@@ -6,11 +6,13 @@ import {openzeppelin_saveDeploymentManifest} from "./openzeppelin-upgrade-valida
 
 const logger: Logger = console.log
 
+// note: to generate rinkeby scripts update the `--network` in the package.json
 async function main() {
   const hardhatUpgrades = new HardhatUpgradesManifest({hre, logger})
   const proxyContracts = Object.keys(await hre.deployments.all())
     .filter((x) => x.includes("_Proxy") && x != "CreditDesk_Proxy" && x != "Pool_Proxy")
     .map((x) => x.replace("_Proxy", ""))
+
   await hardhatUpgrades.writeManifest({
     contracts: proxyContracts,
   })
@@ -25,6 +27,12 @@ export class HardhatUpgradesManifest {
     this.hre = deployer.hre
   }
 
+  /*
+  If you're seeing the following error:
+  - "Error saving manifest for <>: Error: The requested contract was not found. Make sure the source code is available for compilation".
+  - Unfortunately, we weren't able to figure out why the metadata is different - theory is related to the way compilation occurs.
+  - The solution is to replace the `{validations:{}}` block for the given contract w/ the metadata provided in the error - inside of packages/protocol/cache/validations.json.
+  */
   async writeManifest({contracts}: {contracts: string[]}): Promise<void> {
     const {network} = this.hre
     this.logger(`Writing manifest: ${contracts}`)
