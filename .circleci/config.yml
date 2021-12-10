@@ -16,7 +16,7 @@ commands:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  test:
+  install:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
@@ -51,7 +51,8 @@ jobs:
           key: deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
           paths:
             - ~/.npm
-            - ./**/node_modules/
+            - ./packages/protocol/node_modules/
+            - ./packages/utils/node_modules/
             - ./packages/protocol/artifacts
             - ./packages/protocol/cache
             - ./packages/protocol/typechain
