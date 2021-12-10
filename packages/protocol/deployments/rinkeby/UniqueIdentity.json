@@ -1,92 +1,24 @@
 {
-  "address": "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
+  "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
   "abi": [
     {
       "type": "event",
       "anonymous": false,
-      "name": "DepositMade",
+      "name": "ApprovalForAll",
       "inputs": [
         {
           "type": "address",
-          "name": "capitalProvider",
-          "indexed": true
-        },
-        {
-          "type": "uint256",
-          "name": "amount",
-          "indexed": false
-        },
-        {
-          "type": "uint256",
-          "name": "shares",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "GoldfinchConfigUpdated",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "who",
+          "name": "account",
           "indexed": true
         },
         {
           "type": "address",
-          "name": "configAddress",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "InterestCollected",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "payer",
+          "name": "operator",
           "indexed": true
         },
         {
-          "type": "uint256",
-          "name": "amount",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "InvestmentMadeInJunior",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "tranchedPool",
-          "indexed": true
-        },
-        {
-          "type": "uint256",
-          "name": "amount",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "InvestmentMadeInSenior",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "tranchedPool",
-          "indexed": true
-        },
-        {
-          "type": "uint256",
-          "name": "amount",
+          "type": "bool",
+          "name": "approved",
           "indexed": false
         }
       ]
@@ -106,51 +38,22 @@
     {
       "type": "event",
       "anonymous": false,
-      "name": "PrincipalCollected",
+      "name": "RoleAdminChanged",
       "inputs": [
         {
-          "type": "address",
-          "name": "payer",
+          "type": "bytes32",
+          "name": "role",
           "indexed": true
         },
         {
-          "type": "uint256",
-          "name": "amount",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "PrincipalWrittenDown",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "tranchedPool",
+          "type": "bytes32",
+          "name": "previousAdminRole",
           "indexed": true
         },
         {
-          "type": "int256",
-          "name": "amount",
-          "indexed": false
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "ReserveFundsCollected",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "user",
+          "type": "bytes32",
+          "name": "newAdminRole",
           "indexed": true
-        },
-        {
-          "type": "uint256",
-          "name": "amount",
-          "indexed": false
         }
       ]
     },
@@ -201,11 +104,31 @@
     {
       "type": "event",
       "anonymous": false,
-      "name": "Unpaused",
+      "name": "TransferBatch",
       "inputs": [
         {
           "type": "address",
-          "name": "account",
+          "name": "operator",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "from",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "to",
+          "indexed": true
+        },
+        {
+          "type": "uint256[]",
+          "name": "ids",
+          "indexed": false
+        },
+        {
+          "type": "uint256[]",
+          "name": "values",
           "indexed": false
         }
       ]
@@ -213,21 +136,60 @@
     {
       "type": "event",
       "anonymous": false,
-      "name": "WithdrawalMade",
+      "name": "TransferSingle",
       "inputs": [
         {
           "type": "address",
-          "name": "capitalProvider",
+          "name": "operator",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "from",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "to",
           "indexed": true
         },
         {
           "type": "uint256",
-          "name": "userAmount",
+          "name": "id",
           "indexed": false
         },
         {
           "type": "uint256",
-          "name": "reserveAmount",
+          "name": "value",
+          "indexed": false
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "URI",
+      "inputs": [
+        {
+          "type": "string",
+          "name": "value",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "id",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "Unpaused",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "account",
           "indexed": false
         }
       ]
@@ -242,6 +204,162 @@
       "outputs": [
         {
           "type": "bytes32"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_0",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_1",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_10",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_2",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_3",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_4",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_5",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_6",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_7",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_8",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "ID_TYPE_9",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "MINT_COST_PER_TOKEN",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "uint256"
         }
       ]
     },
@@ -273,144 +391,31 @@
     },
     {
       "type": "function",
-      "name": "__BaseUpgradeablePausable__init",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "owner"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "__PauserPausable__init",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "assets",
+      "name": "SIGNER_ROLE",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
       "inputs": [],
       "outputs": [
         {
-          "type": "uint256"
+          "type": "bytes32"
         }
       ]
     },
     {
       "type": "function",
-      "name": "calculateWritedown",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "tokenId"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "compoundBalance",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "uint256"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "config",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "address"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "deposit",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "amount"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": "depositShares"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "depositWithPermit",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "amount"
-        },
-        {
-          "type": "uint256",
-          "name": "deadline"
-        },
-        {
-          "type": "uint8",
-          "name": "v"
-        },
-        {
-          "type": "bytes32",
-          "name": "r"
-        },
-        {
-          "type": "bytes32",
-          "name": "s"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": "depositShares"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "estimateInvestment",
+      "name": "balanceOf",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
       "inputs": [
         {
           "type": "address",
-          "name": "pool"
+          "name": "account"
+        },
+        {
+          "type": "uint256",
+          "name": "id"
         }
       ],
       "outputs": [
@@ -421,21 +426,50 @@
     },
     {
       "type": "function",
-      "name": "getNumShares",
+      "name": "balanceOfBatch",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
       "inputs": [
         {
-          "type": "uint256",
-          "name": "amount"
+          "type": "address[]",
+          "name": "accounts"
+        },
+        {
+          "type": "uint256[]",
+          "name": "ids"
         }
       ],
       "outputs": [
         {
-          "type": "uint256"
+          "type": "uint256[]"
         }
       ]
+    },
+    {
+      "type": "function",
+      "name": "burn",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "account"
+        },
+        {
+          "type": "uint256",
+          "name": "id"
+        },
+        {
+          "type": "uint256",
+          "name": "expiresAt"
+        },
+        {
+          "type": "bytes",
+          "name": "signature"
+        }
+      ],
+      "outputs": []
     },
     {
       "type": "function",
@@ -545,21 +579,8 @@
           "name": "owner"
         },
         {
-          "type": "address",
-          "name": "_config"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "invest",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "pool"
+          "type": "string",
+          "name": "uri"
         }
       ],
       "outputs": []
@@ -574,6 +595,67 @@
       "outputs": [
         {
           "type": "bool"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "isApprovedForAll",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "account"
+        },
+        {
+          "type": "address",
+          "name": "operator"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "mint",
+      "constant": false,
+      "stateMutability": "payable",
+      "payable": true,
+      "inputs": [
+        {
+          "type": "uint256",
+          "name": "id"
+        },
+        {
+          "type": "uint256",
+          "name": "expiresAt"
+        },
+        {
+          "type": "bytes",
+          "name": "signature"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "nonces",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256"
         }
       ]
     },
@@ -597,19 +679,6 @@
           "type": "bool"
         }
       ]
-    },
-    {
-      "type": "function",
-      "name": "redeem",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "tokenId"
-        }
-      ],
-      "outputs": []
     },
     {
       "type": "function",
@@ -647,56 +716,141 @@
     },
     {
       "type": "function",
-      "name": "sharePrice",
+      "name": "safeBatchTransferFrom",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "from"
+        },
+        {
+          "type": "address",
+          "name": "to"
+        },
+        {
+          "type": "uint256[]",
+          "name": "ids"
+        },
+        {
+          "type": "uint256[]",
+          "name": "amounts"
+        },
+        {
+          "type": "bytes",
+          "name": "data"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "safeTransferFrom",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "from"
+        },
+        {
+          "type": "address",
+          "name": "to"
+        },
+        {
+          "type": "uint256",
+          "name": "id"
+        },
+        {
+          "type": "uint256",
+          "name": "amount"
+        },
+        {
+          "type": "bytes",
+          "name": "data"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "setApprovalForAll",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "operator"
+        },
+        {
+          "type": "bool",
+          "name": "approved"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "setSupportedUIDTypes",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "uint256[]",
+          "name": "ids"
+        },
+        {
+          "type": "bool[]",
+          "name": "values"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "setURI",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "string",
+          "name": "newuri"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "supportedUIDTypes",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
-      "inputs": [],
-      "outputs": [
+      "inputs": [
         {
           "type": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool"
         }
       ]
     },
     {
       "type": "function",
-      "name": "sweepFromCompound",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "sweepToCompound",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "totalLoansOutstanding",
+      "name": "supportsInterface",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
-      "inputs": [],
-      "outputs": [
+      "inputs": [
         {
-          "type": "uint256"
+          "type": "bytes4",
+          "name": "interfaceId"
         }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "totalWritedowns",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
+      ],
       "outputs": [
         {
-          "type": "uint256"
+          "type": "bool"
         }
       ]
     },
@@ -710,75 +864,18 @@
     },
     {
       "type": "function",
-      "name": "updateGoldfinchConfig",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "withdraw",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "usdcAmount"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": "amount"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "withdrawInFidu",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "fiduAmount"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "uint256",
-          "name": "amount"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "writedown",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "uint256",
-          "name": "tokenId"
-        }
-      ],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "writedowns",
+      "name": "uri",
       "constant": true,
       "stateMutability": "view",
       "payable": false,
       "inputs": [
         {
-          "type": "address"
+          "type": "uint256"
         }
       ],
       "outputs": [
         {
-          "type": "uint256"
+          "type": "string"
         }
       ]
     },
@@ -850,24 +947,6 @@
     },
     {
       "type": "function",
-      "name": "supportsInterface",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes4",
-          "name": "id"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "type": "function",
       "name": "transferOwnership",
       "constant": false,
       "payable": false,
@@ -911,99 +990,145 @@
       "outputs": []
     }
   ],
-  "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
+  "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
   "receipt": {
     "to": null,
-    "from": "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
-    "contractAddress": "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
-    "transactionIndex": 15,
-    "gasUsed": "986652",
-    "logsBloom": "0x00000004000000000000000001000000080080000000000000808000000000000000000000008000000400000000000100000000000000000000000010200000000000000000000000000000000000000001000000000000000008000000000000000000020000000000080000000800000000000000000100000000000000400000000000000000000000000020008000000080000000000000000000000000022000000020000000000000000200000000000000000000001000000000000000000000800000000000000000000000000000000090000100042000000020000010000000000000000400000000201000000400000000000000000000020000",
-    "blockHash": "0xbf8ccda2eb376e16256f498cb22ba0802862913e9016b73902b39f26352cc790",
-    "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
+    "from": "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
+    "contractAddress": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
+    "transactionIndex": 12,
+    "gasUsed": "1018033",
+    "logsBloom": "0x0000000420000000080000000000100008008000000000000080000000000000000000000000000000040000000000000000000000000000000000040000000000000000000000000000000000000000000100000000000000000000000000000000000002000040000008000000080000000000000000010000000000000040000000000000000000000000000000800020000000000000000000000000000000a000000000000000000000000200000000000000000000001000000000000000000000000000000000000021000000000000000004000100002000000020000200000000000000000400000000001000002400000000000000000000000008",
+    "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750",
+    "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
     "logs": [
       {
-        "transactionIndex": 15,
-        "blockNumber": 9121421,
-        "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
-        "address": "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
         "topics": [
           "0x5570d70a002632a7b0b3c9304cc89efb62d8da9eca0dbd7752c83b7379068296",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
-          "0x0000000000000000000000003b37bb16af81319d956591ecdba354b41d1b2aff"
+          "0x000000000000000000000000a3b71784457e2ad252382323d47e503c31be21d6"
         ],
         "data": "0x",
-        "logIndex": 16,
-        "blockHash": "0xbf8ccda2eb376e16256f498cb22ba0802862913e9016b73902b39f26352cc790"
+        "logIndex": 18,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
       },
       {
-        "transactionIndex": 15,
-        "blockNumber": 9121421,
-        "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
-        "address": "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
         "topics": [
           "0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d",
           "0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e",
           "0x000000000000000000000000aa96ca940736e937a8571b132992418c7d220976",
-          "0x000000000000000000000000f3c9b38c155410456b5a98fd8bbf5e35b87f6d96"
+          "0x00000000000000000000000012b82166fd044ac854d3fc15c48b5719ca8dfb94"
         ],
         "data": "0x",
-        "logIndex": 17,
-        "blockHash": "0xbf8ccda2eb376e16256f498cb22ba0802862913e9016b73902b39f26352cc790"
+        "logIndex": 19,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
       },
       {
-        "transactionIndex": 15,
-        "blockNumber": 9121421,
-        "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
-        "address": "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
         "topics": [
           "0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d",
           "0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a",
           "0x000000000000000000000000aa96ca940736e937a8571b132992418c7d220976",
-          "0x000000000000000000000000f3c9b38c155410456b5a98fd8bbf5e35b87f6d96"
+          "0x00000000000000000000000012b82166fd044ac854d3fc15c48b5719ca8dfb94"
         ],
         "data": "0x",
-        "logIndex": 18,
-        "blockHash": "0xbf8ccda2eb376e16256f498cb22ba0802862913e9016b73902b39f26352cc790"
+        "logIndex": 20,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
       },
       {
-        "transactionIndex": 15,
-        "blockNumber": 9121421,
-        "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
-        "address": "0xfD3e7E12dF53072036D7c8ba7120aD698ce5c821",
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
         "topics": [
-          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
-          "0x000000000000000000000000f579ff2edd4d46501a06e0f2fbdc59854d094f31",
-          "0x000000000000000000000000f579ff2edd4d46501a06e0f2fbdc59854d094f31"
+          "0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff",
+          "0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e"
         ],
-        "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-        "logIndex": 19,
-        "blockHash": "0xbf8ccda2eb376e16256f498cb22ba0802862913e9016b73902b39f26352cc790"
+        "data": "0x",
+        "logIndex": 21,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
       },
       {
-        "transactionIndex": 15,
-        "blockNumber": 9121421,
-        "transactionHash": "0x18bb6da23d64d570071535d1c6adb383a71ee56921726aa2319a5740900771d1",
-        "address": "0xF579fF2eDD4D46501a06e0F2fbdC59854d094f31",
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
+        "topics": [
+          "0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff",
+          "0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e"
+        ],
+        "data": "0x",
+        "logIndex": 22,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
+      },
+      {
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
+        "topics": [
+          "0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d",
+          "0xe2f4eaae4a9751e85a3e4a7b9587827a877f29914755229b07a7b2da98285f70",
+          "0x000000000000000000000000aa96ca940736e937a8571b132992418c7d220976",
+          "0x00000000000000000000000012b82166fd044ac854d3fc15c48b5719ca8dfb94"
+        ],
+        "data": "0x",
+        "logIndex": 23,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
+      },
+      {
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
+        "topics": [
+          "0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff",
+          "0xe2f4eaae4a9751e85a3e4a7b9587827a877f29914755229b07a7b2da98285f70",
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e"
+        ],
+        "data": "0x",
+        "logIndex": 24,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
+      },
+      {
+        "transactionIndex": 12,
+        "blockNumber": 9781684,
+        "transactionHash": "0x4e73d5812bcb9f7a3ea8f2b31fef49b41342ee5dbf26782ffa27e030b1764321",
+        "address": "0x6CC1cAAcB5E86C1FdcB0ccf24Ad7874401A24708",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
           "0x0000000000000000000000000000000000000000000000000000000000000000",
           "0x000000000000000000000000aa96ca940736e937a8571b132992418c7d220976"
         ],
         "data": "0x",
-        "logIndex": 20,
-        "blockHash": "0xbf8ccda2eb376e16256f498cb22ba0802862913e9016b73902b39f26352cc790"
+        "logIndex": 25,
+        "blockHash": "0x4b3e0ffedee97c8d71f15d81698d58692aacd5e40e391f465792648c269b7750"
       }
     ],
-    "blockNumber": 9121421,
-    "cumulativeGasUsed": "7255388",
+    "blockNumber": 9781684,
+    "cumulativeGasUsed": "1985258",
     "status": 1,
     "byzantium": true
   },
   "args": [
-    "0x3b37bb16AF81319d956591EcDbA354b41D1b2AFf",
+    "0xa3B71784457E2AD252382323d47e503C31BE21d6",
     "0xAA96CA940736e937A8571b132992418c7d220976",
-    "0x485cc955000000000000000000000000aa96ca940736e937a8571b132992418c7d2209760000000000000000000000003d90efea8c8f9e474c9a855b8cbe647940201759"
+    "0xf399e22e000000000000000000000000aa96ca940736e937a8571b132992418c7d2209760000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001d68747470733a2f2f6170702e676f6c6466696e63682e66696e616e6365000000"
   ],
   "solcInputHash": "2db89642daf7ebd20cbbef9f4540b20d",
   "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"implementationAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ownerAddress\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousImplementation\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newImplementation\",\"type\":\"address\"}],\"name\":\"ProxyImplementationUpdated\",\"type\":\"event\"},{\"stateMutability\":\"payable\",\"type\":\"fallback\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"id\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newImplementation\",\"type\":\"address\"}],\"name\":\"upgradeTo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newImplementation\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"upgradeToAndCall\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"Proxy implementing EIP173 for ownership management\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"solc_0.7/proxy/EIP173Proxy.sol\":\"EIP173Proxy\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":999999},\"remappings\":[]},\"sources\":{\"solc_0.7/proxy/EIP173Proxy.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.7.0;\\n\\nimport \\\"./Proxy.sol\\\";\\n\\ninterface ERC165 {\\n    function supportsInterface(bytes4 id) external view returns (bool);\\n}\\n\\n///@notice Proxy implementing EIP173 for ownership management\\ncontract EIP173Proxy is Proxy {\\n    // ////////////////////////// EVENTS ///////////////////////////////////////////////////////////////////////\\n\\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\\n\\n    // /////////////////////// CONSTRUCTOR //////////////////////////////////////////////////////////////////////\\n\\n    constructor(\\n        address implementationAddress,\\n        address ownerAddress,\\n        bytes memory data\\n    ) payable {\\n        _setImplementation(implementationAddress, data);\\n        _setOwner(ownerAddress);\\n    }\\n\\n    // ///////////////////// EXTERNAL ///////////////////////////////////////////////////////////////////////////\\n\\n    function owner() external view returns (address) {\\n        return _owner();\\n    }\\n\\n    function supportsInterface(bytes4 id) external view returns (bool) {\\n        if (id == 0x01ffc9a7 || id == 0x7f5828d0) {\\n            return true;\\n        }\\n        if (id == 0xFFFFFFFF) {\\n            return false;\\n        }\\n\\n        ERC165 implementation;\\n        // solhint-disable-next-line security/no-inline-assembly\\n        assembly {\\n            implementation := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)\\n        }\\n\\n        // Technically this is not standard compliant as ERC-165 require 30,000 gas which that call cannot ensure\\n        // because it is itself inside `supportsInterface` that might only get 30,000 gas.\\n        // In practise this is unlikely to be an issue.\\n        try implementation.supportsInterface(id) returns (bool support) {\\n            return support;\\n        } catch {\\n            return false;\\n        }\\n    }\\n\\n    function transferOwnership(address newOwner) external onlyOwner {\\n        _setOwner(newOwner);\\n    }\\n\\n    function upgradeTo(address newImplementation) external onlyOwner {\\n        _setImplementation(newImplementation, \\\"\\\");\\n    }\\n\\n    function upgradeToAndCall(address newImplementation, bytes calldata data) external payable onlyOwner {\\n        _setImplementation(newImplementation, data);\\n    }\\n\\n    // /////////////////////// MODIFIERS ////////////////////////////////////////////////////////////////////////\\n\\n    modifier onlyOwner() {\\n        require(msg.sender == _owner(), \\\"NOT_AUTHORIZED\\\");\\n        _;\\n    }\\n\\n    // ///////////////////////// INTERNAL //////////////////////////////////////////////////////////////////////\\n\\n    function _owner() internal view returns (address adminAddress) {\\n        // solhint-disable-next-line security/no-inline-assembly\\n        assembly {\\n            adminAddress := sload(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103)\\n        }\\n    }\\n\\n    function _setOwner(address newOwner) internal {\\n        address previousOwner = _owner();\\n        // solhint-disable-next-line security/no-inline-assembly\\n        assembly {\\n            sstore(0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103, newOwner)\\n        }\\n        emit OwnershipTransferred(previousOwner, newOwner);\\n    }\\n}\\n\",\"keccak256\":\"0x7f9bbb686cd29ade05acf0cec1bfded16f0ad8d7e3fcb9cf35cc8b04efdda744\",\"license\":\"MIT\"},\"solc_0.7/proxy/Proxy.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.7.0;\\n\\n// EIP-1967\\nabstract contract Proxy {\\n    // /////////////////////// EVENTS ///////////////////////////////////////////////////////////////////////////\\n\\n    event ProxyImplementationUpdated(address indexed previousImplementation, address indexed newImplementation);\\n\\n    // ///////////////////// EXTERNAL ///////////////////////////////////////////////////////////////////////////\\n\\n    receive() external payable virtual {\\n        revert(\\\"ETHER_REJECTED\\\"); // explicit reject by default\\n    }\\n\\n    fallback() external payable {\\n        _fallback();\\n    }\\n\\n    // ///////////////////////// INTERNAL //////////////////////////////////////////////////////////////////////\\n\\n    function _fallback() internal {\\n        // solhint-disable-next-line security/no-inline-assembly\\n        assembly {\\n            let implementationAddress := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)\\n            calldatacopy(0x0, 0x0, calldatasize())\\n            let success := delegatecall(gas(), implementationAddress, 0x0, calldatasize(), 0, 0)\\n            let retSz := returndatasize()\\n            returndatacopy(0, 0, retSz)\\n            switch success\\n                case 0 {\\n                    revert(0, retSz)\\n                }\\n                default {\\n                    return(0, retSz)\\n                }\\n        }\\n    }\\n\\n    function _setImplementation(address newImplementation, bytes memory data) internal {\\n        address previousImplementation;\\n        // solhint-disable-next-line security/no-inline-assembly\\n        assembly {\\n            previousImplementation := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)\\n        }\\n\\n        // solhint-disable-next-line security/no-inline-assembly\\n        assembly {\\n            sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, newImplementation)\\n        }\\n\\n        emit ProxyImplementationUpdated(previousImplementation, newImplementation);\\n\\n        if (data.length > 0) {\\n            (bool success, ) = newImplementation.delegatecall(data);\\n            if (!success) {\\n                assembly {\\n                    // This assembly ensure the revert contains the exact string data\\n                    let returnDataSize := returndatasize()\\n                    returndatacopy(0, 0, returnDataSize)\\n                    revert(0, returnDataSize)\\n                }\\n            }\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0xfa071ffed5c967384ac4787576322a46a4863d89bf39cd6fde58d4780b42e0ed\",\"license\":\"MIT\"}},\"version\":1}",
@@ -1013,10 +1138,10 @@
     "methodName": "initialize",
     "args": [
       "0xAA96CA940736e937A8571b132992418c7d220976",
-      "0x3d90Efea8C8F9E474C9A855B8Cbe647940201759"
+      "https://app.goldfinch.finance"
     ]
   },
-  "implementation": "0xC124723AdDd8cfe67F7538E4d4D26B9796AdDA48",
+  "implementation": "0xa3B71784457E2AD252382323d47e503C31BE21d6",
   "devdoc": {
     "kind": "dev",
     "methods": {},
