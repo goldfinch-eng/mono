@@ -4,7 +4,7 @@ import {DeployOptions, DeployResult} from "hardhat-deploy/types"
 import {Contract, BaseContract} from "ethers"
 
 import {Logger} from "../types"
-import {fixProvider, getProtocolOwner} from "./"
+import {fixProvider, getProtocolOwner, isTestEnv} from "./"
 import {assertIsString, isPlainObject} from "../../../utils"
 import {openzeppelin_saveDeploymentManifest} from "./openzeppelin-upgrade-validation"
 
@@ -64,7 +64,7 @@ export class ContractDeployer {
     }
 
     // if a new proxy deployment, generate the manifest for hardhat-upgrades
-    if (isPlainObject(options) && isPlainObject(options?.proxy) && !proxyPreviouslyExists) {
+    if (isPlainObject(options) && isPlainObject(options?.proxy) && !proxyPreviouslyExists && !isTestEnv()) {
       const {network} = this.hre
       const proxyContractDeployment = await this.hre.deployments.get(`${contractName}`)
       const implContractDeployment = await this.hre.deployments.get(`${contractName}_Implementation`)
