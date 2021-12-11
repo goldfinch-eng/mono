@@ -7,11 +7,6 @@
       "kind": "transparent"
     },
     {
-      "address": "0xcA03Dc4665A8C3603cb4Fd5Ce71Af9649dC00d44",
-      "txHash": "0x2d97a1e5f6a08e054e7fbd191bd3e671ebda47661f49208b6e92f9dc406ec5c0",
-      "kind": "transparent"
-    },
-    {
       "address": "0x73eccD6288e117cAcA738BDAD4FEC51312166C1A",
       "txHash": "0xf194aac58a89029c93fff3cb95d82a34c1d729eb6d4e8c16eceefb9bd88042bb",
       "kind": "transparent"
@@ -53,7 +48,7 @@
     },
     {
       "address": "0x5370F78c6af2Da9cF6642382A3a75F9D5aEc9cc1",
-      "txHash": "0x4ff83c588e76152e9098bde8c3392f73f911f60f4c35267cc4c5dcac5bb5ddb2",
+      "txHash": "0x1382617a84ade6edd8c7fff803c781e06bd79729700327c1a7e7c71f3cf09881",
       "kind": "transparent"
     }
   ],
@@ -1344,195 +1339,6 @@
         }
       }
     },
-    "15e8da0ae5ade43d848bd32bd240eb297a5e8dfd7b33a0a2e255a538436b88f4": {
-      "address": "0x90118d110B07ABB82Ba8980D1c5cC96EeA810d2C",
-      "txHash": "0x55546adcb21a6825d8144c41bc84f6ed9d90c3db2ea6eb48ccd6554331913d6a",
-      "layout": {
-        "storage": [
-          {
-            "contract": "Initializable",
-            "label": "initialized",
-            "type": "t_bool",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
-          },
-          {
-            "contract": "Initializable",
-            "label": "initializing",
-            "type": "t_bool",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
-          },
-          {
-            "contract": "Initializable",
-            "label": "______gap",
-            "type": "t_array(t_uint256)50_storage",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
-          },
-          {
-            "contract": "ContextUpgradeSafe",
-            "label": "__gap",
-            "type": "t_array(t_uint256)50_storage",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
-          },
-          {
-            "contract": "AccessControlUpgradeSafe",
-            "label": "_roles",
-            "type": "t_mapping(t_bytes32,t_struct(RoleData)260_storage)",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:58"
-          },
-          {
-            "contract": "AccessControlUpgradeSafe",
-            "label": "__gap",
-            "type": "t_array(t_uint256)49_storage",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:210"
-          },
-          {
-            "contract": "PausableUpgradeSafe",
-            "label": "_paused",
-            "type": "t_bool",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:26"
-          },
-          {
-            "contract": "PausableUpgradeSafe",
-            "label": "__gap",
-            "type": "t_array(t_uint256)49_storage",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:84"
-          },
-          {
-            "contract": "ReentrancyGuardUpgradeSafe",
-            "label": "_notEntered",
-            "type": "t_bool",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:21"
-          },
-          {
-            "contract": "ReentrancyGuardUpgradeSafe",
-            "label": "__gap",
-            "type": "t_array(t_uint256)49_storage",
-            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:63"
-          },
-          {
-            "contract": "BaseUpgradeablePausable",
-            "label": "__gap1",
-            "type": "t_array(t_uint256)50_storage",
-            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:31"
-          },
-          {
-            "contract": "BaseUpgradeablePausable",
-            "label": "__gap2",
-            "type": "t_array(t_uint256)50_storage",
-            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:32"
-          },
-          {
-            "contract": "BaseUpgradeablePausable",
-            "label": "__gap3",
-            "type": "t_array(t_uint256)50_storage",
-            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:33"
-          },
-          {
-            "contract": "BaseUpgradeablePausable",
-            "label": "__gap4",
-            "type": "t_array(t_uint256)50_storage",
-            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:34"
-          },
-          {
-            "contract": "GoldfinchConfig",
-            "label": "addresses",
-            "type": "t_mapping(t_uint256,t_address)",
-            "src": "contracts/protocol/core/GoldfinchConfig.sol:23"
-          },
-          {
-            "contract": "GoldfinchConfig",
-            "label": "numbers",
-            "type": "t_mapping(t_uint256,t_uint256)",
-            "src": "contracts/protocol/core/GoldfinchConfig.sol:24"
-          },
-          {
-            "contract": "GoldfinchConfig",
-            "label": "goList",
-            "type": "t_mapping(t_address,t_bool)",
-            "src": "contracts/protocol/core/GoldfinchConfig.sol:25"
-          },
-          {
-            "contract": "GoldfinchConfig",
-            "label": "valuesInitialized",
-            "type": "t_bool",
-            "src": "contracts/protocol/core/GoldfinchConfig.sol:33"
-          }
-        ],
-        "types": {
-          "t_mapping(t_uint256,t_address)": {
-            "label": "mapping(uint256 => address)"
-          },
-          "t_uint256": {
-            "label": "uint256"
-          },
-          "t_address": {
-            "label": "address"
-          },
-          "t_mapping(t_uint256,t_uint256)": {
-            "label": "mapping(uint256 => uint256)"
-          },
-          "t_mapping(t_address,t_bool)": {
-            "label": "mapping(address => bool)"
-          },
-          "t_bool": {
-            "label": "bool"
-          },
-          "t_array(t_uint256)50_storage": {
-            "label": "uint256[50]"
-          },
-          "t_array(t_uint256)49_storage": {
-            "label": "uint256[49]"
-          },
-          "t_mapping(t_bytes32,t_struct(RoleData)260_storage)": {
-            "label": "mapping(bytes32 => struct AccessControlUpgradeSafe.RoleData)"
-          },
-          "t_bytes32": {
-            "label": "bytes32"
-          },
-          "t_struct(RoleData)260_storage": {
-            "label": "struct AccessControlUpgradeSafe.RoleData",
-            "members": [
-              {
-                "label": "members",
-                "type": "t_struct(AddressSet)4204_storage"
-              },
-              {
-                "label": "adminRole",
-                "type": "t_bytes32"
-              }
-            ]
-          },
-          "t_struct(AddressSet)4204_storage": {
-            "label": "struct EnumerableSet.AddressSet",
-            "members": [
-              {
-                "label": "_inner",
-                "type": "t_struct(Set)4024_storage"
-              }
-            ]
-          },
-          "t_struct(Set)4024_storage": {
-            "label": "struct EnumerableSet.Set",
-            "members": [
-              {
-                "label": "_values",
-                "type": "t_array(t_bytes32)dyn_storage"
-              },
-              {
-                "label": "_indexes",
-                "type": "t_mapping(t_bytes32,t_uint256)"
-              }
-            ]
-          },
-          "t_array(t_bytes32)dyn_storage": {
-            "label": "bytes32[]"
-          },
-          "t_mapping(t_bytes32,t_uint256)": {
-            "label": "mapping(bytes32 => uint256)"
-          }
-        }
-      }
-    },
     "82a34c85781250523a30aa29c50ef41e9be487ee2b59846235ebc903991a8f97": {
       "address": "0x2dE080e97B0caE9825375D31f5D0eD5751fDf16D",
       "txHash": "0x09e44f18f294b23a6e34ce5e10b3094e953f80766bff8ffebd2ae08ed44e8b6e",
@@ -1788,7 +1594,11 @@
           },
           "t_enum(LockupPeriod)29935": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"]
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ]
           },
           "t_mapping(t_uint256,t_struct(StakedPosition)29944_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
@@ -2529,7 +2339,7 @@
     },
     "fca9e357ca2dfb99376660b44f1eabf2137fd709602a494b41134f9b533ff8b9": {
       "address": "0x2fc631e4B3018258759C52AF169200213e84ABab",
-      "txHash": "0x1cd934c8e2c8cac6a4b0f265143a77dbd91f9c6d3e5af96c8a1a82293108bf9c",
+      "txHash": "0x912e40f7d799a9de9ef2f3b3a5f33c24e6ae07838f1cbaf7a00d7a12812960a7",
       "layout": {
         "storage": [
           {
@@ -2885,7 +2695,7 @@
     },
     "ba26bd720343ecb882737b8c40cb9bd092027b1e072cdb6fc1e0a33bbe214488": {
       "address": "0x63cf2Cd54fE91e3545D1379abf5bfd194545259d",
-      "txHash": "0xd35909b504bb6649bbf05c088a0cff27105fe65d4d757bb76580bb8a87513adf",
+      "txHash": "0x763f8521b03dced6d10927ec6eae392134a3eabe2ba914d1aed6e604753c42bd",
       "layout": {
         "storage": [
           {
@@ -3083,7 +2893,7 @@
     },
     "26108f9308862479cd1482e55e00ecbc28fee4e87d6f2dbe3ab5ad31acc9c163": {
       "address": "0x1e2F4432bFeF9E9Ad39DA6d272F4aFf33629c770",
-      "txHash": "0xa3e017dd0d353b8841d5f2b8a4b6d44dc740c4c12017041947581ddc6fd53a19",
+      "txHash": "0xc00916e5d6e1a4f2d4762966fcb1106ab77ad102affdb971eb52383bd673d8f1",
       "layout": {
         "storage": [
           {
@@ -3287,7 +3097,7 @@
     },
     "dea601ebe62a9064dca727fdad69a3fd8ce5048dc8d22cac1a773b0b31cd32e7": {
       "address": "0x446e7636a5Fa9af46c3718719e465B547248bF62",
-      "txHash": "0x0ea0f8a8527068663c5669677b5b79627d95b18e6b03c1d7bc59654a024c2566",
+      "txHash": "0x6ab4b63681d528507ed1cce16183f8f7fd7337bbee99bd2cdfa5e7521ac66d48",
       "layout": {
         "storage": [
           {
@@ -3473,7 +3283,7 @@
     },
     "2a132555a31f8d77526933591abc33e530407f40bb2e0e93bc53f57685ea1b7c": {
       "address": "0x505d59ffFd312983Cc0eD114d7F117B91520d742",
-      "txHash": "0x16713f3ddfcae64c897dc4e72ce3846f5f1e2e0a749a97b39775125fdc465c67",
+      "txHash": "0xfc35e66239aa3e71615c10fca115e4323927466b77694124d1bc465373f6c244",
       "layout": {
         "storage": [
           {
@@ -3635,7 +3445,7 @@
     },
     "dcea102663d16cca37494e4a561ea163beff9d7ad2ce0c811c45fe19be6c71a6": {
       "address": "0xcEC91d876E8f003110D43381359b1bAd124e7F2b",
-      "txHash": "0xa0a189e1a58ebee12e35a966f4a9a55180f311401d52da6861c646f3bcd345af",
+      "txHash": "0xc52ac74b4d7a9a7e52d99dc303cbfbe78010d46e1c9b6c99e88ba0c6376c4180",
       "layout": {
         "storage": [
           {

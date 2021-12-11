@@ -27,6 +27,7 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
+    const proxyPreviouslyExists = await this.hre.deployments.getOrNull(`${contractName}`)
     if (isPlainObject(options) && isPlainObject(options?.proxy) && !options?.proxy?.owner) {
       const protocol_owner = await getProtocolOwner()
       options = {
@@ -62,8 +63,8 @@ export class ContractDeployer {
       )
     }
 
-    // if a proxy, generate the manifest for hardhat-upgrades
-    if (isPlainObject(options) && isPlainObject(options?.proxy)) {
+    // if a new proxy deployment, generate the manifest for hardhat-upgrades
+    if (isPlainObject(options) && isPlainObject(options?.proxy) && !proxyPreviouslyExists) {
       const {network} = this.hre
       const proxyContractDeployment = await this.hre.deployments.get(`${contractName}`)
       const implContractDeployment = await this.hre.deployments.get(`${contractName}_Implementation`)
