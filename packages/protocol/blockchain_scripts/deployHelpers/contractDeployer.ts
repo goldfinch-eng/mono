@@ -4,8 +4,9 @@ import {DeployOptions, DeployResult} from "hardhat-deploy/types"
 import {Contract, BaseContract} from "ethers"
 
 import {Logger} from "../types"
-import {getProtocolOwner} from "./"
+import {fixProvider, getProtocolOwner, isTestEnv} from "./"
 import {assertIsString, isPlainObject} from "../../../utils"
+import {openzeppelin_saveDeploymentManifest} from "./openzeppelin-upgrade-validation"
 
 export class ContractDeployer {
   public readonly logger: Logger
@@ -26,6 +27,7 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
+    const proxyPreviouslyExists = await this.hre.deployments.getOrNull(`${contractName}`)
     if (isPlainObject(options) && isPlainObject(options?.proxy) && !options?.proxy?.owner) {
       const protocol_owner = await getProtocolOwner()
       options = {
@@ -36,6 +38,7 @@ export class ContractDeployer {
         },
       }
     }
+
     let result: DeployResult
     const unsignedTx = await this.hre.deployments.catchUnknownSigner(
       async () => {
@@ -58,6 +61,22 @@ export class ContractDeployer {
       this.logger(
         `${contractName} implementation was deployed to: ${result.address} (${this.sizeInKb(result).toFixed(3)}kb)`
       )
+    }
+
+    // if a new proxy deployment, generate the manifest for hardhat-upgrades
+    if (isPlainObject(options) && isPlainObject(options?.proxy) && !proxyPreviouslyExists && !isTestEnv()) {
+      const {network} = this.hre
+      const proxyContractDeployment = await this.hre.deployments.get(`${contractName}`)
+      const implContractDeployment = await this.hre.deployments.get(`${contractName}_Implementation`)
+      try {
+        await openzeppelin_saveDeploymentManifest(
+          fixProvider(network.provider),
+          proxyContractDeployment,
+          implContractDeployment
+        )
+      } catch (e) {
+        this.logger(`Error saving manifest for ${contract}: ${e}`)
+      }
     }
 
     return (await ethers.getContractAt(result.abi, result.address)) as T
