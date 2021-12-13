@@ -7,6 +7,7 @@ import {
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
+import * as migrate231 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3.1/migrate"
 import {
   assertIsChainId,
   DISTRIBUTOR_ROLE,
@@ -58,6 +59,10 @@ const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
 
 const v23PerformMigration = deployments.createFixture(async ({deployments}) => {
   return await migrate23.main()
+})
+
+const v231PerformMigration = deployments.createFixture(async () => {
+  await migrate231.main()
 })
 
 describe("V2.2 & v2.3 migration", async function () {
@@ -464,6 +469,30 @@ describe("V2.2 & v2.3 migration", async function () {
 
           expect(await goldfinchConfig.goList(KNOWN_ADDRESS_ON_GO_LIST)).to.be.false
         })
+      })
+    })
+  })
+
+  describe("v2.3.1 migration", async () => {
+    beforeEach(async () => {
+      await v231PerformMigration()
+    })
+
+    describe("StakingRewards", async () => {
+      it("is unpaused", async () => {
+        expect(await stakingRewards.paused()).to.be.false
+      })
+    })
+
+    describe("CommunityRewards", async () => {
+      it("is unpaused", async () => {
+        expect(await communityRewards.paused()).to.be.false
+      })
+    })
+
+    describe("MerkleDirectDistributor", async () => {
+      it("is unpaused", async () => {
+        expect(await merkleDirectDistributor.paused()).to.be.false
       })
     })
   })
