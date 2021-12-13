@@ -2,8 +2,9 @@ import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockcha
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import React, {useState} from "react"
+import React, {useContext, useState} from "react"
 import {useMediaQuery} from "react-responsive"
+import {AppContext} from "../App"
 import {
   CommunityRewardsGrant,
   CommunityRewardsLoaded,
@@ -13,6 +14,7 @@ import {
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,
@@ -30,6 +32,7 @@ import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
+import {getIsRefreshing} from "./refreshIndicator"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
 
@@ -47,6 +50,7 @@ enum ActionButtonTexts {
   accept = "Accept",
   accepting = "Accepting...",
   claimGFI = "Claim GFI",
+  claiming = "Claiming...",
   claimed = "Claimed",
   vesting = "Vesting",
 }
@@ -58,9 +62,14 @@ interface ActionButtonProps {
 }
 
 function ActionButton(props: ActionButtonProps) {
+  const currentRoute = useCurrentRoute()
+  const {currentBlock, leavesCurrentBlock} = useContext(AppContext)
+  assertNonNullable(currentRoute)
+  assertNonNullable(leavesCurrentBlock)
   const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const disabledClass = props.disabled || isPending ? "disabled-button" : ""
+  const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock[currentRoute])
+  const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
   async function action(e): Promise<void> {
     if (e.target === e.currentTarget) {
@@ -71,7 +80,12 @@ function ActionButton(props: ActionButtonProps) {
     setIsPending(false)
   }
 
-  const isAccepting = props.text === ActionButtonTexts.accept && isPending
+  let actionText = props.text
+  if (props.text === ActionButtonTexts.accept && (isPending || isRefreshing)) {
+    actionText = ActionButtonTexts.accepting
+  } else if (props.text === ActionButtonTexts.claimGFI && (isPending || isRefreshing)) {
+    actionText = ActionButtonTexts.claiming
+  }
 
   return (
     <button
@@ -79,7 +93,7 @@ function ActionButton(props: ActionButtonProps) {
       className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
       onClick={action}
     >
-      {isAccepting ? ActionButtonTexts.accepting : props.text}
+      {actionText}
     </button>
   )
 }
