@@ -8,7 +8,6 @@ import Borrow from "./components/borrow"
 import DevTools from "./components/devTools"
 import Earn from "./components/earn"
 import Footer from "./components/footer"
-import NetworkWidget from "./components/networkWidget"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
 import PrivacyPolicy from "./components/privacyPolicy"
@@ -44,7 +43,23 @@ import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./uti
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {Web3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
+import NetworkIndicators from "./components/networkIndicators"
 import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
+import {
+  ABOUT_ROUTE,
+  AppRoute,
+  BORROW_ROUTE,
+  EARN_ROUTE,
+  INDEX_ROUTE,
+  PRIVACY_POLICY_ROUTE,
+  REWARDS_ROUTE,
+  SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
+  SENIOR_POOL_ROUTE,
+  TERMS_OF_SERVICE_ROUTE,
+  TRANCHED_POOL_ROUTE,
+  TRANSACTIONS_ROUTE,
+  VERIFY_ROUTE,
+} from "./types/routes"
 
 interface GeolocationData {
   ip: string
@@ -59,9 +74,36 @@ interface GeolocationData {
 
 export type SetSessionFn = (data: SessionData | undefined) => void
 
+export type LeavesCurrentBlock = Record<AppRoute, BlockInfo | undefined>
+
 export interface GlobalState {
   web3Status?: Web3Status
+
+  // This tracks the latest block that the application knows about. Think of this as a
+  // global or root-level piece of state; it applies to the entire application.
   currentBlock?: BlockInfo
+  // This handler is for use whenever something has happened (e.g. the user took some action)
+  // to which we want to react by refreshing chain data (and values derived thereof). Refreshing
+  // the application's understanding of the current block is meant to be sufficient (i.e. it's
+  // the developer's responsibility to accomplish this) to trigger cascading refreshing of the
+  // data depended on by the mounted components in the component tree.
+  refreshCurrentBlock?: () => Promise<void>
+  // This tracks the latest block that the application knows about *at the respective leaf of the
+  // component tree*, that is, which corresponds to the chain data being shown to the user on a
+  // given route. Tracking this separately from `currentBlock` is useful because it enables us --
+  // assuming the developer has implemented the necessary usage of `refreshCurrentBlock()` to trigger
+  // refreshing, and of `setLeafCurrentBlock()` when the refresh has finished as far as a given
+  // route is concerned -- to display an indicator in the UI that the chain data are being refreshed,
+  // if the leaf's current block is lagging behind the `currentBlock`.
+  leavesCurrentBlock?: LeavesCurrentBlock
+  // This setter should be called when the "last" data dependency of a view has finished refreshing,
+  // as defined by a change (increase) in the current block associated with that data dependency; the
+  // setter should be called with that new current block. What is meant by "last"? It's the data
+  // dependency that can be thought of being the closest to a leaf node of the component tree. The
+  // point is that once it's done refreshing, we know that nothing else remains to be refreshed. In
+  // practice, this means we'll want to call `setLeafCurrentBlock()` once per application route.
+  setLeafCurrentBlock?: (route: AppRoute, leafCurrentBlock: BlockInfo) => void
+
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
   communityRewards?: CommunityRewardsLoaded
@@ -72,14 +114,16 @@ export interface GlobalState {
   user?: UserLoaded
   usdc?: ERC20
   goldfinchConfig?: GoldfinchConfigData
-  network?: NetworkConfig
   goldfinchProtocol?: GoldfinchProtocol
+
+  network?: NetworkConfig
   networkMonitor?: NetworkMonitor
+
   geolocationData?: GeolocationData
   setGeolocationData?: (geolocationData: GeolocationData) => void
+
   sessionData?: SessionData
   setSessionData?: SetSessionFn
-  refreshCurrentBlock?: () => Promise<void>
 }
 
 declare let window: any
@@ -99,6 +143,20 @@ function App() {
   const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<UserLoaded>()
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
+  const [leavesCurrentBlock, setLeavesCurrentBlock] = useState<LeavesCurrentBlock>({
+    [INDEX_ROUTE]: undefined,
+    [EARN_ROUTE]: undefined,
+    [ABOUT_ROUTE]: undefined,
+    [REWARDS_ROUTE]: undefined,
+    [BORROW_ROUTE]: undefined,
+    [TRANSACTIONS_ROUTE]: undefined,
+    [SENIOR_POOL_ROUTE]: undefined,
+    [TRANCHED_POOL_ROUTE]: undefined,
+    [VERIFY_ROUTE]: undefined,
+    [TERMS_OF_SERVICE_ROUTE]: undefined,
+    [PRIVACY_POLICY_ROUTE]: undefined,
+    [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+  })
   const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
   const [currentTxs, setCurrentTxs] = useState<CurrentTx<TxType>[]>([])
   const [currentErrors, setCurrentErrors] = useState<any[]>([])
@@ -112,6 +170,7 @@ function App() {
     currentBlock?.timestamp
   )
   const consistent = useFromSameBlock(
+    {setAsLeaf: false},
     currentBlock,
     _gfi,
     _stakingRewards,
@@ -328,9 +387,14 @@ function App() {
     setCurrentBlock(currentBlock)
   }
 
+  function setLeafCurrentBlock(route: AppRoute, leafCurrentBlock: BlockInfo) {
+    setLeavesCurrentBlock({...leavesCurrentBlock, [route]: leafCurrentBlock})
+  }
+
   const store: GlobalState = {
     web3Status,
     currentBlock,
+    leavesCurrentBlock,
     stakingRewards,
     gfi,
     communityRewards,
@@ -349,60 +413,62 @@ function App() {
     sessionData,
     setSessionData,
     refreshCurrentBlock,
+    setLeafCurrentBlock,
   }
 
   return (
     <AppContext.Provider value={store}>
       <ThemeProvider theme={defaultTheme}>
-        <NetworkWidget
-          user={user}
-          currentBlock={currentBlock}
-          network={network}
-          currentErrors={currentErrors}
-          currentTxs={currentTxs}
-          connectionComplete={setupWeb3}
-        />
         <EarnProvider>
           <BorrowProvider>
             <Router>
+              <NetworkIndicators
+                user={user}
+                network={network}
+                currentErrors={currentErrors}
+                currentTxs={currentTxs}
+                connectionComplete={setupWeb3}
+                rootCurrentBlock={currentBlock}
+                leavesCurrentBlock={leavesCurrentBlock}
+              />
               {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
               <Sidebar />
               <div>
                 <Switch>
-                  <Route exact path="/">
-                    <Redirect to="/earn" />
+                  <Route exact path={INDEX_ROUTE}>
+                    <Redirect to={EARN_ROUTE} />
                   </Route>
-                  <Route path="/about">{/* <About /> */}</Route>
-                  <Route path="/earn">
+                  <Route path={ABOUT_ROUTE}>{/* <About /> */}</Route>
+                  <Route path={EARN_ROUTE}>
                     <Earn />
                   </Route>
                   {toggleRewards && (
-                    <Route path="/rewards">
+                    <Route path={REWARDS_ROUTE}>
                       <Rewards />
                     </Route>
                   )}
-                  <Route path="/borrow">
+                  <Route path={BORROW_ROUTE}>
                     <Borrow />
                   </Route>
-                  <Route path="/transactions">
+                  <Route path={TRANSACTIONS_ROUTE}>
                     <Transactions currentTxs={currentTxs} />
                   </Route>
-                  <Route path="/pools/senior">
+                  <Route path={SENIOR_POOL_ROUTE}>
                     <SeniorPoolView />
                   </Route>
-                  <Route path="/pools/:poolAddress">
+                  <Route path={TRANCHED_POOL_ROUTE}>
                     <TranchedPoolView />
                   </Route>
-                  <Route path="/verify">
+                  <Route path={VERIFY_ROUTE}>
                     <VerifyIdentity />
                   </Route>
-                  <Route path="/terms">
+                  <Route path={TERMS_OF_SERVICE_ROUTE}>
                     <TermsOfService />
                   </Route>
-                  <Route path="/privacy">
+                  <Route path={PRIVACY_POLICY_ROUTE}>
                     <PrivacyPolicy />
                   </Route>
-                  <Route path="/senior-pool-agreement-non-us">
+                  <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
                     <SeniorPoolAgreementNonUS />
                   </Route>
                 </Switch>

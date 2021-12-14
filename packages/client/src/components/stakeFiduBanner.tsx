@@ -23,7 +23,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
   const {pool: _pool, user: _user, stakingRewards: _stakingRewards, currentBlock} = useContext(AppContext)
   const sendFromUser = useSendFromUser()
   const formMethods = useForm()
-  const consistent = useFromSameBlock(currentBlock, _pool, _user, _stakingRewards)
+  const consistent = useFromSameBlock({setAsLeaf: false}, currentBlock, _pool, _user, _stakingRewards)
 
   const stake = async () => {
     assertNonNullable(consistent)

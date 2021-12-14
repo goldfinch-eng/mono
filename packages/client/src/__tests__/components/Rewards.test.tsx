@@ -17,6 +17,7 @@ import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {defaultTheme} from "../../styles/theme"
 import {assertWithLoadedInfo} from "../../types/loadable"
+import {AppRoute} from "../../types/routes"
 import {SessionData} from "../../types/session"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
@@ -70,8 +71,13 @@ function renderRewards(
     signatureBlockNumTimestamp: currentBlock.timestamp,
     version: 1,
   }
+  const setLeafCurrentBlock = (route: AppRoute, currentBlock: BlockInfo) => {
+    // pass
+  }
   const store = {
     currentBlock,
+    refreshCurrentBlock,
+    setLeafCurrentBlock,
     network,
     stakingRewards,
     gfi,
@@ -79,7 +85,6 @@ function renderRewards(
     merkleDistributor,
     merkleDirectDistributor,
     communityRewards,
-    refreshCurrentBlock,
     networkMonitor,
     sessionData,
   }
@@ -1317,12 +1322,28 @@ describe("Rewards list and detail", () => {
           ],
         },
       })
+      const watchAssetMock = mock({
+        blockchain,
+        watchAsset: {
+          params: {
+            type: "ERC20",
+            options: {
+              address: gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: "https://app.goldfinch.finance/gfi-token.svg",
+            },
+          },
+          return: true,
+        },
+      })
 
       fireEvent.click(screen.getByText("Accept"))
       await waitFor(async () => {
         expect(await screen.getByText("Accepting...")).toBeInTheDocument()
       })
       expect(acceptMock).toHaveBeenCalled()
+      expect(watchAssetMock).not.toHaveBeenCalled()
     })
 
     it("for MerkleDirectDistributor airdrop, clicking button triggers sending `acceptGrant()`", async () => {
@@ -1371,12 +1392,28 @@ describe("Rewards list and detail", () => {
           ],
         },
       })
+      const watchAssetMock = mock({
+        blockchain,
+        watchAsset: {
+          params: {
+            type: "ERC20",
+            options: {
+              address: gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: "https://app.goldfinch.finance/gfi-token.svg",
+            },
+          },
+          return: true,
+        },
+      })
 
       fireEvent.click(screen.getByText("Accept"))
       await waitFor(async () => {
         expect(await screen.getByText("Accepting...")).toBeInTheDocument()
       })
       expect(acceptMock).toHaveBeenCalled()
+      expect(watchAssetMock).toHaveBeenCalled()
     })
 
     it("clicking community rewards button triggers sending `getReward()`", async () => {
@@ -1417,6 +1454,21 @@ describe("Rewards list and detail", () => {
           params: "1",
         },
       })
+      const watchAssetMock = mock({
+        blockchain,
+        watchAsset: {
+          params: {
+            type: "ERC20",
+            options: {
+              address: gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: "https://app.goldfinch.finance/gfi-token.svg",
+            },
+          },
+          return: true,
+        },
+      })
 
       fireEvent.click(screen.getByText("Claim GFI"))
       await waitFor(async () => {
@@ -1428,6 +1480,7 @@ describe("Rewards list and detail", () => {
       })
 
       expect(getRewardMock).toHaveBeenCalled()
+      expect(watchAssetMock).toHaveBeenCalled()
     })
 
     it("clicking staking reward button triggers sending `getReward()`", async () => {
@@ -1467,6 +1520,21 @@ describe("Rewards list and detail", () => {
           params: "1",
         },
       })
+      const watchAssetMock = mock({
+        blockchain,
+        watchAsset: {
+          params: {
+            type: "ERC20",
+            options: {
+              address: gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: "https://app.goldfinch.finance/gfi-token.svg",
+            },
+          },
+          return: true,
+        },
+      })
 
       fireEvent.click(screen.getByText("Claim GFI"))
       await waitFor(async () => {
@@ -1478,6 +1546,7 @@ describe("Rewards list and detail", () => {
       })
 
       expect(getRewardMock).toHaveBeenCalled()
+      expect(watchAssetMock).toHaveBeenCalled()
     })
   })
 })

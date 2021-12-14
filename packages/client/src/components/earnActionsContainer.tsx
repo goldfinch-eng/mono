@@ -21,7 +21,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   const {disabled, kyc} = props
   const {pool: _pool, user: _user, goldfinchConfig, currentBlock} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
-  const consistent = useFromSameBlock(currentBlock, _pool, _user)
+  const consistent = useFromSameBlock({setAsLeaf: false}, currentBlock, _pool, _user)
 
   function closeForm() {
     setShowAction("")
