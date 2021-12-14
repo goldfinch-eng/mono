@@ -50,7 +50,6 @@ enum ActionButtonTexts {
   accept = "Accept",
   accepting = "Accepting...",
   claimGFI = "Claim GFI",
-  claiming = "Claiming...",
   claimed = "Claimed",
   vesting = "Vesting",
 }
@@ -80,12 +79,7 @@ function ActionButton(props: ActionButtonProps) {
     setIsPending(false)
   }
 
-  let actionText = props.text
-  if (props.text === ActionButtonTexts.accept && (isPending || isRefreshing)) {
-    actionText = ActionButtonTexts.accepting
-  } else if (props.text === ActionButtonTexts.claimGFI && (isPending || isRefreshing)) {
-    actionText = ActionButtonTexts.claiming
-  }
+  const isAccepting = props.text === ActionButtonTexts.accept && isPending
 
   return (
     <button
@@ -93,7 +87,7 @@ function ActionButton(props: ActionButtonProps) {
       className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
       onClick={action}
     >
-      {actionText}
+      {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
 }
