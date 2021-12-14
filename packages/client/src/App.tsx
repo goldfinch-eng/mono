@@ -29,6 +29,8 @@ import {useSessionLocalStorage} from "./hooks/useSignIn"
 import {EarnProvider} from "./contexts/EarnContext"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import getApolloClient from "./graphql/client"
+import Banner from "./components/banner"
+import {iconInfo} from "./components/icons"
 
 export interface NetworkConfig {
   name?: string
@@ -66,6 +68,8 @@ export interface GlobalState {
   setSessionData?: SetSessionFn
   backersByTranchedPoolAddress?: BackersByTranchedPoolAddress
   setBackersByTranchedPoolAddress?: (newVal: BackersByTranchedPoolAddress) => void
+  hasGraphError?: boolean
+  setHasGraphError?: (value: boolean) => void
 }
 
 declare let window: any
@@ -90,6 +94,7 @@ function App() {
   )
   const [backersByTranchedPoolAddress, setBackersByTranchedPoolAddress] = useState<BackersByTranchedPoolAddress>({})
   const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient())
+  const [hasGraphError, setHasGraphError] = useState<boolean>(false)
 
   useEffect(() => {
     setupWeb3()
@@ -209,11 +214,20 @@ function App() {
     setSessionData,
     backersByTranchedPoolAddress,
     setBackersByTranchedPoolAddress,
+    hasGraphError,
+    setHasGraphError,
   }
 
   return (
     <ApolloProvider client={apolloClient}>
       <AppContext.Provider value={store}>
+        {hasGraphError && (
+          <Banner variant="warning" icon={iconInfo}>
+            <span className="bold">WARNING:</span> Due to technical issues with the blockchain data provider, the data
+            displayed below may not be up-to-date. Complete transactions with caution, or refresh and try again in a few
+            minutes
+          </Banner>
+        )}
         <NetworkWidget
           user={user}
           network={network}
