@@ -972,6 +972,8 @@ describe("Rewards list and detail", () => {
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
 
     expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI", {selector: "div.subtitle"})).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI", {selector: "div.subtitle"})).toBeVisible()
     expect(await screen.findByText("Accept")).toBeVisible()
 
     expect(screen.getByTestId("detail-granted").textContent).toEqual("2,500.00")
@@ -1156,6 +1158,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Goldfinch Investment"))
 
     fireEvent.click(screen.getByText("Flight Academy"))
+    expect(await screen.findByText("2,500.00 GFI", {selector: "div.subtitle"})).toBeVisible()
     expect(await screen.findByText("Transaction details")).toBeVisible()
     expect(await screen.findByText("2,500.00 GFI reward for participating in Flight Academy")).toBeVisible()
 
@@ -1242,6 +1245,7 @@ describe("Rewards list and detail", () => {
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
 
     expect(await screen.findByText("Flight Academy")).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI", {selector: "div.subtitle"})).toBeVisible()
     expect(screen.getAllByText("Claimed").length).toBe(1)
 
     expect(screen.getAllByTestId("detail-granted")[0]?.textContent).toEqual("2,500.00")
