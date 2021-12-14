@@ -72,10 +72,9 @@ function ActionButton(props: ActionButtonProps) {
   const currentRoute = useCurrentRoute()
   const {currentBlock, leavesCurrentBlock} = useContext(AppContext)
   assertNonNullable(currentRoute)
-  assertNonNullable(leavesCurrentBlock)
   const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock[currentRoute])
+  const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
   const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
   async function action(e): Promise<void> {
