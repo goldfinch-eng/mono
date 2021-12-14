@@ -265,10 +265,10 @@ describe("Rewards portfolio overview", () => {
     )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
 
-    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    expect(await screen.findByText("Total GFI rewards")).toBeVisible()
     expect(await screen.findByText("Wallet balance")).toBeVisible()
-    expect(await screen.findByText("Fully vested")).toBeVisible()
-    expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Vesting")).toBeVisible()
 
     expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
     expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
@@ -293,10 +293,10 @@ describe("Rewards portfolio overview", () => {
     )
     renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
 
-    expect(await screen.findByText("Total GFI balance")).toBeVisible()
+    expect(await screen.findByText("Total GFI rewards")).toBeVisible()
     expect(await screen.findByText("Wallet balance")).toBeVisible()
-    expect(await screen.findByText("Fully vested")).toBeVisible()
-    expect(await screen.findByText("Still vesting")).toBeVisible()
+    expect(await screen.findByText("Claimable")).toBeVisible()
+    expect(await screen.findByText("Vesting")).toBeVisible()
 
     expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("1.00")
     expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
@@ -319,10 +319,10 @@ describe("Rewards portfolio overview", () => {
         currentBlock
       )
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
@@ -369,10 +369,10 @@ describe("Rewards portfolio overview", () => {
         currentBlock
       )
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.71")
@@ -401,9 +401,9 @@ describe("Rewards portfolio overview", () => {
         )
 
         expect(await screen.findByText("Wallet balance")).toBeVisible()
-        expect(await screen.findByText("Fully vested")).toBeVisible()
-        expect(await screen.findByText("Still vesting")).toBeVisible()
-        expect(await screen.findByText("Total GFI balance")).toBeVisible()
+        expect(await screen.findByText("Claimable")).toBeVisible()
+        expect(await screen.findByText("Vesting")).toBeVisible()
+        expect(await screen.findByText("Total GFI rewards")).toBeVisible()
 
         expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
         expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
@@ -437,9 +437,9 @@ describe("Rewards portfolio overview", () => {
         )
 
         expect(await screen.findByText("Wallet balance")).toBeVisible()
-        expect(await screen.findByText("Fully vested")).toBeVisible()
-        expect(await screen.findByText("Still vesting")).toBeVisible()
-        expect(await screen.findByText("Total GFI balance")).toBeVisible()
+        expect(await screen.findByText("Claimable")).toBeVisible()
+        expect(await screen.findByText("Vesting")).toBeVisible()
+        expect(await screen.findByText("Total GFI rewards")).toBeVisible()
 
         expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("1.00")
         expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
@@ -469,10 +469,10 @@ describe("Rewards portfolio overview", () => {
         currentBlock
       )
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.00")
@@ -505,10 +505,10 @@ describe("Rewards portfolio overview", () => {
         currentBlock
       )
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("500.00")
@@ -535,9 +535,9 @@ describe("Rewards portfolio overview", () => {
       )
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
@@ -564,9 +564,9 @@ describe("Rewards portfolio overview", () => {
       )
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.00")
@@ -598,9 +598,9 @@ describe("Rewards portfolio overview", () => {
       )
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("5.48")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("10.96")
@@ -629,10 +629,10 @@ describe("Rewards portfolio overview", () => {
         currentBlock
       )
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2,500.00")
@@ -659,9 +659,9 @@ describe("Rewards portfolio overview", () => {
       )
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("2,500.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
@@ -690,10 +690,10 @@ describe("Rewards portfolio overview", () => {
         currentBlock
       )
 
-      expect(await screen.findByText("Total GFI balance")).toBeVisible()
+      expect(await screen.findByText("Total GFI rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
-      expect(await screen.findByText("Fully vested")).toBeVisible()
-      expect(await screen.findByText("Still vesting")).toBeVisible()
+      expect(await screen.findByText("Claimable")).toBeVisible()
+      expect(await screen.findByText("Vesting")).toBeVisible()
 
       expect(await screen.getByTestId("summary-wallet-balance").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.71")

@@ -39,7 +39,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   return (
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
-        <span className="total-gfi-balance">Total GFI balance</span>
+        <span className="total-gfi-balance">Total GFI rewards</span>
         <span className="total-gfi">{displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}</span>
         <span className="total-usd">{displayDollars(totalUSD)}</span>
       </div>
@@ -55,14 +55,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item">
-          <span>
-            {
-              // NOTE: We describe the value here to the user as what's vested, but the value we use is what's
-              // claimable, so as to avoid double-counting any amount that had vested previously and was claimed
-              // previously and that is now counted by "Wallet balance".
-              "Fully vested"
-            }
-          </span>
+          <span>{"Claimable"}</span>
           <div>
             <span className={valueDisabledClass} data-testid="summary-claimable">
               {displayNumber(claimable ? gfiFromAtomic(claimable) : undefined, 2)}
@@ -71,7 +64,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item">
-          <span>Still vesting</span>
+          <span>Vesting</span>
           <div>
             <span className={valueDisabledClass} data-testid="summary-still-vesting">
               {displayNumber(unvested ? gfiFromAtomic(unvested) : undefined, 2)}
@@ -80,7 +73,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item total-balance">
-          <span>Total balance</span>
+          <span>Total rewards</span>
           <div>
             <span className={valueDisabledClass} data-testid="summary-total-balance">
               {displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}
@@ -316,10 +309,10 @@ function Rewards() {
       />
       <div className="gfi-rewards table-spaced">
         <div className="table-header background-container-inner">
-          <h2 className="table-cell col32 title">GFI Rewards</h2>
+          <h2 className="table-cell col32 title">Reward type</h2>
           {!isTabletOrMobile && (
             <>
-              <div className="table-cell col20 numeric balance break-granted-column">Granted GFI</div>
+              <div className="table-cell col20 numeric balance break-granted-column">Vesting GFI</div>
               <div className="table-cell col20 numeric limit break-claimable-column">Claimable GFI</div>
             </>
           )}

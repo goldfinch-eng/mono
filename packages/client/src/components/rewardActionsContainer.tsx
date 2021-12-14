@@ -276,6 +276,9 @@ function RewardsListItem(props: RewardsListItemProps) {
 
   const detailsComponent = <Details open={open} disabled={disabledText} itemDetails={props.details} />
 
+  const grantedGFIZeroDisabled = displayNumber(gfiFromAtomic(props.grantedGFI), 2) === "0.00" ? "disabled-text" : ""
+  const claimableGFIZeroDisabled = displayNumber(gfiFromAtomic(props.claimableGFI), 2) === "0.00" ? "disabled-text" : ""
+
   return (
     <>
       {isTabletOrMobile ? (
@@ -318,10 +321,16 @@ function RewardsListItem(props: RewardsListItemProps) {
           <div onClick={() => setOpen(!open)}>
             <div className="rewards-list-item table-row background-container clickable">
               <div className="table-cell col32">{props.title}</div>
-              <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-granted">
+              <div
+                className={`table-cell col20 numeric ${valueDisabledClass} ${grantedGFIZeroDisabled}`}
+                data-testid="detail-granted"
+              >
                 {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
               </div>
-              <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-claimable">
+              <div
+                className={`table-cell col20 numeric ${valueDisabledClass} ${claimableGFIZeroDisabled}`}
+                data-testid="detail-claimable"
+              >
                 {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
               </div>
               {actionButtonComponent}
