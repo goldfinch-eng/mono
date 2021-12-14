@@ -18,6 +18,18 @@ declare module "depay-web3-mock" {
       delay?: number
       return: string[]
     }
+    watchAsset?: {
+      params: {
+        type: string
+        options: {
+          address: string
+          symbol: string
+          decimals: number
+          image: string
+        }
+      }
+      return: boolean
+    }
   }): (...args: unknown[]) => unknown
 
   export function resetMocks(): void
