@@ -222,6 +222,8 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await goldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
     await setupSeniorPool()
+
+    await stakingRewards.unpause({from: await getProtocolOwner()})
   })
 
   describe("drawing down into another currency", async function () {

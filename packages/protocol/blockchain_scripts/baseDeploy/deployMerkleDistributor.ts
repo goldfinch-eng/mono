@@ -9,6 +9,7 @@ import {
   DISTRIBUTOR_ROLE,
   getContract,
   getProtocolOwner,
+  getTruffleContract,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../deployHelpers"
 import {isMerkleDistributorInfo} from "../merkle/merkleDistributor/types"
@@ -78,11 +79,7 @@ export async function deployMerkleDistributor(
     gasLimit: 4000000,
     args: [communityRewards.contract.address, merkleRoot],
   })
-  const contract = await getContract<MerkleDistributor, MerkleDistributorInstance>(
-    contractName,
-    TRUFFLE_CONTRACT_PROVIDER,
-    {at: merkleDistributor.address}
-  )
+  const contract = await getTruffleContract<MerkleDistributorInstance>(contractName, {at: merkleDistributor.address})
 
   const deployed: Deployed<MerkleDistributorInstance> = {
     name: contractName,

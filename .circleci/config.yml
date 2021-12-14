@@ -2,6 +2,17 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
+commands:
+  create_concatenated_package_lock:
+    description: "Concatenate all package-lock.json files recognized by lerna.js into single file. File is used as checksum source for part of caching key."
+    parameters:
+      filename:
+        type: string
+    steps:
+      - run:
+          name: Combine package-lock.json files to single file
+          command: find . -name package-lock.json -type f | grep -v node_modules | xargs cat > << parameters.filename >>
+
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
@@ -10,15 +21,18 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
       - image: cimg/node:12.18.3
+    resource_class: large
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
+      - create_concatenated_package_lock:
+          filename: combined-package-lock.txt
       - restore_cache:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - dep-{{ .Branch }}-{{checksum "package-lock.json"}}
+            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Update Ubuntu
           command: |
@@ -28,12 +42,13 @@ jobs:
           name: Install Python
           command: sudo apt-get install python
       - run:
+          name: Install
+          command: npx lerna bootstrap --no-ci
+      - run:
           name: Build
-          command: |
-            npx lerna bootstrap --ci
-            npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
+          command: npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
       - save_cache:
-          key: dep-{{ .Branch }}-{{checksum "package-lock.json"}}
+          key: deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
           paths:
             - ~/.npm
             - ./packages/protocol/node_modules/
@@ -49,17 +64,39 @@ jobs:
     parallelism: 4
     steps: 
       - checkout
+      - create_concatenated_package_lock:
+          filename: combined-package-lock.txt
       - restore_cache:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - dep-{{ .Branch }}-{{checksum "package-lock.json"}}
+            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Test
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep -v mainnet_forking | circleci tests split --split-by=timings)
             npm run test:unfiltered $tests
+            
+  mainnet_forking:
+    docker:
+      - image: cimg/node:12.18.3
+    parallelism: 2
+    steps:
+      - checkout
+      - create_concatenated_package_lock:
+          filename: combined-package-lock.txt
+      - restore_cache:
+          # See the configuration reference documentation for more details on using restore_cache and save_cache steps
+          # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
+          keys:
+            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+      - run:
+          name: Test
+          command: |
+            cd packages/protocol
+            tests=$(circleci tests glob "test/**/*.test.ts"| grep mainnet_forking | circleci tests split --split-by=timings)
+            HARDHAT_FORK=mainnet npm run test:unfiltered $tests
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -67,6 +104,9 @@ workflows:
   protocol:
     jobs:
       - install
+      - mainnet_forking:
+          requires:
+          - install
       - test:
           requires:
           - install
