@@ -403,17 +403,16 @@ function getStakingRewardsVestingSchedule(endTime: number) {
   })
   return `Linear until 100% on ${vestingEndDate}`
 }
-function getClaimStatus(claimed: BigNumber, vested: BigNumber): string {
-  return `${displayNumber(gfiFromAtomic(claimed))} claimed of your total vested ${displayNumber(
-    gfiFromAtomic(vested),
-    2
-  )} GFI`
+function getClaimStatus(claimed: BigNumber, vested: BigNumber, gfiPrice: BigNumber): string {
+  return `${displayDollars(gfiInDollars(gfiToDollarsAtomic(claimed, gfiPrice)))} (${displayNumber(
+    gfiFromAtomic(claimed)
+  )} GFI) claimed of your total vested ${displayNumber(gfiFromAtomic(vested), 2)} GFI`
 }
 function getVestingStatus(vested: BigNumber, granted: BigNumber): string {
   return `${displayPercent(vested.dividedBy(granted))} (${displayNumber(gfiFromAtomic(vested), 2)} GFI) vested`
 }
 function getCurrentEarnRate(currentEarnRate: BigNumber): string {
-  return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} granted per week`
+  return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} GFI granted per week`
 }
 
 function getNotAcceptedMerkleDistributorGrantDetails(
@@ -462,7 +461,8 @@ function getMerkleDirectDistributorGrantDetails(
 function getStakingOrCommunityRewardsDetails(
   item: StakingRewardsPosition | CommunityRewardsGrant,
   stakingRewards: StakingRewardsLoaded,
-  communityRewards: CommunityRewardsLoaded
+  communityRewards: CommunityRewardsLoaded,
+  gfi: GFILoaded
 ): StakingRewardsDetails | CommunityRewardsDetails {
   if (item instanceof StakingRewardsPosition) {
     return {
@@ -470,7 +470,7 @@ function getStakingOrCommunityRewardsDetails(
       shortTransactionDetails: item.shortDescription,
       transactionDetails: item.description,
       vestingSchedule: getStakingRewardsVestingSchedule(item.storedPosition.rewards.endTime),
-      claimStatus: getClaimStatus(item.claimed, item.vested),
+      claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: getCurrentEarnRate(item.currentEarnRate),
       vestingStatus: getVestingStatus(item.vested, item.granted),
       etherscanAddress: stakingRewards.address,
@@ -580,7 +580,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   if (props.type === "communityRewards" || props.type === "stakingRewards") {
     const item = props.item
     const title = item.title
-    const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
+    const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards, props.gfi)
 
     if (item.claimable.eq(0)) {
       let status: RewardStatus

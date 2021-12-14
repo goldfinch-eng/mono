@@ -18,11 +18,6 @@ export const DetailsContainer = styled.div<DetailsContainerProps>`
   ${({disabled, theme}) =>
     disabled &&
     `
-      span, a {
-        color: ${theme.colors.sandXxDark};
-        pointer-events: none;
-      }
-
       ${EtherscanLinkContainer} svg path {
         fill: ${theme.colors.sandXxDark};
       }

@@ -796,7 +796,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("0.00 claimed of your total vested 0.00 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
-      expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+      expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
       expect(await screen.findByText("Vesting status")).toBeVisible()
       expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
@@ -830,7 +830,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
-      expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+      expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
       expect(await screen.findByText("Vesting status")).toBeVisible()
       expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
@@ -1016,7 +1016,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
-    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+    expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
     expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
@@ -1070,7 +1070,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
-    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+    expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
     expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
@@ -1125,7 +1125,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("0.00 claimed of your total vested 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
-    expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+    expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
     expect(await screen.findByText("Vesting status")).toBeVisible()
     expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
@@ -1192,7 +1192,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("0.82 claimed of your total vested 3.06 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
-      expect(await screen.findByText("+453.60 granted per week")).toBeVisible()
+      expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
       expect(await screen.findByText("Vesting status")).toBeVisible()
       expect(await screen.findByText("1.14% (3.06 GFI) vested")).toBeVisible()
