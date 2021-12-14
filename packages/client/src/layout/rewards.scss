@@ -133,6 +133,12 @@ button.expand {
     .disabled-text {
       color: $sand-xxdark;
     }
+
+    .subtitle {
+      color: $sand-xxdark;
+      font-size: $sans-size-xs;
+      margin-top: 6px;
+    }
   }
 
   .rewards-list-item.no-rewards {

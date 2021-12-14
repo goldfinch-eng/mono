@@ -98,6 +98,7 @@ function OpenDetails(props: OpenDetailsProps) {
 
 type BaseItemDetails = {
   transactionDetails: string
+  shortTransactionDetails: string
   vestingSchedule: string
   vestingStatus: string
   etherscanAddress: string
@@ -257,6 +258,7 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
 
 interface RewardsListItemProps {
   title: string
+  subtitle: string
   grantedGFI: BigNumber
   claimableGFI: BigNumber
   status: RewardStatus
@@ -320,7 +322,10 @@ function RewardsListItem(props: RewardsListItemProps) {
         <li>
           <div onClick={() => setOpen(!open)}>
             <div className="rewards-list-item table-row background-container clickable">
-              <div className="table-cell col32">{props.title}</div>
+              <div className="table-cell col32">
+                {props.title}
+                <div className="subtitle">{props.subtitle}</div>
+              </div>
               <div
                 className={`table-cell col20 numeric ${valueDisabledClass} ${grantedGFIZeroDisabled}`}
                 data-testid="detail-granted"
@@ -420,6 +425,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   const vestingLength = new BigNumber(item.grantInfo.grant.vestingLength).toNumber()
   return {
     type: "merkleDistributor",
+    shortTransactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI`,
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(item.grantInfo.grant.cliffLength),
@@ -442,6 +448,7 @@ function getMerkleDirectDistributorGrantDetails(
   const displayReason = MerkleDirectDistributor.getDisplayReason(item.grantInfo.reason)
   return {
     type: "merkleDirectDistributor",
+    shortTransactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI`,
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getDirectGrantVestingSchedule(),
     claimStatus: undefined,
@@ -460,6 +467,7 @@ function getStakingOrCommunityRewardsDetails(
   if (item instanceof StakingRewardsPosition) {
     return {
       type: "stakingRewards",
+      shortTransactionDetails: item.shortDescription,
       transactionDetails: item.description,
       vestingSchedule: getStakingRewardsVestingSchedule(item.storedPosition.rewards.endTime),
       claimStatus: getClaimStatus(item.claimed, item.vested),
@@ -470,6 +478,7 @@ function getStakingOrCommunityRewardsDetails(
   } else {
     return {
       type: "communityRewards",
+      shortTransactionDetails: item.shortDescription,
       transactionDetails: item.description,
       vestingSchedule: getGrantVestingSchedule(
         item.rewards.cliffLength,
@@ -596,6 +605,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         <RewardsListItem
           status={status}
           title={title}
+          subtitle={details.shortTransactionDetails}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
@@ -608,6 +618,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         <RewardsListItem
           status={RewardStatus.Claimable}
           title={title}
+          subtitle={details.shortTransactionDetails}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
@@ -637,6 +648,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       <RewardsListItem
         status={RewardStatus.Acceptable}
         title={MerkleDistributor.getDisplayTitle(item.grantInfo.reason)}
+        subtitle={details.shortTransactionDetails}
         grantedGFI={item.granted}
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
@@ -651,6 +663,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       <RewardsListItem
         status={item.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Acceptable}
         title={MerkleDirectDistributor.getDisplayTitle(item.grantInfo.reason)}
+        subtitle={details.shortTransactionDetails}
         grantedGFI={item.granted}
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
