@@ -5,6 +5,7 @@ import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
 import {useStaleWhileRevalidating} from "../../hooks/useAsync"
+import {useCurrentRoute} from "../../hooks/useCurrentRoute"
 import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
@@ -16,7 +17,8 @@ import PoolStatus from "../poolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
-  const {web3Status, pool, user, goldfinchConfig, stakingRewards, gfi, refreshCurrentBlock} = useContext(AppContext)
+  const {web3Status, pool, user, goldfinchConfig, stakingRewards, gfi, refreshCurrentBlock, setLeafCurrentBlock} =
+    useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
@@ -24,12 +26,17 @@ function SeniorPoolView(): JSX.Element {
   const kycResult = useKYC()
   const kyc = useStaleWhileRevalidating(kycResult)
   const session = useSession()
+  const currentRoute = useCurrentRoute()
 
-  useEffect(() => {
-    if (pool && stakingRewards && gfi && user) {
-      refreshCapitalProviderData(pool, stakingRewards, gfi, user)
-    }
-  }, [pool, stakingRewards, gfi, user])
+  useEffect(
+    () => {
+      if (pool && stakingRewards && gfi && user) {
+        refreshCapitalProviderData(pool, stakingRewards, gfi, user)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pool, stakingRewards, gfi, user]
+  )
 
   async function refreshCapitalProviderData(
     pool: SeniorPoolLoaded,
@@ -37,6 +44,9 @@ function SeniorPoolView(): JSX.Element {
     gfi: GFILoaded,
     user: UserLoaded
   ) {
+    assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
+
     // TODO Would be ideal to refactor this component so that the child components it renders all
     // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
     // `stakingRewards`, `gfi`, and `user` that are guaranteed to be based on the same block number. For now,
@@ -53,6 +63,7 @@ function SeniorPoolView(): JSX.Element {
     ) {
       const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
       setCapitalProvider(capitalProvider)
+      setLeafCurrentBlock(currentRoute, pool.info.value.currentBlock)
     }
   }
 

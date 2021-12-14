@@ -1,19 +1,36 @@
-import {useEffect, useState} from "react"
+import {useContext, useEffect, useState} from "react"
+import {AppContext} from "../App"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
-import {BlockInfo} from "../utils"
+import {assertNonNullable, BlockInfo} from "../utils"
+import {useCurrentRoute} from "./useCurrentRoute"
+
+type UseFromSameBlockConfig = {
+  // Whether, upon a change in the `currentBlock` passed to the hook or in the `deps` dependencies,
+  // the `currentBlock` should be set as the leaf current block in app state, if `currentBlock`
+  // matches the current block of all the `deps`.
+  setAsLeaf: boolean
+}
 
 type InfoWithCurrentBlock = {currentBlock: BlockInfo}
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(currentBlock: BlockInfo | undefined, ...deps: [T | undefined, U | undefined]): [T, U] | undefined
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined]
+): [T, U] | undefined
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(currentBlock: BlockInfo | undefined, ...deps: [T | undefined, U | undefined, V | undefined]): [T, U, V] | undefined
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined, V | undefined]
+): [T, U, V] | undefined
 
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
@@ -21,6 +38,7 @@ export function useFromSameBlock<
   V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
+  config: UseFromSameBlockConfig,
   currentBlock: BlockInfo | undefined,
   ...deps: [T | undefined, U | undefined, V | undefined, W | undefined]
 ): [T, U, V, W] | undefined
@@ -32,6 +50,7 @@ export function useFromSameBlock<
   W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
+  config: UseFromSameBlockConfig,
   currentBlock: BlockInfo | undefined,
   ...deps: [T | undefined, U | undefined, V | undefined, W | undefined, X | undefined]
 ): [T, U, V, W, X] | undefined
@@ -44,6 +63,7 @@ export function useFromSameBlock<
   X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   Y extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
+  config: UseFromSameBlockConfig,
   currentBlock: BlockInfo | undefined,
   ...deps: [T | undefined, U | undefined, V | undefined, W | undefined, X | undefined, Y | undefined]
 ): [T, U, V, W, X, Y] | undefined
@@ -62,8 +82,20 @@ export function useFromSameBlock<
  */
 export function useFromSameBlock<
   T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
->(currentBlock: BlockInfo | undefined, ...deps: Array<T | undefined>): T[] | undefined {
+>(config: UseFromSameBlockConfig, currentBlock: BlockInfo | undefined, ...deps: Array<T | undefined>): T[] | undefined {
+  const {setLeafCurrentBlock} = useContext(AppContext)
   const [value, setValue] = useState<T[]>()
+  const currentRoute = config.setAsLeaf
+    ? // ASSUMPTION: `config.setAsLeaf` does not change over the life of a component instance
+      // in which this hook is used. Therefore we can conditionally call `useCurrentRoute()` here
+      // without meaningfully violating React's rule not to call hooks conditionally.
+      // Being able in this way to avoid calling `useCurrentRoute()` is important for being
+      // able to use this `useFromSameBlock()` hook above our usage of react-router in the component
+      // tree, i.e. where `useCurrentRoute()` would fail to identify the current route because
+      // the router context does not exist.
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      useCurrentRoute()
+    : undefined
 
   useEffect(() => {
     if (currentBlock) {
@@ -80,6 +112,12 @@ export function useFromSameBlock<
       }, [])
       if (reduced && reduced.length) {
         setValue(reduced)
+
+        if (config.setAsLeaf) {
+          assertNonNullable(setLeafCurrentBlock)
+          assertNonNullable(currentRoute)
+          setLeafCurrentBlock(currentRoute, currentBlock)
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

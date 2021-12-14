@@ -17,6 +17,7 @@ import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {defaultTheme} from "../../styles/theme"
 import {assertWithLoadedInfo} from "../../types/loadable"
+import {AppRoute} from "../../types/routes"
 import {SessionData} from "../../types/session"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
@@ -70,8 +71,13 @@ function renderRewards(
     signatureBlockNumTimestamp: currentBlock.timestamp,
     version: 1,
   }
+  const setLeafCurrentBlock = (route: AppRoute, currentBlock: BlockInfo) => {
+    // pass
+  }
   const store = {
     currentBlock,
+    refreshCurrentBlock,
+    setLeafCurrentBlock,
     network,
     stakingRewards,
     gfi,
@@ -79,7 +85,6 @@ function renderRewards(
     merkleDistributor,
     merkleDirectDistributor,
     communityRewards,
-    refreshCurrentBlock,
     networkMonitor,
     sessionData,
   }
