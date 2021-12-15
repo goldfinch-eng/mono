@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js"
 import {mock, resetMocks} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
-import {AppContext} from "../../App"
+import {AppContext, LeavesCurrentBlock} from "../../App"
 import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
@@ -17,7 +17,7 @@ import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {defaultTheme} from "../../styles/theme"
 import {assertWithLoadedInfo} from "../../types/loadable"
-import {AppRoute} from "../../types/routes"
+import {AppRoute, INDEX_ROUTE} from "../../types/routes"
 import {SessionData} from "../../types/session"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
@@ -63,7 +63,8 @@ function renderRewards(
   currentBlock: BlockInfo,
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor,
-  sessionData?: SessionData
+  sessionData?: SessionData,
+  leavesCurrentBlock?: LeavesCurrentBlock
 ) {
   sessionData = sessionData || {
     signature: "foo",
@@ -76,6 +77,7 @@ function renderRewards(
   }
   const store = {
     currentBlock,
+    leavesCurrentBlock,
     refreshCurrentBlock,
     setLeafCurrentBlock,
     network,
@@ -780,6 +782,29 @@ describe("Rewards list and detail", () => {
     const list = container.getElementsByClassName("rewards-list-item")
     expect(list.length).toEqual(1)
     expect(list[0]?.textContent).toContain("You have no rewards. You can earn rewards by supplying")
+  })
+
+  it("disables all buttons during global refresh", async () => {
+    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
+      await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+
+    renderRewards(
+      stakingRewards,
+      gfi,
+      user,
+      merkleDistributor,
+      merkleDirectDistributor,
+      communityRewards,
+      currentBlock,
+      undefined,
+      undefined,
+      undefined,
+      {[INDEX_ROUTE]: {number: 93, timestamp: 1640783490}} as LeavesCurrentBlock
+    )
+
+    expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toHaveClass("disabled-button")
   })
 
   it("shows staking reward on rewards list", async () => {
