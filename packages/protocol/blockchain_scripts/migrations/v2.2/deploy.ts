@@ -29,8 +29,6 @@ import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {Contract} from "ethers"
-import {generateMerkleRoot as generateMerkleDirectRoot} from "../../merkle/merkleDirectDistributor/generateMerkleRoot"
-import {generateMerkleRoot} from "../../merkle/merkleDistributor/generateMerkleRoot"
 import {promises as fs} from "fs"
 import path from "path"
 import {deployCommunityRewards} from "../../baseDeploy/deployCommunityRewards"
@@ -41,7 +39,11 @@ import {deployMerkleDirectDistributor} from "../../baseDeploy/deployMerkleDirect
 import {deployMerkleDistributor} from "../../baseDeploy/deployMerkleDistributor"
 import BN from "bn.js"
 import {bigVal} from "@goldfinch-eng/protocol/test/testHelpers"
-import {gfiTotalSupply} from "../../../blockchain_scripts/airdrop/community/calculation"
+import {
+  gfiTotalSupply,
+  NO_VESTING_MERKLE_INFO_PATH,
+  VESTING_MERKLE_INFO_PATH,
+} from "../../../blockchain_scripts/airdrop/community/calculation"
 import BigNumber from "bignumber.js"
 
 export const STAKING_REWARDS_PARAMS = {
@@ -104,17 +106,7 @@ export async function getOldConfig() {
   }
 }
 
-export async function deploy(
-  deployEffects: DeployEffects,
-  anonDeployEffects: DeployEffects,
-  {
-    noVestingGrants,
-    vestingGrants,
-  }: {
-    noVestingGrants: string
-    vestingGrants: string
-  }
-) {
+export async function deploy(deployEffects: DeployEffects, anonDeployEffects: DeployEffects) {
   const deployer = new ContractDeployer(console.log, hre)
   const upgrader = new ContractUpgrader(deployer)
   const protocolOwner = await getProtocolOwner()
@@ -170,22 +162,15 @@ export async function deploy(
   const lpStakingRewards = await deployLPStakingRewards(deployer, {config, deployEffects})
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
 
-  console.log("Writing merkle roots")
-  const vestingMerkleInfo = generateMerkleRoot(JSON.parse(await fs.readFile(vestingGrants, {encoding: "utf8"})))
-  await fs.writeFile(path.join(__dirname, "./vestingMerkleInfo.json"), JSON.stringify(vestingMerkleInfo, null, 2))
-  const noVestingMerkleInfo = generateMerkleDirectRoot(
-    JSON.parse(await fs.readFile(noVestingGrants, {encoding: "utf8"}))
-  )
-  await fs.writeFile(path.join(__dirname, "./noVestingMerkleInfo.json"), JSON.stringify(noVestingMerkleInfo, null, 2))
   const merkleDistributor = await deployMerkleDistributor(deployer, {
     communityRewards,
     deployEffects,
-    merkleDistributorInfoPath: path.join(__dirname, "./vestingMerkleInfo.json"),
+    merkleDistributorInfoPath: VESTING_MERKLE_INFO_PATH,
   })
   const merkleDirectDistributor = await deployMerkleDirectDistributor(deployer, {
     gfi,
     deployEffects,
-    merkleDirectDistributorInfoPath: path.join(__dirname, "./noVestingMerkleInfo.json"),
+    merkleDirectDistributorInfoPath: NO_VESTING_MERKLE_INFO_PATH,
   })
 
   // 3. Deploy GFI and set staking rewards parameters

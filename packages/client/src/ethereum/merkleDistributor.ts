@@ -44,7 +44,7 @@ export class MerkleDistributor {
       )
     }
 
-    const merkleDistributorInfo = await getMerkleDistributorInfo()
+    const merkleDistributorInfo = await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
     if (!merkleDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
