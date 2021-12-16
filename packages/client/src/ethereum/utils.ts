@@ -14,7 +14,6 @@ import {BlockNumber} from "web3-core"
 import {Contract} from "web3-eth-contract"
 import {KnownEventData, PoolEventType} from "../types/events"
 import {NetworkConfig} from "../types/network"
-import {assertNonNullable} from "../utils"
 import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 
