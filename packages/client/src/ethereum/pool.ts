@@ -40,7 +40,6 @@ import {
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
-import {checkSameBlock} from "./currentBlock"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -87,8 +86,6 @@ class SeniorPool {
   }
 
   async initialize(stakingRewards: StakingRewardsLoaded, gfi: GFILoaded, currentBlock: BlockInfo): Promise<void> {
-    checkSameBlock(currentBlock, stakingRewards.info.value.currentBlock, gfi.info.value.currentBlock)
-
     const poolData = await fetchPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
     const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
     this.info = {
@@ -234,12 +231,6 @@ async function fetchCapitalProviderData(
   user: UserLoaded
 ): Promise<Loaded<CapitalProvider>> {
   const currentBlock = pool.info.value.currentBlock
-  checkSameBlock(
-    currentBlock,
-    stakingRewards.info.value.currentBlock,
-    gfi.info.value.currentBlock,
-    user.info.value.currentBlock
-  )
 
   const attributes = [{method: "sharePrice"}]
   const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {

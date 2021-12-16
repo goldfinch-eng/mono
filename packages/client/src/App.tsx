@@ -184,8 +184,10 @@ function App() {
   const merkleDistributor = consistent?.[3]
   const merkleDirectDistributor = consistent?.[4]
 
-  // TODO We should use `useFromSameBlock()` again to make gfi, stakingRewards, communityRewards,
-  // merkleDistributor, merkleDirectDistributor, and pool be from same block.
+  // To ensure `gfi`, `stakingRewards`, `communityRewards`, `merkleDistributor`,
+  // `merkleDirectDistributor`, and `pool` are from the same block, we'd use `useFromSameBlock()`
+  // again here. But holding off on that due to the decision to abandon
+  // https://github.com/warbler-labs/mono/pull/140.
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
@@ -233,6 +235,10 @@ function App() {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usdc, pool, web3Status?.address, overrideAddress])
+
+  // To ensure the data dependencies of `user` *and* `user` itself are from the same block,
+  // we'd use `useFromSameBlock()` again here. But holding off on that due to the decision to abandon
+  // https://github.com/warbler-labs/mono/pull/140.
 
   async function getWeb3Status(): Promise<Web3Status> {
     if (!window.ethereum) {
