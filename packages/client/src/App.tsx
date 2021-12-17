@@ -386,8 +386,8 @@ function App() {
 
     const address = overrideAddress || userAddress
 
-    const userMerkleDistributor = new UserMerkleDistributor()
-    const userMerkleDirectDistributor = new UserMerkleDirectDistributor()
+    const userMerkleDistributor = new UserMerkleDistributor(goldfinchProtocol)
+    const userMerkleDirectDistributor = new UserMerkleDirectDistributor(goldfinchProtocol)
     await Promise.all([
       userMerkleDistributor.initialize(address, merkleDistributor, communityRewards, currentBlock),
       userMerkleDirectDistributor.initialize(address, merkleDirectDistributor, currentBlock),

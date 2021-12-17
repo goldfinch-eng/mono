@@ -466,9 +466,11 @@ type UserMerkleDistributorLoadedInfo = {
 }
 
 export class UserMerkleDistributor {
+  goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserMerkleDistributorLoadedInfo>
 
-  constructor() {
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
       value: undefined,
@@ -481,7 +483,7 @@ export class UserMerkleDistributor {
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    const merkleDistributorInfo = await getMerkleDistributorInfo()
+    const merkleDistributorInfo = await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
     if (!merkleDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
@@ -582,7 +584,7 @@ export class UserMerkleDistributor {
     allAirdrops: MerkleDistributorGrantInfo[],
     recipient: string
   ): MerkleDistributorGrantInfo[] {
-    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
+    return allAirdrops.filter((grantInfo) => grantInfo.account.toLowerCase() === recipient.toLowerCase())
   }
 }
 
@@ -600,9 +602,11 @@ type UserMerkleDirectDistributorLoadedInfo = {
 }
 
 export class UserMerkleDirectDistributor {
+  goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserMerkleDirectDistributorLoadedInfo>
 
-  constructor() {
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
       value: undefined,
@@ -614,7 +618,7 @@ export class UserMerkleDirectDistributor {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo()
+    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
     }
@@ -710,7 +714,7 @@ export class UserMerkleDirectDistributor {
     allAirdrops: MerkleDirectDistributorGrantInfo[],
     recipient: string
   ): MerkleDirectDistributorGrantInfo[] {
-    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
+    return allAirdrops.filter((grantInfo) => grantInfo.account.toLowerCase() === recipient.toLowerCase())
   }
 }
 

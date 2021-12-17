@@ -23,6 +23,9 @@ import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
+import useNonNullContext from "../hooks/useNonNullContext"
+import {RINKEBY} from "../ethereum/utils"
+import _ from "lodash"
 
 // Filter out 0 limit (inactive) and test pools
 const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -247,6 +250,7 @@ function usePoolBackers({
   backers: Loadable<PoolBacker[]>
   poolsAddresses: Loadable<string[]>
 } {
+  const {network} = useNonNullContext(AppContext)
   let [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
     loaded: false,
     value: undefined,
@@ -265,6 +269,12 @@ function usePoolBackers({
         currentBlock.number
       )
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
+
+      // Remove invalid pool on rinkeby that returns wrong number of values for getTranche
+      if (network.name === RINKEBY) {
+        poolAddresses = _.remove(poolAddresses, "0x3622Bf116643c5f2f1764924Ce6ce8814302BA76")
+      }
+
       setPoolsAddresses({
         loaded: true,
         value: poolAddresses,
