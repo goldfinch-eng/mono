@@ -28,7 +28,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
-const RINKEBY = "rinkeby"
+export const RINKEBY = "rinkeby"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
@@ -167,11 +167,11 @@ function getFromBlock(chain) {
 }
 
 type MethodInfo = {method: string; name?: string; args?: any}
-function fetchDataFromAttributes(
+async function fetchDataFromAttributes(
   web3Obj: Contract | BaseContract,
   attributes: MethodInfo[],
   {bigNumber, blockNumber}: {bigNumber?: boolean; blockNumber?: number} = {}
-): any {
+): Promise<any> {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
