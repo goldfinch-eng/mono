@@ -64,7 +64,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
    * @dev Gets the token name.
    * @return string representing the token name
    */
-  function name() public view returns (string memory) {
+  function name() public pure returns (string memory) {
     return "Unique Identity";
   }
 
@@ -72,7 +72,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
    * @dev Gets the token symbol.
    * @return string representing the token symbol
    */
-  function symbol() public view returns (string memory) {
+  function symbol() public pure returns (string memory) {
     return "UID";
   }
 
