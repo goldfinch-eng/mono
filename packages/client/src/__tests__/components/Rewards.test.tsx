@@ -789,7 +789,6 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Vesting", {selector: "button"})).toBeVisible()
-    // expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
     expect((await screen.findAllByText("0.00")).length).toBe(7)
 
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
