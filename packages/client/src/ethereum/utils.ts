@@ -111,21 +111,13 @@ export function isMainnetFork() {
   return process.env.REACT_APP_HARDHAT_FORK === MAINNET
 }
 
-async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
-  let path: string
-  if (networkId === LOCAL && isMainnetFork()) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.json"
-  } else if (networkId === LOCAL) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json"
-  } else if (networkId === RINKEBY) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.json"
-  } else if (networkId === MAINNET) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.json"
-  } else {
-    throw new Error("Unsupported network for merkle distributor")
-  }
+async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && process.env.REACT_APP_HARDHAT_FORK !== MAINNET ? ".dev" : ""
 
-  return import(path)
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+  )
     .then((result: unknown): MerkleDistributorInfo => {
       const plain = _.toPlainObject(result)
       if (isMerkleDistributorInfo(plain)) {
@@ -140,22 +132,13 @@ async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistri
     })
 }
 
-async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
-  let path: string
-  if (networkId === LOCAL && isMainnetFork()) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.json"
-  } else if (networkId === LOCAL) {
-    path =
-      "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json"
-  } else if (networkId === RINKEBY) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.json"
-  } else if (networkId === MAINNET) {
-    path = "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.json"
-  } else {
-    throw new Error("Unsupported network for merkle distributor")
-  }
+async function getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && process.env.REACT_APP_HARDHAT_FORK !== MAINNET ? ".dev" : ""
 
-  return import(path)
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
     .then((result: unknown): MerkleDirectDistributorInfo => {
       const plain = _.toPlainObject(result)
       if (isMerkleDirectDistributorInfo(plain)) {

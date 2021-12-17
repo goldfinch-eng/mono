@@ -41,7 +41,7 @@ export class MerkleDirectDistributor {
       throw new Error("MerkleDirectDistributor address of GFI contract doesn't match with deployed GFI address")
     }
 
-    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo()
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
     }
