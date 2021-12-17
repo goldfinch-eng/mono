@@ -4,13 +4,9 @@ import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
-import {
-  CommunityRewardsGrant,
-  CommunityRewardsLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "../ethereum/communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../ethereum/merkleDirectDistributor"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import {UserLoaded} from "../ethereum/user"

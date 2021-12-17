@@ -18,12 +18,7 @@ import Transactions from "./components/transactions"
 import VerifyIdentity from "./components/verifyIdentity"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import {EarnProvider} from "./contexts/EarnContext"
-import {
-  CommunityRewards,
-  CommunityRewardsLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "./ethereum/communityRewards"
+import {CommunityRewards, CommunityRewardsLoaded} from "./ethereum/communityRewards"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
 import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
@@ -69,6 +64,7 @@ import {
   TRANSACTIONS_ROUTE,
   VERIFY_ROUTE,
 } from "./types/routes"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 
 interface GeolocationData {
   ip: string

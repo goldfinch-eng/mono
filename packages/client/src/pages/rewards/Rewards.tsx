@@ -8,12 +8,9 @@ import {AppContext} from "../../App"
 import ConnectionNotice from "../../components/connectionNotice"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
-import {
-  CommunityRewardsGrant,
-  CommunityRewardsLoaded,
-  MerkleDirectDistributorLoaded,
-} from "../../ethereum/communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
+import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {

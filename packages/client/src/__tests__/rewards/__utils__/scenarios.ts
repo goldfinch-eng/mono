@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
-import {CommunityRewards, MerkleDirectDistributor} from "../../../ethereum/communityRewards"
+import {CommunityRewards} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {User} from "../../../ethereum/user"
 import {SeniorPoolLoaded, StakingRewards} from "../../../ethereum/pool"
@@ -24,6 +24,7 @@ import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockcha
 import BigNumber from "bignumber.js"
 import {BlockInfo} from "../../../utils"
 import {MerkleDistributor} from "../../../ethereum/merkleDistributor"
+import {MerkleDirectDistributor} from "../../../ethereum/merkleDirectDistributor"
 
 export async function setupNewStakingReward(
   goldfinchProtocol: GoldfinchProtocol,
