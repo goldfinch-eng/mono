@@ -66,6 +66,7 @@ import path from "path"
 import {promises as fs} from "fs"
 import _ from "lodash"
 import {MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {VESTING_MERKLE_INFO_PATH} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
@@ -865,7 +866,7 @@ describe("mainnet forking tests", async function () {
       // no vesting to merkle direct distributor balance
       it("proper reward allocation for users claimable", async () => {
         const vestingGrantsJson: MerkleDistributorInfo = JSON.parse(
-          await fs.readFile(path.join(__dirname, "../../blockchain_scripts/migrations/v2.2/vestingMerkleInfo.json"), {
+          await fs.readFile(VESTING_MERKLE_INFO_PATH, {
             encoding: "utf8",
           })
         )
