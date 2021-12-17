@@ -36,6 +36,7 @@ import LoadingButton from "./loadingButton"
 import {getIsRefreshing} from "./refreshIndicator"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
+import useNonNullContext from "../hooks/useNonNullContext"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
@@ -70,8 +71,7 @@ interface ActionButtonProps {
 
 function ActionButton(props: ActionButtonProps) {
   const currentRoute = useCurrentRoute()
-  const {currentBlock, leavesCurrentBlock} = useContext(AppContext)
-  assertNonNullable(currentRoute)
+  const {currentBlock, leavesCurrentBlock} = useNonNullContext(AppContext)
   const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
