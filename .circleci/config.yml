@@ -48,7 +48,7 @@ jobs:
           name: Build
           command: npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
       - save_cache:
-          key: deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+          key: deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
           paths:
             - ~/.npm
             - ./packages/protocol/node_modules/
