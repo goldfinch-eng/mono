@@ -296,10 +296,15 @@ type UserCommunityRewardsLoadedInfo = {
 }
 
 export class UserCommunityRewards {
+  address: string
   goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserCommunityRewardsLoadedInfo>
 
-  constructor(goldfinchProtocol: GoldfinchProtocol) {
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
@@ -308,7 +313,6 @@ export class UserCommunityRewards {
   }
 
   async initialize(
-    address: string,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
     userMerkleDistributor: UserMerkleDistributorLoaded,
@@ -319,7 +323,7 @@ export class UserCommunityRewards {
     // The former approach reflects any token transfers that may have occurred to or from the
     // `recipient`, whereas the latter does not.
     const grants = await communityRewards.contract.methods
-      .balanceOf(address)
+      .balanceOf(this.address)
       .call(undefined, currentBlock.number)
       .then((balance: string) => parseInt(balance, 10))
       .then((numPositions: number) =>
@@ -327,7 +331,9 @@ export class UserCommunityRewards {
           Array(numPositions)
             .fill("")
             .map((val, i) =>
-              communityRewards.contract.methods.tokenOfOwnerByIndex(address, i).call(undefined, currentBlock.number)
+              communityRewards.contract.methods
+                .tokenOfOwnerByIndex(this.address, i)
+                .call(undefined, currentBlock.number)
             )
         )
       )
@@ -466,10 +472,15 @@ type UserMerkleDistributorLoadedInfo = {
 }
 
 export class UserMerkleDistributor {
+  address: string
   goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserMerkleDistributorLoadedInfo>
 
-  constructor(goldfinchProtocol: GoldfinchProtocol) {
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
@@ -478,7 +489,6 @@ export class UserMerkleDistributor {
   }
 
   async initialize(
-    address: string,
     merkleDistributor: MerkleDistributorLoaded,
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
@@ -488,7 +498,10 @@ export class UserMerkleDistributor {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
 
-    const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(merkleDistributorInfo.grants, address)
+    const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(
+      merkleDistributorInfo.grants,
+      this.address
+    )
     const [withAcceptance, _tokenLaunchTime] = await Promise.all([
       UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
       communityRewards.contract.methods.tokenLaunchTimeInSeconds().call(undefined, currentBlock.number),
@@ -602,10 +615,15 @@ type UserMerkleDirectDistributorLoadedInfo = {
 }
 
 export class UserMerkleDirectDistributor {
+  address: string
   goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserMerkleDirectDistributorLoadedInfo>
 
-  constructor(goldfinchProtocol: GoldfinchProtocol) {
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
@@ -613,11 +631,7 @@ export class UserMerkleDirectDistributor {
     }
   }
 
-  async initialize(
-    address: string,
-    merkleDirectDistributor: MerkleDirectDistributorLoaded,
-    currentBlock: BlockInfo
-  ): Promise<void> {
+  async initialize(merkleDirectDistributor: MerkleDirectDistributorLoaded, currentBlock: BlockInfo): Promise<void> {
     const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
@@ -625,7 +639,7 @@ export class UserMerkleDirectDistributor {
 
     const airdropsForRecipient = UserMerkleDirectDistributor.getAirdropsForRecipient(
       merkleDirectDistributorInfo.grants,
-      address
+      this.address
     )
     const withAcceptance = await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
       airdropsForRecipient,

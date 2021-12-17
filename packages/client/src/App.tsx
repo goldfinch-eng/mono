@@ -386,23 +386,17 @@ function App() {
 
     const address = overrideAddress || userAddress
 
-    const userMerkleDistributor = new UserMerkleDistributor(goldfinchProtocol)
-    const userMerkleDirectDistributor = new UserMerkleDirectDistributor(goldfinchProtocol)
+    const userMerkleDistributor = new UserMerkleDistributor(address, goldfinchProtocol)
+    const userMerkleDirectDistributor = new UserMerkleDirectDistributor(address, goldfinchProtocol)
     await Promise.all([
-      userMerkleDistributor.initialize(address, merkleDistributor, communityRewards, currentBlock),
-      userMerkleDirectDistributor.initialize(address, merkleDirectDistributor, currentBlock),
+      userMerkleDistributor.initialize(merkleDistributor, communityRewards, currentBlock),
+      userMerkleDirectDistributor.initialize(merkleDirectDistributor, currentBlock),
     ])
     assertWithLoadedInfo(userMerkleDistributor)
     assertWithLoadedInfo(userMerkleDirectDistributor)
 
-    const userCommunityRewards = new UserCommunityRewards(goldfinchProtocol)
-    await userCommunityRewards.initialize(
-      address,
-      communityRewards,
-      merkleDistributor,
-      userMerkleDistributor,
-      currentBlock
-    )
+    const userCommunityRewards = new UserCommunityRewards(address, goldfinchProtocol)
+    await userCommunityRewards.initialize(communityRewards, merkleDistributor, userMerkleDistributor, currentBlock)
     assertWithLoadedInfo(userCommunityRewards)
 
     setUserMerkleDistributor(userMerkleDistributor)
