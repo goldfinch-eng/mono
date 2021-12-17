@@ -870,8 +870,8 @@ describe("mainnet forking tests", async function () {
           })
         )
 
-        // randomly sample 500 grants
-        _.sampleSize(vestingGrantsJson.grants, 500).forEach(
+        // randomly sample 50 grants
+        _.sampleSize(vestingGrantsJson.grants, 50).forEach(
           async ({index, proof, account: recipient, grant: {amount, vestingLength, cliffLength, vestingInterval}}) => {
             const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
             const recipientBalanceBefore = await gfi.balanceOf(recipient)
