@@ -31,7 +31,16 @@ import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
 import {CurrentTx, TxType} from "./types/transactions"
-import {getUserData, UserLoaded} from "./ethereum/user"
+import {
+  getUserData,
+  UserCommunityRewards,
+  UserCommunityRewardsLoaded,
+  UserLoaded,
+  UserMerkleDirectDistributor,
+  UserMerkleDirectDistributorLoaded,
+  UserMerkleDistributor,
+  UserMerkleDistributorLoaded,
+} from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
@@ -109,6 +118,9 @@ export interface GlobalState {
   communityRewards?: CommunityRewardsLoaded
   merkleDistributor?: MerkleDistributorLoaded
   merkleDirectDistributor?: MerkleDirectDistributorLoaded
+  userMerkleDistributor?: UserMerkleDistributorLoaded
+  userMerkleDirectDistributor?: UserMerkleDirectDistributorLoaded
+  userCommunityRewards?: UserCommunityRewardsLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: CreditDesk
   user?: UserLoaded
@@ -138,6 +150,9 @@ function App() {
   const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
   const [_merkleDirectDistributor, setMerkleDirectDistributor] = useState<MerkleDirectDistributorLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
+  const [userMerkleDistributor, setUserMerkleDistributor] = useState<UserMerkleDistributorLoaded>()
+  const [userMerkleDirectDistributor, setUserMerkleDirectDistributor] = useState<UserMerkleDirectDistributorLoaded>()
+  const [userCommunityRewards, setUserCommunityRewards] = useState<UserCommunityRewardsLoaded>()
   const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
@@ -214,6 +229,21 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stakingRewards, gfi])
+
+  useEffect(() => {
+    if (
+      goldfinchProtocol &&
+      communityRewards &&
+      merkleDistributor &&
+      merkleDirectDistributor &&
+      web3Status &&
+      web3Status.type === "connected" &&
+      currentBlock
+    ) {
+      refreshUserMerkleAndCommunityRewardsInfo(web3Status.address, overrideAddress)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [communityRewards, merkleDistributor, merkleDirectDistributor, web3Status?.address, overrideAddress])
 
   useEffect(() => {
     if (
@@ -348,6 +378,42 @@ function App() {
     setPool(pool)
   }
 
+  async function refreshUserMerkleAndCommunityRewardsInfo(
+    userAddress: string,
+    overrideAddress: string | undefined
+  ): Promise<void> {
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(currentBlock)
+    assertNonNullable(communityRewards)
+    assertNonNullable(merkleDistributor)
+    assertNonNullable(merkleDirectDistributor)
+
+    const address = overrideAddress || userAddress
+
+    const userMerkleDistributor = new UserMerkleDistributor()
+    const userMerkleDirectDistributor = new UserMerkleDirectDistributor()
+    await Promise.all([
+      userMerkleDistributor.initialize(address, merkleDistributor, communityRewards, currentBlock),
+      userMerkleDirectDistributor.initialize(address, merkleDirectDistributor, currentBlock),
+    ])
+    assertWithLoadedInfo(userMerkleDistributor)
+    assertWithLoadedInfo(userMerkleDirectDistributor)
+
+    const userCommunityRewards = new UserCommunityRewards(goldfinchProtocol)
+    await userCommunityRewards.initialize(
+      address,
+      communityRewards,
+      merkleDistributor,
+      userMerkleDistributor,
+      currentBlock
+    )
+    assertWithLoadedInfo(userCommunityRewards)
+
+    setUserMerkleDistributor(userMerkleDistributor)
+    setUserMerkleDirectDistributor(userMerkleDirectDistributor)
+    setUserCommunityRewards(userCommunityRewards)
+  }
+
   async function refreshUserData(userAddress: string, overrideAddress: string | undefined): Promise<void> {
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(pool)
@@ -409,6 +475,9 @@ function App() {
     pool,
     creditDesk,
     user,
+    userMerkleDistributor,
+    userMerkleDirectDistributor,
+    userCommunityRewards,
     usdc,
     goldfinchConfig,
     network,

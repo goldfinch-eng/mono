@@ -66,9 +66,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
   }
 
   if (consistent) {
-    const pool = consistent[0]
-    const user = consistent[1]
-    const stakingRewards = consistent[2]
+    const [pool, user, stakingRewards] = consistent
 
     // Being eligible for supplying into the senior pool is logically independent of, and therefore not
     // necessary for, being able to stake any unstaked FIDU you may have. But for consistency of UX in

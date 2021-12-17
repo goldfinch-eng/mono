@@ -288,7 +288,7 @@ type UserCommunityRewardsLoadedInfo = {
   granted: BigNumber
 }
 
-class UserCommunityRewards {
+export class UserCommunityRewards {
   goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserCommunityRewardsLoadedInfo>
 
@@ -732,9 +732,6 @@ export type UserLoadedInfo = {
     }
   }
   stakingRewards: UserStakingRewardsLoaded
-  communityRewards: UserCommunityRewardsLoaded
-  merkleDistributor: UserMerkleDistributorLoaded
-  merkleDirectDistributor: UserMerkleDirectDistributorLoaded
 }
 
 export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
@@ -831,26 +828,8 @@ export class User {
     )
 
     const userStakingRewards = new UserStakingRewards()
-    const userMerkleDistributor = new UserMerkleDistributor()
-    const userMerkleDirectDistributor = new UserMerkleDirectDistributor()
-    await Promise.all([
-      userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock),
-      userMerkleDistributor.initialize(this.address, merkleDistributor, communityRewards, currentBlock),
-      userMerkleDirectDistributor.initialize(this.address, merkleDirectDistributor, currentBlock),
-    ])
+    await userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock)
     assertWithLoadedInfo(userStakingRewards)
-    assertWithLoadedInfo(userMerkleDistributor)
-    assertWithLoadedInfo(userMerkleDirectDistributor)
-
-    const userCommunityRewards = new UserCommunityRewards(this.goldfinchProtocol)
-    await userCommunityRewards.initialize(
-      this.address,
-      communityRewards,
-      merkleDistributor,
-      userMerkleDistributor,
-      currentBlock
-    )
-    assertWithLoadedInfo(userCommunityRewards)
 
     this.info = {
       loaded: true,
@@ -877,9 +856,6 @@ export class User {
           },
         },
         stakingRewards: userStakingRewards,
-        communityRewards: userCommunityRewards,
-        merkleDistributor: userMerkleDistributor,
-        merkleDirectDistributor: userMerkleDirectDistributor,
       },
     }
   }

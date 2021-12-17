@@ -16,7 +16,12 @@ import {
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
-import {UserLoaded} from "../../ethereum/user"
+import {
+  UserCommunityRewardsLoaded,
+  UserLoaded,
+  UserMerkleDirectDistributorLoaded,
+  UserMerkleDistributorLoaded,
+} from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
 import {useSession} from "../../hooks/useSignIn"
 import {MerkleDirectDistributorGrant} from "../../types/merkleDirectDistributor"
@@ -151,6 +156,9 @@ function Rewards() {
     merkleDistributor: _merkleDistributor,
     merkleDirectDistributor: _merkleDirectDistributor,
     communityRewards: _communityRewards,
+    userMerkleDistributor: _userMerkleDistributor,
+    userMerkleDirectDistributor: _userMerkleDirectDistributor,
+    userCommunityRewards: _userCommunityRewards,
     currentBlock,
   } = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
@@ -161,7 +169,10 @@ function Rewards() {
     UserLoaded,
     MerkleDistributorLoaded,
     MerkleDirectDistributorLoaded,
-    CommunityRewardsLoaded
+    CommunityRewardsLoaded,
+    UserMerkleDistributorLoaded,
+    UserMerkleDirectDistributorLoaded,
+    UserCommunityRewardsLoaded
   >(
     {setAsLeaf: true},
     currentBlock,
@@ -170,7 +181,10 @@ function Rewards() {
     _user,
     _merkleDistributor,
     _merkleDirectDistributor,
-    _communityRewards
+    _communityRewards,
+    _userMerkleDistributor,
+    _userMerkleDirectDistributor,
+    _userCommunityRewards
   )
 
   const disabled = session.status !== "authenticated"
@@ -182,19 +196,21 @@ function Rewards() {
   let totalBalance: BigNumber | undefined
   let rewards: React.ReactNode | undefined
   if (consistent) {
-    const stakingRewards = consistent[0]
-    const gfi = consistent[1]
-    const user = consistent[2]
-    const merkleDistributor = consistent[3]
-    const merkleDirectDistributor = consistent[4]
-    const communityRewards = consistent[5]
+    const [
+      stakingRewards,
+      gfi,
+      user,
+      merkleDistributor,
+      merkleDirectDistributor,
+      communityRewards,
+      userMerkleDistributor,
+      userMerkleDirectDistributor,
+      userCommunityRewards,
+    ] = consistent
 
     loaded = true
 
     const userStakingRewards = user.info.value.stakingRewards
-    const userCommunityRewards = user.info.value.communityRewards
-    const userMerkleDistributor = user.info.value.merkleDistributor
-    const userMerkleDirectDistributor = user.info.value.merkleDirectDistributor
 
     const emptyRewards =
       !userCommunityRewards.info.value.grants.length &&
