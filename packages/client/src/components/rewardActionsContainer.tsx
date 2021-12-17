@@ -2,7 +2,7 @@ import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockcha
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import React, {useContext, useState} from "react"
+import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
 import {AppContext} from "../App"
 import {
