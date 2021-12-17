@@ -32,7 +32,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Update Ubuntu
           command: |
@@ -70,7 +70,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Test
           command: |
@@ -90,7 +90,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Test
           command: |
