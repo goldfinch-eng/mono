@@ -17,7 +17,7 @@ import {
   StakingRewards,
   StakingRewardsLoaded,
 } from "../../../ethereum/pool"
-import {User, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
+import {User, UserCommunityRewards, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
 import {BlockInfo} from "../../../utils"
@@ -115,7 +115,7 @@ const defaultStakingRewardsStartTime = String(defaultCurrentBlock.timestamp)
 export const defaultStakingRewardsVestingLength = 31536000
 const defaultStakingRewardsEndTime = String(defaultCurrentBlock.timestamp + defaultStakingRewardsVestingLength)
 
-export async function mockUserInitializationContractCalls(
+export async function mockUserRelatedInitializationContractCalls(
   user: User,
   stakingRewards: StakingRewards,
   gfi: GFI,
