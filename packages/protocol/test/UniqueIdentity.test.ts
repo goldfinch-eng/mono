@@ -178,6 +178,13 @@ describe("UniqueIdentity", () => {
     })
   })
 
+  describe("name and symbol", () => {
+    it("Returns correct values", async () => {
+      expect(await uniqueIdentity.name()).to.equal("Unique Identity")
+      expect(await uniqueIdentity.symbol()).to.equal("UID")
+    })
+  })
+
   describe("setSupportedUIDTypes", () => {
     it("requires sender to be admin", async () => {
       expect(await uniqueIdentity.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
@@ -722,12 +729,6 @@ describe("UniqueIdentity", () => {
           /ERC1155Pausable: token transfer while paused/
         )
       })
-    })
-  })
-
-  describe("upgradeability", () => {
-    it("is upgradeable", async () => {
-      // TODO
     })
   })
 })
