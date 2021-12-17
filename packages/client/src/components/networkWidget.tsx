@@ -3,6 +3,11 @@ import _ from "lodash"
 import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
+import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
+import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
+import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
+import {useSession, useSignIn} from "../hooks/useSignIn"
+import {NetworkConfig} from "../types/network"
 import {
   ACCEPT_TX_TYPE,
   BORROW_TX_TYPE,
@@ -24,18 +29,13 @@ import {
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
-  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
 } from "../types/transactions"
-import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
-import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
-import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
-import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
 import {ArrayItemType, BlockInfo, croppedAddress, displayDollars, displayNumber} from "../utils"
 import web3 from "../web3"
 import {iconCheck, iconOutArrow} from "./icons"
 import NetworkErrors from "./networkErrors"
-import {NetworkConfig} from "../types/network"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -231,61 +231,6 @@ function NetworkWidget(props: NetworkWidgetProps) {
     )
   }
 
-  const connectMetamaskNetworkWidget = (
-    <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-      <button className="network-widget-button bold" onClick={toggleOpenWidget}>
-        Connect Metamask
-      </button>
-      <div className="network-widget-info">
-        <div className="network-widget-section">
-          <div className="agree-to-terms">
-            <p>
-              By connecting, I accept Goldfinch's{" "}
-              <a href="/terms" target="_blank">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="/privacy" target="_blank">
-                Privacy Policy
-              </a>
-              .
-            </p>
-          </div>
-          <button className="button bold" onClick={enableMetamask}>
-            Connect Metamask
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
-  const enabledNetworkWidget = (
-    <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-      <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
-        <div className="status-icon">
-          <div className="indicator"></div>
-          <div className="spinner">
-            <div className="double-bounce1"></div>
-            <div className="double-bounce2"></div>
-          </div>
-        </div>
-        {enabledText}
-        <div className="success-indicator">{iconCheck}Success</div>
-      </button>
-      <div className="network-widget-info">
-        <div className="network-widget-section address">{userAddressForDisplay}</div>
-        <NetworkErrors currentErrors={props.currentErrors} />
-        <div className="network-widget-section">
-          USDC balance{" "}
-          <span className="value">
-            {displayNumber(props.user ? usdcFromAtomic(props.user.info.value.usdcBalance) : undefined, 2)}
-          </span>
-        </div>
-        {transactions}
-      </div>
-    </div>
-  )
-
   if (web3Status?.type === "no_web3") {
     return (
       <div ref={node} className="network-widget">
@@ -311,14 +256,61 @@ function NetworkWidget(props: NetworkWidgetProps) {
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (
-    web3Status.type === "has_web3" ||
-    (web3Status.type === "connected" && session.status !== "authenticated") ||
-    isSessionDataInvalid(sessionData, currentTimestamp)
-  ) {
-    return connectMetamaskNetworkWidget
+  } else if (session.status !== "authenticated") {
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
+          Connect Metamask
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section">
+            <div className="agree-to-terms">
+              <p>
+                By connecting, I accept Goldfinch's{" "}
+                <a href="/terms" target="_blank">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a href="/privacy" target="_blank">
+                  Privacy Policy
+                </a>
+                .
+              </p>
+            </div>
+            <button className="button bold" onClick={enableMetamask}>
+              Connect Metamask
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   } else {
-    return enabledNetworkWidget
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
+          <div className="status-icon">
+            <div className="indicator"></div>
+            <div className="spinner">
+              <div className="double-bounce1"></div>
+              <div className="double-bounce2"></div>
+            </div>
+          </div>
+          {enabledText}
+          <div className="success-indicator">{iconCheck}Success</div>
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section address">{userAddressForDisplay}</div>
+          <NetworkErrors currentErrors={props.currentErrors} />
+          <div className="network-widget-section">
+            USDC balance{" "}
+            <span className="value">
+              {displayNumber(props.user ? usdcFromAtomic(props.user.info.value.usdcBalance) : undefined, 2)}
+            </span>
+          </div>
+          {transactions}
+        </div>
+      </div>
+    )
   }
 }
 
