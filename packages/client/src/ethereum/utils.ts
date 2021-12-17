@@ -107,13 +107,11 @@ async function getDeployments(networkId) {
     .catch(console.error)
 }
 
-export function isMainnetFork() {
-  return process.env.REACT_APP_HARDHAT_FORK === MAINNET
-}
-
-async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
+async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
   const fileNameSuffix =
-    process.env.NODE_ENV === "development" && process.env.REACT_APP_HARDHAT_FORK !== MAINNET ? ".dev" : ""
+    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
+      ? ".dev"
+      : ""
 
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
@@ -132,9 +130,11 @@ async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undef
     })
 }
 
-async function getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
   const fileNameSuffix =
-    process.env.NODE_ENV === "development" && process.env.REACT_APP_HARDHAT_FORK !== MAINNET ? ".dev" : ""
+    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
+      ? ".dev"
+      : ""
 
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
