@@ -38,6 +38,7 @@ import {
   decodeLogs,
   getDeployedAsTruffleContract,
   getOnlyLog,
+  getFirstLog,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -50,6 +51,7 @@ import {
   GoInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
+  MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
@@ -66,7 +68,12 @@ import path from "path"
 import {promises as fs} from "fs"
 import _ from "lodash"
 import {MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
-import {VESTING_MERKLE_INFO_PATH} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
+import {
+  NO_VESTING_MERKLE_INFO_PATH,
+  VESTING_MERKLE_INFO_PATH,
+} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
+import {MerkleDirectDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {DepositedAndStaked, RewardPaid} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
@@ -147,6 +154,11 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     "MerkleDistributor"
   )
 
+  const merkleDirectDistributor = await getDeployedAsTruffleContract<MerkleDirectDistributorInstance>(
+    deployments,
+    "MerkleDirectDistributor"
+  )
+
   return {
     seniorPool,
     seniorPoolStrategy,
@@ -161,6 +173,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     gfi,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
   }
 })
 
@@ -187,7 +200,8 @@ describe("mainnet forking tests", async function () {
     backerRewards: BackerRewardsInstance,
     gfi: GFIInstance,
     communityRewards: CommunityRewardsInstance,
-    merkleDistributor: MerkleDistributorInstance
+    merkleDistributor: MerkleDistributorInstance,
+    merkleDirectDistributor: MerkleDirectDistributorInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -234,6 +248,7 @@ describe("mainnet forking tests", async function () {
       gfi,
       communityRewards,
       merkleDistributor,
+      merkleDirectDistributor,
     } = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -851,7 +866,7 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe("CommunityRewards liquidity_provider", () => {
+  describe("CommunityRewards", () => {
     beforeEach(async () => {
       await communityRewards.unpause({
         from: MAINNET_MULTISIG,
@@ -864,62 +879,150 @@ describe("mainnet forking tests", async function () {
       // })
 
       // no vesting to merkle direct distributor balance
-      it("proper reward allocation for users claimable", async () => {
-        const vestingGrantsJson: MerkleDistributorInfo = JSON.parse(
-          await fs.readFile(VESTING_MERKLE_INFO_PATH, {
-            encoding: "utf8",
-          })
-        )
+      describe("MerkleDistributor", () => {
+        it("proper reward allocation for users claimable", async () => {
+          const vestingGrantsJson: MerkleDistributorInfo = JSON.parse(
+            await fs.readFile(VESTING_MERKLE_INFO_PATH, {
+              encoding: "utf8",
+            })
+          )
 
-        // randomly sample 50 grants
-        _.sampleSize(vestingGrantsJson.grants, 50).forEach(
-          async ({index, proof, account: recipient, grant: {amount, vestingLength, cliffLength, vestingInterval}}) => {
-            const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
-            const recipientBalanceBefore = await gfi.balanceOf(recipient)
-
-            const receipt = await merkleDistributor.acceptGrant(
+          // randomly sample 50 grants
+          _.sampleSize(vestingGrantsJson.grants, 50).forEach(
+            async ({
               index,
-              amount,
-              vestingLength,
-              cliffLength,
-              vestingInterval,
               proof,
-              {from: recipient}
-            )
-            const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
-            const tokenId = grantedEvent.args.tokenId
+              account: recipient,
+              grant: {amount, vestingLength, cliffLength, vestingInterval},
+            }) => {
+              const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+              const recipientBalanceBefore = await gfi.balanceOf(recipient)
 
-            await impersonateAccount(hre, recipient)
+              const receipt = await merkleDistributor.acceptGrant(
+                index,
+                amount,
+                vestingLength,
+                cliffLength,
+                vestingInterval,
+                proof,
+                {from: recipient}
+              )
+              const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
+              const tokenId = grantedEvent.args.tokenId
 
-            // should have no claimable rewards
-            expect(await communityRewards.claimableRewards(tokenId)).to.bignumber.equal(new BN(0))
+              await impersonateAccount(hre, recipient)
 
-            // verify grant properties
-            const grantState = await communityRewards.grants(tokenId)
-            assertCommunityRewardsVestingRewards(grantState)
-            expect(grantState.totalGranted).to.bignumber.equal(amount)
-            expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
-            expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
-            expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
+              // should have no claimable rewards
+              expect(await communityRewards.claimableRewards(tokenId)).to.bignumber.equal(new BN(0))
 
-            // advance time to end of grant
-            await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(vestingLength))})
-            await ethers.provider.send("evm_mine", [])
+              // verify grant properties
+              const grantState = await communityRewards.grants(tokenId)
+              assertCommunityRewardsVestingRewards(grantState)
+              expect(grantState.totalGranted).to.bignumber.equal(amount)
+              expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
+              expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
+              expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
 
-            // verify fully vested claimable rewards
-            const claimable = await communityRewards.claimableRewards(tokenId)
-            expect(claimable).to.bignumber.equal(amount)
+              // advance time to end of grant
+              await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(vestingLength))})
+              await ethers.provider.send("evm_mine", [])
 
-            // claim all awards
-            await communityRewards.getReward(tokenId, {from: recipient})
+              // verify fully vested claimable rewards
+              const claimable = await communityRewards.claimableRewards(tokenId)
+              expect(claimable).to.bignumber.equal(amount)
 
-            const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
-            expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore.sub(claimable))
+              // claim all awards
+              await communityRewards.getReward(tokenId, {from: recipient})
 
-            const recipientBalanceAfter = await gfi.balanceOf(recipient)
-            expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(claimable))
-          }
+              const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+              expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore.sub(claimable))
+
+              const recipientBalanceAfter = await gfi.balanceOf(recipient)
+              expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(claimable))
+            }
+          )
+        })
+      })
+
+      describe("MerkleDirectDistributor", () => {
+        it("proper reward allocation for users claimable", async () => {
+          const noVestingGrantsJson: MerkleDirectDistributorInfo = JSON.parse(
+            await fs.readFile(NO_VESTING_MERKLE_INFO_PATH, {
+              encoding: "utf8",
+            })
+          )
+
+          // randomly sample 50 grants
+          _.sampleSize(noVestingGrantsJson.grants, 50).forEach(
+            async ({index, proof, account: recipient, grant: {amount}}) => {
+              const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
+              const recipientBalanceBefore = await gfi.balanceOf(recipient)
+
+              const receipt = await merkleDirectDistributor.acceptGrant(index, amount, proof, {from: recipient})
+              const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
+              const tokenId = grantedEvent.args.tokenId
+
+              await impersonateAccount(hre, recipient)
+
+              // should have no claimable rewards
+              expect(await communityRewards.claimableRewards(tokenId)).to.bignumber.equal(new BN(0))
+
+              // verify grant properties
+              const grantState = await communityRewards.grants(tokenId)
+              assertCommunityRewardsVestingRewards(grantState)
+              expect(grantState.totalGranted).to.bignumber.equal(amount)
+              expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
+
+              // verify fully vested claimable rewards
+              const claimable = await communityRewards.claimableRewards(tokenId)
+              expect(claimable).to.bignumber.equal(amount)
+
+              // claim all awards
+              await communityRewards.getReward(tokenId, {from: recipient})
+
+              const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+              expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore.sub(claimable))
+
+              const recipientBalanceAfter = await gfi.balanceOf(recipient)
+              expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(claimable))
+            }
+          )
+        })
+      })
+    })
+
+    describe("StakingRewards", () => {
+      it("deposits and stakings into senior pool, and can withdraw", async () => {
+        const yearInSeconds = new BN(365 * 24 * 60 * 60)
+        const halfYearInSeconds = yearInSeconds.div(new BN(2))
+        const amount = usdcVal(1000)
+
+        await usdc.approve(stakingRewards.address, amount)
+
+        const receipt = await stakingRewards.depositAndStake(amount)
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+        const tokenId = stakedEvent.args.tokenId
+        const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+          decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
         )
+        expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+        expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+        expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+        expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+        expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+        expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
+
+        // advance time to end of grant
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const rewardReceipt = await stakingRewards.getReward(tokenId)
+        const rewardEvent = getFirstLog<RewardPaid>(
+          decodeLogs(rewardReceipt.receipt.rawLogs, stakingRewards, "RewardPaid")
+        )
+        const gfiBalance = await gfi.balanceOf(owner)
+        expect(gfiBalance).to.bignumber.gt(new BN("0"))
+        expect(gfiBalance).to.bignumber.equal(rewardEvent.args.reward)
       })
     })
   })

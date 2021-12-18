@@ -74,13 +74,18 @@ function ActionButton(props: ActionButtonProps) {
   const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
   const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
-  async function action(e): Promise<void> {
-    if (e.target === e.currentTarget) {
-      e.stopPropagation()
+  async function action(evt: any): Promise<void> {
+    if (evt.target === evt.currentTarget) {
+      evt.stopPropagation()
     }
     setIsPending(true)
-    await props.onClick()
-    setIsPending(false)
+    try {
+      await props.onClick()
+    } catch (err: unknown) {
+      console.error(err)
+      setIsPending(false)
+      throw err
+    }
   }
 
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
@@ -590,10 +595,14 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   async function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
     const previousGfiBalance = props.user.info.value.gfiBalance
-    await sendFromUser(rewards.contract.methods.getReward(tokenId), {
-      type: CLAIM_TX_TYPE,
-      data: {},
-    })
+    await sendFromUser(
+      rewards.contract.methods.getReward(tokenId),
+      {
+        type: CLAIM_TX_TYPE,
+        data: {},
+      },
+      {rejectOnError: true}
+    )
     await requestUserAddGfiTokenToWallet(previousGfiBalance)
   }
 
@@ -613,7 +622,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         data: {
           index: info.index,
         },
-      }
+      },
+      {rejectOnError: true}
     )
     // NOTE: We do not call `requestUserAddGfiTokenToWallet()` here because accepting a MerkleDistributor
     // grant does not transfer GFI to the user. For MerkleDistributor grants, it's most relevant to ask the user to
@@ -629,7 +639,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         data: {
           index: info.index,
         },
-      }
+      },
+      {rejectOnError: true}
     )
     // For MerkleDirectDistributor grants (unlike MerkleDistributor grants), accepting the grant does transfer GFI
     // to them, so it is relevant to ask the user here to add GFI to their wallet.
