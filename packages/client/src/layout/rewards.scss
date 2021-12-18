@@ -59,7 +59,7 @@
   }
 
   .total-balance {
-    border-top:  2px solid $sand;
+    border-top: 2px solid $sand;
     padding: 12px 0 0 0;
   }
 }
@@ -114,6 +114,11 @@ button.expand {
     color: $purp-dark;
   }
 
+  .balance,
+  .limit {
+    color: $purp-dark;
+  }
+
   .info-banner {
     button {
       font-size: $sans-size-base;
@@ -127,6 +132,12 @@ button.expand {
 
     .disabled-text {
       color: $sand-xxdark;
+    }
+
+    .subtitle {
+      color: $purp-light;
+      font-size: $sans-size-xs;
+      margin-top: 6px;
     }
   }
 
@@ -191,13 +202,14 @@ button.expand {
     .detail-label {
       display: block;
       margin: 0 0 4px 0;
-      color: $sand-xxdark;
+      color: $purp-dark;
     }
   }
 }
 
 @media only screen and (max-width: 1050px) {
-  .gfi-rewards .table-cell.col32, .gfi-rewards .table-cell.col20{
+  .gfi-rewards .table-cell.col32,
+  .gfi-rewards .table-cell.col20 {
     width: 23%;
   }
 
