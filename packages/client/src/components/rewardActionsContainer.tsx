@@ -78,15 +78,17 @@ function ActionButton(props: ActionButtonProps) {
   const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
   const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
-  async function action(e): Promise<void> {
-    if (e.target === e.currentTarget) {
-      e.stopPropagation()
+  async function action(evt: any): Promise<void> {
+    if (evt.target === evt.currentTarget) {
+      evt.stopPropagation()
     }
     setIsPending(true)
     try {
       await props.onClick()
-    } catch (e) {
+    } catch (err: unknown) {
+      console.error(err)
       setIsPending(false)
+      throw err
     }
   }
 
