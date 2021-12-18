@@ -63,6 +63,15 @@ export class CommunityRewardsGrant {
     }`
   }
 
+  get shortDescription(): string {
+    const transactionDate = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI • ${transactionDate}`
+  }
+
   get granted(): BigNumber {
     return this.rewards.totalGranted
   }
@@ -163,7 +172,7 @@ export class MerkleDirectDistributor {
       throw new Error("MerkleDirectDistributor address of GFI contract doesn't match with deployed GFI address")
     }
 
-    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo()
+    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
     }

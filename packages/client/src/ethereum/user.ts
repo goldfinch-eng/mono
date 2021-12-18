@@ -571,7 +571,7 @@ export class UserMerkleDistributor {
     allAirdrops: MerkleDistributorGrantInfo[],
     recipient: string
   ): MerkleDistributorGrantInfo[] {
-    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
+    return allAirdrops.filter((grantInfo) => grantInfo.account.toLowerCase() === recipient.toLowerCase())
   }
 }
 
@@ -692,7 +692,7 @@ export class UserMerkleDirectDistributor {
     allAirdrops: MerkleDirectDistributorGrantInfo[],
     recipient: string
   ): MerkleDirectDistributorGrantInfo[] {
-    return allAirdrops.filter((grantInfo) => grantInfo.account === recipient)
+    return allAirdrops.filter((grantInfo) => grantInfo.account.toLowerCase() === recipient.toLowerCase())
   }
 }
 

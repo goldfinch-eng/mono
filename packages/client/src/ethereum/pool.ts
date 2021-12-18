@@ -759,6 +759,10 @@ class StakingRewardsPosition {
     }`
   }
 
+  get shortDescription(): string {
+    return ""
+  }
+
   get granted(): BigNumber {
     return this.storedPosition.rewards.totalUnvested
       .plus(this.storedPosition.rewards.totalVested)
