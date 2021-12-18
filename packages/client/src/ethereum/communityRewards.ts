@@ -63,6 +63,15 @@ export class CommunityRewardsGrant {
     }`
   }
 
+  get shortDescription(): string {
+    const transactionDate = new Date(this.rewards.startTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI • ${transactionDate}`
+  }
+
   get granted(): BigNumber {
     return this.rewards.totalGranted
   }
