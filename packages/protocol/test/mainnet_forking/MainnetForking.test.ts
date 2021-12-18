@@ -38,6 +38,7 @@ import {
   decodeLogs,
   getDeployedAsTruffleContract,
   getOnlyLog,
+  getFirstLog,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -72,6 +73,7 @@ import {
   VESTING_MERKLE_INFO_PATH,
 } from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
 import {MerkleDirectDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {DepositedAndStaked, RewardPaid} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
@@ -864,7 +866,7 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe("CommunityRewards liquidity_provider", () => {
+  describe("CommunityRewards", () => {
     beforeEach(async () => {
       await communityRewards.unpause({
         from: MAINNET_MULTISIG,
@@ -986,6 +988,41 @@ describe("mainnet forking tests", async function () {
             }
           )
         })
+      })
+    })
+
+    describe("StakingRewards", () => {
+      it("deposits and stakings into senior pool, and can withdraw", async () => {
+        const yearInSeconds = new BN(365 * 24 * 60 * 60)
+        const halfYearInSeconds = yearInSeconds.div(new BN(2))
+        const amount = usdcVal(1000)
+
+        await usdc.approve(stakingRewards.address, amount)
+
+        const receipt = await stakingRewards.depositAndStake(amount)
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+        const tokenId = stakedEvent.args.tokenId
+        const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+          decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+        )
+        expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+        expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+        expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+        expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+        expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+        expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
+
+        // advance time to end of grant
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const rewardReceipt = await stakingRewards.getReward(tokenId)
+        const rewardEvent = getFirstLog<RewardPaid>(
+          decodeLogs(rewardReceipt.receipt.rawLogs, stakingRewards, "RewardPaid")
+        )
+        const gfiBalance = await gfi.balanceOf(owner)
+        expect(gfiBalance).to.bignumber.gt(new BN("0"))
+        expect(gfiBalance).to.bignumber.equal(rewardEvent.args.reward)
       })
     })
   })
