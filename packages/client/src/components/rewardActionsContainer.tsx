@@ -4,6 +4,7 @@ import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
+import {AppContext} from "../App"
 import {
   CommunityRewardsGrant,
   CommunityRewardsLoaded,
@@ -13,6 +14,7 @@ import {
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {UserLoaded} from "../ethereum/user"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
@@ -31,8 +33,10 @@ import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
+import {getIsRefreshing} from "./refreshIndicator"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
+import useNonNullContext from "../hooks/useNonNullContext"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
@@ -66,9 +70,13 @@ interface ActionButtonProps {
 }
 
 function ActionButton(props: ActionButtonProps) {
+  const currentRoute = useCurrentRoute()
+  const {currentBlock, leavesCurrentBlock} = useNonNullContext(AppContext)
+  assertNonNullable(currentRoute)
   const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const disabledClass = props.disabled || isPending ? "disabled-button" : ""
+  const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
+  const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
   async function action(e): Promise<void> {
     if (e.target === e.currentTarget) {
