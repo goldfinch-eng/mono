@@ -44,7 +44,7 @@ export class MerkleDistributor {
       )
     }
 
-    const merkleDistributorInfo = await getMerkleDistributorInfo()
+    const merkleDistributorInfo = await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
     if (!merkleDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
@@ -93,6 +93,10 @@ export class MerkleDistributor {
         return "as a Liquidity Provider"
       case "flight_academy_and_liquidity_provider":
         return "in Flight Academy and as a Liquidity Provider"
+      case "advisor":
+        return "as a Goldfinch advisor"
+      case "contributor":
+        return "as a Goldfinch contributor"
       default:
         assertUnreachable(reason)
     }

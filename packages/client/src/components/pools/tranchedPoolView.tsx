@@ -777,6 +777,9 @@ interface TranchedPoolViewURLParams {
 }
 
 function TranchedPoolView() {
+  // TODO Use `setLeafCurrentBlock()` in this view, after we have refactored the TranchedPool class
+  // to use the Loadable pattern.
+
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
   const {goldfinchProtocol, usdc, user, network, setSessionData, currentBlock} = useContext(AppContext)
   const session = useSession()

@@ -1,9 +1,10 @@
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
+import {AppContext} from "../App"
 import {
   CommunityRewardsGrant,
   CommunityRewardsLoaded,
@@ -11,8 +12,10 @@ import {
   MerkleDirectDistributorLoaded,
 } from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
-import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
+import {UserLoaded} from "../ethereum/user"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {
   Column,
@@ -23,21 +26,27 @@ import {
   DetailValue,
   EtherscanLinkContainer,
 } from "../pages/rewards/styles"
+import {MerkleDirectDistributorGrant} from "../types/merkleDirectDistributor"
+import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
+import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
 import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "../utils"
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
+import {getIsRefreshing} from "./refreshIndicator"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
-import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
-import {
-  AcceptedMerkleDirectDistributorGrant,
-  NotAcceptedMerkleDirectDistributorGrant,
-} from "../types/merkleDirectDistributor"
-import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
+import useNonNullContext from "../hooks/useNonNullContext"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
-const TOKEN_LAUNCH_TIME_IN_SECONDS = 1638900000 // Tuesday, December 7, 2021 10:00:00 AM GMT-08:00
+const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
+const GFI_TOKEN_IMAGE_URL = `${
+  process.env.NODE_ENV === "development"
+    ? process.env.REACT_APP_MURMURATION === "yes"
+      ? "https://murmuration.goldfinch.finance"
+      : "http://localhost:3000"
+    : "https://app.goldfinch.finance"
+}/gfi-token.svg`
 
 enum RewardStatus {
   Acceptable,
@@ -61,9 +70,13 @@ interface ActionButtonProps {
 }
 
 function ActionButton(props: ActionButtonProps) {
+  const currentRoute = useCurrentRoute()
+  const {currentBlock, leavesCurrentBlock} = useNonNullContext(AppContext)
+  assertNonNullable(currentRoute)
   const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const disabledClass = props.disabled || isPending ? "disabled-button" : ""
+  const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
+  const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
   async function action(e): Promise<void> {
     if (e.target === e.currentTarget) {
@@ -80,7 +93,11 @@ function ActionButton(props: ActionButtonProps) {
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
 
   return (
-    <button className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`} onClick={action}>
+    <button
+      disabled={props.disabled}
+      className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
+      onClick={action}
+    >
       {isAccepting ? ActionButtonTexts.accepting : props.text}
     </button>
   )
@@ -100,6 +117,7 @@ function OpenDetails(props: OpenDetailsProps) {
 
 type BaseItemDetails = {
   transactionDetails: string
+  shortTransactionDetails: string
   vestingSchedule: string
   vestingStatus: string
   etherscanAddress: string
@@ -232,13 +250,13 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
       return {
         ...baseProps,
         text: ActionButtonTexts.accept,
-        disabled: false,
+        disabled: props.disabled,
       }
     case RewardStatus.Claimable:
       return {
         ...baseProps,
         text: ActionButtonTexts.claimGFI,
-        disabled: false,
+        disabled: props.disabled,
       }
     case RewardStatus.TemporarilyAllClaimed:
       return {
@@ -259,10 +277,12 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
 
 interface RewardsListItemProps {
   title: string
+  subtitle: string
   grantedGFI: BigNumber
   claimableGFI: BigNumber
   status: RewardStatus
   details: ItemDetails
+  disabled: boolean
   handleOnClick: () => Promise<void>
 }
 
@@ -276,6 +296,9 @@ function RewardsListItem(props: RewardsListItemProps) {
   const actionButtonComponent = <ActionButton {...getActionButtonProps(props)} />
 
   const detailsComponent = <Details open={open} disabled={disabledText} itemDetails={props.details} />
+
+  const grantedGFIZeroDisabled = displayNumber(gfiFromAtomic(props.grantedGFI), 2) === "0.00" ? "disabled-text" : ""
+  const claimableGFIZeroDisabled = displayNumber(gfiFromAtomic(props.claimableGFI), 2) === "0.00" ? "disabled-text" : ""
 
   return (
     <>
@@ -297,10 +320,11 @@ function RewardsListItem(props: RewardsListItemProps) {
                 <div className="detail-container">
                   <span className="detail-label">
                     {
-                      // NOTE: Consistently with our approach in the rewards summary, we describe
-                      // the value to the user here as what's vested, though the value we use is what's
-                      // claimable. What's claimable is the relevant piece of information that informs
-                      // their understanding of whether they should be able to take any action with the button.
+                      // NOTE: Consistently with our approach in the rewards summary and rewards list item
+                      // column labels, we describe the value to the user here as what's vested, though the
+                      // value we use is what's claimable. What's claimable is the relevant piece of information
+                      // that informs their understanding of whether they should be able to take any action
+                      // with the list item button.
                       "Vested GFI"
                     }
                   </span>
@@ -318,11 +342,20 @@ function RewardsListItem(props: RewardsListItemProps) {
         <li>
           <div onClick={() => setOpen(!open)}>
             <div className="rewards-list-item table-row background-container clickable">
-              <div className="table-cell col32">{props.title}</div>
-              <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-granted">
+              <div className="table-cell col32">
+                {props.title}
+                <div className="subtitle">{props.subtitle}</div>
+              </div>
+              <div
+                className={`table-cell col20 numeric ${valueDisabledClass} ${grantedGFIZeroDisabled}`}
+                data-testid="detail-granted"
+              >
                 {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
               </div>
-              <div className={`table-cell col20 numeric ${valueDisabledClass}`} data-testid="detail-claimable">
+              <div
+                className={`table-cell col20 numeric ${valueDisabledClass} ${claimableGFIZeroDisabled}`}
+                data-testid="detail-claimable"
+              >
                 {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
               </div>
               {actionButtonComponent}
@@ -390,17 +423,16 @@ function getStakingRewardsVestingSchedule(endTime: number) {
   })
   return `Linear until 100% on ${vestingEndDate}`
 }
-function getClaimStatus(claimed: BigNumber, vested: BigNumber): string {
-  return `${displayNumber(gfiFromAtomic(claimed))} claimed of your total vested ${displayNumber(
-    gfiFromAtomic(vested),
-    2
-  )} GFI`
+function getClaimStatus(claimed: BigNumber, vested: BigNumber, gfiPrice: BigNumber): string {
+  return `${displayDollars(gfiInDollars(gfiToDollarsAtomic(claimed, gfiPrice)))} (${displayNumber(
+    gfiFromAtomic(claimed)
+  )} GFI) claimed of your total vested ${displayNumber(gfiFromAtomic(vested), 2)} GFI`
 }
 function getVestingStatus(vested: BigNumber, granted: BigNumber): string {
   return `${displayPercent(vested.dividedBy(granted))} (${displayNumber(gfiFromAtomic(vested), 2)} GFI) vested`
 }
 function getCurrentEarnRate(currentEarnRate: BigNumber): string {
-  return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} granted per week`
+  return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} GFI granted per week`
 }
 
 function getNotAcceptedMerkleDistributorGrantDetails(
@@ -412,6 +444,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   const vestingLength = new BigNumber(item.grantInfo.grant.vestingLength).toNumber()
   return {
     type: "merkleDistributor",
+    shortTransactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI`,
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(item.grantInfo.grant.cliffLength),
@@ -427,13 +460,14 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   }
 }
 function getMerkleDirectDistributorGrantDetails(
-  item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant,
+  item: MerkleDirectDistributorGrant,
   gfi: GFILoaded,
   merkleDirectDistributor: MerkleDirectDistributorLoaded
 ): MerkleDirectDistributorGrantDetails {
   const displayReason = MerkleDirectDistributor.getDisplayReason(item.grantInfo.reason)
   return {
     type: "merkleDirectDistributor",
+    shortTransactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI`,
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getDirectGrantVestingSchedule(),
     claimStatus: undefined,
@@ -447,14 +481,16 @@ function getMerkleDirectDistributorGrantDetails(
 function getStakingOrCommunityRewardsDetails(
   item: StakingRewardsPosition | CommunityRewardsGrant,
   stakingRewards: StakingRewardsLoaded,
-  communityRewards: CommunityRewardsLoaded
+  communityRewards: CommunityRewardsLoaded,
+  gfi: GFILoaded
 ): StakingRewardsDetails | CommunityRewardsDetails {
   if (item instanceof StakingRewardsPosition) {
     return {
       type: "stakingRewards",
+      shortTransactionDetails: item.shortDescription,
       transactionDetails: item.description,
       vestingSchedule: getStakingRewardsVestingSchedule(item.storedPosition.rewards.endTime),
-      claimStatus: getClaimStatus(item.claimed, item.vested),
+      claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: getCurrentEarnRate(item.currentEarnRate),
       vestingStatus: getVestingStatus(item.vested, item.granted),
       etherscanAddress: stakingRewards.address,
@@ -462,6 +498,7 @@ function getStakingOrCommunityRewardsDetails(
   } else {
     return {
       type: "communityRewards",
+      shortTransactionDetails: item.shortDescription,
       transactionDetails: item.description,
       vestingSchedule: getGrantVestingSchedule(
         item.rewards.cliffLength,
@@ -487,6 +524,8 @@ type MerkleDistributorRewardType = "merkleDistributor"
 type MerkleDirectDistributorRewardType = "merkleDirectDistributor"
 
 type RewardActionsContainerProps = {
+  disabled: boolean
+  user: UserLoaded
   gfi: GFILoaded
   merkleDistributor: MerkleDistributorLoaded
   merkleDirectDistributor: MerkleDirectDistributorLoaded
@@ -507,7 +546,7 @@ type RewardActionsContainerProps = {
     }
   | {
       type: MerkleDirectDistributorRewardType
-      item: AcceptedMerkleDirectDistributorGrant | NotAcceptedMerkleDirectDistributorGrant
+      item: MerkleDirectDistributorGrant
     }
 )
 
@@ -519,9 +558,46 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
+  async function requestUserAddGfiTokenToWallet(previousGfiBalance: BigNumber): Promise<void> {
+    if (previousGfiBalance.eq(0)) {
+      return (window as any).ethereum
+        .request({
+          method: "wallet_watchAsset",
+          params: {
+            type: "ERC20",
+            options: {
+              address: props.gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: GFI_TOKEN_IMAGE_URL,
+            },
+          },
+        })
+        .then((success: boolean) => {
+          if (!success) {
+            throw new Error("Failed to add GFI token to wallet.")
+          }
+        })
+        .catch(console.error)
+    } else {
+      // Don't ask the user to add the GFI asset to their wallet, as for Metamask this was
+      // observed to prompt the user with another dialog even if GFI was already an asset in
+      // their wallet -- in which case Metamask includes this warning in the dialog:
+      // "This action will edit tokens that are already listed in your wallet, which can
+      // be used to phish you. Only approve if you are certain that you mean to change
+      // what these tokens represent." Seems better to optimize for not triggering this UX,
+      // which will possibly concern the user (even though it need not; a better-designed
+      // Metamask would detect that the GFI contract address in the request is equal to the
+      // address of the asset already in the wallet, and not show such a warning, or not
+      // show the dialog at all...), than to be aggressive about getting the user to add
+      // the asset to their wallet.
+    }
+  }
+
+  async function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
     assertNonNullable(rewards)
-    return sendFromUser(
+    const previousGfiBalance = props.user.info.value.gfiBalance
+    await sendFromUser(
       rewards.contract.methods.getReward(tokenId),
       {
         type: CLAIM_TX_TYPE,
@@ -529,6 +605,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
+    await requestUserAddGfiTokenToWallet(previousGfiBalance)
   }
 
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
@@ -550,10 +627,14 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
+    // NOTE: We do not call `requestUserAddGfiTokenToWallet()` here because accepting a MerkleDistributor
+    // grant does not transfer GFI to the user. For MerkleDistributor grants, it's most relevant to ask the user to
+    // add GFI to their wallet only as part of `handleClaim()`.
   }
-  function handleAcceptMerkleDirectDistributorGrant(info: MerkleDirectDistributorGrantInfo): Promise<void> {
+  async function handleAcceptMerkleDirectDistributorGrant(info: MerkleDirectDistributorGrantInfo): Promise<void> {
     assertNonNullable(props.merkleDirectDistributor)
-    return sendFromUser(
+    const previousGfiBalance = props.user.info.value.gfiBalance
+    await sendFromUser(
       props.merkleDirectDistributor.contract.methods.acceptGrant(info.index, info.grant.amount, info.proof),
       {
         type: ACCEPT_TX_TYPE,
@@ -563,12 +644,15 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
+    // For MerkleDirectDistributor grants (unlike MerkleDistributor grants), accepting the grant does transfer GFI
+    // to them, so it is relevant to ask the user here to add GFI to their wallet.
+    await requestUserAddGfiTokenToWallet(previousGfiBalance)
   }
 
   if (props.type === "communityRewards" || props.type === "stakingRewards") {
     const item = props.item
     const title = item.title
-    const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards)
+    const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards, props.gfi)
 
     if (item.claimable.eq(0)) {
       let status: RewardStatus
@@ -593,10 +677,12 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         <RewardsListItem
           status={status}
           title={title}
+          subtitle={details.shortTransactionDetails}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
+          disabled={props.disabled}
         />
       )
     } else if (!showAction) {
@@ -604,10 +690,12 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         <RewardsListItem
           status={RewardStatus.Claimable}
           title={title}
+          subtitle={details.shortTransactionDetails}
           grantedGFI={item.granted}
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
+          disabled={props.disabled}
         />
       )
     }
@@ -632,10 +720,12 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       <RewardsListItem
         status={RewardStatus.Acceptable}
         title={MerkleDistributor.getDisplayTitle(item.grantInfo.reason)}
+        subtitle={details.shortTransactionDetails}
         grantedGFI={item.granted}
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
+        disabled={props.disabled}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
@@ -645,10 +735,12 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       <RewardsListItem
         status={item.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Acceptable}
         title={MerkleDirectDistributor.getDisplayTitle(item.grantInfo.reason)}
+        subtitle={details.shortTransactionDetails}
         grantedGFI={item.granted}
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
+        disabled={props.disabled}
       />
     )
   } else {

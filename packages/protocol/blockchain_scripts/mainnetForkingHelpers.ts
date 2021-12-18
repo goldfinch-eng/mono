@@ -125,7 +125,7 @@ async function upgradeContracts({
       UpgradedImplAddress: upgradedImplAddress,
     }
 
-    await rewriteUpgradedDeployment(contractName, upgradedContract, contract.ProxyContract)
+    await rewriteUpgradedDeployment(contractName)
     await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
   }
   return upgradedContracts
@@ -140,20 +140,20 @@ async function upgradeContracts({
  *
  * When using `hre.deployments.deploy` with the `proxy` key, hardhat-deploy will write out the combined ABI. But since
  * we use a multisig to change the proxy's implementation, only the implementation ABI is written out by hardhat-deploy.
- * Work around this by rewriting the ABI the combined ABI ourselves.
+ * Work around this by rewriting the combined ABI ourselves.
  */
-async function rewriteUpgradedDeployment(deploymentName: string, impl: Contract, proxy: Contract) {
-  const implAbi = JSON.parse(String(impl.interface.format(FormatTypes.json)))
-  const proxyAbi = JSON.parse(String(proxy.interface.format(FormatTypes.json)))
+export async function rewriteUpgradedDeployment(deploymentName: string) {
+  const implDeployment = await hre.deployments.get(`${deploymentName}_Implementation`)
+  const proxyDeployment = await hre.deployments.get(`${deploymentName}_Proxy`)
 
-  const mergedABI = mergeABIs([implAbi, proxyAbi], {
+  const mergedABI = mergeABIs([implDeployment.abi, proxyDeployment.abi], {
     check: false,
     skipSupportsInterface: false,
   })
 
   const deployment = await hre.deployments.get(deploymentName)
   deployment.abi = mergedABI
-  deployment.implementation = impl.address
+  deployment.implementation = implDeployment.address
   await hre.deployments.save(deploymentName, deployment)
 }
 

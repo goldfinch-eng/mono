@@ -7,6 +7,7 @@ import {
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
+import * as migrate231 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3.1/migrate"
 import {
   assertIsChainId,
   DISTRIBUTOR_ROLE,
@@ -41,7 +42,11 @@ import {
   UniqueIdentity,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
-import {StakingRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import {
+  CommunityRewardsInstance,
+  MerkleDirectDistributorInstance,
+  StakingRewardsInstance,
+} from "@goldfinch-eng/protocol/typechain/truffle"
 import {STAKING_REWARDS_PARAMS} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/deploy"
 import {bigVal, expectProxyOwner, expectRoles, expectOwnerRole} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GFIInstance, GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
@@ -56,16 +61,20 @@ const v23PerformMigration = deployments.createFixture(async ({deployments}) => {
   return await migrate23.main()
 })
 
+const v231PerformMigration = deployments.createFixture(async () => {
+  await migrate231.main()
+})
+
 describe("V2.2 & v2.3 migration", async function () {
   this.timeout(TEST_TIMEOUT)
   let v22migration: Awaited<ReturnType<typeof migrate22.main>>
   let v23migration: Awaited<ReturnType<typeof migrate23.main>>
-  let newConfigDeployment: Deployment
   let newConfig: GoldfinchConfigInstance
   let existingContracts
-  let oldConfigDeployment: Deployment
   let stakingRewards: StakingRewardsInstance
+  let merkleDirectDistributor: MerkleDirectDistributorInstance
   let gfi: GFIInstance
+  let communityRewards: CommunityRewardsInstance
 
   before(async () => {
     const {gf_deployer} = await getNamedAccounts()
@@ -76,20 +85,36 @@ describe("V2.2 & v2.3 migration", async function () {
     existingContracts = await getAllExistingContracts(chainId)
   })
 
-  beforeEach(async () => {
+  const testSetup = deployments.createFixture(async () => {
     const {gf_deployer} = await getNamedAccounts()
     assertIsString(gf_deployer)
     await fundWithWhales(["ETH"], [gf_deployer])
     // migration = await performMigration()
-    v22migration = await v22PerformMigration()
-    newConfigDeployment = await deployments.get("GoldfinchConfig")
-    newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+    const v22migration = await v22PerformMigration()
+    const newConfigDeployment = await deployments.get("GoldfinchConfig")
+    const newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
       at: newConfigDeployment.address,
     })
-    stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
-    gfi = await getTruffleContract<GFIInstance>("GFI", {
+    const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
+    const gfi = await getTruffleContract<GFIInstance>("GFI", {
       at: await (await deployments.get("GFI")).address,
     })
+    const merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>(
+      "MerkleDirectDistributor",
+      {
+        at: (await deployments.get("MerkleDirectDistributor")).address,
+      }
+    )
+    const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards", {
+      at: (await deployments.get("CommunityRewards")).address,
+    })
+    return {v22migration, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards}
+  })
+
+  beforeEach(async () => {
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({gfi, v22migration, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards} =
+      await testSetup())
   })
 
   expectProxyOwner({
@@ -109,6 +134,24 @@ describe("V2.2 & v2.3 migration", async function () {
   })
 
   describe("v2.2 migration", () => {
+    context("StakingRewards", async () => {
+      it("is paused", async () => {
+        expect(await stakingRewards.paused()).to.be.true
+      })
+    })
+
+    context("MerkelDirectDistributor", async () => {
+      it("is paused", async () => {
+        expect(await merkleDirectDistributor.paused()).to.be.true
+      })
+    })
+
+    context("CommunityRewards", async () => {
+      it("is paused", async () => {
+        expect(await communityRewards.paused()).to.be.true
+      })
+    })
+
     context("GoldfinchConfig", async () => {
       it("deploys a proxied GoldfinchConfig and initializes values", async () => {
         const newConfigDeployment = await deployments.get("GoldfinchConfig")
@@ -413,6 +456,10 @@ describe("V2.2 & v2.3 migration", async function () {
           expect(await go.legacyGoList()).to.be.eq(GOLDFINCH_CONFIG_ADDRESS_WITH_GO_LIST)
         })
 
+        it("config is not the null address", async () => {
+          expect(await go.config()).to.not.eq("0x000000000000000000000000000000000000000000")
+        })
+
         it("goListOverride is working correctly", async () => {
           expect(await go.go(KNOWN_ADDRESS_ON_GO_LIST)).to.be.true
           const goldfinchConfigDeployment = await deployments.get("GoldfinchConfig")
@@ -422,6 +469,30 @@ describe("V2.2 & v2.3 migration", async function () {
 
           expect(await goldfinchConfig.goList(KNOWN_ADDRESS_ON_GO_LIST)).to.be.false
         })
+      })
+    })
+  })
+
+  describe("v2.3.1 migration", async () => {
+    beforeEach(async () => {
+      await v231PerformMigration()
+    })
+
+    describe("StakingRewards", async () => {
+      it("is unpaused", async () => {
+        expect(await stakingRewards.paused()).to.be.false
+      })
+    })
+
+    describe("CommunityRewards", async () => {
+      it("is unpaused", async () => {
+        expect(await communityRewards.paused()).to.be.false
+      })
+    })
+
+    describe("MerkleDirectDistributor", async () => {
+      it("is unpaused", async () => {
+        expect(await merkleDirectDistributor.paused()).to.be.false
       })
     })
   })

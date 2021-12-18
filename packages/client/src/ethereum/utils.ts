@@ -28,7 +28,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
-const RINKEBY = "rinkeby"
+export const RINKEBY = "rinkeby"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
@@ -107,8 +107,12 @@ async function getDeployments(networkId) {
     .catch(console.error)
 }
 
-async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
-  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
+async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
+      ? ".dev"
+      : ""
+
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
   )
@@ -126,8 +130,12 @@ async function getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undef
     })
 }
 
-async function getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
-  const fileNameSuffix = process.env.NODE_ENV === "development" ? ".dev" : ""
+async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
+      ? ".dev"
+      : ""
+
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
   )
@@ -167,11 +175,11 @@ function getFromBlock(chain) {
 }
 
 type MethodInfo = {method: string; name?: string; args?: any}
-function fetchDataFromAttributes(
+async function fetchDataFromAttributes(
   web3Obj: Contract | BaseContract,
   attributes: MethodInfo[],
   {bigNumber, blockNumber}: {bigNumber?: boolean; blockNumber?: number} = {}
-): any {
+): Promise<any> {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)

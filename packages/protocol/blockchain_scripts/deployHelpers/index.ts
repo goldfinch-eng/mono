@@ -119,9 +119,15 @@ const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CH
 export const isSafeConfigChainId = (val: unknown): val is SafeConfigChainId =>
   (SAFE_CONFIG_CHAIN_IDS as unknown[]).includes(val)
 
-const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString}> = {
-  [MAINNET_CHAIN_ID]: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"},
-  [RINKEBY_CHAIN_ID]: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"},
+const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString; executor: AddressString}> = {
+  [MAINNET_CHAIN_ID]: {
+    safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f",
+    executor: "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5",
+  },
+  [RINKEBY_CHAIN_ID]: {
+    safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976",
+    executor: "0xeF3fAA47e1b0515f640c588a0bc3D268d5aa29B9",
+  },
 }
 
 // WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
