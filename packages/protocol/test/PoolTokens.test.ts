@@ -512,10 +512,10 @@ describe("PoolTokens", () => {
             expect(await goldfinchConfig.goList(person3)).to.equal(false)
           })
 
-          it("rejects", async () => {
+          it("allows", async () => {
             await expect(
               withPoolSender(() => poolTokens.mint({principalAmount: String(amount), tranche: "1"}, person3))
-            ).to.be.rejectedWith(/has not been go-listed/)
+            ).to.be.fulfilled
           })
         })
       })
@@ -583,10 +583,8 @@ describe("PoolTokens", () => {
             expect(await goldfinchConfig.goList(person3)).to.equal(false)
           })
 
-          it("rejects transfer", async () => {
-            await expect(poolTokens.transferFrom(person2, person3, tokenId, {from: person2})).to.be.rejectedWith(
-              /has not been go-listed/
-            )
+          it("allows transfer", async () => {
+            await expect(poolTokens.transferFrom(person2, person3, tokenId, {from: person2})).to.be.fulfilled
           })
         })
       })
