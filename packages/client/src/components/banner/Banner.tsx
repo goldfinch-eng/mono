@@ -5,6 +5,7 @@ interface BaseBannerProps {
   children: ReactNode
   icon?: JSX.Element
   variant?: string
+  noSpacing?: boolean
 }
 
 function getVariantColor(variant: string | undefined): string {
@@ -18,12 +19,10 @@ function getVariantColor(variant: string | undefined): string {
 
 function Banner(props: BaseBannerProps) {
   return (
-    <div className="content-section">
-      <div className={`background-container ${getVariantColor(props.variant)}`}>
-        <div className="message">
-          {props.icon}
-          <p>{props.children}</p>
-        </div>
+    <div className={`background-container ${getVariantColor(props.variant)} ${props.noSpacing ? "no-margin" : ""}`}>
+      <div className="message">
+        {props.icon}
+        <p>{props.children}</p>
       </div>
     </div>
   )

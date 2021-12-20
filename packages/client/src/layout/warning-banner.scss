@@ -1,7 +1,7 @@
 @import "./utils.scss";
 
 .warning-banner {
-  width: calc(100% + 50px);
+  width: calc(100% + 60px);
   padding: 30px;
   display: flex;
   flex-direction: column;
@@ -18,6 +18,11 @@
   animation: dropIn 0.5s;
   @include space-x(0em);
   @include space-y(1em);
+
+  &.no-margin {
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
 
   .message {
     display: flex;
