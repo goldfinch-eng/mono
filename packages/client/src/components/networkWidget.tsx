@@ -47,12 +47,11 @@ interface NetworkWidgetProps {
 }
 
 function NetworkWidget(props: NetworkWidgetProps) {
-  const {web3Status, sessionData} = useContext(AppContext)
+  const {web3Status} = useContext(AppContext)
   const session = useSession()
   const [, signIn] = useSignIn()
   const [showSignIn, setShowSignIn] = useState<Boolean>(false)
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
-  const currentTimestamp = props.currentBlock?.timestamp
 
   useEffect(() => {
     if (props.user && session.status !== "authenticated" && showSignIn) {
