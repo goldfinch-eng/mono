@@ -18,12 +18,7 @@ import Transactions from "./components/transactions"
 import VerifyIdentity from "./components/verifyIdentity"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import {EarnProvider} from "./contexts/EarnContext"
-import {
-  CommunityRewards,
-  CommunityRewardsLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "./ethereum/communityRewards"
+import {CommunityRewards, CommunityRewardsLoaded} from "./ethereum/communityRewards"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
 import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
@@ -69,6 +64,7 @@ import {
   TRANSACTIONS_ROUTE,
   VERIFY_ROUTE,
 } from "./types/routes"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 
 interface GeolocationData {
   ip: string
@@ -390,23 +386,17 @@ function App() {
 
     const address = overrideAddress || userAddress
 
-    const userMerkleDistributor = new UserMerkleDistributor()
-    const userMerkleDirectDistributor = new UserMerkleDirectDistributor()
+    const userMerkleDistributor = new UserMerkleDistributor(address, goldfinchProtocol)
+    const userMerkleDirectDistributor = new UserMerkleDirectDistributor(address, goldfinchProtocol)
     await Promise.all([
-      userMerkleDistributor.initialize(address, merkleDistributor, communityRewards, currentBlock),
-      userMerkleDirectDistributor.initialize(address, merkleDirectDistributor, currentBlock),
+      userMerkleDistributor.initialize(merkleDistributor, communityRewards, currentBlock),
+      userMerkleDirectDistributor.initialize(merkleDirectDistributor, currentBlock),
     ])
     assertWithLoadedInfo(userMerkleDistributor)
     assertWithLoadedInfo(userMerkleDirectDistributor)
 
-    const userCommunityRewards = new UserCommunityRewards(goldfinchProtocol)
-    await userCommunityRewards.initialize(
-      address,
-      communityRewards,
-      merkleDistributor,
-      userMerkleDistributor,
-      currentBlock
-    )
+    const userCommunityRewards = new UserCommunityRewards(address, goldfinchProtocol)
+    await userCommunityRewards.initialize(communityRewards, merkleDistributor, userMerkleDistributor, currentBlock)
     assertWithLoadedInfo(userCommunityRewards)
 
     setUserMerkleDistributor(userMerkleDistributor)

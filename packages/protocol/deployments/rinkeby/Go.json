@@ -2,757 +2,794 @@
   "address": "0xF28f64d4a74Eb431A4aC3058409c4E8Ba115Dfb3",
   "abi": [
     {
-      "type": "event",
       "anonymous": false,
-      "name": "GoldfinchConfigUpdated",
       "inputs": [
         {
-          "type": "address",
+          "indexed": true,
+          "internalType": "address",
           "name": "who",
-          "indexed": true
+          "type": "address"
         },
         {
-          "type": "address",
+          "indexed": false,
+          "internalType": "address",
           "name": "configAddress",
-          "indexed": false
+          "type": "address"
         }
-      ]
+      ],
+      "name": "GoldfinchConfigUpdated",
+      "type": "event"
     },
     {
-      "type": "event",
       "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "Paused",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "account",
-          "indexed": false
-        }
-      ]
+      "type": "event"
     },
     {
-      "type": "event",
       "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
       "name": "RoleGranted",
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role",
-          "indexed": true
-        },
-        {
-          "type": "address",
-          "name": "account",
-          "indexed": true
-        },
-        {
-          "type": "address",
-          "name": "sender",
-          "indexed": true
-        }
-      ]
+      "type": "event"
     },
     {
-      "type": "event",
       "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
       "name": "RoleRevoked",
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role",
-          "indexed": true
-        },
-        {
-          "type": "address",
-          "name": "account",
-          "indexed": true
-        },
-        {
-          "type": "address",
-          "name": "sender",
-          "indexed": true
-        }
-      ]
+      "type": "event"
     },
     {
-      "type": "event",
       "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "Unpaused",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "account",
-          "indexed": false
-        }
-      ]
+      "type": "event"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "DEFAULT_ADMIN_ROLE",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "bytes32",
+          "name": "",
           "type": "bytes32"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_0",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_1",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_10",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_2",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_3",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_4",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_5",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_6",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_7",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_8",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "ID_TYPE_9",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "OWNER_ROLE",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "bytes32",
+          "name": "",
           "type": "bytes32"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "PAUSER_ROLE",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "bytes32",
+          "name": "",
           "type": "bytes32"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
       "name": "__BaseUpgradeablePausable__init",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "owner"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "__PauserPausable__init",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
-      "name": "allIdTypes",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
       ],
+      "name": "allIdTypes",
       "outputs": [
         {
+          "internalType": "uint256",
+          "name": "",
           "type": "uint256"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
-      "name": "config",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
       "inputs": [],
+      "name": "config",
       "outputs": [
         {
+          "internalType": "contract GoldfinchConfig",
+          "name": "",
           "type": "address"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
-      "name": "getRoleAdmin",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
       "inputs": [
         {
-          "type": "bytes32",
-          "name": "role"
-        }
-      ],
-      "outputs": [
-        {
+          "internalType": "bytes32",
+          "name": "role",
           "type": "bytes32"
         }
-      ]
+      ],
+      "name": "getRoleAdmin",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
-      "name": "getRoleMember",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
       "inputs": [
         {
-          "type": "bytes32",
-          "name": "role"
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
         },
         {
-          "type": "uint256",
-          "name": "index"
-        }
-      ],
-      "outputs": [
-        {
-          "type": "address"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "getRoleMemberCount",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role"
-        }
-      ],
-      "outputs": [
-        {
+          "internalType": "uint256",
+          "name": "index",
           "type": "uint256"
         }
-      ]
+      ],
+      "name": "getRoleMember",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "go",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "account"
-        }
-      ],
       "outputs": [
         {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "onlyIdTypes",
+          "type": "uint256[]"
+        }
+      ],
       "name": "goOnlyIdTypes",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "account"
-        },
-        {
-          "type": "uint256[]",
-          "name": "onlyIdTypes"
-        }
-      ],
       "outputs": [
         {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "goSeniorPool",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "account"
-        }
-      ],
       "outputs": [
         {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "grantRole",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role"
-        },
-        {
-          "type": "address",
-          "name": "account"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "hasRole",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role"
-        },
-        {
-          "type": "address",
-          "name": "account"
-        }
-      ],
       "outputs": [
         {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "contract GoldfinchConfig",
+          "name": "_config",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_uniqueIdentity",
+          "type": "address"
+        }
+      ],
       "name": "initialize",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "owner"
-        },
-        {
-          "type": "address",
-          "name": "_config"
-        },
-        {
-          "type": "address",
-          "name": "_uniqueIdentity"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "isAdmin",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "legacyGoList",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "contract GoldfinchConfig",
+          "name": "",
           "type": "address"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "pause",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "paused",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "performUpgrade",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "renounceRole",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role"
-        },
-        {
-          "type": "address",
-          "name": "account"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
       "name": "revokeRole",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes32",
-          "name": "role"
-        },
-        {
-          "type": "address",
-          "name": "account"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "contract GoldfinchConfig",
+          "name": "_legacyGoList",
+          "type": "address"
+        }
+      ],
       "name": "setLegacyGoList",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "_legacyGoList"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [],
       "name": "uniqueIdentity",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
       "outputs": [
         {
+          "internalType": "address",
+          "name": "",
           "type": "address"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "unpause",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
-    },
-    {
-      "type": "function",
-      "name": "updateGoldfinchConfig",
-      "constant": false,
-      "payable": false,
-      "inputs": [],
-      "outputs": []
-    },
-    {
-      "type": "constructor",
-      "stateMutability": "payable",
-      "payable": true,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "implementationAddress"
-        },
-        {
-          "type": "address",
-          "name": "ownerAddress"
-        },
-        {
-          "type": "bytes",
-          "name": "data"
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "OwnershipTransferred",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "previousOwner",
-          "indexed": true
-        },
-        {
-          "type": "address",
-          "name": "newOwner",
-          "indexed": true
-        }
-      ]
-    },
-    {
-      "type": "event",
-      "anonymous": false,
-      "name": "ProxyImplementationUpdated",
-      "inputs": [
-        {
-          "type": "address",
-          "name": "previousImplementation",
-          "indexed": true
-        },
-        {
-          "type": "address",
-          "name": "newImplementation",
-          "indexed": true
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "owner",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [],
-      "outputs": [
-        {
-          "type": "address"
-        }
-      ]
-    },
-    {
-      "type": "function",
-      "name": "supportsInterface",
-      "constant": true,
-      "stateMutability": "view",
-      "payable": false,
-      "inputs": [
-        {
-          "type": "bytes4",
-          "name": "id"
         }
       ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "updateGoldfinchConfig",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "implementationAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "ownerAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousImplementation",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "ProxyImplementationUpdated",
+      "type": "event"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "fallback"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
       "outputs": [
         {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "id",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
           "type": "bool"
         }
-      ]
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
       "name": "transferOwnership",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "newOwner"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
       "name": "upgradeTo",
-      "constant": false,
-      "payable": false,
-      "inputs": [
-        {
-          "type": "address",
-          "name": "newImplementation"
-        }
-      ],
-      "outputs": []
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
-      "type": "function",
-      "name": "upgradeToAndCall",
-      "constant": false,
-      "stateMutability": "payable",
-      "payable": true,
       "inputs": [
         {
-          "type": "address",
-          "name": "newImplementation"
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
         },
         {
-          "type": "bytes",
-          "name": "data"
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
         }
       ],
-      "outputs": []
+      "name": "upgradeToAndCall",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
     }
   ],
   "transactionHash": "0x9ee6aaf86231afcbccaad9fc8a8a00df7faa151cd89f0ce3c759a44a2db815aa",

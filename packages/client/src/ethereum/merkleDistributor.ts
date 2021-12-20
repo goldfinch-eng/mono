@@ -1,7 +1,4 @@
-import {
-  GrantReason,
-  MerkleDistributorInfo,
-} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {GrantReason} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import startCase from "lodash/startCase"
@@ -11,11 +8,9 @@ import {KnownEventData, MerkleDistributorEventType} from "../types/events"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getMerkleDistributorInfo} from "./utils"
 
 type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
-  merkleDistributorInfo: MerkleDistributorInfo
 }
 
 export type MerkleDistributorLoaded = WithLoadedInfo<MerkleDistributor, MerkleDistributorLoadedInfo>
@@ -44,16 +39,10 @@ export class MerkleDistributor {
       )
     }
 
-    const merkleDistributorInfo = await getMerkleDistributorInfo()
-    if (!merkleDistributorInfo) {
-      throw new Error("Failed to retrieve MerkleDistributor info.")
-    }
-
     this.info = {
       loaded: true,
       value: {
         currentBlock,
-        merkleDistributorInfo,
       },
     }
   }
