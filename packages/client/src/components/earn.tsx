@@ -353,11 +353,9 @@ function Earn() {
     assertNonNullable(setLeafCurrentBlock)
     assertNonNullable(currentRoute)
 
-    // TODO Would be ideal to refactor this component so that the child components it renders all
-    // receive state that is consistent, i.e. using `pool.poolData`, `capitalProvider` state,
-    // `stakingRewards`, `gfi`, and `user` that are guaranteed to be based on the same block number. For now, here
-    // we ensure that the derivation of `capitalProvider` state is done using `pool.poolData`,
-    // `stakingRewards`, `gfi`, and `user` that are consistent with each other.
+    // To ensure `pool`, `stakingRewards`, `gfi`, `user`, and `capitalProvider` are from
+    // the same block, we'd use `useFromSameBlock()` in this component. But holding off
+    // on that due to the decision to abandon https://github.com/warbler-labs/mono/pull/140.
     const poolBlockNumber = pool.info.value.currentBlock.number
     const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
     const gfiBlockNumber = gfi.info.value.currentBlock.number

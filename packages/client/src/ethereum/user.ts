@@ -65,7 +65,6 @@ import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
-import {checkSameBlock} from "./currentBlock"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {getFromBlock, MAINNET} from "./utils"
 
@@ -129,7 +128,6 @@ class UserStakingRewards {
     stakedEvents: WithCurrentBlock<{value: KnownEventData<typeof STAKED_EVENT>[]}>,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(currentBlock, stakingRewards.info.value.currentBlock, stakedEvents.currentBlock)
     // NOTE: In defining `positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
     // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
@@ -309,13 +307,6 @@ class UserCommunityRewards {
     userMerkleDistributor: UserMerkleDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(
-      currentBlock,
-      communityRewards.info.value.currentBlock,
-      merkleDistributor.info.value.currentBlock,
-      userMerkleDistributor.info.value.currentBlock
-    )
-
     // NOTE: In defining `grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
     // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
@@ -482,8 +473,6 @@ export class UserMerkleDistributor {
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(currentBlock, merkleDistributor.info.value.currentBlock, communityRewards.info.value.currentBlock)
-
     const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(
       merkleDistributor.info.value.merkleDistributorInfo.grants,
       address
@@ -613,8 +602,6 @@ export class UserMerkleDirectDistributor {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(currentBlock, merkleDirectDistributor.info.value.currentBlock)
-
     const airdropsForRecipient = UserMerkleDirectDistributor.getAirdropsForRecipient(
       merkleDirectDistributor.info.value.merkleDirectDistributorInfo.grants,
       address
@@ -792,16 +779,6 @@ export class User {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    checkSameBlock(
-      currentBlock,
-      pool.info.value.currentBlock,
-      stakingRewards.info.value.currentBlock,
-      gfi.info.value.currentBlock,
-      communityRewards.info.value.currentBlock,
-      merkleDistributor.info.value.currentBlock,
-      merkleDirectDistributor.info.value.currentBlock
-    )
-
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
 
     const usdcBalance = await usdc.getBalance(this.address, currentBlock)
