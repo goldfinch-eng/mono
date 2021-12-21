@@ -21,7 +21,6 @@ import {
 } from "../../ethereum/pool"
 import {User, UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
-import {KYC} from "../../hooks/useGoldfinchClient"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
@@ -60,11 +59,10 @@ function renderStakeFiduBanner(
     refreshCurrentBlock,
     networkMonitor,
   }
-  const kyc: KYC = {status: "approved", countryCode: "BR"}
   return render(
     <AppContext.Provider value={store}>
       <Router>
-        <StakeFiduBanner capitalProvider={capitalProvider} kyc={kyc} actionComplete={() => {}} disabled={false} />
+        <StakeFiduBanner capitalProvider={capitalProvider} actionComplete={() => {}} disabled={false} />
       </Router>
     </AppContext.Provider>
   )
