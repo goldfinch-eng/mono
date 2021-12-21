@@ -47,6 +47,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   );
 
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
+  event TranchedPoolAssessed(address indexed pool);
   event PaymentApplied(
     address indexed payer,
     address indexed pool,
@@ -794,6 +795,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
         reserveAmount
       );
     }
+    emit TranchedPoolAssessed(address(this));
   }
 
   modifier onlyLocker() {
