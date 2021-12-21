@@ -2,7 +2,6 @@ import {useContext, useState} from "react"
 import {AppContext} from "../App"
 import {CapitalProvider} from "../ethereum/pool"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
-import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
 import {assertNonNullable} from "../utils"
 import DepositForm from "./depositForm"
@@ -14,11 +13,10 @@ interface EarnActionsContainerProps {
   disabled: boolean
   actionComplete: () => Promise<any>
   capitalProvider: CapitalProvider | undefined
-  kyc: KYC | undefined
 }
 
 function EarnActionsContainer(props: EarnActionsContainerProps) {
-  const {disabled, kyc} = props
+  const {disabled} = props
   const {pool: _pool, user: _user, goldfinchConfig, currentBlock} = useContext(AppContext)
   const [showAction, setShowAction] = useState<string>()
   const consistent = useFromSameBlock({setAsLeaf: false}, currentBlock, _pool, _user)

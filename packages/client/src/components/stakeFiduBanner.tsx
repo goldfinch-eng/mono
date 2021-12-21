@@ -6,7 +6,6 @@ import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {CapitalProvider} from "../ethereum/pool"
 import {FIDU_APPROVAL_TX_TYPE, STAKE_TX_TYPE} from "../types/transactions"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
-import {KYC} from "../hooks/useGoldfinchClient"
 import {eligibleForSeniorPool} from "../hooks/useKYC"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {displayDollars, displayNumber, displayPercent, assertNonNullable} from "../utils"
@@ -15,7 +14,6 @@ import LoadingButton from "./loadingButton"
 interface StakeFiduBannerProps {
   disabled: boolean
   capitalProvider: CapitalProvider | undefined
-  kyc: KYC | undefined
   actionComplete: () => void
 }
 

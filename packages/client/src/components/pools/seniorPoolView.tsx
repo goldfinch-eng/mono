@@ -4,9 +4,7 @@ import {usdcFromAtomic} from "../../ethereum/erc20"
 import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
-import {useStaleWhileRevalidating} from "../../hooks/useAsync"
 import {useCurrentRoute} from "../../hooks/useCurrentRoute"
-import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
 import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
@@ -23,8 +21,6 @@ function SeniorPoolView(): JSX.Element {
     loaded: false,
     value: undefined,
   })
-  const kycResult = useKYC()
-  const kyc = useStaleWhileRevalidating(kycResult)
   const session = useSession()
   const currentRoute = useCurrentRoute()
 
@@ -107,13 +103,11 @@ function SeniorPoolView(): JSX.Element {
         disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
-        kyc={kyc}
       />
       <StakeFiduBanner
         disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
-        kyc={kyc}
       />
       <PoolStatus />
     </div>
