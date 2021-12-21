@@ -38,6 +38,7 @@
     "lodash": "^4.17.20",
     "moment": "^2.27.0",
     "node-sass": "^4.13.0",
+    "path-to-regexp": "^6.2.0",
     "persona": "^3.10.0",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
@@ -56,7 +57,7 @@
     "web3": "^1.2.1"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "REACT_APP_GCLOUD_FUNCTIONS_URL=\"http://localhost:5001/goldfinch-frontends-dev/us-central1\" react-app-rewired start",
     "start:murmuration": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
     "start:murmuration:liquidity-mining": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK= HARDHAT_FORK= MURMURATION=yes npm run start",
     "build": "react-app-rewired build",
