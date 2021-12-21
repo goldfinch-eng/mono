@@ -98,7 +98,7 @@ function SeniorPoolView(): JSX.Element {
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice
         requireUnlock={false}
-        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
+        requireGolist
         isPaused={pool?.info.loaded ? pool.info.value.isPaused : undefined}
       />
       {maxCapacityNotice}

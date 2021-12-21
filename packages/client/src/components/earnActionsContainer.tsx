@@ -38,7 +38,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
     const pool = consistent[0]
     const user = consistent[1]
     readyAndEligible =
-      !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(kyc, user)
+      !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(user)
   }
 
   let placeholderClass = ""
