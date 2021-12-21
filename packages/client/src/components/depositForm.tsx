@@ -138,33 +138,37 @@ function DepositForm(props: DepositFormProps) {
       )
     )
 
+    const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+
     return (
       <div className="form-inputs">
         {warningMessage}
-        <div className="checkbox-container form-input-label">
-          <input
-            className="checkbox"
-            type="checkbox"
-            name={STAKING_FORM_VAL}
-            id={STAKING_FORM_VAL}
-            ref={(ref) => formMethods.register(ref)}
-          />
-          <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
-            <div>
-              <div className="checkbox-label-primary">
-                <div>{`I want to stake my supply to earn GFI rewards (additional ${displayPercent(
-                  pool.info.value.poolData.estimatedApyFromGfi
-                )} APY).`}</div>
+        {toggleRewards && (
+          <div className="checkbox-container form-input-label">
+            <input
+              className="checkbox"
+              type="checkbox"
+              name={STAKING_FORM_VAL}
+              id={STAKING_FORM_VAL}
+              ref={(ref) => formMethods.register(ref)}
+            />
+            <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
+              <div>
+                <div className="checkbox-label-primary">
+                  <div>{`I want to stake my supply to earn GFI rewards (additional ${displayPercent(
+                    pool.info.value.poolData.estimatedApyFromGfi
+                  )} APY).`}</div>
+                </div>
+                <div className="form-input-note">
+                  <p>
+                    Goldfinch incentivizes long term participation. Maximum GFI rewards will be earned by those who hold
+                    for at least 12 months. Staking incurs additional gas.
+                  </p>
+                </div>
               </div>
-              <div className="form-input-note">
-                <p>
-                  Goldfinch incentivizes long term participation. Maximum GFI rewards will be earned by those who hold
-                  for at least 12 months. Staking incurs additional gas.
-                </p>
-              </div>
-            </div>
-          </label>
-        </div>
+            </label>
+          </div>
+        )}
         <div className="checkbox-container form-input-label">
           <input
             className="checkbox"
