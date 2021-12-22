@@ -161,7 +161,7 @@ class CreditLine extends BaseCreditLine {
     ]
     let data = await fetchDataFromAttributes(this.creditLine, attributes, {blockNumber: currentBlock.number})
     attributes.forEach((info) => {
-      this[info.name || info.method] = new BigNumber(data[info.method])
+      this[info.name || info.method] = new BigNumber(data[info.name || info.method])
     })
 
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
