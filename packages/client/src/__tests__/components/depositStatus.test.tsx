@@ -1,4 +1,3 @@
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
 import {render, screen} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
@@ -6,10 +5,8 @@ import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import DepositStatus from "../../components/depositStatus"
-import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -19,20 +16,17 @@ import {
   SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
-import {User, UserLoaded} from "../../ethereum/user"
+import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
-import {defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
+import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
 import {toDisplayPercent} from "../rewards/__utils__/display"
+import {mockCapitalProviderCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {
-  mockCapitalProviderCalls,
-  mockUserInitializationContractCalls,
-  resetAirdropMocks,
-} from "../rewards/__utils__/mocks"
-import {
-  getDefaultClasses,
+  prepareBaseDeps,
+  prepareUserRelatedDeps,
   setupClaimableStakingReward,
   setupNewStakingReward,
   setupPartiallyClaimedStakingReward,
@@ -65,13 +59,7 @@ function renderDepositStatus(
 describe("Senior pool page deposit status", () => {
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
-  let gfi: GFILoaded,
-    stakingRewards: StakingRewardsLoaded,
-    communityRewards: CommunityRewardsLoaded,
-    merkleDistributor: MerkleDistributorLoaded,
-    merkleDirectDistributor: MerkleDirectDistributorLoaded,
-    user: User | UserLoaded,
-    capitalProvider: Loaded<CapitalProvider>
+  let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded, capitalProvider: Loaded<CapitalProvider>
 
   const currentBlock = defaultCurrentBlock
 
@@ -97,29 +85,11 @@ describe("Senior pool page deposit status", () => {
     seniorPool = _seniorPoolLoaded
   })
   beforeEach(async () => {
-    const result = await getDefaultClasses(goldfinchProtocol, currentBlock)
-    gfi = result.gfi
-    stakingRewards = result.stakingRewards
-    communityRewards = result.communityRewards
-    merkleDistributor = result.merkleDistributor
-    merkleDirectDistributor = result.merkleDirectDistributor
-
-    user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    await mockUserInitializationContractCalls(user, stakingRewards, gfi, communityRewards, merkleDistributor, {
-      currentBlock,
-    })
-    await user.initialize(
-      seniorPool,
-      stakingRewards,
-      gfi,
-      communityRewards,
-      merkleDistributor,
-      merkleDirectDistributor,
-      currentBlock
-    )
-
-    assertWithLoadedInfo(user)
-    assertWithLoadedInfo(seniorPool)
+    const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+    gfi = baseDeps.gfi
+    stakingRewards = baseDeps.stakingRewards
+    const userRelatedDeps = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+    user = userRelatedDeps.user
 
     await mockCapitalProviderCalls()
     capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)

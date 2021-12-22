@@ -414,8 +414,8 @@ describe("UniqueIdentity", () => {
         from: recipient,
         value: MINT_PAYMENT,
       })
-      const tolerance = new BN(100)
-      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(88330), tolerance)
+      const tolerance = new BN(50)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(88377), tolerance)
     })
 
     context("paused", () => {
