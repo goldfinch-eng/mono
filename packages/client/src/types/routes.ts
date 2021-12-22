@@ -1,3 +1,5 @@
+import {genExhaustiveTuple} from "@goldfinch-eng/utils/src/type"
+
 export const INDEX_ROUTE = "/"
 export const EARN_ROUTE = "/earn"
 export const ABOUT_ROUTE = "/about"
@@ -40,3 +42,18 @@ export function isAppRoute(val: unknown): val is AppRoute {
     val === SENIOR_POOL_AGREEMENT_NON_US_ROUTE
   )
 }
+
+export const appRoutes = genExhaustiveTuple<AppRoute>()(
+  INDEX_ROUTE,
+  EARN_ROUTE,
+  ABOUT_ROUTE,
+  REWARDS_ROUTE,
+  BORROW_ROUTE,
+  TRANSACTIONS_ROUTE,
+  SENIOR_POOL_ROUTE,
+  TRANCHED_POOL_ROUTE,
+  VERIFY_ROUTE,
+  TERMS_OF_SERVICE_ROUTE,
+  PRIVACY_POLICY_ROUTE,
+  SENIOR_POOL_AGREEMENT_NON_US_ROUTE
+)
