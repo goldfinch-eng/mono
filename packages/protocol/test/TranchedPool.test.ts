@@ -44,6 +44,7 @@ import {deployBaseFixture, deployTranchedPoolWithGoldfinchFactoryFixture} from "
 
 const RESERVE_FUNDS_COLLECTED_EVENT = "ReserveFundsCollected"
 const PAYMENT_APPLIED_EVENT = "PaymentApplied"
+const ASSESS_EVENT = "TranchedPoolAssessed"
 const EXPECTED_JUNIOR_CAPITAL_LOCKED_EVENT_ARGS = ["0", "1", "2", "__length__", "lockedUntil", "pool", "trancheId"]
 const TEST_TIMEOUT = 30000
 const HALF_CENT = usdcVal(1).div(new BN(200))
@@ -62,6 +63,9 @@ const expectPaymentRelatedEventsEmitted = (
   expectEvent(receipt, RESERVE_FUNDS_COLLECTED_EVENT, {
     from: tranchedPool.address,
     amount: amounts.reserve,
+  })
+  expectEvent(receipt, ASSESS_EVENT, {
+    pool: tranchedPool.address,
   })
   expectEvent(receipt, PAYMENT_APPLIED_EVENT, {
     payer: borrowerAddress,
