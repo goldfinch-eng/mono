@@ -742,7 +742,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       />
     )
   } else {
-    assertUnreachable(props)
+    return assertUnreachable(props)
   }
 }
 
