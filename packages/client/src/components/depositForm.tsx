@@ -14,7 +14,7 @@ import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
-  [STAKING_FORM_VAL]: true,
+  [STAKING_FORM_VAL]: process.env.REACT_APP_TOGGLE_REWARDS === "true" ? true : false,
 }
 
 interface DepositFormProps {
@@ -138,12 +138,10 @@ function DepositForm(props: DepositFormProps) {
       )
     )
 
-    const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-
     return (
       <div className="form-inputs">
         {warningMessage}
-        {toggleRewards && (
+        {process.env.REACT_APP_TOGGLE_REWARDS === "true" && (
           <div className="checkbox-container form-input-label">
             <input
               className="checkbox"

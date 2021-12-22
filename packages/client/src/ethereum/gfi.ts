@@ -38,6 +38,9 @@ class GFI {
     portfolioBalanceInDollars: BigNumber,
     globalEstimatedApyFromGfi: BigNumber
   ) {
+    if (process.env.REACT_APP_TOGGLE_REWARDS !== "true") {
+      return new BigNumber(0)
+    }
     if (portfolioBalanceInDollars.gt(0)) {
       const balancePortionEarningGfi = stakedBalanceInDollars.div(portfolioBalanceInDollars)
       // NOTE: Because our frontend does not currently support staking with lockup, we do not

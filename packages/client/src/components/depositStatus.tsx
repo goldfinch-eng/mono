@@ -9,8 +9,6 @@ interface DepositStatusProps {
   capitalProvider: CapitalProvider | undefined
 }
 
-const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-
 function DepositStatus(props: DepositStatusProps) {
   if (props.poolData && props.capitalProvider) {
     const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
@@ -62,7 +60,7 @@ function DepositStatus(props: DepositStatusProps) {
             estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
-        {toggleRewards && (
+        {process.env.REACT_APP_TOGGLE_REWARDS === "true" && (
           <AnnualGrowthTooltipContent
             supplyingCombined={false}
             estimatedApyFromSupplying={estimatedApyFromSupplying}
