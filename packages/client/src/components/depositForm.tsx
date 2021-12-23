@@ -158,8 +158,8 @@ function DepositForm(props: DepositFormProps) {
               </div>
               <div className="form-input-note">
                 <p>
-                  You will be required to pay a gas fee to stake. Goldfinch incentivizes long-term capital
-                  investment—i.e. the longer you stake, the more rewards you can earn. <a>Read more</a>
+                  Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
+                  maximum GFI by staking for at least 12 months.
                 </p>
               </div>
             </div>
