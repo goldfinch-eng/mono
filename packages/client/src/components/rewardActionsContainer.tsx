@@ -5,13 +5,9 @@ import BigNumber from "bignumber.js"
 import React, {useState} from "react"
 import {useMediaQuery} from "react-responsive"
 import {AppContext} from "../App"
-import {
-  CommunityRewardsGrant,
-  CommunityRewardsLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "../ethereum/communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../ethereum/merkleDirectDistributor"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
@@ -746,7 +742,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       />
     )
   } else {
-    assertUnreachable(props)
+    return assertUnreachable(props)
   }
 }
 

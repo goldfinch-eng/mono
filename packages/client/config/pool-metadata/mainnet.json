@@ -1,4 +1,11 @@
 {
+  "0x1d596d28a7923a22aa013b0e7082bba23daa656b": {
+    "name": "Almavest Basket #5",
+    "category": "Global multi-sector loans",
+    "description": "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+    "icon": "%PUBLIC_URL%/icons/almavest.png",
+    "agreement": "https://docsend.com/view/r9dpyy8wqxp2n5td/d/k87sbpm4ny3s23y6"
+  },
   "0xc9BDd0D3B80CC6EfE79a82d850f44EC9B55387Ae": {
     "name": "Cauris",
     "category": "Global multi-sector loans",
