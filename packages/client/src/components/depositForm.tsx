@@ -158,8 +158,8 @@ function DepositForm(props: DepositFormProps) {
               </div>
               <div className="form-input-note">
                 <p>
-                  Goldfinch incentivizes long term participation. Maximum GFI rewards will be earned by those who hold
-                  for at least 12 months. Staking incurs additional gas.
+                  You will be required to pay a gas fee to stake. Goldfinch incentivizes long-term capital
+                  investment—i.e. the longer you stake, the more rewards you can earn. <a>Read more</a>
                 </p>
               </div>
             </div>
@@ -175,10 +175,12 @@ function DepositForm(props: DepositFormProps) {
           />
           <label className="checkbox-label" htmlFor="agreement">
             <div>
-              I agree to the&nbsp;
-              <a className="form-link" href="/senior-pool-agreement-non-us" target="_blank">
-                Senior Pool Agreement.
-              </a>
+              <div className="checkbox-label-primary">
+                I agree to the&nbsp;
+                <a className="form-link checkbox-label-link" href="/senior-pool-agreement-non-us" target="_blank">
+                  Senior Pool Agreement.
+                </a>
+              </div>
             </div>
           </label>
         </div>

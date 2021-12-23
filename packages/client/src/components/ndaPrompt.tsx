@@ -39,7 +39,7 @@ function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPromptProps) {
               id="agreement"
               ref={(ref) => formMethods.register(ref, {required: "You must agree to the Non-Disclosure Agreement."})}
             />
-            <label className="checkbox-label" htmlFor="agreement">
+            <label className="checkbox-label-primary" htmlFor="agreement">
               <div>
                 I agree to the&nbsp;
                 <a className="checkbox-label-link" href={NDAUrl} target="_blank" rel="noreferrer">

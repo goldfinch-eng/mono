@@ -13,7 +13,7 @@ input.checkbox {
     margin-right: 0.75em;
     flex: 0 0 $checkbox-height;
     line-height: 100%;
-    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='check' viewBox='0 0 24 24' aria-hidden='true' focusable='false' %3E%3Cpath fill='none' stroke='#{url-encoded-color($sand-dark)}' stroke-width='3' d='M1.73 12.91l6.37 6.37L22.79 4.59' /%3E%3C/svg%3E");
+    content: "";
     padding: 5px;
     display: inline-block;
     height: $checkbox-height;
@@ -38,6 +38,9 @@ input.checkbox {
 }
 .checkbox-label-primary {
   display: flex;
-  height: $checkbox-height;
+  flex-wrap: wrap;
+  min-height: $checkbox-height;
+  line-height: 18px;
   align-items: center;
+  font-size: $sans-size-s;
 }
