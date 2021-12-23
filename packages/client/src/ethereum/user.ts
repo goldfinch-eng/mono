@@ -1112,12 +1112,7 @@ async function getAndTransformFIDUEvents(
   owner: string,
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
-  const approvalEvents = await goldfinchProtocol.queryEvents(
-    "Fidu",
-    APPROVAL_EVENT_TYPES,
-    undefined,
-    currentBlock.number
-  )
+  const approvalEvents = await goldfinchProtocol.queryEvents("Fidu", APPROVAL_EVENT_TYPES, {owner}, currentBlock.number)
   return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
