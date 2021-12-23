@@ -3,6 +3,7 @@ import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import BigNumber from "bignumber.js"
 import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
+import sinon from "sinon"
 import {AppContext} from "../../App"
 import StakeFiduBanner from "../../components/stakeFiduBanner"
 import {GFILoaded} from "../../ethereum/gfi"
@@ -63,11 +64,20 @@ function renderStakeFiduBanner(
 }
 
 describe("Stake unstaked fidu", () => {
+  let sandbox = sinon.createSandbox()
   const stakeButtonCopy = "Stake all FIDU"
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded
   const currentBlock = defaultCurrentBlock
+
+  beforeEach(() => {
+    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
+  })
+
+  afterEach(() => {
+    sandbox.restore()
+  })
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -273,6 +283,35 @@ describe("Stake unstaked fidu", () => {
         expect(allowanceMock).toHaveBeenCalled()
         expect(approvalMock).not.toHaveBeenCalled()
         expect(stakeMock).toHaveBeenCalled()
+      })
+    })
+
+    describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
+      beforeEach(() => {
+        sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
+      })
+
+      it("hide the stake button", async () => {
+        await mockCapitalProviderCalls()
+        const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+        const networkMonitor = {
+          addPendingTX: () => {},
+          watch: () => {},
+          markTXErrored: () => {},
+        }
+        const refreshCurrentBlock = jest.fn()
+        renderStakeFiduBanner(
+          seniorPool,
+          stakingRewards,
+          gfi,
+          user,
+          capitalProvider.value,
+          currentBlock,
+          refreshCurrentBlock,
+          networkMonitor
+        )
+
+        expect(await screen.queryByText(stakeButtonCopy)).not.toBeInTheDocument()
       })
     })
   })
