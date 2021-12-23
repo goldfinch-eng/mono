@@ -139,7 +139,7 @@ export function PortfolioOverview({
           }`}</div>
         </div>
       </div>
-      {process.env.REACT_APP_TOGGLE_REWARDS === "true" && (
+      {toggleRewards && (
         <AnnualGrowthTooltipContent
           supplyingCombined={true}
           estimatedApyFromSupplying={estimatedApyFromSupplying}

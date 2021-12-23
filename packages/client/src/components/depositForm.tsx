@@ -14,7 +14,7 @@ import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
-  [STAKING_FORM_VAL]: process.env.REACT_APP_TOGGLE_REWARDS === "true" ? true : false,
+  [STAKING_FORM_VAL]: process.env.REACT_APP_TOGGLE_REWARDS === "true",
 }
 
 interface DepositFormProps {
