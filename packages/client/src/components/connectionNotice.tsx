@@ -59,7 +59,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
     devName: "wrong_network",
     match: ({network}) => !!network.name && !network.supported,
     render: (_props) => (
-      <Banner variant="warning" icon={iconInfo} noSpacing>
+      <Banner variant="warning" icon={iconInfo}>
         You are on an unsupported network, please switch to Ethereum mainnet
       </Banner>
     ),

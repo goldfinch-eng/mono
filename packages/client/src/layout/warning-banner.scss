@@ -9,8 +9,8 @@
   color: $purp-dark;
   font-size: $sans-size-s;
   line-height: 24px;
-  margin-top: 104px;
-  margin-bottom: -40px;
+  margin-top: 0px;
+  margin-bottom: 0px;
 
   -webkit-animation: dropIn 0.5s;
   -moz-animation: dropIn 0.5s;
@@ -19,9 +19,9 @@
   @include space-x(0em);
   @include space-y(1em);
 
-  &.no-margin {
-    margin-top: 0px;
-    margin-bottom: 0px;
+  &.spaced {
+    margin-top: 104px;
+    margin-bottom: -75px;
   }
 
   .message {

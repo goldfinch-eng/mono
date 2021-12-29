@@ -1,11 +1,10 @@
 import React, {ReactNode} from "react"
 
 interface BaseBannerProps {
-  classNames?: string
+  className?: string
   children: ReactNode
   icon?: JSX.Element
   variant?: string
-  noSpacing?: boolean
 }
 
 function getVariantColor(variant: string | undefined): string {
@@ -19,7 +18,7 @@ function getVariantColor(variant: string | undefined): string {
 
 function Banner(props: BaseBannerProps) {
   return (
-    <div className={`background-container ${getVariantColor(props.variant)} ${props.noSpacing ? "no-margin" : ""}`}>
+    <div className={`background-container ${getVariantColor(props.variant)} ${props.className}`}>
       <div className="message">
         {props.icon}
         <p>{props.children}</p>
