@@ -221,15 +221,15 @@ function App() {
   return (
     <ApolloProvider client={apolloClient}>
       <AppContext.Provider value={store}>
-        <div className="content-section">
-          {hasGraphError && (
+        {hasGraphError && (
+          <div className="content-section">
             <Banner variant="warning" icon={iconInfo} className="spaced">
               <span className="bold">WARNING:</span> Due to technical issues with the blockchain data provider, the data
               displayed below may not be up-to-date. Complete transactions with caution, or refresh and try again in a
               few minutes
             </Banner>
-          )}
-        </div>
+          </div>
+        )}
         <NetworkWidget
           user={user}
           network={network}
