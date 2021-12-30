@@ -113,7 +113,9 @@ class Web3User implements User {
     const poolTxs = await mapEventsToTx(poolEvents)
     this.poolEvents = poolEvents
     this.poolTxs = poolTxs
-    this.pastTxs = _.reverse(_.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), "blockNumber"))
+    this.pastTxs = _.reverse(
+      _.sortBy(_.compact(_.concat(usdcTxs, poolTxs, creditDeskTxs)), ["blockNumber", "transactionIndex"])
+    )
 
     const golistStatus = await this.fetchGolistStatus(this.address)
     this.goListed = golistStatus.golisted

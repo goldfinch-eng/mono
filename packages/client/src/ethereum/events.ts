@@ -38,7 +38,7 @@ export function getEventAmountBN(eventData: EventData): BigNumber {
 
 async function mapEventsToTx(events) {
   const txs = await Promise.all(_.map(_.compact(events), mapEventToTx))
-  return _.reverse(_.sortBy(txs, "blockNumber"))
+  return _.reverse(_.sortBy(txs, ["blockNumber", "transactionIndex"]))
 }
 
 function mapEventToTx(event) {
@@ -64,6 +64,7 @@ function mapEventToTx(event) {
       amountBN: new BigNumber(amount),
       id: event.transactionHash,
       blockNumber: event.blockNumber,
+      transactionIndex: event.transactionIndex,
       blockTime: block.timestamp,
       date: moment.unix(block.timestamp).format("MMM D, h:mma"),
       status: "successful",

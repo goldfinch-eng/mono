@@ -236,7 +236,7 @@ export async function getWeightedAverageSharePrice(capitalProvider, pool?: Senio
   let preparedEvents
   if (pool) {
     const poolEvents = await pool.getPoolEvents(capitalProvider.address, ["DepositMade"])
-    preparedEvents = _.reverse(_.sortBy(poolEvents, "blockNumber"))
+    preparedEvents = _.reverse(_.sortBy(poolEvents, ["blockNumber", "transactionIndex"]))
   } else {
     preparedEvents = _.reverse(_.sortBy(capitalProvider.seniorPoolDeposits, "blockNumber"))
   }
