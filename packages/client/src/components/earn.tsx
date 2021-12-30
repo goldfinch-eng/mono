@@ -343,11 +343,11 @@ function Earn() {
       <div className="page-header">
         <div>{earnMessage}</div>
       </div>
+      <ConnectionNotice />
       {isLoading ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <>
-          <ConnectionNotice />
           <PortfolioOverview poolData={pool?.gf} capitalProvider={capitalProviderData} poolBackers={backersData} />
         </>
       )}

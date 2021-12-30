@@ -9,6 +9,8 @@ import VerifyAddressBanner from "./verifyAddressBanner"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
+import Banner from "./banner"
+import {iconInfo} from "./icons"
 
 export interface ConnectionNoticeProps {
   creditLine?: CreditLine
@@ -57,10 +59,9 @@ export const strategies: ConnectionNoticeStrategy[] = [
     devName: "wrong_network",
     match: ({network}) => !!network.name && !network.supported,
     render: (_props) => (
-      <TextBanner>
-        It looks like you aren't on the right Ethereum network. To use Goldfinch, you should connect to Ethereum Mainnet
-        from Metamask.
-      </TextBanner>
+      <Banner variant="warning" icon={iconInfo}>
+        You are on an unsupported network, please switch to Ethereum mainnet
+      </Banner>
     ),
   },
   {
