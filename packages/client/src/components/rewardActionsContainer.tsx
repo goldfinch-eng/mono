@@ -216,7 +216,7 @@ function Details(props: DetailsProps) {
 }
 
 interface ClaimFormProps {
-  totalUSD: BigNumber
+  totalUSD: BigNumber | undefined
   claimable: BigNumber
   disabled: boolean
   onCloseForm: () => void
@@ -421,7 +421,7 @@ function getStakingRewardsVestingSchedule(endTime: number) {
   })
   return `Linear until 100% on ${vestingEndDate}`
 }
-function getClaimStatus(claimed: BigNumber, vested: BigNumber, gfiPrice: BigNumber): string {
+function getClaimStatus(claimed: BigNumber, vested: BigNumber, gfiPrice: BigNumber | undefined): string {
   return `${displayDollars(gfiInDollars(gfiToDollarsAtomic(claimed, gfiPrice)))} (${displayNumber(
     gfiFromAtomic(claimed)
   )} GFI) claimed of your total vested ${displayNumber(gfiFromAtomic(vested), 2)} GFI`

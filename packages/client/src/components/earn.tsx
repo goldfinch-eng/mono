@@ -98,8 +98,9 @@ export function PortfolioOverview({
     totalBalance,
     globalEstimatedApyFromGfi
   )
-
-  const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+  const estimatedApy = estimatedApyFromGfi
+    ? estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+    : estimatedApyFromSupplying
 
   const unrealizedGainsPercent = totalUnrealizedGains.dividedBy(totalBalance)
   const displayUnrealizedGains = roundDownPenny(totalUnrealizedGains)
@@ -127,7 +128,7 @@ export function PortfolioOverview({
             {displayDollars(roundDownPenny(estimatedAnnualGrowth))}
           </div>
           <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${displayPercent(estimatedApy)} APY${
-            estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
+            estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
       </div>

@@ -18,13 +18,16 @@ function DepositStatus(props: DepositStatusProps) {
     const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
     const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi
+
     const estimatedApyFromGfi = GFI.estimateApyFromGfi(
       props.capitalProvider.stakedSeniorPoolBalanceInDollars,
       portfolioBalance,
       globalEstimatedApyFromGfi
     )
 
-    const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+    const estimatedApy = estimatedApyFromGfi
+      ? estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+      : estimatedApyFromSupplying
     const apyDisplay = `${displayPercent(estimatedApy)}`
 
     const estimatedGrowth = portfolioBalance.multipliedBy(estimatedApy)
