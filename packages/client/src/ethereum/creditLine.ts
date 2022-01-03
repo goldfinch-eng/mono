@@ -169,6 +169,7 @@ class CreditLine extends BaseCreditLine {
       data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
       this["maxLimit"] = new BigNumber(data["maxLimit"])
     } catch (e) {
+      console.log("maxLimit not available on old CreditLines, use currentLimit", {e})
       this["maxLimit"] = this["currentLimit"]
     }
 

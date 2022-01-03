@@ -60,13 +60,6 @@ enum UserType {
   BORROWER
 }
 
-enum TranchedPoolState {
-  Open
-  JuniorLocked
-  SeniorLocked
-  WithdrawalsUnlocked
-}
-
 type User @entity {
   id: ID!
   type: UserType
@@ -76,10 +69,12 @@ type User @entity {
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
+  tokens: [TranchedPoolToken!] @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
   id: ID!
+  trancheId: BigInt!
   tranchedPool: TranchedPool!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
@@ -89,6 +84,7 @@ type SeniorTrancheInfo @entity {
 
 type JuniorTrancheInfo @entity {
   id: ID!
+  trancheId: BigInt!
   tranchedPool: TranchedPool!
   lockedUntil: BigInt!
   principalDeposited: BigInt!
@@ -159,7 +155,6 @@ type TranchedPool @entity {
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
-  state: TranchedPoolState!
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
@@ -172,7 +167,7 @@ type TranchedPool @entity {
 }
 
 type TranchedPoolToken @entity {
-  id: ID!
+  id: ID! # Set to tokenId
   user: User!
   tranchedPool: TranchedPool!
   tranche: BigInt!

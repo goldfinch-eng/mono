@@ -54,6 +54,18 @@ dataSources:
           file: ./abis/TranchedPool.json
         - name: GoldfinchFactory
           file: ./abis/GoldfinchFactory.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+        - name: SeniorPool_Implementation
+          file: ./abis/SeniorPool_Implementation.json
+        - name: SeniorPool_Proxy
+          file: ./abis/SeniorPool_Proxy.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
       eventHandlers:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
@@ -111,6 +123,8 @@ dataSources:
           file: ./abis/PoolTokens_Implementation.json
         - name: PoolTokens_Proxy
           file: ./abis/PoolTokens_Proxy.json
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
       eventHandlers:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
@@ -202,6 +216,16 @@ templates:
           file: ./abis/GoldfinchFactory.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+        - name: SeniorPool_Implementation
+          file: ./abis/SeniorPool_Implementation.json
+        - name: SeniorPool_Proxy
+          file: ./abis/SeniorPool_Proxy.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
       eventHandlers:
         - event: PoolCreated(indexed address,indexed address)
           handler: handlePoolCreated
@@ -216,26 +240,35 @@ templates:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       file: ./src/mappings/tranched_pool.ts
-      entities: []
+      entities:
+        - User
+        - TranchedPool
+        - TranchedPoolToken
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
+        - name: Fidu_Implementation
+          file: ./abis/Fidu_Implementation.json
         - name: Fidu
           file: ./abis/Fidu.json
         - name: Fidu_Proxy
           file: ./abis/Fidu_Proxy.json
-        - name: Fidu_Implementation
-          file: ./abis/Fidu_Implementation.json
         - name: CreditLine
           file: ./abis/CreditLine.json
-        - name: GoldfinchConfig
-          file: ./abis/GoldfinchConfig.json
         - name: PoolTokens
           file: ./abis/PoolTokens.json
         - name: PoolTokens_Proxy
           file: ./abis/PoolTokens_Proxy.json
         - name: PoolTokens_Implementation
           file: ./abis/PoolTokens_Implementation.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+        - name: SeniorPool_Implementation
+          file: ./abis/SeniorPool_Implementation.json
+        - name: SeniorPool_Proxy
+          file: ./abis/SeniorPool_Proxy.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
@@ -247,6 +280,18 @@ templates:
           handler: handleDrawdownsUnpaused
         - event: WithdrawalMade(indexed address,indexed uint256,indexed uint256,uint256,uint256)
           handler: handleWithdrawalMade
+        - event: TrancheLocked(indexed address,uint256,uint256)
+          handler: handleTrancheLocked
+        - event: SliceCreated(indexed address,uint256)
+          handler: handleSliceCreated
+        - event: EmergencyShutdown(indexed address)
+          handler: handleEmergencyShutdown
+        - event: GoldfinchConfigUpdated(indexed address,address)
+          handler: handleGoldfinchConfigUpdated
+        - event: DrawdownMade(indexed address,uint256)
+          handler: handleDrawdownMade
+        - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handlePaymentApplied
 
   - name: PoolTokens
     kind: ethereum/contract
@@ -267,6 +312,8 @@ templates:
           file: ./abis/PoolTokens.json
         - name: PoolTokens_Implementation
           file: ./abis/PoolTokens_Implementation.json
+        - name: TranchedPool
+          file: ./abis/TranchedPool.json
       eventHandlers:
         - event: TokenBurned(indexed address,indexed address,indexed uint256)
           handler: handleTokenBurned

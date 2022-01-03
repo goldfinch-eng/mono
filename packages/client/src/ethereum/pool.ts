@@ -131,7 +131,7 @@ export type SeniorPoolLoaded = WithLoadedInfo<SeniorPool, SeniorPoolLoadedInfo>
 interface CapitalProvider {
   currentBlock: BlockInfo
   sharePrice: BigNumber
-  gfiPrice: BigNumber
+  gfiPrice: BigNumber | undefined
   shares: {
     parts: {
       notStaked: BigNumber
@@ -163,18 +163,18 @@ type CapitalProviderStakingRewardsInfo =
   | {
       hasUnvested: true
       unvested: BigNumber
-      unvestedInDollars: BigNumber
+      unvestedInDollars: BigNumber | undefined
       lastVestingEndTime: number
     }
   | {
       hasUnvested: false
       unvested: null
-      unvestedInDollars: null
+      unvestedInDollars: null | undefined
       lastVestingEndTime: null
     }
 
 type CapitalProviderStakingInfo = {
-  gfiPrice: BigNumber
+  gfiPrice: BigNumber | undefined
   shares: {
     locked: BigNumber
     unlocked: BigNumber
@@ -207,7 +207,7 @@ function getCapitalProviderStakingInfo(
     rewards = {
       hasUnvested: false,
       unvested: null,
-      unvestedInDollars: null,
+      unvestedInDollars: undefined,
       lastVestingEndTime: null,
     }
   }
@@ -324,7 +324,7 @@ type PoolData = {
   cumulativeDrawdowns: BigNumber
   estimatedTotalInterest: BigNumber
   estimatedApy: BigNumber
-  estimatedApyFromGfi: BigNumber
+  estimatedApyFromGfi: BigNumber | undefined
   defaultRate: BigNumber
   poolEvents: KnownEventData<PoolEventType>[]
   assetsAsOf: typeof assetsAsOf
@@ -366,7 +366,7 @@ async function fetchPoolData(
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   const currentEarnRatePerYear = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
   const estimatedApyFromGfi = gfiToDollarsAtomic(currentEarnRatePerYear, gfi.info.value.price)
-    .multipliedBy(
+    ?.multipliedBy(
       // This might be better thought of as the share-price mantissa, which happens to be the
       // same as `FIDU_DECIMALS`.
       FIDU_DECIMALS

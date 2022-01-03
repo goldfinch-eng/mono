@@ -138,10 +138,12 @@ function DepositForm(props: DepositFormProps) {
       )
     )
 
+    const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+
     return (
       <div className="form-inputs">
         {warningMessage}
-        {process.env.REACT_APP_TOGGLE_REWARDS === "true" && (
+        {toggleRewards && (
           <div className="checkbox-container form-input-label">
             <input
               className="checkbox"
@@ -159,8 +161,8 @@ function DepositForm(props: DepositFormProps) {
                 </div>
                 <div className="form-input-note">
                   <p>
-                    Goldfinch incentivizes long term participation. Maximum GFI rewards will be earned by those who hold
-                    for at least 12 months. Staking incurs additional gas.
+                    Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
+                    maximum GFI by staking for at least 12 months.
                   </p>
                 </div>
               </div>
@@ -177,10 +179,12 @@ function DepositForm(props: DepositFormProps) {
           />
           <label className="checkbox-label" htmlFor="agreement">
             <div>
-              I agree to the&nbsp;
-              <a className="form-link" href="/senior-pool-agreement-non-us" target="_blank">
-                Senior Pool Agreement.
-              </a>
+              <div className="checkbox-label-primary">
+                I agree to the&nbsp;
+                <a className="form-link checkbox-label-link" href="/senior-pool-agreement-non-us" target="_blank">
+                  Senior Pool Agreement.
+                </a>
+              </div>
             </div>
           </label>
         </div>

@@ -172,6 +172,7 @@ describe("withdrawal form", () => {
     expect(await screen.findByText("Withdraw")).toBeVisible()
 
     const formParagraph = await container.getElementsByClassName("paragraph")
+
     expect(formParagraph[0]?.textContent).toContain(
       "You have 128.89 GFI ($128.89) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI."
     )

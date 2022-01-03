@@ -678,7 +678,12 @@ describe("Rewards list and detail", () => {
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   const currentBlock = defaultCurrentBlock
+  const OLD_ENV = process.env
 
+  beforeEach(() => {
+    jest.resetModules()
+    process.env = {...OLD_ENV}
+  })
   beforeEach(resetMocks)
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
   beforeEach(async () => {
@@ -699,6 +704,10 @@ describe("Rewards list and detail", () => {
     }
     assertWithLoadedInfo(_seniorPoolLoaded)
     seniorPool = _seniorPoolLoaded
+  })
+
+  afterAll(() => {
+    process.env = OLD_ENV
   })
 
   it("shows empty list", async () => {
@@ -764,6 +773,65 @@ describe("Rewards list and detail", () => {
         `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
       )
     })
+  })
+
+  it("shows default value when GFI price is undefined", async () => {
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({goldfinch: {usd: undefined}}),
+      })
+    ) as jest.Mock
+
+    const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+
+    renderRewards(deps, currentBlock)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    await waitFor(async () => {
+      expect(await screen.findByText("Claim status")).toBeVisible()
+      expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    })
+  })
+
+  it("shows default value if the request returns an empty object", async () => {
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      })
+    ) as jest.Mock
+
+    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+    renderRewards(deps, currentBlock)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+  })
+
+  it("shows GFI price from Coingecko API", async () => {
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({goldfinch: {usd: 200}}),
+      })
+    ) as jest.Mock
+
+    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+    renderRewards(deps, currentBlock)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("$164.33 (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
   })
 
   it("shows claimable staking reward on rewards list", async () => {
