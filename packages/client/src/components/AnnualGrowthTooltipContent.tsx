@@ -5,7 +5,7 @@ import {displayPercent} from "../utils"
 type AnnualGrowthTooltipContentProps = {
   supplyingCombined: boolean
   estimatedApyFromSupplying: BigNumber
-  estimatedApyFromGfi: BigNumber
+  estimatedApyFromGfi: BigNumber | undefined
   estimatedApy: BigNumber
 }
 

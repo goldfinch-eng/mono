@@ -1,8 +1,7 @@
 import {
-  ProxyImplementationUpdated
-} from "../../generated/GoldfinchFactoryProxy/GoldfinchFactory_Proxy"
+  ProxyImplementationUpdated,
+} from "../../generated/GoldfinchFactoryProxy/GoldfinchFactory"
 import { GoldfinchFactory as GoldfinchFactoryTemplate } from '../../generated/templates';
-
 
 export function handleProxyImplementationUpdated(
   event: ProxyImplementationUpdated

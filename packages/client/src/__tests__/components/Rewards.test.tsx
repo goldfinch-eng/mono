@@ -1,36 +1,51 @@
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
 import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import BigNumber from "bignumber.js"
 import {mock, resetMocks} from "depay-web3-mock"
-import {BrowserRouter as Router} from "react-router-dom"
+import {MemoryRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {AppContext, LeavesCurrentBlock} from "../../App"
-import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
+import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
 import {PoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
-import {User, UserLoaded} from "../../ethereum/user"
+import {
+  UserCommunityRewardsLoaded,
+  UserLoaded,
+  UserMerkleDirectDistributorLoaded,
+  UserMerkleDistributorLoaded,
+} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import Rewards from "../../pages/rewards"
 import {defaultTheme} from "../../styles/theme"
 import {assertWithLoadedInfo} from "../../types/loadable"
-import {AppRoute, INDEX_ROUTE} from "../../types/routes"
+import {
+  ABOUT_ROUTE,
+  AppRoute,
+  BORROW_ROUTE,
+  EARN_ROUTE,
+  INDEX_ROUTE,
+  PRIVACY_POLICY_ROUTE,
+  REWARDS_ROUTE,
+  SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
+  SENIOR_POOL_ROUTE,
+  TERMS_OF_SERVICE_ROUTE,
+  TRANCHED_POOL_ROUTE,
+  TRANSACTIONS_ROUTE,
+  VERIFY_ROUTE,
+} from "../../types/routes"
 import {SessionData} from "../../types/session"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
+import {resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {
-  assertAllMocksAreCalled,
-  mockUserInitializationContractCalls,
-  resetAirdropMocks,
-  RewardsMockData,
-} from "../rewards/__utils__/mocks"
-import {
-  getDefaultClasses,
   merkleDistributorAirdropVesting,
+  prepareBaseDeps,
+  prepareUserRelatedDeps,
   setupAcceptedDirectReward,
   setupClaimableCommunityReward,
   setupClaimableStakingReward,
@@ -54,12 +69,17 @@ mock({
 web3.setProvider((global.window as any).ethereum)
 
 function renderRewards(
-  stakingRewards: StakingRewardsLoaded | undefined,
-  gfi: GFILoaded | undefined,
-  user: UserLoaded | undefined,
-  merkleDistributor: MerkleDistributorLoaded | undefined,
-  merkleDirectDistributor: MerkleDirectDistributorLoaded | undefined,
-  communityRewards: CommunityRewardsLoaded | undefined,
+  deps: {
+    stakingRewards: StakingRewardsLoaded | undefined
+    gfi: GFILoaded | undefined
+    user: UserLoaded | undefined
+    merkleDistributor: MerkleDistributorLoaded | undefined
+    merkleDirectDistributor: MerkleDirectDistributorLoaded | undefined
+    communityRewards: CommunityRewardsLoaded | undefined
+    userMerkleDistributor: UserMerkleDistributorLoaded | undefined
+    userMerkleDirectDistributor: UserMerkleDirectDistributorLoaded | undefined
+    userCommunityRewards: UserCommunityRewardsLoaded | undefined
+  },
   currentBlock: BlockInfo,
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor,
@@ -81,20 +101,15 @@ function renderRewards(
     refreshCurrentBlock,
     setLeafCurrentBlock,
     network,
-    stakingRewards,
-    gfi,
-    user,
-    merkleDistributor,
-    merkleDirectDistributor,
-    communityRewards,
     networkMonitor,
     sessionData,
+    ...deps,
   }
 
   return render(
     <AppContext.Provider value={store}>
       <ThemeProvider theme={defaultTheme}>
-        <Router>
+        <Router initialEntries={[REWARDS_ROUTE]}>
           <Rewards />
         </Router>
       </ThemeProvider>
@@ -102,42 +117,8 @@ function renderRewards(
   )
 }
 
-async function getUserLoaded(
-  goldfinchProtocol: GoldfinchProtocol,
-  seniorPoolLoaded: SeniorPoolLoaded,
-  stakingRewards: StakingRewardsLoaded,
-  gfi: GFILoaded,
-  communityRewards: CommunityRewardsLoaded,
-  merkleDistributor: MerkleDistributorLoaded,
-  merkleDirectDistributor: MerkleDirectDistributorLoaded,
-  rewardsMock: RewardsMockData
-): Promise<UserLoaded> {
-  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-  const mocks = await mockUserInitializationContractCalls(
-    user,
-    stakingRewards,
-    gfi,
-    communityRewards,
-    merkleDistributor,
-    rewardsMock
-  )
-
-  await user.initialize(
-    seniorPoolLoaded,
-    stakingRewards,
-    gfi,
-    communityRewards,
-    merkleDistributor,
-    merkleDirectDistributor,
-    rewardsMock.currentBlock
-  )
-  assertAllMocksAreCalled(mocks)
-  assertWithLoadedInfo(user)
-  return user
-}
-
 describe("Rewards portfolio overview", () => {
-  let seniorPoolLoaded: SeniorPoolLoaded
+  let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   const currentBlock = defaultCurrentBlock
 
@@ -160,94 +141,201 @@ describe("Rewards portfolio overview", () => {
       },
     }
     assertWithLoadedInfo(_seniorPoolLoaded)
-    seniorPoolLoaded = _seniorPoolLoaded
+    seniorPool = _seniorPoolLoaded
   })
 
   describe("loading state", () => {
     it("shows loading message when all requirements are empty", async () => {
-      renderRewards(undefined, undefined, undefined, undefined, undefined, undefined, currentBlock)
+      renderRewards(
+        {
+          stakingRewards: undefined,
+          gfi: undefined,
+          user: undefined,
+          merkleDistributor: undefined,
+          merkleDirectDistributor: undefined,
+          communityRewards: undefined,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
 
     it("shows loading message when all but one requirement are empty", async () => {
-      const {stakingRewards} = await getDefaultClasses(goldfinchProtocol, currentBlock)
-      renderRewards(stakingRewards, undefined, undefined, undefined, undefined, undefined, currentBlock)
+      const {stakingRewards} = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      renderRewards(
+        {
+          stakingRewards,
+          gfi: undefined,
+          user: undefined,
+          merkleDistributor: undefined,
+          merkleDirectDistributor: undefined,
+          communityRewards: undefined,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
     it("shows loading message when all but two requirements are empty", async () => {
-      const {stakingRewards, gfi} = await getDefaultClasses(goldfinchProtocol, currentBlock)
-      renderRewards(stakingRewards, gfi, undefined, undefined, undefined, undefined, currentBlock)
+      const {stakingRewards, gfi} = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      renderRewards(
+        {
+          stakingRewards,
+          gfi,
+          user: undefined,
+          merkleDistributor: undefined,
+          merkleDirectDistributor: undefined,
+          communityRewards: undefined,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
     it("shows loading message when all but three requirements are empty", async () => {
-      const {stakingRewards, gfi, merkleDistributor, merkleDirectDistributor, communityRewards} =
-        await getDefaultClasses(goldfinchProtocol, currentBlock)
-      const user = await getUserLoaded(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        stakingRewards,
-        gfi,
-        communityRewards,
-        merkleDistributor,
-        merkleDirectDistributor,
-        {currentBlock}
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      renderRewards(
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: undefined,
+          merkleDirectDistributor: undefined,
+          communityRewards: undefined,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
       )
-      renderRewards(stakingRewards, gfi, user, undefined, undefined, undefined, currentBlock)
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
     it("shows loading message when all but four requirements are empty", async () => {
-      const {stakingRewards, gfi, merkleDistributor, merkleDirectDistributor, communityRewards} =
-        await getDefaultClasses(goldfinchProtocol, currentBlock)
-      const user = await getUserLoaded(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        stakingRewards,
-        gfi,
-        communityRewards,
-        merkleDistributor,
-        merkleDirectDistributor,
-        {currentBlock}
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      renderRewards(
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: baseDeps.merkleDistributor,
+          merkleDirectDistributor: undefined,
+          communityRewards: undefined,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
       )
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, undefined, undefined, currentBlock)
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
     it("shows loading message when all but five requirements are empty", async () => {
-      const {stakingRewards, gfi, merkleDistributor, merkleDirectDistributor, communityRewards} =
-        await getDefaultClasses(goldfinchProtocol, currentBlock)
-      const user = await getUserLoaded(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        stakingRewards,
-        gfi,
-        communityRewards,
-        merkleDistributor,
-        merkleDirectDistributor,
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      renderRewards(
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: baseDeps.merkleDistributor,
+          merkleDirectDistributor: baseDeps.merkleDirectDistributor,
+          communityRewards: undefined,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
+      expect(await screen.findByText("Loading...")).toBeVisible()
+    })
+    it("shows loading message when all but six requirements are empty", async () => {
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      renderRewards(
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: baseDeps.merkleDistributor,
+          merkleDirectDistributor: baseDeps.merkleDirectDistributor,
+          communityRewards: baseDeps.communityRewards,
+          userMerkleDistributor: undefined,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
+      expect(await screen.findByText("Loading...")).toBeVisible()
+    })
+    it("shows loading message when all but seven requirements are empty", async () => {
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user, userMerkleDistributor} = await prepareUserRelatedDeps(
+        {goldfinchProtocol, seniorPool, ...baseDeps},
         {currentBlock}
       )
-      renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, undefined, currentBlock)
+      renderRewards(
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: baseDeps.merkleDistributor,
+          merkleDirectDistributor: baseDeps.merkleDirectDistributor,
+          communityRewards: baseDeps.communityRewards,
+          userMerkleDistributor,
+          userMerkleDirectDistributor: undefined,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
+      expect(await screen.findByText("Loading...")).toBeVisible()
+    })
+    it("shows loading message when all but eight requirements are empty", async () => {
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user, userMerkleDistributor, userMerkleDirectDistributor} = await prepareUserRelatedDeps(
+        {goldfinchProtocol, seniorPool, ...baseDeps},
+        {currentBlock}
+      )
+      renderRewards(
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: baseDeps.merkleDistributor,
+          merkleDirectDistributor: baseDeps.merkleDirectDistributor,
+          communityRewards: baseDeps.communityRewards,
+          userMerkleDistributor,
+          userMerkleDirectDistributor,
+          userCommunityRewards: undefined,
+        },
+        currentBlock
+      )
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
 
     it("doesn't show loading message when all requirements are loaded", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} =
-        await getDefaultClasses(goldfinchProtocol, currentBlock)
-      const user = await getUserLoaded(
-        goldfinchProtocol,
-        seniorPoolLoaded,
-        stakingRewards,
-        gfi,
-        communityRewards,
-        merkleDistributor,
-        merkleDirectDistributor,
-        {currentBlock}
-      )
+      const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+      const {user, userMerkleDistributor, userMerkleDirectDistributor, userCommunityRewards} =
+        await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
       renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
+        {
+          stakingRewards: baseDeps.stakingRewards,
+          gfi: baseDeps.gfi,
+          user,
+          merkleDistributor: baseDeps.merkleDistributor,
+          merkleDirectDistributor: baseDeps.merkleDirectDistributor,
+          communityRewards: baseDeps.communityRewards,
+          userMerkleDistributor,
+          userMerkleDirectDistributor,
+          userCommunityRewards,
+        },
         currentBlock
       )
 
@@ -256,21 +344,9 @@ describe("Rewards portfolio overview", () => {
   })
 
   it("shows empty portfolio", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
-      goldfinchProtocol,
-      currentBlock
-    )
-    const user = await getUserLoaded(
-      goldfinchProtocol,
-      seniorPoolLoaded,
-      stakingRewards,
-      gfi,
-      communityRewards,
-      merkleDistributor,
-      merkleDirectDistributor,
-      {currentBlock}
-    )
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+    const userRelated = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+    renderRewards({...baseDeps, ...userRelated}, currentBlock)
 
     expect(await screen.findByText("Total rewards")).toBeVisible()
     expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -284,21 +360,12 @@ describe("Rewards portfolio overview", () => {
   })
 
   it("shows wallet balance on portfolio", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
-      goldfinchProtocol,
-      currentBlock
-    )
-    const user = await getUserLoaded(
-      goldfinchProtocol,
-      seniorPoolLoaded,
-      stakingRewards,
-      gfi,
-      communityRewards,
-      merkleDistributor,
-      merkleDirectDistributor,
+    const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+    const userRelated = await prepareUserRelatedDeps(
+      {goldfinchProtocol, seniorPool, ...baseDeps},
       {currentBlock, gfi: {gfiBalance: "1000000000000000000"}}
     )
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards({...baseDeps, ...userRelated}, currentBlock)
 
     expect(await screen.findByText("Total rewards")).toBeVisible()
     expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -313,18 +380,9 @@ describe("Rewards portfolio overview", () => {
 
   describe("StakingRewards", () => {
     it("in same block as staking, staking reward won't be reflected in portfolio, as nothing has vested and there is no optimistic increment", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupNewStakingReward(goldfinchProtocol, seniorPoolLoaded, currentBlock)
+      const deps = await setupNewStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Total rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -363,18 +421,9 @@ describe("Rewards portfolio overview", () => {
     })
 
     it("staking reward with non-zero claimable amount appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupClaimableStakingReward(goldfinchProtocol, seniorPoolLoaded, currentBlock)
+      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Total rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -394,18 +443,9 @@ describe("Rewards portfolio overview", () => {
 
     describe("wallet balance is 0", () => {
       it("partially-claimed staking reward appears on portfolio", async () => {
-        const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-          await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPoolLoaded, undefined, currentBlock)
+        const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
 
-        renderRewards(
-          stakingRewards,
-          gfi,
-          user,
-          merkleDistributor,
-          merkleDirectDistributor,
-          communityRewards,
-          currentBlock
-        )
+        renderRewards(deps, currentBlock)
 
         expect(await screen.findByText("Wallet balance")).toBeVisible()
         expect(await screen.findByText("Claimable")).toBeVisible()
@@ -425,23 +465,14 @@ describe("Rewards portfolio overview", () => {
     })
     describe("wallet balance is > 0", () => {
       it("partially-claimed staking reward appears on portfolio", async () => {
-        const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-          await setupPartiallyClaimedStakingReward(
-            goldfinchProtocol,
-            seniorPoolLoaded,
-            "1000000000000000000",
-            currentBlock
-          )
-
-        renderRewards(
-          stakingRewards,
-          gfi,
-          user,
-          merkleDistributor,
-          merkleDirectDistributor,
-          communityRewards,
+        const deps = await setupPartiallyClaimedStakingReward(
+          goldfinchProtocol,
+          seniorPool,
+          "1000000000000000000",
           currentBlock
         )
+
+        renderRewards(deps, currentBlock)
 
         expect(await screen.findByText("Wallet balance")).toBeVisible()
         expect(await screen.findByText("Claimable")).toBeVisible()
@@ -463,18 +494,9 @@ describe("Rewards portfolio overview", () => {
 
   describe("CommunityRewards", () => {
     it("MerkleDistributor airdrop without vesting that has not been accepted is counted in portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPoolLoaded, currentBlock)
+      const deps = await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPool, currentBlock)
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Total rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -493,24 +515,15 @@ describe("Rewards portfolio overview", () => {
     })
 
     it("MerkleDistributor airdrop with vesting that has not been accepted is counted in portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupMerkleDistributorAirdropVesting(
-          goldfinchProtocol,
-          seniorPoolLoaded,
-          String(currentBlock.timestamp - parseInt(merkleDistributorAirdropVesting.grant.vestingLength, 16) / 2),
-          new BigNumber(merkleDistributorAirdropVesting.grant.amount).dividedBy(2).toString(10),
-          currentBlock
-        )
-
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
+      const deps = await setupMerkleDistributorAirdropVesting(
+        goldfinchProtocol,
+        seniorPool,
+        String(currentBlock.timestamp - parseInt(merkleDistributorAirdropVesting.grant.vestingLength, 16) / 2),
+        new BigNumber(merkleDistributorAirdropVesting.grant.amount).dividedBy(2).toString(10),
         currentBlock
       )
+
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Total rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -529,17 +542,8 @@ describe("Rewards portfolio overview", () => {
     })
 
     it("accepted community reward with vesting appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupVestingCommunityReward(goldfinchProtocol, seniorPoolLoaded, currentBlock)
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      const deps = await setupVestingCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
@@ -558,17 +562,8 @@ describe("Rewards portfolio overview", () => {
     })
 
     it("accepted community reward without vesting appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupClaimableCommunityReward(goldfinchProtocol, seniorPoolLoaded, currentBlock)
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      const deps = await setupClaimableCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
@@ -587,22 +582,13 @@ describe("Rewards portfolio overview", () => {
     })
 
     it("accepted community reward partially claimed and still vesting appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupPartiallyClaimedCommunityReward(
-          goldfinchProtocol,
-          seniorPoolLoaded,
-          "5480000000000000000",
-          currentBlock
-        )
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
+      const deps = await setupPartiallyClaimedCommunityReward(
+        goldfinchProtocol,
+        seniorPool,
+        "5480000000000000000",
         currentBlock
       )
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
@@ -623,18 +609,9 @@ describe("Rewards portfolio overview", () => {
 
   describe("MerkleDirectDistributor rewards", () => {
     it("MerkleDirectDistributor airdrop that has not been accepted is counted in portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupMerkleDirectDistributorAirdrop(goldfinchProtocol, seniorPoolLoaded, currentBlock)
+      const deps = await setupMerkleDirectDistributorAirdrop(goldfinchProtocol, seniorPool, currentBlock)
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Total rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -653,17 +630,8 @@ describe("Rewards portfolio overview", () => {
     })
 
     it("accepted MerkleDirectDistributor reward appears on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupAcceptedDirectReward(goldfinchProtocol, seniorPoolLoaded, currentBlock)
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      const deps = await setupAcceptedDirectReward(goldfinchProtocol, seniorPool, currentBlock)
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Wallet balance")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
@@ -684,18 +652,9 @@ describe("Rewards portfolio overview", () => {
 
   describe("Staking and community rewards", () => {
     it("accepted community reward and staking reward appear on portfolio", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupCommunityRewardAndStakingReward(goldfinchProtocol, seniorPoolLoaded, currentBlock)
+      const deps = await setupCommunityRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock
-      )
+      renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Total rewards")).toBeVisible()
       expect(await screen.findByText("Wallet balance")).toBeVisible()
@@ -719,7 +678,12 @@ describe("Rewards list and detail", () => {
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   const currentBlock = defaultCurrentBlock
+  const OLD_ENV = process.env
 
+  beforeEach(() => {
+    jest.resetModules()
+    process.env = {...OLD_ENV}
+  })
   beforeEach(resetMocks)
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
   beforeEach(async () => {
@@ -742,42 +706,16 @@ describe("Rewards list and detail", () => {
     seniorPool = _seniorPoolLoaded
   })
 
+  afterAll(() => {
+    process.env = OLD_ENV
+  })
+
   it("shows empty list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor} = await getDefaultClasses(
-      goldfinchProtocol,
-      currentBlock
-    )
+    const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+    const userRelatedDeps = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+    const deps = {...baseDeps, ...userRelatedDeps}
 
-    const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    const mocks = await mockUserInitializationContractCalls(
-      user,
-      stakingRewards,
-      gfi,
-      communityRewards,
-      merkleDistributor,
-      {currentBlock}
-    )
-    await user.initialize(
-      seniorPool,
-      stakingRewards,
-      gfi,
-      communityRewards,
-      merkleDistributor,
-      merkleDirectDistributor,
-      currentBlock
-    )
-    assertAllMocksAreCalled(mocks)
-    assertWithLoadedInfo(user)
-
-    const {container} = renderRewards(
-      stakingRewards,
-      gfi,
-      user,
-      merkleDistributor,
-      merkleDirectDistributor,
-      communityRewards,
-      currentBlock
-    )
+    const {container} = renderRewards(deps, currentBlock)
 
     const list = container.getElementsByClassName("rewards-list-item")
     expect(list.length).toEqual(1)
@@ -785,22 +723,22 @@ describe("Rewards list and detail", () => {
   })
 
   it("disables all buttons during global refresh", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(
-      stakingRewards,
-      gfi,
-      user,
-      merkleDistributor,
-      merkleDirectDistributor,
-      communityRewards,
-      currentBlock,
-      undefined,
-      undefined,
-      undefined,
-      {[INDEX_ROUTE]: {number: 93, timestamp: 1640783490}} as LeavesCurrentBlock
-    )
+    renderRewards(deps, currentBlock, undefined, undefined, undefined, {
+      [INDEX_ROUTE]: undefined,
+      [EARN_ROUTE]: undefined,
+      [ABOUT_ROUTE]: undefined,
+      [REWARDS_ROUTE]: {number: currentBlock.number - 1, timestamp: currentBlock.timestamp - 1},
+      [BORROW_ROUTE]: undefined,
+      [TRANSACTIONS_ROUTE]: undefined,
+      [SENIOR_POOL_ROUTE]: undefined,
+      [TRANCHED_POOL_ROUTE]: undefined,
+      [VERIFY_ROUTE]: undefined,
+      [TERMS_OF_SERVICE_ROUTE]: undefined,
+      [PRIVACY_POLICY_ROUTE]: undefined,
+      [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+    })
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
@@ -808,9 +746,8 @@ describe("Rewards list and detail", () => {
   })
 
   it("shows staking reward on rewards list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupNewStakingReward(goldfinchProtocol, seniorPool, currentBlock)
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    const deps = await setupNewStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Vesting", {selector: "button"})).toBeVisible()
@@ -833,16 +770,74 @@ describe("Rewards list and detail", () => {
 
       expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
         "href",
-        `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+        `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
       )
     })
   })
 
-  it("shows claimable staking reward on rewards list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+  it("shows default value when GFI price is undefined", async () => {
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({goldfinch: {usd: undefined}}),
+      })
+    ) as jest.Mock
+
+    const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+
+    renderRewards(deps, currentBlock)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    await waitFor(async () => {
+      expect(await screen.findByText("Claim status")).toBeVisible()
+      expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    })
+  })
+
+  it("shows default value if the request returns an empty object", async () => {
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      })
+    ) as jest.Mock
+
+    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+    renderRewards(deps, currentBlock)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+  })
+
+  it("shows GFI price from Coingecko API", async () => {
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({goldfinch: {usd: 200}}),
+      })
+    ) as jest.Mock
+
+    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+    renderRewards(deps, currentBlock)
+
+    fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("$164.33 (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+  })
+
+  it("shows claimable staking reward on rewards list", async () => {
+    const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
@@ -867,16 +862,15 @@ describe("Rewards list and detail", () => {
 
       expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
         "href",
-        `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+        `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
       )
     })
   })
 
   it("shows claimable community reward on rewards list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupClaimableCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupClaimableCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
@@ -898,15 +892,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
     )
   })
 
   it("shows vesting community reward on rewards list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupVestingCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupVestingCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Vesting", {selector: "button"})).toBeVisible()
@@ -928,15 +921,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
     )
   })
 
   it("shows airdrop from MerkleDistributor without vesting", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Accept")).toBeVisible()
@@ -956,21 +948,20 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${merkleDistributor.address}`
+      `https://${network.name}.etherscan.io/address/${deps.merkleDistributor.address}`
     )
   })
 
   it("shows airdrop from MerkleDistributor with vesting", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupMerkleDistributorAirdropVesting(
-        goldfinchProtocol,
-        seniorPool,
-        String(currentBlock.timestamp - parseInt(merkleDistributorAirdropVesting.grant.vestingLength, 16) / 2),
-        new BigNumber(merkleDistributorAirdropVesting.grant.amount).dividedBy(2).toString(10),
-        currentBlock
-      )
+    const deps = await setupMerkleDistributorAirdropVesting(
+      goldfinchProtocol,
+      seniorPool,
+      String(currentBlock.timestamp - parseInt(merkleDistributorAirdropVesting.grant.vestingLength, 16) / 2),
+      new BigNumber(merkleDistributorAirdropVesting.grant.amount).dividedBy(2).toString(10),
+      currentBlock
+    )
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Accept")).toBeVisible()
@@ -990,15 +981,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${merkleDistributor.address}`
+      `https://${network.name}.etherscan.io/address/${deps.merkleDistributor.address}`
     )
   })
 
   it("shows airdrop from MerkleDirectDistributor", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupMerkleDirectDistributorAirdrop(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupMerkleDirectDistributorAirdrop(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(await screen.findByText("2,500.00 GFI", {selector: "div.subtitle"})).toBeVisible()
@@ -1020,15 +1010,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
     )
   })
 
   it("shows accepted community reward and staking reward", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupCommunityRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupCommunityRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
@@ -1055,7 +1044,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
     )
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
@@ -1073,15 +1062,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
     )
   })
 
   it("shows accepted MerkleDirectDistributor reward and staking reward", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupDirectRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupDirectRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Flight Academy")).toBeVisible()
@@ -1109,7 +1097,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
     )
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
@@ -1125,15 +1113,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
     )
   })
 
   it("shows accepted community reward, accepted MerkleDirectDistributor reward, and staking reward", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupCommunityRewardAndDirectRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupCommunityRewardAndDirectRewardAndStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
@@ -1164,7 +1151,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
     )
     fireEvent.click(screen.getByText("Staked 50K FIDU on Dec 29"))
 
@@ -1182,7 +1169,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
     )
     fireEvent.click(screen.getByText("Goldfinch Investment"))
 
@@ -1199,15 +1186,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
     )
   })
 
   it("staking reward partially claimed appears on list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Staked 50K FIDU on Dec 29")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
@@ -1232,16 +1218,15 @@ describe("Rewards list and detail", () => {
 
       expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
         "href",
-        `https://${network.name}.etherscan.io/address/${stakingRewards.address}`
+        `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
       )
     })
   })
 
   it("community reward partially claimed appears on list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupPartiallyClaimedCommunityReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+    const deps = await setupPartiallyClaimedCommunityReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(await screen.findByText("Claim GFI")).toBeVisible()
@@ -1263,15 +1248,14 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
     )
   })
 
   it("Accepted MerkleDirectDistributor reward appears on list", async () => {
-    const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-      await setupDirectReward(goldfinchProtocol, seniorPool, currentBlock)
+    const deps = await setupDirectReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(stakingRewards, gfi, user, merkleDistributor, merkleDirectDistributor, communityRewards, currentBlock)
+    renderRewards(deps, currentBlock)
 
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(await screen.findByText("2,500.00 GFI", {selector: "div.subtitle"})).toBeVisible()
@@ -1292,14 +1276,13 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
     )
   })
 
   describe("rewards transactions", () => {
     it("for MerkleDistributor airdrop, clicking button triggers sending `acceptGrant()`", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPool, currentBlock)
+      const deps = await setupMerkleDistributorAirdropNoVesting(goldfinchProtocol, seniorPool, currentBlock)
       const networkMonitor = {
         addPendingTX: () => {},
         watch: () => {},
@@ -1307,17 +1290,7 @@ describe("Rewards list and detail", () => {
       } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock,
-        refreshCurrentBlock,
-        networkMonitor
-      )
+      renderRewards(deps, currentBlock, refreshCurrentBlock, networkMonitor)
 
       expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
       expect(await screen.findByText("Accept")).toBeVisible()
@@ -1352,7 +1325,7 @@ describe("Rewards list and detail", () => {
           params: {
             type: "ERC20",
             options: {
-              address: gfi.address,
+              address: deps.gfi.address,
               symbol: "GFI",
               decimals: 18,
               image: "https://app.goldfinch.finance/gfi-token.svg",
@@ -1371,8 +1344,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("for MerkleDirectDistributor airdrop, clicking button triggers sending `acceptGrant()`", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupMerkleDirectDistributorAirdrop(goldfinchProtocol, seniorPool, currentBlock)
+      const deps = await setupMerkleDirectDistributorAirdrop(goldfinchProtocol, seniorPool, currentBlock)
       const networkMonitor = {
         addPendingTX: () => {},
         watch: () => {},
@@ -1380,17 +1352,7 @@ describe("Rewards list and detail", () => {
       } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock,
-        refreshCurrentBlock,
-        networkMonitor
-      )
+      renderRewards(deps, currentBlock, refreshCurrentBlock, networkMonitor)
 
       expect(await screen.findByText("Flight Academy")).toBeVisible()
       expect(await screen.findByText("Accept")).toBeVisible()
@@ -1422,7 +1384,7 @@ describe("Rewards list and detail", () => {
           params: {
             type: "ERC20",
             options: {
-              address: gfi.address,
+              address: deps.gfi.address,
               symbol: "GFI",
               decimals: 18,
               image: "https://app.goldfinch.finance/gfi-token.svg",
@@ -1441,8 +1403,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("clicking community rewards button triggers sending `getReward()`", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupClaimableCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
+      const deps = await setupClaimableCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
       const networkMonitor = {
         addPendingTX: () => {},
         watch: () => {},
@@ -1450,17 +1411,7 @@ describe("Rewards list and detail", () => {
       } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock,
-        refreshCurrentBlock,
-        networkMonitor
-      )
+      renderRewards(deps, currentBlock, refreshCurrentBlock, networkMonitor)
 
       expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
@@ -1484,7 +1435,7 @@ describe("Rewards list and detail", () => {
           params: {
             type: "ERC20",
             options: {
-              address: gfi.address,
+              address: deps.gfi.address,
               symbol: "GFI",
               decimals: 18,
               image: "https://app.goldfinch.finance/gfi-token.svg",
@@ -1508,8 +1459,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("clicking staking reward button triggers sending `getReward()`", async () => {
-      const {gfi, stakingRewards, communityRewards, merkleDistributor, merkleDirectDistributor, user} =
-        await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
       const networkMonitor = {
         addPendingTX: () => {},
         watch: () => {},
@@ -1517,17 +1467,7 @@ describe("Rewards list and detail", () => {
       } as unknown as NetworkMonitor
       const refreshCurrentBlock = jest.fn()
 
-      renderRewards(
-        stakingRewards,
-        gfi,
-        user,
-        merkleDistributor,
-        merkleDirectDistributor,
-        communityRewards,
-        currentBlock,
-        refreshCurrentBlock,
-        networkMonitor
-      )
+      renderRewards(deps, currentBlock, refreshCurrentBlock, networkMonitor)
 
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
@@ -1550,7 +1490,7 @@ describe("Rewards list and detail", () => {
           params: {
             type: "ERC20",
             options: {
-              address: gfi.address,
+              address: deps.gfi.address,
               symbol: "GFI",
               decimals: 18,
               image: "https://app.goldfinch.finance/gfi-token.svg",

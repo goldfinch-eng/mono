@@ -1,13 +1,14 @@
-import {useLocation, useRouteMatch} from "react-router-dom"
-import {AppRoute, isAppRoute} from "../types/routes"
+import {pathToRegexp} from "path-to-regexp"
+import {useLocation} from "react-router-dom"
+import {AppRoute, appRoutes} from "../types/routes"
 
 export function useCurrentRoute(): AppRoute | undefined {
   const location = useLocation()
-  const routeMatch = useRouteMatch(location.pathname)
-  if (routeMatch && isAppRoute(routeMatch.path)) {
-    return routeMatch.path
+  const routeMatch = appRoutes.find((route: string) => pathToRegexp(route).exec(location.pathname))
+  if (routeMatch) {
+    return routeMatch
   } else {
-    console.error(`Unexpected route path: ${routeMatch?.path}`)
+    console.error(`Failed to match route path: ${location.pathname}`)
     return
   }
 }

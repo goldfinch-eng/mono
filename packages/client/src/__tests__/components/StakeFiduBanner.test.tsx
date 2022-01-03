@@ -1,15 +1,13 @@
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import "@testing-library/jest-dom"
 import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import BigNumber from "bignumber.js"
 import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
+import sinon from "sinon"
 import {AppContext} from "../../App"
 import StakeFiduBanner from "../../components/stakeFiduBanner"
-import {CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "../../ethereum/communityRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -19,19 +17,14 @@ import {
   SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
-import {User, UserLoaded} from "../../ethereum/user"
+import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
-import {defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
-import {
-  mockCapitalProviderCalls,
-  mockStakeFiduBannerCalls,
-  mockUserInitializationContractCalls,
-  resetAirdropMocks,
-} from "../rewards/__utils__/mocks"
-import {getDefaultClasses} from "../rewards/__utils__/scenarios"
+import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
+import {mockCapitalProviderCalls, mockStakeFiduBannerCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
+import {prepareBaseDeps, prepareUserRelatedDeps} from "../rewards/__utils__/scenarios"
 
 mock({
   blockchain: "ethereum",
@@ -69,16 +62,20 @@ function renderStakeFiduBanner(
 }
 
 describe("Stake unstaked fidu", () => {
+  let sandbox = sinon.createSandbox()
   const stakeButtonCopy = "Stake all FIDU"
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
-  let gfi: GFILoaded,
-    stakingRewards: StakingRewardsLoaded,
-    communityRewards: CommunityRewardsLoaded,
-    merkleDistributor: MerkleDistributorLoaded,
-    merkleDirectDistributor: MerkleDirectDistributorLoaded,
-    user: UserLoaded
+  let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded
   const currentBlock = defaultCurrentBlock
+
+  beforeEach(() => {
+    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
+  })
+
+  afterEach(() => {
+    sandbox.restore()
+  })
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -99,28 +96,11 @@ describe("Stake unstaked fidu", () => {
     assertWithLoadedInfo(_seniorPoolLoaded)
     seniorPool = _seniorPoolLoaded
 
-    const results = await getDefaultClasses(goldfinchProtocol, currentBlock)
-    gfi = results.gfi
-    stakingRewards = results.stakingRewards
-    communityRewards = results.communityRewards
-    merkleDistributor = results.merkleDistributor
-    merkleDirectDistributor = results.merkleDirectDistributor
-
-    const _user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
-    await mockUserInitializationContractCalls(_user, stakingRewards, gfi, communityRewards, merkleDistributor, {
-      currentBlock,
-    })
-    await _user.initialize(
-      seniorPool,
-      stakingRewards,
-      gfi,
-      communityRewards,
-      merkleDistributor,
-      merkleDirectDistributor,
-      currentBlock
-    )
-    assertWithLoadedInfo(_user)
-    user = _user
+    const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+    gfi = baseDeps.gfi
+    stakingRewards = baseDeps.stakingRewards
+    const userRelatedDeps = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+    user = userRelatedDeps.user
   })
 
   afterEach(() => {
@@ -301,6 +281,35 @@ describe("Stake unstaked fidu", () => {
         expect(allowanceMock).toHaveBeenCalled()
         expect(approvalMock).not.toHaveBeenCalled()
         expect(stakeMock).toHaveBeenCalled()
+      })
+    })
+
+    describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
+      beforeEach(() => {
+        sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
+      })
+
+      it("hide the stake button", async () => {
+        await mockCapitalProviderCalls()
+        const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+        const networkMonitor = {
+          addPendingTX: () => {},
+          watch: () => {},
+          markTXErrored: () => {},
+        }
+        const refreshCurrentBlock = jest.fn()
+        renderStakeFiduBanner(
+          seniorPool,
+          stakingRewards,
+          gfi,
+          user,
+          capitalProvider.value,
+          currentBlock,
+          refreshCurrentBlock,
+          networkMonitor
+        )
+
+        expect(await screen.queryByText(stakeButtonCopy)).not.toBeInTheDocument()
       })
     })
   })

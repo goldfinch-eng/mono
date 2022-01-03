@@ -1,5 +1,11 @@
-import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {
+  MerkleDirectDistributorGrantInfo,
+  MerkleDirectDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {
+  MerkleDistributorGrantInfo,
+  MerkleDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
@@ -59,15 +65,15 @@ import {
 } from "../types/transactions"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {CommunityRewardsGrant, CommunityRewardsLoaded, MerkleDirectDistributorLoaded} from "./communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
-import {checkSameBlock} from "./currentBlock"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {getFromBlock, MAINNET} from "./utils"
+import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo, MAINNET} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -129,7 +135,6 @@ class UserStakingRewards {
     stakedEvents: WithCurrentBlock<{value: KnownEventData<typeof STAKED_EVENT>[]}>,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(currentBlock, stakingRewards.info.value.currentBlock, stakedEvents.currentBlock)
     // NOTE: In defining `positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
     // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
@@ -290,11 +295,16 @@ type UserCommunityRewardsLoadedInfo = {
   granted: BigNumber
 }
 
-class UserCommunityRewards {
+export class UserCommunityRewards {
+  address: string
   goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserCommunityRewardsLoadedInfo>
 
-  constructor(goldfinchProtocol: GoldfinchProtocol) {
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
@@ -303,25 +313,17 @@ class UserCommunityRewards {
   }
 
   async initialize(
-    address: string,
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
     userMerkleDistributor: UserMerkleDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(
-      currentBlock,
-      communityRewards.info.value.currentBlock,
-      merkleDistributor.info.value.currentBlock,
-      userMerkleDistributor.info.value.currentBlock
-    )
-
     // NOTE: In defining `grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
     // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
     // `recipient`, whereas the latter does not.
     const grants = await communityRewards.contract.methods
-      .balanceOf(address)
+      .balanceOf(this.address)
       .call(undefined, currentBlock.number)
       .then((balance: string) => parseInt(balance, 10))
       .then((numPositions: number) =>
@@ -329,7 +331,9 @@ class UserCommunityRewards {
           Array(numPositions)
             .fill("")
             .map((val, i) =>
-              communityRewards.contract.methods.tokenOfOwnerByIndex(address, i).call(undefined, currentBlock.number)
+              communityRewards.contract.methods
+                .tokenOfOwnerByIndex(this.address, i)
+                .call(undefined, currentBlock.number)
             )
         )
       )
@@ -458,6 +462,7 @@ export type UserCommunityRewardsLoaded = WithLoadedInfo<UserCommunityRewards, Us
 
 type UserMerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
+  merkleDistributorInfo: MerkleDistributorInfo
   airdrops: {
     accepted: AcceptedMerkleDistributorGrant[]
     notAccepted: NotAcceptedMerkleDistributorGrant[]
@@ -467,9 +472,16 @@ type UserMerkleDistributorLoadedInfo = {
 }
 
 export class UserMerkleDistributor {
+  address: string
+  goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserMerkleDistributorLoadedInfo>
 
-  constructor() {
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
+    this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
       value: undefined,
@@ -477,16 +489,18 @@ export class UserMerkleDistributor {
   }
 
   async initialize(
-    address: string,
     merkleDistributor: MerkleDistributorLoaded,
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    checkSameBlock(currentBlock, merkleDistributor.info.value.currentBlock, communityRewards.info.value.currentBlock)
+    const merkleDistributorInfo = await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+    if (!merkleDistributorInfo) {
+      throw new Error("Failed to retrieve MerkleDistributor info.")
+    }
 
     const airdropsForRecipient = UserMerkleDistributor.getAirdropsForRecipient(
-      merkleDistributor.info.value.merkleDistributorInfo.grants,
-      address
+      merkleDistributorInfo.grants,
+      this.address
     )
     const [withAcceptance, _tokenLaunchTime] = await Promise.all([
       UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
@@ -553,6 +567,7 @@ export class UserMerkleDistributor {
       loaded: true,
       value: {
         currentBlock,
+        merkleDistributorInfo,
         airdrops: {
           accepted,
           notAccepted,
@@ -590,6 +605,7 @@ export type UserMerkleDistributorLoaded = WithLoadedInfo<UserMerkleDistributor, 
 
 type UserMerkleDirectDistributorLoadedInfo = {
   currentBlock: BlockInfo
+  merkleDirectDistributorInfo: MerkleDirectDistributorInfo
   airdrops: {
     accepted: AcceptedMerkleDirectDistributorGrant[]
     notAccepted: NotAcceptedMerkleDirectDistributorGrant[]
@@ -599,25 +615,31 @@ type UserMerkleDirectDistributorLoadedInfo = {
 }
 
 export class UserMerkleDirectDistributor {
+  address: string
+  goldfinchProtocol: GoldfinchProtocol
   info: Loadable<UserMerkleDirectDistributorLoadedInfo>
 
-  constructor() {
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
+    this.goldfinchProtocol = goldfinchProtocol
     this.info = {
       loaded: false,
       value: undefined,
     }
   }
 
-  async initialize(
-    address: string,
-    merkleDirectDistributor: MerkleDirectDistributorLoaded,
-    currentBlock: BlockInfo
-  ): Promise<void> {
-    checkSameBlock(currentBlock, merkleDirectDistributor.info.value.currentBlock)
+  async initialize(merkleDirectDistributor: MerkleDirectDistributorLoaded, currentBlock: BlockInfo): Promise<void> {
+    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+    if (!merkleDirectDistributorInfo) {
+      throw new Error("Failed to retrieve MerkleDirectDistributor info.")
+    }
 
     const airdropsForRecipient = UserMerkleDirectDistributor.getAirdropsForRecipient(
-      merkleDirectDistributor.info.value.merkleDirectDistributorInfo.grants,
-      address
+      merkleDirectDistributorInfo.grants,
+      this.address
     )
     const withAcceptance = await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
       airdropsForRecipient,
@@ -676,6 +698,7 @@ export class UserMerkleDirectDistributor {
       loaded: true,
       value: {
         currentBlock,
+        merkleDirectDistributorInfo,
         airdrops: {
           accepted,
           notAccepted,
@@ -745,9 +768,6 @@ export type UserLoadedInfo = {
     }
   }
   stakingRewards: UserStakingRewardsLoaded
-  communityRewards: UserCommunityRewardsLoaded
-  merkleDistributor: UserMerkleDistributorLoaded
-  merkleDirectDistributor: UserMerkleDirectDistributorLoaded
 }
 
 export type UserLoaded = WithLoadedInfo<User, UserLoadedInfo>
@@ -792,16 +812,6 @@ export class User {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    checkSameBlock(
-      currentBlock,
-      pool.info.value.currentBlock,
-      stakingRewards.info.value.currentBlock,
-      gfi.info.value.currentBlock,
-      communityRewards.info.value.currentBlock,
-      merkleDistributor.info.value.currentBlock,
-      merkleDirectDistributor.info.value.currentBlock
-    )
-
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
 
     const usdcBalance = await usdc.getBalance(this.address, currentBlock)
@@ -854,26 +864,8 @@ export class User {
     )
 
     const userStakingRewards = new UserStakingRewards()
-    const userMerkleDistributor = new UserMerkleDistributor()
-    const userMerkleDirectDistributor = new UserMerkleDirectDistributor()
-    await Promise.all([
-      userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock),
-      userMerkleDistributor.initialize(this.address, merkleDistributor, communityRewards, currentBlock),
-      userMerkleDirectDistributor.initialize(this.address, merkleDirectDistributor, currentBlock),
-    ])
+    await userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock)
     assertWithLoadedInfo(userStakingRewards)
-    assertWithLoadedInfo(userMerkleDistributor)
-    assertWithLoadedInfo(userMerkleDirectDistributor)
-
-    const userCommunityRewards = new UserCommunityRewards(this.goldfinchProtocol)
-    await userCommunityRewards.initialize(
-      this.address,
-      communityRewards,
-      merkleDistributor,
-      userMerkleDistributor,
-      currentBlock
-    )
-    assertWithLoadedInfo(userCommunityRewards)
 
     this.info = {
       loaded: true,
@@ -900,9 +892,6 @@ export class User {
           },
         },
         stakingRewards: userStakingRewards,
-        communityRewards: userCommunityRewards,
-        merkleDistributor: userMerkleDistributor,
-        merkleDirectDistributor: userMerkleDirectDistributor,
       },
     }
   }
@@ -1123,12 +1112,7 @@ async function getAndTransformFIDUEvents(
   owner: string,
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
-  const approvalEvents = await goldfinchProtocol.queryEvents(
-    "Fidu",
-    APPROVAL_EVENT_TYPES,
-    undefined,
-    currentBlock.number
-  )
+  const approvalEvents = await goldfinchProtocol.queryEvents("Fidu", APPROVAL_EVENT_TYPES, {owner}, currentBlock.number)
   return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {

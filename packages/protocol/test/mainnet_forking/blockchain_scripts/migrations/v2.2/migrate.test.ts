@@ -226,6 +226,56 @@ describe("V2.2 & v2.3 migration", async function () {
     })
 
     context("token launch", async () => {
+      describe("CommunityRewards", () => {
+        describe("rewardsAvailable", () => {
+          it("is correct", async () => {
+            expect(await communityRewards.rewardsAvailable()).to.bignumber.eq("19116804411560100000000000")
+          })
+        })
+      })
+
+      describe("StakingRewards", async () => {
+        describe("rewardsAvailable", () => {
+          it("is correct", async () => {
+            expect(await stakingRewards.rewardsAvailable()).to.bignumber.eq("9142857120000000000000000")
+          })
+        })
+      })
+
+      describe("GFI", () => {
+        it(`cap should be ${gfiTotalSupply.toString()}`, async () => {
+          expect(await gfi.cap()).to.be.bignumber.eq(gfiTotalSupply)
+        })
+
+        it("100% of the cap has been minted", async () => {
+          expect(await gfi.cap()).to.be.bignumber.eq(await gfi.totalSupply())
+        })
+
+        describe("balanceOf", () => {
+          it("StakingRewards is correct", async () => {
+            expect(await gfi.balanceOf(stakingRewards.address)).to.bignumber.eq("9142857120000000000000000")
+          })
+
+          it("CommunityRewards is correct", async () => {
+            expect(await gfi.balanceOf(communityRewards.address)).to.bignumber.eq("19116804411560100000000000")
+          })
+
+          it("Coinbase Custody is correct", async () => {
+            expect(await gfi.balanceOf("0xc95c99CeF8A8D0DbFEd996021d11c1635674B1be")).to.bignumber.be.eq(
+              "51878852980000000000000000"
+            )
+          })
+
+          it("MerkleDirectDistributor is correct", async () => {
+            expect(await gfi.balanceOf(merkleDirectDistributor.address)).to.bignumber.eq("4500813523096940000000000")
+          })
+
+          it("Protocol Owner is correct", async () => {
+            expect(await gfi.balanceOf(await getProtocolOwner())).to.bignumber.eq("29646384965342959999999000")
+          })
+        })
+      })
+
       it("deploys staking / airdrop contracts", async () => {
         for (const contractName of ["StakingRewards", "CommunityRewards"]) {
           await expect(deployments.get(contractName)).to.not.be.rejected
@@ -269,14 +319,6 @@ describe("V2.2 & v2.3 migration", async function () {
           it("does have MINTER role", async () => {
             expect(await gfi.hasRole(MINTER_ROLE, await getProtocolOwner())).to.be.true
           })
-        })
-
-        it(`GFI cap should be ${gfiTotalSupply.toString()}`, async () => {
-          expect(await gfi.cap()).to.be.bignumber.eq(gfiTotalSupply)
-        })
-
-        it("100% of the cap has been minted", async () => {
-          expect(await gfi.cap()).to.be.bignumber.eq(await gfi.totalSupply())
         })
       })
     })

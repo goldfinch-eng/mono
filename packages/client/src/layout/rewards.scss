@@ -113,6 +113,9 @@ button.expand {
     font-size: $sans-size-s;
     color: $purp-dark;
   }
+  .background-container {
+    margin-bottom: 25px;
+  }
 
   .balance,
   .limit {
@@ -120,9 +123,13 @@ button.expand {
   }
 
   .info-banner {
+    padding: 0;
+    margin: 0;
+    width: 100%;
     button {
       font-size: $sans-size-base;
     }
+
   }
 
   .rewards-list-item {

@@ -229,40 +229,62 @@ export async function deploy(deployEffects: DeployEffects, anonDeployEffects: De
     deferred: [await gfiEthersContract.populateTransaction.setCap(gfiTotalSupply.toString())],
   })
 
-  if (await isMainnet()) {
-    throw new Error("This script should not be run on mainnet!")
-  }
-  const goldfinchCoinbaseCustodyAddress = "0x483e2BaF7F4e0Ac7D90c2C3Efc13c3AF5050F3c2" // TODO(will): find actual address
-
-  const getPercentOfGfi = (percent) => {
-    return new BigNumber(gfiTotalSupply.toString()).multipliedBy(percent).toPrecision()
-  }
+  const goldfinchCoinbaseCustodyAddress = "0xc95c99CeF8A8D0DbFEd996021d11c1635674B1be"
 
   // Some GFI has already been minted, so we need to account for it
   const existingSupply = await gfi.contract.totalSupply()
 
   const gfiAllocationsByAddress = {
-    [goldfinchCoinbaseCustodyAddress]: new BN(getPercentOfGfi("0.4704"))
-      // v- this portion is unallocated
-      .add(new BN("4125714275400000000000000"))
-      .sub(existingSupply)
-      .toString(),
-    [communityRewards.contract.address]: getPercentOfGfi("0.1118").toString(),
-    [asNonNullable(merkleDirectDistributor).contract.address]: getPercentOfGfi("0.0373").toString(),
-    [protocolOwner]: getPercentOfGfi("0.2444").toString(),
-    [lpStakingRewards.address]: getPercentOfGfi("0.1").toString(), // 10%
+    [goldfinchCoinbaseCustodyAddress]: "51878852980000000000000000",
+    [communityRewards.contract.address]: "19116804411560100000000000",
+    [asNonNullable(merkleDirectDistributor).contract.address]: "4500813523096940000000000",
+    [protocolOwner]: new BigNumber("29646386049938100000000000").minus(existingSupply.toString()).toFixed(0),
+    [lpStakingRewards.address]: "9142857120000000000000000",
   }
+
+  const expectedAllocation = new BigNumber(gfiTotalSupply.sub(existingSupply).toString())
+
+  const totalAllocationBeforeCorrection = Object.values(gfiAllocationsByAddress).reduce(
+    (acc, x) => acc.plus(x),
+    new BigNumber(0)
+  )
+
+  // 0.1 GFI tolerance
+  const overallocationTolerance = new BigNumber(1e17)
+  const difference = totalAllocationBeforeCorrection.minus(expectedAllocation)
+
+  console.log(`subtracting ${difference.toString()} from treasury to account for overallocation`)
+
+  if (difference.gt(overallocationTolerance)) {
+    throw new Error(
+      `Unacceptable difference found in minting amounts found: difference = ${difference.toString()} - tolerance = ${overallocationTolerance.toString()}`
+    )
+  }
+
+  if (difference.lt(new BigNumber("0"))) {
+    throw new Error(`Underallocating by ${difference.toString()}!`)
+  }
+
+  // subtract any overallocation from the goldfinch treasury. Note this is
+  // required to be an extremely small amount (<0.1 GFI) to rectify any small
+  // overallocations
+  gfiAllocationsByAddress[protocolOwner] = new BigNumber(gfiAllocationsByAddress[protocolOwner] as string)
+    .minus(difference)
+    .toFixed(0)
 
   console.log("Created transactions for minting GFI")
   for (const [address, amount] of Object.entries(gfiAllocationsByAddress)) {
     console.log(` minting ${amount} GFI to ${address}`)
   }
 
-  const totalAllocation = Object.values(gfiAllocationsByAddress).reduce((acc, x) => acc.add(new BN(x)), new BN(0))
-  const expectedAllocation = gfiTotalSupply.sub(existingSupply)
+  const totalAllocation = Object.values(gfiAllocationsByAddress).reduce(
+    (acc, x) => acc.plus(new BigNumber(x)),
+    new BigNumber(0)
+  )
+
   if (!totalAllocation.eq(expectedAllocation)) {
     throw new Error(
-      `All of GFI has not been allocated! expected ${expectedAllocation.toString()} ; found ${totalAllocation.toString()}`
+      `Not allocating all GFI: expected ${expectedAllocation.toString()} - found ${totalAllocation.toString()}`
     )
   }
 

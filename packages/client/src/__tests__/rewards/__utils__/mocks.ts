@@ -9,11 +9,7 @@ import {mock} from "depay-web3-mock"
 import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {BigNumber} from "bignumber.js"
-import {
-  CommunityRewards,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "../../../ethereum/communityRewards"
+import {CommunityRewards} from "../../../ethereum/communityRewards"
 import {GFI} from "../../../ethereum/gfi"
 import {
   mockGetWeightedAverageSharePrice,
@@ -21,7 +17,7 @@ import {
   StakingRewards,
   StakingRewardsLoaded,
 } from "../../../ethereum/pool"
-import {User, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
+import {User, UserCommunityRewards, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
 import {BlockInfo} from "../../../utils"
@@ -44,6 +40,7 @@ import {
   MerkleDirectDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../ethereum/merkleDirectDistributor"
 
 class ImproperlyConfiguredMockError extends Error {}
 
@@ -118,7 +115,7 @@ const defaultStakingRewardsStartTime = String(defaultCurrentBlock.timestamp)
 export const defaultStakingRewardsVestingLength = 31536000
 const defaultStakingRewardsEndTime = String(defaultCurrentBlock.timestamp + defaultStakingRewardsVestingLength)
 
-export async function mockUserInitializationContractCalls(
+export async function mockUserRelatedInitializationContractCalls(
   user: User,
   stakingRewards: StakingRewards,
   gfi: GFI,
