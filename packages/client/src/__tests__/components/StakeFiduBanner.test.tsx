@@ -19,7 +19,6 @@ import {
 } from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
-import {KYC} from "../../hooks/useGoldfinchClient"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
@@ -53,11 +52,10 @@ function renderStakeFiduBanner(
     refreshCurrentBlock,
     networkMonitor,
   }
-  const kyc: KYC = {status: "approved", countryCode: "BR"}
   return render(
     <AppContext.Provider value={store}>
       <Router>
-        <StakeFiduBanner capitalProvider={capitalProvider} kyc={kyc} actionComplete={() => {}} disabled={false} />
+        <StakeFiduBanner capitalProvider={capitalProvider} actionComplete={() => {}} disabled={false} />
       </Router>
     </AppContext.Provider>
   )
@@ -108,6 +106,42 @@ describe("Stake unstaked fidu", () => {
   afterEach(() => {
     mockGetWeightedAverageSharePrice(undefined)
     jest.clearAllMocks()
+  })
+
+  describe("senior pool eligibility", () => {
+    it("sets placeholder class if not eligible", async () => {
+      user.info.value.goListed = false
+      await mockCapitalProviderCalls()
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      const {container} = renderStakeFiduBanner(
+        seniorPool,
+        stakingRewards,
+        gfi,
+        user,
+        capitalProvider.value,
+        currentBlock
+      )
+
+      const message = await container.getElementsByClassName("placeholder")
+      expect(message.length).toEqual(1)
+    })
+
+    it("does not set placeholder class if eligible", async () => {
+      user.info.value.goListed = true
+      await mockCapitalProviderCalls()
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      const {container} = renderStakeFiduBanner(
+        seniorPool,
+        stakingRewards,
+        gfi,
+        user,
+        capitalProvider.value,
+        currentBlock
+      )
+
+      const message = await container.getElementsByClassName("placeholder")
+      expect(message.length).toEqual(0)
+    })
   })
 
   it("do not show banner when user has no unstaked fidu", async () => {

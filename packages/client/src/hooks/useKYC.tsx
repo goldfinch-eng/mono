@@ -23,8 +23,7 @@ export function useKYC(): AsyncResult<KYC> {
   return result
 }
 
-export function eligibleForSeniorPool(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
-  const approved = kyc?.status === "approved" && kyc?.countryCode !== "US"
+export function eligibleForSeniorPool(user: UserLoaded | undefined): boolean {
   const goListed = !!user && user.info.value.goListed
-  return approved || goListed
+  return goListed
 }
