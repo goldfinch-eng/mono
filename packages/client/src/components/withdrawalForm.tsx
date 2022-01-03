@@ -264,6 +264,8 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+
   function renderForm({formMethods}) {
     // NOTE: `props.capitalProvider.rewardsInfo` reflects unvested rewards from *all* positions,
     // including any locked positions. Even though our UI doesn't enable using lock-up, it seems
@@ -284,7 +286,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // forfeiting, will not necessarily equal the amount that will actually be forfeited when the
     // transaction is executed.
     const forfeitAdvisory =
-      process.env.REACT_APP_TOGGLE_REWARDS === "true" && props.capitalProvider.rewardsInfo.hasUnvested ? (
+      toggleRewards && props.capitalProvider.rewardsInfo.hasUnvested ? (
         <div className="form-message paragraph">
           {"You have "}
           {displayNumber(gfiFromAtomic(props.capitalProvider.rewardsInfo.unvested), 2)}
@@ -310,7 +312,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     let notes: Array<{key: string; content: React.ReactNode}> = []
     let withdrawalInfo: WithdrawalInfo | undefined
-    if (transactionAmount) {
+    if (transactionAmount && toggleRewards) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
       if (withdrawalAmount.gt(0)) {
