@@ -3,6 +3,7 @@ import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
 import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
+import sinon from "sinon"
 import {AppContext} from "../../App"
 import WithdrawalForm from "../../components/withdrawalForm"
 import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
@@ -86,6 +87,7 @@ function renderWithdrawalForm(
 }
 
 describe("withdrawal form", () => {
+  let sandbox = sinon.createSandbox()
   const networkMonitor = {
     addPendingTX: () => {},
     watch: () => {},
@@ -95,6 +97,14 @@ describe("withdrawal form", () => {
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded, capitalProvider: Loaded<CapitalProvider>
   const currentBlock = defaultCurrentBlock
+
+  beforeEach(() => {
+    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
+  })
+
+  afterEach(() => {
+    sandbox.restore()
+  })
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -256,6 +266,35 @@ describe("withdrawal form", () => {
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
     )
+  })
+
+  describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
+    beforeEach(() => {
+      sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
+    })
+
+    it("does not show staking messaging", async () => {
+      const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+      await mockCapitalProviderCalls()
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+      }
+      const {container} = renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
+
+      expect(await screen.findByText("Available to withdraw: $50,072.85")).toBeVisible()
+      expect(await screen.findByText("Max")).toBeVisible()
+      expect(await screen.findByText("Submit")).toBeVisible()
+      expect(await screen.findByText("Cancel")).toBeVisible()
+      expect(await screen.findByText("Withdraw")).toBeVisible()
+
+      const formParagraph = await container.getElementsByClassName("paragraph")
+      expect(formParagraph[0]?.textContent).not.toContain(
+        "You have 265.94 GFI ($265.94) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+      )
+    })
   })
 
   describe("withdrawal transaction(s)", () => {

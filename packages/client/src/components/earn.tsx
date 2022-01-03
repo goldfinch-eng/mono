@@ -104,6 +104,7 @@ export function PortfolioOverview({
 
   const unrealizedGainsPercent = totalUnrealizedGains.dividedBy(totalBalance)
   const displayUnrealizedGains = roundDownPenny(totalUnrealizedGains)
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
   return (
     <div className="background-container">
@@ -120,24 +121,33 @@ export function PortfolioOverview({
         <div className="deposit-status-item">
           <div className="deposit-status-item-flex">
             <div className="label">Est. Annual Growth</div>
-            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
-              <InfoIcon />
-            </span>
+            {toggleRewards && (
+              <span
+                data-tip=""
+                data-for="annual-growth-tooltip"
+                data-offset="{'top': 0, 'left': 0}"
+                data-place="bottom"
+              >
+                <InfoIcon />
+              </span>
+            )}
           </div>
           <div className="value" data-testid="portfolio-est-growth">
             {displayDollars(roundDownPenny(estimatedAnnualGrowth))}
           </div>
           <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${displayPercent(estimatedApy)} APY${
-            estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
+            toggleRewards && estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
       </div>
-      <AnnualGrowthTooltipContent
-        supplyingCombined={true}
-        estimatedApyFromSupplying={estimatedApyFromSupplying}
-        estimatedApyFromGfi={estimatedApyFromGfi}
-        estimatedApy={estimatedApy}
-      />
+      {toggleRewards && (
+        <AnnualGrowthTooltipContent
+          supplyingCombined={true}
+          estimatedApyFromSupplying={estimatedApyFromSupplying}
+          estimatedApyFromGfi={estimatedApyFromGfi}
+          estimatedApy={estimatedApy}
+        />
+      )}
     </div>
   )
 }

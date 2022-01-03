@@ -2,6 +2,7 @@ import "@testing-library/jest-dom"
 import {render, screen} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
 import {mock} from "depay-web3-mock"
+import sinon from "sinon"
 import {BrowserRouter as Router} from "react-router-dom"
 import {AppContext} from "../../App"
 import DepositStatus from "../../components/depositStatus"
@@ -57,11 +58,20 @@ function renderDepositStatus(
 }
 
 describe("Senior pool page deposit status", () => {
+  let sandbox = sinon.createSandbox()
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded, capitalProvider: Loaded<CapitalProvider>
 
   const currentBlock = defaultCurrentBlock
+
+  beforeEach(() => {
+    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
+  })
+
+  afterEach(() => {
+    sandbox.restore()
+  })
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -261,5 +271,24 @@ describe("Senior pool page deposit status", () => {
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
     expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
+  })
+
+  describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
+    beforeEach(() => {
+      sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
+    })
+
+    it("hides the tooltips", async () => {
+      const poolData = {
+        estimatedApy: new BigNumber("0.00483856000534281158"),
+        estimatedApyFromGfi: new BigNumber("0"),
+      }
+      renderDepositStatus(poolData, capitalProvider, currentBlock)
+
+      expect(
+        await screen.queryByText("Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:")
+      ).not.toBeInTheDocument()
+      expect(screen.queryByText("Senior Pool APY")).not.toBeInTheDocument()
+    })
   })
 })

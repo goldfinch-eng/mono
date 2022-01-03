@@ -264,6 +264,8 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+
   function renderForm({formMethods}) {
     // NOTE: `props.capitalProvider.rewardsInfo` reflects unvested rewards from *all* positions,
     // including any locked positions. Even though our UI doesn't enable using lock-up, it seems
@@ -283,23 +285,24 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // here, as the basis for telling the user how much unvested rewards their withdrawal entails
     // forfeiting, will not necessarily equal the amount that will actually be forfeited when the
     // transaction is executed.
-    const forfeitAdvisory = props.capitalProvider.rewardsInfo.hasUnvested ? (
-      <div className="form-message paragraph">
-        {"You have "}
-        {displayNumber(gfiFromAtomic(props.capitalProvider.rewardsInfo.unvested), 2)}
-        {" GFI ("}
-        {displayDollars(props.capitalProvider.rewardsInfo.unvestedInDollars, 2)}
-        {") that is still vesting until "}
-        {lastVestingEnd!.toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
-        {". If you withdraw before then, you "}
-        {props.capitalProvider.shares.parts.notStaked.gt(0) ? "might" : "will"}
-        {" forfeit a portion of your unvested GFI."}
-      </div>
-    ) : undefined
+    const forfeitAdvisory =
+      toggleRewards && props.capitalProvider.rewardsInfo.hasUnvested ? (
+        <div className="form-message paragraph">
+          {"You have "}
+          {displayNumber(gfiFromAtomic(props.capitalProvider.rewardsInfo.unvested), 2)}
+          {" GFI ("}
+          {displayDollars(props.capitalProvider.rewardsInfo.unvestedInDollars, 2)}
+          {") that is still vesting until "}
+          {lastVestingEnd!.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
+          {". If you withdraw before then, you "}
+          {props.capitalProvider.shares.parts.notStaked.gt(0) ? "might" : "will"}
+          {" forfeit a portion of your unvested GFI."}
+        </div>
+      ) : undefined
     const protocolFeeAdvisory = (
       <div className="form-message paragraph">
         {forfeitAdvisory ? "Also as a reminder," : "Note that"}
@@ -309,7 +312,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     let notes: Array<{key: string; content: React.ReactNode}> = []
     let withdrawalInfo: WithdrawalInfo | undefined
-    if (transactionAmount) {
+    if (transactionAmount && toggleRewards) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
       if (withdrawalAmount.gt(0)) {
