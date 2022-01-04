@@ -23,18 +23,17 @@ import {useFromSameBlock} from "../../hooks/useFromSameBlock"
 import {useSession} from "../../hooks/useSignIn"
 import {MerkleDirectDistributorGrant} from "../../types/merkleDirectDistributor"
 import {NotAcceptedMerkleDistributorGrant} from "../../types/merkleDistributor"
-import {displayDollars, displayNumber} from "../../utils"
+import {displayNumber, displayDollars} from "../../utils"
 
 interface RewardsSummaryProps {
   claimable: BigNumber | undefined
   unvested: BigNumber | undefined
   totalGFI: BigNumber | undefined
   totalUSD: BigNumber | undefined
-  walletBalance: BigNumber | undefined
 }
 
 function RewardsSummary(props: RewardsSummaryProps) {
-  const {claimable, unvested, totalGFI, totalUSD, walletBalance} = props
+  const {claimable, unvested, totalGFI, totalUSD} = props
 
   const valueDisabledClass = totalGFI && totalGFI.gt(0) ? "value" : "disabled-value"
 
@@ -47,15 +46,6 @@ function RewardsSummary(props: RewardsSummaryProps) {
       </div>
 
       <div className="rewards-summary-right-item">
-        <div className="details-item">
-          <span>Wallet balance</span>
-          <div>
-            <span className={valueDisabledClass} data-testid="summary-wallet-balance">
-              {displayNumber(walletBalance ? gfiFromAtomic(walletBalance) : undefined, 2)}
-            </span>
-            <span>GFI</span>
-          </div>
-        </div>
         <div className="details-item">
           <span>{"Claimable"}</span>
           <div>
@@ -326,13 +316,7 @@ function Rewards() {
         <h1>Rewards</h1>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      <RewardsSummary
-        walletBalance={gfiBalance}
-        claimable={claimable}
-        unvested={unvested}
-        totalGFI={totalBalance}
-        totalUSD={totalUSD}
-      />
+      <RewardsSummary claimable={claimable} unvested={unvested} totalGFI={totalBalance} totalUSD={totalUSD} />
       <div className="gfi-rewards table-spaced">
         <div className="table-header background-container-inner">
           <h2 className="table-cell col32 title">Reward type</h2>

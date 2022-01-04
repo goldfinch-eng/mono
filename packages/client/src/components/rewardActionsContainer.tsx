@@ -54,6 +54,7 @@ enum RewardStatus {
 enum ActionButtonTexts {
   accept = "Accept",
   accepting = "Accepting...",
+  claiming = "Claiming...",
   claimGFI = "Claim GFI",
   claimed = "Claimed",
   vesting = "Vesting",
@@ -89,6 +90,17 @@ function ActionButton(props: ActionButtonProps) {
   }
 
   const isAccepting = props.text === ActionButtonTexts.accept && isPending
+  const isClaiming = props.text === ActionButtonTexts.claimGFI && isPending
+
+  function getActionButtonText(): string {
+    if (isAccepting) {
+      return ActionButtonTexts.accepting
+    }
+    if (isClaiming) {
+      return ActionButtonTexts.claiming
+    }
+    return props.text
+  }
 
   return (
     <button
@@ -96,7 +108,7 @@ function ActionButton(props: ActionButtonProps) {
       className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
       onClick={action}
     >
-      {isAccepting ? ActionButtonTexts.accepting : props.text}
+      {getActionButtonText()}
     </button>
   )
 }
@@ -127,7 +139,7 @@ type FullItemDetails<T> = BaseItemDetails & {
 }
 type LimitedItemDetails<T> = BaseItemDetails & {
   type: T
-  claimStatus: undefined
+  claimStatus: string | undefined
   currentEarnRate: undefined
 }
 type StakingRewardsDetails = FullItemDetails<StakingRewardsRewardType>
@@ -179,7 +191,7 @@ function Details(props: DetailsProps) {
       </ColumnsContainer>
     )
   } else {
-    const {transactionDetails, vestingSchedule, vestingStatus} = props.itemDetails
+    const {transactionDetails, vestingSchedule, vestingStatus, claimStatus} = props.itemDetails
     columns = (
       <ColumnsContainer>
         <Column>
@@ -196,6 +208,10 @@ function Details(props: DetailsProps) {
           <Detail>
             <DetailLabel>Vesting schedule</DetailLabel>
             <DetailValue>{vestingSchedule}</DetailValue>
+          </Detail>
+          <Detail>
+            <DetailLabel>Claim status</DetailLabel>
+            <DetailValue>{claimStatus}</DetailValue>
           </Detail>
         </Column>
       </ColumnsContainer>
@@ -276,7 +292,7 @@ function getActionButtonProps(props: RewardsListItemProps): ActionButtonProps {
 interface RewardsListItemProps {
   title: string
   subtitle: string
-  grantedGFI: BigNumber
+  unvestedGFI: BigNumber
   claimableGFI: BigNumber
   status: RewardStatus
   details: ItemDetails
@@ -295,7 +311,7 @@ function RewardsListItem(props: RewardsListItemProps) {
 
   const detailsComponent = <Details open={open} disabled={disabledText} itemDetails={props.details} />
 
-  const grantedGFIZeroDisabled = displayNumber(gfiFromAtomic(props.grantedGFI), 2) === "0.00" ? "disabled-text" : ""
+  const unvestedGFIZeroDisabled = displayNumber(gfiFromAtomic(props.unvestedGFI), 2) === "0.00" ? "disabled-text" : ""
   const claimableGFIZeroDisabled = displayNumber(gfiFromAtomic(props.claimableGFI), 2) === "0.00" ? "disabled-text" : ""
 
   return (
@@ -310,9 +326,9 @@ function RewardsListItem(props: RewardsListItemProps) {
               </div>
               <div className="item-details">
                 <div className="detail-container">
-                  <span className="detail-label">Granted GFI</span>
-                  <div className={`${valueDisabledClass}`} data-testid="detail-granted">
-                    {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+                  <span className="detail-label">Vesting GFI</span>
+                  <div className={`${valueDisabledClass}`} data-testid="detail-unvested">
+                    {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
                   </div>
                 </div>
                 <div className="detail-container">
@@ -323,7 +339,7 @@ function RewardsListItem(props: RewardsListItemProps) {
                       // value we use is what's claimable. What's claimable is the relevant piece of information
                       // that informs their understanding of whether they should be able to take any action
                       // with the list item button.
-                      "Vested GFI"
+                      "Claimable GFI"
                     }
                   </span>
                   <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
@@ -345,10 +361,10 @@ function RewardsListItem(props: RewardsListItemProps) {
                 <div className="subtitle">{props.subtitle}</div>
               </div>
               <div
-                className={`table-cell col20 numeric ${valueDisabledClass} ${grantedGFIZeroDisabled}`}
-                data-testid="detail-granted"
+                className={`table-cell col20 numeric ${valueDisabledClass} ${unvestedGFIZeroDisabled}`}
+                data-testid="detail-unvested"
               >
-                {displayNumber(gfiFromAtomic(props.grantedGFI), 2)}
+                {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
               </div>
               <div
                 className={`table-cell col20 numeric ${valueDisabledClass} ${claimableGFIZeroDisabled}`}
@@ -432,6 +448,14 @@ function getVestingStatus(vested: BigNumber, granted: BigNumber): string {
 function getCurrentEarnRate(currentEarnRate: BigNumber): string {
   return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} GFI granted per week`
 }
+function getAirdropShortTransactionDetails(startTime, granted) {
+  const transactionDate = new Date(startTime * 1000).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+  return `${displayNumber(gfiFromAtomic(granted))} GFI • ${transactionDate}`
+}
 
 function getNotAcceptedMerkleDistributorGrantDetails(
   item: NotAcceptedMerkleDistributorGrant,
@@ -442,7 +466,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   const vestingLength = new BigNumber(item.grantInfo.grant.vestingLength).toNumber()
   return {
     type: "merkleDistributor",
-    shortTransactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI`,
+    shortTransactionDetails: getAirdropShortTransactionDetails(TOKEN_LAUNCH_TIME_IN_SECONDS, item.granted),
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(item.grantInfo.grant.cliffLength),
@@ -465,7 +489,7 @@ function getMerkleDirectDistributorGrantDetails(
   const displayReason = MerkleDirectDistributor.getDisplayReason(item.grantInfo.reason)
   return {
     type: "merkleDirectDistributor",
-    shortTransactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI`,
+    shortTransactionDetails: getAirdropShortTransactionDetails(TOKEN_LAUNCH_TIME_IN_SECONDS, item.granted),
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
     vestingSchedule: getDirectGrantVestingSchedule(),
     claimStatus: undefined,
@@ -508,7 +532,7 @@ function getStakingOrCommunityRewardsDetails(
             }
           : null
       ),
-      claimStatus: undefined,
+      claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: undefined,
       vestingStatus: getVestingStatus(item.vested, item.granted),
       etherscanAddress: communityRewards.address,
@@ -676,7 +700,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           status={status}
           title={title}
           subtitle={details.shortTransactionDetails}
-          grantedGFI={item.granted}
+          unvestedGFI={item.unvested}
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
@@ -689,7 +713,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           status={RewardStatus.Claimable}
           title={title}
           subtitle={details.shortTransactionDetails}
-          grantedGFI={item.granted}
+          unvestedGFI={item.unvested}
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
@@ -719,7 +743,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         status={RewardStatus.Acceptable}
         title={MerkleDistributor.getDisplayTitle(item.grantInfo.reason)}
         subtitle={details.shortTransactionDetails}
-        grantedGFI={item.granted}
+        unvestedGFI={item.unvested}
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
@@ -731,10 +755,10 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     const details = getMerkleDirectDistributorGrantDetails(item, props.gfi, props.merkleDirectDistributor)
     return (
       <RewardsListItem
-        status={item.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Acceptable}
+        status={item.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Claimable}
         title={MerkleDirectDistributor.getDisplayTitle(item.grantInfo.reason)}
         subtitle={details.shortTransactionDetails}
-        grantedGFI={item.granted}
+        unvestedGFI={item.unvested}
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}

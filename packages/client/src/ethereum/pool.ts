@@ -26,7 +26,7 @@ import {
   WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
-import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS, gfiFromAtomic} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
 import {
@@ -734,16 +734,12 @@ class StakingRewardsPosition {
   }
 
   get title(): string {
-    const date = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    })
     const origStakedAmount = new Intl.NumberFormat(undefined, {
       notation: "compact",
       compactDisplay: "short",
     }).format(Number(fiduFromAtomic(this.stakedEvent.returnValues.amount)))
 
-    return `Staked ${origStakedAmount} FIDU on ${date}`
+    return `Staked ${origStakedAmount} FIDU`
   }
 
   get description(): string {
@@ -760,7 +756,12 @@ class StakingRewardsPosition {
   }
 
   get shortDescription(): string {
-    return ""
+    const transactionDate = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI to date • ${transactionDate}`
   }
 
   get granted(): BigNumber {
