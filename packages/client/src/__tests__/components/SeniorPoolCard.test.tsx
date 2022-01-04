@@ -11,6 +11,7 @@ function renderSeniorPoolCard(remainingCapacity) {
     apy: 10,
     limit: 300,
     remainingCapacity: remainingCapacity,
+    disabled: false,
   }
 
   const store = {

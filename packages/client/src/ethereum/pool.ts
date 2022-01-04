@@ -642,7 +642,7 @@ function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
  * @param maxPoolCapacity - Maximum capacity of the pool
  * @returns Remaining capacity of pool in atomic units
  */
-function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumber {
+export function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
@@ -664,6 +664,12 @@ async function getEstimatedTotalInterest(pool: SeniorPool, currentBlock: BlockIn
       return {balance, interestApr}
     })
   )
+  return getEstimatedTotalInterestForCreditLines(creditLineData)
+}
+
+export function getEstimatedTotalInterestForCreditLines(
+  creditLineData: {balance: BigNumber; interestApr: BigNumber}[]
+): BigNumber {
   return BigNumber.sum.apply(
     null,
     creditLineData.map((cl) => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS.toString())))

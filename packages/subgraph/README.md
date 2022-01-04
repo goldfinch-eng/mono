@@ -71,7 +71,7 @@ In practical terms, logs should be added to monitor the progress of the applicat
 - Make sure you have docker and docker-compose installed
 - Start the frontend with npm run start to start the hardhat node
 - On another terminal, clone the subgraph and go to the subgraph folder
-- Run: `./start-local.sh` or `./reset-start-local.sh`
+- Run: `./reset-local.sh && ./start-local.sh` or `./start-local.sh`
   - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
 - The indexing of the subgraph should start immediately.
 - Urls available are:
@@ -79,6 +79,16 @@ In practical terms, logs should be added to monitor the progress of the applicat
   - GraphQL HTTP server at: http://localhost:8000
   - Index node server at: http://localhost:8030
   - Metrics server at: http://localhost:8040
+
+### Quick Runs
+- A quick run script is available: `packages/subgraph/quick-start.sh`. This requires a test dump to be restored to the postgres container.
+  - This only works for mainnet forking
+  - The network on metamask should be http://localhost:8545
+
+### Creating local backups
+- If you already have a running db and want to save it for future runs use:
+  - docker exec -t <postgres-container-id> pg_dumpall -c -U graph-node > ~/dump.sql
+
 
 ## Resources
 - [The Graph Academy](https://thegraph.academy/developers/)

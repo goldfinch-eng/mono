@@ -439,7 +439,7 @@ function ActionsContainer({
     session.status === "authenticated" &&
     backer &&
     !tranchedPool?.isPaused &&
-    tranchedPool?.state === PoolState.Open &&
+    tranchedPool?.poolState === PoolState.Open &&
     !tranchedPool.isFull &&
     !tranchedPool.metadata?.disabled &&
     user?.info.value.goListed
@@ -531,7 +531,7 @@ function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 
   let rightAmountPrefix = ""
   let rightAmountDescription = "Remaining"
-  if (tranchedPool.state === PoolState.Open) {
+  if (tranchedPool.poolState === PoolState.Open) {
     // Show an "approx." sign if the junior tranche is not yet locked
     rightAmountPrefix = "~"
     rightAmountDescription = "Est. Remaining"
@@ -582,7 +582,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 
   let rightAmountPrefix = ""
   let rightAmountDescription = "Remaining"
-  if (tranchedPool.state === PoolState.Open) {
+  if (tranchedPool.poolState === PoolState.Open) {
     // Show an "approx." sign if the junior tranche is not yet locked
     rightAmountPrefix = "~"
     rightAmountDescription = "Est. Remaining"

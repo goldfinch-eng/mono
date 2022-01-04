@@ -9,6 +9,7 @@ type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
   lastestPoolStatus: SeniorPoolStatus!
+  investmentsMade: [TranchedPool!]!
 }
 
 type SeniorPoolStatus @entity {

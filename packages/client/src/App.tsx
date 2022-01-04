@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/react"
 import React, {useEffect, useState} from "react"
 import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
+import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import Borrow from "./components/borrow"
 import DevTools from "./components/devTools"
 import Earn from "./components/earn"
@@ -47,6 +48,7 @@ import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./uti
 import web3, {SESSION_DATA_KEY} from "./web3"
 import {Web3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
+import getApolloClient from "./graphql/client"
 import NetworkIndicators from "./components/networkIndicators"
 import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 import {
@@ -201,6 +203,7 @@ function App() {
   // https://github.com/warbler-labs/mono/pull/140.
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+  const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient(undefined))
 
   useEffect(() => {
     setupWeb3()
@@ -211,6 +214,11 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    setApolloClient(getApolloClient(network))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network])
 
   useEffect(() => {
     if (goldfinchProtocol && currentBlock) {
@@ -482,68 +490,70 @@ function App() {
   }
 
   return (
-    <AppContext.Provider value={store}>
-      <ThemeProvider theme={defaultTheme}>
-        <EarnProvider>
-          <BorrowProvider>
-            <Router>
-              <NetworkIndicators
-                user={user}
-                network={network}
-                currentErrors={currentErrors}
-                currentTxs={currentTxs}
-                connectionComplete={setupWeb3}
-                rootCurrentBlock={currentBlock}
-                leavesCurrentBlock={leavesCurrentBlock}
-              />
-              {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
-              <Sidebar />
-              <div>
-                <Switch>
-                  <Route exact path={INDEX_ROUTE}>
-                    <Redirect to={EARN_ROUTE} />
-                  </Route>
-                  <Route path={ABOUT_ROUTE}>{/* <About /> */}</Route>
-                  <Route path={EARN_ROUTE}>
-                    <Earn />
-                  </Route>
-                  {toggleRewards && (
-                    <Route path={REWARDS_ROUTE}>
-                      <Rewards />
+    <ApolloProvider client={apolloClient}>
+      <AppContext.Provider value={store}>
+        <ThemeProvider theme={defaultTheme}>
+          <EarnProvider>
+            <BorrowProvider>
+              <Router>
+                <NetworkIndicators
+                  user={user}
+                  network={network}
+                  currentErrors={currentErrors}
+                  currentTxs={currentTxs}
+                  connectionComplete={setupWeb3}
+                  rootCurrentBlock={currentBlock}
+                  leavesCurrentBlock={leavesCurrentBlock}
+                />
+                {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
+                <Sidebar />
+                <div>
+                  <Switch>
+                    <Route exact path={INDEX_ROUTE}>
+                      <Redirect to={EARN_ROUTE} />
                     </Route>
-                  )}
-                  <Route path={BORROW_ROUTE}>
-                    <Borrow />
-                  </Route>
-                  <Route path={TRANSACTIONS_ROUTE}>
-                    <Transactions currentTxs={currentTxs} />
-                  </Route>
-                  <Route path={SENIOR_POOL_ROUTE}>
-                    <SeniorPoolView />
-                  </Route>
-                  <Route path={TRANCHED_POOL_ROUTE}>
-                    <TranchedPoolView />
-                  </Route>
-                  <Route path={VERIFY_ROUTE}>
-                    <VerifyIdentity />
-                  </Route>
-                  <Route path={TERMS_OF_SERVICE_ROUTE}>
-                    <TermsOfService />
-                  </Route>
-                  <Route path={PRIVACY_POLICY_ROUTE}>
-                    <PrivacyPolicy />
-                  </Route>
-                  <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
-                    <SeniorPoolAgreementNonUS />
-                  </Route>
-                </Switch>
-              </div>
-            </Router>
-          </BorrowProvider>
-        </EarnProvider>
-        <Footer />
-      </ThemeProvider>
-    </AppContext.Provider>
+                    <Route path={ABOUT_ROUTE}>{/* <About /> */}</Route>
+                    <Route path={EARN_ROUTE}>
+                      <Earn />
+                    </Route>
+                    {toggleRewards && (
+                      <Route path={REWARDS_ROUTE}>
+                        <Rewards />
+                      </Route>
+                    )}
+                    <Route path={BORROW_ROUTE}>
+                      <Borrow />
+                    </Route>
+                    <Route path={TRANSACTIONS_ROUTE}>
+                      <Transactions currentTxs={currentTxs} />
+                    </Route>
+                    <Route path={SENIOR_POOL_ROUTE}>
+                      <SeniorPoolView />
+                    </Route>
+                    <Route path={TRANCHED_POOL_ROUTE}>
+                      <TranchedPoolView />
+                    </Route>
+                    <Route path={VERIFY_ROUTE}>
+                      <VerifyIdentity />
+                    </Route>
+                    <Route path={TERMS_OF_SERVICE_ROUTE}>
+                      <TermsOfService />
+                    </Route>
+                    <Route path={PRIVACY_POLICY_ROUTE}>
+                      <PrivacyPolicy />
+                    </Route>
+                    <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
+                      <SeniorPoolAgreementNonUS />
+                    </Route>
+                  </Switch>
+                </div>
+              </Router>
+            </BorrowProvider>
+          </EarnProvider>
+          <Footer />
+        </ThemeProvider>
+      </AppContext.Provider>
+    </ApolloProvider>
   )
 }
 

@@ -17,6 +17,14 @@ if ! which jq 2>&1 > /dev/null; then
     exit 1
 fi
 
+if grep -Fxq "host.docker.internal" docker-compose.yml
+then
+    echo "Will run setup"
+else
+    echo "Setup already completed"
+    exit 0
+fi
+
 # Create the graph-node container
 docker-compose up --no-start graph-node
 
