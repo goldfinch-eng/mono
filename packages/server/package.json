@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "test": "NODE_ENV=test npx hardhat test --show-stack-traces",
-    "start": "HARDHAT_FORK=mainnet FIRESTORE_EMULATOR_HOST=localhost:8080 npx hardhat run index.ts --network localhost",
+    "start": "FIRESTORE_EMULATOR_HOST=localhost:8080 npx hardhat run index.ts --network localhost",
     "start:murmuration": "HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
     "start:murmuration:liquidity-mining": "HARDHAT_FORK= MURMURATION=yes FIRESTORE_EMULATOR_HOST=localhost:8080 npx hardhat run index.ts --network localhost",
     "pre-commit": "lint-staged",
@@ -15,7 +15,10 @@
     "lint:fix": "eslint --resolve-plugins-relative-to=. --fix ."
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"]
+    "*.(js(x)?|ts(x)?)": [
+      "prettier --write",
+      "eslint --resolve-plugins-relative-to=. --fix"
+    ]
   },
   "dependencies": {
     "@goldfinch-eng/protocol": "^0.1.0",

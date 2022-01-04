@@ -198,6 +198,11 @@ async function getExistingContracts(
 }
 
 async function fundWithWhales(currencies: Ticker[], recipients: string[], amount?: any) {
+  const {
+    deployments: {log: logger},
+  } = hre
+  logger("💰🐋 Begin fundWithWhales")
+
   const whales: Record<Ticker, AddressString> = {
     USDC: "0xf977814e90da44bfa03b6295a0616a897441acec",
     USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
@@ -209,12 +214,13 @@ async function fundWithWhales(currencies: Ticker[], recipients: string[], amount
 
   for (const currency of currencies) {
     if (!whales[currency]) {
-      throw new Error(`We don't have a whale mapping for ${currency}`)
+      throw new Error(`🚨 We don't have a whale mapping for ${currency}`)
     }
     for (const recipient of _.compact(recipients)) {
       assertIsTicker(currency)
       if (currency === "ETH") {
         const whale = whales[currency]
+        logger(`💰🐋 funding ${currency}`, {whale, recipient})
         await impersonateAccount(hre, whale)
         const signer = ethers.provider.getSigner(whale)
         assertNonNullable(signer)
@@ -231,6 +237,7 @@ async function fundWithWhales(currencies: Ticker[], recipients: string[], amount
       }
     }
   }
+  logger("💰🐋 End fundWithWhales")
 }
 
 async function fundWithWhale({
@@ -241,10 +248,15 @@ async function fundWithWhale({
 }: {
   whale: string
   recipient: string
-  erc20: any
+  erc20: Contract
   amount: BN
 }) {
+  const {
+    deployments: {log: logger},
+  } = hre
+
   await impersonateAccount(hre, whale)
+  logger(`💰🐋 funding ${erc20.name}`, {whale, recipient})
   const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
 

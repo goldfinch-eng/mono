@@ -90,19 +90,22 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+    logger("🐳 Funding from local whales")
     await fundFromLocalWhale(gf_deployer, erc20s, hre)
     await fundFromLocalWhale(borrower, erc20s, hre)
+    logger("🐳 Finished funding from local whales")
   }
 
   if (isMainnetForking()) {
+    logger("🐳 Funding from mainnet forking whales")
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
 
-    logger("Funding protocol_owner with whales")
+    logger("🐳 Funding protocol_owner with whales")
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
-    logger(`Finished funding with whales.`)
+    logger("🐳 Finished funding with whales.")
 
     // Grant local signer role
     await impersonateAccount(hre, protocol_owner)
