@@ -77,11 +77,15 @@ app.post("/fundWithWhales", async (req, res) => {
 })
 
 app.post("/setupForTesting", async (req, res) => {
+  const {
+    deployments: {log: logger},
+  } = hre
   if (process.env.NODE_ENV === "production") {
     return res.status(404).send({message: "setupForTesting only available on local and murmuration"})
   }
 
   try {
+    logger("⚒️ setupForTesting")
     const {address} = req.body
     await setUpForTesting(hre, {
       overrideAddress: address,
