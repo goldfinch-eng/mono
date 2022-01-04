@@ -2,3 +2,5 @@ export const FIDU_ADDRESS = "0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF"
 export const SENIOR_POOL_ADDRESS = "0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822"
 export const POOL_TOKENS_ADDRESS = "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df"
 export const GOLDFINCH_CONFIG_ADDRESS = "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
+export const LeverageRatioConfigIndex = 9
+export const ReserveDenominatorConfigIndex = 3

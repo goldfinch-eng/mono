@@ -211,6 +211,7 @@ export interface getTranchedPoolsData_tranchedPools_juniorTranches {
   principalDeposited: any
   principalSharePrice: any
   interestSharePrice: any
+  trancheId: any
 }
 
 export interface getTranchedPoolsData_tranchedPools_seniorTranches {
@@ -220,6 +221,7 @@ export interface getTranchedPoolsData_tranchedPools_seniorTranches {
   principalDeposited: any
   principalSharePrice: any
   interestSharePrice: any
+  trancheId: any
 }
 
 export interface getTranchedPoolsData_tranchedPools {

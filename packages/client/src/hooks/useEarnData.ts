@@ -37,7 +37,7 @@ export function useTranchedPoolSubgraphData(skip = false): {
   loading: boolean
   error: ApolloError | undefined
 } {
-  const {goldfinchProtocol, currentBlock, user, web3Status} = useContext(AppContext)
+  const {goldfinchProtocol, currentBlock, user, web3Status} = useNonNullContext(AppContext)
   const [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
     loaded: false,
     value: undefined,

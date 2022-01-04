@@ -88,7 +88,8 @@ export const GET_TRANCHED_POOLS_DATA = gql`
         dueDate
         name
       }
-      backers {
+      # TODO support filtering by userAddress or paginating queries once the amount of backers by tranched pools increases
+      backers(first: 1000) {
         id
         user {
           id
@@ -121,6 +122,7 @@ export const GET_TRANCHED_POOLS_DATA = gql`
         principalDeposited
         principalSharePrice
         interestSharePrice
+        trancheId
       }
       seniorTranches {
         id
@@ -128,6 +130,7 @@ export const GET_TRANCHED_POOLS_DATA = gql`
         principalDeposited
         principalSharePrice
         interestSharePrice
+        trancheId
       }
     }
   }

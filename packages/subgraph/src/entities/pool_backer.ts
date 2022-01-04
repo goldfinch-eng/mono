@@ -1,7 +1,6 @@
-import { Address, BigInt } from '@graphprotocol/graph-ts'
-import { PoolBacker, TranchedPoolToken } from "../../generated/schema"
+import { Address, BigInt, log } from '@graphprotocol/graph-ts'
+import { PoolBacker, TranchedPool, TranchedPoolToken } from "../../generated/schema"
 import { TranchedPool as TranchedPoolContract } from '../../generated/templates/PoolTokens/TranchedPool'
-import { getOrInitUser } from './user'
 
 // Currently, AssemblyScript does not support Closures.
 // Because of that, we need to do some restructuring on the code
@@ -28,18 +27,12 @@ export function getOrInitPoolBacker(poolAddress: Address, userAddress: Address):
   return poolBacker
 }
 
-export function updatePoolBacker(userAddress: Address, tokenId: BigInt): void {
-  const tranchedPoolToken = TranchedPoolToken.load(tokenId.toString())
-  if (!tranchedPoolToken) {
-    return
-  }
+export function updatePoolBacker(userAddress: Address, tranchedPoolAddress: Address): void {
+  let poolAddressStr = tranchedPoolAddress.toHexString()
+  let currentBackerStr = userAddress.toHexString()
+  const id = `${poolAddressStr}-${currentBackerStr}`
 
-  const poolAddress = tranchedPoolToken.tranchedPool
-  const user = getOrInitUser(userAddress)
-
-  const id = `${poolAddress}-${userAddress.toHexString()}`
   let poolBacker = PoolBacker.load(id)
-
   if (!poolBacker) {
     poolBacker = new PoolBacker(id)
   }
@@ -50,34 +43,45 @@ export function updatePoolBacker(userAddress: Address, tokenId: BigInt): void {
   let interestRedeemable = new BigInt(0)
   let principalRedeemable = new BigInt(0)
 
-  let tokens = user.tokens
+  let tranchedPool = TranchedPool.load(poolAddressStr)
+  if (!tranchedPool) {
+    // There's one scenario where the Transfer event happens before the PoolCreated. This check is required
+    // because handleTransfer triggers updates on the involved backers
+    return
+  }
+
+  let tokens = tranchedPool.tokens
   if (tokens){
     for (let i = 0, k = tokens.length; i < k; ++i) {
-      let tokenId = tokens[i]
-      if (tokenId) {
-        const tokenInfo = TranchedPoolToken.load(tokenId)
-        if (tokenInfo) {
-          principalAmount = principalAmount.plus(tokenInfo.principalAmount)
-          principalRedeemed = principalRedeemed.plus(tokenInfo.principalRedeemed)
-          interestRedeemed = interestRedeemed.plus(tokenInfo.interestRedeemed)
+      let tokenId = assert(tokens[i])
 
-          const poolContract = TranchedPoolContract.bind(Address.fromString(poolAddress))
-          const availableToWithdraw = poolContract.availableToWithdraw(BigInt.fromString(tokenId))
-          tokenInfo.interestRedeemable = availableToWithdraw.value0
-          tokenInfo.principalRedeemable = availableToWithdraw.value1
-          tokenInfo.save()
+      const tokenInfo = assert(TranchedPoolToken.load(tokenId))
 
-          interestRedeemable = interestRedeemable.plus(tokenInfo.interestRedeemable)
-          principalRedeemable = principalRedeemable.plus(tokenInfo.principalRedeemable)
+      let userAddr = tokenInfo.user.toString()
+      if (userAddr == currentBackerStr) {
+        principalAmount = principalAmount.plus(tokenInfo.principalAmount)
+        principalRedeemed = principalRedeemed.plus(tokenInfo.principalRedeemed)
+        interestRedeemed = interestRedeemed.plus(tokenInfo.interestRedeemed)
+
+        const poolContract = TranchedPoolContract.bind(Address.fromString(poolAddressStr))
+        let callResult = poolContract.try_availableToWithdraw(BigInt.fromString(tokenId))
+        if (callResult.reverted) {
+          log.warning('availableToWithdraw reverted for pool {} and backer {}', [poolAddressStr, currentBackerStr])
+        } else {
+          tokenInfo.interestRedeemable = callResult.value.value0
+          tokenInfo.principalRedeemable = callResult.value.value1
         }
+        tokenInfo.save()
+
+        interestRedeemable = interestRedeemable.plus(tokenInfo.interestRedeemable)
+        principalRedeemable = principalRedeemable.plus(tokenInfo.principalRedeemable)
       }
     }
   }
 
   const unusedPrincipal = principalRedeemed.plus(principalRedeemable)
-
   poolBacker.user = userAddress.toHexString()
-  poolBacker.tranchedPool = poolAddress.toString()
+  poolBacker.tranchedPool = tranchedPoolAddress.toHexString()
   poolBacker.principalAmount = principalAmount
   poolBacker.principalRedeemed = principalRedeemed
   poolBacker.interestRedeemed = interestRedeemed
@@ -88,4 +92,18 @@ export function updatePoolBacker(userAddress: Address, tokenId: BigInt): void {
   poolBacker.principalRedeemable = principalRedeemable
   poolBacker.interestRedeemable = interestRedeemable
   poolBacker.save()
+}
+
+export function updateAllPoolBackers(address: Address): void {
+  let tranchedPoolAddress = address.toHexString()
+  let tranchedPool = assert(TranchedPool.load(tranchedPoolAddress))
+  const backers = tranchedPool.backers
+
+  if (backers) {
+    for (let i = 0, k = backers.length; i < k; ++i) {
+      let backer = assert(backers[i])
+      let poolBacker = assert(PoolBacker.load(backer))
+      updatePoolBacker(Address.fromString(poolBacker.user), Address.fromString(tranchedPoolAddress))
+    }
+  }
 }

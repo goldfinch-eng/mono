@@ -314,6 +314,22 @@ templates:
           file: ./abis/PoolTokens_Implementation.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+        - name: SeniorPool_Implementation
+          file: ./abis/SeniorPool_Implementation.json
+        - name: SeniorPool_Proxy
+          file: ./abis/SeniorPool_Proxy.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: Fidu_Implementation
+          file: ./abis/Fidu_Implementation.json
+        - name: Fidu
+          file: ./abis/Fidu.json
+        - name: Fidu_Proxy
+          file: ./abis/Fidu_Proxy.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
       eventHandlers:
         - event: TokenBurned(indexed address,indexed address,indexed uint256)
           handler: handleTokenBurned

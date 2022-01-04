@@ -17,11 +17,11 @@ import {NetworkConfig} from "../types/network"
 
 function trancheInfo(tranche: JuniorTrancheGQL | SeniorTrancheGQL): TrancheInfo {
   return {
-    id: parseInt(tranche.id, 10),
+    id: Number(tranche.trancheId),
     principalDeposited: new BigNumber(tranche.principalDeposited),
     principalSharePrice: new BigNumber(tranche.principalSharePrice),
     interestSharePrice: new BigNumber(tranche.interestSharePrice),
-    lockedUntil: parseInt(tranche.lockedUntil, 10),
+    lockedUntil: Number(tranche.lockedUntil),
   }
 }
 
@@ -115,11 +115,11 @@ export async function parseBackers(
   return Promise.all(
     tranchedPools.map(async (tranchedPoolData) => {
       const tranchedPool = await parseTranchedPool(tranchedPoolData, _goldfinchProtocol, currentBlock)
-      const backerData = tranchedPoolData.backers?.find((b) => b.user.id === userAddress)
 
-      // This defines the backer's address as the tranchedPool address in the absence of userAddress
+      // Defines the backer's address as the tranchedPool address in the absence of userAddress
       // to show the list of pools when there's no web3 provider
       const address = userAddress || tranchedPool.address
+      const backerData = tranchedPoolData.backers?.find((b) => b.user.id.toLowerCase() === address.toLowerCase())
       const backer = new PoolBacker(address, tranchedPool, _goldfinchProtocol)
       backer.principalAmount = new BigNumber(backerData?.principalAmount || 0)
       backer.principalRedeemed = new BigNumber(backerData?.principalRedeemed || 0)

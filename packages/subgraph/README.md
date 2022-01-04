@@ -89,6 +89,44 @@ In practical terms, logs should be added to monitor the progress of the applicat
 - If you already have a running db and want to save it for future runs use:
   - docker exec -t <postgres-container-id> pg_dumpall -c -U graph-node > ~/dump.sql
 
+## Validating data from the subgraph
+1. Change the network to be mainnet
+2. Change on App.tsx the currentBlock. eg:
+```
+- const currentBlock = getBlockInfo(await getCurrentBlock())
++ const currentBlock = {
++   number: 13845148,
++   timestamp: 1637262806,
++ }
+```
+- Add the block number on the graphql/queries.ts. eg:
+```
+_meta(block: {number: 13845148}) {
+  ...
+}
+seniorPools(first: 1, block: {number: 13845148}) {
+  ...
+}
+tranchedPools(block: {number: 13845148}) {
+  ...
+}
+```
+- On `usePoolsData`, disable the skip flag from web3 and add the validation scripts
+```
+  // Fetch data from subgraph
+  const {error, backers: backersSubgraph, seniorPoolStatus, data} = useTranchedPoolSubgraphData(false)
+
+  // Fetch data from web3 provider
+  const {backers: backersWeb3, poolsAddresses} = usePoolBackersWeb3({skip: false})
+  const {seniorPoolStatus: seniorPoolStatusWeb3} = useSeniorPoolStatusWeb3(capitalProvider)
+
+  if (backersSubgraph.loaded && backersWeb3.loaded && currentBlock && goldfinchProtocol) {
+    generalTranchedPoolsValidationByBackers(backersWeb3.value, backersSubgraph.value)
+    generalBackerValidation(goldfinchProtocol, data, currentBlock)
+  }
+```
+  - Beaware that running `generalBackerValidation` will run the validations for all backers which is subject to rate limit of the web3 provider
+- On `src/graphql/client.ts` change the `API_URLS` for the url of the subgraph you want to validate
 
 ## Resources
 - [The Graph Academy](https://thegraph.academy/developers/)
