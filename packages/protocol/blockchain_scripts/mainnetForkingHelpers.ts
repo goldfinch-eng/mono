@@ -97,7 +97,7 @@ async function upgradeContracts({
       contractToDeploy = `Test${contractName}`
     }
 
-    logger("Trying to deploy", contractToDeploy)
+    logger("📡 Trying to deploy", contractToDeploy)
     const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
     await deployer.deploy(contractToDeploy, {
       from: deployFrom,
