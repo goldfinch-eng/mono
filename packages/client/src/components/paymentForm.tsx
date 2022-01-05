@@ -61,12 +61,14 @@ function PaymentForm(props) {
         setValidations({
           wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
           transactionLimit: (value) =>
-            goldfinchConfig && goldfinchConfig.transactionLimit.gte(usdcToAtomic(value))
-              ? `This is over the per-transaction limit of ${displayDollars(
-                  usdcFromAtomic(goldfinchConfig.transactionLimit),
-                  0
-                )}`
-              : undefined,
+            goldfinchConfig
+              ? goldfinchConfig.transactionLimit.gte(usdcToAtomic(value))
+                ? undefined
+                : `This is over the per-transaction limit of ${displayDollars(
+                    usdcFromAtomic(goldfinchConfig.transactionLimit),
+                    0
+                  )}`
+              : "Invalid transaction limit.",
           // @ts-expect-error ts-migrate(7030) FIXME: Not all code paths return a value.
           creditLine: (value) => {
             if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
