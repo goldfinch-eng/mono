@@ -58,7 +58,7 @@ import {
   EARN_ROUTE,
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
-  REWARDS_ROUTE,
+  GFI_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
   SENIOR_POOL_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
@@ -160,7 +160,7 @@ function App() {
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
-    [REWARDS_ROUTE]: undefined,
+    [GFI_ROUTE]: undefined,
     [BORROW_ROUTE]: undefined,
     [TRANSACTIONS_ROUTE]: undefined,
     [SENIOR_POOL_ROUTE]: undefined,
@@ -517,7 +517,7 @@ function App() {
                       <Earn />
                     </Route>
                     {toggleRewards && (
-                      <Route path={REWARDS_ROUTE}>
+                      <Route path={GFI_ROUTE}>
                         <Rewards />
                       </Route>
                     )}
