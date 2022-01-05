@@ -16,7 +16,6 @@ dotenv.config({path: findEnvLocal()})
 import express from "express"
 import cors from "cors"
 import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
-import BN from "bn.js"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {
@@ -56,7 +55,7 @@ app.post("/fundWithWhales", async (req, res) => {
   try {
     const {address} = req.body
     if (isMainnetForking()) {
-      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], {amount: 75000})
     } else {
       const chainId = await hre.getChainId()
       assertIsChainId(chainId)

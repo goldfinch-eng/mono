@@ -7,11 +7,25 @@ import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "./impersonateAccount"
 const {ethers} = hre
 
-export async function fundWithWhales(currencies: Ticker[], recipients: string[], amount?: any) {
+type FundWithWhaleOptions = {
+  amount?: number
+  debug?: typeof console.log // added because hre logger isn't working on async requests to the packages/server node instance
+}
+
+export async function fundWithWhales(
+  currencies: Ticker[],
+  recipients: string[],
+  {amount, debug}: FundWithWhaleOptions
+) {
   const {
     deployments: {log: logger},
   } = hre
-  logger("💰🐋 Begin fundWithWhales")
+  if (!debug) {
+    debug = (...args) => {
+      logger(...args)
+    }
+  }
+  debug("💰🐋 Begin fundWithWhales")
 
   const whales: Record<Ticker, AddressString> = {
     USDC: "0xf977814e90da44bfa03b6295a0616a897441acec",
@@ -23,7 +37,7 @@ export async function fundWithWhales(currencies: Ticker[], recipients: string[],
   assertIsChainId(chainId)
 
   for (const currency of currencies) {
-    logger(`💰🐋 funding ${currency}`)
+    debug(`💰🐋 funding ${currency}`)
     if (!whales[currency]) {
       throw new Error(`🚨 We don't have a whale mapping for ${currency}`)
     }
@@ -31,7 +45,7 @@ export async function fundWithWhales(currencies: Ticker[], recipients: string[],
       assertIsTicker(currency)
       if (currency === "ETH") {
         const whale = whales[currency]
-        logger(`💰🐋 whale:${whale}, recipient:${recipient}`)
+        debug(`💰🐋 whale:${whale}, recipient:${recipient}`)
         await impersonateAccount(hre, whale)
         const signer = ethers.provider.getSigner(whale)
         assertNonNullable(signer)
@@ -44,12 +58,13 @@ export async function fundWithWhales(currencies: Ticker[], recipients: string[],
           erc20,
           whale: whales[currency],
           recipient: recipient,
-          amount: amount || new BN("200000"),
+          amount: amount || 200000,
+          debug,
         })
       }
     }
   }
-  logger("💰🐋 End fundWithWhales")
+  debug("💰🐋 End fundWithWhales")
 }
 
 async function fundWithWhale({
@@ -57,24 +72,23 @@ async function fundWithWhale({
   recipient,
   erc20,
   amount,
+  debug,
 }: {
   whale: string
   recipient: string
   erc20: Contract
-  amount: BN
+  amount: number
+  debug: typeof console.log
 }) {
-  const {
-    deployments: {log: logger},
-  } = hre
-  logger(`💰🐋 funding erc20 ${erc20.name}`)
-  logger(`💰🐋 recipient:${recipient}`)
-  logger(`💰🐋 whale:${whale}`)
+  debug(`💰🐋 funding erc20 ${erc20.name}`)
+  debug(`💰🐋 recipient:${recipient}`)
+  debug(`💰🐋 whale:${whale}`)
   await impersonateAccount(hre, whale)
   const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
 
   const erc20Balance = await erc20.balanceOf()
-  logger(`💰🐋 whaleBalance:${erc20Balance}`)
+  debug(`💰🐋 whaleBalance:${erc20Balance}`)
 
   const ten = new BN(10)
   const d = new BN((await contract.decimals()).toString())

@@ -35,7 +35,7 @@ describe("deployEffects", () => {
 
     protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
-    await fundWithWhales(["ETH"], [protocolOwner])
+    await fundWithWhales(["ETH"], [protocolOwner], {})
 
     deployEffects = await getDeployEffects()
   })

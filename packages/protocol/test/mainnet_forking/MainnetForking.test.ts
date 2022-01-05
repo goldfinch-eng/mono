@@ -59,7 +59,6 @@ import {Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
 import {assertCommunityRewardsVestingRewards} from "../communityRewardsHelpers"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
-import path from "path"
 import {promises as fs} from "fs"
 import _ from "lodash"
 import {MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
@@ -85,7 +84,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
   assertNonNullable(bwr)
-  await fundWithWhales(["USDC"], [owner, bwr])
+  await fundWithWhales(["USDC"], [owner, bwr], {})
 
   // Ensure the multisig has funds for various transactions
   const ownerAccount = await getSignerForAddress(owner)
@@ -253,7 +252,7 @@ describe("mainnet forking tests", async function () {
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
-    await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
+    await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3], {})
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await goldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
     await setupSeniorPool()
@@ -657,7 +656,7 @@ describe("mainnet forking tests", async function () {
           usdc,
           goldfinchFactory,
         }))
-        await fundWithWhales(["USDC"], [unGoListedUser])
+        await fundWithWhales(["USDC"], [unGoListedUser], {})
         await erc20Approve(usdc, seniorPool.address, MAX_UINT, [unGoListedUser])
         await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [unGoListedUser])
         await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [unGoListedUser])
@@ -699,7 +698,7 @@ describe("mainnet forking tests", async function () {
           usdc,
           goldfinchFactory,
         }))
-        await fundWithWhales(["USDC"], [goListedUser])
+        await fundWithWhales(["USDC"], [goListedUser], {})
         const goldfinchConfigWithGoListAddress = await go.legacyGoList()
         const goldfinchConfigWithGoList = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
           at: goldfinchConfigWithGoListAddress,

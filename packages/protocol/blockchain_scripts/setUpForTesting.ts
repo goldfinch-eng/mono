@@ -109,11 +109,13 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     debug("🐳 Funding from mainnet forking whales")
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
-    await fundWithWhales(["ETH"], [protocolOwner])
+    await fundWithWhales(["ETH"], [protocolOwner], {})
 
     debug("🐳 Funding protocol_owner with whales")
     underwriter = protocol_owner
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], {
+      amount: 75000,
+    })
     debug("🐳 Finished funding with whales.")
 
     // Grant local signer role

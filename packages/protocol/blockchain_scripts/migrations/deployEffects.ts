@@ -15,7 +15,6 @@ import {
   isMainnetForking,
   LOCAL_CHAIN_ID,
   MAINNET_CHAIN_ID,
-  RINKEBY_CHAIN_ID,
   SAFE_CONFIG,
 } from "../deployHelpers"
 import {UpgradedContracts} from "../mainnetForkingHelpers"
@@ -23,7 +22,6 @@ import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {DefenderUpgrader} from "../adminActions/defenderUpgrader"
 import {PopulatedTransaction} from "@ethersproject/contracts"
 import {BigNumber} from "ethers"
-import {isSafeInteger} from "@goldfinch-eng/utils/node_modules/@types/lodash"
 import {fundWithWhales} from "../helpers/fundWithWhales"
 
 /**
@@ -134,7 +132,7 @@ class MainnetForkingMultisendEffects extends MultisendEffects {
     })
     const threshold = await this.safe.getThreshold()
     const approvers = (await this.safe.getOwners()).filter((o) => o !== executor).splice(0, threshold - 1)
-    await fundWithWhales(["ETH"], approvers)
+    await fundWithWhales(["ETH"], approvers, {})
     const signers = await Promise.all(approvers.map((a) => ethers.getSigner(a)))
     await Promise.all(
       signers.map(async (signer) => {
@@ -355,7 +353,7 @@ async function getSafe(overrides?: {via?: string}): Promise<Safe> {
   const {executor} = safeConfig
 
   if (isMainnetForking()) {
-    await fundWithWhales(["ETH"], [executor])
+    await fundWithWhales(["ETH"], [executor], {})
   }
 
   return constructSafe({via, executor})
