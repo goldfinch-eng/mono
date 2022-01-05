@@ -61,9 +61,11 @@ type OverrideOptions = {
 
 let logger: Logger
 export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: OverrideOptions = {}) {
-  const {getNamedAccounts, deployments, getChainId} = hre
-  const {getOrNull, log} = deployments
-  logger = log
+  const {
+    getNamedAccounts,
+    deployments: {getOrNull, log: logger},
+    getChainId,
+  } = hre
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
   const deployer = new ContractDeployer(logger, hre)
@@ -339,7 +341,7 @@ async function createBorrowerContractAndPool({
   const result = await (await goldfinchFactory.createBorrower(address)).wait()
   const lastEventArgs = getLastEventArgs(result)
   const bwrConAddr = lastEventArgs[0]
-  logger(`Created borrower contract: ${bwrConAddr} for ${address}`)
+  logger(`📜 Created borrower contract: ${bwrConAddr} for ${address}`)
 
   const filledPool = await createPoolForBorrower({
     getOrNull,
@@ -424,9 +426,9 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
 }
 
 export async function fundFromLocalWhale(userToFund: string, erc20s: any, hre: HardhatRuntimeEnvironment) {
-  const {deployments} = hre
-  const {log} = deployments
-  logger = log
+  const {
+    deployments: {log: logger},
+  } = hre
 
   logger("Sending money to:", userToFund)
   const [protocol_owner] = await ethers.getSigners()

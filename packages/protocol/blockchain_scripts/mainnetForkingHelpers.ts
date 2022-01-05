@@ -213,6 +213,7 @@ async function fundWithWhales(currencies: Ticker[], recipients: string[], amount
   assertIsChainId(chainId)
 
   for (const currency of currencies) {
+    logger(`💰🐋 funding ${currency}`)
     if (!whales[currency]) {
       throw new Error(`🚨 We don't have a whale mapping for ${currency}`)
     }
@@ -220,7 +221,7 @@ async function fundWithWhales(currencies: Ticker[], recipients: string[], amount
       assertIsTicker(currency)
       if (currency === "ETH") {
         const whale = whales[currency]
-        logger(`💰🐋 funding ${currency}`, {whale, recipient})
+        logger(`💰🐋 whale:${whale}, recipient:${recipient}`)
         await impersonateAccount(hre, whale)
         const signer = ethers.provider.getSigner(whale)
         assertNonNullable(signer)
@@ -228,8 +229,9 @@ async function fundWithWhales(currencies: Ticker[], recipients: string[], amount
       } else {
         const erc20Address = getERC20Address(currency, chainId)
         assertIsString(erc20Address)
+        const erc20 = await ethers.getContractAt("IERC20withDec", erc20Address)
         await fundWithWhale({
-          erc20: await ethers.getContractAt("IERC20withDec", erc20Address),
+          erc20,
           whale: whales[currency],
           recipient: recipient,
           amount: amount || new BN("200000"),
@@ -254,11 +256,15 @@ async function fundWithWhale({
   const {
     deployments: {log: logger},
   } = hre
-
+  logger(`💰🐋 funding erc20 ${erc20.name}`)
+  logger(`💰🐋 recipient:${recipient}`)
+  logger(`💰🐋 whale:${whale}`)
   await impersonateAccount(hre, whale)
-  logger(`💰🐋 funding ${erc20.name}`, {whale, recipient})
   const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
+
+  const erc20Balance = await erc20.balanceOf()
+  logger(`💰🐋 whaleBalance:${erc20Balance}`)
 
   const ten = new BN(10)
   const d = new BN((await contract.decimals()).toString())
