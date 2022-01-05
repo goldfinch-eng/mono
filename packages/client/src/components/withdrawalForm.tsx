@@ -312,7 +312,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     let notes: Array<{key: string; content: React.ReactNode}> = []
     let withdrawalInfo: WithdrawalInfo | undefined
-    if (transactionAmount && toggleRewards) {
+    if (transactionAmount) {
       const withdrawalAmountString = usdcToAtomic(transactionAmount)
       const withdrawalAmount = new BigNumber(withdrawalAmountString)
       if (withdrawalAmount.gt(0)) {
