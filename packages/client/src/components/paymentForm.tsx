@@ -14,8 +14,18 @@ import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
 import {assertNonNullable, displayDollars} from "../utils"
 import {PAYMENT_TX_TYPE} from "../types/transactions"
+import {CreditLine, MultipleCreditLines} from "../ethereum/creditLine"
+import {BorrowerInterface} from "../ethereum/borrower"
 
-function PaymentForm(props) {
+type PaymentFormProps = {
+  borrower: BorrowerInterface
+  creditLine: CreditLine | MultipleCreditLines
+  actionComplete: () => void
+  closeForm: () => void
+  title: string
+}
+
+function PaymentForm(props: PaymentFormProps) {
   const {borrower, creditLine, actionComplete} = props
   const {usdc, user, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
 
@@ -100,27 +110,26 @@ function PaymentForm(props) {
     const erc20Amount = erc20.atomicAmount(transactionAmount)
     let unsentAction
     if (creditLine.isMultiple) {
-      let addresses = []
-      let usdcAmounts = []
+      let addresses: string[] = []
+      let usdcAmounts: BigNumber[] = []
       if (paymentOption === "totalDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingTotalDueAmount.gt(0)) {
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
             addresses.push(cl.address)
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
-            usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars))
+            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingTotalDueAmountInDollars)))
           }
         })
       } else if (paymentOption === "periodDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
             addresses.push(cl.address)
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
-            usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars))
+            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingPeriodDueAmountInDollars)))
           }
         })
       } else {
+        if (!(creditLine instanceof MultipleCreditLines)) {
+          throw new Error("Expected instance of MultipleCreditLines.")
+        }
         // Other amount. Split across all credit lines depending on what's due. If we're swapping then
         // we need to split the USDC value (the quote) rather than the user provided input. Since the USDC
         // value will be what's used to pay

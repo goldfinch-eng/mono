@@ -258,7 +258,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
   }
 
-  splitPayment(dollarAmount) {
+  splitPayment(dollarAmount): [string[], BigNumber[]] {
     // Pay the minimum amounts for each creditline until there's no money left
     let amountRemaining = new BigNumber(usdcToAtomic(dollarAmount))
     let addresses: string[] = []
@@ -364,4 +364,4 @@ export function displayDueDate(cl: CreditLine): string {
   return cl.dueDate
 }
 
-export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine}
+export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine, MultipleCreditLines}
