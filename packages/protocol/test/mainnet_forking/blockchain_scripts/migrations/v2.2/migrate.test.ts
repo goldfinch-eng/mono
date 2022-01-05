@@ -1,9 +1,5 @@
 import hre, {getNamedAccounts, deployments, getChainId, ethers} from "hardhat"
-import {
-  fundWithWhales,
-  getAllExistingContracts,
-  impersonateAccount,
-} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {getAllExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
@@ -51,6 +47,8 @@ import {STAKING_REWARDS_PARAMS} from "@goldfinch-eng/protocol/blockchain_scripts
 import {bigVal, expectProxyOwner, expectRoles, expectOwnerRole} from "@goldfinch-eng/protocol/test/testHelpers"
 import {GFIInstance, GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {gfiTotalSupply} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
+import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 
 const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})

@@ -18,12 +18,13 @@ import {
   RINKEBY_CHAIN_ID,
   SAFE_CONFIG,
 } from "../deployHelpers"
-import {fundWithWhales, UpgradedContracts} from "../mainnetForkingHelpers"
+import {UpgradedContracts} from "../mainnetForkingHelpers"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {DefenderUpgrader} from "../adminActions/defenderUpgrader"
 import {PopulatedTransaction} from "@ethersproject/contracts"
 import {BigNumber} from "ethers"
 import {isSafeInteger} from "@goldfinch-eng/utils/node_modules/@types/lodash"
+import {fundWithWhales} from "../helpers/fundWithWhales"
 
 /**
  * Interface for performing bulk actions during protocol upgrades. The underlying

@@ -18,7 +18,7 @@ import cors from "cors"
 import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
 import BN from "bn.js"
 
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {
   setUpForTesting,
   fundFromLocalWhale,
@@ -63,7 +63,11 @@ app.post("/fundWithWhales", async (req, res) => {
 
       if (chainId === LOCAL_CHAIN_ID) {
         const {erc20s} = await getERC20s({chainId, hre})
-        await fundFromLocalWhale(address, erc20s, hre)
+        await fundFromLocalWhale(address, erc20s, {
+          debug: (...args) => {
+            console.log(...args)
+          },
+        })
       } else {
         throw new Error(`Unexpected chain id: ${chainId}`)
       }
@@ -77,18 +81,17 @@ app.post("/fundWithWhales", async (req, res) => {
 })
 
 app.post("/setupForTesting", async (req, res) => {
-  const {
-    deployments: {log: logger},
-  } = hre
   if (process.env.NODE_ENV === "production") {
     return res.status(404).send({message: "setupForTesting only available on local and murmuration"})
   }
 
   try {
-    logger("⚒️ setupForTesting")
     const {address} = req.body
     await setUpForTesting(hre, {
       overrideAddress: address,
+      debug: (...args) => {
+        console.log(...args)
+      },
     })
   } catch (e) {
     console.error("setupForTesting error", e)

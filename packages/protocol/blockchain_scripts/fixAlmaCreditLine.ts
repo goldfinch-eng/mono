@@ -11,11 +11,13 @@ import {
 } from "./deployHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {CreditLineInstance, GoldfinchFactoryInstance, TranchedPoolInstance} from "../typechain/truffle"
-import {fundWithWhales, getExistingContracts, impersonateAccount, upgradeContracts} from "./mainnetForkingHelpers"
+import {getExistingContracts, upgradeContracts} from "./mainnetForkingHelpers"
 import {decodeLogs} from "../test/testHelpers"
 import {CreditLineCreated} from "../typechain/truffle/CreditDesk"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {CreditLine, GoldfinchFactory, TranchedPool} from "../typechain/ethers"
+import {impersonateAccount} from "./helpers/impersonateAccount"
+import {fundWithWhales} from "./helpers/fundWithWhales"
 
 async function main() {
   // let oldBorrowerAddress = "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6"

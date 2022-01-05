@@ -27,7 +27,6 @@ import {
   updateConfig,
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
-import {fundWithWhales, impersonateAccount} from "../blockchain_scripts/mainnetForkingHelpers"
 import {Logger} from "../blockchain_scripts/types"
 import {advanceTime, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 import {
@@ -48,6 +47,8 @@ import {
 import * as migrate from "../blockchain_scripts/migrations/v2.2/migrate"
 import * as migratev23 from "../blockchain_scripts/migrations/v2.3/migrate"
 import * as migratev231 from "../blockchain_scripts/migrations/v2.3.1/migrate"
+import {impersonateAccount} from "./helpers/impersonateAccount"
+import {fundWithWhales} from "./helpers/fundWithWhales"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -57,15 +58,21 @@ It is only really used for test purposes, and should never be used on Mainnet (w
 */
 type OverrideOptions = {
   overrideAddress?: string
+  debug?: typeof console.log // added because hre logger isn't working on async requests to the packages/server node instance
 }
 
 let logger: Logger
-export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: OverrideOptions = {}) {
+export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideAddress, debug}: OverrideOptions = {}) {
   const {
     getNamedAccounts,
     deployments: {getOrNull, log: logger},
     getChainId,
   } = hre
+  if (!debug) {
+    debug = (...args) => {
+      logger(...args)
+    }
+  }
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
   const deployer = new ContractDeployer(logger, hre)
@@ -86,28 +93,28 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
   if (process.env.TEST_USERS) {
     throw new Error("`TEST_USERS` is deprecated. Use `TEST_USER` instead.")
   }
-  const borrower = options?.overrideAddress || process.env.TEST_USER || protocol_owner
-  const requestFromClient = !!options?.overrideAddress
+  const borrower = overrideAddress || process.env.TEST_USER || protocol_owner
+  const requestFromClient = !!overrideAddress
 
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-    logger("🐳 Funding from local whales")
-    await fundFromLocalWhale(gf_deployer, erc20s, hre)
-    await fundFromLocalWhale(borrower, erc20s, hre)
-    logger("🐳 Finished funding from local whales")
+    debug("🐳 Funding from local whales")
+    await fundFromLocalWhale(gf_deployer, erc20s, {debug})
+    await fundFromLocalWhale(borrower, erc20s, {debug})
+    debug("🐳 Finished funding from local whales")
   }
 
   if (isMainnetForking()) {
-    logger("🐳 Funding from mainnet forking whales")
+    debug("🐳 Funding from mainnet forking whales")
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
 
-    logger("🐳 Funding protocol_owner with whales")
+    debug("🐳 Funding protocol_owner with whales")
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], new BN("75000"))
-    logger("🐳 Finished funding with whales.")
+    debug("🐳 Finished funding with whales.")
 
     // Grant local signer role
     await impersonateAccount(hre, protocol_owner)
@@ -142,7 +149,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, options: O
   const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
   const lastEventArgs = getLastEventArgs(result)
   const protocolBorrowerCon = lastEventArgs[0]
-  logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
+  debug(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
   const commonPool = await createPoolForBorrower({
     getOrNull,
@@ -425,12 +432,13 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-export async function fundFromLocalWhale(userToFund: string, erc20s: any, hre: HardhatRuntimeEnvironment) {
-  const {
-    deployments: {log: logger},
-  } = hre
-
-  logger("Sending money to:", userToFund)
+export async function fundFromLocalWhale(userToFund: string, erc20s: any, {debug}: OverrideOptions) {
+  if (!debug) {
+    debug = (...args) => {
+      logger(...args)
+    }
+  }
+  debug("💰 Sending money to:", userToFund)
   const [protocol_owner] = await ethers.getSigners()
   if (protocol_owner) {
     await protocol_owner.sendTransaction({
@@ -438,7 +446,7 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, hre: H
       value: ethers.utils.parseEther("10.0"),
     })
   } else {
-    throw new Error("Failed to obtain `protocol_owner`.")
+    throw new Error("🚨 Failed to obtain `protocol_owner`.")
   }
 
   const ten = new BN(10)
@@ -455,7 +463,11 @@ async function getDeployedAsEthersContractOrNull<T>(
   getter: (name: string) => Promise<Deployment | null>,
   name: string
 ): Promise<T | null> {
-  logger("Trying to get the deployed version of...", name)
+  const {
+    deployments: {log: logger},
+  } = hre
+
+  logger("📡 Trying to get the deployed version of...", name)
   let deployed = await getter(name)
   if (!deployed && isTestEnv()) {
     deployed = await getter(`Test${name}`)

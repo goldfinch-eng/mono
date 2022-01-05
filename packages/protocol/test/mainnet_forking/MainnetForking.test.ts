@@ -10,12 +10,7 @@ import {
   getProtocolOwner,
   getTruffleContract,
 } from "../../blockchain_scripts/deployHelpers"
-import {
-  MAINNET_MULTISIG,
-  getExistingContracts,
-  impersonateAccount,
-  fundWithWhales,
-} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 const {deployments, ethers, artifacts, web3} = hre
@@ -74,6 +69,8 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
 import {MerkleDirectDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {DepositedAndStaked, RewardPaid} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
+import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however

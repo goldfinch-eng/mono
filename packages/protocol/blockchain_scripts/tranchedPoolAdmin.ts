@@ -2,7 +2,7 @@
 import {INTEREST_DECIMALS, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {ethers} from "hardhat"
 import {CONFIG_KEYS} from "./configKeys"
-import {impersonateAccount, MAINNET_MULTISIG} from "./mainnetForkingHelpers"
+import {MAINNET_MULTISIG} from "./mainnetForkingHelpers"
 import {Borrower, CreditLine, SeniorPool, TranchedPool} from "../typechain/ethers"
 import {BigNumber} from "bignumber.js"
 import {Signer} from "ethers"
@@ -10,6 +10,7 @@ import hre from "hardhat"
 const {getNamedAccounts} = hre
 import deployedABIs from "../deployments/all_dev.json"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {impersonateAccount} from "./helpers/impersonateAccount"
 
 async function main() {
   let signerAddress: string
