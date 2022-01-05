@@ -52,7 +52,6 @@ import {
   StakingRewardsInstance,
   TranchedPoolInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import * as migrate22 from "../../blockchain_scripts/migrations/v2.2/migrate"
 import * as migrate23 from "../../blockchain_scripts/migrations/v2.3/migrate"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
 import {Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
@@ -78,7 +77,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
-  await migrate22.main()
   await migrate23.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
@@ -115,17 +113,13 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const go: GoInstance = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
 
+  const legacyGoldfinchConfig = await artifacts.require("GoldfinchConfig").at(await go.legacyGoList())
+
   const goldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
 
-  const newGoldfinchConfig: GoldfinchConfigInstance = await artifacts
-    .require("GoldfinchConfig")
-    .at(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig))
-
-  const backerRewards: BackerRewardsInstance = await artifacts
-    .require("BackerRewards")
-    .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.BackerRewards))
+  const backerRewards: BackerRewardsInstance = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
 
   const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
     .require("GoldfinchFactory")
@@ -136,9 +130,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     .require("FixedLeverageRatioStrategy")
     .at(seniorPoolStrategyAddress)
 
-  const stakingRewards: StakingRewardsInstance = await artifacts
-    .require("StakingRewards")
-    .at(await newGoldfinchConfig.getAddress(CONFIG_KEYS.StakingRewards))
+  const stakingRewards: StakingRewardsInstance = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
 
   // GFI is deployed by the temp multisig
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
@@ -170,6 +162,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     communityRewards,
     merkleDistributor,
     merkleDirectDistributor,
+    legacyGoldfinchConfig,
   }
 })
 
@@ -197,15 +190,14 @@ describe("mainnet forking tests", async function () {
     gfi: GFIInstance,
     communityRewards: CommunityRewardsInstance,
     merkleDistributor: MerkleDistributorInstance,
-    merkleDirectDistributor: MerkleDirectDistributorInstance
+    merkleDirectDistributor: MerkleDirectDistributorInstance,
+    legacyGoldfinchConfig: GoldfinchConfigInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
-    await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(40000000), {from: MAINNET_MULTISIG})
     await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
     await seniorPool.deposit(usdcVal(10000), {from: owner})
-    await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(20000000), {from: MAINNET_MULTISIG})
   }
 
   async function createBorrowerContract() {
@@ -245,6 +237,7 @@ describe("mainnet forking tests", async function () {
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
+      legacyGoldfinchConfig,
     } = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -254,7 +247,7 @@ describe("mainnet forking tests", async function () {
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
-    await goldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
+    await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
     await setupSeniorPool()
 
     await stakingRewards.unpause({from: await getProtocolOwner()})
@@ -993,9 +986,9 @@ describe("mainnet forking tests", async function () {
         const halfYearInSeconds = yearInSeconds.div(new BN(2))
         const amount = usdcVal(1000)
 
-        await usdc.approve(stakingRewards.address, amount)
+        await usdc.approve(stakingRewards.address, amount, {from: owner})
 
-        const receipt = await stakingRewards.depositAndStake(amount)
+        const receipt = await stakingRewards.depositAndStake(amount, {from: owner})
         const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
@@ -1012,7 +1005,7 @@ describe("mainnet forking tests", async function () {
         await advanceTime({seconds: halfYearInSeconds})
         await ethers.provider.send("evm_mine", [])
 
-        const rewardReceipt = await stakingRewards.getReward(tokenId)
+        const rewardReceipt = await stakingRewards.getReward(tokenId, {from: owner})
         const rewardEvent = getFirstLog<RewardPaid>(
           decodeLogs(rewardReceipt.receipt.rawLogs, stakingRewards, "RewardPaid")
         )
