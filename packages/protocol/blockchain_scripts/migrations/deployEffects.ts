@@ -304,7 +304,10 @@ class DefenderMultisendEffects extends MultisendEffects {
     for (const approver of approvers) {
       const unsignedApproveTx = await asNonNullable(safeContract.populateTransaction.approveHash)(safeTxHash)
       unsignedApproveTx.from = approver
-      console.log("Approve tx:", unsignedApproveTx)
+      console.log("Approve tx:", JSON.stringify(unsignedApproveTx, null, 4))
+
+      const signature = generatePreValidatedSignature(approver)
+      safeTx.addSignature(signature)
     }
 
     const signature = generatePreValidatedSignature(executor)
@@ -322,7 +325,7 @@ class DefenderMultisendEffects extends MultisendEffects {
       safeTx.encodedSignatures()
     )
     unsignedTx.from = executor
-    console.log("Execute tx:", unsignedTx)
+    console.log("Execute tx:", JSON.stringify(unsignedTx, null, 4))
     console.log("========================================================================================")
   }
 }
