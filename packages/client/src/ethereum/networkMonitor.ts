@@ -10,6 +10,7 @@ import {assertNonNullable} from "../utils"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
 const MURMURATION_CHAIN_ID = 31337
+const MURMURATION_RPC_URL = "https://murmuration.goldfinch.finance/_chain"
 
 class NetworkMonitor {
   web3: Web3
@@ -41,7 +42,22 @@ class NetworkMonitor {
     if (process.env.REACT_APP_MURMURATION === "yes" && this.networkId !== MURMURATION_CHAIN_ID) {
       const currentProvider: AbstractProvider = this.web3.currentProvider as AbstractProvider
       assertNonNullable(currentProvider.request)
-      await currentProvider.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x7A69"}]})
+      try {
+        await currentProvider.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x7A69"}]})
+      } catch (error: any) {
+        if (error.code === 4902) {
+          await currentProvider.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: "0x7A69",
+                chainName: "Murmuration",
+                rpcUrls: [MURMURATION_RPC_URL],
+              },
+            ],
+          })
+        }
+      }
     }
   }
 
