@@ -29,7 +29,7 @@ import {
   EARN_ROUTE,
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
-  REWARDS_ROUTE,
+  GFI_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
   SENIOR_POOL_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
@@ -109,7 +109,7 @@ function renderRewards(
   return render(
     <AppContext.Provider value={store}>
       <ThemeProvider theme={defaultTheme}>
-        <Router initialEntries={[REWARDS_ROUTE]}>
+        <Router initialEntries={[GFI_ROUTE]}>
           <Rewards />
         </Router>
       </ThemeProvider>
@@ -689,7 +689,7 @@ describe("Rewards list and detail", () => {
       [INDEX_ROUTE]: undefined,
       [EARN_ROUTE]: undefined,
       [ABOUT_ROUTE]: undefined,
-      [REWARDS_ROUTE]: {number: currentBlock.number - 1, timestamp: currentBlock.timestamp - 1},
+      [GFI_ROUTE]: {number: currentBlock.number - 1, timestamp: currentBlock.timestamp - 1},
       [BORROW_ROUTE]: undefined,
       [TRANSACTIONS_ROUTE]: undefined,
       [SENIOR_POOL_ROUTE]: undefined,

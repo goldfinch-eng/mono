@@ -313,7 +313,7 @@ function Rewards() {
   return (
     <div className="content-section">
       <div className="page-header">
-        <h1>Rewards</h1>
+        <h1>GFI</h1>
       </div>
       <ConnectionNotice requireUnlock={false} />
       <RewardsSummary claimable={claimable} unvested={unvested} totalGFI={totalBalance} totalUSD={totalUSD} />
