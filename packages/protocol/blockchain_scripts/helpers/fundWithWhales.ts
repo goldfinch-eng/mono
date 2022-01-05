@@ -1,11 +1,10 @@
 import BN from "bn.js"
 import {Ticker, AddressString, getERC20Address, currentChainId, assertIsChainId, assertIsTicker} from "../deployHelpers"
 import _ from "lodash"
-import hre from "hardhat"
+import hre, {ethers} from "hardhat"
 import {Contract} from "ethers"
 import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "./impersonateAccount"
-const {ethers} = hre
 
 type FundWithWhaleOptions = {
   amount?: number
