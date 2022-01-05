@@ -132,7 +132,7 @@ class MainnetForkingMultisendEffects extends MultisendEffects {
     })
     const threshold = await this.safe.getThreshold()
     const approvers = (await this.safe.getOwners()).filter((o) => o !== executor).splice(0, threshold - 1)
-    await fundWithWhales(["ETH"], approvers, {})
+    await fundWithWhales(["ETH"], approvers)
     const signers = await Promise.all(approvers.map((a) => ethers.getSigner(a)))
     await Promise.all(
       signers.map(async (signer) => {
@@ -353,7 +353,7 @@ async function getSafe(overrides?: {via?: string}): Promise<Safe> {
   const {executor} = safeConfig
 
   if (isMainnetForking()) {
-    await fundWithWhales(["ETH"], [executor], {})
+    await fundWithWhales(["ETH"], [executor])
   }
 
   return constructSafe({via, executor})

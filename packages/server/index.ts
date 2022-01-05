@@ -56,9 +56,8 @@ app.post("/fundWithWhales", async (req, res) => {
     const {address} = req.body
     console.log(`🐳 fundWithWhales isMainnetForking:${isMainnetForking()}`)
     if (isMainnetForking()) {
-      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], {
-        amount: 75000,
-        debug: (...args) => {
+      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], 75000, {
+        logger: (...args) => {
           console.log(...args)
         },
       })
@@ -69,7 +68,7 @@ app.post("/fundWithWhales", async (req, res) => {
       if (chainId === LOCAL_CHAIN_ID) {
         const {erc20s} = await getERC20s({chainId, hre})
         await fundFromLocalWhale(address, erc20s, {
-          debug: (...args) => {
+          logger: (...args) => {
             console.log(...args)
           },
         })
@@ -94,7 +93,7 @@ app.post("/setupForTesting", async (req, res) => {
     const {address} = req.body
     await setUpForTesting(hre, {
       overrideAddress: address,
-      debug: (...args) => {
+      logger: (...args) => {
         console.log(...args)
       },
     })

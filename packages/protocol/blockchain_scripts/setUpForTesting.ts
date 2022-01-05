@@ -58,20 +58,18 @@ It is only really used for test purposes, and should never be used on Mainnet (w
 */
 type OverrideOptions = {
   overrideAddress?: string
-  debug?: typeof console.log // added because hre logger isn't working on async requests to the packages/server node instance
+  logger?: typeof console.log // added because hre logger isn't working on async requests to the packages/server node instance
 }
 
 let logger: Logger
-export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideAddress, debug}: OverrideOptions = {}) {
+export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideAddress, logger}: OverrideOptions = {}) {
   const {
     getNamedAccounts,
-    deployments: {getOrNull, log: logger},
+    deployments: {getOrNull, log},
     getChainId,
   } = hre
-  if (!debug) {
-    debug = (...args) => {
-      logger(...args)
-    }
+  if (!logger) {
+    logger = log
   }
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
@@ -99,24 +97,22 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-    debug("🐳 Funding from local whales")
-    await fundFromLocalWhale(gf_deployer, erc20s, {debug})
-    await fundFromLocalWhale(borrower, erc20s, {debug})
-    debug("🐳 Finished funding from local whales")
+    logger("🐳 Funding from local whales")
+    await fundFromLocalWhale(gf_deployer, erc20s, {logger})
+    await fundFromLocalWhale(borrower, erc20s, {logger})
+    logger("🐳 Finished funding from local whales")
   }
 
   if (isMainnetForking()) {
-    debug("🐳 Funding from mainnet forking whales")
+    logger("🐳 Funding from mainnet forking whales")
     const protocolOwner = await getProtocolOwner()
     await impersonateAccount(hre, protocolOwner)
-    await fundWithWhales(["ETH"], [protocolOwner], {})
+    await fundWithWhales(["ETH"], [protocolOwner])
 
-    debug("🐳 Funding protocol_owner with whales")
+    logger("🐳 Funding protocol_owner with whales")
     underwriter = protocol_owner
-    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], {
-      amount: 75000,
-    })
-    debug("🐳 Finished funding with whales.")
+    await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], 75000)
+    logger("🐳 Finished funding with whales.")
 
     // Grant local signer role
     await impersonateAccount(hre, protocol_owner)
@@ -151,7 +147,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
   const lastEventArgs = getLastEventArgs(result)
   const protocolBorrowerCon = lastEventArgs[0]
-  debug(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
+  logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
   const commonPool = await createPoolForBorrower({
     getOrNull,
@@ -434,8 +430,8 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-export async function fundFromLocalWhale(userToFund: string, erc20s: any, {debug}: {debug: typeof console.log}) {
-  debug("💰 Sending money to:", userToFund)
+export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logger}: {logger: typeof console.log}) {
+  logger("💰 Sending money to:", userToFund)
   const [protocol_owner] = await ethers.getSigners()
   if (protocol_owner) {
     await protocol_owner.sendTransaction({
