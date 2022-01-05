@@ -339,7 +339,7 @@ async function createBorrowerContractAndPool({
   const result = await (await goldfinchFactory.createBorrower(address)).wait()
   const lastEventArgs = getLastEventArgs(result)
   const bwrConAddr = lastEventArgs[0]
-  logger(`Created borrower contract: ${bwrConAddr} for ${address}`)
+  logger(`📜 Created borrower contract: ${bwrConAddr} for ${address}`)
 
   const filledPool = await createPoolForBorrower({
     getOrNull,
