@@ -24,6 +24,7 @@ export async function fundWithWhales(
       logger(...args)
     }
   }
+
   debug("💰🐋 Begin fundWithWhales")
 
   const whales: Record<Ticker, AddressString> = {
@@ -86,7 +87,9 @@ async function fundWithWhale({
   const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
 
-  const erc20Balance = await erc20.balanceOf()
+  debug(`💰🐋 recipientStartBalance:${await erc20.balanceOf(recipient)}`)
+
+  const erc20Balance = await erc20.balanceOf(whale)
   debug(`💰🐋 whaleBalance:${erc20Balance}`)
 
   const ten = new BN(10)
@@ -94,4 +97,5 @@ async function fundWithWhale({
   const decimals = ten.pow(new BN(d))
 
   await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
+  debug(`💰🐋 recipientEndBalance:${await erc20.balanceOf(recipient)}`)
 }

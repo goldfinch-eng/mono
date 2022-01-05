@@ -434,12 +434,7 @@ async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
-export async function fundFromLocalWhale(userToFund: string, erc20s: any, {debug}: OverrideOptions) {
-  if (!debug) {
-    debug = (...args) => {
-      logger(...args)
-    }
-  }
+export async function fundFromLocalWhale(userToFund: string, erc20s: any, {debug}: {debug: typeof console.log}) {
   debug("💰 Sending money to:", userToFund)
   const [protocol_owner] = await ethers.getSigners()
   if (protocol_owner) {

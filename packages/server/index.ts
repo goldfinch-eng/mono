@@ -54,8 +54,14 @@ app.post("/fundWithWhales", async (req, res) => {
 
   try {
     const {address} = req.body
+    console.log(`🐳 fundWithWhales isMainnetForking:${isMainnetForking()}`)
     if (isMainnetForking()) {
-      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], {amount: 75000})
+      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], {
+        amount: 75000,
+        debug: (...args) => {
+          console.log(...args)
+        },
+      })
     } else {
       const chainId = await hre.getChainId()
       assertIsChainId(chainId)
