@@ -164,19 +164,24 @@ class CreditLine extends BaseCreditLine {
       this[info.name || info.method] = new BigNumber(data[info.name || info.method])
     })
 
+    await this.calculateFields(currentBlock)
+    // Just for front-end usage.
+    this.loaded = true
+  }
+
+  async calculateFields(currentBlock: BlockInfo) {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
     try {
-      data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
+      const data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
       this["maxLimit"] = new BigNumber(data["maxLimit"])
     } catch (e) {
       console.log("maxLimit not available on old CreditLines, use currentLimit", {e})
       this["maxLimit"] = this["currentLimit"]
     }
 
-    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
-
     this.isLate = this._calculateIsLate(currentBlock)
     const interestOwed = this._calculateInterestOwed()
+    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
     this.collectedPaymentBalance = new BigNumber(
@@ -189,8 +194,6 @@ class CreditLine extends BaseCreditLine {
     this.remainingTotalDueAmount = BigNumber.max(this.totalDueAmount.minus(this.collectedPaymentBalance), zero)
     const collectedForPrincipal = BigNumber.max(this.collectedPaymentBalance.minus(this.periodDueAmount), zero)
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
-    // Just for front-end usage.
-    this.loaded = true
   }
 
   _calculateIsLate(currentBlock: BlockInfo) {

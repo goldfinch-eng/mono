@@ -229,7 +229,7 @@ describe("V2.2 & v2.3 migration", async function () {
       describe("CommunityRewards", () => {
         describe("rewardsAvailable", () => {
           it("is correct", async () => {
-            expect(await communityRewards.rewardsAvailable()).to.bignumber.eq("19116804411560100000000000")
+            expect(await communityRewards.rewardsAvailable()).to.bignumber.eq("14745027289195700000000000")
           })
         })
       })
@@ -257,12 +257,12 @@ describe("V2.2 & v2.3 migration", async function () {
           })
 
           it("CommunityRewards is correct", async () => {
-            expect(await gfi.balanceOf(communityRewards.address)).to.bignumber.eq("19116804411560100000000000")
+            expect(await gfi.balanceOf(communityRewards.address)).to.bignumber.eq("14745027289195700000000000")
           })
 
           it("Coinbase Custody is correct", async () => {
             expect(await gfi.balanceOf("0xc95c99CeF8A8D0DbFEd996021d11c1635674B1be")).to.bignumber.be.eq(
-              "51878852980000000000000000"
+              "56250630099154500000000000"
             )
           })
 
@@ -271,7 +271,7 @@ describe("V2.2 & v2.3 migration", async function () {
           })
 
           it("Protocol Owner is correct", async () => {
-            expect(await gfi.balanceOf(await getProtocolOwner())).to.bignumber.eq("29646384965342959999999000")
+            expect(await gfi.balanceOf(await getProtocolOwner())).to.bignumber.eq("29646384968552859999999000")
           })
         })
       })

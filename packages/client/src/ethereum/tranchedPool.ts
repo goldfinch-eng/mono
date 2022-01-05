@@ -95,7 +95,7 @@ const TRANCHES = {
   Junior: 2,
 }
 
-interface TrancheInfo {
+export type TrancheInfo = {
   id: number
   principalDeposited: BigNumber
   principalSharePrice: BigNumber
@@ -119,7 +119,7 @@ class TranchedPool {
   contract: TranchedPoolContract
   creditLine!: CreditLine
   creditLineAddress!: string
-  state!: PoolState
+  poolState!: PoolState
   metadata?: TranchedPoolMetadata
   juniorFeePercent!: BigNumber
   reserveFeePercent!: BigNumber
@@ -174,19 +174,22 @@ class TranchedPool {
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
 
-    const now = currentBlock.timestamp
-    if (now < seniorTranche.lockedUntil) {
-      this.state = PoolState.SeniorLocked
-    } else if (juniorTranche.lockedUntil === 0) {
-      this.state = PoolState.Open
-    } else if (now < juniorTranche.lockedUntil || seniorTranche.lockedUntil === 0) {
-      this.state = PoolState.JuniorLocked
-    } else {
-      this.state = PoolState.WithdrawalsUnlocked
-    }
+    this.poolState = this.getPoolState(currentBlock)
   }
 
-  private async loadPoolMetadata(): Promise<TranchedPoolMetadata | undefined> {
+  getPoolState(currentBlock: BlockInfo): PoolState {
+    const now = currentBlock.timestamp
+    if (now < this.seniorTranche.lockedUntil) {
+      return PoolState.SeniorLocked
+    } else if (this.juniorTranche.lockedUntil === 0) {
+      return PoolState.Open
+    } else if (now < this.juniorTranche.lockedUntil || this.seniorTranche.lockedUntil === 0) {
+      return PoolState.JuniorLocked
+    }
+    return PoolState.WithdrawalsUnlocked
+  }
+
+  public async loadPoolMetadata(): Promise<TranchedPoolMetadata | undefined> {
     let store = await getMetadataStore(this.goldfinchProtocol.networkId)
     return store[this.address.toLowerCase()]
   }
@@ -231,7 +234,7 @@ class TranchedPool {
   }
 
   remainingJuniorCapacity(): BigNumber {
-    if (this.state >= PoolState.JuniorLocked) {
+    if (this.poolState >= PoolState.JuniorLocked) {
       return ZERO
     }
     return this.remainingCapacity().dividedBy(this.estimatedLeverageRatio.plus(1))

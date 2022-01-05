@@ -9,6 +9,7 @@ type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
   lastestPoolStatus: SeniorPoolStatus!
+  investmentsMade: [TranchedPool!]!
 }
 
 type SeniorPoolStatus @entity {
@@ -159,9 +160,9 @@ type TranchedPool @entity {
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
   estimatedSeniorPoolContribution: BigInt!
+  backers: [PoolBacker!]!
+  tokens: [TranchedPoolToken!]!
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
-  backers: [PoolBacker!]! @derivedFrom(field: "tranchedPool")
-  tokens: [TranchedPoolToken!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
 }

@@ -51,7 +51,7 @@ class BorrowerInterface {
     for (let address of this.borrowerPoolAddresses) {
       const tranchedPool = new TranchedPool(address, this.goldfinchProtocol)
       await tranchedPool.initialize(currentBlock)
-      if (tranchedPool.state >= PoolState.SeniorLocked) {
+      if (tranchedPool.poolState >= PoolState.SeniorLocked) {
         this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
       }
       this.tranchedPoolByCreditLine[tranchedPool.creditLineAddress] = tranchedPool

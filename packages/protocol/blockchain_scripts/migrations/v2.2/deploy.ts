@@ -235,8 +235,8 @@ export async function deploy(deployEffects: DeployEffects, anonDeployEffects: De
   const existingSupply = await gfi.contract.totalSupply()
 
   const gfiAllocationsByAddress = {
-    [goldfinchCoinbaseCustodyAddress]: "51878852980000000000000000",
-    [communityRewards.contract.address]: "19116804411560100000000000",
+    [goldfinchCoinbaseCustodyAddress]: "56250630099154500000000000",
+    [communityRewards.contract.address]: "14745027289195700000000000",
     [asNonNullable(merkleDirectDistributor).contract.address]: "4500813523096940000000000",
     [protocolOwner]: new BigNumber("29646386049938100000000000").minus(existingSupply.toString()).toFixed(0),
     [lpStakingRewards.address]: "9142857120000000000000000",

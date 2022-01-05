@@ -12,6 +12,7 @@ export function getOrInitSeniorPool(address: Address): SeniorPool {
   if (!seniorPool) {
     seniorPool = new SeniorPool(address.toHexString())
 		seniorPool.capitalProviders = []
+    seniorPool.investmentsMade = []
 
     let poolStatus = new SeniorPoolStatus('1')
     poolStatus.rawBalance = new BigInt(0)
@@ -66,5 +67,13 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.save()
 
   seniorPool.lastestPoolStatus = poolStatus.id
+  seniorPool.save()
+}
+
+export function updatePoolInvestments(seniorPoolAddress: Address, tranchedPoolAddress: Address): void {
+  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
+  let investments = seniorPool.investmentsMade
+  investments.push(tranchedPoolAddress.toHexString())
+  seniorPool.investmentsMade = investments
   seniorPool.save()
 }
