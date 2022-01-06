@@ -1,5 +1,6 @@
 import {CommunityRewards, MerkleDirectDistributor, StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
 import {deployments} from "hardhat"
+import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "../../baseDeploy"
 import {getEthersContract} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
 
@@ -23,6 +24,7 @@ export async function main() {
       await communityRewards.populateTransaction.pause(),
       await merkleDirectDistributor.populateTransaction.pause(),
       await stakingRewards.populateTransaction.pause(),
+      await communityRewards.populateTransaction.setTokenLaunchTimeInSeconds(TOKEN_LAUNCH_TIME_IN_SECONDS),
     ],
   })
 
