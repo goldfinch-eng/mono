@@ -16,9 +16,8 @@ dotenv.config({path: findEnvLocal()})
 import express from "express"
 import cors from "cors"
 import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
-import BN from "bn.js"
 
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {
   setUpForTesting,
   fundFromLocalWhale,
@@ -55,15 +54,24 @@ app.post("/fundWithWhales", async (req, res) => {
 
   try {
     const {address} = req.body
+    console.log(`🐳 fundWithWhales isMainnetForking:${isMainnetForking()}`)
     if (isMainnetForking()) {
-      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], 75000, {
+        logger: (...args) => {
+          console.log(...args)
+        },
+      })
     } else {
       const chainId = await hre.getChainId()
       assertIsChainId(chainId)
 
       if (chainId === LOCAL_CHAIN_ID) {
         const {erc20s} = await getERC20s({chainId, hre})
-        await fundFromLocalWhale(address, erc20s, hre)
+        await fundFromLocalWhale(address, erc20s, {
+          logger: (...args) => {
+            console.log(...args)
+          },
+        })
       } else {
         throw new Error(`Unexpected chain id: ${chainId}`)
       }
@@ -85,6 +93,9 @@ app.post("/setupForTesting", async (req, res) => {
     const {address} = req.body
     await setUpForTesting(hre, {
       overrideAddress: address,
+      logger: (...args) => {
+        console.log(...args)
+      },
     })
   } catch (e) {
     console.error("setupForTesting error", e)

@@ -10,12 +10,7 @@ import {
   getProtocolOwner,
   getTruffleContract,
 } from "../../blockchain_scripts/deployHelpers"
-import {
-  MAINNET_MULTISIG,
-  getExistingContracts,
-  impersonateAccount,
-  fundWithWhales,
-} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 const {deployments, ethers, artifacts, web3} = hre
@@ -64,16 +59,17 @@ import {Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
 import {assertCommunityRewardsVestingRewards} from "../communityRewardsHelpers"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
-import path from "path"
 import {promises as fs} from "fs"
 import _ from "lodash"
-import {MerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {MerkleDistributorInfo} from "../../blockchain_scripts/merkle/merkleDistributor/types"
 import {
   NO_VESTING_MERKLE_INFO_PATH,
   VESTING_MERKLE_INFO_PATH,
-} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
-import {MerkleDirectDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+} from "../../blockchain_scripts/airdrop/community/calculation"
+import {MerkleDirectDistributorInfo} from "../../blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {DepositedAndStaked, RewardPaid} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
+import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
+import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however

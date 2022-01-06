@@ -1,10 +1,10 @@
 import {getNamedAccounts} from "hardhat"
-import {fundWithWhales} from "packages/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {assertIsString} from "packages/utils/src/type"
 import {deploy} from "packages/protocol/blockchain_scripts/migrations/v2.0.1/deploy"
 import {ETHDecimals, MINTER_ROLE, OWNER_ROLE, PAUSER_ROLE} from "packages/protocol/blockchain_scripts/deployHelpers"
 import BN from "bn.js"
 import {getDeployEffects} from "packages/protocol/blockchain_scripts/migrations/deployEffects"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
 describe("v2.0.1", () => {
   beforeEach(async () => {
