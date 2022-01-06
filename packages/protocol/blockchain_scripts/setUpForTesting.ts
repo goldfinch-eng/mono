@@ -44,7 +44,6 @@ import {
   UniqueIdentity,
 } from "../typechain/ethers"
 
-import * as migrate from "../blockchain_scripts/migrations/v2.2/migrate"
 import * as migratev23 from "../blockchain_scripts/migrations/v2.3/migrate"
 import * as migratev231 from "../blockchain_scripts/migrations/v2.3.1/migrate"
 import {impersonateAccount} from "./helpers/impersonateAccount"
@@ -124,7 +123,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
     await tx.wait()
 
-    await migrate.main()
     await migratev23.main()
     await migratev231.main()
 
