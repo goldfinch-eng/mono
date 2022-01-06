@@ -10,7 +10,7 @@ describe("v2.0.1", () => {
   beforeEach(async () => {
     const {gf_deployer} = await getNamedAccounts()
     assertIsString(gf_deployer)
-    await fundWithWhales(["ETH"], [gf_deployer], {})
+    await fundWithWhales(["ETH"], [gf_deployer])
   })
 
   describe("deployment", async () => {
