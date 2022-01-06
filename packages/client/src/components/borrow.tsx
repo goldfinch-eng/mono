@@ -11,7 +11,7 @@ import {useBorrow} from "../contexts/BorrowContext"
 import {assertNonNullable} from "../utils"
 
 function Borrow(props) {
-  const {creditDesk, user, goldfinchProtocol} = useContext(AppContext)
+  const {creditDesk, user, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [creditLinesAddresses, setCreditLinesAddresses] = useState<string[]>([])
   const [creditLine, setCreditLine] = useState(defaultCreditLine)
   const {borrowStore, setBorrowStore} = useBorrow()
@@ -50,7 +50,8 @@ function Borrow(props) {
 
   async function changeCreditLine(clAddresses) {
     assertNonNullable(goldfinchProtocol)
-    setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol))
+    assertNonNullable(currentBlock)
+    setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol, currentBlock))
   }
 
   let creditActionsContainer

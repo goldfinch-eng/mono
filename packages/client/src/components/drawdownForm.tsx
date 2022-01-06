@@ -13,8 +13,17 @@ import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import UnlockERC20Form from "./unlockERC20Form"
+import {BorrowerInterface} from "../ethereum/borrower"
+import {CreditLine} from "../ethereum/creditLine"
 
-function DrawdownForm(props) {
+type DrawdownFormProps = {
+  borrower: BorrowerInterface
+  creditLine: CreditLine
+  actionComplete: () => void
+  closeForm: () => void
+}
+
+function DrawdownForm(props: DrawdownFormProps) {
   const {pool, usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
@@ -38,9 +47,11 @@ function DrawdownForm(props) {
   }
 
   function action({transactionAmount, sendToAddress}) {
+    // NOTE: We allow `sendToAddress` to be empty, and in that case rely on the Borrower contract
+    // to transfer the drawndown funds to the sender.
+
     assertNonNullable(erc20)
     const drawdownAmount = usdcToAtomic(transactionAmount)
-    sendToAddress = sendToAddress || props.borrower.address
 
     let unsentAction
     if (isSwapping()) {
@@ -75,7 +86,8 @@ function DrawdownForm(props) {
   }
 
   function renderForm({formMethods}) {
-    let warningMessage, disabled
+    let warningMessage: React.ReactNode | undefined
+    let disabled = false
     if (props.creditLine.isLate) {
       warningMessage = <p className="form-message">Cannot drawdown when payment is past due</p>
       disabled = true

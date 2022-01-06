@@ -27,7 +27,9 @@ export function displayNumber(val: number | string | BigNumber | undefined, deci
   if (decimals === 2 && valFloat < 0.01 && valFloat > 0) {
     return "<0.01"
   }
-  return commaFormat(valFloat.toFixed(decimals))
+  // Javascript's threshold at which it defaults to exponential notation is 1e21 (cf.
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed#description).
+  return valFloat >= 1e21 ? valFloat.toExponential(decimals) : commaFormat(valFloat.toFixed(decimals))
 }
 
 function commaFormat(numberString): string {

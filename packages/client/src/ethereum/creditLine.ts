@@ -258,7 +258,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
   }
 
-  splitPayment(dollarAmount) {
+  splitPayment(dollarAmount): [string[], BigNumber[]] {
     // Pay the minimum amounts for each creditline until there's no money left
     let amountRemaining = new BigNumber(usdcToAtomic(dollarAmount))
     let addresses: string[] = []
@@ -332,7 +332,11 @@ function buildCreditLine(address): CreditlineContract {
   return new web3.eth.Contract(CreditLineAbi, address) as unknown as CreditlineContract
 }
 
-async function fetchCreditLineData(creditLineAddresses: string | string[], goldfinchProtocol: GoldfinchProtocol) {
+async function fetchCreditLineData(
+  creditLineAddresses: string | string[],
+  goldfinchProtocol: GoldfinchProtocol,
+  currentBlock: BlockInfo
+) {
   let result
   // Provided address can be a nothing, a single address or an array of addresses. Normalize the single address to an array
   creditLineAddresses = typeof creditLineAddresses === "string" ? [creditLineAddresses] : creditLineAddresses
@@ -347,7 +351,7 @@ async function fetchCreditLineData(creditLineAddresses: string | string[], goldf
   } else {
     result = new MultipleCreditLines(creditLineAddresses, goldfinchProtocol)
   }
-  await result.initialize()
+  await result.initialize(currentBlock)
   return result
 }
 
@@ -360,4 +364,4 @@ export function displayDueDate(cl: CreditLine): string {
   return cl.dueDate
 }
 
-export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine}
+export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine, MultipleCreditLines}
