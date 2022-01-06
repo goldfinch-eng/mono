@@ -60,6 +60,8 @@ export const openzeppelin_saveDeploymentManifest = async (
 ): Promise<undefined> => {
   const {version, validations} = await getVersionAndValidations(implementation)
 
+  // to debug: console.log(validations.log[n]?.CreditLineFactory)
+
   const manifest = await Manifest.forNetwork(provider)
   await manifest.addProxy({
     address: proxy.address,

@@ -71,7 +71,7 @@ const scenarios: Scenario[] = [
         supported: true,
       }
     },
-    expectedText: /It looks like you aren't on the right Ethereum network/,
+    expectedText: /You are on an unsupported network, please switch to Ethereum mainnet/,
   },
   {
     devName: "not_connected_to_metamask",

@@ -65,7 +65,7 @@ function TransactionInput(props: TransactionInputProps) {
           <Controller
             control={props.formMethods.control}
             name={name}
-            defaultValue="0"
+            defaultValue=""
             rules={{
               required: "Amount is required",
               min: {value: 0.0000001, message: "Must be greater than 0"},

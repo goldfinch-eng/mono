@@ -67,6 +67,8 @@ import {
   VERIFY_ROUTE,
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
+import Banner from "./components/banner"
+import {iconInfo} from "./components/icons"
 
 interface GeolocationData {
   ip: string
@@ -134,6 +136,8 @@ export interface GlobalState {
 
   sessionData?: SessionData
   setSessionData?: SetSessionFn
+  hasGraphError?: boolean
+  setHasGraphError?: (value: boolean) => void
 }
 
 declare let window: any
@@ -204,6 +208,7 @@ function App() {
 
   const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
   const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient(undefined))
+  const [hasGraphError, setHasGraphError] = useState<boolean>(false)
 
   useEffect(() => {
     setupWeb3()
@@ -487,6 +492,8 @@ function App() {
     setSessionData,
     refreshCurrentBlock,
     setLeafCurrentBlock,
+    hasGraphError,
+    setHasGraphError,
   }
 
   return (

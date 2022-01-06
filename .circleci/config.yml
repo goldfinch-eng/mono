@@ -57,7 +57,7 @@ jobs:
             - ./packages/protocol/cache
             - ./packages/protocol/typechain
             - ./packages/utils/dist
-          
+
   test:
     docker:
       - image: cimg/node:12.18.3
@@ -77,7 +77,7 @@ jobs:
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep -v mainnet_forking | circleci tests split --split-by=timings)
             npm run test:unfiltered $tests
-            
+
   mainnet_forking:
     docker:
       - image: cimg/node:12.18.3

@@ -11,6 +11,8 @@ import {assertNonNullable} from "../utils"
 import {useContext} from "react"
 import {NetworkConfig} from "../types/network"
 import {Web3Status} from "../types/web3"
+import Banner from "./banner"
+import {iconInfo} from "./icons"
 
 export interface ConnectionNoticeProps {
   creditLine?: CreditLine
@@ -59,10 +61,9 @@ export const strategies: ConnectionNoticeStrategy[] = [
     devName: "wrong_network",
     match: ({network}) => !!network && !network.supported,
     render: (_props) => (
-      <TextBanner>
-        It looks like you aren't on the right Ethereum network. To use Goldfinch, you should connect to Ethereum Mainnet
-        from Metamask.
-      </TextBanner>
+      <Banner variant="warning" icon={iconInfo}>
+        You are on an unsupported network, please switch to Ethereum mainnet.
+      </Banner>
     ),
   },
   {
