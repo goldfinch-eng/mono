@@ -94,6 +94,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     address poolAddress = _msgSender();
     tokenId = createToken(params, poolAddress);
     _mint(to, tokenId);
+    config.getBackerRewards().setPoolTokenAccRewardsPerPrincipalDollarAtMint(_msgSender(), tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
     return tokenId;
   }
@@ -189,15 +190,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   function destroyAndBurn(uint256 tokenId) internal {
     delete tokens[tokenId];
     _burn(tokenId);
-  }
-
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual override(ERC721PresetMinterPauserAutoIdUpgradeSafe) whenNotPaused {
-    require(to == address(0) || config.getGo().go(to), "This address has not been go-listed");
-    super._beforeTokenTransfer(from, to, tokenId);
   }
 
   function _validPool(address poolAddress) internal view virtual returns (bool) {

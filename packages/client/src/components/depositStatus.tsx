@@ -1,48 +1,84 @@
-import {BigNumber} from "bignumber.js"
+import {GFI} from "../ethereum/gfi"
 import {CapitalProvider, PoolData} from "../ethereum/pool"
-import {isGraphSeniorPoolData, GraphSeniorPoolData, GraphUserData} from "../graphql/utils"
+import {InfoIcon} from "../ui/icons"
 import {displayDollars, displayPercent} from "../utils"
+import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
-  poolData?: PoolData | GraphSeniorPoolData
-  capitalProvider?: CapitalProvider | GraphUserData
+  poolData: PoolData | undefined
+  capitalProvider: CapitalProvider | undefined
 }
 
 function DepositStatus(props: DepositStatusProps) {
-  const {capitalProvider, poolData} = props
-  const portfolioBalance = capitalProvider?.availableToWithdrawInDollars || new BigNumber("0")
-  const portfolioBalanceDisplay = displayDollars(portfolioBalance)
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
+  if (props.poolData && props.capitalProvider) {
+    const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
+    const portfolioBalanceDisplay = displayDollars(portfolioBalance)
 
-  let estimatedAPY: BigNumber | null = null
+    const globalEstimatedApyFromSupplying = props.poolData.estimatedApy
+    const estimatedApyFromSupplying = globalEstimatedApyFromSupplying
 
-  if (isGraphSeniorPoolData(poolData) || poolData?.loaded) {
-    estimatedAPY = poolData.estimatedApy
-  }
-  let apyDisplay: string = `${displayPercent(estimatedAPY)}`
+    const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi
 
-  if (portfolioBalance.gt(0) && estimatedAPY) {
-    const estimatedGrowth = estimatedAPY.multipliedBy(portfolioBalance)
+    const estimatedApyFromGfi = GFI.estimateApyFromGfi(
+      props.capitalProvider.stakedSeniorPoolBalanceInDollars,
+      portfolioBalance,
+      globalEstimatedApyFromGfi
+    )
+
+    const estimatedApy = estimatedApyFromGfi
+      ? estimatedApyFromSupplying.plus(estimatedApyFromGfi)
+      : estimatedApyFromSupplying
+    const apyDisplay = `${displayPercent(estimatedApy)}`
+
+    const estimatedGrowth = portfolioBalance.multipliedBy(estimatedApy)
     const estimatedGrowthDisplay = displayDollars(estimatedGrowth)
 
-    let unrealizedGainsPrefix = capitalProvider?.unrealizedGainsInDollars.gte(0) ? "+" : ""
-    let unrealizedGainsDisplay = displayDollars(capitalProvider?.unrealizedGainsInDollars)
-    let unrealizedGainsPercentDisplay = displayPercent(capitalProvider?.unrealizedGainsPercentage)
+    let unrealizedGainsPrefix = props.capitalProvider.unrealizedGainsInDollars.gte(0) ? "+" : ""
+    let unrealizedGainsDisplay = displayDollars(props.capitalProvider.unrealizedGainsInDollars)
+    let unrealizedGainsPercentDisplay = displayPercent(props.capitalProvider.unrealizedGainsPercentage)
 
     return (
       <div className="deposit-status background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{portfolioBalanceDisplay}</div>
-          <div className="sub-value">
+          <div className="value" data-testid="portfolio-total-balance">
+            {portfolioBalanceDisplay}
+          </div>
+          <div className="sub-value" data-testid="portfolio-total-balance-perc">
             {unrealizedGainsPrefix}
             {unrealizedGainsDisplay} ({unrealizedGainsPercentDisplay})
           </div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. Annual Growth</div>
-          <div className="value">{estimatedGrowthDisplay}</div>
-          <div className="sub-value">{`${apyDisplay} APY`}</div>
+          <div className="deposit-status-item-flex">
+            <div className="label">Est. Annual Growth</div>
+            {toggleRewards && (
+              <span
+                data-tip=""
+                data-for="annual-growth-tooltip"
+                data-offset="{'top': 0, 'left': 0}"
+                data-place="bottom"
+              >
+                <InfoIcon />
+              </span>
+            )}
+          </div>
+          <div className="value" data-testid="portfolio-est-growth">
+            {estimatedGrowthDisplay}
+          </div>
+          <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${apyDisplay} APY${
+            estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""
+          }`}</div>
         </div>
+        {toggleRewards && (
+          <AnnualGrowthTooltipContent
+            supplyingCombined={false}
+            estimatedApyFromSupplying={estimatedApyFromSupplying}
+            estimatedApyFromGfi={estimatedApyFromGfi}
+            estimatedApy={estimatedApy}
+          />
+        )}
       </div>
     )
   } else {
@@ -50,11 +86,13 @@ function DepositStatus(props: DepositStatusProps) {
       <div className="deposit-status background-container-inner">
         <div className="deposit-status-item">
           <div className="label">Portfolio balance</div>
-          <div className="value">{portfolioBalanceDisplay}</div>
+          <div className="value" data-testid="portfolio-total-balance">
+            {displayDollars(undefined, 2)}
+          </div>
         </div>
         <div className="deposit-status-item">
-          <div className="label">Est. APY</div>
-          <div className="value">{apyDisplay}</div>
+          <div className="label">Est. Annual Growth</div>
+          <div className="value" data-testid="portfolio-est-growth">{`${displayDollars(undefined)}`}</div>
         </div>
       </div>
     )

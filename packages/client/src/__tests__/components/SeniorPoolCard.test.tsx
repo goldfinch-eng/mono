@@ -1,7 +1,6 @@
 import "@testing-library/jest-dom"
 import {AppContext} from "../../App"
 import {render, screen, waitFor} from "@testing-library/react"
-import {defaultUser} from "../../ethereum/user"
 import {SeniorPoolCard} from "../../components/earn"
 import BigNumber from "bignumber.js"
 
@@ -12,10 +11,11 @@ function renderSeniorPoolCard(remainingCapacity) {
     apy: 10,
     limit: 300,
     remainingCapacity: remainingCapacity,
+    disabled: false,
   }
 
   const store = {
-    user: defaultUser(),
+    user: undefined,
   }
 
   return render(

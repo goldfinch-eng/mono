@@ -1,42 +1,44 @@
+import {isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
 import React, {useEffect, useState, useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
+import {CombinedRepaymentTx} from "../ethereum/pool"
+import {getEtherscanSubdomain} from "../ethereum/utils"
 import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
 import {iconOutArrow} from "./icons"
 
 function RecentRepayments() {
-  const {pool, user, network, goldfinchProtocol} = useContext(AppContext)
-  const [repayments, setRepayments] = useState([])
+  const {pool, user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
+  const [repayments, setRepayments] = useState<CombinedRepaymentTx[]>([])
   let transactionRows
 
   useEffect(() => {
-    if (pool && pool.gf && goldfinchProtocol) {
-      pool.gf.getRepaymentEvents(goldfinchProtocol).then((repayments) => {
-        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any[]' is not assignable to para... Remove this comment to see the full error message
+    if (pool && goldfinchProtocol && currentBlock) {
+      pool.info.value.poolData.getRepaymentEvents(pool, goldfinchProtocol, currentBlock).then((repayments) => {
         setRepayments(_.slice(repayments, 0, 3))
       })
     }
-  }, [pool, goldfinchProtocol])
+  }, [pool, goldfinchProtocol, currentBlock])
 
-  function createTransactionRows(tx) {
+  function createTransactionRows(tx: CombinedRepaymentTx) {
     assertNonNullable(network)
-    const etherscanSubdomain = network.name === "mainnet" ? "" : `${network.name}.`
+    const etherscanSubdomain = getEtherscanSubdomain(network)
     let yourPortion
     let yourPortionClass
 
-    if (user.loaded && pool && pool.gf.loaded) {
+    if (user && pool) {
       let yourPortionValue = usdcFromAtomic(
         user
           .poolBalanceAsOf(tx.blockNumber)
-          .dividedBy(pool.gf.assetsAsOf(tx.blockNumber))
+          .dividedBy(pool.info.value.poolData.assetsAsOf(tx.blockNumber))
           .multipliedBy(tx.interestAmountBN)
       )
 
       yourPortion = displayDollars(yourPortionValue, 4)
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
       yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
-    } else if (!user.loaded && !user.address) {
+    } else if (!user) {
       yourPortion = displayDollars(0, 4)
     } else {
       yourPortion = "Loading..."
@@ -48,7 +50,7 @@ function RecentRepayments() {
           <span className="transaction-link-label">{croppedAddress(tx.id)}</span>
           <a
             className="inline-button"
-            href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
+            href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
             target="_blank"
             rel="noopener noreferrer"
           >

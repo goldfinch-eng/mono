@@ -16,11 +16,20 @@ dotenv.config({path: findEnvLocal()})
 import express from "express"
 import cors from "cors"
 import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
-import BN from "bn.js"
 
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import setUpForTesting from "@goldfinch-eng/protocol/deploy/setUpForTesting"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
+import {
+  setUpForTesting,
+  fundFromLocalWhale,
+  getERC20s,
+} from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
+import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
+import {
+  assertIsChainId,
+  isMainnetForking,
+  LOCAL_CHAIN_ID,
+} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import admin, {firestore} from "firebase-admin"
 
 import {getDb, getUsers} from "@goldfinch-eng/functions/db"
@@ -43,8 +52,35 @@ app.post("/fundWithWhales", async (req, res) => {
     return res.status(404).send({message: "fundWithWhales only available on local and murmuration"})
   }
 
-  const {address} = req.body
-  await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], new BN("75000"))
+  try {
+    const {address} = req.body
+    console.log(`🐳 fundWithWhales isMainnetForking:${isMainnetForking()}`)
+    if (isMainnetForking()) {
+      await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [address], 75000, {
+        logger: (...args) => {
+          console.log(...args)
+        },
+      })
+    } else {
+      const chainId = await hre.getChainId()
+      assertIsChainId(chainId)
+
+      if (chainId === LOCAL_CHAIN_ID) {
+        const {erc20s} = await getERC20s({chainId, hre})
+        await fundFromLocalWhale(address, erc20s, {
+          logger: (...args) => {
+            console.log(...args)
+          },
+        })
+      } else {
+        throw new Error(`Unexpected chain id: ${chainId}`)
+      }
+    }
+  } catch (e) {
+    console.error("fundWithWhales error", e)
+    return res.status(500).send({message: "fundWithWhales error"})
+  }
+
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
 })
 
@@ -52,14 +88,50 @@ app.post("/setupForTesting", async (req, res) => {
   if (process.env.NODE_ENV === "production") {
     return res.status(404).send({message: "setupForTesting only available on local and murmuration"})
   }
-  const {address} = req.body
 
   try {
+    const {address} = req.body
     await setUpForTesting(hre, {
       overrideAddress: address,
+      logger: (...args) => {
+        console.log(...args)
+      },
     })
   } catch (e) {
-    return res.status(404).send({message: "setupForTesting error"})
+    console.error("setupForTesting error", e)
+    return res.status(500).send({message: "setupForTesting error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/advanceTimeOneDay", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "advanceTimeOnDay only available on local and murmuration"})
+  }
+
+  try {
+    await advanceTime({days: 1})
+    await mineBlock()
+  } catch (e) {
+    console.error("advanceTimeOneDay error", e)
+    return res.status(500).send({message: "advanceTimeOneDay error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/advanceTimeThirtyDays", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "advanceTimeThirtyDays only available on local and murmuration"})
+  }
+
+  try {
+    await advanceTime({days: 30})
+    await mineBlock()
+  } catch (e) {
+    console.error("advanceTimeThirtyDays error", e)
+    return res.status(500).send({message: "advanceTimeThirtyDays error"})
   }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
@@ -68,8 +140,8 @@ app.post("/setupForTesting", async (req, res) => {
 admin.initializeApp({projectId: "goldfinch-frontends-dev"})
 
 app.post("/kycStatus", async (req, res) => {
-  if (process.env.NODE_ENV === "production" || process.env.MURMURATION) {
-    return res.status(404).send({message: "kycStatus only available on local"})
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "kycStatus only available on local and murmuration"})
   }
 
   const {address, countryCode, kycStatus} = req.body
@@ -103,7 +175,7 @@ app.post("/kycStatus", async (req, res) => {
       }
     })
   } catch (e) {
-    console.error(e)
+    console.error("kycStatus error", e)
     return res.status(500).send({status: "error", message: (e as Error)?.message})
   }
 

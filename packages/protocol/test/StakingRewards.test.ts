@@ -9,13 +9,18 @@ import {
   SeniorPoolInstance,
   StakingRewardsInstance,
 } from "../typechain/truffle"
-const {ethers} = hre
+const {ethers, deployments} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
-import {RewardPaid, Staked} from "../typechain/truffle/StakingRewards"
-const {deployments} = hre
+import {
+  DepositedAndStaked,
+  RewardPaid,
+  Staked,
+  Unstaked,
+  UnstakedAndWithdrew,
+  UnstakedAndWithdrewMultiple,
+} from "../typechain/truffle/StakingRewards"
 import {
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   expect,
   decodeLogs,
@@ -25,11 +30,17 @@ import {
   bigVal,
   expectAction,
   MAX_UINT,
+  getCurrentTimestamp,
+  usdcToFidu,
+  decimals,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import {deployBaseFixture} from "./util/fixtures"
+
+const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum LockupPeriod {
@@ -60,12 +71,12 @@ describe("StakingRewards", function () {
   let owner: string,
     investor: string,
     anotherUser: string,
-    goldfinchConfig: GoldfinchConfigInstance,
     gfi: GFIInstance,
     usdc: ERC20Instance,
     seniorPool: SeniorPoolInstance,
     fidu: FiduInstance,
-    stakingRewards: StakingRewardsInstance
+    stakingRewards: StakingRewardsInstance,
+    goldfinchConfig: GoldfinchConfigInstance
 
   let fiduAmount: BN
   let anotherUserFiduAmount: BN
@@ -138,7 +149,7 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc} = await deployAllContracts(deployments)
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -181,6 +192,7 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      ...others,
     }
   })
 
@@ -190,7 +202,6 @@ describe("StakingRewards", function () {
       owner,
       investor,
       anotherUser,
-      goldfinchConfig,
       seniorPool,
       gfi,
       stakingRewards,
@@ -203,7 +214,16 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      goldfinchConfig,
     } = await testSetup())
+  })
+
+  it("defaults the staking multipliers to be 1x", async () => {
+    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.eq(MULTIPLIER_DECIMALS)
+    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwelveMonths)).to.bignumber.eq(MULTIPLIER_DECIMALS)
+    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwentyFourMonths)).to.bignumber.eq(
+      MULTIPLIER_DECIMALS
+    )
   })
 
   describe("stake", () => {
@@ -316,7 +336,24 @@ describe("StakingRewards", function () {
       await usdc.approve(stakingRewards.address, amount, {from: investor})
       const receipt = await stakingRewards.depositAndStake(amount, {from: investor})
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -364,7 +401,24 @@ describe("StakingRewards", function () {
         from: investor,
       })
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -411,6 +465,15 @@ describe("StakingRewards", function () {
   })
 
   describe("depositAndStakeWithLockup", async () => {
+    beforeEach(async () => {
+      await stakingRewards.setLeverageMultiplier(
+        LockupPeriod.SixMonths,
+        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+      )
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
+    })
+
     it("deposits into senior pool and stakes resulting shares with lockup", async () => {
       const amount = usdcVal(1000)
       const balanceBefore = await usdc.balanceOf(investor)
@@ -418,8 +481,26 @@ describe("StakingRewards", function () {
 
       await usdc.approve(stakingRewards.address, amount, {from: investor})
       const receipt = await stakingRewards.depositAndStakeWithLockup(amount, LockupPeriod.SixMonths, {from: investor})
+      const currentTimestamp = await getCurrentTimestamp()
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(currentTimestamp.add(new BN((60 * 60 * 24 * 365) / 2)))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(15)).div(new BN(10)))
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -449,6 +530,15 @@ describe("StakingRewards", function () {
   })
 
   describe("depositWithPermitAndStakeWithLockup", async () => {
+    beforeEach(async () => {
+      await stakingRewards.setLeverageMultiplier(
+        LockupPeriod.SixMonths,
+        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+      )
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
+    })
+
     it("deposits into senior pool and stakes resulting shares with lockup", async () => {
       const nonce = await (usdc as any).nonces(investor)
       const deadline = MAX_UINT
@@ -480,8 +570,26 @@ describe("StakingRewards", function () {
         s as any,
         {from: investor}
       )
+      const currentTimestamp = await getCurrentTimestamp()
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+      )
+      const expectedSharePrice = new BN(1).mul(decimals)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(currentTimestamp.add(new BN((60 * 60 * 24 * 365) / 2)))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(15)).div(new BN(10)))
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -521,9 +629,6 @@ describe("StakingRewards", function () {
         const wallet = await getWallet(investor)
         assertNonNullable(wallet)
         const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
-
-        const balanceBefore = await usdc.balanceOf(investor)
-        const seniorPoolAssetsBefore = await seniorPool.assets()
 
         await stakingRewards.pause()
         await expect(
@@ -600,6 +705,17 @@ describe("StakingRewards", function () {
         [() => gfi.balanceOf(investor), {unchanged: true}],
         [() => stakingRewards.earnedSinceLastCheckpoint(tokenId), {unchanged: true}],
       ])
+    })
+
+    it("emits an Unstaked event", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+      const receipt = await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
+
+      const unstakedEvent = getFirstLog<Unstaked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Unstaked"))
+
+      expect(unstakedEvent.args.user).to.equal(investor)
+      expect(unstakedEvent.args.tokenId).to.bignumber.equal(tokenId)
+      expect(unstakedEvent.args.amount).to.bignumber.equal(fiduAmount)
     })
 
     context("position is locked-up", async () => {
@@ -720,6 +836,25 @@ describe("StakingRewards", function () {
       await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})).to.be.rejected
     })
 
+    it("emits an UnstakedAndWithdrew event", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      const withdrawAmount = fiduAmount.div(new BN(2))
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
+      const receipt = await stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
+
+      const unstakedAndWithdrewEvent = getFirstLog<UnstakedAndWithdrew>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "UnstakedAndWithdrew")
+      )
+
+      expect(unstakedAndWithdrewEvent.args.user).to.equal(investor)
+      expect(unstakedAndWithdrewEvent.args.usdcReceivedAmount).to.bignumber.equal(
+        withdrawAmountInUsdc.mul(new BN(995)).div(new BN(1000))
+      )
+      expect(unstakedAndWithdrewEvent.args.tokenId).to.bignumber.equal(tokenId)
+      expect(unstakedAndWithdrewEvent.args.amount).to.bignumber.equal(withdrawAmount)
+    })
+
     context("user does not own position token", async () => {
       it("reverts", async () => {
         const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
@@ -793,6 +928,26 @@ describe("StakingRewards", function () {
       await expect(stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})).to.be.rejected
     })
 
+    it("emits an UnstakedAndWithdrew event", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      const withdrawAmount = fiduAmount.div(new BN(2))
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
+
+      const receipt = await stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
+
+      const unstakedAndWithdrewEvent = getFirstLog<UnstakedAndWithdrew>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "UnstakedAndWithdrew")
+      )
+
+      expect(unstakedAndWithdrewEvent.args.user).to.equal(investor)
+      expect(unstakedAndWithdrewEvent.args.usdcReceivedAmount).to.bignumber.equal(
+        withdrawAmountInUsdc.mul(new BN(995)).div(new BN(1000))
+      )
+      expect(unstakedAndWithdrewEvent.args.tokenId).to.bignumber.equal(tokenId)
+      expect(unstakedAndWithdrewEvent.args.amount).to.bignumber.equal(withdrawAmount)
+    })
+
     context("user does not own position token", async () => {
       it("reverts", async () => {
         const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
@@ -855,7 +1010,6 @@ describe("StakingRewards", function () {
     it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
       const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
       const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
-      const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
 
       const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
       const totalWithdrawalAmountInUsdc = firstTokenWithdrawAmount.add(secondTokenWithdrawAmount)
@@ -877,6 +1031,36 @@ describe("StakingRewards", function () {
           {from: investor}
         )
       ).to.be.rejected
+    })
+
+    it("emits an UnstakedAndWithdrewMultiple event", async () => {
+      const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+      const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
+
+      const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
+      const totalWithdrawalAmountInUsdc = firstTokenWithdrawAmount.add(secondTokenWithdrawAmount)
+
+      const receipt = await stakingRewards.unstakeAndWithdrawMultiple(
+        [firstToken, secondToken],
+        [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+        {from: investor}
+      )
+
+      const unstakedAndWithdrewMultipleEvent = getFirstLog<UnstakedAndWithdrewMultiple>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "UnstakedAndWithdrewMultiple")
+      )
+
+      expect(unstakedAndWithdrewMultipleEvent.args.user).to.equal(investor)
+      expect(unstakedAndWithdrewMultipleEvent.args.usdcReceivedAmount).to.bignumber.equal(
+        totalWithdrawalAmountInUsdc.mul(new BN(995)).div(new BN(1000))
+      )
+      expect(unstakedAndWithdrewMultipleEvent.args.tokenIds.length).to.equal(2)
+      expect(unstakedAndWithdrewMultipleEvent.args.tokenIds[0]).to.bignumber.equal(firstToken)
+      expect(unstakedAndWithdrewMultipleEvent.args.tokenIds[1]).to.bignumber.equal(secondToken)
+      expect(unstakedAndWithdrewMultipleEvent.args.amounts.length).to.equal(2)
+      expect(unstakedAndWithdrewMultipleEvent.args.amounts[0]).to.bignumber.equal(firstTokenAmount)
+      expect(unstakedAndWithdrewMultipleEvent.args.amounts[1]).to.bignumber.equal(secondTokenAmount)
     })
 
     describe("validations", async () => {
@@ -979,10 +1163,10 @@ describe("StakingRewards", function () {
 
     it("unstakes fidu and withdraws from the senior pool for multiple position tokens", async () => {
       const firstTokenAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
-      const secondTokenAmountInUsd = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+      const secondTokenAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
 
       const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
-      const totalWithdrawalAmountInUsdc = firstTokenAmountInUsdc.add(secondTokenAmountInUsd)
+      const totalWithdrawalAmountInUsdc = firstTokenAmountInUsdc.add(secondTokenAmountInUsdc)
       await expectAction(() =>
         stakingRewards.unstakeAndWithdrawMultipleInFidu(
           [firstToken, secondToken],
@@ -1001,6 +1185,35 @@ describe("StakingRewards", function () {
           {from: investor}
         )
       ).to.be.rejected
+    })
+
+    it("emits an UnstakedAndWithdrewMultiple event", async () => {
+      const firstTokenAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+      const totalWithdrawalAmountInFidu = firstTokenAmount.add(secondTokenAmount)
+      const totalWithdrawalAmountInUsdc = firstTokenAmountInUsdc.add(secondTokenAmountInUsdc)
+
+      const receipt = await stakingRewards.unstakeAndWithdrawMultipleInFidu(
+        [firstToken, secondToken],
+        [firstTokenAmount, secondTokenAmount],
+        {from: investor}
+      )
+
+      const unstakedAndWithdrewMultipleEvent = getFirstLog<UnstakedAndWithdrewMultiple>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "UnstakedAndWithdrewMultiple")
+      )
+
+      expect(unstakedAndWithdrewMultipleEvent.args.user).to.equal(investor)
+      expect(unstakedAndWithdrewMultipleEvent.args.usdcReceivedAmount).to.bignumber.equal(
+        totalWithdrawalAmountInUsdc.mul(new BN(995)).div(new BN(1000))
+      )
+      expect(unstakedAndWithdrewMultipleEvent.args.tokenIds.length).to.equal(2)
+      expect(unstakedAndWithdrewMultipleEvent.args.tokenIds[0]).to.bignumber.equal(firstToken)
+      expect(unstakedAndWithdrewMultipleEvent.args.tokenIds[1]).to.bignumber.equal(secondToken)
+      expect(unstakedAndWithdrewMultipleEvent.args.amounts.length).to.equal(2)
+      expect(unstakedAndWithdrewMultipleEvent.args.amounts[0]).to.bignumber.equal(firstTokenAmount)
+      expect(unstakedAndWithdrewMultipleEvent.args.amounts[1]).to.bignumber.equal(secondTokenAmount)
     })
 
     describe("validations", async () => {
@@ -1287,6 +1500,15 @@ describe("StakingRewards", function () {
     })
 
     context("boosting", async () => {
+      beforeEach(async () => {
+        await stakingRewards.setLeverageMultiplier(
+          LockupPeriod.SixMonths,
+          new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+        )
+        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
+      })
+
       it("accounts for boosting", async () => {
         await stake({amount: fiduAmount, from: anotherUser})
         const tokenId = await stakeWithLockup({
@@ -1310,6 +1532,128 @@ describe("StakingRewards", function () {
 
         // It should return 0, since the last checkpoint occcured in the current block
         expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.equal(new BN(0))
+      })
+    })
+  })
+
+  describe("currentEarnRatePerToken", async () => {
+    let rewardRate: BN
+
+    beforeEach(async function () {
+      rewardRate = new BN(String(2e18))
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      const totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+    })
+
+    context("`lastUpdateTime` is in the past", () => {
+      it("returns the rewards earned per second for staking one FIDU token", async () => {
+        await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        expect(currentTimestamp).to.bignumber.equal(timestampAfterStaking.add(halfYearInSeconds))
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.currentEarnRatePerToken()).to.bignumber.equal(
+          rewardRate.mul(halfYearInSeconds).mul(decimals).div(expectedTotalLeveragedStakedSupply).div(halfYearInSeconds)
+        )
+      })
+    })
+
+    context("`lastUpdateTime` is the current timestamp", () => {
+      it("returns the rewards earned per second for staking one FIDU token", async () => {
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.currentEarnRatePerToken()).to.bignumber.equal(
+          rewardRate.mul(decimals).div(expectedTotalLeveragedStakedSupply)
+        )
+      })
+    })
+  })
+
+  describe("positionCurrentEarnRate", async () => {
+    let rewardRate: BN
+
+    beforeEach(async function () {
+      rewardRate = new BN(String(2e18))
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      const totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+    })
+
+    context("`lastUpdateTime` is in the past", () => {
+      it("returns the rewards earned per second for the position", async () => {
+        const tokenId = await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const currentTimestamp = await getCurrentTimestamp()
+        expect(currentTimestamp).to.bignumber.equal(timestampAfterStaking.add(halfYearInSeconds))
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.positionCurrentEarnRate(tokenId)).to.bignumber.equal(
+          rewardRate
+            .mul(halfYearInSeconds)
+            .mul(fiduAmount)
+            .div(expectedTotalLeveragedStakedSupply)
+            .div(halfYearInSeconds)
+        )
+      })
+    })
+
+    context("`lastUpdateTime` is the current timestamp", () => {
+      it("returns the rewards earned per second for staking one FIDU token", async () => {
+        await advanceTime({seconds: halfYearInSeconds})
+        await ethers.provider.send("evm_mine", [])
+
+        const tokenId = await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+        const timestampAfterStaking = await getCurrentTimestamp()
+
+        const lastUpdateTime = await stakingRewards.lastUpdateTime()
+        expect(lastUpdateTime).to.bignumber.equal(timestampAfterStaking)
+
+        const expectedTotalLeveragedStakedSupply = fiduAmount.mul(new BN(2))
+        expect(await stakingRewards.positionCurrentEarnRate(tokenId)).to.bignumber.equal(
+          rewardRate.mul(fiduAmount).div(expectedTotalLeveragedStakedSupply)
+        )
       })
     })
   })
@@ -1463,6 +1807,13 @@ describe("StakingRewards", function () {
 
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
+
+      await stakingRewards.setLeverageMultiplier(
+        LockupPeriod.SixMonths,
+        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
+      )
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
     })
 
     describe("stakeWithLockup", async () => {
@@ -1868,7 +2219,7 @@ describe("StakingRewards", function () {
         await advanceTime({seconds: 1000})
 
         await expect(stakingRewards.getReward(tokenId, {from: investor})).to.be.rejectedWith(
-          /additional rewardPerToken cannot exceed rewardsSinceLastUpdate/
+          /additionalRewardsPerToken cannot exceed rewardsSinceLastUpdate/
         )
       })
     })
@@ -2109,6 +2460,32 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(
           /Must have admin role/
         )
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    let otherConfig: GoldfinchConfigInstance
+
+    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
+      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
+      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
+      return {goldfinchConfig}
+    })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
+    })
+
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
+        const tx = await stakingRewards.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: otherConfig.address,
+        })
       })
     })
   })

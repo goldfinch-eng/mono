@@ -1,14 +1,16 @@
 import {useLocation} from "react-router-dom"
-import {AppContext, NetworkConfig} from "../App"
+import {AppContext} from "../App"
 import {CreditLine} from "../ethereum/creditLine"
-import {UnlockedStatus, User} from "../ethereum/user"
-import useNonNullContext from "../hooks/useNonNullContext"
+import {UnlockedStatus, UserLoaded} from "../ethereum/user"
 import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./verifyAddressBanner"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
+import {useContext} from "react"
+import {NetworkConfig} from "../types/network"
+import {Web3Status} from "../types/web3"
 import Banner from "./banner"
 import {iconInfo} from "./icons"
 
@@ -18,7 +20,6 @@ export interface ConnectionNoticeProps {
   requireUnlock?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
   isPaused?: boolean
-  isClosedToUser?: boolean
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
@@ -32,8 +33,9 @@ function TextBanner({children}: React.PropsWithChildren<{}>) {
 }
 
 interface ConditionProps extends ConnectionNoticeProps {
-  network: NetworkConfig
-  user: User
+  network: NetworkConfig | undefined
+  user: UserLoaded | undefined
+  web3Status: Web3Status | undefined
   session: Session
   location: any
 }
@@ -47,7 +49,7 @@ interface ConnectionNoticeStrategy {
 export const strategies: ConnectionNoticeStrategy[] = [
   {
     devName: "install_metamask",
-    match: (_props) => !(window as any).ethereum,
+    match: ({web3Status}) => web3Status?.type === "no_web3",
     render: (_props) => (
       <TextBanner>
         In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}
@@ -57,16 +59,17 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "wrong_network",
-    match: ({network}) => !!network.name && !network.supported,
+    match: ({network}) => !!network && !network.supported,
     render: (_props) => (
       <Banner variant="warning" icon={iconInfo}>
-        You are on an unsupported network, please switch to Ethereum mainnet
+        You are on an unsupported network, please switch to Ethereum mainnet.
       </Banner>
     ),
   },
   {
     devName: "not_connected_to_metamask",
-    match: ({user, session}) => user.web3Connected && session.status === "unknown",
+    match: ({session, web3Status}) =>
+      web3Status?.type === "has_web3" || (web3Status?.type === "connected" && session.status === "unknown"),
     render: (_props) => (
       <TextBanner>
         You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
@@ -75,14 +78,14 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "connected_user_with_expired_session",
-    match: ({user, session}) => user.web3Connected && session.status === "known",
+    match: ({session, web3Status}) => web3Status?.type === "connected" && session.status === "known",
     render: (_props) => (
       <TextBanner>Your session has expired. To use Goldfinch, you first need to reconnect to Metamask.</TextBanner>
     ),
   },
   {
     devName: "no_credit_line",
-    match: ({user, creditLine}) => user.loaded && !!creditLine && creditLine.loaded && !creditLine.address,
+    match: ({user, creditLine}) => !!user && !!creditLine && creditLine.loaded && !creditLine.address,
     render: (_props) => (
       <TextBanner>
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.
@@ -91,7 +94,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "no_golist",
-    match: ({user, requireGolist}) => user.loaded && !user.goListed && !!requireGolist,
+    match: ({user, requireGolist}) => !!user && !user.info.value.goListed && !!requireGolist,
     render: (_props) => <VerifyAddressBanner />,
   },
   {
@@ -135,7 +138,7 @@ export const strategies: ConnectionNoticeStrategy[] = [
     devName: "require_unlock",
     match: ({requireUnlock, location, user}) => {
       let unlockStatus = getUnlockStatus({location, user})
-      return user.loaded && !!requireUnlock && !!unlockStatus && !unlockStatus.isUnlocked
+      return !!user && !!requireUnlock && !!unlockStatus && !unlockStatus.isUnlocked
     },
     render: ({location, user}) => {
       let unlockStatus = getUnlockStatus({location, user})
@@ -152,19 +155,16 @@ export const strategies: ConnectionNoticeStrategy[] = [
       </TextBanner>
     ),
   },
-  {
-    devName: "pool_closed_to_user",
-    match: ({isClosedToUser}) => !!isClosedToUser,
-    render: () => <TextBanner>The pool is currently closed to new participants.</TextBanner>,
-  },
 ]
 
-function getUnlockStatus({location, user}: {location: any; user: User}): UnlockedStatus | null {
+function getUnlockStatus({location, user}: {location: any; user: UserLoaded | undefined}): UnlockedStatus | null {
   let unlockStatus: UnlockedStatus | null = null
-  if (location.pathname.startsWith("/pools/senior")) {
-    unlockStatus = user.getUnlockStatus("earn")
-  } else if (location.pathname.startsWith("/borrow")) {
-    unlockStatus = user.getUnlockStatus("borrow")
+  if (user) {
+    if (location.pathname.startsWith("/pools/senior")) {
+      unlockStatus = user.info.value.usdcIsUnlocked.earn
+    } else if (location.pathname.startsWith("/borrow")) {
+      unlockStatus = user.info.value.usdcIsUnlocked.borrow
+    }
   }
   return unlockStatus
 }
@@ -175,7 +175,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     requireGolist: false,
     ...props,
   }
-  const {network, user} = useNonNullContext(AppContext)
+  const {network, user, web3Status} = useContext(AppContext)
   const session = useSession()
   let location = useLocation()
 
@@ -184,6 +184,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     user,
     session,
     location,
+    web3Status,
     ...props,
   }
 

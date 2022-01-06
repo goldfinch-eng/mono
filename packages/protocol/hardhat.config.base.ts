@@ -1,10 +1,14 @@
+import {findEnvLocal} from "@goldfinch-eng/utils"
+import dotenv from "dotenv"
 import {
   TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
   TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
-} from "./test/blockchain_scripts/merkleDistributor/fixtures"
-
-import {findEnvLocal} from "@goldfinch-eng/utils"
-import dotenv from "dotenv"
+} from "./test/blockchain_scripts/merkle/merkleDistributor/fixtures"
+import {
+  TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+  TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
+} from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
+import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
@@ -30,7 +34,7 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 13514817, // Oct-29-2021 10:37:33 PM +UTC
+            blockNumber: 13946748, // Jan-05-2022 05:19:02 PM +UTC
           }
         : undefined,
     },
@@ -56,7 +60,7 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 100,
           },
         },
       },
@@ -65,28 +69,42 @@ export default {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 100,
           },
         },
       },
     ],
   },
+  mocha: {
+    reporter: "list",
+  },
   namedAccounts: {
     protocol_owner: {
       default: 0,
       1: "0xc840B3e21FF0EBA77468AD450d868D4362cF67fE",
-      4: "0x83CB0ec2f0013a9641654b344D34615f95b7D7FC",
+      4: "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
     },
     gf_deployer: {
       default: 1,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
-      4: "0xf3c9B38c155410456b5A98fD8bBf5E35B87F6d96",
+      4: "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
+    },
+    temp_multisig: {
+      1: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
+      4: "0x80B9823A6D12Cc00d70E184b2b310d360220E792",
+      31337: "0x60d2be34bce277f5f5889adfd4991baefa17461c",
     },
     test_merkle_distributor_recipient_a: {
       hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_A,
     },
     test_merkle_distributor_recipient_b: {
       hardhat: TEST_MERKLE_DISTRIBUTOR_RECIPIENT_B,
+    },
+    test_merkle_direct_distributor_recipient_a: {
+      hardhat: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_A,
+    },
+    test_merkle_direct_distributor_recipient_b: {
+      hardhat: TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
     },
   },
   gasReporter: {
@@ -103,5 +121,8 @@ export default {
     project: "goldfinch-protocol",
     username: "goldfinch",
     forkNetwork: "1", //Network id of the network we want to fork
+  },
+  contractSizer: {
+    runOnCompile: true,
   },
 }

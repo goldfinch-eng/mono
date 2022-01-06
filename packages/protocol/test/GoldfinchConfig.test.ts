@@ -101,7 +101,7 @@ describe("GoldfinchConfig", () => {
       await goldfinchConfig.setNumber(2, randomNumber1, {from: owner})
       await goldfinchConfig.setNumber(3, randomNumber2, {from: owner})
 
-      await expectAction(() => newGoldfinchConfig.initializeFromOtherConfig(goldfinchConfig.address)).toChange([
+      await expectAction(() => newGoldfinchConfig.initializeFromOtherConfig(goldfinchConfig.address, 4, 4)).toChange([
         [async () => await newGoldfinchConfig.getAddress(0), {to: randomAddress1, bignumber: false}],
         [async () => await newGoldfinchConfig.getAddress(1), {to: randomAddress2, bignumber: false}],
         [async () => await newGoldfinchConfig.getAddress(2), {to: randomAddress1, bignumber: false}],

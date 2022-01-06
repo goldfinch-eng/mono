@@ -1,22 +1,25 @@
+import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import {AppContext, NetworkConfig, SetSessionFn} from "../App"
-import {User} from "../ethereum/user"
+import web3 from "web3"
+import {AppContext, SetSessionFn} from "../App"
+import {User, UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {Session, useSignIn} from "../hooks/useSignIn"
+import {NetworkConfig} from "../types/network"
+import {MINT_UID_TX_TYPE} from "../types/transactions"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
-import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import web3 from "web3"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -253,8 +256,11 @@ function ErrorCard({title}: {title: string}) {
   )
 }
 
-function isElligible(kyc: KYC | undefined, user: User) {
-  return (kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") || user.goListed
+function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
+  return (
+    (!!kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") ||
+    (!!user && user.info.value.goListed)
+  )
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
@@ -273,7 +279,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
 
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
-    } else if (isElligible(kyc, user) && !disabled) {
+    } else if (isEligible(kyc, user) && !disabled) {
       dispatch({type: CREATE_UID})
     }
   })
@@ -282,6 +288,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     if (session.status !== "authenticated") {
       return
     }
+    assertNonNullable(user)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     setLoading(true)
@@ -294,7 +301,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
           setEntityType("US")
         }
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
       setErrored(true)
     } finally {
       setLoading(false)
@@ -306,7 +313,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
   }
 
   function renderForm() {
-    if (user.goListed) {
+    if (user && user.info.value.goListed) {
       return (
         <VerificationNotice
           icon={iconCircleCheck}
@@ -338,14 +345,14 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
           kycStatus={kyc?.status}
           entityType={entityType}
           onClose={() => setEntityType("")}
-          network={network?.name!}
-          address={user.address}
+          network={network?.name}
+          address={user?.address}
           onEvent={() => fetchKYCStatus(session)}
         />
       )
     } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
-    } else if (isElligible(kyc, user)) {
+    } else if (isEligible(kyc, user)) {
       return (
         <VerificationNotice
           icon={iconCircleCheck}
@@ -365,8 +372,8 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
         <NonUSForm
           onClose={() => setEntityType("")}
           entityType={entityType}
-          network={network?.name!}
-          address={user.address}
+          network={network?.name}
+          address={user?.address}
           onEvent={() => fetchKYCStatus(session)}
         />
       )
@@ -495,7 +502,8 @@ async function fetchTrustedSignature({
 
 function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const formMethods = useForm()
-  const {user, network, setSessionData, goldfinchProtocol, refreshUserData} = useNonNullContext(AppContext)
+  const {user, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
+    useNonNullContext(AppContext)
   const [session] = useSignIn()
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
@@ -505,12 +513,13 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       return
     }
 
-    if (user.hasUID) {
+    if (user && user.info.value.hasUID) {
       dispatch({type: END})
     }
   })
 
   const action = async () => {
+    assertNonNullable(currentBlock)
     try {
       const trustedSignature = await fetchTrustedSignature({
         network,
@@ -519,22 +528,23 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         user,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = 0 // Hardcoding for v2.2 migration (constant name changed from ID_VERSION_0 to ID_TYPE_0)
+      const version = await uniqueIdentity.methods.ID_TYPE_0().call(undefined, currentBlock.number)
       await sendFromUser(
         uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
-          type: "Mint UID",
+          type: MINT_UID_TX_TYPE,
+          data: {},
         },
         {value: UNIQUE_IDENTITY_MINT_PRICE}
       )
-      refreshUserData()
-    } catch (error: any) {
+      refreshCurrentBlock()
+    } catch (err: unknown) {
       setErrored(true)
-      console.error(error)
+      console.error(err)
     }
   }
 
-  if (user.hasUID) {
+  if (user && user.info.value.hasUID) {
     return (
       <VerificationNotice
         icon={iconCircleCheck}
@@ -558,7 +568,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         }
       />
     )
-  } else if (user.legacyGolisted) {
+  } else if (user && user.info.value.legacyGolisted) {
     return (
       <FormProvider {...formMethods}>
         <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
@@ -603,9 +613,10 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 }
 
 function VerifyIdentity() {
-  const {user} = useContext(AppContext)
+  const {user, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
+  const currentRoute = useCurrentRoute()
 
   useEffect(() => {
     if (state.step === START && session.status !== "authenticated") {
@@ -615,13 +626,25 @@ function VerifyIdentity() {
     }
   })
 
+  useEffect(
+    () => {
+      if (currentBlock) {
+        assertNonNullable(setLeafCurrentBlock)
+        assertNonNullable(currentRoute)
+        setLeafCurrentBlock(currentRoute, currentBlock)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentBlock?.number]
+  )
+
   let children: JSX.Element
   if (state.step === START) {
     children = <></>
   } else if (state.step === SIGN_IN) {
     children = (
       <SignInForm
-        disabled={!user.address}
+        disabled={!user?.address}
         action={async () => {
           const session = await signIn()
           if (session.status !== "authenticated") {
@@ -643,7 +666,7 @@ function VerifyIdentity() {
   return (
     <div className="content-section verify-identity">
       <div className="page-header">Verify your identity</div>
-      <ConnectionNotice />
+      <ConnectionNotice requireUnlock={false} />
       {children}
     </div>
   )

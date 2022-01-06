@@ -86,6 +86,7 @@ autotasks/relayer/dist
 **/*/deployments/localhost
 **/*/deployments/hardhat
 **/*/deployments/all_dev.json
+**/*/deployments/all_client_test.json
 
 # Misc
 .DS_Store

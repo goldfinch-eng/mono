@@ -49,3 +49,89 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
     }
   }
 `
+
+export const GET_TRANCHED_POOLS_DATA = gql`
+  query getTranchedPoolsData {
+    _meta {
+      block {
+        number
+      }
+    }
+    tranchedPools {
+      id
+      estimatedSeniorPoolContribution
+      isPaused
+      estimatedLeverageRatio
+      juniorFeePercent
+      reserveFeePercent
+      totalDeposited
+      creditLine {
+        id
+        interestApr
+        limit
+        balance
+        remainingPeriodDueAmount
+        remainingTotalDueAmount
+        availableCredit
+        interestAccruedAsOf
+        paymentPeriodInDays
+        termInDays
+        nextDueTime
+        interestOwed
+        termEndTime
+        lastFullPaymentTime
+        termEndDate
+        periodDueAmount
+        interestAprDecimal
+        collectedPaymentBalance
+        totalDueAmount
+        dueDate
+        name
+      }
+      # TODO support filtering by userAddress or paginating queries once the amount of backers by tranched pools increases
+      backers(first: 1000) {
+        id
+        user {
+          id
+          tokens {
+            id
+            tranchedPool {
+              id
+            }
+            tranche
+            principalAmount
+            principalRedeemed
+            interestRedeemed
+            principalRedeemable
+            interestRedeemable
+          }
+        }
+        balance
+        unrealizedGains
+        principalAmount
+        principalRedeemed
+        interestRedeemed
+        principalAtRisk
+        principalRedeemable
+        interestRedeemable
+        availableToWithdraw
+      }
+      juniorTranches {
+        id
+        lockedUntil
+        principalDeposited
+        principalSharePrice
+        interestSharePrice
+        trancheId
+      }
+      seniorTranches {
+        id
+        lockedUntil
+        principalDeposited
+        principalSharePrice
+        interestSharePrice
+        trancheId
+      }
+    }
+  }
+`

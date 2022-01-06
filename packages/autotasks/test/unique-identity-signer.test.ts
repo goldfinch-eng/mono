@@ -13,6 +13,8 @@ import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
 import {FetchKYCFunction, KYC} from "../unique-identity-signer"
 
+const TEST_TIMEOUT = 30000
+
 function fetchStubbedKycStatus(kyc: KYC): FetchKYCFunction {
   return async (_) => {
     return Promise.resolve(kyc)
@@ -180,6 +182,7 @@ describe("unique-identity-signer", () => {
           "x-goldfinch-signature": "test_signature",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
+        await uniqueIdentity.setSupportedUIDTypes([0], [true])
 
         let result = await uniqueIdentitySigner.main({
           auth,
@@ -206,7 +209,7 @@ describe("unique-identity-signer", () => {
 
         await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
         expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
-      })
+      }).timeout(TEST_TIMEOUT)
     })
   })
 })

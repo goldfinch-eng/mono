@@ -1,5 +1,5 @@
 import chai from "chai"
-import hardhat, {artifacts, web3, ethers} from "hardhat"
+import hardhat, {artifacts, web3, ethers, getNamedAccounts} from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 const expect = chai.expect
@@ -13,8 +13,8 @@ import {
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
   getContract,
-  GetContractOptions,
   TRUFFLE_CONTRACT_PROVIDER,
+  OWNER_ROLE,
 } from "../blockchain_scripts/deployHelpers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
@@ -37,18 +37,22 @@ import {
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
+  MerkleDirectDistributorInstance,
+  BackerRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, UniqueIdentity, Go, TestUniqueIdentity} from "../typechain/ethers"
+import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
+const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
 import {BaseContract} from "ethers"
+import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -57,8 +61,10 @@ const EMPTY_DATA = "0x"
 const BLOCKS_PER_DAY = 5760
 const ZERO = new BN(0)
 
+export type $TSFixMe = any
+
 // Helper functions. These should be pretty generic.
-function bigVal(number) {
+function bigVal(number): BN {
   return new BN(number).mul(decimals)
 }
 
@@ -66,11 +72,17 @@ function usdcVal(number) {
   return new BN(number).mul(USDC_DECIMALS)
 }
 
-function usdcToFidu(number) {
+function usdcToFidu(number: BN | number) {
+  if (!(number instanceof BN)) {
+    number = new BN(number)
+  }
   return number.mul(decimals.div(USDCDecimals))
 }
 
-function fiduToUSDC(number) {
+function fiduToUSDC(number: BN | number) {
+  if (!(number instanceof BN)) {
+    number = new BN(number)
+  }
   return number.div(decimals.div(USDCDecimals))
 }
 
@@ -92,6 +104,14 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
 
 async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
   return (await artifacts.require(name).at(address)) as T
+}
+
+async function setupBackerRewards(gfi: GFIInstance, backerRewards: BackerRewardsInstance, owner: string) {
+  const gfiAmount = bigVal(100_000_000) // 100M
+  await gfi.setCap(gfiAmount)
+  await gfi.mint(owner, gfiAmount)
+  await backerRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
+  await backerRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -198,6 +218,10 @@ function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): Decod
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
+function decodeAndGetFirstLog<T extends Truffle.AnyEvent>(logs, emitter, eventName): DecodedLog<T> {
+  return getFirstLog<T>(decodeLogs<T>(logs, emitter, eventName))
+}
+
 function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
   const firstLog = logs[0]
   assertNonNullable(firstLog)
@@ -208,11 +232,15 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
   return getFirstLog(logs)
 }
 
-type DeployAllContractsOptions = {
+export type DeployAllContractsOptions = {
   deployForwarder?: {
     fromAccount: string
   }
   deployMerkleDistributor?: {
+    fromAccount: string
+    root: string
+  }
+  deployMerkleDirectDistributor?: {
     fromAccount: string
     root: string
   }
@@ -237,8 +265,10 @@ async function deployAllContracts(
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: StakingRewardsInstance
+  backerRewards: TestBackerRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
+  merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
 }> {
@@ -273,6 +303,7 @@ async function deployAllContracts(
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
     "CommunityRewards",
@@ -290,6 +321,29 @@ async function deployAllContracts(
       TRUFFLE_CONTRACT_PROVIDER
     )
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
+  }
+
+  let merkleDirectDistributor: MerkleDirectDistributorInstance | null = null
+  if (options.deployMerkleDirectDistributor) {
+    const {protocol_owner} = await getNamedAccounts()
+    assertNonNullable(protocol_owner)
+    await deployments.deploy("MerkleDirectDistributor", {
+      from: options.deployMerkleDirectDistributor.fromAccount,
+      gasLimit: 4000000,
+      proxy: {
+        owner: protocol_owner,
+        execute: {
+          init: {
+            methodName: "initialize",
+            args: [protocol_owner, gfi.address, options.deployMerkleDirectDistributor.root],
+          },
+        },
+      },
+    })
+    merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
+      "MerkleDirectDistributor",
+      TRUFFLE_CONTRACT_PROVIDER
+    )
   }
 
   const uniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
@@ -316,8 +370,10 @@ async function deployAllContracts(
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    merkleDirectDistributor,
     uniqueIdentity,
     go,
+    backerRewards,
   }
 }
 
@@ -361,6 +417,10 @@ async function advanceTime({days, seconds, toSecond}: {days?: Numberish; seconds
   return newTimestamp
 }
 
+async function mineBlock(): Promise<void> {
+  await ethers.provider.send("evm_mine", [])
+}
+
 async function getBalance(address, erc20) {
   if (typeof address !== "string") {
     throw new Error("Address must be a string")
@@ -381,6 +441,22 @@ const createPoolWithCreditLine = async ({
   termInDays = new BN(365),
   limit = usdcVal(10000),
   lateFeeApr = interestAprAsBN("3.0"),
+  principalGracePeriodInDays = new BN(185),
+  fundableAt = new BN(0),
+  allowedUIDTypes = [0],
+}: {
+  people: {owner: string; borrower: string}
+  usdc: ERC20Instance
+  goldfinchFactory: GoldfinchFactoryInstance
+  juniorFeePercent?: Numberish
+  interestApr?: Numberish
+  paymentPeriodInDays?: Numberish
+  termInDays?: Numberish
+  limit?: Numberish
+  lateFeeApr?: Numberish
+  principalGracePeriodInDays?: Numberish
+  fundableAt?: Numberish
+  allowedUIDTypes?: Numberish[]
 }): Promise<{tranchedPool: TranchedPoolInstance; creditLine: CreditLineInstance}> => {
   const thisOwner = people.owner
   const thisBorrower = people.borrower
@@ -401,9 +477,13 @@ const createPoolWithCreditLine = async ({
     paymentPeriodInDays,
     termInDays,
     lateFeeApr,
+    principalGracePeriodInDays,
+    fundableAt,
+    allowedUIDTypes,
     {from: thisOwner}
   )
-  const event = result.logs[result.logs.length - 1]
+
+  const event = result.logs[result.logs.length - 1] as $TSFixMe
   const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
   const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
 
@@ -446,12 +526,51 @@ async function fundWithEthFromLocalWhale(userToFund: string, amount: BN) {
   })
 }
 
+export function expectProxyOwner({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
+  describe("proxy owners", async () => {
+    forContracts.forEach((contractName) => {
+      it(`sets the correct proxy owner for ${contractName}`, async () => {
+        const proxyDeployment = await hardhat.deployments.get(`${contractName}_Proxy`)
+        const proxyContract = await ethers.getContractAt(proxyDeployment.abi, proxyDeployment.address)
+        expect(await proxyContract.owner()).to.eq(await toBe())
+      })
+    })
+  })
+}
+
+export type RoleExpectation = {contractName: string; roles: string[]; address: () => Promise<string>}
+export function expectRoles(expectations: RoleExpectation[]) {
+  describe("roles", async () => {
+    for (const {contractName, roles, address} of expectations) {
+      for (const role of roles) {
+        it(`assigns the ${role} role`, async () => {
+          const addr = await address()
+          const deployment = await hardhat.deployments.get(contractName)
+          const contract = await ethers.getContractAt(deployment.abi, deployment.address)
+
+          expect(await contract.hasRole(role, addr)).to.be.true
+        })
+      }
+    }
+  })
+}
+
+export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<string>; forContracts: string[]}) {
+  const expectations: RoleExpectation[] = forContracts.map((contract) => ({
+    contractName: contract,
+    roles: [OWNER_ROLE],
+    address: toBe,
+  }))
+  expectRoles(expectations)
+}
+
 export {
   hardhat,
   chai,
   expect,
   decimals,
   USDC_DECIMALS,
+  GFI_DECIMALS,
   BN,
   MAX_UINT,
   tolerance,
@@ -477,12 +596,15 @@ export {
   erc20Transfer,
   getCurrentTimestamp,
   advanceTime,
+  mineBlock,
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,
+  decodeAndGetFirstLog,
   getOnlyLog,
   toTruffle,
   genDifferentHexString,
   toEthers,
   fundWithEthFromLocalWhale,
+  setupBackerRewards,
 }

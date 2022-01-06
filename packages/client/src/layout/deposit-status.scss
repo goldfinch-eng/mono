@@ -13,6 +13,23 @@
   text-align: center;
   width: 100%;
 
+  .deposit-status-item-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      margin-left: 7px;
+      cursor: pointer;
+
+      &:hover {
+        path {
+          fill: $purp-dark;
+        }
+      }
+    }
+  }
+
   ~ .deposit-status-item {
     margin-top: 36px;
   }
@@ -35,6 +52,12 @@
 
   .disabled {
     color: $sand-xxdark;
+  }
+}
+
+.placeholder .deposit-status .deposit-status-item .deposit-status-item-flex svg:hover {
+  path {
+    fill: #C4BeB7;
   }
 }
 

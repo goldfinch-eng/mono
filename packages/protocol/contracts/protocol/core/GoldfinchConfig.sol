@@ -72,6 +72,12 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newAddress;
   }
 
+  function setTranchedPoolImplementation(address newAddress) public onlyAdmin {
+    uint256 key = uint256(ConfigOptions.Addresses.TranchedPoolImplementation);
+    emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
+    addresses[key] = newAddress;
+  }
+
   function setBorrowerImplementation(address newAddress) public onlyAdmin {
     uint256 key = uint256(ConfigOptions.Addresses.BorrowerImplementation);
     emit AddressUpdated(msg.sender, key, addresses[key], newAddress);
@@ -84,14 +90,18 @@ contract GoldfinchConfig is BaseUpgradeablePausable {
     addresses[key] = newAddress;
   }
 
-  function initializeFromOtherConfig(address _initialConfig) public onlyAdmin {
+  function initializeFromOtherConfig(
+    address _initialConfig,
+    uint256 numbersLength,
+    uint256 addressesLength
+  ) public onlyAdmin {
     require(!valuesInitialized, "Already initialized values");
     IGoldfinchConfig initialConfig = IGoldfinchConfig(_initialConfig);
-    for (uint256 i = 0; i < 10; i++) {
+    for (uint256 i = 0; i < numbersLength; i++) {
       setNumber(i, initialConfig.getNumber(i));
     }
 
-    for (uint256 i = 0; i < 11; i++) {
+    for (uint256 i = 0; i < addressesLength; i++) {
       if (getAddress(i) == address(0)) {
         setAddress(i, initialConfig.getAddress(i));
       }

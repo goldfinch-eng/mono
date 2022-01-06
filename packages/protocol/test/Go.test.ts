@@ -2,20 +2,27 @@
 import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {deployAllContracts, getCurrentTimestamp, SECONDS_PER_DAY} from "./testHelpers"
+import {getCurrentTimestamp, SECONDS_PER_DAY, ZERO_ADDRESS} from "./testHelpers"
 import {
   getContract,
+  getTruffleContract,
   GO_LISTER_ROLE,
   OWNER_ROLE,
   PAUSER_ROLE,
   TRUFFLE_CONTRACT_PROVIDER,
 } from "../blockchain_scripts/deployHelpers"
-import {Go} from "../typechain/ethers"
-import {GoInstance, GoldfinchConfigInstance, TestUniqueIdentityInstance} from "../typechain/truffle"
+import {Go, StakingRewards} from "../typechain/ethers"
+import {
+  GoInstance,
+  GoldfinchConfigInstance,
+  StakingRewardsInstance,
+  TestUniqueIdentityInstance,
+} from "../typechain/truffle"
 import {mint} from "./uniqueIdentityHelpers"
 import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import {DeployResult} from "hardhat-deploy/types"
 import {expectEvent} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
 
 const setupTest = deployments.createFixture(async ({deployments}) => {
@@ -26,7 +33,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const anotherUser2 = asNonNullable(_anotherUser2)
   const uninitializedGoDeployer = asNonNullable(_anotherUser3)
 
-  const deployed = await deployAllContracts(deployments)
+  const deployed = await deployBaseFixture()
 
   const goldfinchConfig = deployed.goldfinchConfig
   const uniqueIdentity = deployed.uniqueIdentity
@@ -81,6 +88,38 @@ describe("Go", () => {
     await go.pause()
     expect(await go.paused()).to.equal(true)
   }
+
+  describe("setLegacyGoList", async () => {
+    const testAddress = "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+    describe("when set with a valid GoldfinchConfig address", async () => {
+      let goldfinchConfigWithGoList: GoldfinchConfigInstance
+      beforeEach(async () => {
+        const newConfigDeployment = await deployments.deploy("GoldfinchConfig", {
+          from: owner,
+        })
+        goldfinchConfigWithGoList = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+          at: newConfigDeployment.address,
+        })
+
+        await goldfinchConfigWithGoList.initialize(owner)
+        await goldfinchConfigWithGoList.addToGoList(testAddress, {from: owner})
+        await go.setLegacyGoList(goldfinchConfigWithGoList.address)
+      })
+
+      it("it should use the other config for the go list", async () => {
+        expect(await go.go(testAddress)).to.be.true
+      })
+    })
+
+    describe("by default", async () => {
+      it("works correctly", async () => {
+        expect(await go.go(testAddress)).to.be.false
+        await goldfinchConfig.addToGoList(testAddress, {from: owner})
+        expect(await go.go(testAddress)).to.be.true
+      })
+    })
+  })
 
   describe("initialize", () => {
     it("rejects zero address owner", async () => {
@@ -212,6 +251,7 @@ describe("Go", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
         await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })
@@ -228,6 +268,7 @@ describe("Go", () => {
           expect(await go.go(anotherUser)).to.equal(true)
         })
       })
+
       context("account is not on legacy go-list", () => {
         beforeEach(async () => {
           expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
@@ -239,10 +280,92 @@ describe("Go", () => {
       })
     })
 
+    context("goOnlyIdTypes", () => {
+      it("Validates zero address", async () => {
+        await expect(go.goOnlyIdTypes(ZERO_ADDRESS, [])).to.be.rejectedWith(/Zero address is not go-listed/)
+      })
+
+      it("returns true if has UID and not legacy golisted", async () => {
+        const tokenId = new BN(0)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
+      })
+
+      it("returns true if legacy golisted and doesnt have UID", async () => {
+        const tokenId = new BN(0)
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        await goldfinchConfig.addToGoList(anotherUser, {from: owner})
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
+        expect(await go.goOnlyIdTypes(anotherUser, [tokenId])).to.equal(true)
+      })
+
+      it("returns false if not legacy golisted and no included UID", async () => {
+        const tokenId = new BN(0)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await go.goOnlyIdTypes(anotherUser, [1])).to.equal(false)
+      })
+    })
+
+    context("goSeniorPool", () => {
+      it("Validates zero address", async () => {
+        await expect(go.goSeniorPool(ZERO_ADDRESS)).to.be.rejectedWith(/Zero address is not go-listed/)
+      })
+
+      it("returns true if called by staking rewards contract", async () => {
+        const tokenId = new BN(0)
+        await uniqueIdentity.setSupportedUIDTypes([], [])
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
+        const stakingRewardsContract = await getContract<StakingRewards, StakingRewardsInstance>(
+          "StakingRewards",
+          TRUFFLE_CONTRACT_PROVIDER
+        )
+        await expect(go.goSeniorPool(stakingRewardsContract.address)).to.be.fulfilled
+      })
+
+      it("returns true if has UID and not legacy golisted", async () => {
+        const tokenId = new BN(0)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns true if legacy golisted", async () => {
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        await goldfinchConfig.addToGoList(anotherUser, {from: owner})
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns false if not legacy golisted and no included UID", async () => {
+        const tokenId = new BN(2)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
+        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(false)
+      })
+    })
+
     context("paused", () => {
       beforeEach(async () => {
         const tokenId = new BN(0)
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
         await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
         expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
       })

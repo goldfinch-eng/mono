@@ -7,128 +7,6 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "previousOwner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "previousImplementation",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newImplementation",
-          "type": "address"
-        }
-      ],
-      "name": "ProxyImplementationUpdated",
-      "type": "event"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "fallback"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes4",
-          "name": "id",
-          "type": "bytes4"
-        }
-      ],
-      "name": "supportsInterface",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newImplementation",
-          "type": "address"
-        }
-      ],
-      "name": "upgradeTo",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newImplementation",
-          "type": "address"
-        },
-        {
-          "internalType": "bytes",
-          "name": "data",
-          "type": "bytes"
-        }
-      ],
-      "name": "upgradeToAndCall",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "receive"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
           "name": "account",
           "type": "address"
         },
@@ -357,7 +235,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_0",
+      "name": "ID_TYPE_0",
       "outputs": [
         {
           "internalType": "uint256",
@@ -370,7 +248,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_1",
+      "name": "ID_TYPE_1",
       "outputs": [
         {
           "internalType": "uint256",
@@ -383,7 +261,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_10",
+      "name": "ID_TYPE_10",
       "outputs": [
         {
           "internalType": "uint256",
@@ -396,7 +274,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_2",
+      "name": "ID_TYPE_2",
       "outputs": [
         {
           "internalType": "uint256",
@@ -409,7 +287,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_3",
+      "name": "ID_TYPE_3",
       "outputs": [
         {
           "internalType": "uint256",
@@ -422,7 +300,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_4",
+      "name": "ID_TYPE_4",
       "outputs": [
         {
           "internalType": "uint256",
@@ -435,7 +313,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_5",
+      "name": "ID_TYPE_5",
       "outputs": [
         {
           "internalType": "uint256",
@@ -448,7 +326,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_6",
+      "name": "ID_TYPE_6",
       "outputs": [
         {
           "internalType": "uint256",
@@ -461,7 +339,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_7",
+      "name": "ID_TYPE_7",
       "outputs": [
         {
           "internalType": "uint256",
@@ -474,7 +352,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_8",
+      "name": "ID_TYPE_8",
       "outputs": [
         {
           "internalType": "uint256",
@@ -487,7 +365,7 @@
     },
     {
       "inputs": [],
-      "name": "ID_VERSION_9",
+      "name": "ID_TYPE_9",
       "outputs": [
         {
           "internalType": "uint256",
@@ -809,6 +687,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -970,6 +861,24 @@
     {
       "inputs": [
         {
+          "internalType": "uint256[]",
+          "name": "ids",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "bool[]",
+          "name": "values",
+          "type": "bool[]"
+        }
+      ],
+      "name": "setSupportedUIDTypes",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "string",
           "name": "newuri",
           "type": "string"
@@ -978,6 +887,57 @@
       "name": "setURI",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "supportedUIDTypes",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "interfaceId",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -1026,6 +986,109 @@
       ],
       "stateMutability": "payable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousImplementation",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "ProxyImplementationUpdated",
+      "type": "event"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "fallback"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeTo",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newImplementation",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "upgradeToAndCall",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
     }
   ],
   "transactionHash": "0x517054372b36470ea012f6b23d165e5f3d3366d26329cd57b6e83a376ffb5614",
@@ -1179,7 +1242,7 @@
       "https://app.goldfinch.finance"
     ]
   },
-  "implementation": "0x9dA94dB465C185E7De453C5dB6BdCc314395717C",
+  "implementation": "0xf265eAc216c240f703462981fC4c09411630771f",
   "devdoc": {
     "kind": "dev",
     "methods": {},

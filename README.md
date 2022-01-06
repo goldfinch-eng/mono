@@ -37,11 +37,10 @@ All contracts are located under `packages/protocol/contracts`
 
 ### Frontend Development
 - `npm run start:local`
-  - The simplest way to get going. All fresh, local state. The subgraph will not be deployed since it requires mainnet forking.
+  - The simplest way to get going. All fresh, local state.
 - `npm run start`
   - This will run a local, [mainnet-forked](https://hardhat.org/hardhat-network/guides/mainnet-forking.html) blockchain. Extremely useful for certain changes.
   - Requires an Alchemy API key. Sign up for free at https://www.alchemy.com/. To use it, see the one-time setup below.
-  - If `REACT_APP_TOGGLE_THE_GRAPH` is enabled, this will also create and deploy our subgraph to a local graph node. Please note: it may take up to a few hours to finish the subgraph's indexing when deploying it for the first time.
 
 Both options will start several processes, including your local blockchain and front-end server, which will pop up on http://localhost:3000. It takes a min to spin up.
 
@@ -63,8 +62,6 @@ Both options will start several processes, including your local blockchain and f
 Changes to the frontend should be automatically hotloaded using react-refresh.
 
 Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running your start command.
-
-Changes to the subgraph will also require re-deploying, to do this run `npm run deploy` from the subgraph directory.
 
 #### Other ways to run
 * `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.

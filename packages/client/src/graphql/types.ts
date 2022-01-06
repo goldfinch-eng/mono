@@ -100,6 +100,159 @@ export interface getSeniorPoolAndProvidersVariables {
 // @generated
 // This file was automatically generated and should not be edited.
 
+// ====================================================
+// GraphQL query operation: getTranchedPoolsData
+// ====================================================
+
+export interface getTranchedPoolsData__meta_block {
+  __typename: "_Block_"
+  /**
+   * The block number
+   */
+  number: number
+}
+
+export interface getTranchedPoolsData__meta {
+  __typename: "_Meta_"
+  /**
+   * Information about a specific subgraph block. The hash of the block
+   * will be null if the _meta field has a block constraint that asks for
+   * a block number. It will be filled if the _meta field has no block constraint
+   * and therefore asks for the latest  block
+   */
+  block: getTranchedPoolsData__meta_block
+}
+
+export interface getTranchedPoolsData_seniorPools_lastestPoolStatus {
+  __typename: "SeniorPoolStatus"
+  totalShares: any
+  totalPoolAssets: any
+}
+
+export interface getTranchedPoolsData_seniorPools_investmentsMade {
+  __typename: "TranchedPool"
+  id: string
+}
+
+export interface getTranchedPoolsData_seniorPools {
+  __typename: "SeniorPool"
+  id: string
+  lastestPoolStatus: getTranchedPoolsData_seniorPools_lastestPoolStatus
+  investmentsMade: getTranchedPoolsData_seniorPools_investmentsMade[]
+}
+
+export interface getTranchedPoolsData_tranchedPools_creditLine {
+  __typename: "CreditLine"
+  id: string
+  interestApr: any
+  limit: any
+  balance: any
+  remainingPeriodDueAmount: any
+  remainingTotalDueAmount: any
+  availableCredit: any
+  interestAccruedAsOf: any
+  paymentPeriodInDays: any
+  termInDays: any
+  nextDueTime: any
+  interestOwed: any
+  termEndTime: any
+  lastFullPaymentTime: any
+  termEndDate: any
+  periodDueAmount: any | null
+  interestAprDecimal: any | null
+  collectedPaymentBalance: any | null
+  totalDueAmount: any | null
+  dueDate: string | null
+  name: string | null
+}
+
+export interface getTranchedPoolsData_tranchedPools_backers_user_tokens_tranchedPool {
+  __typename: "TranchedPool"
+  id: string
+}
+
+export interface getTranchedPoolsData_tranchedPools_backers_user_tokens {
+  __typename: "TranchedPoolToken"
+  id: string
+  tranchedPool: getTranchedPoolsData_tranchedPools_backers_user_tokens_tranchedPool
+  tranche: any
+  principalAmount: any
+  principalRedeemed: any
+  interestRedeemed: any
+  principalRedeemable: any
+  interestRedeemable: any
+}
+
+export interface getTranchedPoolsData_tranchedPools_backers_user {
+  __typename: "User"
+  id: string
+  tokens: getTranchedPoolsData_tranchedPools_backers_user_tokens[] | null
+}
+
+export interface getTranchedPoolsData_tranchedPools_backers {
+  __typename: "PoolBacker"
+  id: string
+  user: getTranchedPoolsData_tranchedPools_backers_user
+  balance: any
+  unrealizedGains: any
+  principalAmount: any
+  principalRedeemed: any
+  interestRedeemed: any
+  principalAtRisk: any
+  principalRedeemable: any
+  interestRedeemable: any
+  availableToWithdraw: any
+}
+
+export interface getTranchedPoolsData_tranchedPools_juniorTranches {
+  __typename: "JuniorTrancheInfo"
+  id: string
+  lockedUntil: any
+  principalDeposited: any
+  principalSharePrice: any
+  interestSharePrice: any
+  trancheId: any
+}
+
+export interface getTranchedPoolsData_tranchedPools_seniorTranches {
+  __typename: "SeniorTrancheInfo"
+  id: string
+  lockedUntil: any
+  principalDeposited: any
+  principalSharePrice: any
+  interestSharePrice: any
+  trancheId: any
+}
+
+export interface getTranchedPoolsData_tranchedPools {
+  __typename: "TranchedPool"
+  id: string
+  estimatedSeniorPoolContribution: any
+  isPaused: boolean
+  estimatedLeverageRatio: any
+  juniorFeePercent: any
+  reserveFeePercent: any
+  totalDeposited: any
+  creditLine: getTranchedPoolsData_tranchedPools_creditLine
+  backers: getTranchedPoolsData_tranchedPools_backers[] | null
+  juniorTranches: getTranchedPoolsData_tranchedPools_juniorTranches[]
+  seniorTranches: getTranchedPoolsData_tranchedPools_seniorTranches[]
+}
+
+export interface getTranchedPoolsData {
+  /**
+   * Access to subgraph metadata
+   */
+  _meta: getTranchedPoolsData__meta | null
+  seniorPools: getTranchedPoolsData_seniorPools[]
+  tranchedPools: getTranchedPoolsData_tranchedPools[]
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
 //==============================================================
 // START Enums and Input Objects
 //==============================================================

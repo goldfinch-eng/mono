@@ -3,7 +3,7 @@ import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
-import {croppedAddress, roundUpPenny} from "../utils"
+import {BlockInfo, croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {CreditLine as CreditlineContract} from "@goldfinch-eng/protocol/typechain/web3/CreditLine"
 import {Contract} from "web3-eth-contract"
@@ -15,7 +15,8 @@ const zero = new BigNumber(0)
 abstract class BaseCreditLine {
   address!: string | string[]
 
-  abstract readonly limit: BigNumber
+  abstract readonly currentLimit: BigNumber
+  abstract readonly maxLimit: BigNumber
   abstract readonly remainingPeriodDueAmount: BigNumber
   abstract readonly remainingTotalDueAmount: BigNumber
   abstract readonly availableCredit: BigNumber
@@ -32,7 +33,7 @@ abstract class BaseCreditLine {
   name!: string
   goldfinchProtocol!: GoldfinchProtocol
 
-  async initialize() {
+  async initialize(currentBlock: BlockInfo) {
     // no-op
   }
 
@@ -56,6 +57,14 @@ abstract class BaseCreditLine {
     return this.creditLines.length > 1
   }
 
+  get limit() {
+    if (this.currentLimit.gt(0)) {
+      return this.currentLimit
+    } else {
+      return this.maxLimit
+    }
+  }
+
   // Is next payment due
   get isPaymentDue() {
     return this.remainingPeriodDueAmount.gt(0)
@@ -77,7 +86,8 @@ abstract class BaseCreditLine {
 }
 
 class DefaultCreditLine extends BaseCreditLine {
-  limit: BigNumber
+  currentLimit: BigNumber
+  maxLimit: BigNumber
   remainingPeriodDueAmount: BigNumber
   remainingTotalDueAmount: BigNumber
   availableCredit: BigNumber
@@ -86,7 +96,8 @@ class DefaultCreditLine extends BaseCreditLine {
   constructor() {
     super()
     this.balance = zero
-    this.limit = zero
+    this.currentLimit = zero
+    this.maxLimit = zero
     this.periodDueAmount = zero
     this.remainingPeriodDueAmount = zero
     this.interestAprDecimal = zero
@@ -104,7 +115,8 @@ class DefaultCreditLine extends BaseCreditLine {
 
 class CreditLine extends BaseCreditLine {
   address: string
-  limit!: BigNumber
+  currentLimit!: BigNumber
+  maxLimit!: BigNumber
   remainingPeriodDueAmount!: BigNumber
   remainingTotalDueAmount!: BigNumber
   availableCredit!: BigNumber
@@ -134,7 +146,7 @@ class CreditLine extends BaseCreditLine {
     this.name = croppedAddress(this.address)
   }
 
-  async initialize() {
+  async initialize(currentBlock: BlockInfo) {
     const attributes = [
       {method: "balance"},
       {method: "interestApr"},
@@ -142,23 +154,39 @@ class CreditLine extends BaseCreditLine {
       {method: "paymentPeriodInDays"},
       {method: "termInDays"},
       {method: "nextDueTime"},
-      {method: "limit"},
+      {method: "limit", name: "currentLimit"},
       {method: "interestOwed"},
       {method: "termEndTime"},
       {method: "lastFullPaymentTime"},
     ]
-    let data = await fetchDataFromAttributes(this.creditLine, attributes)
+    let data = await fetchDataFromAttributes(this.creditLine, attributes, {blockNumber: currentBlock.number})
     attributes.forEach((info) => {
-      this[info.method] = new BigNumber(data[info.method])
+      this[info.name || info.method] = new BigNumber(data[info.name || info.method])
     })
 
-    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
+    await this.calculateFields(currentBlock)
+    // Just for front-end usage.
+    this.loaded = true
+  }
 
-    this.isLate = await this._calculateIsLate()
+  async calculateFields(currentBlock: BlockInfo) {
+    // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
+    try {
+      const data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
+      this["maxLimit"] = new BigNumber(data["maxLimit"])
+    } catch (e) {
+      console.log("maxLimit not available on old CreditLines, use currentLimit", {e})
+      this["maxLimit"] = this["currentLimit"]
+    }
+
+    this.isLate = this._calculateIsLate(currentBlock)
     const interestOwed = this._calculateInterestOwed()
+    const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
-    this.collectedPaymentBalance = new BigNumber(await this.usdc.methods.balanceOf(this.address).call())
+    this.collectedPaymentBalance = new BigNumber(
+      await this.usdc.methods.balanceOf(this.address).call(undefined, currentBlock.number)
+    )
     this.periodDueAmount = this._calculateNextDueAmount()
     this.remainingPeriodDueAmount = BigNumber.max(this.periodDueAmount.minus(this.collectedPaymentBalance), zero)
     this.interestAprDecimal = new BigNumber(this.interestApr).div(INTEREST_DECIMALS.toString())
@@ -166,17 +194,14 @@ class CreditLine extends BaseCreditLine {
     this.remainingTotalDueAmount = BigNumber.max(this.totalDueAmount.minus(this.collectedPaymentBalance), zero)
     const collectedForPrincipal = BigNumber.max(this.collectedPaymentBalance.minus(this.periodDueAmount), zero)
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
-    // Just for front-end usage.
-    this.loaded = true
   }
 
-  async _calculateIsLate() {
-    const currentTime = (await web3.eth.getBlock("latest")).timestamp as number
+  _calculateIsLate(currentBlock: BlockInfo) {
     if (this.lastFullPaymentTime.isZero()) {
       // Brand new creditline
       return false
     }
-    const secondsSinceLastFullPayment = currentTime - this.lastFullPaymentTime.toNumber()
+    const secondsSinceLastFullPayment = currentBlock.timestamp - this.lastFullPaymentTime.toNumber()
     return secondsSinceLastFullPayment > this.paymentPeriodInDays.toNumber() * SECONDS_PER_DAY
   }
 
@@ -220,9 +245,9 @@ class MultipleCreditLines extends BaseCreditLine {
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
   }
 
-  async initialize() {
+  async initialize(currentBlock: BlockInfo) {
     this.creditLines = this.address.map((address) => new CreditLine(address, this.goldfinchProtocol))
-    await Promise.all(this.creditLines.map((cl) => cl.initialize()))
+    await Promise.all(this.creditLines.map((cl) => cl.initialize(currentBlock)))
     // Filter by active and sort by most recent
     this.creditLines = this.creditLines.filter((cl) => cl.limit.gt(0)).reverse()
     // Reset address to match creditlines
@@ -233,7 +258,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
   }
 
-  splitPayment(dollarAmount) {
+  splitPayment(dollarAmount): [string[], BigNumber[]] {
     // Pay the minimum amounts for each creditline until there's no money left
     let amountRemaining = new BigNumber(usdcToAtomic(dollarAmount))
     let addresses: string[] = []
@@ -271,6 +296,14 @@ class MultipleCreditLines extends BaseCreditLine {
     return this.creditLines.reduce((val, cl) => val.plus(cl.limit), zero)
   }
 
+  get currentLimit() {
+    return this.creditLines.reduce((val, cl) => val.plus(cl.currentLimit), zero)
+  }
+
+  get maxLimit() {
+    return this.creditLines.reduce((val, cl) => val.plus(cl.maxLimit), zero)
+  }
+
   get remainingPeriodDueAmount() {
     return this.creditLines.reduce((val, cl) => val.plus(cl.remainingPeriodDueAmount), zero)
   }
@@ -299,7 +332,11 @@ function buildCreditLine(address): CreditlineContract {
   return new web3.eth.Contract(CreditLineAbi, address) as unknown as CreditlineContract
 }
 
-async function fetchCreditLineData(creditLineAddresses: string | string[], goldfinchProtocol: GoldfinchProtocol) {
+async function fetchCreditLineData(
+  creditLineAddresses: string | string[],
+  goldfinchProtocol: GoldfinchProtocol,
+  currentBlock: BlockInfo
+) {
   let result
   // Provided address can be a nothing, a single address or an array of addresses. Normalize the single address to an array
   creditLineAddresses = typeof creditLineAddresses === "string" ? [creditLineAddresses] : creditLineAddresses
@@ -314,7 +351,7 @@ async function fetchCreditLineData(creditLineAddresses: string | string[], goldf
   } else {
     result = new MultipleCreditLines(creditLineAddresses, goldfinchProtocol)
   }
-  await result.initialize()
+  await result.initialize(currentBlock)
   return result
 }
 
@@ -327,4 +364,4 @@ export function displayDueDate(cl: CreditLine): string {
   return cl.dueDate
 }
 
-export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine}
+export {buildCreditLine, fetchCreditLineData, defaultCreditLine, CreditLine, MultipleCreditLines}
