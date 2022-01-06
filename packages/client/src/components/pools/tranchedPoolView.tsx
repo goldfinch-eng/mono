@@ -66,7 +66,7 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
       return []
     }
     return await goldfinchProtocol.queryEvents(
-      tranchedPool.contract,
+      tranchedPool.contract.readOnly,
       [DEPOSIT_MADE_EVENT],
       {
         tranche: TRANCHES.Junior.toString(),
@@ -117,7 +117,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     const depositAmount = usdcToAtomic(transactionAmount)
     // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
     if (process.env.REACT_APP_HARDHAT_FORK) {
-      return sendFromUser(tranchedPool.contract.methods.deposit(TRANCHES.Junior, depositAmount), {
+      return sendFromUser(tranchedPool.contract.userWallet.methods.deposit(TRANCHES.Junior, depositAmount), {
         type: SUPPLY_TX_TYPE,
         data: {
           amount: transactionAmount,
@@ -130,7 +130,7 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
         spender: tranchedPool.address,
       })
       return sendFromUser(
-        tranchedPool.contract.methods.depositWithPermit(
+        tranchedPool.contract.userWallet.methods.depositWithPermit(
           TRANCHES.Junior,
           signatureData.value,
           signatureData.deadline,
@@ -291,14 +291,14 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
     let firstToken = backer.tokenInfos[0]!
     if (new BigNumber(withdrawAmount).gt(firstToken.principalRedeemable.plus(firstToken.interestRedeemable))) {
       let splits = splitWithdrawAmount(new BigNumber(withdrawAmount), backer.tokenInfos)
-      return sendFromUser(tranchedPool.contract.methods.withdrawMultiple(splits.tokenIds, splits.amounts), {
+      return sendFromUser(tranchedPool.contract.userWallet.methods.withdrawMultiple(splits.tokenIds, splits.amounts), {
         type: WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
         data: {
           amount: withdrawAmount,
         },
       }).then(actionComplete)
     } else {
-      return sendFromUser(tranchedPool.contract.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
+      return sendFromUser(tranchedPool.contract.userWallet.methods.withdraw(backer.tokenInfos[0]!.id, withdrawAmount), {
         type: WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
         data: {
           amount: withdrawAmount,

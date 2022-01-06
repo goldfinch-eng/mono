@@ -47,7 +47,7 @@ interface NetworkWidgetProps {
 }
 
 function NetworkWidget(props: NetworkWidgetProps) {
-  const {web3Status} = useContext(AppContext)
+  const {userWalletWeb3Status} = useContext(AppContext)
   const session = useSession()
   const [, signIn] = useSignIn()
   const [showSignIn, setShowSignIn] = useState<Boolean>(false)
@@ -180,7 +180,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
           </div>
         </div>
         {transactionLabel}&nbsp;
-        {web3.utils.isHexStrict(tx.id) && (
+        {web3.readOnly.utils.isHexStrict(tx.id) && (
           <a
             className="inline-button"
             href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
@@ -230,7 +230,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
     )
   }
 
-  if (web3Status?.type === "no_web3") {
+  if (userWalletWeb3Status?.type === "no_web3") {
     return (
       <div ref={node} className="network-widget">
         <a href="https://metamask.io" className="network-widget-button bold">
@@ -238,7 +238,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </a>
       </div>
     )
-  } else if (!web3Status || (web3Status.type === "connected" && !props.user)) {
+  } else if (!userWalletWeb3Status || (userWalletWeb3Status.type === "connected" && !props.user)) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button">

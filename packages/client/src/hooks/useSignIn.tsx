@@ -72,7 +72,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       assertNonNullable(setSessionData)
       assertNonNullable(currentBlock)
 
-      const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
+      const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
       const signer = provider.getSigner(user.address)
 
       const signatureBlockNum = currentBlock.number

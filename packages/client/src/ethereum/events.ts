@@ -60,7 +60,7 @@ async function mapEventToTx<T extends KnownEventName>(
   config: EventParserConfig<T>
 ): Promise<HistoricalTx<T> | undefined> {
   if (isKnownEventData<T>(eventData, known)) {
-    return web3.eth.getBlock(eventData.blockNumber).then((block) => {
+    return web3.readOnly.eth.getBlock(eventData.blockNumber).then((block) => {
       const parsedName = config.parseName(eventData)
       const parsedAmount = config.parseAmount(eventData)
 

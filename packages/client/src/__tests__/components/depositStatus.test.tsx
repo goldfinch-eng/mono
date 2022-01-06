@@ -2,8 +2,8 @@ import "@testing-library/jest-dom"
 import {render, screen} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
 import {mock} from "depay-web3-mock"
-import sinon from "sinon"
 import {BrowserRouter as Router} from "react-router-dom"
+import sinon from "sinon"
 import {AppContext} from "../../App"
 import DepositStatus from "../../components/depositStatus"
 import {GFILoaded} from "../../ethereum/gfi"
@@ -37,7 +37,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderDepositStatus(
   poolData: Partial<PoolData>,

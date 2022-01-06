@@ -63,6 +63,7 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
 } from "../types/transactions"
+import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "./communityRewards"
@@ -81,7 +82,7 @@ export async function getUserData(
   address: string,
   goldfinchProtocol: GoldfinchProtocol,
   pool: SeniorPoolLoaded,
-  creditDesk: CreditDesk,
+  creditDesk: Web3IO<CreditDesk>,
   networkId: string,
   stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
@@ -139,7 +140,7 @@ class UserStakingRewards {
     // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
     // `recipient`, whereas the latter does not.
-    const positions = await stakingRewards.contract.methods
+    const positions = await stakingRewards.contract.readOnly.methods
       .balanceOf(address)
       .call(undefined, currentBlock.number)
       .then((balance: string) => {
@@ -151,7 +152,9 @@ class UserStakingRewards {
           Array(numPositions)
             .fill("")
             .map((val, i) =>
-              stakingRewards.contract.methods.tokenOfOwnerByIndex(address, i).call(undefined, currentBlock.number)
+              stakingRewards.contract.readOnly.methods
+                .tokenOfOwnerByIndex(address, i)
+                .call(undefined, currentBlock.number)
             )
         )
       )
@@ -160,7 +163,7 @@ class UserStakingRewards {
           tokenIds,
           Promise.all(
             tokenIds.map((tokenId) =>
-              stakingRewards.contract.methods
+              stakingRewards.contract.readOnly.methods
                 .positions(tokenId)
                 .call(undefined, currentBlock.number)
                 .then(async (rawPosition) => {
@@ -191,7 +194,9 @@ class UserStakingRewards {
           ),
           Promise.all(
             tokenIds.map((tokenId) =>
-              stakingRewards.contract.methods.positionCurrentEarnRate(tokenId).call(undefined, currentBlock.number)
+              stakingRewards.contract.readOnly.methods
+                .positionCurrentEarnRate(tokenId)
+                .call(undefined, currentBlock.number)
             )
           ),
         ])
@@ -322,7 +327,7 @@ export class UserCommunityRewards {
     // to determine `tokenIds`, rather than using the set of Granted events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
     // `recipient`, whereas the latter does not.
-    const grants = await communityRewards.contract.methods
+    const grants = await communityRewards.contract.readOnly.methods
       .balanceOf(this.address)
       .call(undefined, currentBlock.number)
       .then((balance: string) => parseInt(balance, 10))
@@ -331,7 +336,7 @@ export class UserCommunityRewards {
           Array(numPositions)
             .fill("")
             .map((val, i) =>
-              communityRewards.contract.methods
+              communityRewards.contract.readOnly.methods
                 .tokenOfOwnerByIndex(this.address, i)
                 .call(undefined, currentBlock.number)
             )
@@ -342,18 +347,18 @@ export class UserCommunityRewards {
           tokenIds,
           Promise.all(
             tokenIds.map((tokenId) =>
-              communityRewards.contract.methods.grants(tokenId).call(undefined, currentBlock.number)
+              communityRewards.contract.readOnly.methods.grants(tokenId).call(undefined, currentBlock.number)
             )
           ),
           Promise.all(
             tokenIds.map((tokenId) =>
-              communityRewards.contract.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
+              communityRewards.contract.readOnly.methods.claimableRewards(tokenId).call(undefined, currentBlock.number)
             )
           ),
           Promise.all(
             tokenIds.map(async (tokenId) => {
               const events = await this.goldfinchProtocol.queryEvents(
-                merkleDistributor.contract,
+                merkleDistributor.contract.readOnly,
                 [GRANT_ACCEPTED_EVENT],
                 {tokenId},
                 currentBlock.number
@@ -504,7 +509,7 @@ export class UserMerkleDistributor {
     )
     const [withAcceptance, _tokenLaunchTime] = await Promise.all([
       UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
-      communityRewards.contract.methods.tokenLaunchTimeInSeconds().call(undefined, currentBlock.number),
+      communityRewards.contract.readOnly.methods.tokenLaunchTimeInSeconds().call(undefined, currentBlock.number),
     ])
     const tokenLaunchTime = new BigNumber(_tokenLaunchTime)
     const airdrops = withAcceptance.reduce<{
@@ -535,7 +540,7 @@ export class UserMerkleDistributor {
       airdrops.notAccepted.map(async (grantInfo): Promise<NotAcceptedMerkleDistributorGrant> => {
         const granted = new BigNumber(grantInfo.grant.amount)
         const optimisticVested = new BigNumber(
-          await communityRewards.contract.methods
+          await communityRewards.contract.readOnly.methods
             .totalVestedAt(
               tokenLaunchTime.toString(10),
               tokenLaunchTime.plus(new BigNumber(grantInfo.grant.vestingLength)).toString(10),
@@ -586,7 +591,7 @@ export class UserMerkleDistributor {
     return Promise.all(
       airdropsForRecipient.map(async (grantInfo) => ({
         grantInfo,
-        isAccepted: await merkleDistributor.contract.methods
+        isAccepted: await merkleDistributor.contract.readOnly.methods
           .isGrantAccepted(grantInfo.index)
           .call(undefined, currentBlock.number),
       }))
@@ -717,7 +722,7 @@ export class UserMerkleDirectDistributor {
     return Promise.all(
       airdropsForRecipient.map(async (grantInfo) => ({
         grantInfo,
-        isAccepted: await merkleDirectDistributor.contract.methods
+        isAccepted: await merkleDirectDistributor.contract.readOnly.methods
           .isGrantAccepted(grantInfo.index)
           .call(undefined, currentBlock.number),
       }))
@@ -780,12 +785,12 @@ export class User {
 
   goldfinchProtocol: GoldfinchProtocol
 
-  private creditDesk: CreditDesk
+  private creditDesk: Web3IO<CreditDesk>
 
   constructor(
     address: string,
     networkId: string,
-    creditDesk: CreditDesk,
+    creditDesk: Web3IO<CreditDesk>,
     goldfinchProtocol: GoldfinchProtocol,
     borrower: BorrowerInterface | undefined
   ) {
@@ -860,7 +865,7 @@ export class User {
     const hasUID = golistStatus.hasUID
 
     const gfiBalance = new BigNumber(
-      await gfi.contract.methods.balanceOf(this.address).call(undefined, currentBlock.number)
+      await gfi.contract.readOnly.methods.balanceOf(this.address).call(undefined, currentBlock.number)
     )
 
     const userStakingRewards = new UserStakingRewards()
@@ -1033,14 +1038,14 @@ export class User {
   async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
     if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
       const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      const legacyGolisted = await config.methods.goList(address).call(undefined, currentBlock.number)
+      const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
 
       const go = this.goldfinchProtocol.getContract<Go>("Go")
-      const golisted = await go.methods.go(address).call(undefined, currentBlock.number)
+      const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
       const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
       const hasUID = !new BigNumber(
-        await uniqueIdentity.methods.balanceOf(address, 0).call(undefined, currentBlock.number)
+        await uniqueIdentity.readOnly.methods.balanceOf(address, 0).call(undefined, currentBlock.number)
       ).isZero()
 
       return {
@@ -1074,7 +1079,7 @@ async function getAndTransformUSDCEvents(
   owner: string,
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
-  let approvalEvents = await usdc.contract.getPastEvents(APPROVAL_EVENT, {
+  let approvalEvents = await usdc.contract.readOnly.getPastEvents(APPROVAL_EVENT, {
     filter: {owner, spender},
     fromBlock: "earliest",
     toBlock: currentBlock.number,
@@ -1146,7 +1151,7 @@ async function getPoolEvents(
 }
 
 async function getAndTransformCreditDeskEvents(
-  creditDesk: CreditDesk,
+  creditDesk: Web3IO<CreditDesk>,
   address: string[],
   networkId: string,
   currentBlock: BlockInfo
@@ -1154,7 +1159,7 @@ async function getAndTransformCreditDeskEvents(
   const fromBlock = getFromBlock(networkId)
   const [paymentEvents, drawdownEvents] = await Promise.all(
     CREDIT_DESK_EVENT_TYPES.map((eventName) => {
-      return creditDesk.getPastEvents(eventName, {
+      return creditDesk.readOnly.getPastEvents(eventName, {
         filter: {payer: address, borrower: address},
         fromBlock,
         toBlock: currentBlock.number,

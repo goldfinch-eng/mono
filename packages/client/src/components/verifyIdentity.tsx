@@ -4,7 +4,7 @@ import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import web3 from "web3"
+import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../App"
 import {User, UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
@@ -419,7 +419,7 @@ const UNIQUE_IDENTITY_SIGNER_URLS = {
     "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe",
 }
 
-const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
+const UNIQUE_IDENTITY_MINT_PRICE = Web3Library.utils.toWei("0.00083", "ether")
 
 const START = "start"
 const SIGN_IN = "sign_in"
@@ -528,9 +528,9 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         user,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = await uniqueIdentity.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+      const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
       await sendFromUser(
-        uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
+        uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
           type: MINT_UID_TX_TYPE,
           data: {},

@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js"
 import {memoize} from "lodash"
 import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
+import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import web3 from "../web3"
 import * as ERC20Contract from "./ERC20.json"
@@ -24,7 +25,7 @@ abstract class ERC20 {
   localContractName?: string
   permitVersion?: string
   decimals: number
-  contract!: Contract
+  contract!: Web3IO<Contract>
   goldfinchProtocol: GoldfinchProtocol
 
   constructor(goldfinchProtocol, ticker: Ticker) {
@@ -36,12 +37,10 @@ abstract class ERC20 {
   }
 
   initialize() {
-    if (!this.contract) {
-      this.contract = this.initializeContract()
-    }
+    this.contract = this.initializeContract()
   }
 
-  initializeContract() {
+  initializeContract(): Web3IO<Contract> {
     const config = this.goldfinchProtocol.deployments
     const localContract = this.localContractName && config.contracts[this.localContractName]
     let address
@@ -55,12 +54,13 @@ abstract class ERC20 {
         address = this.networksToAddress[this.goldfinchProtocol.networkId]
       }
     }
-    const erc20 = new web3.eth.Contract(ERC20Contract.abi as AbiItem[], address)
-    return erc20
+    const readOnlyErc20 = new web3.readOnly.eth.Contract(ERC20Contract.abi as AbiItem[], address)
+    const userWalletErc20 = new web3.userWallet.eth.Contract(ERC20Contract.abi as AbiItem[], address)
+    return {readOnly: readOnlyErc20, userWallet: userWalletErc20}
   }
 
   get address() {
-    return this.contract.options.address
+    return this.contract.readOnly.options.address
   }
 
   async getAllowance(
@@ -68,7 +68,7 @@ abstract class ERC20 {
     currentBlock: BlockInfo | undefined
   ): Promise<BigNumber> {
     return new BigNumber(
-      await this.contract.methods
+      await this.contract.readOnly.methods
         .allowance(owner, spender)
         .call(undefined, currentBlock ? currentBlock.number : "latest")
     )
@@ -76,7 +76,9 @@ abstract class ERC20 {
 
   async getBalance(address: string, currentBlock: BlockInfo | undefined): Promise<BigNumber> {
     return new BigNumber(
-      await this.contract.methods.balanceOf(address).call(undefined, currentBlock ? currentBlock.number : "latest")
+      await this.contract.readOnly.methods
+        .balanceOf(address)
+        .call(undefined, currentBlock ? currentBlock.number : "latest")
     )
   }
 

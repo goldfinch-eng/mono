@@ -217,7 +217,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     return (
       info.withdraw
         ? sendFromUser(
-            pool.contract.methods.withdrawInFidu(info.withdraw.fiduAmount.toString(10)),
+            pool.contract.userWallet.methods.withdrawInFidu(info.withdraw.fiduAmount.toString(10)),
             {
               type: WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
               data: {
@@ -234,11 +234,11 @@ function WithdrawalForm(props: WithdrawalFormProps) {
       info.unstakeAndWithdraw
         ? sendFromUser(
             info.unstakeAndWithdraw.tokens.length === 1
-              ? stakingRewards.contract.methods.unstakeAndWithdrawInFidu(
+              ? stakingRewards.contract.userWallet.methods.unstakeAndWithdrawInFidu(
                   info.unstakeAndWithdraw.tokens[0]!.tokenId,
                   info.unstakeAndWithdraw.tokens[0]!.fiduAmount.toString(10)
                 )
-              : stakingRewards.contract.methods.unstakeAndWithdrawMultipleInFidu(
+              : stakingRewards.contract.userWallet.methods.unstakeAndWithdrawMultipleInFidu(
                   info.unstakeAndWithdraw.tokens.map((info) => info.tokenId),
                   info.unstakeAndWithdraw.tokens.map((info) => info.fiduAmount.toString(10))
                 ),

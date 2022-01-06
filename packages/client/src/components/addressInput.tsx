@@ -18,7 +18,7 @@ function AddressInput(props) {
           className="form-input small-text"
           ref={props.formMethods.register({
             validate: (value) => {
-              return value === "" || web3.utils.isAddress(value)
+              return value === "" || web3.readOnly.utils.isAddress(value)
             },
           })}
           disabled={props.disabled}

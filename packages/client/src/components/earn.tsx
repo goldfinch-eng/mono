@@ -1,8 +1,8 @@
-import React, {useContext, useEffect, useState} from "react"
 import BigNumber from "bignumber.js"
+import React, {useContext, useEffect, useState} from "react"
 import {useHistory} from "react-router-dom"
-import {useEarn} from "../contexts/EarnContext"
 import {AppContext} from "../App"
+import {useEarn} from "../contexts/EarnContext"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {GFI, GFILoaded} from "../ethereum/gfi"
 import {
@@ -14,13 +14,13 @@ import {
 } from "../ethereum/pool"
 import {PoolBacker} from "../ethereum/tranchedPool"
 import {UserLoaded} from "../ethereum/user"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {Loadable, Loaded} from "../types/loadable"
 import {InfoIcon} from "../ui/icons"
 import {assertNonNullable, displayDollars, displayPercent, roundDownPenny} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
-import {useCurrentRoute} from "../hooks/useCurrentRoute"
 
 function PoolList({title, children}) {
   return (
@@ -251,7 +251,7 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
 }
 
 function Earn() {
-  const {web3Status, pool, usdc, user, stakingRewards, gfi, setLeafCurrentBlock} = useContext(AppContext)
+  const {userWalletWeb3Status, pool, usdc, user, stakingRewards, gfi, setLeafCurrentBlock} = useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
@@ -303,7 +303,7 @@ function Earn() {
   }
 
   const loaded = pool && capitalProviderData.loaded && backersData.loaded && user
-  const earnMessage = web3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
+  const earnMessage = userWalletWeb3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
 
   return (
     <div className="content-section">
@@ -311,7 +311,7 @@ function Earn() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      {web3Status?.type === "no_web3" || !loaded ? (
+      {userWalletWeb3Status?.type === "no_web3" || !loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview

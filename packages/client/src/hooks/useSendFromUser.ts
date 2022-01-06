@@ -120,7 +120,7 @@ function useSendFromUser() {
     txData: TxData<U>,
     options: UseSendFromUserOptions = {}
   ) {
-    return web3.eth.getGasPrice().then(
+    return web3.userWallet.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
           await sendTransaction(
