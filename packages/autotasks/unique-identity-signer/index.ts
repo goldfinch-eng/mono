@@ -81,6 +81,7 @@ export async function handler(event: HandlerParams) {
   return await main({signer, auth: auth, network, uniqueIdentity})
 }
 
+// Main function
 export async function main({
   auth,
   signer,
