@@ -1,58 +1,41 @@
-import hre, {getNamedAccounts, deployments, getChainId} from "hardhat"
-import {getAllExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
-import * as migrate22 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/migrate"
-import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
-import * as migrate231 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3.1/migrate"
+import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {
   assertIsChainId,
-  DISTRIBUTOR_ROLE,
   getEthersContract,
   getProtocolOwner,
-  getTempMultisig,
   getTruffleContract,
   isMainnetForking,
   MAINNET_CHAIN_ID,
   ZERO_ADDRESS,
-  MINTER_ROLE,
-  OWNER_ROLE,
-  PAUSER_ROLE,
 } from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
+import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
+import {getAllExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import * as migrate231 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3.1/migrate"
+import * as migrate23 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.3/migrate"
 import {Awaited} from "@goldfinch-eng/protocol/blockchain_scripts/types"
-import {TEST_TIMEOUT} from "../../../MainnetForking.test"
-import {Deployment} from "hardhat-deploy/types"
-import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
+import {expectOwnerRole, expectProxyOwner} from "@goldfinch-eng/protocol/test/testHelpers"
 import {
-  CommunityRewards,
-  DynamicLeverageRatioStrategy,
   Go,
   GoldfinchConfig,
   GoldfinchFactory,
-  MerkleDirectDistributor,
   PoolTokens,
   SeniorPool,
-  StakingRewards,
   TestBackerRewards,
-  TranchedPool,
   UniqueIdentity,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
 import {
   CommunityRewardsInstance,
+  GFIInstance,
+  GoInstance,
+  GoldfinchConfigInstance,
   MerkleDirectDistributorInstance,
   StakingRewardsInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {STAKING_REWARDS_PARAMS} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.2/deploy"
-import {expectProxyOwner, expectRoles, expectOwnerRole} from "@goldfinch-eng/protocol/test/testHelpers"
-import {GFIInstance, GoInstance, GoldfinchConfigInstance} from "@goldfinch-eng/protocol/typechain/truffle"
-import {gfiTotalSupply} from "@goldfinch-eng/protocol/blockchain_scripts/airdrop/community/calculation"
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
-
-const v22PerformMigration = deployments.createFixture(async ({deployments}) => {
-  await deployments.fixture("base_deploy", {keepExistingDeployments: true})
-  return await migrate22.main()
-})
+import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
+import hre, {deployments, getChainId, getNamedAccounts} from "hardhat"
+import {Deployment} from "hardhat-deploy/types"
+import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 
 const v23PerformMigration = deployments.createFixture(async ({deployments}) => {
   return await migrate23.main()
@@ -64,7 +47,6 @@ const v231PerformMigration = deployments.createFixture(async () => {
 
 describe("V2.2 & v2.3 migration", async function () {
   this.timeout(TEST_TIMEOUT)
-  let v22migration: Awaited<ReturnType<typeof migrate22.main>>
   let v23migration: Awaited<ReturnType<typeof migrate23.main>>
   let newConfig: GoldfinchConfigInstance
   let existingContracts
@@ -86,8 +68,6 @@ describe("V2.2 & v2.3 migration", async function () {
     const {gf_deployer} = await getNamedAccounts()
     assertIsString(gf_deployer)
     await fundWithWhales(["ETH"], [gf_deployer])
-    // migration = await performMigration()
-    const v22migration = await v22PerformMigration()
     const newConfigDeployment = await deployments.get("GoldfinchConfig")
     const newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
       at: newConfigDeployment.address,
@@ -105,13 +85,12 @@ describe("V2.2 & v2.3 migration", async function () {
     const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards", {
       at: (await deployments.get("CommunityRewards")).address,
     })
-    return {v22migration, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards}
+    return {newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards}
   })
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, v22migration, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards} =
-      await testSetup())
+    ;({gfi, newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards} = await testSetup())
   })
 
   expectProxyOwner({
@@ -128,231 +107,6 @@ describe("V2.2 & v2.3 migration", async function () {
       "MerkleDirectDistributor",
       "DynamicLeverageRatioStrategy",
     ],
-  })
-
-  describe("v2.2 migration", () => {
-    context("StakingRewards", async () => {
-      it("is paused", async () => {
-        expect(await stakingRewards.paused()).to.be.true
-      })
-    })
-
-    context("MerkelDirectDistributor", async () => {
-      it("is paused", async () => {
-        expect(await merkleDirectDistributor.paused()).to.be.true
-      })
-    })
-
-    context("CommunityRewards", async () => {
-      it("is paused", async () => {
-        expect(await communityRewards.paused()).to.be.true
-      })
-    })
-
-    context("GoldfinchConfig", async () => {
-      it("deploys a proxied GoldfinchConfig and initializes values", async () => {
-        const newConfigDeployment = await deployments.get("GoldfinchConfig")
-        const newConfig = v22migration.deployedContracts.config
-        const oldConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-          at: existingContracts.GoldfinchConfig.address,
-        })
-
-        expect(newConfigDeployment.address).to.not.eq(existingContracts.GoldfinchConfig.address)
-        expect(newConfigDeployment.address).to.eq(newConfig.address)
-
-        for (const [k, v] of Object.entries(CONFIG_KEYS_BY_TYPE.numbers)) {
-          expect((await oldConfig.getNumber(v)).toString(), k).to.eq((await newConfig.getNumber(v)).toString())
-        }
-
-        for (const [k, v] of Object.entries(CONFIG_KEYS_BY_TYPE.addresses)) {
-          // Ignore GoldfinchConfig, since it should only be set in the old config
-          // Ignore StakingRewards, since it gets deployed and set only in the new config
-          // Ignore GFI, since it set only in the new config
-          if (!["GoldfinchConfig", "StakingRewards", "GFI"].includes(k)) {
-            expect(await oldConfig.getAddress(v), k).to.eq(await newConfig.getAddress(v))
-          }
-        }
-      })
-
-      context("StakingRewards", async () => {
-        it("has expected parameters set", async () => {
-          expect(await stakingRewards.minRate()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.minRate)
-          expect(await stakingRewards.maxRate()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.maxRate)
-          expect(await stakingRewards.minRateAtPercent()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.minRateAtPercent)
-          expect(await stakingRewards.maxRateAtPercent()).to.be.bignumber.eq(STAKING_REWARDS_PARAMS.maxRateAtPercent)
-        })
-      })
-
-      it("has GFI address set", async () => {
-        const gfi = await deployments.get("GFI")
-        const address = await expect(newConfig.getAddress(CONFIG_KEYS.GFI)).to.be.fulfilled
-        expect(address).to.eq(gfi.address)
-      })
-
-      it("updates the config address on various contracts", async () => {
-        const oldConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
-          at: existingContracts.GoldfinchConfig.address,
-        })
-        const newConfig = v22migration.deployedContracts.config
-
-        // Old config should have the new config's address set
-        expect(await oldConfig.getAddress(CONFIG_KEYS.GoldfinchConfig)).to.eq(newConfig.address)
-
-        // All of these contracts should point to the new config now
-        const updateConfigContracts = [
-          "Fidu",
-          "FixedLeverageRatioStrategy",
-          "GoldfinchFactory",
-          "SeniorPool",
-          "PoolTokens",
-        ]
-        for (const contractName of updateConfigContracts) {
-          const contract = await getEthersContract(contractName)
-          expect(await contract.config()).to.eq(newConfig.address)
-        }
-
-        // Existing TranchedPool should also point to new config now
-        const tranchedPoolAddresses = Object.keys(poolMetadata)
-        const tranchedPoolContracts = await Promise.all(
-          tranchedPoolAddresses.map(async (address) => getEthersContract<TranchedPool>("TranchedPool", {at: address}))
-        )
-        for (const tranchedPool of tranchedPoolContracts) {
-          expect(await tranchedPool.config()).to.eq(newConfig.address)
-        }
-      })
-    })
-
-    context("token launch", async () => {
-      describe("CommunityRewards", () => {
-        describe("rewardsAvailable", () => {
-          it("is correct", async () => {
-            expect(await communityRewards.rewardsAvailable()).to.bignumber.eq("14745027289195700000000000")
-          })
-        })
-      })
-
-      describe("StakingRewards", async () => {
-        describe("rewardsAvailable", () => {
-          it("is correct", async () => {
-            expect(await stakingRewards.rewardsAvailable()).to.bignumber.eq("9142857120000000000000000")
-          })
-        })
-      })
-
-      describe("GFI", () => {
-        it(`cap should be ${gfiTotalSupply.toString()}`, async () => {
-          expect(await gfi.cap()).to.be.bignumber.eq(gfiTotalSupply)
-        })
-
-        it("100% of the cap has been minted", async () => {
-          expect(await gfi.cap()).to.be.bignumber.eq(await gfi.totalSupply())
-        })
-
-        describe("balanceOf", () => {
-          it("StakingRewards is correct", async () => {
-            expect(await gfi.balanceOf(stakingRewards.address)).to.bignumber.eq("9142857120000000000000000")
-          })
-
-          it("CommunityRewards is correct", async () => {
-            expect(await gfi.balanceOf(communityRewards.address)).to.bignumber.eq("14745027289195700000000000")
-          })
-
-          it("Coinbase Custody is correct", async () => {
-            expect(await gfi.balanceOf("0xc95c99CeF8A8D0DbFEd996021d11c1635674B1be")).to.bignumber.be.eq(
-              "56250630099154500000000000"
-            )
-          })
-
-          it("MerkleDirectDistributor is correct", async () => {
-            expect(await gfi.balanceOf(merkleDirectDistributor.address)).to.bignumber.eq("4500813523096940000000000")
-          })
-
-          it("Protocol Owner is correct", async () => {
-            expect(await gfi.balanceOf(await getProtocolOwner())).to.bignumber.eq("29646384968552859999999000")
-          })
-        })
-      })
-
-      it("deploys staking / airdrop contracts", async () => {
-        for (const contractName of ["StakingRewards", "CommunityRewards"]) {
-          await expect(deployments.get(contractName)).to.not.be.rejected
-        }
-      })
-
-      it("deploys merkle distributors", async () => {
-        for (const contractName of ["MerkleDistributor", "MerkleDirectDistributor"]) {
-          await expect(deployments.get(contractName)).to.not.be.rejected
-        }
-      })
-
-      expectRoles([
-        {
-          contractName: "CommunityRewards",
-          roles: [DISTRIBUTOR_ROLE],
-          address: async () => (await deployments.get("MerkleDistributor")).address,
-        },
-      ])
-
-      describe("roles", async () => {
-        describe("temp multisig for owning GFI", async () => {
-          it("does not have OWNER role", async () => {
-            expect(await gfi.hasRole(OWNER_ROLE, await getTempMultisig())).to.be.false
-          })
-          it("does not have PAUSER role", async () => {
-            expect(await gfi.hasRole(PAUSER_ROLE, await getTempMultisig())).to.be.false
-          })
-          it("does not have MINTER role", async () => {
-            expect(await gfi.hasRole(MINTER_ROLE, await getTempMultisig())).to.be.false
-          })
-        })
-
-        describe("protocol owner", async () => {
-          it("does have OWNER role", async () => {
-            expect(await gfi.hasRole(OWNER_ROLE, await getProtocolOwner())).to.be.true
-          })
-          it("does have PAUSER role", async () => {
-            expect(await gfi.hasRole(PAUSER_ROLE, await getProtocolOwner())).to.be.true
-          })
-          it("does have MINTER role", async () => {
-            expect(await gfi.hasRole(MINTER_ROLE, await getProtocolOwner())).to.be.true
-          })
-        })
-      })
-    })
-
-    context("other contracts", async () => {
-      it("deploys DynamicLeverageRatioStrategy", async () => {
-        await expect(deployments.get("DynamicLeverageRatioStrategy")).to.not.be.rejected
-      })
-    })
-
-    context("initialization", async () => {
-      it("initializes all contracts", async () => {
-        await impersonateAccount(hre, await getProtocolOwner())
-        await fundWithWhales(["ETH"], [await getProtocolOwner()])
-        await expect(
-          (await getEthersContract<StakingRewards>("StakingRewards")).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS)
-        ).to.be.rejectedWith(/initialized/)
-        await expect(
-          (
-            await getEthersContract<CommunityRewards>("CommunityRewards")
-          ).__initialize__(ZERO_ADDRESS, ZERO_ADDRESS, "12345")
-        ).to.be.rejectedWith(/initialized/)
-        await expect(
-          (await getEthersContract<GoldfinchConfig>("GoldfinchConfig")).initialize(ZERO_ADDRESS)
-        ).to.be.rejectedWith(/initialized/)
-        await expect(
-          (
-            await getEthersContract<MerkleDirectDistributor>("MerkleDirectDistributor")
-          ).initialize(ZERO_ADDRESS, ZERO_ADDRESS, web3.utils.keccak256("test"))
-        ).to.be.rejectedWith(/initialized/)
-        await expect(
-          (
-            await getEthersContract<DynamicLeverageRatioStrategy>("DynamicLeverageRatioStrategy")
-          ).initialize(ZERO_ADDRESS)
-        ).to.be.rejectedWith(/initialized/)
-      })
-    })
   })
 
   describe("v2.3 migration", () => {
