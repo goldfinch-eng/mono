@@ -35,7 +35,7 @@ import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
-const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
+const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
 const GFI_TOKEN_IMAGE_URL = `${
   process.env.NODE_ENV === "development"
     ? process.env.REACT_APP_MURMURATION === "yes"
