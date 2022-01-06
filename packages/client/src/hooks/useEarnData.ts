@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react"
-import {ApolloError, useQuery} from "@apollo/client"
+import {ApolloError} from "@apollo/client"
 import _ from "lodash"
 import {AppContext} from "../App"
 import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
@@ -16,6 +16,7 @@ import {RINKEBY} from "../ethereum/utils"
 import useNonNullContext from "./useNonNullContext"
 import {getTranchedPoolsData as QueryResult} from "../graphql/types"
 import {usdcToAtomic} from "../ethereum/erc20"
+import useGraphQuerier from "./useGraphQuerier"
 
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -43,7 +44,7 @@ export function useTranchedPoolSubgraphData(skip = false): {
     value: undefined,
   })
 
-  const {loading, error, data} = useQuery(GET_TRANCHED_POOLS_DATA, {skip})
+  const {loading, error, data} = useGraphQuerier(GET_TRANCHED_POOLS_DATA, skip)
 
   useEffect(() => {
     async function parseData(
@@ -67,11 +68,11 @@ export function useTranchedPoolSubgraphData(skip = false): {
       parseData(data)
     }
 
-    if (web3Status?.type !== "no_web3" && data && goldfinchProtocol && currentBlock) {
+    if (web3Status?.type !== "no_web3" && data && goldfinchProtocol && currentBlock && user?.address) {
       parseData(data, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goldfinchProtocol, data, user?.address, currentBlock, web3Status])
+  }, [goldfinchProtocol, data, user?.address, web3Status])
 
   return {loading, error, backers}
 }

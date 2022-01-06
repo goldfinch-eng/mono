@@ -13,25 +13,33 @@ const styles = {
 
 interface RefreshIndicatorProps {
   rootCurrentBlock: BlockInfo | undefined
+  leavesRootBlockOfLastGraphRefresh: LeavesCurrentBlock
   leavesCurrentBlock: LeavesCurrentBlock
 }
 
 export function getIsRefreshing(
   rootCurrentBlock: BlockInfo | undefined,
-  leafCurrentBlock: BlockInfo | undefined
+  leafCurrentBlock: BlockInfo | undefined,
+  rootBlockOfLastGraphRefresh: BlockInfo | undefined
 ): boolean {
-  return !!rootCurrentBlock && !!leafCurrentBlock && rootCurrentBlock.number > leafCurrentBlock.number
+  return (
+    !!rootCurrentBlock &&
+    !!leafCurrentBlock &&
+    !!rootBlockOfLastGraphRefresh &&
+    (rootCurrentBlock.number > leafCurrentBlock.number || rootCurrentBlock.number > rootBlockOfLastGraphRefresh.number)
+  )
 }
 
 function RefreshIndicator(props: RefreshIndicatorProps) {
   const currentRoute = useCurrentRoute()
-  let leafCurrentBlock: BlockInfo | undefined
+  let leafCurrentBlock: BlockInfo | undefined, rootBlockOfLastGraphRefresh: BlockInfo | undefined
   if (currentRoute) {
     leafCurrentBlock = props.leavesCurrentBlock[currentRoute]
+    rootBlockOfLastGraphRefresh = props.leavesRootBlockOfLastGraphRefresh[currentRoute]
   } else {
     console.error("Failed to identify current route for leaf current block.")
   }
-  const isRefreshing = getIsRefreshing(props.rootCurrentBlock, leafCurrentBlock)
+  const isRefreshing = getIsRefreshing(props.rootCurrentBlock, leafCurrentBlock, rootBlockOfLastGraphRefresh)
   return (
     <div className="refresh-indicator">
       {isRefreshing ? (

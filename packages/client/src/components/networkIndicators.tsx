@@ -16,6 +16,7 @@ type NetworkIndicatorsProps = {
   currentTxs: CurrentTx<TxType>[]
   connectionComplete: () => any
   rootCurrentBlock: BlockInfo | undefined
+  leavesRootBlockOfLastGraphRefresh: LeavesCurrentBlock
   leavesCurrentBlock: LeavesCurrentBlock
   hasGraphError: boolean
 }
@@ -34,7 +35,11 @@ function NetworkIndicators(props: NetworkIndicatorsProps) {
       )}
       <div className="network-indicators">
         <div className="network-indicators-inner">
-          <RefreshIndicator rootCurrentBlock={props.rootCurrentBlock} leavesCurrentBlock={props.leavesCurrentBlock} />
+          <RefreshIndicator
+            rootCurrentBlock={props.rootCurrentBlock}
+            leavesCurrentBlock={props.leavesCurrentBlock}
+            leavesRootBlockOfLastGraphRefresh={props.leavesRootBlockOfLastGraphRefresh}
+          />
           <div className="network-widget-container">
             <NetworkWidget
               user={props.user}

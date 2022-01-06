@@ -91,7 +91,7 @@ function EarnProvider({children}: EarnProviderProps) {
 
   useEffect(() => {
     if (graphError) {
-      console.error("Activating fallback to Web3", graphError)
+      console.error("Activating fallback to Web3.", graphError)
       setUseWeb3(true)
     }
   }, [graphError])

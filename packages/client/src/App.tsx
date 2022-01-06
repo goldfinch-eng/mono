@@ -110,6 +110,24 @@ export interface GlobalState {
   // point is that once it's done refreshing, we know that nothing else remains to be refreshed. In
   // practice, this means we'll want to call `setLeafCurrentBlock()` once per application route.
   setLeafCurrentBlock?: (route: AppRoute, leafCurrentBlock: BlockInfo) => void
+  // This tracks the latest block that triggered a refresh on the subgraph *at the respective leaf of the
+  // component tree*. We can't trust that the graph will always be up to date with the blockchain,
+  // if the graph is unstable it's possible for the subgraph to lag behind and no
+  // amount of refreshes would solve the issue. To cope with this problem we are tracking when
+  // refreshes are made for a given route. Tracking this separately from `currentBlock` is useful
+  // because it enables us -- assuming the developer has implemented the necessary usage of
+  // `refreshCurrentBlock()` to trigger refreshing, and of `setLeafRootBlockLastGraphRefresh()`
+  // when the refresh has finished as far as a given route is concerned -- to display an indicator
+  // in the UI that the chain data are being refreshed, if the leaf's current block is lagging behind
+  // the `currentBlock`.
+  leavesRootBlockOfLastGraphRefresh?: LeavesCurrentBlock
+  // This setter should be called when a refresh is made, the refresh is triggered by a change (increase)
+  // in the current block associated with that data dependency; the setter should be called with that
+  // new current block. Ideally, the the last data dependency calls `setLeafRootBlockLastGraphRefresh`,
+  // in practice, this means that we'll want to call it once by query, being feasible to define one query
+  // by application route. The point is that once it's done refreshing, we know that nothing else
+  // remains to be refreshed.
+  setLeafRootBlockLastGraphRefresh?: (route: AppRoute, rootBlockOfLastGraphRefresh: BlockInfo) => void
 
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
@@ -159,6 +177,20 @@ function App() {
   const [user, setUser] = useState<UserLoaded>()
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
   const [leavesCurrentBlock, setLeavesCurrentBlock] = useState<LeavesCurrentBlock>({
+    [INDEX_ROUTE]: undefined,
+    [EARN_ROUTE]: undefined,
+    [ABOUT_ROUTE]: undefined,
+    [GFI_ROUTE]: undefined,
+    [BORROW_ROUTE]: undefined,
+    [TRANSACTIONS_ROUTE]: undefined,
+    [SENIOR_POOL_ROUTE]: undefined,
+    [TRANCHED_POOL_ROUTE]: undefined,
+    [VERIFY_ROUTE]: undefined,
+    [TERMS_OF_SERVICE_ROUTE]: undefined,
+    [PRIVACY_POLICY_ROUTE]: undefined,
+    [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+  })
+  const [leavesRootBlockOfLastGraphRefresh, setLeavesRootBlockOfLastGraphRefresh] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
@@ -464,10 +496,15 @@ function App() {
     setLeavesCurrentBlock({...leavesCurrentBlock, [route]: leafCurrentBlock})
   }
 
+  function setLeafRootBlockLastGraphRefresh(route: AppRoute, leafRootBlock: BlockInfo) {
+    setLeavesRootBlockOfLastGraphRefresh({...leavesRootBlockOfLastGraphRefresh, [route]: leafRootBlock})
+  }
+
   const store: GlobalState = {
     web3Status,
     currentBlock,
     leavesCurrentBlock,
+    leavesRootBlockOfLastGraphRefresh,
     stakingRewards,
     gfi,
     communityRewards,
@@ -490,6 +527,7 @@ function App() {
     setSessionData,
     refreshCurrentBlock,
     setLeafCurrentBlock,
+    setLeafRootBlockLastGraphRefresh,
     hasGraphError,
     setHasGraphError,
   }
@@ -498,9 +536,9 @@ function App() {
     <ApolloProvider client={apolloClient}>
       <AppContext.Provider value={store}>
         <ThemeProvider theme={defaultTheme}>
-          <EarnProvider>
-            <BorrowProvider>
-              <Router>
+          <Router>
+            <EarnProvider>
+              <BorrowProvider>
                 <NetworkIndicators
                   user={user}
                   network={network}
@@ -509,6 +547,7 @@ function App() {
                   connectionComplete={setupWeb3}
                   rootCurrentBlock={currentBlock}
                   leavesCurrentBlock={leavesCurrentBlock}
+                  leavesRootBlockOfLastGraphRefresh={leavesRootBlockOfLastGraphRefresh}
                   hasGraphError={hasGraphError}
                 />
                 {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
@@ -553,9 +592,9 @@ function App() {
                     </Route>
                   </Switch>
                 </div>
-              </Router>
-            </BorrowProvider>
-          </EarnProvider>
+              </BorrowProvider>
+            </EarnProvider>
+          </Router>
           <Footer />
         </ThemeProvider>
       </AppContext.Provider>
