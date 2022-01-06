@@ -67,8 +67,6 @@ import {
   VERIFY_ROUTE,
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
-import Banner from "./components/banner"
-import {iconInfo} from "./components/icons"
 
 interface GeolocationData {
   ip: string
@@ -511,6 +509,7 @@ function App() {
                   connectionComplete={setupWeb3}
                   rootCurrentBlock={currentBlock}
                   leavesCurrentBlock={leavesCurrentBlock}
+                  hasGraphError={hasGraphError}
                 />
                 {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
                 <Sidebar />

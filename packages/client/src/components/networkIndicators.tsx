@@ -6,6 +6,8 @@ import {CurrentTx, TxType} from "../types/transactions"
 import {BlockInfo} from "../utils"
 import NetworkWidget from "./networkWidget"
 import RefreshIndicator from "./refreshIndicator"
+import Banner from "./banner"
+import {iconInfo} from "./icons"
 
 type NetworkIndicatorsProps = {
   user: UserLoaded | undefined
@@ -15,22 +17,34 @@ type NetworkIndicatorsProps = {
   connectionComplete: () => any
   rootCurrentBlock: BlockInfo | undefined
   leavesCurrentBlock: LeavesCurrentBlock
+  hasGraphError: boolean
 }
 
 function NetworkIndicators(props: NetworkIndicatorsProps) {
   return (
-    <div className="network-indicators">
-      <div className="network-indicators-inner">
-        <RefreshIndicator rootCurrentBlock={props.rootCurrentBlock} leavesCurrentBlock={props.leavesCurrentBlock} />
-        <div className="network-widget-container">
-          <NetworkWidget
-            user={props.user}
-            currentBlock={props.rootCurrentBlock}
-            network={props.network}
-            currentErrors={props.currentErrors}
-            currentTxs={props.currentTxs}
-            connectionComplete={props.connectionComplete}
-          />
+    <div>
+      {props.hasGraphError && (
+        <div className="content-section">
+          <Banner variant="warning" icon={iconInfo} className="spaced">
+            <span className="bold">WARNING:</span> Due to technical issues with the blockchain data provider, the data
+            displayed below may not be up-to-date. Complete transactions with caution, or refresh and try again in a few
+            minutes
+          </Banner>
+        </div>
+      )}
+      <div className="network-indicators">
+        <div className="network-indicators-inner">
+          <RefreshIndicator rootCurrentBlock={props.rootCurrentBlock} leavesCurrentBlock={props.leavesCurrentBlock} />
+          <div className="network-widget-container">
+            <NetworkWidget
+              user={props.user}
+              currentBlock={props.rootCurrentBlock}
+              network={props.network}
+              currentErrors={props.currentErrors}
+              currentTxs={props.currentTxs}
+              connectionComplete={props.connectionComplete}
+            />
+          </div>
         </div>
       </div>
     </div>
