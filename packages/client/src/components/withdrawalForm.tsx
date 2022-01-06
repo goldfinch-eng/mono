@@ -334,6 +334,19 @@ function WithdrawalForm(props: WithdrawalFormProps) {
           withdrawalInfo && withdrawalInfo.unstakeAndWithdraw
             ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
             : new BigNumber(0)
+        const forfeitedGfiNotesSuffix = toggleRewards ? (
+          <span>
+            {" and "}
+            <span className="font-bold">
+              {"forfeit "}
+              {displayNumber(gfiFromAtomic(forfeitedGfi), 2)}
+              {" GFI ("}
+              {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
+              {")"}
+            </span>
+            {" that is still unvested"}
+          </span>
+        ) : undefined
         notes = [
           {
             key: "advisory",
@@ -344,15 +357,9 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                   {"receive "}
                   {displayDollars(usdcFromAtomic(getUsdcAmountNetOfProtocolFee(withdrawalAmount)), 2)}
                 </span>
-                {" net of protocol reserves and "}
-                <span className="font-bold">
-                  {"forfeit "}
-                  {displayNumber(gfiFromAtomic(forfeitedGfi), 2)}
-                  {" GFI ("}
-                  {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
-                  {")"}
-                </span>
-                {" that is still unvested."}
+                {" net of protocol reserves"}
+                {forfeitedGfiNotesSuffix}
+                {"."}
               </p>
             ),
           },
