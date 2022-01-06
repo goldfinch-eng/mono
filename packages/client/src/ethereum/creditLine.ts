@@ -326,6 +326,8 @@ class MultipleCreditLines extends BaseCreditLine {
   set limit(_) {}
   set availableCredit(_) {}
   set remainingPeriodDueAmount(_) {}
+  set currentLimit(_) {}
+  set maxLimit(_) {}
 }
 
 function buildCreditLine(address): CreditlineContract {
