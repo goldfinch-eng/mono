@@ -191,10 +191,12 @@ describe("unique-identity-signer", () => {
               fetchKYCStatus: fetchKYCFunction,
             })
 
-            await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
-            expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
-            expect(await uniqueIdentity.balanceOf(anotherUser, 1)).to.bignumber.eq(new BN(0))
-            expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
+            await uniqueIdentity.burn(anotherUser, usNonAccreditedIdType, result.expiresAt, result.signature, {
+              from: anotherUser,
+            })
+            expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
         })
       })
