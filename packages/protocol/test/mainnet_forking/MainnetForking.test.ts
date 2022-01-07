@@ -11,7 +11,7 @@ import {
   getTruffleContract,
 } from "../../blockchain_scripts/deployHelpers"
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
-import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
+import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -179,7 +179,7 @@ describe("mainnet forking tests", async function () {
   this.retries(2)
 
   // eslint-disable-next-line no-unused-vars
-  let accounts, owner, bwr, person3, usdc, fidu
+  let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
   let goldfinchFactory, busd, usdt, cUSDC
   let reserveAddress,
     tranchedPool: TranchedPoolInstance,
@@ -193,15 +193,11 @@ describe("mainnet forking tests", async function () {
     communityRewards: CommunityRewardsInstance,
     merkleDistributor: MerkleDistributorInstance,
     merkleDirectDistributor: MerkleDirectDistributorInstance,
-    legacyGoldfinchConfig: GoldfinchConfigInstance,
-    goldfinchConfig: GoldfinchConfigInstance
+    legacyGoldfinchConfig: GoldfinchConfigInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
-    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.TotalFundsLimit, usdcVal(100_000_000), {
-      from: await getProtocolOwner(),
-    })
     await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
     await seniorPool.deposit(usdcVal(10000), {from: owner})
   }
