@@ -35,6 +35,8 @@ import {
   getOnlyLog,
   getFirstLog,
 } from "../testHelpers"
+import * as migrate232 from "../../blockchain_scripts/migrations/v2.3.2/migrate"
+import * as migrate231 from "../../blockchain_scripts/migrations/v2.3.1/migrate"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
   BackerRewardsInstance,
@@ -52,7 +54,6 @@ import {
   StakingRewardsInstance,
   TranchedPoolInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import * as migrate23 from "../../blockchain_scripts/migrations/v2.3/migrate"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
 import {Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
@@ -77,7 +78,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
-  await migrate23.main()
+  await migrate232.main()
+  // await migrate231.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -249,8 +251,6 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
     await setupSeniorPool()
-
-    await stakingRewards.unpause({from: await getProtocolOwner()})
   })
 
   describe("drawing down into another currency", async function () {
@@ -538,7 +538,6 @@ describe("mainnet forking tests", async function () {
         }))
 
         reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
-        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(40000000), {from: MAINNET_MULTISIG})
 
         await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [owner])
         await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
@@ -856,17 +855,7 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("CommunityRewards", () => {
-    beforeEach(async () => {
-      await communityRewards.unpause({
-        from: MAINNET_MULTISIG,
-      })
-    })
     describe("claimableRewards", () => {
-      // TODO @will verify vesting to community rewards balance
-      // it("contract holds the correct amount of claimable rewards", async () => {
-      //   expect(await communityRewards.rewardsAvailable()).to.bignumber.equal("")
-      // })
-
       // no vesting to merkle direct distributor balance
       describe("MerkleDistributor", () => {
         it("proper reward allocation for users claimable", async () => {

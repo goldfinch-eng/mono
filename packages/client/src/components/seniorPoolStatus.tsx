@@ -1,28 +1,53 @@
+import {useQuery} from "@apollo/client"
 import {BigNumber} from "bignumber.js"
 import {useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {displayDollars, displayPercent} from "../utils"
+import {SeniorPoolLoaded} from "../ethereum/pool"
+import {parseSeniorPoolStatus} from "../graphql/parsers"
+import {GET_SENIOR_POOL_STATUS} from "../graphql/queries"
+import {displayDollars, displayPercent, shouldUseWeb3} from "../utils"
 import {iconOutArrow} from "./icons"
 import InfoSection from "./infoSection"
 import RecentRepayments from "./recentRepayments"
 
-interface PoolStatusProps {}
+interface SeniorPoolStatusProps {
+  pool: SeniorPoolLoaded | undefined
+}
 
-function PoolStatus(props: PoolStatusProps) {
-  const {goldfinchConfig, pool} = useContext(AppContext)
+function SeniorPoolStatus(props: SeniorPoolStatusProps) {
+  const {goldfinchConfig} = useContext(AppContext)
+  const {pool} = props
+  const useWeb3 = shouldUseWeb3()
+  const {data} = useQuery(GET_SENIOR_POOL_STATUS, {skip: useWeb3})
 
   function deriveRows() {
-    let defaultRate: BigNumber | undefined
+    // NOTE: Currently, `pool` and `data` do not necessarily relate to the same block number. Therefore
+    // they are not guaranteed to be logically consistent with each other. To address this, we must
+    // query The Graph for data from the same block number as `pool`, or else use `pool` or `data`
+    // exclusively. Consider also the analogous consistency-with-respect-to-block-number issue between
+    // these pool status data and data shown elsewhere on the page.
+
     let poolBalance: string | undefined
     let totalLoansOutstanding: string | undefined
+    if (!useWeb3 && data) {
+      const result = parseSeniorPoolStatus(data)
+      poolBalance = usdcFromAtomic(result.totalPoolAssets)
+      totalLoansOutstanding = usdcFromAtomic(result.totalLoansOutstanding)
+    } else {
+      if (pool) {
+        const poolData = pool.info.value.poolData
+        poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
+        totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
+      }
+    }
+
+    let defaultRate: BigNumber | undefined
     let capacityRemaining: BigNumber | undefined
     const maxPoolCapacity: BigNumber | undefined = goldfinchConfig ? goldfinchConfig.totalFundsLimit : undefined
     if (pool && maxPoolCapacity) {
       const poolData = pool.info.value.poolData
       defaultRate = poolData.defaultRate
-      poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
-      totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
       capacityRemaining = poolData.remainingCapacity(maxPoolCapacity)
     }
 
@@ -58,5 +83,5 @@ function PoolStatus(props: PoolStatusProps) {
   )
 }
 
-export default PoolStatus
-export type {PoolStatusProps}
+export default SeniorPoolStatus
+export type {SeniorPoolStatusProps}

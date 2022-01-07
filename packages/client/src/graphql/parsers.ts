@@ -1,7 +1,8 @@
 import BigNumber from "bignumber.js"
 import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
-import {INTEREST_DECIMALS} from "../ethereum/utils"
+import {INTEREST_DECIMALS, USDC_DECIMALS} from "../ethereum/utils"
 import {
+  getSeniorPool as QueryResultSeniorPoolStatus,
   getTranchedPoolsData_tranchedPools as TranchedPoolGQL,
   getTranchedPoolsData_tranchedPools_backers_user_tokens as TokenInfoGQL,
   getTranchedPoolsData_tranchedPools_creditLine as CreditLineGQL,
@@ -14,6 +15,26 @@ import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {CreditLine} from "../ethereum/creditLine"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {NetworkConfig} from "../types/network"
+import {FIDU_DECIMALS} from "../ethereum/fidu"
+
+export function parseSeniorPoolStatus(data: QueryResultSeniorPoolStatus) {
+  const seniorPool = data.seniorPool
+  assertNonNullable(seniorPool)
+  const latestPoolStatus = seniorPool.latestPoolStatus
+
+  const totalShares = new BigNumber(latestPoolStatus.totalShares)
+  const sharePrice = new BigNumber(latestPoolStatus.totalPoolAssets).dividedBy(totalShares)
+  const totalPoolAssetsInDollars = totalShares
+    .div(FIDU_DECIMALS.toString())
+    .multipliedBy(sharePrice)
+    .div(FIDU_DECIMALS.toString())
+  const totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
+
+  return {
+    totalPoolAssets,
+    totalLoansOutstanding: latestPoolStatus.totalLoansOutstanding,
+  }
+}
 
 function trancheInfo(tranche: JuniorTrancheGQL | SeniorTrancheGQL): TrancheInfo {
   return {

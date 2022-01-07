@@ -29,7 +29,7 @@ import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
 
 const logger: Logger = console.log
 
-export const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
+export const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
 
 export type Deployed<T> = {
   name: string
