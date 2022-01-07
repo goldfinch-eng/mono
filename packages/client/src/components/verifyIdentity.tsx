@@ -569,7 +569,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
             <div className="message">
               <p className="font-small">
                 Your UID, or "Unique Identity", is an NFT that represents your unique identity and grants you access to
-                participate in Borrower Pools and{" "}
+                participate in Borrower Pools and the{" "}
                 <Link className="form-link" to="/pools/senior">
                   Senior Pool
                 </Link>
