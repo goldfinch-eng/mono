@@ -5,7 +5,9 @@ import {getEthersContract} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
 
 export async function main() {
-  const effects = await getDeployEffects()
+  const effects = await getDeployEffects({
+    title: "Pause contracts after manual testing",
+  })
 
   const communityRewards = await getEthersContract<CommunityRewards>("CommunityRewards", {
     at: (await deployments.get("CommunityRewards")).address,
