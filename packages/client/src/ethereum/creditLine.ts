@@ -170,20 +170,12 @@ class CreditLine extends BaseCreditLine {
   }
 
   async calculateFields(currentBlock: BlockInfo) {
-    // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
-    try {
-      const data = await fetchDataFromAttributes(this.creditLine, [{method: "maxLimit"}])
-      this["maxLimit"] = new BigNumber(data["maxLimit"])
-    } catch (e) {
-      console.log("maxLimit not available on old CreditLines, use currentLimit", {e})
-      this["maxLimit"] = this["currentLimit"]
-    }
-
     this.isLate = this._calculateIsLate(currentBlock)
     const interestOwed = this._calculateInterestOwed()
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
+    this.maxLimit = await this._getMaxLimit()
     this.collectedPaymentBalance = new BigNumber(
       await this.usdc.methods.balanceOf(this.address).call(undefined, currentBlock.number)
     )
@@ -194,6 +186,18 @@ class CreditLine extends BaseCreditLine {
     this.remainingTotalDueAmount = BigNumber.max(this.totalDueAmount.minus(this.collectedPaymentBalance), zero)
     const collectedForPrincipal = BigNumber.max(this.collectedPaymentBalance.minus(this.periodDueAmount), zero)
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
+  }
+
+  async _getMaxLimit(): Promise<BigNumber> {
+    // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
+    const V2_2_MIGRATION_DATE = "2022-01-04"
+    const creditLineStart = moment(this.termEndDate, "MMM D, YYYY").subtract(this.termInDays.toNumber(), "days")
+    if (creditLineStart.isBefore(moment(V2_2_MIGRATION_DATE))) {
+      return this.currentLimit
+    } else {
+      const maxLimit = await this.creditLine.methods.maxLimit().call()
+      return new BigNumber(maxLimit)
+    }
   }
 
   _calculateIsLate(currentBlock: BlockInfo) {
