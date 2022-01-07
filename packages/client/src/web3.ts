@@ -37,7 +37,8 @@ const isMetaMaskInpageProvider = (obj: unknown): obj is MetaMaskInpageProvider =
 
 function genUserWalletWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
   const wrapped: WrappedProvider = {type: "metamask", provider: metamaskProvider}
-  const provider = process.env.REACT_APP_TRACE_WEB3 ? withTracing("userWallet", wrapped).provider : wrapped.provider
+  const provider =
+    process.env.REACT_APP_TRACE_WEB3 === "yes" ? withTracing("userWallet", wrapped).provider : wrapped.provider
   return new Web3(provider as ProviderType)
 }
 
@@ -68,7 +69,8 @@ function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
       console.log(`Unexpected chain id: ${chainId}. Falling back to Metamask's default provider.`)
     }
   }
-  const provider = process.env.REACT_APP_TRACE_WEB3 ? withTracing("readOnly", wrapped).provider : wrapped.provider
+  const provider =
+    process.env.REACT_APP_TRACE_WEB3 === "yes" ? withTracing("readOnly", wrapped).provider : wrapped.provider
   return new Web3(provider as ProviderType)
 }
 
