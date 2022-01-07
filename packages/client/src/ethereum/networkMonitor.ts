@@ -125,7 +125,7 @@ class NetworkMonitor {
       } else {
         throw new Error("Failed to identify transaction to update.")
       }
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTxs, tx), "blockTime"))
+      const newTXs = _.reverse(_.sortBy(_.concat(currentTxs, tx), "blockNumber"))
 
       this.currentTxs = newTXs // Update local copy
       return newTXs
