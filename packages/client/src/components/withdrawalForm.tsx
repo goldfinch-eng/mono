@@ -63,20 +63,34 @@ interface WithdrawalFormProps {
   closeForm: () => void
 }
 
+type TransactionConfig = {
+  displayAmount: string
+  // Whether the user intends to withdraw the maximum amount. If this is `true`, we should compute the
+  // withdrawal amount respecting this value instead of `displayAmount`, as using the
+  // latter would be liable to leave "dust" because it is a USDC amount and therefore may convert
+  // imprecisely into FIDU.
+  max: boolean
+}
+
 function WithdrawalForm(props: WithdrawalFormProps) {
   const {goldfinchConfig, pool, stakingRewards} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 
-  const [transactionAmount, setTransactionAmount] = useState()
-  const debouncedSetTransactionAmount = useDebounce(setTransactionAmount, 200)
+  const [transactionConfig, setTransactionConfig] = useState<TransactionConfig | undefined>()
+  const debouncedSetTransactionConfig = useDebounce(setTransactionConfig, 200)
 
-  function getWithdrawalInfo(withdrawalAmount: BigNumber): WithdrawalInfo {
+  function getWithdrawalInfo(config: TransactionConfig): WithdrawalInfo {
+    const withdrawalUsdcDisplayAmount = new BigNumber(usdcToAtomic(config.displayAmount))
+
     // We prefer to perform withdrawals in FIDU, rather than USDC, as this ensures we can withdraw
-    // unstaked FIDU completely and exit staked positions completely. If we performed the withdrawal
-    // in USDC, it would be possible for unstaked FIDU not to be withdrawn completely, or for staked
-    // positions not to be exited completely, if the share price were to change between the time this
-    // logic executes and the time the transaction were executed.
-    const withdrawalFiduAmount = getNumSharesFromUsdc(withdrawalAmount, props.capitalProvider.sharePrice)
+    // unstaked FIDU completely and exit staked positions completely (assuming the share price does
+    // not change between the time we perform this computation and the time the transaction executes).
+    // If we performed the withdrawal in terms of USDC, it would be possible, due to rounding error
+    // in the conversion from USDC -> FIDU, for unstaked FIDU not to be withdrawn completely or for
+    // staked positions not to be exited completely.
+    const withdrawalFiduAmount: BigNumber = config.max
+      ? props.capitalProvider.shares.aggregates.withdrawable
+      : getNumSharesFromUsdc(withdrawalUsdcDisplayAmount, props.capitalProvider.sharePrice)
 
     if (!withdrawalFiduAmount.gt(0)) {
       throw new WithdrawalInfoError("Withdrawal amount in FIDU must be greater than 0.")
@@ -170,11 +184,12 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // amounts that are recognizable to the user, i.e. that accord with the USDC amount
     // they entered into the form. So here we define the "recognizable" USDC amount corresponding
     // to the withdraw transaction and the unstake-and-withdraw transaction, ensuring that
-    // they sum to the `withdrawalAmount` (which is what the user has entered into the form),
-    // which would not otherwise be guaranteed, because converting from USDC -> FIDU -> USDC
-    // could lose precision due to integer division. Note also that in defining these recognizable
-    // amounts, we don't reflect the fee taken by the protocol; that deduction will be reflected
-    // only in displaying the transactions in their "historical" form.
+    // they sum to the `withdrawalUsdcDisplayAmount` (which corresponds to what the user sees in the
+    // transaction input), which would not otherwise be guaranteed, because converting from
+    // USDC -> FIDU -> USDC could lose precision due to integer division. Note also that in
+    // defining these recognizable amounts, we don't reflect the fee taken by the protocol;
+    // that deduction will be reflected only in displaying the transactions in their "historical"
+    // form.
     if (withdraw && unstakeAndWithdraw) {
       const recognizableUsdcAmountWithdraw = getUsdcFromNumShares(withdraw.fiduAmount, props.capitalProvider.sharePrice)
       return {
@@ -184,14 +199,14 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         },
         unstakeAndWithdraw: {
           ...unstakeAndWithdraw,
-          recognizableUsdcAmount: withdrawalAmount.minus(recognizableUsdcAmountWithdraw),
+          recognizableUsdcAmount: withdrawalUsdcDisplayAmount.minus(recognizableUsdcAmountWithdraw),
         },
       }
     } else if (withdraw && !unstakeAndWithdraw) {
       return {
         withdraw: {
           ...withdraw,
-          recognizableUsdcAmount: withdrawalAmount,
+          recognizableUsdcAmount: withdrawalUsdcDisplayAmount,
         },
         unstakeAndWithdraw,
       }
@@ -200,7 +215,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
         withdraw,
         unstakeAndWithdraw: {
           ...unstakeAndWithdraw,
-          recognizableUsdcAmount: withdrawalAmount,
+          recognizableUsdcAmount: withdrawalUsdcDisplayAmount,
         },
       }
     } else {
@@ -209,10 +224,20 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   }
 
   function action({transactionAmount}) {
+    if (!transactionConfig) {
+      console.error("Expected withdrawal transaction config to be defined.")
+      return
+    }
+    if (transactionAmount !== transactionConfig.displayAmount) {
+      // This case is theoretically possible because the transaction amount maintained in form state is not
+      // updated atomically with the updating of the transaction config.
+      console.error("Withdrawal transaction config amount is inconsistent with displayed amount.")
+      return
+    }
+
     assertNonNullable(stakingRewards)
-    const withdrawalAmountString = usdcToAtomic(transactionAmount)
-    const withdrawalAmount = new BigNumber(withdrawalAmountString)
-    const info = getWithdrawalInfo(withdrawalAmount)
+
+    const info = getWithdrawalInfo(transactionConfig)
 
     return (
       info.withdraw
@@ -272,7 +297,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // appropriate to use unvested rewards info here from all positions (rather than only the
     // unstakeable positions), because (1) that does not impact correctness of the calculation
     // of how much would be forfeited for the user's intended withdrawal amount; and (2) that amount
-    // of unvested rewards corresponds to what's shown as the "Still vesting" amount on the Rewards
+    // of unvested rewards corresponds to what's shown as the "Vesting" amount on the GFI
     // page.
     const lastVestingEnd = props.capitalProvider.rewardsInfo.hasUnvested
       ? new Date(props.capitalProvider.rewardsInfo.lastVestingEndTime * 1000)
@@ -312,12 +337,11 @@ function WithdrawalForm(props: WithdrawalFormProps) {
 
     let notes: Array<{key: string; content: React.ReactNode}> = []
     let withdrawalInfo: WithdrawalInfo | undefined
-    if (transactionAmount) {
-      const withdrawalAmountString = usdcToAtomic(transactionAmount)
-      const withdrawalAmount = new BigNumber(withdrawalAmountString)
-      if (withdrawalAmount.gt(0)) {
+    if (transactionConfig) {
+      const withdrawalUsdcDisplayAmount = new BigNumber(usdcToAtomic(transactionConfig.displayAmount))
+      if (withdrawalUsdcDisplayAmount.gt(0)) {
         try {
-          withdrawalInfo = getWithdrawalInfo(withdrawalAmount)
+          withdrawalInfo = getWithdrawalInfo(transactionConfig)
         } catch (err: unknown) {
           if (err instanceof ExcessiveWithdrawalError) {
             // It's possible for this case to arise due to the asynchronicity between when the form is
@@ -355,7 +379,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 {"You will "}
                 <span className="font-bold">
                   {"receive "}
-                  {displayDollars(usdcFromAtomic(getUsdcAmountNetOfProtocolFee(withdrawalAmount)), 2)}
+                  {displayDollars(usdcFromAtomic(getUsdcAmountNetOfProtocolFee(withdrawalUsdcDisplayAmount)), 2)}
                 </span>
                 {" net of protocol reserves"}
                 {forfeitedGfiNotesSuffix}
@@ -375,7 +399,10 @@ function WithdrawalForm(props: WithdrawalFormProps) {
           <TransactionInput
             formMethods={formMethods}
             onChange={(e) => {
-              debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
+              debouncedSetTransactionConfig({
+                displayAmount: formMethods.getValues("transactionAmount"),
+                max: false,
+              })
             }}
             maxAmountInDollars={availableToWithdrawInDollars}
             rightDecoration={
@@ -383,7 +410,12 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 className="enter-max-amount"
                 type="button"
                 onClick={() => {
-                  formMethods.setValue("transactionAmount", roundDownPenny(availableToWithdrawInDollars), {
+                  const displayAmount = roundDownPenny(availableToWithdrawInDollars).toString(10)
+                  setTransactionConfig({
+                    displayAmount,
+                    max: true,
+                  })
+                  formMethods.setValue("transactionAmount", displayAmount, {
                     shouldValidate: true,
                     shouldDirty: true,
                   })
@@ -399,7 +431,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             action={async (data): Promise<void> => {
               await action(data)
               formMethods.reset()
-              debouncedSetTransactionAmount(0)
+              debouncedSetTransactionConfig()
             }}
           />
         </div>
