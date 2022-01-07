@@ -26,7 +26,7 @@ export interface getSeniorPoolAndProviders__meta {
   block: getSeniorPoolAndProviders__meta_block
 }
 
-export interface getSeniorPoolAndProviders_seniorPools_lastestPoolStatus {
+export interface getSeniorPoolAndProviders_seniorPools_latestPoolStatus {
   __typename: "SeniorPoolStatus"
   id: string
   rawBalance: any
@@ -47,7 +47,7 @@ export interface getSeniorPoolAndProviders_seniorPools_lastestPoolStatus {
 export interface getSeniorPoolAndProviders_seniorPools {
   __typename: "SeniorPool"
   id: string
-  lastestPoolStatus: getSeniorPoolAndProviders_seniorPools_lastestPoolStatus
+  latestPoolStatus: getSeniorPoolAndProviders_seniorPools_latestPoolStatus
 }
 
 export interface getSeniorPoolAndProviders_user_capitalProviderStatus {
@@ -101,6 +101,59 @@ export interface getSeniorPoolAndProvidersVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL query operation: getSeniorPool
+// ====================================================
+
+export interface getSeniorPool__meta_block {
+  __typename: "_Block_"
+  /**
+   * The block number
+   */
+  number: number
+}
+
+export interface getSeniorPool__meta {
+  __typename: "_Meta_"
+  /**
+   * Information about a specific subgraph block. The hash of the block
+   * will be null if the _meta field has a block constraint that asks for
+   * a block number. It will be filled if the _meta field has no block constraint
+   * and therefore asks for the latest  block
+   */
+  block: getSeniorPool__meta_block
+}
+
+export interface getSeniorPool_seniorPool_latestPoolStatus {
+  __typename: "SeniorPoolStatus"
+  id: string
+  rawBalance: any
+  compoundBalance: any
+  balance: any
+  totalShares: any
+  sharePrice: any
+  totalPoolAssets: any
+  totalLoansOutstanding: any
+}
+
+export interface getSeniorPool_seniorPool {
+  __typename: "SeniorPool"
+  latestPoolStatus: getSeniorPool_seniorPool_latestPoolStatus
+}
+
+export interface getSeniorPool {
+  /**
+   * Access to subgraph metadata
+   */
+  _meta: getSeniorPool__meta | null
+  seniorPool: getSeniorPool_seniorPool | null
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: getTranchedPoolsData
 // ====================================================
 
@@ -123,7 +176,7 @@ export interface getTranchedPoolsData__meta {
   block: getTranchedPoolsData__meta_block
 }
 
-export interface getTranchedPoolsData_seniorPools_lastestPoolStatus {
+export interface getTranchedPoolsData_seniorPools_latestPoolStatus {
   __typename: "SeniorPoolStatus"
   totalShares: any
   totalPoolAssets: any
@@ -137,7 +190,7 @@ export interface getTranchedPoolsData_seniorPools_investmentsMade {
 export interface getTranchedPoolsData_seniorPools {
   __typename: "SeniorPool"
   id: string
-  lastestPoolStatus: getTranchedPoolsData_seniorPools_lastestPoolStatus
+  latestPoolStatus: getTranchedPoolsData_seniorPools_latestPoolStatus
   investmentsMade: getTranchedPoolsData_seniorPools_investmentsMade[]
 }
 
@@ -234,7 +287,7 @@ export interface getTranchedPoolsData_tranchedPools {
   reserveFeePercent: any
   totalDeposited: any
   creditLine: getTranchedPoolsData_tranchedPools_creditLine
-  backers: getTranchedPoolsData_tranchedPools_backers[] | null
+  backers: getTranchedPoolsData_tranchedPools_backers[]
   juniorTranches: getTranchedPoolsData_tranchedPools_juniorTranches[]
   seniorTranches: getTranchedPoolsData_tranchedPools_seniorTranches[]
 }

@@ -11,7 +11,7 @@ import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "../earnActionsContainer"
 import InvestorNotice from "../investorNotice"
-import PoolStatus from "../poolStatus"
+import SeniorPoolStatus from "../seniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
@@ -90,11 +90,7 @@ function SeniorPoolView(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice
-        requireUnlock={false}
-        requireGolist
-        isPaused={pool?.info.loaded ? pool.info.value.isPaused : undefined}
-      />
+      <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
@@ -107,7 +103,7 @@ function SeniorPoolView(): JSX.Element {
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
       />
-      <PoolStatus />
+      <SeniorPoolStatus pool={pool} />
     </div>
   )
 }
