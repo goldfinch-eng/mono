@@ -1,4 +1,5 @@
-import {deployUniqueIdentity, deployGo} from "../../baseDeploy"
+import {deployGo} from "../../baseDeploy/deployGo"
+import {deployUniqueIdentity} from "../../baseDeploy/deployUniqueIdentity"
 import {ContractDeployer, ContractUpgrader, getProtocolOwner, getTruffleContract, isMainnet} from "../../deployHelpers"
 import hre from "hardhat"
 import {GoldfinchConfigInstance} from "../../../typechain/truffle"

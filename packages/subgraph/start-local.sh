@@ -4,13 +4,6 @@ root_dir=$(dirname $(dirname $(dirname $(readlink -f "$0"))))
 env_path="${root_dir}/.env.local"
 source "${env_path}"
 
-if [ -z "$REACT_APP_HARDHAT_FORK" ]; then
-    echo "Cannot start subgraph without mainnet forking." \
-         "Either start with mainnet forking or set REACT_APP_TOGGLE_THE_GRAPH as false." \
-         "Exiting..."
-    exit 1
-fi
-
 if [ "$REACT_APP_TOGGLE_THE_GRAPH" != "true" ]; then
     echo "The graph feature flag is toggled off. Exiting..."
     exit 0
@@ -25,21 +18,11 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     bash ./setup.sh
 fi
 
-echo "On a linux system running setup script"
 docker-compose down -v;
 docker-compose up -d;
-
-# if [ -d "data" ]
-# then
-#   echo "Found old data for the graph node - deleting it";
-#   # we need to sudo this to remove system locked files
-#   sudo rm -rf data/;
-# fi
 
 sleep 30
 
 npm run build
-
 npm run create-local
-
 npm run deploy-local

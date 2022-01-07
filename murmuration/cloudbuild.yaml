@@ -24,7 +24,7 @@ steps:
       - rolling-action
       - start-update
       - murmuration-goldfinch-finance-3
-      - '--version=template=murmuration-goldfinch-finance-3'
+      - '--version=template=murmuration-goldfinch-finance-7'
       - '--zone=us-central1-a'
     entrypoint: gcloud
     id: Update Template
@@ -44,7 +44,7 @@ images:
   - '$_GCR_HOSTNAME/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:latest'
 options:
   substitutionOption: ALLOW_LOOSE
-  machineType: E2_HIGHCPU_8
+  machineType: E2_HIGHCPU_32
 substitutions:
   _GCR_HOSTNAME: us.gcr.io
   _SERVICE_NAME: murmuration-goldfinch-finance

@@ -1,7 +1,14 @@
 import React, {useState} from "react"
 import {useFormContext} from "react-hook-form"
 
-function LoadingButton(props) {
+type LoadingButtonProps = {
+  action: (data: any) => Promise<void>
+  text?: string | React.ReactNode
+  disabled?: boolean
+  className?: string
+}
+
+function LoadingButton(props: LoadingButtonProps) {
   const [isPending, setIsPending] = useState(false)
   const formMethods = useFormContext()
 
@@ -21,7 +28,9 @@ function LoadingButton(props) {
           .catch((error) => setIsPending(false))
       })}
       disabled={props.disabled}
-      className={`button submit-form ${isPending ? "pending" : ""} ${props.disabled ? "disabled" : ""}`}
+      className={`button submit-form ${isPending ? "pending" : ""} ${props.disabled ? "disabled" : ""} ${
+        props.className || ""
+      }`}
     >
       {buttonText}
     </button>

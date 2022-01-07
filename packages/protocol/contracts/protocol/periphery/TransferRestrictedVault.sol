@@ -70,7 +70,7 @@ contract TransferRestrictedVault is
   }
 
   function depositJunior(ITranchedPool tranchedPool, uint256 amount) public nonReentrant {
-    require(config.goList(msg.sender), "This address has not been go-listed");
+    require(config.getGo().go(msg.sender), "This address has not been go-listed");
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     approveSpender(address(tranchedPool), amount);

@@ -81,6 +81,7 @@ export async function handler(event: HandlerParams) {
   return await main({signer, auth: auth, network, uniqueIdentity})
 }
 
+// Main function
 export async function main({
   auth,
   signer,
@@ -107,7 +108,7 @@ export async function main({
   const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = auth["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
-  const idVersion = await uniqueIdentity.ID_VERSION_0()
+  const idVersion = await uniqueIdentity.ID_TYPE_0()
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   const encoded = pack(signTypes, signParams)

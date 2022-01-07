@@ -4,7 +4,9 @@ import {getOneInchContract} from "./oneInch"
 import {Contract} from "web3-eth-contract"
 import {ERC20, Tickers} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {TranchedPool} from "./tranchedPool"
+import {PoolState, TranchedPool} from "./tranchedPool"
+import {BlockInfo} from "../utils"
+import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
 
 class BorrowerInterface {
   userAddress: string
@@ -36,19 +38,29 @@ class BorrowerInterface {
     this.creditLinesAddresses = []
   }
 
-  async initialize() {
-    let poolEvents = await this.goldfinchProtocol.queryEvents("GoldfinchFactory", ["PoolCreated"], {
-      borrower: [this.borrowerAddress, this.userAddress],
-    })
+  async initialize(currentBlock: BlockInfo) {
+    let poolEvents = await this.goldfinchProtocol.queryEvents(
+      "GoldfinchFactory",
+      [POOL_CREATED_EVENT],
+      {
+        borrower: [this.borrowerAddress, this.userAddress],
+      },
+      currentBlock.number
+    )
     this.borrowerPoolAddresses = poolEvents.map((e: any) => e.returnValues.pool)
     for (let address of this.borrowerPoolAddresses) {
       const tranchedPool = new TranchedPool(address, this.goldfinchProtocol)
-      await tranchedPool.initialize()
-      this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
+      await tranchedPool.initialize(currentBlock)
+      if (tranchedPool.poolState >= PoolState.SeniorLocked) {
+        this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
+      }
       this.tranchedPoolByCreditLine[tranchedPool.creditLineAddress] = tranchedPool
       this.tranchedPools[address] = tranchedPool
     }
-    this.allowance = await this.usdc.getAllowance({owner: this.userAddress, spender: this.borrowerAddress})
+    this.allowance = await this.usdc.getAllowance(
+      {owner: this.userAddress, spender: this.borrowerAddress},
+      currentBlock
+    )
   }
 
   getPoolAddressFromCL(address: string): string {
@@ -60,7 +72,7 @@ class BorrowerInterface {
     }
   }
 
-  get shouldUseGasless() {
+  get shouldUseGasless(): boolean {
     return process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
   }
 
@@ -125,7 +137,7 @@ class BorrowerInterface {
 
     const result = await this.oneInch.methods
       .getExpectedReturn(this.usdc.address, toToken, amount, splitParts, 0)
-      .call()
+      .call(undefined, "latest")
     return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
       this.getPoolAddressFromCL(creditLineAddress),
       amount,
@@ -153,11 +165,17 @@ class BorrowerInterface {
 
 async function getBorrowerContract(
   ownerAddress: string,
-  goldfinchProtocol: GoldfinchProtocol
+  goldfinchProtocol: GoldfinchProtocol,
+  currentBlock: BlockInfo
 ): Promise<BorrowerInterface | undefined> {
-  const borrowerCreatedEvents = await goldfinchProtocol.queryEvents("GoldfinchFactory", "BorrowerCreated", {
-    owner: ownerAddress,
-  })
+  const borrowerCreatedEvents = await goldfinchProtocol.queryEvents(
+    "GoldfinchFactory",
+    [BORROWER_CREATED_EVENT],
+    {
+      owner: ownerAddress,
+    },
+    currentBlock.number
+  )
   let borrower: Contract | null = null
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
@@ -166,7 +184,7 @@ async function getBorrowerContract(
       borrower = goldfinchProtocol.getContract<Contract>("Borrower", lastEvent.returnValues.borrower)
       const oneInch = getOneInchContract(goldfinchProtocol.networkId)
       const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
-      await borrowerInterface.initialize()
+      await borrowerInterface.initialize(currentBlock)
       return borrowerInterface
     } else {
       throw new Error("Failed to index into `borrowerCreatedEvents`.")

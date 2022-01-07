@@ -1,8 +1,20 @@
+import {
+  isMerkleDirectDistributorInfo,
+  MerkleDirectDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {
+  isMerkleDistributorInfo,
+  MerkleDistributorInfo,
+} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
+import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import {Contract, EventData} from "web3-eth-contract"
-import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
+import {BlockNumber} from "web3-core"
+import {Contract} from "web3-eth-contract"
+import {KnownEventData, PoolEventType} from "../types/events"
+import {NetworkConfig} from "../types/network"
+import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 
 const decimalPlaces = 6
@@ -16,7 +28,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
-const RINKEBY = "rinkeby"
+export const RINKEBY = "rinkeby"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
@@ -45,7 +57,7 @@ const ONE_INCH_ADDRESSES = {
 
 // Only keep entries for supported networks
 // (ie. where we deployed the latest contracts)
-const mapNetworkToID = {
+const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
   private: "localhost",
@@ -58,7 +70,7 @@ const chainIdToNetworkID = {
   31337: "localhost",
 }
 
-const SUPPORTED_NETWORKS = {
+const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,
@@ -69,8 +81,8 @@ async function getDeployments(networkId) {
   if (config) {
     return Promise.resolve(config[networkId])
   }
-  const deploymentFileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
-  return import(`@goldfinch-eng/protocol/deployments/all${deploymentFileNameSuffix}.json`)
+  const fileNameSuffix = process.env.NODE_ENV === "development" ? "_dev" : ""
+  return import(`@goldfinch-eng/protocol/deployments/all${fileNameSuffix}.json`)
     .then((result) => {
       config = transformedConfig(result)
 
@@ -95,6 +107,52 @@ async function getDeployments(networkId) {
     .catch(console.error)
 }
 
+async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
+      ? ".dev"
+      : ""
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
+async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
+      ? ".dev"
+      : ""
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDirectDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDirectDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle direct distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
 function transformedConfig(config) {
   return _.reduce(
     config,
@@ -117,17 +175,17 @@ function getFromBlock(chain) {
 }
 
 type MethodInfo = {method: string; name?: string; args?: any}
-function fetchDataFromAttributes(
+async function fetchDataFromAttributes(
   web3Obj: Contract | BaseContract,
   attributes: MethodInfo[],
-  {bigNumber}: {bigNumber?: boolean} = {}
-): any {
+  {bigNumber, blockNumber}: {bigNumber?: boolean; blockNumber?: number} = {}
+): Promise<any> {
   const result = {}
   if (!web3Obj) {
     return Promise.resolve(result)
   }
   var promises = attributes.map((methodInfo) => {
-    return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call()
+    return web3Obj.methods[methodInfo.method](...(methodInfo?.args || [])).call(undefined, blockNumber)
   })
   return Promise.all(promises)
     .then((results) => {
@@ -145,26 +203,35 @@ function fetchDataFromAttributes(
     })
 }
 
-async function getPoolEvents(
+async function getPoolEvents<T extends PoolEventType>(
   pool: SeniorPool | Pool,
   address: string | undefined,
-  eventNames: string[]
-): Promise<EventData[]> {
+  eventNames: T[],
+  toBlock: BlockNumber
+): Promise<KnownEventData<T>[]> {
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     eventNames.map((eventName) => {
       return pool.contract.getPastEvents(eventName, {
         filter: address ? {capitalProvider: address} : undefined,
         fromBlock,
-        toBlock: "latest",
+        toBlock,
       })
     })
   )
-  return _.compact(_.flatten(events))
+  const compacted = _.compact(_.flatten(events))
+  return reduceToKnown(compacted, eventNames)
 }
+
+const getEtherscanSubdomain = (network: NetworkConfig | undefined): string | undefined =>
+  network ? (network.name === "mainnet" ? "" : `${network.name}.`) : undefined
+
+const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 
 export {
   getDeployments,
+  getMerkleDistributorInfo,
+  getMerkleDirectDistributorInfo,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,
@@ -188,4 +255,6 @@ export {
   MAINNET,
   LOCAL,
   getPoolEvents,
+  getEtherscanSubdomain,
+  ONE_YEAR_SECONDS,
 }

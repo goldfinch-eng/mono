@@ -4,6 +4,7 @@ import {iconX} from "./icons"
 import {AppContext} from "../App"
 import {useForm} from "react-hook-form"
 import useNonNullContext from "../hooks/useNonNullContext"
+import {UserLoaded} from "../ethereum/user"
 
 function SetKycStatus() {
   const formMethods = useForm({mode: "onChange"})
@@ -91,7 +92,7 @@ export default function DevTools(props) {
     }
   }
 
-  function renderPanel() {
+  function renderPanel(user: UserLoaded) {
     if (panel === "default") {
       return (
         <div className="actions">
@@ -125,6 +126,30 @@ export default function DevTools(props) {
           >
             fundWithWhales
           </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () =>
+              fetch("/advanceTimeOneDay", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+              })
+            }
+          >
+            advanceTimeOneDay
+          </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () =>
+              fetch("/advanceTimeThirtyDays", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+              })
+            }
+          >
+            advanceTimeThirtyDays
+          </DevToolsButton>
           <DevToolsButton disabled={disabled} setDisabled={setDisabled} onClick={async () => setPanel("kyc")}>
             KYC
           </DevToolsButton>
@@ -137,7 +162,7 @@ export default function DevTools(props) {
     return
   }
 
-  return (
+  return user ? (
     <div
       className={`devTools ${showDevTools}`}
       onClick={() => {
@@ -155,9 +180,9 @@ export default function DevTools(props) {
               {iconX}
             </button>
           </div>
-          {renderPanel()}
+          {renderPanel(user)}
         </div>
       )}
     </div>
-  )
+  ) : null
 }

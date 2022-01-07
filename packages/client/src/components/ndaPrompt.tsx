@@ -4,14 +4,14 @@ import {FormProvider, useForm} from "react-hook-form"
 import {iconOutArrow, iconX} from "./icons"
 import LoadingButton from "./loadingButton"
 
-interface NdaPrompProps {
+interface NdaPromptProps {
   show: boolean
   onClose: () => void
-  onSign: () => void
+  onSign: () => Promise<void>
   NDAUrl?: string
 }
 
-function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPrompProps) {
+function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPromptProps) {
   const formMethods = useForm()
 
   useEffect(() => {
@@ -39,7 +39,7 @@ function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPrompProps) {
               id="agreement"
               ref={(ref) => formMethods.register(ref, {required: "You must agree to the Non-Disclosure Agreement."})}
             />
-            <label className="checkbox-label" htmlFor="agreement">
+            <label className="checkbox-label-primary" htmlFor="agreement">
               <div>
                 I agree to the&nbsp;
                 <a className="checkbox-label-link" href={NDAUrl} target="_blank" rel="noreferrer">
@@ -52,7 +52,7 @@ function NdaPrompt({show, onClose, onSign, NDAUrl}: NdaPrompProps) {
               <ErrorMessage errors={formMethods.errors} name="agreement" />
             </div>
           </div>
-          <LoadingButton className="button right-icon" action={onSign} text={<>View{iconOutArrow}</>} />
+          <LoadingButton className="right-icon" action={onSign} text={<>View{iconOutArrow}</>} />
           <button className="close-button" onClick={() => onClose()}>
             {iconX}
           </button>

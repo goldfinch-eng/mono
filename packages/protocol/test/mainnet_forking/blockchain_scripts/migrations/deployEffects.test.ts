@@ -1,6 +1,5 @@
 import {GoldfinchConfig} from "../../../../typechain/ethers"
 import hre, {ethers, deployments} from "hardhat"
-import {fundWithWhales, impersonateAccount} from "../../../../blockchain_scripts/mainnetForkingHelpers"
 import {getEthersContract, getProtocolOwner} from "../../../../blockchain_scripts/deployHelpers"
 import {
   getDeployEffects,
@@ -8,6 +7,8 @@ import {
   changeImplementations,
 } from "../../../../blockchain_scripts/migrations/deployEffects"
 import {TEST_TIMEOUT} from "../../MainnetForking.test"
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
+import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 
 async function getImplementationAddress(address: string): Promise<string> {
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"

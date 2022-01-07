@@ -23,6 +23,27 @@ abstract contract ITranchedPool {
     uint256 lockedUntil;
   }
 
+  struct PoolSlice {
+    TrancheInfo seniorTranche;
+    TrancheInfo juniorTranche;
+    uint256 totalInterestAccrued;
+    uint256 principalDeployed;
+  }
+
+  struct SliceInfo {
+    uint256 reserveFeePercent;
+    uint256 interestAccrued;
+    uint256 principalAccrued;
+  }
+
+  struct ApplyResult {
+    uint256 interestRemaining;
+    uint256 principalRemaining;
+    uint256 reserveDeduction;
+    uint256 oldInterestSharePrice;
+    uint256 oldPrincipalSharePrice;
+  }
+
   function initialize(
     address _config,
     address _borrower,
@@ -31,7 +52,10 @@ abstract contract ITranchedPool {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
   ) public virtual;
 
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
@@ -42,7 +66,13 @@ abstract contract ITranchedPool {
 
   function lockPool() external virtual;
 
+  function initializeNextSlice(uint256 _fundableAt) external virtual;
+
+  function totalJuniorDeposits() external view virtual returns (uint256);
+
   function drawdown(uint256 amount) external virtual;
+
+  function setFundableAt(uint256 timestamp) external virtual;
 
   function deposit(uint256 tranche, uint256 amount) external virtual returns (uint256 tokenId);
 

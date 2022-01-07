@@ -1,9 +1,4 @@
-.network-widget {
-  position: fixed;
-  right: 64px;
-  top: 10px;
-  z-index: 1;
-}
+.network-widget {}
 
 .network-widget-button {
   background: $sand-light;
@@ -75,6 +70,7 @@
   &.bold {
     background-color: $blue-xlight;
     text-align: center;
+    border: 0;
   }
 
   &.bold:hover {

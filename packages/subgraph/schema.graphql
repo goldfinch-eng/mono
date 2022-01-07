@@ -1,12 +1,15 @@
 """
 Notes
 - address are mapped as IDs
+- We are using reverse lookups to create virtual fields:
+  https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
 """
 
 type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
-  lastestPoolStatus: SeniorPoolStatus!
+  latestPoolStatus: SeniorPoolStatus!
+  investmentsMade: [TranchedPool!]!
 }
 
 type SeniorPoolStatus @entity {
@@ -65,4 +68,113 @@ type User @entity {
   goListed: Boolean
 
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
+  tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
+  poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
+  tokens: [TranchedPoolToken!] @derivedFrom(field: "user")
+}
+
+type SeniorTrancheInfo @entity {
+  id: ID!
+  trancheId: BigInt!
+  tranchedPool: TranchedPool!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type JuniorTrancheInfo @entity {
+  id: ID!
+  trancheId: BigInt!
+  tranchedPool: TranchedPool!
+  lockedUntil: BigInt!
+  principalDeposited: BigInt!
+  principalSharePrice: BigInt!
+  interestSharePrice: BigInt!
+}
+
+type TranchedPoolDeposit @entity {
+  id: ID! # Set to transaction hash
+  user: User!
+  tranchedPool: TranchedPool!
+  tranche: BigInt!
+  tokenId: BigInt!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type PoolBacker @entity {
+  id: ID! # Set to `${tranchedPool.id}-${user.id}`
+  user: User!
+  tranchedPool: TranchedPool!
+  balance: BigInt!
+  unrealizedGains: BigInt!
+  principalAmount: BigInt!
+  principalRedeemed: BigInt!
+  interestRedeemed: BigInt!
+  principalAtRisk: BigInt!
+  principalRedeemable: BigInt!
+  interestRedeemable: BigInt!
+  availableToWithdraw: BigInt!
+}
+
+type CreditLine @entity {
+  id: ID!
+  tranchedPool: TranchedPool!
+  limit: BigInt!
+  interestApr: BigInt!
+  balance: BigInt!
+  remainingPeriodDueAmount: BigInt!
+  remainingTotalDueAmount: BigInt!
+  availableCredit: BigInt!
+  interestAccruedAsOf: BigInt!
+  paymentPeriodInDays: BigInt!
+  termInDays: BigInt!
+  nextDueTime: BigInt!
+  interestOwed: BigInt!
+  termEndTime: BigInt!
+  lastFullPaymentTime: BigInt!
+  termEndDate: BigInt!
+  # These fields are marked as nullable as they
+  # either require information not yet available on the subgraph,
+  # or are not used on the pages we are integrating.
+  periodDueAmount: BigInt
+  interestAprDecimal: BigInt
+  collectedPaymentBalance: BigInt
+  totalDueAmount: BigInt
+  dueDate: String
+  name: String
+}
+
+type TranchedPool @entity {
+  id: ID!
+  estimatedJuniorApy: BigInt!
+  estimatedTotalAssets: BigInt!
+  estimatedLeverageRatio: BigInt!
+  remainingCapacity: BigInt!
+  remainingJuniorCapacity: BigInt!
+  creditLine: CreditLine!
+  isPaused: Boolean!
+  juniorFeePercent: BigInt!
+  reserveFeePercent: BigInt!
+  totalDeposited: BigInt!
+  estimatedSeniorPoolContribution: BigInt!
+  backers: [PoolBacker!]!
+  tokens: [TranchedPoolToken!]!
+  deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
+  seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+}
+
+type TranchedPoolToken @entity {
+  id: ID! # Set to tokenId
+  user: User!
+  tranchedPool: TranchedPool!
+  tranche: BigInt!
+  principalAmount: BigInt!
+  principalRedeemed: BigInt!
+  interestRedeemed: BigInt!
+  interestRedeemable: BigInt!
+  principalRedeemable: BigInt!
 }

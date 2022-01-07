@@ -32,7 +32,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Update Ubuntu
           command: |
@@ -48,7 +48,7 @@ jobs:
           name: Build
           command: npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
       - save_cache:
-          key: deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+          key: deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
           paths:
             - ~/.npm
             - ./packages/protocol/node_modules/
@@ -57,7 +57,7 @@ jobs:
             - ./packages/protocol/cache
             - ./packages/protocol/typechain
             - ./packages/utils/dist
-          
+
   test:
     docker:
       - image: cimg/node:12.18.3
@@ -70,14 +70,14 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Test
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep -v mainnet_forking | circleci tests split --split-by=timings)
             npm run test:unfiltered $tests
-            
+
   mainnet_forking:
     docker:
       - image: cimg/node:12.18.3
@@ -90,7 +90,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
       - run:
           name: Test
           command: |
