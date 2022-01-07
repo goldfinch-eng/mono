@@ -183,18 +183,18 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            // result = await uniqueIdentitySigner.main({
-            //   auth,
-            //   signer,
-            //   network,
-            //   uniqueIdentity: ethersUniqueIdentity,
-            //   fetchKYCStatus: fetchKYCFunction,
-            // })
+            result = await uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
 
-            // await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
-            // expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
-            // expect(await uniqueIdentity.balanceOf(anotherUser, 1)).to.bignumber.eq(new BN(0))
-            // expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
+            await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
+            expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, 1)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
         })
       })
