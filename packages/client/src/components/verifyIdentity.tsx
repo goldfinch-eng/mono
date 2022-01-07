@@ -98,7 +98,6 @@ function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
         } else {
           verifyIdSection = (
             <>
-              <div> Step 1: Verify ID</div>
               <PersonaForm
                 entityType={entityType}
                 network={network}
@@ -110,23 +109,7 @@ function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
             </>
           )
         }
-        return (
-          <>
-            <div className="form-message paragraph">
-              Goldfinch may soon have opportunities for U.S. individuals who qualify as accredited investors. You can
-              pre-verify your address.
-            </div>
-            {verifyIdSection}
-            <h2>Step 2: Verify Accredited Status</h2>
-            <div className="form-message paragraph">
-              To verify your accredited status, start by filling out{" "}
-              <a className="link" target="_blank" rel="noopener noreferrer" href="https://forms.gle/DmhWgpJUbMphtqC19">
-                this form
-              </a>
-              . Then we will reach out with next steps.
-            </div>
-          </>
-        )
+        return <>{verifyIdSection}</>
       }}
       closeForm={onClose}
     />
@@ -600,8 +583,15 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
           <div className="info-banner subtle">
             <div className="message">
               <p className="font-small">
-                Your UID, or "Unique Identity", is an NFT that represents your unique identity and grants you access to
-                participate in Borrower Pools. You do not need your UID to participate in the Senior Pool.
+                Your UID is an NFT that represents your unique identity and grants you access to certain Goldfinch
+                community privileges.
+                <br />
+                <br />
+                For Non-U.S. individuals, the UID allows you to participate in investing and governance activities.
+                <br />
+                <br />
+                For U.S. individuals, the UID allows you to participate in governance activities only. U.S. individuals
+                may not participate in investing activities.
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />

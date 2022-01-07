@@ -67,7 +67,7 @@ async function fundWithWhale({
   amount: number
   logger: typeof console.log
 }) {
-  logger(`💰🐋 funding erc20 ${erc20.name}`)
+  logger(`💰🐋 funding erc20 ${erc20.address}`)
   logger(`💰🐋 recipient:${recipient}`)
   logger(`💰🐋 whale:${whale}`)
   await impersonateAccount(hre, whale)
