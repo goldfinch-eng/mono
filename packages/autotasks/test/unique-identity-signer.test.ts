@@ -165,7 +165,7 @@ describe("unique-identity-signer", () => {
             }
             await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
 
-            const result = await uniqueIdentitySigner.main({
+            let result = await uniqueIdentitySigner.main({
               auth,
               signer,
               network,
