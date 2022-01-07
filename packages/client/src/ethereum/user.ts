@@ -67,7 +67,7 @@ import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../uti
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
-import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
+import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
@@ -838,7 +838,7 @@ export class User {
     )
     const {poolEvents, poolTxs} = poolEventsAndTxs
     const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
-    const pastTxs = _.reverse(
+    let pastTxs = _.reverse(
       _.sortBy(
         [
           ...usdcTxs,
@@ -853,6 +853,7 @@ export class User {
         ["blockNumber", "transactionIndex"]
       )
     )
+    pastTxs = await populateDates(pastTxs)
 
     const golistStatus = await this._fetchGolistStatus(this.address, currentBlock)
     const goListed = golistStatus.golisted
