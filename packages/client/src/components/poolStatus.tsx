@@ -10,32 +10,21 @@ import RecentRepayments from "./recentRepayments"
 interface PoolStatusProps {}
 
 function PoolStatus(props: PoolStatusProps) {
-  const {goldfinchConfig, pool} = useContext(AppContext)
+  const {pool} = useContext(AppContext)
 
   function deriveRows() {
     let defaultRate: BigNumber | undefined
     let poolBalance: string | undefined
     let totalLoansOutstanding: string | undefined
-    let capacityRemaining: BigNumber | undefined
-    const maxPoolCapacity: BigNumber | undefined = goldfinchConfig ? goldfinchConfig.totalFundsLimit : undefined
-    if (pool && maxPoolCapacity) {
+    if (pool) {
       const poolData = pool.info.value.poolData
       defaultRate = poolData.defaultRate
       poolBalance = usdcFromAtomic(poolData.totalPoolAssets)
       totalLoansOutstanding = usdcFromAtomic(poolData.totalLoansOutstanding)
-      capacityRemaining = poolData.remainingCapacity(maxPoolCapacity)
     }
 
     return [
       {label: "Total pool balance", value: displayDollars(poolBalance)},
-      {
-        label: "Max pool capacity",
-        value: displayDollars(maxPoolCapacity ? usdcFromAtomic(maxPoolCapacity) : undefined),
-      },
-      {
-        label: "Remaining capacity",
-        value: displayDollars(capacityRemaining ? usdcFromAtomic(capacityRemaining) : undefined),
-      },
       {label: "Loans outstanding", value: displayDollars(totalLoansOutstanding)},
       {label: "Default rate", value: displayPercent(defaultRate)},
     ]
