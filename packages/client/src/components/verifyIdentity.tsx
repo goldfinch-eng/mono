@@ -297,20 +297,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
 
   function renderForm() {
     if (user && user.info.value.goListed) {
-      return (
-        <VerificationNotice
-          icon={iconCircleCheck}
-          notice={
-            <>
-              Your verification was approved to participate in the{" "}
-              <Link className="form-link" to="/pools/senior">
-                Senior Pool
-              </Link>
-              .
-            </>
-          }
-        />
-      )
+      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
     } else if (loading) {
       return <LoadingCard title="Verify your address" />
     } else if (errored) {
@@ -336,20 +323,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
     } else if (isEligible(kyc, user)) {
-      return (
-        <VerificationNotice
-          icon={iconCircleCheck}
-          notice={
-            <>
-              Your verification was approved to participate in the{" "}
-              <Link className="form-link" to="/pools/senior">
-                Senior Pool
-              </Link>
-              .
-            </>
-          }
-        />
-      )
+      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
     } else if (entityType === "non-US") {
       return (
         <NonUSForm
@@ -559,13 +533,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
           <div className="info-banner subtle">
             <div className="message">
               <div>
-                <p className="font-small mb-2">
-                  Your verification was approved to participate in{" "}
-                  <Link className="form-link" to="/">
-                    Borrower Pools
-                  </Link>
-                  . However, there may be future opportunities that require you to mint a UID.
-                </p>
+                <p className="font-small mb-2">Your verification was approved.</p>
               </div>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />

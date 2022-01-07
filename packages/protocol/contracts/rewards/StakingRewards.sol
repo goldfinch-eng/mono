@@ -179,10 +179,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // of tokens that should have been disbursed in the elapsed time. The attacker would need to find
     // a way to reduce totalLeveragedStakedSupply while maintaining a staked position of >= 1.
     // See: https://twitter.com/Mudit__Gupta/status/1409463917290557440
-    require(
-      additionalRewardsPerToken <= rewardsSinceLastUpdate,
-      "additionalRewardsPerToken cannot exceed rewardsSinceLastUpdate"
-    );
+    if (additionalRewardsPerToken > rewardsSinceLastUpdate) {
+      return 0;
+    }
     return additionalRewardsPerToken;
   }
 

@@ -111,7 +111,7 @@ async function upgradeContracts({
     const proxyDeployment = await hre.deployments.get(`${contractToDeploy}`)
     const implDeployment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
     await openzeppelin_assertIsValidImplementation(implDeployment)
-    await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
+    // await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
 
     const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDeployment.address})).connect(
       ethersSigner
