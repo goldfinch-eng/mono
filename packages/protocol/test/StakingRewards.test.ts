@@ -2211,16 +2211,17 @@ describe("StakingRewards", function () {
         await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
       })
 
-      it("reverts", async () => {
+      it("does not disburse any rewards", async () => {
         // 0.000000000000050000 fidu
         const fiduAmount = new BN(5e4)
         const tokenId = await stake({amount: fiduAmount, from: investor})
 
         await advanceTime({seconds: 1000})
 
-        await expect(stakingRewards.getReward(tokenId, {from: investor})).to.be.rejectedWith(
-          /additionalRewardsPerToken cannot exceed rewardsSinceLastUpdate/
-        )
+        await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
+          [() => gfi.balanceOf(investor), {unchanged: true}],
+          [() => stakingRewards.earnedSinceLastCheckpoint(tokenId), {unchanged: true}],
+        ])
       })
     })
 
