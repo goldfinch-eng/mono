@@ -538,7 +538,6 @@ describe("mainnet forking tests", async function () {
         }))
 
         reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
-        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(40000000), {from: MAINNET_MULTISIG})
 
         await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [owner])
         await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
