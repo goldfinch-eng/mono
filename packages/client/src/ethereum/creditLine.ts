@@ -175,7 +175,7 @@ class CreditLine extends BaseCreditLine {
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
-    this.maxLimit = await this._getMaxLimit()
+    this.maxLimit = await this._getMaxLimit(currentBlock)
     this.collectedPaymentBalance = new BigNumber(
       await this.usdc.methods.balanceOf(this.address).call(undefined, currentBlock.number)
     )
@@ -188,14 +188,14 @@ class CreditLine extends BaseCreditLine {
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
   }
 
-  async _getMaxLimit(): Promise<BigNumber> {
+  async _getMaxLimit(currentBlock: BlockInfo): Promise<BigNumber> {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
     const V2_2_MIGRATION_DATE = "2022-01-04"
     const creditLineStart = moment(this.termEndDate, "MMM D, YYYY").subtract(this.termInDays.toNumber(), "days")
     if (creditLineStart.isBefore(moment(V2_2_MIGRATION_DATE))) {
       return this.currentLimit
     } else {
-      const maxLimit = await this.creditLine.methods.maxLimit().call()
+      const maxLimit = await this.creditLine.methods.maxLimit().call(undefined, currentBlock.number)
       return new BigNumber(maxLimit)
     }
   }
