@@ -38,7 +38,7 @@ export function useTranchedPoolSubgraphData(skip = false): {
   loading: boolean
   error: ApolloError | undefined
 } {
-  const {goldfinchProtocol, currentBlock, user, web3Status} = useNonNullContext(AppContext)
+  const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useNonNullContext(AppContext)
   const [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
     loaded: false,
     value: undefined,
@@ -64,15 +64,15 @@ export function useTranchedPoolSubgraphData(skip = false): {
       })
     }
 
-    if (web3Status?.type === "no_web3" && data) {
+    if (userWalletWeb3Status?.type === "no_web3" && data) {
       parseData(data)
     }
 
-    if (web3Status?.type !== "no_web3" && data && goldfinchProtocol && currentBlock && user?.address) {
+    if (userWalletWeb3Status?.type !== "no_web3" && data && goldfinchProtocol && currentBlock && user?.address) {
       parseData(data, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goldfinchProtocol, data, user?.address, web3Status])
+  }, [goldfinchProtocol, data, user?.address, currentBlock, userWalletWeb3Status])
 
   return {loading, error, backers}
 }

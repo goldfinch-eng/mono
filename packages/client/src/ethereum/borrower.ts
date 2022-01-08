@@ -7,13 +7,14 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {PoolState, TranchedPool} from "./tranchedPool"
 import {BlockInfo} from "../utils"
 import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
+import {Web3IO} from "../types/web3"
 
 class BorrowerInterface {
   userAddress: string
-  borrowerContract: Contract
+  borrowerContract: Web3IO<Contract>
   usdc: ERC20
   goldfinchProtocol: GoldfinchProtocol
-  oneInch: Contract
+  oneInch: Web3IO<Contract>
   borrowerAddress: string
   creditLinesAddresses!: string[]
   borrowerPoolAddresses!: string[]
@@ -23,16 +24,16 @@ class BorrowerInterface {
 
   constructor(
     userAddress: string,
-    borrowerContract: Contract,
+    borrowerContract: Web3IO<Contract>,
     goldfinchProtocol: GoldfinchProtocol,
-    oneInch: Contract
+    oneInch: Web3IO<Contract>
   ) {
     this.userAddress = userAddress
     this.borrowerContract = borrowerContract
     this.goldfinchProtocol = goldfinchProtocol
     this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
     this.oneInch = oneInch
-    this.borrowerAddress = this.borrowerContract.options.address
+    this.borrowerAddress = this.borrowerContract.readOnly.options.address
     this.tranchedPools = {}
     this.tranchedPoolByCreditLine = {}
     this.creditLinesAddresses = []
@@ -79,7 +80,7 @@ class BorrowerInterface {
   drawdown(creditLineAddress, drawdownAmount, sendToAddress) {
     sendToAddress = sendToAddress || this.userAddress
     return this.submit(
-      this.borrowerContract.methods.drawdown(
+      this.borrowerContract.userWallet.methods.drawdown(
         this.getPoolAddressFromCL(creditLineAddress),
         drawdownAmount,
         sendToAddress
@@ -95,21 +96,25 @@ class BorrowerInterface {
   }
 
   pay(creditLineAddress, amount) {
-    return this.submit(this.borrowerContract.methods.pay(this.getPoolAddressFromCL(creditLineAddress), amount))
+    return this.submit(
+      this.borrowerContract.userWallet.methods.pay(this.getPoolAddressFromCL(creditLineAddress), amount)
+    )
   }
 
   payInFull(creditLineAddress, amount) {
-    return this.submit(this.borrowerContract.methods.payInFull(this.getPoolAddressFromCL(creditLineAddress), amount))
+    return this.submit(
+      this.borrowerContract.userWallet.methods.payInFull(this.getPoolAddressFromCL(creditLineAddress), amount)
+    )
   }
 
   payMultiple(creditLines, amounts) {
     let poolAddresses = creditLines.map((a) => this.getPoolAddressFromCL(a))
-    return this.submit(this.borrowerContract.methods.payMultiple(poolAddresses, amounts))
+    return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amounts))
   }
 
   payWithSwapOnOneInch(creditLineAddress, amount, minAmount, fromToken, quote) {
     return this.submit(
-      this.borrowerContract.methods.payWithSwapOnOneInch(
+      this.borrowerContract.userWallet.methods.payWithSwapOnOneInch(
         this.getPoolAddressFromCL(creditLineAddress),
         amount,
         fromToken,
@@ -121,7 +126,7 @@ class BorrowerInterface {
 
   payMultipleWithSwapOnOneInch(creditLines, amounts, originAmount, fromToken, quote) {
     return this.submit(
-      this.borrowerContract.methods.payMultipleWithSwapOnOneInch(
+      this.borrowerContract.userWallet.methods.payMultipleWithSwapOnOneInch(
         creditLines.map((a) => this.getPoolAddressFromCL(a)),
         amounts,
         originAmount,
@@ -135,10 +140,10 @@ class BorrowerInterface {
     toToken = toToken || "0xdac17f958d2ee523a2206206994597c13d831ec7" // Mainnet USDT
     const splitParts = 10
 
-    const result = await this.oneInch.methods
+    const result = await this.oneInch.userWallet.methods
       .getExpectedReturn(this.usdc.address, toToken, amount, splitParts, 0)
       .call(undefined, "latest")
-    return this.borrowerContract.methods.drawdownWithSwapOnOneInch(
+    return this.borrowerContract.userWallet.methods.drawdownWithSwapOnOneInch(
       this.getPoolAddressFromCL(creditLineAddress),
       amount,
       sendToAddress,
@@ -176,7 +181,7 @@ async function getBorrowerContract(
     },
     currentBlock.number
   )
-  let borrower: Contract | null = null
+  let borrower: Web3IO<Contract> | null = null
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
     const lastEvent = borrowerCreatedEvents[lastIndex]

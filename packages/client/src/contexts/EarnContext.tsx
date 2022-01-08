@@ -5,6 +5,7 @@ import {CapitalProvider} from "../ethereum/pool"
 import {PoolBacker} from "../ethereum/tranchedPool"
 import {usePoolBackersWeb3, useSeniorPoolStatusWeb3, useTranchedPoolSubgraphData} from "../hooks/useEarnData"
 import {Loadable} from "../types/loadable"
+import {shouldUseWeb3} from "../utils"
 
 interface EarnStoreType {
   capitalProvider: Loadable<CapitalProvider>
@@ -57,17 +58,8 @@ export function usePoolsData(
   }
 }
 
-function shouldUseWeb3(useWeb3Default: boolean): boolean {
-  if (process.env.NODE_ENV !== "production" && process.env.REACT_APP_HARDHAT_FORK) {
-    console.warn("Cannot use subgraph locally with mainnet forking, using web3 to make requests.")
-    return true
-  }
-
-  return useWeb3Default || process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
-}
-
 function EarnProvider({children}: EarnProviderProps) {
-  const [useWeb3, setUseWeb3] = useState<boolean>(shouldUseWeb3(false))
+  const [useWeb3, setUseWeb3] = useState<boolean>(shouldUseWeb3())
   const [earnStore, setEarnStore] = useState<EarnStoreType>({
     capitalProvider: {
       loaded: false,

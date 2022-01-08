@@ -10,7 +10,7 @@ import {BlockNumber} from "web3-core"
 import {Contract, EventData, Filter} from "web3-eth-contract"
 import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
 import {assertBigNumber, BlockInfo, defaultSum, displayNumber, roundDownPenny} from "../utils"
-import {buildCreditLine} from "./creditLine"
+import {buildCreditLineReadOnly} from "./creditLine"
 import {Tickers, usdcFromAtomic} from "./erc20"
 import {
   DRAWDOWN_MADE_EVENT,
@@ -40,10 +40,11 @@ import {
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
+import {Web3IO} from "../types/web3"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
-  contract: PoolContract
+  contract: Web3IO<PoolContract>
   chain: string
   address: string
 
@@ -63,9 +64,9 @@ type SeniorPoolLoadedInfo = {
 
 class SeniorPool {
   goldfinchProtocol: GoldfinchProtocol
-  contract: SeniorPoolContract
-  usdc: Contract
-  fidu: FiduContract
+  contract: Web3IO<SeniorPoolContract>
+  usdc: Web3IO<Contract>
+  fidu: Web3IO<FiduContract>
   chain: string
   address: string
   v1Pool: Pool
@@ -87,7 +88,7 @@ class SeniorPool {
 
   async initialize(stakingRewards: StakingRewardsLoaded, gfi: GFILoaded, currentBlock: BlockInfo): Promise<void> {
     const poolData = await fetchPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
-    const isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
+    const isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.info = {
       loaded: true,
       value: {
@@ -233,14 +234,14 @@ async function fetchCapitalProviderData(
   const currentBlock = pool.info.value.currentBlock
 
   const attributes = [{method: "sharePrice"}]
-  const {sharePrice} = await fetchDataFromAttributes(pool.contract, attributes, {
+  const {sharePrice} = await fetchDataFromAttributes(pool.contract.readOnly, attributes, {
     bigNumber: true,
     blockNumber: currentBlock.number,
   })
   assertBigNumber(sharePrice)
 
   const numSharesNotStaked = new BigNumber(
-    await pool.fidu.methods.balanceOf(user.address).call(undefined, currentBlock.number)
+    await pool.fidu.readOnly.methods.balanceOf(user.address).call(undefined, currentBlock.number)
   )
   const stakingInfo = getCapitalProviderStakingInfo(user.info.value.stakingRewards, gfi)
   const numSharesStakedLocked = stakingInfo.shares.locked
@@ -264,7 +265,7 @@ async function fetchCapitalProviderData(
 
   const address = user.address
   const allowance = new BigNumber(
-    await pool.usdc.methods.allowance(address, pool.address).call(undefined, currentBlock.number)
+    await pool.usdc.readOnly.methods.allowance(address, pool.address).call(undefined, currentBlock.number)
   )
   const weightedAverageSharePrice = await getWeightedAverageSharePrice(
     pool,
@@ -334,19 +335,25 @@ type PoolData = {
 
 async function fetchPoolData(
   pool: SeniorPool,
-  erc20: Contract,
+  erc20: Web3IO<Contract>,
   stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
   currentBlock: BlockInfo
 ): Promise<PoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
-  let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(pool.contract, attributes, {
-    blockNumber: currentBlock.number,
-  })
-  let rawBalance = new BigNumber(await erc20.methods.balanceOf(pool.address).call(undefined, currentBlock.number))
+  let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(
+    pool.contract.readOnly,
+    attributes,
+    {
+      blockNumber: currentBlock.number,
+    }
+  )
+  let rawBalance = new BigNumber(
+    await erc20.readOnly.methods.balanceOf(pool.address).call(undefined, currentBlock.number)
+  )
   let compoundBalance = new BigNumber(_compoundBalance)
   let balance = compoundBalance.plus(rawBalance)
-  let totalShares = new BigNumber(await pool.fidu.methods.totalSupply().call(undefined, currentBlock.number))
+  let totalShares = new BigNumber(await pool.fidu.readOnly.methods.totalSupply().call(undefined, currentBlock.number))
 
   // Do some slightly goofy multiplication and division here so that we have consistent units across
   // 'balance', 'totalPoolBalance', and 'totalLoansOutstanding', allowing us to do arithmetic between them
@@ -357,7 +364,7 @@ async function fetchPoolData(
     .div(FIDU_DECIMALS.toString())
   let totalPoolAssets = totalPoolAssetsInDollars.multipliedBy(USDC_DECIMALS.toString())
   let totalLoansOutstanding = new BigNumber(
-    await pool.contract.methods.totalLoansOutstanding().call(undefined, currentBlock.number)
+    await pool.contract.readOnly.methods.totalLoansOutstanding().call(undefined, currentBlock.number)
   )
   let cumulativeWritedowns = await getCumulativeWritedowns(pool, currentBlock)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock)
@@ -490,7 +497,7 @@ async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo
   // then fixed. So we include only `PrincipalWrittenDown` events emitted by `pool`.
 
   const events = await pool.goldfinchProtocol.queryEvents(
-    pool.contract,
+    pool.contract.readOnly,
     [PRINCIPAL_WRITTEN_DOWN_EVENT],
     undefined,
     currentBlock.number
@@ -507,7 +514,9 @@ async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo)
   )
   let allDrawdownEvents = _.flatten(
     await Promise.all(
-      tranchedPools.map((pool) => protocol.queryEvents(pool, [DRAWDOWN_MADE_EVENT], undefined, currentBlock.number))
+      tranchedPools.map((pool) =>
+        protocol.queryEvents(pool.readOnly, [DRAWDOWN_MADE_EVENT], undefined, currentBlock.number)
+      )
     )
   )
   const sum: BigNumber = defaultSum(allDrawdownEvents.map((eventData) => new BigNumber(eventData.returnValues.amount)))
@@ -583,7 +592,7 @@ async function getRepaymentEvents(
   currentBlock: BlockInfo
 ): Promise<CombinedRepaymentTx[]> {
   const events = await goldfinchProtocol.queryEvents(
-    pool.contract,
+    pool.contract.readOnly,
     REPAYMENT_EVENT_TYPES,
     undefined,
     currentBlock.number
@@ -654,9 +663,9 @@ async function getEstimatedTotalInterest(pool: SeniorPool, currentBlock: BlockIn
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
   const creditLineAddresses = await Promise.all(
-    tranchedPools.map((p) => p.methods.creditLine().call(undefined, currentBlock.number))
+    tranchedPools.map((p) => p.readOnly.methods.creditLine().call(undefined, currentBlock.number))
   )
-  const creditLines = creditLineAddresses.map((a) => buildCreditLine(a))
+  const creditLines = creditLineAddresses.map((a) => buildCreditLineReadOnly(a))
   const creditLineData = await Promise.all(
     creditLines.map(async (cl) => {
       let balance = new BigNumber(await cl.methods.balance().call(undefined, currentBlock.number))
@@ -688,7 +697,7 @@ async function getTranchedPoolAddressesForSeniorPoolCalc(pool: SeniorPool, curre
   const [metadataStore, investmentEvents] = await Promise.all([
     getMetadataStore(protocol.networkId),
     protocol.queryEvents(
-      pool.contract,
+      pool.contract.readOnly,
       ["InvestmentMadeInSenior", "InvestmentMadeInJunior"],
       undefined,
       currentBlock.number
@@ -823,7 +832,7 @@ export type StakingRewardsLoaded = WithLoadedInfo<StakingRewards, StakingRewards
 
 class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
-  contract: StakingRewardsContract
+  contract: Web3IO<StakingRewardsContract>
   address: string
   info: Loadable<StakingRewardsLoadedInfo>
 
@@ -839,9 +848,9 @@ class StakingRewards {
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
     const [isPaused, currentEarnRate] = await Promise.all([
-      this.contract.methods.paused().call(undefined, currentBlock.number),
+      this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
       new BigNumber(0),
-      // this.contract.methods
+      // this.contract.readOnly.methods
       //   .currentEarnRatePerToken()
       //   .call(undefined, currentBlock.number)
       //   .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
@@ -863,11 +872,11 @@ class StakingRewards {
     currentBlock: BlockInfo
   ): Promise<PositionOptimisticIncrement> {
     const earnedSinceLastCheckpoint = new BigNumber(
-      await this.contract.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
+      await this.contract.readOnly.methods.earnedSinceLastCheckpoint(tokenId).call(undefined, currentBlock.number)
     )
     const optimisticCurrentGrant = rewards.totalUnvested.plus(rewards.totalVested).plus(earnedSinceLastCheckpoint)
     const optimisticTotalVested = new BigNumber(
-      await this.contract.methods
+      await this.contract.readOnly.methods
         .totalVestedAt(rewards.startTime, rewards.endTime, currentBlock.timestamp, optimisticCurrentGrant.toString(10))
         .call(undefined, currentBlock.number)
     )
@@ -889,7 +898,7 @@ class StakingRewards {
     toBlock: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     const events = await this.goldfinchProtocol.queryEvents(
-      this.contract,
+      this.contract.readOnly,
       eventNames,
       {
         ...(filter || {}),

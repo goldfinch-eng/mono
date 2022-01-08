@@ -3,6 +3,7 @@ import {GFI as GFIContract} from "@goldfinch-eng/protocol/typechain/web3/GFI"
 import BigNumber from "bignumber.js"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo} from "../utils"
+import {Web3IO} from "../types/web3"
 
 type GFILoadedInfo = {
   currentBlock: BlockInfo
@@ -14,7 +15,7 @@ interface FetchGfiPriceResult {
 }
 class GFI {
   goldfinchProtocol: GoldfinchProtocol
-  contract: GFIContract
+  contract: Web3IO<GFIContract>
   address: string
   info: Loadable<GFILoadedInfo>
 

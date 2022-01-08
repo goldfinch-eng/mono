@@ -29,7 +29,7 @@ export function getOrInitSeniorPool(address: Address): SeniorPool {
     poolStatus.defaultRate = new BigInt(0)
     poolStatus.save()
 
-    seniorPool.lastestPoolStatus = poolStatus.id
+    seniorPool.latestPoolStatus = poolStatus.id
     seniorPool.save()
   }
   return seniorPool as SeniorPool
@@ -56,7 +56,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let balance = contract.assets().minus(contract.totalLoansOutstanding()).plus(contract.totalWritedowns())
   let rawBalance = balance
 
-  let poolStatus = SeniorPoolStatus.load(seniorPool.lastestPoolStatus) as SeniorPoolStatus
+  let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
   poolStatus.compoundBalance = compoundBalance
   poolStatus.totalLoansOutstanding = totalLoansOutstanding
   poolStatus.totalShares = totalSupply
@@ -66,7 +66,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.save()
 
-  seniorPool.lastestPoolStatus = poolStatus.id
+  seniorPool.latestPoolStatus = poolStatus.id
   seniorPool.save()
 }
 

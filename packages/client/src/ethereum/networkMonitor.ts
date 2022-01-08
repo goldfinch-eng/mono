@@ -13,18 +13,21 @@ import {PlainObject} from "@goldfinch-eng/utils/src/type"
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
 const MURMURATION_CHAIN_ID = 31337
 
+type SetCurrentTxs = (fn: (currentTx: CurrentTx<TxType>[]) => CurrentTx<TxType>[]) => void
+type SetCurrentErrors = (fn: (currentErrors: any[]) => any[]) => void
+
 class NetworkMonitor {
-  web3: Web3
+  userWalletWeb3: Web3
   currentBlockNumber: number
   currentTxs: CurrentTx<TxType>[]
-  setCurrentTxs: (fn: (currentTx: CurrentTx<TxType>[]) => CurrentTx<TxType>[]) => void
-  setCurrentErrors: (fn: (currentErrors: any[]) => any[]) => void
+  setCurrentTxs: SetCurrentTxs
+  setCurrentErrors: SetCurrentErrors
   networkId!: number
   notifySdk!: NotifyAPI
   blockHeaderSubscription!: Subscription<BlockHeader>
 
-  constructor(web3, state) {
-    this.web3 = web3
+  constructor(userWalletWeb3: Web3, state: {setCurrentTxs: SetCurrentTxs; setCurrentErrors: SetCurrentErrors}) {
+    this.userWalletWeb3 = userWalletWeb3
     this.currentBlockNumber = 0
     this.currentTxs = []
     this.setCurrentTxs = state.setCurrentTxs
@@ -32,16 +35,16 @@ class NetworkMonitor {
   }
 
   async initialize(currentBlock: BlockInfo) {
-    this.networkId = await this.web3.eth.getChainId()
+    this.networkId = await this.userWalletWeb3.eth.getChainId()
     this.notifySdk = Notify({dappId: NOTIFY_API_KEY, networkId: this.networkId})
     this.currentBlockNumber = currentBlock.number
-    this.blockHeaderSubscription = this.web3.eth.subscribe("newBlockHeaders")
+    this.blockHeaderSubscription = this.userWalletWeb3.eth.subscribe("newBlockHeaders")
     this.blockHeaderSubscription.on("data", (blockHeader) => {
       this.newBlockHeaderReceived(blockHeader)
     })
 
     if (process.env.REACT_APP_MURMURATION === "yes" && this.networkId !== MURMURATION_CHAIN_ID) {
-      const currentProvider: AbstractProvider = this.web3.currentProvider as AbstractProvider
+      const currentProvider: AbstractProvider = this.userWalletWeb3.currentProvider as AbstractProvider
       assertNonNullable(currentProvider.request)
       await currentProvider.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x7A69"}]})
     }
@@ -125,7 +128,7 @@ class NetworkMonitor {
       } else {
         throw new Error("Failed to identify transaction to update.")
       }
-      const newTXs = _.reverse(_.sortBy(_.concat(currentTxs, tx), "blockTime"))
+      const newTXs = _.reverse(_.sortBy(_.concat(currentTxs, tx), "blockNumber"))
 
       this.currentTxs = newTXs // Update local copy
       return newTXs

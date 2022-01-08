@@ -38,6 +38,7 @@ import {
   VERIFY_ROUTE,
 } from "../../types/routes"
 import {SessionData} from "../../types/session"
+import {Web3IO} from "../../types/web3"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
@@ -66,7 +67,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderRewards(
   deps: {
@@ -1285,7 +1287,7 @@ describe("Rewards list and detail", () => {
       expect(screen.getByText("1,000.00 GFI • Jan 11, 2022")).toBeVisible()
       expect(await screen.findByText("Accept")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1348,7 +1350,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1408,7 +1410,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.getByText("1,000.00 GFI • Dec 29, 2021")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1463,7 +1465,7 @@ describe("Rewards list and detail", () => {
 
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()

@@ -6,6 +6,7 @@ import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {KnownEventData, MerkleDistributorEventType} from "../types/events"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
+import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 
@@ -17,7 +18,7 @@ export type MerkleDistributorLoaded = WithLoadedInfo<MerkleDistributor, MerkleDi
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
-  contract: MerkleDistributorContract
+  contract: Web3IO<MerkleDistributorContract>
   address: string
   info: Loadable<MerkleDistributorLoadedInfo>
 
@@ -32,7 +33,9 @@ export class MerkleDistributor {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const communityRewardsAddress = await this.contract.methods.communityRewards().call(undefined, currentBlock.number)
+    const communityRewardsAddress = await this.contract.readOnly.methods
+      .communityRewards()
+      .call(undefined, currentBlock.number)
     if (communityRewardsAddress !== this.goldfinchProtocol.getAddress("CommunityRewards")) {
       throw new Error(
         "MerkleDistributor community rewards address doesn't match with deployed CommunityRewards address"
@@ -54,7 +57,7 @@ export class MerkleDistributor {
     toBlock: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     const events = await this.goldfinchProtocol.queryEvents(
-      this.contract,
+      this.contract.readOnly,
       eventNames,
       {
         ...(filter || {}),

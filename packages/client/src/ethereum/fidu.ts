@@ -1,23 +1,7 @@
-import web3 from "../web3"
 import BigNumber from "bignumber.js"
-import {getDeployments} from "./utils"
-import {Contract} from "web3-eth-contract"
 
 export const FIDU_DECIMAL_PLACES = 18
 export const FIDU_DECIMALS = new BigNumber(String(10 ** FIDU_DECIMAL_PLACES))
-
-/**
- * Returns a Fidu contract deployed on a given network
- * @param networkId network to get deployed fidu on
- * @returns Fidu contract
- */
-export async function getFidu(networkId: string): Promise<Contract> {
-  const config = await getDeployments(networkId)
-  const fiduContract = config.contracts.Fidu
-  const fidu = new web3.eth.Contract(fiduContract.abi, fiduContract.address)
-  ;(fidu as any).chain = networkId
-  return fidu
-}
 
 /**
  * Returns the number of Fidu tokens given a number of atoms
