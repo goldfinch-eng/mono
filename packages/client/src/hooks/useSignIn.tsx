@@ -5,7 +5,7 @@ import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SESSION_DATA_VERSION} from "../types/session"
 import {assertNonNullable} from "../utils"
-import web3 from "../web3"
+import web3, {getUserWalletWeb3Status} from "../web3"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
@@ -59,10 +59,11 @@ export function useSession(): Session {
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
-  const {setSessionData, userWalletWeb3Status, currentBlock} = useContext(AppContext)
+  const {setSessionData, currentBlock} = useContext(AppContext)
   const session = useSession()
   const signIn = useCallback(
     async function () {
+      const userWalletWeb3Status = await getUserWalletWeb3Status()
       assertNonNullable(userWalletWeb3Status)
       assertNonNullable(setSessionData)
       assertNonNullable(currentBlock)
@@ -95,7 +96,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
         return getSession({address: userAddress, signature: undefined, signatureBlockNum: undefined})
       }
     },
-    [userWalletWeb3Status, setSessionData, currentBlock]
+    [setSessionData, currentBlock]
   )
 
   return [session, signIn]

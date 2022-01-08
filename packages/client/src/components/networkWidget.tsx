@@ -1,6 +1,6 @@
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
-import React, {useContext, useEffect, useState} from "react"
+import React, {useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
@@ -50,25 +50,13 @@ function NetworkWidget(props: NetworkWidgetProps) {
   const {userWalletWeb3Status} = useContext(AppContext)
   const session = useSession()
   const [, signIn] = useSignIn()
-  const [showSignIn, setShowSignIn] = useState<Boolean>(false)
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
-
-  useEffect(() => {
-    if (props.user && session.status !== "authenticated" && showSignIn) {
-      signIn().then((session) => {
-        setShowSignIn(false)
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.user?.address, showSignIn])
 
   async function enableMetamask(): Promise<void> {
     return (window as any).ethereum
       .request({method: "eth_requestAccounts"})
-      .then(() => {
-        setShowSignIn(true)
-        props.connectionComplete()
-      })
+      .then(signIn)
+      .then(props.connectionComplete)
       .catch((error) => {
         console.error("Error connecting to metamask", error)
       })
