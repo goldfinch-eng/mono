@@ -441,7 +441,6 @@ function App() {
       merkleDirectDistributor,
       currentBlock
     )
-
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed

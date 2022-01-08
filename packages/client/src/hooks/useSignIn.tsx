@@ -32,48 +32,47 @@ interface SessionLocalStorageType {
 }
 
 function getSession(info: GetSessionInfo | undefined): Session {
-  if (info) {
-    if (info.address && info.signature) {
-      const signature = info.signature
-      const signatureBlockNum = info.signatureBlockNum
-      return {status: "authenticated", signature, signatureBlockNum}
-    } else {
-      return {status: "known"}
-    }
+  if (info?.signature) {
+    const signature = info.signature
+    const signatureBlockNum = info.signatureBlockNum
+    return {status: "authenticated", signature, signatureBlockNum}
+  } else if (info && !info.signature) {
+    return {status: "known"}
   } else {
     return {status: "unknown"}
   }
 }
 
 export function useSession(): Session {
-  const {sessionData, user} = useContext(AppContext)
-  return getSession(
-    user
-      ? sessionData
-        ? {
-            address: user.address,
-            signature: sessionData.signature,
-            signatureBlockNum: sessionData.signatureBlockNum,
-            signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
-            version: sessionData.version,
-          }
-        : {address: user.address, signature: undefined, signatureBlockNum: undefined}
-      : undefined
-  )
+  const {sessionData, userWalletWeb3Status} = useContext(AppContext)
+  if (userWalletWeb3Status?.type === "connected" && sessionData) {
+    return getSession({
+      address: userWalletWeb3Status.address,
+      signature: sessionData.signature,
+      signatureBlockNum: sessionData.signatureBlockNum,
+      signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
+      version: sessionData.version,
+    })
+  } else {
+    return getSession(undefined)
+  }
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
-  const {setSessionData, user, currentBlock} = useContext(AppContext)
+  const {setSessionData, userWalletWeb3Status, currentBlock} = useContext(AppContext)
   const session = useSession()
-
   const signIn = useCallback(
     async function () {
-      assertNonNullable(user)
+      assertNonNullable(userWalletWeb3Status)
       assertNonNullable(setSessionData)
       assertNonNullable(currentBlock)
-
+      const userAddress = userWalletWeb3Status.address
+      if (!userAddress) {
+        setSessionData(undefined)
+        return getSession(undefined)
+      }
       const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
-      const signer = provider.getSigner(user.address)
+      const signer = provider.getSigner(userAddress)
 
       const signatureBlockNum = currentBlock.number
       const signatureBlockNumTimestamp = currentBlock.timestamp
@@ -90,13 +89,13 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       }
       if (signature) {
         setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
-        return getSession({address: user.address, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+        return getSession({address: userAddress, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
       } else {
         setSessionData(undefined)
-        return getSession({address: user.address, signature: undefined, signatureBlockNum: undefined})
+        return getSession({address: userAddress, signature: undefined, signatureBlockNum: undefined})
       }
     },
-    [user, setSessionData, currentBlock]
+    [userWalletWeb3Status, setSessionData, currentBlock]
   )
 
   return [session, signIn]
