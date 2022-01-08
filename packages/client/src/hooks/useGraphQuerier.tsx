@@ -2,7 +2,7 @@ import {ApolloError, DocumentNode, useQuery} from "@apollo/client"
 import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {getTranchedPoolsData} from "../graphql/types"
+import {getSeniorPool, getTranchedPoolsData} from "../graphql/types"
 import {AppRoute} from "../types/routes"
 
 export type UseGraphQuerierConfig = {
@@ -15,17 +15,19 @@ export type UseGraphQuerierConfig = {
   setAsLeaf: boolean
 }
 
-interface UseGraphQuerierReturnValue {
+type GraphData = getTranchedPoolsData | getSeniorPool
+
+interface UseGraphQuerierReturnValue<T extends GraphData> {
   loading: boolean
   error?: ApolloError
-  data?: getTranchedPoolsData
+  data?: T
 }
 
-export function useGraphQuerier(
+export function useGraphQuerier<T extends GraphData>(
   config: UseGraphQuerierConfig,
   query: DocumentNode,
   skip: boolean
-): UseGraphQuerierReturnValue {
+): UseGraphQuerierReturnValue<T> {
   const {
     currentBlock,
     setHasGraphError,
@@ -78,18 +80,22 @@ export function useGraphQuerier(
       ) {
         const newLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh = currentBlock
 
-        refetch().then((): void => {
-          // If this hook is configured such that its querying is done at the leaf of the component
-          // tree (as far as queries to The Graph are concerned; not talking about web3 here) set
-          // current-block-triggering-last-successful-graph-refresh for the leaf, upon the success
-          // of the refresh.
-          if (config.setAsLeaf) {
-            setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(
-              config.route,
-              newLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh
-            )
-          }
-        })
+        refetch()
+          .then((): void => {
+            // If this hook is configured such that its querying is done at the leaf of the component
+            // tree (as far as queries to The Graph are concerned; not talking about web3 here), set
+            // current-block-triggering-last-successful-graph-refresh for the leaf, upon the success
+            // of the refresh.
+            if (config.setAsLeaf) {
+              setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(
+                config.route,
+                newLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh
+              )
+            }
+          })
+          .catch((err: unknown) => {
+            console.error("Refetch failed", err)
+          })
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

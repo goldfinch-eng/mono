@@ -508,7 +508,7 @@ function App() {
   function setLeafCurrentBlock(route: AppRoute, newLeafCurrentBlock: BlockInfo) {
     const existing = leavesCurrentBlock[route]
     if (!existing || existing.number < newLeafCurrentBlock.number) {
-      setLeavesCurrentBlock({...leavesCurrentBlock, [route]: newLeafCurrentBlock})
+      setLeavesCurrentBlock((prevState) => ({...prevState, [route]: newLeafCurrentBlock}))
     }
   }
 
@@ -518,10 +518,10 @@ function App() {
   ) {
     const existing = leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh[route]
     if (!existing || existing.number < newCurrentBlockTriggeringLastSuccessfulGraphRefresh.number) {
-      setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh({
-        ...leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+      setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh((prevState) => ({
+        ...prevState,
         [route]: newCurrentBlockTriggeringLastSuccessfulGraphRefresh,
-      })
+      }))
     }
   }
 

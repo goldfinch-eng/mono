@@ -1,4 +1,3 @@
-import {useQuery} from "@apollo/client"
 import {BigNumber} from "bignumber.js"
 import {useContext} from "react"
 import {AppContext} from "../App"
@@ -6,6 +5,9 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {SeniorPoolLoaded} from "../ethereum/pool"
 import {parseSeniorPoolStatus} from "../graphql/parsers"
 import {GET_SENIOR_POOL_STATUS} from "../graphql/queries"
+import {getSeniorPool} from "../graphql/types"
+import useGraphQuerier from "../hooks/useGraphQuerier"
+import {SENIOR_POOL_ROUTE} from "../types/routes"
 import {displayDollars, displayPercent, shouldUseWeb3} from "../utils"
 import {iconOutArrow} from "./icons"
 import InfoSection from "./infoSection"
@@ -19,7 +21,14 @@ function SeniorPoolStatus(props: SeniorPoolStatusProps) {
   const {goldfinchConfig} = useContext(AppContext)
   const {pool} = props
   const useWeb3 = shouldUseWeb3()
-  const {data} = useQuery(GET_SENIOR_POOL_STATUS, {skip: useWeb3})
+  const {data} = useGraphQuerier<getSeniorPool>(
+    {
+      route: SENIOR_POOL_ROUTE,
+      setAsLeaf: true,
+    },
+    GET_SENIOR_POOL_STATUS,
+    useWeb3
+  )
 
   function deriveRows() {
     // NOTE: Currently, `pool` and `data` do not necessarily relate to the same block number. Therefore

@@ -14,7 +14,7 @@ import {POOL_CREATED_EVENT} from "../types/events"
 import {CapitalProvider} from "../ethereum/pool"
 import {RINKEBY} from "../ethereum/utils"
 import useNonNullContext from "./useNonNullContext"
-import {getTranchedPoolsData as QueryResult} from "../graphql/types"
+import {getTranchedPoolsData, getTranchedPoolsData as QueryResult} from "../graphql/types"
 import {usdcToAtomic} from "../ethereum/erc20"
 import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
 
@@ -47,7 +47,11 @@ export function useTranchedPoolSubgraphData(
     value: undefined,
   })
 
-  const {loading, error, data} = useGraphQuerier(graphQuerierConfig, GET_TRANCHED_POOLS_DATA, skip)
+  const {loading, error, data} = useGraphQuerier<getTranchedPoolsData>(
+    graphQuerierConfig,
+    GET_TRANCHED_POOLS_DATA,
+    skip
+  )
 
   useEffect(() => {
     async function parseData(
