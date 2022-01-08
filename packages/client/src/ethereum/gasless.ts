@@ -42,7 +42,7 @@ const TypedData = {
 }
 
 async function submitGaslessTransaction(contractAddress, unsentAction) {
-  const provider = new ethers.providers.Web3Provider(web3.currentProvider)
+  const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider)
   const signer = provider.getSigner()
   const from = await signer.getAddress()
 

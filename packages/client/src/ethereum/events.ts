@@ -58,7 +58,7 @@ function getRichAmount(amount: AmountWithUnits): RichAmount {
 async function populateDates<T extends KnownEventName, U extends HistoricalTx<T> | CombinedRepaymentTx>(txs: U[]) {
   return await Promise.all(
     txs.map((tx) => {
-      return web3.eth.getBlock(tx.blockNumber).then((block) => {
+      return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
         assertNumber(block.timestamp)
         tx.date = moment.unix(block.timestamp).format("MMM D, h:mma")
         return tx

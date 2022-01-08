@@ -4,6 +4,7 @@ import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {KnownEventData, MerkleDirectDistributorEventType} from "../types/events"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
+import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDistributor} from "./merkleDistributor"
@@ -16,7 +17,7 @@ export type MerkleDirectDistributorLoaded = WithLoadedInfo<MerkleDirectDistribut
 
 export class MerkleDirectDistributor {
   goldfinchProtocol: GoldfinchProtocol
-  contract: MerkleDirectDistributorContract
+  contract: Web3IO<MerkleDirectDistributorContract>
   address: string
   info: Loadable<MerkleDirectDistributorLoadedInfo>
 
@@ -31,7 +32,7 @@ export class MerkleDirectDistributor {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const gfiAddress = await this.contract.methods.gfi().call(undefined, currentBlock.number)
+    const gfiAddress = await this.contract.readOnly.methods.gfi().call(undefined, currentBlock.number)
     if (gfiAddress !== this.goldfinchProtocol.getAddress("GFI")) {
       throw new Error("MerkleDirectDistributor address of GFI contract doesn't match with deployed GFI address")
     }
@@ -51,7 +52,7 @@ export class MerkleDirectDistributor {
     toBlock: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     const events = await this.goldfinchProtocol.queryEvents(
-      this.contract,
+      this.contract.readOnly,
       eventNames,
       {
         ...(filter || {}),

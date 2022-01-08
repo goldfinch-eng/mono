@@ -119,7 +119,7 @@ export function assertBigNumber(val: unknown): asserts val is BigNumber {
 }
 
 export async function getCurrentBlock() {
-  return await web3.eth.getBlock("latest")
+  return await web3.readOnly.eth.getBlock("latest")
 }
 
 export type BlockInfo = {

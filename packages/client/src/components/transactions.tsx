@@ -70,7 +70,7 @@ function Transactions(props: TransactionsProps) {
       await Promise.all(
         tranchedPoolsAddresses.map((address) =>
           goldfinchProtocol.queryEvents(
-            tranchedPools[address]!.contract,
+            tranchedPools[address]!.contract.readOnly,
             TRANCHED_POOL_EVENT_TYPES,
             undefined,
             currentBlock.number

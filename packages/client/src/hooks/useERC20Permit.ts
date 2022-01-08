@@ -59,8 +59,8 @@ export default function useERC20Permit(): {
     const now = currentBlock.timestamp
     const deadline = new BigNumber(now).plus(deadlineFromNow)
 
-    const nonce = await contract.methods.nonces(owner).call(undefined, "latest")
-    const chainId = await web3.eth.getChainId()
+    const nonce = await contract.userWallet.methods.nonces(owner).call(undefined, "latest")
+    const chainId = await web3.userWallet.eth.getChainId()
     const message = {
       owner,
       spender,
@@ -85,7 +85,7 @@ export default function useERC20Permit(): {
       message,
     })
 
-    const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
+    const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
     const signature = await provider.send("eth_signTypedData_v4", [owner, data]).then(splitSignature)
     return {
       v: signature.v!,
