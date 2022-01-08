@@ -102,7 +102,7 @@ export function useGraphQuerier<T extends GraphData>(
   }, [currentBlock])
 
   useEffect(() => {
-    if (hasBlockError) {
+    if (hasBlockError || hasQueryError) {
       setHasGraphError?.(true)
     } else {
       setHasGraphError?.(false)
@@ -111,8 +111,12 @@ export function useGraphQuerier<T extends GraphData>(
   }, [hasBlockError, hasQueryError])
 
   useEffect(() => {
-    if (hasBlockError) setHasBlockError(false)
-    if (hasQueryError) setHasQueryError(false)
+    if (hasBlockError) {
+      setHasBlockError(false)
+    }
+    if (hasQueryError) {
+      setHasQueryError(false)
+    }
 
     if (currentBlock?.number && graphBlockNumber && graphBlockNumber + 10 < currentBlock.number) {
       console.error(`
