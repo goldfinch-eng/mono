@@ -1,5 +1,5 @@
 import {BigNumber} from "bignumber.js"
-import {useContext} from "react"
+import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {SeniorPoolLoaded} from "../ethereum/pool"
@@ -20,8 +20,8 @@ interface SeniorPoolStatusProps {
 function SeniorPoolStatus(props: SeniorPoolStatusProps) {
   const {goldfinchConfig} = useContext(AppContext)
   const {pool} = props
-  const useWeb3 = shouldUseWeb3()
-  const {data} = useGraphQuerier<getSeniorPool>(
+  const [useWeb3, setUseWeb3] = useState<boolean>(shouldUseWeb3())
+  const {error: graphError, data} = useGraphQuerier<getSeniorPool>(
     {
       route: SENIOR_POOL_ROUTE,
       setAsLeaf: true,
@@ -29,6 +29,13 @@ function SeniorPoolStatus(props: SeniorPoolStatusProps) {
     GET_SENIOR_POOL_STATUS,
     useWeb3
   )
+
+  useEffect(() => {
+    if (graphError) {
+      console.error("Activating fallback to Web3.", graphError)
+      setUseWeb3(true)
+    }
+  }, [graphError])
 
   function deriveRows() {
     // NOTE: Currently, `pool` and `data` do not necessarily relate to the same block number. Therefore

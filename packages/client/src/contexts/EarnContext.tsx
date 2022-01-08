@@ -37,7 +37,7 @@ export function usePoolsData(
   graphError: ApolloError | undefined
 } {
   // Fetch data from subgraph
-  const {error, backers: backersSubgraph} = useTranchedPoolSubgraphData(graphQuerierConfig, useWeb3)
+  const {error: graphError, backers: backersSubgraph} = useTranchedPoolSubgraphData(graphQuerierConfig, useWeb3)
 
   // Fetch data from web3 provider
   const {backers: backersWeb3, poolsAddresses: poolsAddressesWeb3} = usePoolBackersWeb3(!useWeb3)
@@ -45,7 +45,6 @@ export function usePoolsData(
 
   const seniorPoolStatusData = seniorPoolStatusWeb3
   const backersData = useWeb3 ? backersWeb3 : backersSubgraph
-  const errorData = useWeb3 ? undefined : error
   const poolsAddressesData: Loadable<string[]> = useWeb3
     ? poolsAddressesWeb3
     : {
@@ -55,7 +54,7 @@ export function usePoolsData(
 
   return {
     backers: backersData,
-    graphError: errorData,
+    graphError,
     poolsAddresses: poolsAddressesData,
     seniorPoolStatus: seniorPoolStatusData,
   }
