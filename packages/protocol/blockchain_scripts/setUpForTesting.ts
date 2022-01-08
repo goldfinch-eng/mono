@@ -44,7 +44,6 @@ import {
   UniqueIdentity,
 } from "../typechain/ethers"
 
-import * as migratev23 from "../blockchain_scripts/migrations/v2.3/migrate"
 import * as migratev231 from "../blockchain_scripts/migrations/v2.3.1/migrate"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {fundWithWhales} from "./helpers/fundWithWhales"
@@ -123,7 +122,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
     await tx.wait()
 
-    await migratev23.main()
     await migratev231.main()
 
     // TODO: temporary while GoldfinchFactory upgrade hasn't been deployed
