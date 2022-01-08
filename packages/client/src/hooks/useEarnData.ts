@@ -16,7 +16,7 @@ import {RINKEBY} from "../ethereum/utils"
 import useNonNullContext from "./useNonNullContext"
 import {getTranchedPoolsData as QueryResult} from "../graphql/types"
 import {usdcToAtomic} from "../ethereum/erc20"
-import useGraphQuerier from "./useGraphQuerier"
+import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
 
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -33,7 +33,10 @@ function sortPoolBackers(poolBackers: PoolBacker[]): PoolBacker[] {
   )
 }
 
-export function useTranchedPoolSubgraphData(skip = false): {
+export function useTranchedPoolSubgraphData(
+  graphQuerierConfig: UseGraphQuerierConfig,
+  skip = false
+): {
   backers: Loadable<PoolBacker[]>
   loading: boolean
   error: ApolloError | undefined
@@ -44,7 +47,7 @@ export function useTranchedPoolSubgraphData(skip = false): {
     value: undefined,
   })
 
-  const {loading, error, data} = useGraphQuerier(GET_TRANCHED_POOLS_DATA, skip)
+  const {loading, error, data} = useGraphQuerier(graphQuerierConfig, GET_TRANCHED_POOLS_DATA, skip)
 
   useEffect(() => {
     async function parseData(

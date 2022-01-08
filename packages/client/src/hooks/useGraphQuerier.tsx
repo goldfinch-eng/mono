@@ -1,11 +1,19 @@
-import {useState, useEffect, useContext} from "react"
-import {AppContext} from "../App"
-import {useQuery, ApolloError, DocumentNode} from "@apollo/client"
-import {getTranchedPoolsData} from "../graphql/types"
-import {BlockInfo} from "../utils"
-import {useCurrentRoute} from "./useCurrentRoute"
+import {ApolloError, DocumentNode, useQuery} from "@apollo/client"
 import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
-import {EARN_ROUTE} from "../types/routes"
+import {useContext, useEffect, useState} from "react"
+import {AppContext} from "../App"
+import {getTranchedPoolsData} from "../graphql/types"
+import {AppRoute} from "../types/routes"
+
+export type UseGraphQuerierConfig = {
+  // The route on which this invocation of the `useGraphQuerier` hook is used.
+  route: AppRoute
+  // Whether, upon a successful query, the current-block that triggered the query
+  // should be set as the current-block-triggering-last-successful-graph-refresh for
+  // the `route`. This corresponds to whether this usage of the `useGraphQuerier` hook is
+  // located at the leaf of the component tree for `route`.
+  setAsLeaf: boolean
+}
 
 interface UseGraphQuerierReturnValue {
   loading: boolean
@@ -13,34 +21,79 @@ interface UseGraphQuerierReturnValue {
   data?: getTranchedPoolsData
 }
 
-export function useGraphQuerier(QUERY: DocumentNode, skip: boolean): UseGraphQuerierReturnValue {
-  const {currentBlock, setHasGraphError, leavesRootBlockOfLastGraphRefresh, setLeafRootBlockLastGraphRefresh} =
-    useContext(AppContext)
-  const currentRoute = useCurrentRoute()
+export function useGraphQuerier(
+  config: UseGraphQuerierConfig,
+  query: DocumentNode,
+  skip: boolean
+): UseGraphQuerierReturnValue {
+  const {
+    currentBlock,
+    setHasGraphError,
+    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+    setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+  } = useContext(AppContext)
   const [graphBlockNumber, setGraphBlockNumber] = useState<number>()
   const [hasBlockError, setHasBlockError] = useState<boolean>(false)
   const [hasQueryError, setHasQueryError] = useState<boolean>(false)
 
-  const {loading, error, data, refetch} = useQuery(QUERY, {skip, notifyOnNetworkStatusChange: true})
+  const {loading, error, data, refetch} = useQuery(query, {skip, notifyOnNetworkStatusChange: true})
 
   useEffect(() => {
-    if (!loading && currentBlock) {
-      assertNonNullable(currentRoute)
-      assertNonNullable(leavesRootBlockOfLastGraphRefresh)
-      assertNonNullable(setLeafRootBlockLastGraphRefresh)
+    if (data && currentBlock) {
+      const {_meta} = data
+      assertNonNullable(_meta)
+      assertNonNullable(_meta.block)
+      if (!graphBlockNumber) {
+        // For the initial fetch, set `graphBlockNumber` state, and if this hook is configured such that
+        // its querying is done at the leaf of the component tree (as far as queries to The Graph are
+        // concerned; not talking about web3 here) set current-block-triggering-last-successful-graph-refresh
+        // for the leaf.
+        setGraphBlockNumber(_meta.block.number)
 
-      // This is required for the specific case of the earn page, we can't rely on the currentRoute
-      // since interactions that update `currentBlock` are triggered by other pages. Failing to call
-      // `setLeafRootBlockLastGraphRefresh` will perpetually show the spinner.
-      const route = leavesRootBlockOfLastGraphRefresh[currentRoute] ? currentRoute : EARN_ROUTE
-      const rootBlockOfLastGraphRefresh = leavesRootBlockOfLastGraphRefresh[route]
-      const rootBlockNumberOfRefresh: BlockInfo = {...currentBlock}
-      if (!!rootBlockOfLastGraphRefresh && rootBlockNumberOfRefresh.number > rootBlockOfLastGraphRefresh.number) {
-        refetch().then(() => setLeafRootBlockLastGraphRefresh(route, rootBlockNumberOfRefresh))
+        if (config.setAsLeaf) {
+          assertNonNullable(setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh)
+          setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(config.route, currentBlock)
+        }
+      } else if (graphBlockNumber < _meta.block.number) {
+        // For all refetches, update `graphBlockNumber` state.
+        setGraphBlockNumber(_meta.block.number)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBlock, loading])
+  }, [data, currentBlock])
+
+  useEffect(() => {
+    if (currentBlock) {
+      assertNonNullable(leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh)
+      assertNonNullable(setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh)
+
+      // If current-block-triggering-last-successful-graph-refresh is now outdated for the
+      // route on which this invocation of the hook is used, refetch. This is appropriate even
+      // if `!config.setAsLeaf`.
+      const leafCurrentBlockTriggeringLastSuccessfulGraphRefresh =
+        leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh[config.route]
+      if (
+        leafCurrentBlockTriggeringLastSuccessfulGraphRefresh &&
+        currentBlock.number > leafCurrentBlockTriggeringLastSuccessfulGraphRefresh.number
+      ) {
+        const newLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh = currentBlock
+
+        refetch().then((): void => {
+          // If this hook is configured such that its querying is done at the leaf of the component
+          // tree (as far as queries to The Graph are concerned; not talking about web3 here) set
+          // current-block-triggering-last-successful-graph-refresh for the leaf, upon the success
+          // of the refresh.
+          if (config.setAsLeaf) {
+            setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(
+              config.route,
+              newLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh
+            )
+          }
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBlock])
 
   useEffect(() => {
     if (hasBlockError) {
@@ -50,24 +103,6 @@ export function useGraphQuerier(QUERY: DocumentNode, skip: boolean): UseGraphQue
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasBlockError, hasQueryError])
-
-  useEffect(() => {
-    if (data) {
-      const {_meta} = data
-      assertNonNullable(_meta)
-      assertNonNullable(_meta.block)
-      setGraphBlockNumber(_meta.block.number)
-
-      assertNonNullable(leavesRootBlockOfLastGraphRefresh)
-      assertNonNullable(setLeafRootBlockLastGraphRefresh)
-      assertNonNullable(currentRoute)
-      const rootBlockOfLastGraphRefresh = leavesRootBlockOfLastGraphRefresh[currentRoute]
-      if (!rootBlockOfLastGraphRefresh && currentBlock) {
-        setLeafRootBlockLastGraphRefresh(currentRoute, currentBlock)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
 
   useEffect(() => {
     if (hasBlockError) setHasBlockError(false)

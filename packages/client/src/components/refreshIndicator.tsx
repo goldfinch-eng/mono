@@ -13,33 +13,39 @@ const styles = {
 
 interface RefreshIndicatorProps {
   rootCurrentBlock: BlockInfo | undefined
-  leavesRootBlockOfLastGraphRefresh: LeavesCurrentBlock
   leavesCurrentBlock: LeavesCurrentBlock
+  leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh: LeavesCurrentBlock
 }
 
 export function getIsRefreshing(
   rootCurrentBlock: BlockInfo | undefined,
   leafCurrentBlock: BlockInfo | undefined,
-  rootBlockOfLastGraphRefresh: BlockInfo | undefined
+  leafCurrentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo | undefined
 ): boolean {
-  return (
+  const baseIsRefreshing = !!rootCurrentBlock && !!leafCurrentBlock && rootCurrentBlock.number > leafCurrentBlock.number
+  const graphIsRefreshing =
     !!rootCurrentBlock &&
-    !!leafCurrentBlock &&
-    !!rootBlockOfLastGraphRefresh &&
-    (rootCurrentBlock.number > leafCurrentBlock.number || rootCurrentBlock.number > rootBlockOfLastGraphRefresh.number)
-  )
+    !!leafCurrentBlockTriggeringLastSuccessfulGraphRefresh &&
+    rootCurrentBlock.number > leafCurrentBlockTriggeringLastSuccessfulGraphRefresh.number
+  return baseIsRefreshing || graphIsRefreshing
 }
 
 function RefreshIndicator(props: RefreshIndicatorProps) {
   const currentRoute = useCurrentRoute()
-  let leafCurrentBlock: BlockInfo | undefined, rootBlockOfLastGraphRefresh: BlockInfo | undefined
+  let leafCurrentBlock: BlockInfo | undefined
+  let leafCurrentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo | undefined
   if (currentRoute) {
     leafCurrentBlock = props.leavesCurrentBlock[currentRoute]
-    rootBlockOfLastGraphRefresh = props.leavesRootBlockOfLastGraphRefresh[currentRoute]
+    leafCurrentBlockTriggeringLastSuccessfulGraphRefresh =
+      props.leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh[currentRoute]
   } else {
     console.error("Failed to identify current route for leaf current block.")
   }
-  const isRefreshing = getIsRefreshing(props.rootCurrentBlock, leafCurrentBlock, rootBlockOfLastGraphRefresh)
+  const isRefreshing = getIsRefreshing(
+    props.rootCurrentBlock,
+    leafCurrentBlock,
+    leafCurrentBlockTriggeringLastSuccessfulGraphRefresh
+  )
   return (
     <div className="refresh-indicator">
       {isRefreshing ? (

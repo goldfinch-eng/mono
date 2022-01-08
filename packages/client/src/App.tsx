@@ -67,6 +67,7 @@ import {
   VERIFY_ROUTE,
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
+import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
 
 interface GeolocationData {
   ip: string
@@ -110,24 +111,28 @@ export interface GlobalState {
   // point is that once it's done refreshing, we know that nothing else remains to be refreshed. In
   // practice, this means we'll want to call `setLeafCurrentBlock()` once per application route.
   setLeafCurrentBlock?: (route: AppRoute, leafCurrentBlock: BlockInfo) => void
-  // This tracks the latest block that triggered a refresh on the subgraph *at the respective leaf of the
-  // component tree*. We can't trust that the graph will always be up to date with the blockchain,
-  // if the graph is unstable it's possible for the subgraph to lag behind and no
-  // amount of refreshes would solve the issue. To cope with this problem we are tracking when
-  // refreshes are made for a given route. Tracking this separately from `currentBlock` is useful
-  // because it enables us -- assuming the developer has implemented the necessary usage of
-  // `refreshCurrentBlock()` to trigger refreshing, and of `setLeafRootBlockLastGraphRefresh()`
-  // when the refresh has finished as far as a given route is concerned -- to display an indicator
-  // in the UI that the chain data are being refreshed, if the leaf's current block is lagging behind
-  // the `currentBlock`.
-  leavesRootBlockOfLastGraphRefresh?: LeavesCurrentBlock
-  // This setter should be called when a refresh is made, the refresh is triggered by a change (increase)
-  // in the current block associated with that data dependency; the setter should be called with that
-  // new current block. Ideally, the the last data dependency calls `setLeafRootBlockLastGraphRefresh`,
-  // in practice, this means that we'll want to call it once by query, being feasible to define one query
-  // by application route. The point is that once it's done refreshing, we know that nothing else
-  // remains to be refreshed.
-  setLeafRootBlockLastGraphRefresh?: (route: AppRoute, rootBlockOfLastGraphRefresh: BlockInfo) => void
+  // Given that we supplement our use of web3 data with data from The Graph, and given that *we do not
+  // pin our queries to The Graph to a particular block number*, we are not able to use only the `leavesCurrentBlock`
+  // data structure to track whether the data we have on some leaf is lagging behind `currentBlock`. We're not able
+  // to do so, because we have no guarantee about what block number the data we receive from The Graph will be for;
+  // The Graph could lag behind our web3 provider's understanding of the current block (or in theory vice versa).
+  // In using The Graph in this way, we are fundamentally accepting the possibility of
+  // inconsistency-with-respect-to-block-number between the data we get from The Graph and the data we get from web3.
+  // We accept this possibility on the ASSUMPTION that given what we actually use the data from The Graph for in
+  // the UI, such inconsistency does not pose a UX problem. It's our responsibility to satisfy this assumption.
+  //
+  // Given that the block number we get for The Graph data after fetch / refresh may lag behind `currentBlock` (and
+  // given that refreshing The Graph data indefinitely is not an acceptable mitigation), we can't incorporate
+  // the block number of our query results from The Graph into `leavesCurrentBlock`. So we use a separate data
+  // structure, to track (for a leaf of the component tree) what was the value of `currentBlock` that triggered
+  // the last successful refresh of The Graph data. In effect, we use this value as an identifier of our refreshes
+  // of The Graph data. When the value becomes equal to `currentBlock`, we know we're done refreshing The Graph
+  // data for that leaf.
+  leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh?: LeavesCurrentBlock
+  setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh?: (
+    route: AppRoute,
+    currentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo
+  ) => void
 
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
@@ -160,6 +165,11 @@ declare let window: any
 
 const AppContext = React.createContext<GlobalState>({})
 
+const earnProviderGraphQuerierConfig: UseGraphQuerierConfig = {
+  route: EARN_ROUTE,
+  setAsLeaf: true,
+}
+
 function App() {
   const [userWalletWeb3Status, setUserWalletWeb3Status] = useState<UserWalletWeb3Status>()
   const [_gfi, setGfi] = useState<GFILoaded>()
@@ -190,7 +200,10 @@ function App() {
     [PRIVACY_POLICY_ROUTE]: undefined,
     [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
   })
-  const [leavesRootBlockOfLastGraphRefresh, setLeavesRootBlockOfLastGraphRefresh] = useState<LeavesCurrentBlock>({
+  const [
+    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+    setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+  ] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
@@ -492,19 +505,31 @@ function App() {
     setCurrentBlock(currentBlock)
   }
 
-  function setLeafCurrentBlock(route: AppRoute, leafCurrentBlock: BlockInfo) {
-    setLeavesCurrentBlock({...leavesCurrentBlock, [route]: leafCurrentBlock})
+  function setLeafCurrentBlock(route: AppRoute, newLeafCurrentBlock: BlockInfo) {
+    const existing = leavesCurrentBlock[route]
+    if (!existing || existing.number < newLeafCurrentBlock.number) {
+      setLeavesCurrentBlock({...leavesCurrentBlock, [route]: newLeafCurrentBlock})
+    }
   }
 
-  function setLeafRootBlockLastGraphRefresh(route: AppRoute, leafRootBlock: BlockInfo) {
-    setLeavesRootBlockOfLastGraphRefresh({...leavesRootBlockOfLastGraphRefresh, [route]: leafRootBlock})
+  function setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(
+    route: AppRoute,
+    newCurrentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo
+  ) {
+    const existing = leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh[route]
+    if (!existing || existing.number < newCurrentBlockTriggeringLastSuccessfulGraphRefresh.number) {
+      setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh({
+        ...leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+        [route]: newCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+      })
+    }
   }
 
   const store: GlobalState = {
     userWalletWeb3Status,
     currentBlock,
     leavesCurrentBlock,
-    leavesRootBlockOfLastGraphRefresh,
+    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
     stakingRewards,
     gfi,
     communityRewards,
@@ -527,7 +552,7 @@ function App() {
     setSessionData,
     refreshCurrentBlock,
     setLeafCurrentBlock,
-    setLeafRootBlockLastGraphRefresh,
+    setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh,
     hasGraphError,
     setHasGraphError,
   }
@@ -537,7 +562,7 @@ function App() {
       <AppContext.Provider value={store}>
         <ThemeProvider theme={defaultTheme}>
           <Router>
-            <EarnProvider>
+            <EarnProvider graphQuerierConfig={earnProviderGraphQuerierConfig}>
               <BorrowProvider>
                 <NetworkIndicators
                   user={user}
@@ -547,7 +572,9 @@ function App() {
                   connectionComplete={setupUserWalletWeb3}
                   rootCurrentBlock={currentBlock}
                   leavesCurrentBlock={leavesCurrentBlock}
-                  leavesRootBlockOfLastGraphRefresh={leavesRootBlockOfLastGraphRefresh}
+                  leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh={
+                    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh
+                  }
                   hasGraphError={hasGraphError}
                 />
                 {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
