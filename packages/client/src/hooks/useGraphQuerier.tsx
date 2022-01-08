@@ -70,8 +70,8 @@ export function useGraphQuerier<T extends GraphData>(
       assertNonNullable(setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh)
 
       // If current-block-triggering-last-successful-graph-refresh is now outdated for the
-      // route on which this invocation of the hook is used, refetch. This is appropriate even
-      // if `!config.setAsLeaf`.
+      // route on which this invocation of the hook is used, refetch. This is appropriate
+      // (i.e. we want to do this refetching) even if `!config.setAsLeaf`.
       const leafCurrentBlockTriggeringLastSuccessfulGraphRefresh =
         leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh[config.route]
       if (
