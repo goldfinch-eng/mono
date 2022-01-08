@@ -620,7 +620,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     assertNonNullable(rewards)
     const previousGfiBalance = props.user.info.value.gfiBalance
     await sendFromUser(
-      rewards.contract.methods.getReward(tokenId),
+      rewards.contract.userWallet.methods.getReward(tokenId),
       {
         type: CLAIM_TX_TYPE,
         data: {},
@@ -633,7 +633,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
     assertNonNullable(props.merkleDistributor)
     return sendFromUser(
-      props.merkleDistributor.contract.methods.acceptGrant(
+      props.merkleDistributor.contract.userWallet.methods.acceptGrant(
         info.index,
         info.grant.amount,
         info.grant.vestingLength,
@@ -657,7 +657,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     assertNonNullable(props.merkleDirectDistributor)
     const previousGfiBalance = props.user.info.value.gfiBalance
     await sendFromUser(
-      props.merkleDirectDistributor.contract.methods.acceptGrant(info.index, info.grant.amount, info.proof),
+      props.merkleDirectDistributor.contract.userWallet.methods.acceptGrant(info.index, info.grant.amount, info.proof),
       {
         type: ACCEPT_TX_TYPE,
         data: {

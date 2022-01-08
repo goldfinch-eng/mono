@@ -6,7 +6,7 @@ import {UserLoaded} from "../../ethereum/user"
 
 function renderNetworkWidget(sessionData, address) {
   let store = {
-    web3Status: {
+    userWalletWeb3Status: {
       type: "connected",
       networkName: "localhost",
       address,

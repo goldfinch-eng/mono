@@ -4,7 +4,7 @@ import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import web3 from "web3"
+import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../App"
 import {User, UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
@@ -314,20 +314,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
 
   function renderForm() {
     if (user && user.info.value.goListed) {
-      return (
-        <VerificationNotice
-          icon={iconCircleCheck}
-          notice={
-            <>
-              Your verification was approved to participate in the{" "}
-              <Link className="form-link" to="/pools/senior">
-                Senior Pool
-              </Link>
-              .
-            </>
-          }
-        />
-      )
+      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
     } else if (loading) {
       return <LoadingCard title="Verify your address" />
     } else if (errored) {
@@ -353,20 +340,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
     } else if (isEligible(kyc, user)) {
-      return (
-        <VerificationNotice
-          icon={iconCircleCheck}
-          notice={
-            <>
-              Your verification was approved to participate in the{" "}
-              <Link className="form-link" to="/pools/senior">
-                Senior Pool
-              </Link>
-              .
-            </>
-          }
-        />
-      )
+      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
     } else if (entityType === "non-US") {
       return (
         <NonUSForm
@@ -419,7 +393,7 @@ const UNIQUE_IDENTITY_SIGNER_URLS = {
     "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe",
 }
 
-const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
+const UNIQUE_IDENTITY_MINT_PRICE = Web3Library.utils.toWei("0.00083", "ether")
 
 const START = "start"
 const SIGN_IN = "sign_in"
@@ -528,9 +502,9 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         user,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = await uniqueIdentity.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+      const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
       await sendFromUser(
-        uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
+        uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
           type: MINT_UID_TX_TYPE,
           data: {},
@@ -576,13 +550,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
           <div className="info-banner subtle">
             <div className="message">
               <div>
-                <p className="font-small mb-2">
-                  Your verification was approved to participate in{" "}
-                  <Link className="form-link" to="/">
-                    Borrower Pools
-                  </Link>
-                  . However, there may be future opportunities that require you to mint a UID.
-                </p>
+                <p className="font-small mb-2">Your verification was approved.</p>
               </div>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />
@@ -601,7 +569,11 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
             <div className="message">
               <p className="font-small">
                 Your UID, or "Unique Identity", is an NFT that represents your unique identity and grants you access to
-                participate in Borrower Pools. You do not need your UID to participate in the Senior Pool.
+                participate in Borrower Pools and the{" "}
+                <Link className="form-link" to="/pools/senior">
+                  Senior Pool
+                </Link>
+                .
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />

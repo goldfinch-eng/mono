@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
 import web3 from "../web3"
-import {getCreditDesk} from "./creditDesk"
+import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
 import {
@@ -20,6 +20,7 @@ import {
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
+import {Web3IO} from "../types/web3"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -116,7 +117,7 @@ function trancheInfo(tuple: any): TrancheInfo {
 class TranchedPool {
   address: string
   goldfinchProtocol: GoldfinchProtocol
-  contract: TranchedPoolContract
+  contract: Web3IO<TranchedPoolContract>
   creditLine!: CreditLine
   creditLineAddress!: string
   poolState!: PoolState
@@ -141,16 +142,16 @@ class TranchedPool {
   }
 
   async initialize(currentBlock: BlockInfo) {
-    this.creditLineAddress = await this.contract.methods.creditLine().call(undefined, currentBlock.number)
+    this.creditLineAddress = await this.contract.readOnly.methods.creditLine().call(undefined, currentBlock.number)
     this.creditLine = new CreditLine(this.creditLineAddress, this.goldfinchProtocol)
     await this.creditLine.initialize(currentBlock)
     this.metadata = await this.loadPoolMetadata()
 
-    let juniorTranche = await this.contract.methods
+    let juniorTranche = await this.contract.readOnly.methods
       .getTranche(TRANCHES.Junior)
       .call(undefined, currentBlock.number)
       .then(trancheInfo)
-    let seniorTranche = await this.contract.methods
+    let seniorTranche = await this.contract.readOnly.methods
       .getTranche(TRANCHES.Senior)
       .call(undefined, currentBlock.number)
       .then(trancheInfo)
@@ -159,20 +160,20 @@ class TranchedPool {
 
     this.totalDeposited = juniorTranche.principalDeposited.plus(seniorTranche.principalDeposited)
     this.juniorFeePercent = new BigNumber(
-      await this.contract.methods.juniorFeePercent().call(undefined, currentBlock.number)
+      await this.contract.readOnly.methods.juniorFeePercent().call(undefined, currentBlock.number)
     )
     this.reserveFeePercent = new BigNumber(100).div(
       await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator, currentBlock)
     )
     let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
     this.estimatedSeniorPoolContribution = new BigNumber(
-      await pool.methods.estimateInvestment(this.address).call(undefined, currentBlock.number)
+      await pool.readOnly.methods.estimateInvestment(this.address).call(undefined, currentBlock.number)
     )
     this.estimatedLeverageRatio = await this.estimateLeverageRatio(currentBlock)
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
-    this.isPaused = await this.contract.methods.paused().call(undefined, currentBlock.number)
+    this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
 
     this.poolState = this.getPoolState(currentBlock)
   }
@@ -254,7 +255,7 @@ class TranchedPool {
   async recentTransactions(currentBlock: BlockInfo) {
     let oldTransactions: any[] = []
     let transactions = await this.goldfinchProtocol.queryEvents(
-      this.contract,
+      this.contract.readOnly,
       [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
       undefined,
       currentBlock.number
@@ -310,7 +311,7 @@ class TranchedPool {
     if (!oldCreditlineAddress) {
       return []
     }
-    const creditDesk = await getCreditDesk(this.goldfinchProtocol.networkId)
+    const creditDesk = await getCreditDeskReadOnly(this.goldfinchProtocol.networkId)
     return await this.goldfinchProtocol.queryEvents(
       creditDesk,
       [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
@@ -327,7 +328,7 @@ class TranchedPool {
 
   async sharePriceUpdatesByTx(tranche: number, currentBlock: BlockInfo) {
     let transactions = await this.goldfinchProtocol.queryEvents(
-      this.contract,
+      this.contract.readOnly,
       [SHARE_PRICE_UPDATED_EVENT],
       {
         tranche: tranche,
@@ -340,7 +341,7 @@ class TranchedPool {
   async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
     const blockTimestamps = await Promise.all(
       transactions.map((tx) => {
-        return web3.eth.getBlock(tx.blockNumber).then((block) => {
+        return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
           return {blockNumber: tx.blockNumber, timestamp: block.timestamp}
         })
       })
@@ -390,7 +391,7 @@ class PoolBacker {
     let events: KnownEventData<typeof DEPOSIT_MADE_EVENT>[] = []
     if (this.address) {
       events = await this.goldfinchProtocol.queryEvents(
-        this.tranchedPool.contract,
+        this.tranchedPool.contract.readOnly,
         [DEPOSIT_MADE_EVENT],
         {
           owner: this.address,
@@ -403,7 +404,7 @@ class PoolBacker {
     let poolTokens = this.goldfinchProtocol.getContract<IPoolTokens>("PoolTokens")
     this.tokenInfos = await Promise.all(
       tokenIds.map((tokenId) => {
-        return poolTokens.methods
+        return poolTokens.readOnly.methods
           .getTokenInfo(tokenId)
           .call(undefined, currentBlock.number)
           .then((res) => tokenInfo(tokenId, res))
@@ -417,7 +418,7 @@ class PoolBacker {
 
     let availableToWithdrawAmounts = await Promise.all(
       tokenIds.map((tokenId) =>
-        this.tranchedPool.contract.methods.availableToWithdraw(tokenId).call(undefined, currentBlock.number)
+        this.tranchedPool.contract.readOnly.methods.availableToWithdraw(tokenId).call(undefined, currentBlock.number)
       )
     )
     this.tokenInfos.forEach((tokenInfo, i) => {

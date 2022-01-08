@@ -11,7 +11,7 @@ import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {SessionData} from "../types/session"
-import {Web3Status} from "../types/web3"
+import {UserWalletWeb3Status} from "../types/web3"
 import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
 
 interface Scenario {
@@ -30,17 +30,17 @@ interface Scenario {
 }
 
 const testUserAddress = "0xtest"
-const noWeb3: Web3Status = {
+const noWeb3: UserWalletWeb3Status = {
   type: "no_web3",
   networkName: undefined,
   address: undefined,
 }
-const hasWeb3: Web3Status = {
+const hasWeb3: UserWalletWeb3Status = {
   type: "has_web3",
   networkName: "localhost",
   address: undefined,
 }
-const connected: Web3Status = {
+const connected: UserWalletWeb3Status = {
   type: "connected",
   networkName: "localhost",
   address: testUserAddress,
@@ -50,10 +50,10 @@ const scenarios: Scenario[] = [
   {
     devName: "install_metamask",
     setUpMatch: ({store}) => {
-      store.web3Status = noWeb3
+      store.userWalletWeb3Status = noWeb3
     },
     setUpFallthrough: ({store}) => {
-      store.web3Status = hasWeb3
+      store.userWalletWeb3Status = hasWeb3
     },
     expectedText: /you'll first need to download and install the Metamask plug-in/,
   },
@@ -76,10 +76,10 @@ const scenarios: Scenario[] = [
   {
     devName: "not_connected_to_metamask",
     setUpMatch: ({store}) => {
-      store.web3Status = hasWeb3
+      store.userWalletWeb3Status = hasWeb3
     },
     setUpFallthrough: ({store}) => {
-      store.web3Status = connected
+      store.userWalletWeb3Status = connected
       store.user = {
         address: testUserAddress,
         info: {loaded: true, value: {goListed: false}},
@@ -90,7 +90,7 @@ const scenarios: Scenario[] = [
   {
     devName: "connected_user_with_expired_session",
     setUpMatch: ({store, props}) => {
-      store.web3Status = connected
+      store.userWalletWeb3Status = connected
       store.user = {
         address: testUserAddress,
         info: {loaded: true, value: {goListed: false}},

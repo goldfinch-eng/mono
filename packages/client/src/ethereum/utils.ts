@@ -213,7 +213,7 @@ async function getPoolEvents<T extends PoolEventType>(
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     eventNames.map((eventName) => {
-      return pool.contract.getPastEvents(eventName, {
+      return pool.contract.readOnly.getPastEvents(eventName, {
         filter: address ? {capitalProvider: address} : undefined,
         fromBlock,
         toBlock,

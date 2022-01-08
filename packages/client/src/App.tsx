@@ -46,7 +46,7 @@ import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
 import web3, {SESSION_DATA_KEY} from "./web3"
-import {Web3Status} from "./types/web3"
+import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
 import getApolloClient from "./graphql/client"
 import NetworkIndicators from "./components/networkIndicators"
@@ -84,7 +84,7 @@ export type SetSessionFn = (data: SessionData | undefined) => void
 export type LeavesCurrentBlock = Record<AppRoute, BlockInfo | undefined>
 
 export interface GlobalState {
-  web3Status?: Web3Status
+  userWalletWeb3Status?: UserWalletWeb3Status
 
   // This tracks the latest block that the application knows about. Think of this as a
   // global or root-level piece of state; it applies to the entire application.
@@ -120,7 +120,7 @@ export interface GlobalState {
   userMerkleDirectDistributor?: UserMerkleDirectDistributorLoaded
   userCommunityRewards?: UserCommunityRewardsLoaded
   pool?: SeniorPoolLoaded
-  creditDesk?: CreditDesk
+  creditDesk?: Web3IO<CreditDesk>
   user?: UserLoaded
   usdc?: ERC20
   goldfinchConfig?: GoldfinchConfigData
@@ -143,17 +143,17 @@ declare let window: any
 const AppContext = React.createContext<GlobalState>({})
 
 function App() {
-  const [web3Status, setWeb3Status] = useState<Web3Status>()
+  const [userWalletWeb3Status, setUserWalletWeb3Status] = useState<UserWalletWeb3Status>()
   const [_gfi, setGfi] = useState<GFILoaded>()
   const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
   const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
   const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
   const [_merkleDirectDistributor, setMerkleDirectDistributor] = useState<MerkleDirectDistributorLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
+  const [creditDesk, setCreditDesk] = useState<Web3IO<CreditDesk>>()
   const [userMerkleDistributor, setUserMerkleDistributor] = useState<UserMerkleDistributorLoaded>()
   const [userMerkleDirectDistributor, setUserMerkleDirectDistributor] = useState<UserMerkleDirectDistributorLoaded>()
   const [userCommunityRewards, setUserCommunityRewards] = useState<UserCommunityRewardsLoaded>()
-  const [creditDesk, setCreditDesk] = useState<CreditDesk>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<UserLoaded>()
@@ -209,7 +209,7 @@ function App() {
   const [hasGraphError, setHasGraphError] = useState<boolean>(false)
 
   useEffect(() => {
-    setupWeb3()
+    setupUserWalletWeb3()
 
     // Admin function to be able to assume the role of any address
     window.setUserAddress = function (overrideAddress: string) {
@@ -243,14 +243,14 @@ function App() {
       communityRewards &&
       merkleDistributor &&
       merkleDirectDistributor &&
-      web3Status &&
-      web3Status.type === "connected" &&
+      userWalletWeb3Status &&
+      userWalletWeb3Status.type === "connected" &&
       currentBlock
     ) {
-      refreshUserMerkleAndCommunityRewardsInfo(web3Status.address, overrideAddress)
+      refreshUserMerkleAndCommunityRewardsInfo(userWalletWeb3Status.address, overrideAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [communityRewards, merkleDistributor, merkleDirectDistributor, web3Status?.address, overrideAddress])
+  }, [communityRewards, merkleDistributor, merkleDirectDistributor, userWalletWeb3Status?.address, overrideAddress])
 
   useEffect(() => {
     if (
@@ -263,36 +263,36 @@ function App() {
       communityRewards &&
       merkleDistributor &&
       merkleDirectDistributor &&
-      web3Status &&
-      web3Status.type === "connected" &&
+      userWalletWeb3Status &&
+      userWalletWeb3Status.type === "connected" &&
       currentBlock
     ) {
-      refreshUserData(web3Status.address, overrideAddress)
+      refreshUserData(userWalletWeb3Status.address, overrideAddress)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [usdc, pool, web3Status?.address, overrideAddress])
+  }, [usdc, pool, userWalletWeb3Status?.address, overrideAddress])
 
   // To ensure the data dependencies of `user` *and* `user` itself are from the same block,
   // we'd use `useFromSameBlock()` again here. But holding off on that due to the decision to abandon
   // https://github.com/warbler-labs/mono/pull/140.
 
-  async function getWeb3Status(): Promise<Web3Status> {
+  async function getUserWalletWeb3Status(): Promise<UserWalletWeb3Status> {
     if (!window.ethereum) {
       return {type: "no_web3", networkName: undefined, address: undefined}
     }
     let networkName: string
     try {
-      // Sometimes it's possible that we can't communicate with the provider, in which case
-      // treat as if we don't have web3.
-      networkName = await web3.eth.net.getNetworkType()
+      // Sometimes it's possible that we can't communicate with the provider through which
+      // we want to send transactions, in which case treat as if we don't have web3.
+      networkName = await web3.userWallet.eth.net.getNetworkType()
       if (!networkName) {
         throw new Error("Falsy network type.")
       }
     } catch (e) {
       return {type: "no_web3", networkName: undefined, address: undefined}
     }
-    const accounts = await web3.eth.getAccounts()
+    const accounts = await web3.userWallet.eth.getAccounts()
     const address = accounts[0]
     if (address) {
       return {type: "connected", networkName, address}
@@ -301,14 +301,14 @@ function App() {
     }
   }
 
-  async function setupWeb3() {
-    const _web3Status = await getWeb3Status()
-    setWeb3Status(_web3Status)
-    if (_web3Status.type === "no_web3") {
+  async function setupUserWalletWeb3() {
+    const _userWalletWeb3Status = await getUserWalletWeb3Status()
+    setUserWalletWeb3Status(_userWalletWeb3Status)
+    if (_userWalletWeb3Status.type === "no_web3") {
       return
     }
 
-    const networkId = mapNetworkToID[_web3Status.networkName] || _web3Status.networkName
+    const networkId = mapNetworkToID[_userWalletWeb3Status.networkName] || _userWalletWeb3Status.networkName
     const name = networkId
     const supported = SUPPORTED_NETWORKS[networkId] || false
     const networkConfig: NetworkConfig = {name, supported}
@@ -332,7 +332,7 @@ function App() {
       setGoldfinchConfig(goldfinchConfigData)
       setGoldfinchProtocol(protocol)
 
-      const monitor = new NetworkMonitor(web3, {
+      const monitor = new NetworkMonitor(web3.userWallet, {
         setCurrentTxs,
         setCurrentErrors,
       })
@@ -465,7 +465,7 @@ function App() {
   }
 
   const store: GlobalState = {
-    web3Status,
+    userWalletWeb3Status,
     currentBlock,
     leavesCurrentBlock,
     stakingRewards,
@@ -506,7 +506,7 @@ function App() {
                   network={network}
                   currentErrors={currentErrors}
                   currentTxs={currentTxs}
-                  connectionComplete={setupWeb3}
+                  connectionComplete={setupUserWalletWeb3}
                   rootCurrentBlock={currentBlock}
                   leavesCurrentBlock={leavesCurrentBlock}
                   hasGraphError={hasGraphError}

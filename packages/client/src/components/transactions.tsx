@@ -43,9 +43,10 @@ import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
-import {mapEventsToTx} from "../ethereum/events"
+import {mapEventsToTx, populateDates} from "../ethereum/events"
 import BigNumber from "bignumber.js"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
+import {assertIsString} from "@goldfinch-eng/utils"
 
 type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]
@@ -69,7 +70,7 @@ function Transactions(props: TransactionsProps) {
       await Promise.all(
         tranchedPoolsAddresses.map((address) =>
           goldfinchProtocol.queryEvents(
-            tranchedPools[address]!.contract,
+            tranchedPools[address]!.contract.readOnly,
             TRANCHED_POOL_EVENT_TYPES,
             undefined,
             currentBlock.number
@@ -77,7 +78,7 @@ function Transactions(props: TransactionsProps) {
         )
       )
     )
-    const poolTxs = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
+    let poolTxs = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
       parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
         switch (eventData.event) {
           case DEPOSIT_MADE_EVENT:
@@ -126,6 +127,7 @@ function Transactions(props: TransactionsProps) {
         }
       },
     })
+    poolTxs = await populateDates(poolTxs)
     setTranchedPoolTxs(poolTxs)
     setLeafCurrentBlock(currentRoute, currentBlock)
   }
@@ -192,6 +194,7 @@ function Transactions(props: TransactionsProps) {
           assertUnreachable(tx)
       }
     } else {
+      assertIsString(tx.date)
       txDate = tx.date
 
       switch (tx.amount.units) {
