@@ -506,23 +506,37 @@ function App() {
   }
 
   function setLeafCurrentBlock(route: AppRoute, newLeafCurrentBlock: BlockInfo) {
-    const existing = leavesCurrentBlock[route]
-    if (!existing || existing.number < newLeafCurrentBlock.number) {
-      setLeavesCurrentBlock((prevState) => ({...prevState, [route]: newLeafCurrentBlock}))
-    }
+    setLeavesCurrentBlock(
+      // NOTE: We must use the functional approach to updating state here (cf.
+      // https://reactjs.org/docs/hooks-reference.html#functional-updates), because
+      // otherwise `setLeavesCurrentBlock` returned by `useState` will not necessarily
+      // merge the new state object into the existing state object (instead it may
+      // replace the object entirely -- which is problematic for two synchronous calls
+      // of `setLeafCurrentBlock()`, as they're liable to clobber each other).
+      (prevState) => {
+        const existing = prevState[route]
+        if (!existing || existing.number < newLeafCurrentBlock.number) {
+          return {...prevState, [route]: newLeafCurrentBlock}
+        }
+        return prevState
+      }
+    )
   }
 
   function setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(
     route: AppRoute,
     newCurrentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo
   ) {
-    const existing = leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh[route]
-    if (!existing || existing.number < newCurrentBlockTriggeringLastSuccessfulGraphRefresh.number) {
-      setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh((prevState) => ({
-        ...prevState,
-        [route]: newCurrentBlockTriggeringLastSuccessfulGraphRefresh,
-      }))
-    }
+    setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh((prevState) => {
+      const existing = prevState[route]
+      if (!existing || existing.number < newCurrentBlockTriggeringLastSuccessfulGraphRefresh.number) {
+        return {
+          ...prevState,
+          [route]: newCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+        }
+      }
+      return prevState
+    })
   }
 
   const store: GlobalState = {
