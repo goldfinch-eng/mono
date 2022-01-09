@@ -6,7 +6,7 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
 import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
-import {useSession, useSignIn} from "../hooks/useSignIn"
+import {useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {
   ACCEPT_TX_TYPE,
@@ -48,8 +48,7 @@ interface NetworkWidgetProps {
 
 function NetworkWidget(props: NetworkWidgetProps) {
   const {userWalletWeb3Status} = useContext(AppContext)
-  const session = useSession()
-  const [, signIn] = useSignIn()
+  const [session, signIn] = useSignIn()
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
 
   async function enableMetamask(): Promise<void> {

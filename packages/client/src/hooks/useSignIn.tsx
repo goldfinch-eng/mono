@@ -32,7 +32,7 @@ interface SessionLocalStorageType {
 }
 
 function getSession(info: GetSessionInfo | undefined): Session {
-  if (info?.signature) {
+  if (info?.signature && info?.address) {
     const signature = info.signature
     const signatureBlockNum = info.signatureBlockNum
     return {status: "authenticated", signature, signatureBlockNum}
