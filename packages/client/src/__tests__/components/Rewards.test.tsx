@@ -95,21 +95,21 @@ function renderRewards(
     signatureBlockNumTimestamp: currentBlock.timestamp,
     version: 1,
   }
-  let defaultUserWeb3Status
+  let defaultUserWalletWeb3Status
   if (deps.user) {
-    defaultUserWeb3Status = {
+    defaultUserWalletWeb3Status = {
       type: "connected",
       networkName: "localhost",
       address: deps.user.address,
     }
   } else {
-    defaultUserWeb3Status = {
+    defaultUserWalletWeb3Status = {
       type: "no_web3",
       networkName: undefined,
       address: undefined,
     }
   }
-  userWalletWeb3Status = userWalletWeb3Status || defaultUserWeb3Status
+  userWalletWeb3Status = userWalletWeb3Status || defaultUserWalletWeb3Status
   const setLeafCurrentBlock = (route: AppRoute, currentBlock: BlockInfo) => {
     // pass
   }
