@@ -14,7 +14,7 @@ import {POOL_CREATED_EVENT} from "../types/events"
 import {CapitalProvider} from "../ethereum/pool"
 import {RINKEBY} from "../ethereum/utils"
 import useNonNullContext from "./useNonNullContext"
-import {getTranchedPoolsData} from "../graphql/types"
+import {getTranchedPoolsData, getTranchedPoolsData_tranchedPools} from "../graphql/types"
 import {usdcToAtomic} from "../ethereum/erc20"
 import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
 
@@ -55,12 +55,11 @@ export function useTranchedPoolSubgraphData(
 
   useEffect(() => {
     async function parseData(
-      data: getTranchedPoolsData,
+      tranchedPools: getTranchedPoolsData_tranchedPools[],
       goldfinchProtocol?: GoldfinchProtocol,
       currentBlock?: BlockInfo,
       userAddress?: string
     ) {
-      const {tranchedPools} = data
       const backers = await parseBackers(tranchedPools, goldfinchProtocol, currentBlock, userAddress)
       const activePoolBackers = backers.filter(
         (p) => p.tranchedPool.creditLine.limit.gte(MIN_POOL_LIMIT) && p.tranchedPool.metadata
@@ -71,12 +70,12 @@ export function useTranchedPoolSubgraphData(
       })
     }
 
-    if (userWalletWeb3Status?.type === "no_web3" && data) {
-      parseData(data)
+    if (userWalletWeb3Status?.type === "no_web3" && data?.tranchedPools) {
+      parseData(data.tranchedPools)
     }
 
-    if (userWalletWeb3Status?.type !== "no_web3" && data && goldfinchProtocol && currentBlock) {
-      parseData(data, goldfinchProtocol, currentBlock, user?.address)
+    if (userWalletWeb3Status?.type !== "no_web3" && data?.tranchedPools && goldfinchProtocol && currentBlock) {
+      parseData(data.tranchedPools, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, data, user?.address, currentBlock, userWalletWeb3Status])

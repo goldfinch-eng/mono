@@ -297,8 +297,8 @@ export interface getTranchedPoolsData {
    * Access to subgraph metadata
    */
   _meta: getTranchedPoolsData__meta | null
-  seniorPools: getTranchedPoolsData_seniorPools[]
-  tranchedPools: getTranchedPoolsData_tranchedPools[]
+  seniorPools: getTranchedPoolsData_seniorPools[] | undefined
+  tranchedPools: getTranchedPoolsData_tranchedPools[] | undefined
 }
 
 /* tslint:disable */
