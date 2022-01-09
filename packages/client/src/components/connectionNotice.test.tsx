@@ -10,7 +10,6 @@ import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
 import {KYC} from "../hooks/useGoldfinchClient"
-import {SessionData} from "../types/session"
 import {UserWalletWeb3Status} from "../types/web3"
 import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
 
@@ -74,37 +73,12 @@ const scenarios: Scenario[] = [
     expectedText: /You are on an unsupported network, please switch to Ethereum mainnet/,
   },
   {
-    devName: "not_connected_to_metamask",
-    setUpMatch: ({store}) => {
-      store.userWalletWeb3Status = hasWeb3
-    },
-    setUpFallthrough: ({store}) => {
-      store.userWalletWeb3Status = connected
-      store.user = {
-        address: testUserAddress,
-        info: {loaded: true, value: {goListed: false}},
-      } as UserLoaded
-    },
-    expectedText: /You are not currently connected to Metamask./,
-  },
-  {
-    devName: "connected_user_with_expired_session",
-    setUpMatch: ({store, props}) => {
-      store.userWalletWeb3Status = connected
-      store.user = {
-        address: testUserAddress,
-        info: {loaded: true, value: {goListed: false}},
-      } as UserLoaded
-      store.sessionData = {signatureBlockNum: 42, signatureBlockNumTimestamp: 47} as SessionData
-    },
-    setUpFallthrough: ({store}) => {
-      store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
-    },
-    expectedText: /Your session has expired. To use Goldfinch, you first need to reconnect to Metamask./,
-  },
-  {
     devName: "no_credit_line",
     setUpMatch: ({store, props}) => {
+      store.user = {
+        address: testUserAddress,
+        info: {loaded: true, value: {goListed: false}},
+      } as UserLoaded
       store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
       defaultCreditLine.loaded = true
       props.creditLine = defaultCreditLine as unknown as CreditLine
@@ -117,6 +91,10 @@ const scenarios: Scenario[] = [
   {
     devName: "no_golist",
     setUpMatch: ({store, props}) => {
+      store.user = {
+        address: testUserAddress,
+        info: {loaded: true, value: {goListed: false}},
+      } as UserLoaded
       props.requireGolist = true
     },
     setUpFallthrough: ({props}) => {
