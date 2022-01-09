@@ -275,7 +275,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (userWalletWeb3Status?.type === "connected" && session.status === "authenticated") {
+  } else {
     const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
     return (
       <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
