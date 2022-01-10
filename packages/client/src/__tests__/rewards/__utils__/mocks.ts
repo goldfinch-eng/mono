@@ -366,7 +366,7 @@ export async function mockUserRelatedInitializationContractCalls(
       filter: Filter | undefined,
       toBlock: BlockNumber
     ): Promise<KnownEventData<T>[]> => {
-      if (contract === merkleDistributor.contract) {
+      if (contract === merkleDistributor.contract.readOnly) {
         if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
           if (isEqual(filter, {tokenId: communityRewardsTokenId})) {
             if (toBlock === 94) {
@@ -583,7 +583,7 @@ export async function mockStakeFiduBannerCalls(
       return: allowanceAmount,
     },
   })
-  web3.eth.getGasPrice = () => {
+  web3.userWallet.eth.getGasPrice = () => {
     return Promise.resolve("100000000")
   }
   const approvalMock = mock({

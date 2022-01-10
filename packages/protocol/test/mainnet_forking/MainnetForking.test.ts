@@ -35,7 +35,6 @@ import {
   getOnlyLog,
   getFirstLog,
 } from "../testHelpers"
-import * as migrate232 from "../../blockchain_scripts/migrations/v2.3.2/migrate"
 import * as migrate231 from "../../blockchain_scripts/migrations/v2.3.1/migrate"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -78,8 +77,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
-  await migrate232.main()
-  // await migrate231.main()
+  await migrate231.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -538,7 +536,6 @@ describe("mainnet forking tests", async function () {
         }))
 
         reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
-        await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, usdcVal(40000000), {from: MAINNET_MULTISIG})
 
         await erc20Approve(usdc, tranchedPool.address, usdcVal(100000), [owner])
         await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)

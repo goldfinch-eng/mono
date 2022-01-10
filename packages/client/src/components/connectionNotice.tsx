@@ -10,7 +10,7 @@ import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
 import {useContext} from "react"
 import {NetworkConfig} from "../types/network"
-import {Web3Status} from "../types/web3"
+import {UserWalletWeb3Status} from "../types/web3"
 import Banner from "./banner"
 import {iconInfo} from "./icons"
 
@@ -35,7 +35,7 @@ function TextBanner({children}: React.PropsWithChildren<{}>) {
 interface ConditionProps extends ConnectionNoticeProps {
   network: NetworkConfig | undefined
   user: UserLoaded | undefined
-  web3Status: Web3Status | undefined
+  userWalletWeb3Status: UserWalletWeb3Status | undefined
   session: Session
   location: any
 }
@@ -49,7 +49,7 @@ interface ConnectionNoticeStrategy {
 export const strategies: ConnectionNoticeStrategy[] = [
   {
     devName: "install_metamask",
-    match: ({web3Status}) => web3Status?.type === "no_web3",
+    match: ({userWalletWeb3Status}) => userWalletWeb3Status?.type === "no_web3",
     render: (_props) => (
       <TextBanner>
         In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}
@@ -64,23 +64,6 @@ export const strategies: ConnectionNoticeStrategy[] = [
       <Banner variant="warning" icon={iconInfo}>
         You are on an unsupported network, please switch to Ethereum mainnet.
       </Banner>
-    ),
-  },
-  {
-    devName: "not_connected_to_metamask",
-    match: ({session, web3Status}) =>
-      web3Status?.type === "has_web3" || (web3Status?.type === "connected" && session.status === "unknown"),
-    render: (_props) => (
-      <TextBanner>
-        You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
-      </TextBanner>
-    ),
-  },
-  {
-    devName: "connected_user_with_expired_session",
-    match: ({session, web3Status}) => web3Status?.type === "connected" && session.status === "known",
-    render: (_props) => (
-      <TextBanner>Your session has expired. To use Goldfinch, you first need to reconnect to Metamask.</TextBanner>
     ),
   },
   {
@@ -175,7 +158,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     requireGolist: false,
     ...props,
   }
-  const {network, user, web3Status} = useContext(AppContext)
+  const {network, user, userWalletWeb3Status} = useContext(AppContext)
   const session = useSession()
   let location = useLocation()
 
@@ -184,7 +167,7 @@ function ConnectionNotice(props: ConnectionNoticeProps) {
     user,
     session,
     location,
-    web3Status,
+    userWalletWeb3Status,
     ...props,
   }
 

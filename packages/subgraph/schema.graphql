@@ -8,7 +8,7 @@ Notes
 type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
-  lastestPoolStatus: SeniorPoolStatus!
+  latestPoolStatus: SeniorPoolStatus!
   investmentsMade: [TranchedPool!]!
 }
 

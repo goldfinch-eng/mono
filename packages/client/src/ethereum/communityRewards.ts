@@ -5,6 +5,7 @@ import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {CommunityRewardsEventType, KnownEventData} from "../types/events"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
+import {Web3IO} from "../types/web3"
 import {BlockInfo, displayNumber} from "../utils"
 import {gfiFromAtomic} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -95,7 +96,7 @@ export type CommunityRewardsLoaded = WithLoadedInfo<CommunityRewards, CommunityR
 
 export class CommunityRewards {
   goldfinchProtocol: GoldfinchProtocol
-  contract: CommunityRewardsContract
+  contract: Web3IO<CommunityRewardsContract>
   address: string
   info: Loadable<CommunityRewardsLoadedInfo>
 
@@ -125,7 +126,7 @@ export class CommunityRewards {
     toBlock: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     const events = await this.goldfinchProtocol.queryEvents(
-      this.contract,
+      this.contract.readOnly,
       eventNames,
       {
         ...(filter || {}),

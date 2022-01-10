@@ -242,7 +242,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     return (
       info.withdraw
         ? sendFromUser(
-            pool.contract.methods.withdrawInFidu(info.withdraw.fiduAmount.toString(10)),
+            pool.contract.userWallet.methods.withdrawInFidu(info.withdraw.fiduAmount.toString(10)),
             {
               type: WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
               data: {
@@ -259,11 +259,11 @@ function WithdrawalForm(props: WithdrawalFormProps) {
       info.unstakeAndWithdraw
         ? sendFromUser(
             info.unstakeAndWithdraw.tokens.length === 1
-              ? stakingRewards.contract.methods.unstakeAndWithdrawInFidu(
+              ? stakingRewards.contract.userWallet.methods.unstakeAndWithdrawInFidu(
                   info.unstakeAndWithdraw.tokens[0]!.tokenId,
                   info.unstakeAndWithdraw.tokens[0]!.fiduAmount.toString(10)
                 )
-              : stakingRewards.contract.methods.unstakeAndWithdrawMultipleInFidu(
+              : stakingRewards.contract.userWallet.methods.unstakeAndWithdrawMultipleInFidu(
                   info.unstakeAndWithdraw.tokens.map((info) => info.tokenId),
                   info.unstakeAndWithdraw.tokens.map((info) => info.fiduAmount.toString(10))
                 ),
@@ -317,7 +317,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
           {displayNumber(gfiFromAtomic(props.capitalProvider.rewardsInfo.unvested), 2)}
           {" GFI ("}
           {displayDollars(props.capitalProvider.rewardsInfo.unvestedInDollars, 2)}
-          {") that is still vesting until "}
+          {") that is still locked until "}
           {lastVestingEnd!.toLocaleDateString(undefined, {
             year: "numeric",
             month: "short",
@@ -325,7 +325,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
           })}
           {". If you withdraw before then, you "}
           {props.capitalProvider.shares.parts.notStaked.gt(0) ? "might" : "will"}
-          {" forfeit a portion of your unvested GFI."}
+          {" forfeit a portion of your locked GFI."}
         </div>
       ) : undefined
     const protocolFeeAdvisory = (
@@ -368,7 +368,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
               {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
               {")"}
             </span>
-            {" that is still unvested"}
+            {" that is still locked"}
           </span>
         ) : undefined
         notes = [

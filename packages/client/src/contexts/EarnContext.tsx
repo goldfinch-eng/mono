@@ -4,7 +4,9 @@ import {SeniorPoolStatus} from "../components/earn"
 import {CapitalProvider} from "../ethereum/pool"
 import {PoolBacker} from "../ethereum/tranchedPool"
 import {usePoolBackersWeb3, useSeniorPoolStatusWeb3, useTranchedPoolSubgraphData} from "../hooks/useEarnData"
+import {UseGraphQuerierConfig} from "../hooks/useGraphQuerier"
 import {Loadable} from "../types/loadable"
+import {shouldUseWeb3} from "../utils"
 
 interface EarnStoreType {
   capitalProvider: Loadable<CapitalProvider>
@@ -13,6 +15,7 @@ interface EarnStoreType {
   poolsAddresses: Loadable<string[]>
 }
 interface EarnProviderProps {
+  graphQuerierConfig: UseGraphQuerierConfig
   children: React.ReactNode
 }
 
@@ -25,6 +28,7 @@ const EarnContext = React.createContext<EarnContextType | undefined>(undefined)
 
 export function usePoolsData(
   capitalProvider: Loadable<CapitalProvider>,
+  graphQuerierConfig: UseGraphQuerierConfig,
   useWeb3 = false
 ): {
   backers: Loadable<PoolBacker[]>
@@ -33,7 +37,7 @@ export function usePoolsData(
   graphError: ApolloError | undefined
 } {
   // Fetch data from subgraph
-  const {error, backers: backersSubgraph} = useTranchedPoolSubgraphData(useWeb3)
+  const {error: graphError, backers: backersSubgraph} = useTranchedPoolSubgraphData(graphQuerierConfig, useWeb3)
 
   // Fetch data from web3 provider
   const {backers: backersWeb3, poolsAddresses: poolsAddressesWeb3} = usePoolBackersWeb3(!useWeb3)
@@ -41,7 +45,6 @@ export function usePoolsData(
 
   const seniorPoolStatusData = seniorPoolStatusWeb3
   const backersData = useWeb3 ? backersWeb3 : backersSubgraph
-  const errorData = useWeb3 ? undefined : error
   const poolsAddressesData: Loadable<string[]> = useWeb3
     ? poolsAddressesWeb3
     : {
@@ -51,23 +54,14 @@ export function usePoolsData(
 
   return {
     backers: backersData,
-    graphError: errorData,
+    graphError,
     poolsAddresses: poolsAddressesData,
     seniorPoolStatus: seniorPoolStatusData,
   }
 }
 
-function shouldUseWeb3(useWeb3Default: boolean): boolean {
-  if (process.env.NODE_ENV !== "production" && process.env.REACT_APP_HARDHAT_FORK) {
-    console.warn("Cannot use subgraph locally with mainnet forking, using web3 to make requests.")
-    return true
-  }
-
-  return useWeb3Default || process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
-}
-
-function EarnProvider({children}: EarnProviderProps) {
-  const [useWeb3, setUseWeb3] = useState<boolean>(shouldUseWeb3(false))
+function EarnProvider(props: EarnProviderProps) {
+  const [useWeb3, setUseWeb3] = useState<boolean>(shouldUseWeb3())
   const [earnStore, setEarnStore] = useState<EarnStoreType>({
     capitalProvider: {
       loaded: false,
@@ -87,11 +81,15 @@ function EarnProvider({children}: EarnProviderProps) {
     },
   })
 
-  const {backers, poolsAddresses, graphError, seniorPoolStatus} = usePoolsData(earnStore.capitalProvider, useWeb3)
+  const {backers, poolsAddresses, graphError, seniorPoolStatus} = usePoolsData(
+    earnStore.capitalProvider,
+    props.graphQuerierConfig,
+    useWeb3
+  )
 
   useEffect(() => {
     if (graphError) {
-      console.error("Activating fallback to Web3", graphError)
+      console.error("Activating fallback to Web3.", graphError)
       setUseWeb3(true)
     }
   }, [graphError])
@@ -106,7 +104,7 @@ function EarnProvider({children}: EarnProviderProps) {
     setEarnStore,
   }
 
-  return <EarnContext.Provider value={value}>{children}</EarnContext.Provider>
+  return <EarnContext.Provider value={value}>{props.children}</EarnContext.Provider>
 }
 
 function useEarn() {

@@ -9,7 +9,7 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
     }
     seniorPools(first: 1) {
       id
-      lastestPoolStatus {
+      latestPoolStatus {
         id
         rawBalance
         compoundBalance
@@ -45,6 +45,28 @@ export const GET_SENIOR_POOL_AND_PROVIDER_DATA = gql`
         shares
         blockNumber
         timestamp
+      }
+    }
+  }
+`
+
+export const GET_SENIOR_POOL_STATUS = gql`
+  query getSeniorPool {
+    _meta {
+      block {
+        number
+      }
+    }
+    seniorPool(id: "0x8481a6ebaf5c7dabc3f7e09e44a89531fd31f822") {
+      latestPoolStatus {
+        id
+        rawBalance
+        compoundBalance
+        balance
+        totalShares
+        sharePrice
+        totalPoolAssets
+        totalLoansOutstanding
       }
     }
   }

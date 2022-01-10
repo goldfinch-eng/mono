@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from "react"
-import {ApolloError, useQuery} from "@apollo/client"
+import {ApolloError} from "@apollo/client"
 import _ from "lodash"
 import {AppContext} from "../App"
 import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
@@ -14,8 +14,9 @@ import {POOL_CREATED_EVENT} from "../types/events"
 import {CapitalProvider} from "../ethereum/pool"
 import {RINKEBY} from "../ethereum/utils"
 import useNonNullContext from "./useNonNullContext"
-import {getTranchedPoolsData as QueryResult} from "../graphql/types"
+import {getTranchedPoolsData, getTranchedPoolsData_tranchedPools} from "../graphql/types"
 import {usdcToAtomic} from "../ethereum/erc20"
+import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
 
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
@@ -32,27 +33,33 @@ function sortPoolBackers(poolBackers: PoolBacker[]): PoolBacker[] {
   )
 }
 
-export function useTranchedPoolSubgraphData(skip = false): {
+export function useTranchedPoolSubgraphData(
+  graphQuerierConfig: UseGraphQuerierConfig,
+  skip = false
+): {
   backers: Loadable<PoolBacker[]>
   loading: boolean
   error: ApolloError | undefined
 } {
-  const {goldfinchProtocol, currentBlock, user, web3Status} = useNonNullContext(AppContext)
+  const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useNonNullContext(AppContext)
   const [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
     loaded: false,
     value: undefined,
   })
 
-  const {loading, error, data} = useQuery(GET_TRANCHED_POOLS_DATA, {skip})
+  const {loading, error, data} = useGraphQuerier<getTranchedPoolsData>(
+    graphQuerierConfig,
+    GET_TRANCHED_POOLS_DATA,
+    skip
+  )
 
   useEffect(() => {
     async function parseData(
-      data: QueryResult,
+      tranchedPools: getTranchedPoolsData_tranchedPools[],
       goldfinchProtocol?: GoldfinchProtocol,
       currentBlock?: BlockInfo,
       userAddress?: string
     ) {
-      const {tranchedPools} = data
       const backers = await parseBackers(tranchedPools, goldfinchProtocol, currentBlock, userAddress)
       const activePoolBackers = backers.filter(
         (p) => p.tranchedPool.creditLine.limit.gte(MIN_POOL_LIMIT) && p.tranchedPool.metadata
@@ -63,15 +70,15 @@ export function useTranchedPoolSubgraphData(skip = false): {
       })
     }
 
-    if (web3Status?.type === "no_web3" && data) {
-      parseData(data)
+    if (userWalletWeb3Status?.type === "no_web3" && data?.tranchedPools) {
+      parseData(data.tranchedPools)
     }
 
-    if (web3Status?.type !== "no_web3" && data && goldfinchProtocol && currentBlock) {
-      parseData(data, goldfinchProtocol, currentBlock, user?.address)
+    if (userWalletWeb3Status?.type !== "no_web3" && data?.tranchedPools && goldfinchProtocol && currentBlock) {
+      parseData(data.tranchedPools, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goldfinchProtocol, data, user?.address, currentBlock, web3Status])
+  }, [goldfinchProtocol, data, user?.address, currentBlock, userWalletWeb3Status])
 
   return {loading, error, backers}
 }
@@ -92,6 +99,7 @@ export function usePoolBackersWeb3(skip = false): {
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
+      user = user || {address: undefined}
       let poolEvents = await goldfinchProtocol.queryEvents(
         "GoldfinchFactory",
         [POOL_CREATED_EVENT],
@@ -122,7 +130,7 @@ export function usePoolBackersWeb3(skip = false): {
       })
     }
 
-    if (goldfinchProtocol && user && currentBlock && !skip) {
+    if (goldfinchProtocol && currentBlock && !skip) {
       loadTranchedPools(goldfinchProtocol, user, currentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,12 +150,12 @@ export function useSeniorPoolStatusWeb3(
   })
 
   useEffect(() => {
-    if (pool && goldfinchConfig && capitalProvider.loaded && !skip) {
+    if (pool && goldfinchConfig && !skip) {
       setSeniorPoolStatus({
         loaded: true,
         value: {
           totalPoolAssets: pool.info.value.poolData.totalPoolAssets,
-          availableToWithdrawInDollars: capitalProvider.value.availableToWithdrawInDollars,
+          availableToWithdrawInDollars: capitalProvider.value?.availableToWithdrawInDollars,
           estimatedApy: pool.info.value.poolData.estimatedApy,
           totalFundsLimit: goldfinchConfig.totalFundsLimit,
           remainingCapacity: goldfinchConfig

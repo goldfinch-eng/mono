@@ -28,7 +28,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     const pool = consistent[0]
     const user = consistent[1]
     const stakingRewards = consistent[2]
-    const amount = new BigNumber(await pool.fidu.methods.balanceOf(user.address).call(undefined, "latest"))
+    const amount = new BigNumber(await pool.fidu.userWallet.methods.balanceOf(user.address).call(undefined, "latest"))
 
     // For the StakingRewards contract to be able to transfer the user's FIDU as part of
     // staking (more precisely, staking directly via `stake()`, as opposed to via `depositAndStake*()`),
@@ -36,12 +36,12 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     // to be transferred. So if the StakingRewards contract is not already thusly approved,
     // staking requires two transactions: one to grant the approval, then one to actually stake.
     const alreadyApprovedAmount = new BigNumber(
-      await pool.fidu.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
+      await pool.fidu.userWallet.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
     )
     const amountRequiringApproval = amount.minus(alreadyApprovedAmount)
     const approval = amountRequiringApproval.gt(0)
       ? sendFromUser(
-          pool.fidu.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
+          pool.fidu.userWallet.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
           {
             type: FIDU_APPROVAL_TX_TYPE,
             data: {
@@ -53,7 +53,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
       : Promise.resolve()
     return approval
       .then(() =>
-        sendFromUser(stakingRewards.contract.methods.stake(amount.toString(10)), {
+        sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10)), {
           type: STAKE_TX_TYPE,
           data: {
             fiduAmount: fiduFromAtomic(amount),
@@ -86,7 +86,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
             )} FIDU (${displayDollars(
               props.capitalProvider.availableToStakeInDollars,
               2
-            )}) that is not staked. Stake your FIDU to earn an estimated ${displayPercent(
+            )}) that is not staked. Stake your FIDU to earn an additional estimated ${displayPercent(
               // NOTE: We do not try to optimistically estimate here what the APY from GFI rewards
               // would be *after* staking -- that is, we don't take into account how the amount
               // of FIDU the user would stake would affect the amount of GFI rewards thenceforth earned
@@ -99,7 +99,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
               // estimating values that would differ for different users, it seems better to consistently
               // report, in this context, one estimated value that is the same for all users.
               pool.info.value.poolData.estimatedApyFromGfi
-            )} APY in GFI rewards.`}
+            )} APY in GFI.`}
           </div>
           <LoadingButton disabled={disabled} action={stake} text="Stake all FIDU" />
         </div>
