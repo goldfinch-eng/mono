@@ -7,7 +7,7 @@ import sinon from "sinon"
 import {AppContext} from "../../App"
 import WithdrawalForm from "../../components/withdrawalForm"
 import {usdcToAtomic} from "../../ethereum/erc20"
-import {GFILoaded} from "../../ethereum/gfi"
+import {COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
@@ -108,6 +108,25 @@ describe("withdrawal form", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
+
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      const url = input.toString()
+      if (url === COINGECKO_API_GFI_PRICE_URL) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              goldfinch: {
+                usd: 2,
+              },
+            }),
+        } as Response)
+      } else {
+        throw new Error(`Unexpected fetch url: ${url}`)
+      }
+    })
+
     resetAirdropMocks()
 
     await goldfinchProtocol.initialize()
@@ -172,7 +191,7 @@ describe("withdrawal form", () => {
     const formParagraph = await container.getElementsByClassName("paragraph")
 
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 128.89 GFI ($128.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI."
+      "You have 128.89 GFI ($257.78) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI."
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
@@ -195,7 +214,7 @@ describe("withdrawal form", () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
       expect(screen.getByText("receive $19,900.00")).toBeVisible()
-      expect(screen.getByText("forfeit 51.40 GFI ($51.40)")).toBeVisible()
+      expect(screen.getByText("forfeit 51.40 GFI ($102.81)")).toBeVisible()
     })
   })
 
@@ -215,7 +234,7 @@ describe("withdrawal form", () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "10,000")
       expect(screen.getByText("receive $9,950.00")).toBeVisible()
-      expect(screen.getByText("forfeit 25.64 GFI ($25.64)")).toBeVisible()
+      expect(screen.getByText("forfeit 25.64 GFI ($51.27)")).toBeVisible()
     })
   })
 
@@ -236,7 +255,7 @@ describe("withdrawal form", () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "8,000")
       expect(screen.getByText("receive $7,960.00")).toBeVisible()
-      expect(screen.getByText("forfeit 20.48 GFI ($20.48)")).toBeVisible()
+      expect(screen.getByText("forfeit 20.48 GFI ($40.97)")).toBeVisible()
     })
   })
 
@@ -259,7 +278,7 @@ describe("withdrawal form", () => {
 
     const formParagraph = await container.getElementsByClassName("paragraph")
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 265.94 GFI ($265.94) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
+      "You have 265.94 GFI ($531.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
@@ -290,7 +309,7 @@ describe("withdrawal form", () => {
 
       const formParagraph = await container.getElementsByClassName("paragraph")
       expect(formParagraph[0]?.textContent).not.toContain(
-        "You have 265.94 GFI ($265.94) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
+        "You have 265.94 GFI ($531.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
       )
     })
   })
