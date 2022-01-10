@@ -937,6 +937,9 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
 
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("Unclaimed")).toBeVisible()
+
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
       `https://${network.name}.etherscan.io/address/${deps.merkleDistributor.address}`
@@ -971,6 +974,9 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Jan 11, 2023")).toBeVisible()
 
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("Unclaimed")).toBeVisible()
+
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
       `https://${network.name}.etherscan.io/address/${deps.merkleDistributor.address}`
@@ -998,6 +1004,9 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("Unclaimed")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1071,8 +1080,8 @@ describe("Rewards list and detail", () => {
     expect(screen.getByText("129.60 GFI to date • Dec 29, 2021")).toBeVisible()
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
-    expect(await screen.getAllByText("Claim GFI").length).toBe(1)
-    expect(await screen.getAllByText("Claimed").length).toBe(1)
+    expect(screen.getAllByTestId("action-button")[0]?.textContent).toEqual("Claim GFI")
+    expect(screen.getAllByTestId("action-button")[1]?.textContent).toEqual("Claimed")
 
     expect(screen.getAllByTestId("detail-unvested")[0]?.textContent).toEqual("128.89")
     expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.71")
@@ -1084,8 +1093,10 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
-    expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual(
+      "$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI"
+    )
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -1108,6 +1119,9 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual("Claimed")
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1168,8 +1182,10 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
 
-    expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI")).toBeVisible()
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual(
+      "$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI"
+    )
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1186,6 +1202,9 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual("Claimed")
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1267,7 +1286,7 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
-    expect(screen.getAllByText("Claimed").length).toBe(1)
+    expect(screen.getByTestId("action-button").textContent).toEqual("Claimed")
 
     expect(screen.getAllByTestId("detail-unvested")[0]?.textContent).toEqual("0.00")
     expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.00")
@@ -1281,6 +1300,9 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual("Claimed")
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",

@@ -109,6 +109,7 @@ function ActionButton(props: ActionButtonProps) {
 
   return (
     <button
+      data-testid="action-button"
       disabled={props.disabled}
       className={`${!isTabletOrMobile && "table-cell"} action ${disabledClass}`}
       onClick={action}
@@ -135,16 +136,15 @@ type BaseItemDetails = {
   shortTransactionDetails: string
   vestingSchedule: string
   vestingStatus: string
+  claimStatus: string
   etherscanAddress: string
 }
 type FullItemDetails<T> = BaseItemDetails & {
   type: T
-  claimStatus: string
   currentEarnRate: string
 }
 type LimitedItemDetails<T> = BaseItemDetails & {
   type: T
-  claimStatus: string | undefined
   currentEarnRate: undefined
 }
 type StakingRewardsDetails = FullItemDetails<StakingRewardsRewardType>
@@ -179,8 +179,8 @@ function Details(props: DetailsProps) {
             <DetailValue>{vestingSchedule}</DetailValue>
           </Detail>
           <Detail>
-            <DetailLabel>Claim status</DetailLabel>
-            <DetailValue>{claimStatus}</DetailValue>
+            <DetailLabel data-testid="claim-status-label">Claim status</DetailLabel>
+            <DetailValue data-testid="claim-status-value">{claimStatus}</DetailValue>
           </Detail>
         </Column>
         <Column>
@@ -215,8 +215,8 @@ function Details(props: DetailsProps) {
             <DetailValue>{vestingSchedule}</DetailValue>
           </Detail>
           <Detail>
-            <DetailLabel>Claim status</DetailLabel>
-            <DetailValue>{claimStatus}</DetailValue>
+            <DetailLabel data-testid="claim-status-label">Claim status</DetailLabel>
+            <DetailValue data-testid="claim-status-value">{claimStatus}</DetailValue>
           </Detail>
         </Column>
       </ColumnsContainer>
@@ -337,16 +337,7 @@ function RewardsListItem(props: RewardsListItemProps) {
                   </div>
                 </div>
                 <div className="detail-container">
-                  <span className="detail-label">
-                    {
-                      // NOTE: Consistently with our approach in the rewards summary and rewards list item
-                      // column labels, we describe the value to the user here as what's vested, though the
-                      // value we use is what's claimable. What's claimable is the relevant piece of information
-                      // that informs their understanding of whether they should be able to take any action
-                      // with the list item button.
-                      "Claimable GFI"
-                    }
-                  </span>
+                  <span className="detail-label">Claimable GFI</span>
                   <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
                     {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
                   </div>
@@ -478,7 +469,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
       new BigNumber(item.grantInfo.grant.vestingInterval),
       vestingLength ? {absolute: false, value: vestingLength} : null
     ),
-    claimStatus: undefined,
+    claimStatus: "Unclaimed",
     currentEarnRate: undefined,
     vestingStatus: `${displayDollars(
       gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
@@ -497,7 +488,7 @@ function getMerkleDirectDistributorGrantDetails(
     shortTransactionDetails: getAirdropShortTransactionDetails(TOKEN_LAUNCH_TIME_IN_SECONDS, item.granted),
     transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI for participating ${displayReason}`,
     vestingSchedule: getDirectGrantVestingSchedule(),
-    claimStatus: undefined,
+    claimStatus: item.accepted ? "Claimed" : "Unclaimed",
     currentEarnRate: undefined,
     vestingStatus: `${displayDollars(
       gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
