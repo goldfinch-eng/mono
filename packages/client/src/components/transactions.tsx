@@ -315,13 +315,28 @@ function Transactions(props: TransactionsProps) {
 
   // Only show txs from currentTxs that are not already in user.pastTxs
   let pendingTxs = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
-  let allTxs = _.reverse(
-    _.sortBy(_.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])]), [
-      "blockNumber",
-      "transactionIndex",
-    ])
-  )
+  const compactTxs = _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])])
+  let allTxs = _.reverse(_.sortBy(compactTxs, ["blockNumber", "transactionIndex"]))
   allTxs = _.uniqBy(allTxs, "eventId")
+
+  // When you supply and stake, it adds a $0.00 Approval transaction that we want to remove so that we do not confuse the user with an approval amount that they did not explicitly take an action on
+  const unReversed = _.sortBy(compactTxs, ["blockNumber", "transactionIndex"])
+  let hasSeenSupplyInCurrentBlock = false
+  allTxs = unReversed.reduce((prev, curr) => {
+    if (curr.name === SUPPLY_TX_TYPE) {
+      hasSeenSupplyInCurrentBlock = true
+    } else if (
+      hasSeenSupplyInCurrentBlock &&
+      [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
+    ) {
+      return prev
+    } else {
+      hasSeenSupplyInCurrentBlock = false
+    }
+    prev.push(curr)
+    return prev
+  }, [] as any)
+
   let transactionRows: React.ReactNode[] = [
     <tr key="empty-row" className="empty-row">
       <td>No transactions</td>
