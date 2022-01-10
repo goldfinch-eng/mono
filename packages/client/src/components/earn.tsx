@@ -14,13 +14,14 @@ import {
 } from "../ethereum/pool"
 import {PoolBacker} from "../ethereum/tranchedPool"
 import {UserLoaded} from "../ethereum/user"
-import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {Loadable, Loaded} from "../types/loadable"
 import {InfoIcon} from "../ui/icons"
 import {assertNonNullable, displayDollars, displayPercent, roundDownPenny} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
+import {ONE_QUADRILLION_USDC} from "../ethereum/utils"
 
 function PoolList({title, children}) {
   return (
@@ -160,7 +161,7 @@ function SeniorPoolCardSkeleton() {
 
 export type SeniorPoolStatus = {
   totalPoolAssets: BigNumber
-  availableToWithdrawInDollars: BigNumber
+  availableToWithdrawInDollars: BigNumber | undefined
   estimatedApy: BigNumber | undefined
   totalFundsLimit: BigNumber | undefined
   remainingCapacity: BigNumber | undefined
@@ -169,7 +170,6 @@ export type SeniorPoolStatus = {
 export function SeniorPoolCard({balance, userBalance, apy, limit, remainingCapacity, disabled}) {
   const disabledClass = disabled ? "disabled" : ""
   const history = useHistory()
-
   return (
     <div
       key="senior-pool"
@@ -241,7 +241,7 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
         </div>
       </div>
       <div className={`${balanceDisabledClass} ${disabledClass} table-cell col22 numeric balance`}>
-        {displayDollars(poolBacker?.balanceInDollars)}
+        {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}
       </div>
       <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
       <div className={`table-cell col16 numeric apy ${disabledClass}`}>{displayPercent(estimatedApy)}</div>
@@ -302,8 +302,16 @@ function Earn() {
     }
   }
 
-  const loaded = pool && capitalProviderData.loaded && backersData.loaded && user
+  const loaded = pool && backersData.loaded
   const earnMessage = userWalletWeb3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
+  let limitToDisplay: string
+  if (seniorPoolStatus.value?.totalFundsLimit?.gte(ONE_QUADRILLION_USDC)) {
+    limitToDisplay = "No Limit"
+  } else if (seniorPoolStatus.value?.totalFundsLimit) {
+    limitToDisplay = displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalFundsLimit), 0)
+  } else {
+    limitToDisplay = displayDollars(undefined)
+  }
 
   return (
     <div className="content-section">
@@ -311,7 +319,7 @@ function Earn() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      {userWalletWeb3Status?.type === "no_web3" || !loaded ? (
+      {userWalletWeb3Status?.type === "no_web3" || !pool || !capitalProviderData.loaded || !backersData.loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview
@@ -327,12 +335,7 @@ function Earn() {
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
               userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
               apy={displayPercent(seniorPoolStatus.value.estimatedApy)}
-              limit={displayDollars(
-                seniorPoolStatus.value.totalFundsLimit
-                  ? usdcFromAtomic(seniorPoolStatus.value.totalFundsLimit)
-                  : undefined,
-                0
-              )}
+              limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}
             />

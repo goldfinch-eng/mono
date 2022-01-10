@@ -45,7 +45,7 @@ import {defaultTheme} from "./styles/theme"
 import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
-import web3, {SESSION_DATA_KEY} from "./web3"
+import web3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
 import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
 import getApolloClient from "./graphql/client"
@@ -322,30 +322,6 @@ function App() {
   // we'd use `useFromSameBlock()` again here. But holding off on that due to the decision to abandon
   // https://github.com/warbler-labs/mono/pull/140.
 
-  async function getUserWalletWeb3Status(): Promise<UserWalletWeb3Status> {
-    if (!window.ethereum) {
-      return {type: "no_web3", networkName: undefined, address: undefined}
-    }
-    let networkName: string
-    try {
-      // Sometimes it's possible that we can't communicate with the provider through which
-      // we want to send transactions, in which case treat as if we don't have web3.
-      networkName = await web3.userWallet.eth.net.getNetworkType()
-      if (!networkName) {
-        throw new Error("Falsy network type.")
-      }
-    } catch (e) {
-      return {type: "no_web3", networkName: undefined, address: undefined}
-    }
-    const accounts = await web3.userWallet.eth.getAccounts()
-    const address = accounts[0]
-    if (address) {
-      return {type: "connected", networkName, address}
-    } else {
-      return {type: "has_web3", networkName, address: undefined}
-    }
-  }
-
   async function setupUserWalletWeb3() {
     const _userWalletWeb3Status = await getUserWalletWeb3Status()
     setUserWalletWeb3Status(_userWalletWeb3Status)
@@ -486,7 +462,6 @@ function App() {
       merkleDirectDistributor,
       currentBlock
     )
-
     Sentry.setUser({
       // NOTE: The info we use here to identify / define the user for the purpose of
       // error tracking with Sentry MUST be kept consistent with (i.e. not exceed

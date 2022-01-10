@@ -38,9 +38,9 @@ import {
   VERIFY_ROUTE,
 } from "../../types/routes"
 import {SessionData} from "../../types/session"
-import {Web3IO} from "../../types/web3"
+import {UserWalletWeb3Status} from "../../types/web3"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import web3, {getUserWalletWeb3Status} from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {
@@ -86,7 +86,8 @@ function renderRewards(
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor,
   sessionData?: SessionData,
-  leavesCurrentBlock?: LeavesCurrentBlock
+  leavesCurrentBlock?: LeavesCurrentBlock,
+  userWalletWeb3Status?: UserWalletWeb3Status
 ) {
   sessionData = sessionData || {
     signature: "foo",
@@ -94,6 +95,21 @@ function renderRewards(
     signatureBlockNumTimestamp: currentBlock.timestamp,
     version: 1,
   }
+  let defaultUserWalletWeb3Status
+  if (deps.user) {
+    defaultUserWalletWeb3Status = {
+      type: "connected",
+      networkName: "localhost",
+      address: deps.user.address,
+    }
+  } else {
+    defaultUserWalletWeb3Status = {
+      type: "no_web3",
+      networkName: undefined,
+      address: undefined,
+    }
+  }
+  userWalletWeb3Status = userWalletWeb3Status || defaultUserWalletWeb3Status
   const setLeafCurrentBlock = (route: AppRoute, currentBlock: BlockInfo) => {
     // pass
   }
@@ -105,6 +121,7 @@ function renderRewards(
     network,
     networkMonitor,
     sessionData,
+    userWalletWeb3Status,
     ...deps,
   }
 

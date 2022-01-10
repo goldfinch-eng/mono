@@ -99,6 +99,7 @@ export function usePoolBackersWeb3(skip = false): {
 
   useEffect(() => {
     async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
+      user = user || {address: undefined}
       let poolEvents = await goldfinchProtocol.queryEvents(
         "GoldfinchFactory",
         [POOL_CREATED_EVENT],
@@ -129,7 +130,7 @@ export function usePoolBackersWeb3(skip = false): {
       })
     }
 
-    if (goldfinchProtocol && user && currentBlock && !skip) {
+    if (goldfinchProtocol && currentBlock && !skip) {
       loadTranchedPools(goldfinchProtocol, user, currentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,12 +150,12 @@ export function useSeniorPoolStatusWeb3(
   })
 
   useEffect(() => {
-    if (pool && goldfinchConfig && capitalProvider.loaded && !skip) {
+    if (pool && goldfinchConfig && !skip) {
       setSeniorPoolStatus({
         loaded: true,
         value: {
           totalPoolAssets: pool.info.value.poolData.totalPoolAssets,
-          availableToWithdrawInDollars: capitalProvider.value.availableToWithdrawInDollars,
+          availableToWithdrawInDollars: capitalProvider.value?.availableToWithdrawInDollars,
           estimatedApy: pool.info.value.poolData.estimatedApy,
           totalFundsLimit: goldfinchConfig.totalFundsLimit,
           remainingCapacity: goldfinchConfig
