@@ -172,7 +172,7 @@ describe("withdrawal form", () => {
     const formParagraph = await container.getElementsByClassName("paragraph")
 
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 128.89 GFI ($128.89) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI."
+      "You have 128.89 GFI ($128.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI."
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
@@ -259,7 +259,7 @@ describe("withdrawal form", () => {
 
     const formParagraph = await container.getElementsByClassName("paragraph")
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 265.94 GFI ($265.94) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+      "You have 265.94 GFI ($265.94) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
@@ -290,7 +290,7 @@ describe("withdrawal form", () => {
 
       const formParagraph = await container.getElementsByClassName("paragraph")
       expect(formParagraph[0]?.textContent).not.toContain(
-        "You have 265.94 GFI ($265.94) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+        "You have 265.94 GFI ($265.94) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
       )
     })
   })

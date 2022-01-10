@@ -155,7 +155,7 @@ function DepositForm(props: DepositFormProps) {
             <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
               <div>
                 <div className="checkbox-label-primary">
-                  <div>{`I want to stake my supply to earn GFI rewards (additional ${displayPercent(
+                  <div>{`I want to stake my supply to earn GFI (additional ${displayPercent(
                     pool.info.value.poolData.estimatedApyFromGfi
                   )} APY).`}</div>
                 </div>

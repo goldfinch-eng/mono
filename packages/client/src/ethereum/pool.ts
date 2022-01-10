@@ -849,11 +849,10 @@ class StakingRewards {
   async initialize(currentBlock: BlockInfo): Promise<void> {
     const [isPaused, currentEarnRate] = await Promise.all([
       this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
-      new BigNumber(0),
-      // this.contract.readOnly.methods
-      //   .currentEarnRatePerToken()
-      //   .call(undefined, currentBlock.number)
-      //   .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
+      this.contract.readOnly.methods
+        .currentEarnRatePerToken()
+        .call(undefined, currentBlock.number)
+        .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
     ])
 
     this.info = {

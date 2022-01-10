@@ -86,7 +86,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
             )} FIDU (${displayDollars(
               props.capitalProvider.availableToStakeInDollars,
               2
-            )}) that is not staked. Stake your FIDU to earn an estimated ${displayPercent(
+            )}) that is not staked. Stake your FIDU to earn an additional estimated ${displayPercent(
               // NOTE: We do not try to optimistically estimate here what the APY from GFI rewards
               // would be *after* staking -- that is, we don't take into account how the amount
               // of FIDU the user would stake would affect the amount of GFI rewards thenceforth earned
@@ -99,7 +99,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
               // estimating values that would differ for different users, it seems better to consistently
               // report, in this context, one estimated value that is the same for all users.
               pool.info.value.poolData.estimatedApyFromGfi
-            )} APY in GFI rewards.`}
+            )} APY in GFI.`}
           </div>
           <LoadingButton disabled={disabled} action={stake} text="Stake all FIDU" />
         </div>

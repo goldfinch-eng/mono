@@ -57,7 +57,7 @@ enum ActionButtonTexts {
   claiming = "Claiming...",
   claimGFI = "Claim GFI",
   claimed = "Claimed",
-  vesting = "Vesting",
+  vesting = "Still Locked",
 }
 
 interface ActionButtonProps {
@@ -175,7 +175,7 @@ function Details(props: DetailsProps) {
             <DetailValue>{transactionDetails}</DetailValue>
           </Detail>
           <Detail>
-            <DetailLabel>Vesting schedule</DetailLabel>
+            <DetailLabel>Unlock schedule</DetailLabel>
             <DetailValue>{vestingSchedule}</DetailValue>
           </Detail>
           <Detail>
@@ -189,7 +189,7 @@ function Details(props: DetailsProps) {
             <DetailValue>{currentEarnRate}</DetailValue>
           </Detail>
           <Detail>
-            <DetailLabel>Vesting status</DetailLabel>
+            <DetailLabel>Unlock status</DetailLabel>
             <DetailValue>{vestingStatus}</DetailValue>
           </Detail>
         </Column>
@@ -205,13 +205,13 @@ function Details(props: DetailsProps) {
             <DetailValue>{transactionDetails}</DetailValue>
           </Detail>
           <Detail>
-            <DetailLabel>Vesting status</DetailLabel>
+            <DetailLabel>Unlock status</DetailLabel>
             <DetailValue>{vestingStatus}</DetailValue>
           </Detail>
         </Column>
         <Column>
           <Detail>
-            <DetailLabel>Vesting schedule</DetailLabel>
+            <DetailLabel>Unlock schedule</DetailLabel>
             <DetailValue>{vestingSchedule}</DetailValue>
           </Detail>
           <Detail>
@@ -250,7 +250,7 @@ function ClaimForm(props: ClaimFormProps) {
       <div className="info-banner background-container subtle">
         <div className="message">
           Claim the total available {displayNumber(gfiFromAtomic(props.claimable), 2)} GFI (
-          {displayDollars(props.totalUSD)}) that has vested.
+          {displayDollars(props.totalUSD)}) that has unlocked.
         </div>
         <LoadingButton text="Submit" action={props.action} disabled={props.disabled} />
       </div>
@@ -331,7 +331,7 @@ function RewardsListItem(props: RewardsListItemProps) {
               </div>
               <div className="item-details">
                 <div className="detail-container">
-                  <span className="detail-label">Vesting GFI</span>
+                  <span className="detail-label">Locked GFI</span>
                   <div className={`${valueDisabledClass}`} data-testid="detail-unvested">
                     {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
                   </div>
@@ -448,7 +448,7 @@ function getClaimStatus(claimed: BigNumber, vested: BigNumber, gfiPrice: BigNumb
   )} GFI) claimed of your total vested ${displayNumber(gfiFromAtomic(vested), 2)} GFI`
 }
 function getVestingStatus(vested: BigNumber, granted: BigNumber): string {
-  return `${displayPercent(vested.dividedBy(granted))} (${displayNumber(gfiFromAtomic(vested), 2)} GFI) vested`
+  return `${displayPercent(vested.dividedBy(granted))} (${displayNumber(gfiFromAtomic(vested), 2)} GFI) unlocked`
 }
 function getCurrentEarnRate(currentEarnRate: BigNumber): string {
   return `+${displayNumber(gfiFromAtomic(currentEarnRate.multipliedBy(ONE_WEEK_SECONDS)), 2)} GFI granted per week`
@@ -472,7 +472,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
   return {
     type: "merkleDistributor",
     shortTransactionDetails: getAirdropShortTransactionDetails(TOKEN_LAUNCH_TIME_IN_SECONDS, item.granted),
-    transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI for participating ${displayReason}`,
     vestingSchedule: getGrantVestingSchedule(
       new BigNumber(item.grantInfo.grant.cliffLength),
       new BigNumber(item.grantInfo.grant.vestingInterval),
@@ -482,7 +482,7 @@ function getNotAcceptedMerkleDistributorGrantDetails(
     currentEarnRate: undefined,
     vestingStatus: `${displayDollars(
       gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
-    )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) vested`,
+    )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) unlocked`,
     etherscanAddress: merkleDistributor.address,
   }
 }
@@ -495,13 +495,13 @@ function getMerkleDirectDistributorGrantDetails(
   return {
     type: "merkleDirectDistributor",
     shortTransactionDetails: getAirdropShortTransactionDetails(TOKEN_LAUNCH_TIME_IN_SECONDS, item.granted),
-    transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI reward for participating ${displayReason}`,
+    transactionDetails: `${displayNumber(gfiFromAtomic(item.granted))} GFI for participating ${displayReason}`,
     vestingSchedule: getDirectGrantVestingSchedule(),
     claimStatus: undefined,
     currentEarnRate: undefined,
     vestingStatus: `${displayDollars(
       gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
-    )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) vested`,
+    )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) unlocked`,
     etherscanAddress: merkleDirectDistributor.address,
   }
 }
