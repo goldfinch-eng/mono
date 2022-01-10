@@ -6,13 +6,10 @@ import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../App"
 import WithdrawalForm from "../../components/withdrawalForm"
-import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {usdcToAtomic} from "../../ethereum/erc20"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
-import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
 import {
   CapitalProvider,
@@ -48,7 +45,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderWithdrawalForm(
   poolData: Partial<PoolData>,
@@ -321,7 +319,7 @@ describe("withdrawal form", () => {
           params: {tokenId: "1", fiduAmount: "19990871828478113245933"},
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()
@@ -370,7 +368,7 @@ describe("withdrawal form", () => {
           params: "19990871828478113245933",
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()
@@ -429,7 +427,7 @@ describe("withdrawal form", () => {
           params: {tokenId: "1", fiduAmount: "9990871828478113245933"},
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()
@@ -490,7 +488,7 @@ describe("withdrawal form", () => {
           params: {tokenIds: ["2", "1"], fiduAmounts: ["5000000000000000000000", "4999998169337911394299"]},
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()

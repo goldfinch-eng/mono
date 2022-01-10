@@ -35,7 +35,7 @@ import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
-const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641924000 // Tuesday, January 11, 2022 10:00:00 AM GMT-08:00
+const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
 const GFI_TOKEN_IMAGE_URL = `${
   process.env.NODE_ENV === "development"
     ? process.env.REACT_APP_MURMURATION === "yes"
@@ -68,11 +68,16 @@ interface ActionButtonProps {
 
 function ActionButton(props: ActionButtonProps) {
   const currentRoute = useCurrentRoute()
-  const {currentBlock, leavesCurrentBlock} = useNonNullContext(AppContext)
+  const {currentBlock, leavesCurrentBlock, leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh} =
+    useNonNullContext(AppContext)
   assertNonNullable(currentRoute)
   const [isPending, setIsPending] = useState<boolean>(false)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const isRefreshing = getIsRefreshing(currentBlock, leavesCurrentBlock?.[currentRoute])
+  const isRefreshing = getIsRefreshing(
+    currentBlock,
+    leavesCurrentBlock?.[currentRoute],
+    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh?.[currentRoute]
+  )
   const disabledClass = props.disabled || isPending || isRefreshing ? "disabled-button" : ""
 
   async function action(evt: any): Promise<void> {
@@ -620,7 +625,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     assertNonNullable(rewards)
     const previousGfiBalance = props.user.info.value.gfiBalance
     await sendFromUser(
-      rewards.contract.methods.getReward(tokenId),
+      rewards.contract.userWallet.methods.getReward(tokenId),
       {
         type: CLAIM_TX_TYPE,
         data: {},
@@ -633,7 +638,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
     assertNonNullable(props.merkleDistributor)
     return sendFromUser(
-      props.merkleDistributor.contract.methods.acceptGrant(
+      props.merkleDistributor.contract.userWallet.methods.acceptGrant(
         info.index,
         info.grant.amount,
         info.grant.vestingLength,
@@ -657,7 +662,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     assertNonNullable(props.merkleDirectDistributor)
     const previousGfiBalance = props.user.info.value.gfiBalance
     await sendFromUser(
-      props.merkleDirectDistributor.contract.methods.acceptGrant(info.index, info.grant.amount, info.proof),
+      props.merkleDirectDistributor.contract.userWallet.methods.acceptGrant(info.index, info.grant.amount, info.proof),
       {
         type: ACCEPT_TX_TYPE,
         data: {

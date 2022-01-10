@@ -29,12 +29,12 @@ function DepositForm(props: DepositFormProps) {
 
   async function approve(depositAmount: string, operator: SeniorPoolLoaded | StakingRewardsLoaded): Promise<void> {
     const alreadyApprovedAmount = new BigNumber(
-      await usdc.contract.methods.allowance(user.address, operator.address).call(undefined, "latest")
+      await usdc.contract.userWallet.methods.allowance(user.address, operator.address).call(undefined, "latest")
     )
     const amountRequiringApproval = new BigNumber(depositAmount).minus(alreadyApprovedAmount)
     return amountRequiringApproval.gt(0)
       ? sendFromUser(
-          usdc.contract.methods.approve(
+          usdc.contract.userWallet.methods.approve(
             operator.address,
             // Since we have to ask for approval, we'll ask for the max amount, so that the user will never
             // need to grant approval again (i.e. which saves them the gas cost of ever having to approve again).
@@ -60,7 +60,7 @@ function DepositForm(props: DepositFormProps) {
       if (process.env.REACT_APP_HARDHAT_FORK) {
         return approve(depositAmountString, stakingRewards)
           .then(() =>
-            sendFromUser(stakingRewards.contract.methods.depositAndStake(depositAmountString), {
+            sendFromUser(stakingRewards.contract.userWallet.methods.depositAndStake(depositAmountString), {
               type: SUPPLY_AND_STAKE_TX_TYPE,
               data: {
                 amount: transactionAmount,
@@ -75,7 +75,7 @@ function DepositForm(props: DepositFormProps) {
           spender: stakingRewards.address,
         })
         return sendFromUser(
-          stakingRewards.contract.methods.depositWithPermitAndStake(
+          stakingRewards.contract.userWallet.methods.depositWithPermitAndStake(
             signatureData.value,
             signatureData.deadline,
             signatureData.v,
@@ -93,7 +93,7 @@ function DepositForm(props: DepositFormProps) {
     } else {
       return approve(depositAmountString, pool)
         .then(() =>
-          sendFromUser(pool.contract.methods.deposit(depositAmountString), {
+          sendFromUser(pool.contract.userWallet.methods.deposit(depositAmountString), {
             type: SUPPLY_TX_TYPE,
             data: {
               amount: transactionAmount,

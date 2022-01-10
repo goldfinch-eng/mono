@@ -23,7 +23,7 @@ function UnlockERC20Form(props: UnlockERC20Props) {
   const unlock = () => {
     assertNonNullable(erc20)
     // The txData parameters must use the schema defined in src/ethereum/events:mapEventToTx
-    return sendFromUser(erc20.contract.methods.approve(unlockAddress, MAX_UINT), {
+    return sendFromUser(erc20.contract.userWallet.methods.approve(unlockAddress, MAX_UINT), {
       type: ERC20_APPROVAL_TX_TYPE,
       data: {
         amount: usdcFromAtomic(MAX_UINT.toString()),

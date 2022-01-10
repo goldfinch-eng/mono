@@ -17,6 +17,7 @@ import {usdcFromAtomic} from "./erc20"
 import {fiduFromAtomic} from "./fidu"
 import {gfiFromAtomic} from "./gfi"
 import {RichAmount, AmountWithUnits, HistoricalTx, TxName} from "../types/transactions"
+import {CombinedRepaymentTx} from "./pool"
 
 async function mapEventsToTx<T extends KnownEventName>(
   events: EventData[],
@@ -24,7 +25,7 @@ async function mapEventsToTx<T extends KnownEventName>(
   config: EventParserConfig<T>
 ): Promise<HistoricalTx<T>[]> {
   const txs = await Promise.all(_.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config)))
-  return _.reverse(_.sortBy(_.compact(txs), "blockNumber"))
+  return _.reverse(_.sortBy(_.compact(txs), ["blockNumber", "transactionIndex"]))
 }
 
 type EventParserConfig<T extends KnownEventName> = {
@@ -54,32 +55,39 @@ function getRichAmount(amount: AmountWithUnits): RichAmount {
   return {atomic, display, units: amount.units}
 }
 
+async function populateDates<T extends KnownEventName, U extends HistoricalTx<T> | CombinedRepaymentTx>(txs: U[]) {
+  return await Promise.all(
+    txs.map((tx) => {
+      return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
+        assertNumber(block.timestamp)
+        tx.date = moment.unix(block.timestamp).format("MMM D, h:mma")
+        return tx
+      })
+    })
+  )
+}
+
 async function mapEventToTx<T extends KnownEventName>(
   eventData: EventData,
   known: T[],
   config: EventParserConfig<T>
 ): Promise<HistoricalTx<T> | undefined> {
   if (isKnownEventData<T>(eventData, known)) {
-    return web3.eth.getBlock(eventData.blockNumber).then((block) => {
-      const parsedName = config.parseName(eventData)
-      const parsedAmount = config.parseAmount(eventData)
+    const parsedName = config.parseName(eventData)
+    const parsedAmount = config.parseAmount(eventData)
 
-      assertNumber(block.timestamp)
-      return {
-        current: false,
-        type: eventData.event,
-        name: parsedName,
-        amount: getRichAmount(parsedAmount),
-        id: eventData.transactionHash,
-        blockNumber: eventData.blockNumber,
-        transactionIndex: eventData.transactionIndex,
-        blockTime: block.timestamp,
-        date: moment.unix(block.timestamp).format("MMM D, h:mma"),
-        status: "successful",
-        eventId: (eventData as any).id,
-        erc20: (eventData as any).erc20,
-      }
-    })
+    return {
+      current: false,
+      type: eventData.event,
+      name: parsedName,
+      amount: getRichAmount(parsedAmount),
+      id: eventData.transactionHash,
+      blockNumber: eventData.blockNumber,
+      transactionIndex: eventData.transactionIndex,
+      status: "successful",
+      eventId: (eventData as any).id,
+      erc20: (eventData as any).erc20,
+    }
   } else {
     console.error(`Unexpected event type: ${eventData.event}. Expected: ${known}`)
     return
@@ -145,4 +153,4 @@ function reduceToKnown<T extends KnownEventName>(events: EventData[], knownEvent
   return reduced.known
 }
 
-export {mapEventsToTx, getBalanceAsOf, getPoolEventAmount, reduceToKnown}
+export {mapEventsToTx, getBalanceAsOf, getPoolEventAmount, reduceToKnown, populateDates}

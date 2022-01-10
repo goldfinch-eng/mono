@@ -38,8 +38,9 @@ import {
   VERIFY_ROUTE,
 } from "../../types/routes"
 import {SessionData} from "../../types/session"
+import {UserWalletWeb3Status} from "../../types/web3"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import web3, {getUserWalletWeb3Status} from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {
@@ -66,7 +67,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderRewards(
   deps: {
@@ -84,7 +86,8 @@ function renderRewards(
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor,
   sessionData?: SessionData,
-  leavesCurrentBlock?: LeavesCurrentBlock
+  leavesCurrentBlock?: LeavesCurrentBlock,
+  userWalletWeb3Status?: UserWalletWeb3Status
 ) {
   sessionData = sessionData || {
     signature: "foo",
@@ -92,6 +95,21 @@ function renderRewards(
     signatureBlockNumTimestamp: currentBlock.timestamp,
     version: 1,
   }
+  let defaultUserWalletWeb3Status
+  if (deps.user) {
+    defaultUserWalletWeb3Status = {
+      type: "connected",
+      networkName: "localhost",
+      address: deps.user.address,
+    }
+  } else {
+    defaultUserWalletWeb3Status = {
+      type: "no_web3",
+      networkName: undefined,
+      address: undefined,
+    }
+  }
+  userWalletWeb3Status = userWalletWeb3Status || defaultUserWalletWeb3Status
   const setLeafCurrentBlock = (route: AppRoute, currentBlock: BlockInfo) => {
     // pass
   }
@@ -103,6 +121,7 @@ function renderRewards(
     network,
     networkMonitor,
     sessionData,
+    userWalletWeb3Status,
     ...deps,
   }
 
@@ -1285,7 +1304,7 @@ describe("Rewards list and detail", () => {
       expect(screen.getByText("1,000.00 GFI • Jan 11, 2022")).toBeVisible()
       expect(await screen.findByText("Accept")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1348,7 +1367,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1408,7 +1427,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.getByText("1,000.00 GFI • Dec 29, 2021")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1463,7 +1482,7 @@ describe("Rewards list and detail", () => {
 
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
