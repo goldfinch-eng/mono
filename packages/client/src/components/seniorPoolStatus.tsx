@@ -1,7 +1,5 @@
 import {useQuery} from "@apollo/client"
 import {BigNumber} from "bignumber.js"
-import {useContext} from "react"
-import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {SeniorPoolLoaded} from "../ethereum/pool"
 import {parseSeniorPoolStatus} from "../graphql/parsers"
@@ -16,7 +14,6 @@ interface SeniorPoolStatusProps {
 }
 
 function SeniorPoolStatus(props: SeniorPoolStatusProps) {
-  const {goldfinchConfig} = useContext(AppContext)
   const {pool} = props
   const useWeb3 = shouldUseWeb3()
   const {data} = useQuery(GET_SENIOR_POOL_STATUS, {skip: useWeb3})
@@ -43,24 +40,13 @@ function SeniorPoolStatus(props: SeniorPoolStatusProps) {
     }
 
     let defaultRate: BigNumber | undefined
-    let capacityRemaining: BigNumber | undefined
-    const maxPoolCapacity: BigNumber | undefined = goldfinchConfig ? goldfinchConfig.totalFundsLimit : undefined
-    if (pool && maxPoolCapacity) {
+    if (pool) {
       const poolData = pool.info.value.poolData
       defaultRate = poolData.defaultRate
-      capacityRemaining = poolData.remainingCapacity(maxPoolCapacity)
     }
 
     return [
       {label: "Total pool balance", value: displayDollars(poolBalance)},
-      {
-        label: "Max pool capacity",
-        value: displayDollars(maxPoolCapacity ? usdcFromAtomic(maxPoolCapacity) : undefined),
-      },
-      {
-        label: "Remaining capacity",
-        value: displayDollars(capacityRemaining ? usdcFromAtomic(capacityRemaining) : undefined),
-      },
       {label: "Loans outstanding", value: displayDollars(totalLoansOutstanding)},
       {label: "Default rate", value: displayPercent(defaultRate)},
     ]
