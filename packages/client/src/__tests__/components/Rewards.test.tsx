@@ -741,7 +741,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.00 GFI")).toBeVisible()
+      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.00 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
       expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -773,7 +773,7 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     await waitFor(async () => {
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+      expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
     })
   })
 
@@ -793,7 +793,7 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+    expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
   })
 
   it("shows GFI price from Coingecko API", async () => {
@@ -812,7 +812,7 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$164.33 (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+    expect(await screen.findByText("$164.33 (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
   })
 
   it("shows claimable staking reward on rewards list", async () => {
@@ -834,7 +834,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
       expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -874,7 +874,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Immediate")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 1,000.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -907,7 +907,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Linear until 100% on Dec 29, 2021")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1027,7 +1027,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -1054,7 +1054,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Immediate")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 1,000.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1085,7 +1085,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -1142,7 +1142,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -1169,7 +1169,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Immediate")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 1,000.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1212,7 +1212,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$0.82 (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+      expect(await screen.findByText("$0.82 (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
       expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
@@ -1252,7 +1252,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Linear until 100% on Dec 8, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$5.48 (5.48 GFI) claimed of your total vested 16.44 GFI")).toBeVisible()
+    expect(await screen.findByText("$5.48 (5.48 GFI) claimed of your total unlocked 16.44 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",

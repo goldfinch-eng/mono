@@ -445,7 +445,7 @@ function getStakingRewardsVestingSchedule(endTime: number) {
 function getClaimStatus(claimed: BigNumber, vested: BigNumber, gfiPrice: BigNumber | undefined): string {
   return `${displayDollars(gfiInDollars(gfiToDollarsAtomic(claimed, gfiPrice)))} (${displayNumber(
     gfiFromAtomic(claimed)
-  )} GFI) claimed of your total vested ${displayNumber(gfiFromAtomic(vested), 2)} GFI`
+  )} GFI) claimed of your total unlocked ${displayNumber(gfiFromAtomic(vested), 2)} GFI`
 }
 function getVestingStatus(vested: BigNumber, granted: BigNumber): string {
   return `${displayPercent(vested.dividedBy(granted))} (${displayNumber(gfiFromAtomic(vested), 2)} GFI) unlocked`
