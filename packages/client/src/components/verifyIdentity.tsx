@@ -555,10 +555,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
                 community privileges.
                 <br />
                 <br />
-                For Non-U.S. individuals, the UID allows you to participate in investing and governance activities.
-                <br />
-                <br />
-                For U.S. individuals, the UID allows you to participate in governance activities only. U.S. individuals
+                Note: U.S. individuals are only eligible to participate in Goldfinch governance-related activities. They
                 may not participate in investing activities.
               </p>
             </div>
