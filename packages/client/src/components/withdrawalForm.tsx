@@ -297,7 +297,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     // appropriate to use unvested rewards info here from all positions (rather than only the
     // unstakeable positions), because (1) that does not impact correctness of the calculation
     // of how much would be forfeited for the user's intended withdrawal amount; and (2) that amount
-    // of unvested rewards corresponds to what's shown as the "Vesting" amount on the GFI
+    // of unvested rewards corresponds to what's shown as the "Locked" amount on the GFI
     // page.
     const lastVestingEnd = props.capitalProvider.rewardsInfo.hasUnvested
       ? new Date(props.capitalProvider.rewardsInfo.lastVestingEndTime * 1000)
