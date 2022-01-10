@@ -73,24 +73,25 @@ function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
     if (chainId && chainId in networkNameByChainId) {
       const networkName = networkNameByChainId[chainId]
       assertNonNullable(networkName)
-      wrapped = process.env.REACT_APP_INFURA_HTTP
-        ? {
-            type: "http",
-            // @ts-expect-error
-            provider: new HttpProvider(
-              `https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
-            ),
-          }
-        : {
-            type: "websocket",
-            // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-            provider: new WebsocketProvider(
-              `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
-            ),
-          }
+      wrapped =
+        process.env.REACT_APP_INFURA_HTTP === "yes"
+          ? {
+              type: "http",
+              // @ts-expect-error
+              provider: new HttpProvider(
+                `https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+              ),
+            }
+          : {
+              type: "websocket",
+              // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
+              provider: new WebsocketProvider(
+                `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+              ),
+            }
       console.log(`Using custom Infura provider with ${wrapped.type} connection.`)
     } else {
-      console.log(`Unexpected chain id: ${chainId}. Falling back to Metamask's default provider.`)
+      console.warn(`Unexpected chain id: ${chainId}. Falling back to Metamask's default provider.`)
     }
   }
   const provider =
