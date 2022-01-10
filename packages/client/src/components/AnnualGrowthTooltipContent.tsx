@@ -19,15 +19,15 @@ const AnnualGrowthTooltipContent = ({
     <div>
       <p className="tooltip-description">
         {supplyingCombined
-          ? "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
-          : "Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:"}
+          ? "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
+          : "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"}
       </p>
       <div className="tooltip-row">
         <p>{supplyingCombined ? "Pool APY" : "Senior Pool APY"}</p>
         <span data-testid="tooltip-estimated-apy">{displayPercent(estimatedApyFromSupplying)}</span>
       </div>
       <div className="tooltip-row">
-        <p>GFI Rewards APY</p>
+        <p>GFI Distribution APY</p>
         <span data-testid="tooltip-gfi-apy">{displayPercent(estimatedApyFromGfi)}</span>
       </div>
       <div className="tooltip-divider"></div>

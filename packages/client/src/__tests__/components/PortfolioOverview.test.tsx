@@ -139,7 +139,7 @@ describe("Earn page portfolio overview", () => {
     // tooltip
     expect(
       await screen.getByText(
-        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
@@ -163,7 +163,7 @@ describe("Earn page portfolio overview", () => {
     // tooltip
     expect(
       await screen.getByText(
-        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
@@ -209,7 +209,7 @@ describe("Earn page portfolio overview", () => {
     // tooltip
     expect(
       await screen.getByText(
-        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
@@ -254,7 +254,7 @@ describe("Earn page portfolio overview", () => {
     // tooltip
     expect(
       await screen.getByText(
-        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
@@ -305,7 +305,7 @@ describe("Earn page portfolio overview", () => {
     // tooltip
     expect(
       await screen.getByText(
-        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
@@ -363,7 +363,7 @@ describe("Earn page portfolio overview", () => {
     // tooltip
     expect(
       await screen.getByText(
-        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+        "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
     expect(screen.getByText("Pool APY")).toBeInTheDocument()
@@ -465,7 +465,7 @@ describe("Earn page portfolio overview", () => {
       // tooltip
       expect(
         await screen.queryByText(
-          "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI rewards:"
+          "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
         )
       ).not.toBeInTheDocument()
       expect(screen.queryByText("Pool APY")).not.toBeInTheDocument()

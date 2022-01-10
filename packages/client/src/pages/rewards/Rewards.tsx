@@ -40,7 +40,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
   return (
     <div className="rewards-summary background-container">
       <div className="rewards-summary-left-item">
-        <span className="total-gfi-balance">Total GFI rewards</span>
+        <span className="total-gfi-balance">Total GFI</span>
         <span className="total-gfi">{displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}</span>
         <span className="total-usd">{displayDollars(totalUSD)}</span>
       </div>
@@ -56,7 +56,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item">
-          <span>Vesting</span>
+          <span>Still Locked</span>
           <div>
             <span className={valueDisabledClass} data-testid="summary-still-vesting">
               {displayNumber(unvested ? gfiFromAtomic(unvested) : undefined, 2)}
@@ -65,7 +65,7 @@ function RewardsSummary(props: RewardsSummaryProps) {
           </div>
         </div>
         <div className="details-item total-balance">
-          <span>Total rewards</span>
+          <span>Total</span>
           <div>
             <span className={valueDisabledClass} data-testid="summary-total-balance">
               {displayNumber(totalGFI ? gfiFromAtomic(totalGFI) : undefined, 2)}
@@ -319,10 +319,10 @@ function Rewards() {
       <RewardsSummary claimable={claimable} unvested={unvested} totalGFI={totalBalance} totalUSD={totalUSD} />
       <div className="gfi-rewards table-spaced">
         <div className="table-header background-container-inner">
-          <h2 className="table-cell col32 title">Reward type</h2>
+          <h2 className="table-cell col32 title">Type</h2>
           {!isTabletOrMobile && (
             <>
-              <div className="table-cell col20 numeric balance break-granted-column">Vesting GFI</div>
+              <div className="table-cell col20 numeric balance break-granted-column">Locked GFI</div>
               <div className="table-cell col20 numeric limit break-claimable-column">Claimable GFI</div>
             </>
           )}
