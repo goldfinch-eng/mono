@@ -73,6 +73,7 @@ export function asNonNullable<T>(val: T | null | undefined, errorMessage?: strin
 }
 
 export const isNumber = (val: unknown): val is number => typeof val === "number"
+export const isNumberOrUndefined = orUndefined(isNumber)
 export const assertNumber: (val: unknown) => asserts val is number = genAssertIsTypeof("number")
 
 export function assertError(val: unknown): asserts val is Error {
