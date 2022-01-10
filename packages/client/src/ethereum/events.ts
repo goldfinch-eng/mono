@@ -25,7 +25,7 @@ async function mapEventsToTx<T extends KnownEventName>(
   config: EventParserConfig<T>
 ): Promise<HistoricalTx<T>[]> {
   const txs = await Promise.all(_.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config)))
-  return _.reverse(_.sortBy(_.compact(txs), "blockNumber"))
+  return _.reverse(_.sortBy(_.compact(txs), ["blockNumber", "transactionIndex"]))
 }
 
 type EventParserConfig<T extends KnownEventName> = {

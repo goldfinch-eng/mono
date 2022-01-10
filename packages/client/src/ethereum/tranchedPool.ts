@@ -266,7 +266,7 @@ class TranchedPool {
     }
 
     transactions = transactions.concat(oldTransactions)
-    transactions = _.reverse(_.sortBy(transactions, "blockNumber")).slice(0, 3)
+    transactions = _.reverse(_.sortBy(transactions, ["blockNumber", "transactionIndex"])).slice(0, 3)
     let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior, currentBlock)
     let blockTimestamps = await this.timestampsByBlockNumber(transactions)
     return transactions.map((e) => {

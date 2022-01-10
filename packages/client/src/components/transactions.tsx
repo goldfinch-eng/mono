@@ -316,10 +316,10 @@ function Transactions(props: TransactionsProps) {
   // Only show txs from currentTxs that are not already in user.pastTxs
   let pendingTxs = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
   let allTxs = _.reverse(
-    _.sortBy(
-      _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])]),
-      "blockNumber"
-    )
+    _.sortBy(_.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])]), [
+      "blockNumber",
+      "transactionIndex",
+    ])
   )
   allTxs = _.uniqBy(allTxs, "eventId")
   let transactionRows: React.ReactNode[] = [
