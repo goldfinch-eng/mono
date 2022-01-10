@@ -160,7 +160,7 @@ function SeniorPoolCardSkeleton() {
 
 export type SeniorPoolStatus = {
   totalPoolAssets: BigNumber
-  availableToWithdrawInDollars: BigNumber
+  availableToWithdrawInDollars: BigNumber | undefined
   estimatedApy: BigNumber | undefined
   totalFundsLimit: BigNumber | undefined
   remainingCapacity: BigNumber | undefined
@@ -241,7 +241,7 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
         </div>
       </div>
       <div className={`${balanceDisabledClass} ${disabledClass} table-cell col22 numeric balance`}>
-        {displayDollars(poolBacker?.balanceInDollars)}
+        {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}
       </div>
       <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
       <div className={`table-cell col16 numeric apy ${disabledClass}`}>{displayPercent(estimatedApy)}</div>
@@ -302,7 +302,7 @@ function Earn() {
     }
   }
 
-  const loaded = pool && capitalProviderData.loaded && backersData.loaded && user
+  const loaded = pool && backersData.loaded
   const earnMessage = userWalletWeb3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
 
   return (
@@ -311,7 +311,7 @@ function Earn() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      {userWalletWeb3Status?.type === "no_web3" || !loaded ? (
+      {userWalletWeb3Status?.type === "no_web3" || !pool || !capitalProviderData.loaded || !backersData.loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview

@@ -10,13 +10,13 @@ import {
 import WebsocketProvider from "web3-providers-ws"
 import HttpProvider from "web3-providers-http"
 import {JsonRpcPayload, JsonRpcResponse} from "web3-core-helpers"
-import {Web3IO} from "./types/web3"
+import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 
 declare let window: any
 let localStorage = window.localStorage
 let currentChain = localStorage.getItem("currentChain")
 let currentAccount = localStorage.getItem("currentAccount")
-export const SESSION_DATA_KEY = "sessionData"
+const SESSION_DATA_KEY = "sessionData"
 
 function cleanSessionAndReload() {
   localStorage.removeItem(SESSION_DATA_KEY)
@@ -40,6 +40,30 @@ function genUserWalletWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
   const provider =
     process.env.REACT_APP_TRACE_WEB3 === "yes" ? withTracing("userWallet", wrapped).provider : wrapped.provider
   return new Web3(provider as ProviderType)
+}
+
+async function getUserWalletWeb3Status(): Promise<UserWalletWeb3Status> {
+  if (!window.ethereum) {
+    return {type: "no_web3", networkName: undefined, address: undefined}
+  }
+  let networkName: string
+  try {
+    // Sometimes it's possible that we can't communicate with the provider through which
+    // we want to send transactions, in which case treat as if we don't have web3.
+    networkName = await web3.userWallet.eth.net.getNetworkType()
+    if (!networkName) {
+      throw new Error("Falsy network type.")
+    }
+  } catch (e) {
+    return {type: "no_web3", networkName: undefined, address: undefined}
+  }
+  const accounts = await web3.userWallet.eth.getAccounts()
+  const address = accounts[0]
+  if (address) {
+    return {type: "connected", networkName, address}
+  } else {
+    return {type: "has_web3", networkName, address: undefined}
+  }
 }
 
 function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
@@ -166,3 +190,5 @@ if (window.ethereum) {
 const web3 = genWeb3()
 
 export default web3
+
+export {getUserWalletWeb3Status, SESSION_DATA_KEY}

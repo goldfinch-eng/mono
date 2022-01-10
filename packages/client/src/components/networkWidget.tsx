@@ -1,12 +1,12 @@
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
-import React, {useContext, useEffect, useState} from "react"
+import React, {useContext} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
 import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
-import {useSession, useSignIn} from "../hooks/useSignIn"
+import {useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {
   ACCEPT_TX_TYPE,
@@ -48,27 +48,14 @@ interface NetworkWidgetProps {
 
 function NetworkWidget(props: NetworkWidgetProps) {
   const {userWalletWeb3Status} = useContext(AppContext)
-  const session = useSession()
-  const [, signIn] = useSignIn()
-  const [showSignIn, setShowSignIn] = useState<Boolean>(false)
+  const [session, signIn] = useSignIn()
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
-
-  useEffect(() => {
-    if (props.user && session.status !== "authenticated" && showSignIn) {
-      signIn().then((session) => {
-        setShowSignIn(false)
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.user?.address, showSignIn])
 
   async function enableMetamask(): Promise<void> {
     return (window as any).ethereum
       .request({method: "eth_requestAccounts"})
-      .then(() => {
-        props.connectionComplete()
-        setShowSignIn(true)
-      })
+      .then(signIn)
+      .then(props.connectionComplete)
       .catch((error) => {
         console.error("Error connecting to metamask", error)
       })
@@ -83,8 +70,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }
 
   let transactions: JSX.Element = <></>
-  let enabledText = croppedAddress(props.user?.address)
-  let userAddressForDisplay = croppedAddress(props.user?.address)
+  let enabledText = croppedAddress(userWalletWeb3Status?.address)
+  let userAddressForDisplay = croppedAddress(userWalletWeb3Status?.address)
   let enabledClass = ""
 
   function transactionItem(tx: CurrentTx<TxType> | ArrayItemType<UserLoadedInfo["pastTxs"]>) {
@@ -229,16 +216,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
       </div>
     )
   }
-
-  if (userWalletWeb3Status?.type === "no_web3") {
-    return (
-      <div ref={node} className="network-widget">
-        <a href="https://metamask.io" className="network-widget-button bold">
-          Go to metamask.io
-        </a>
-      </div>
-    )
-  } else if (!userWalletWeb3Status || (userWalletWeb3Status.type === "connected" && !props.user)) {
+  if (!userWalletWeb3Status) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button">
@@ -249,7 +227,20 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (web3 && props.network && props.network.name && !props.network.supported) {
+  } else if (userWalletWeb3Status?.type === "no_web3") {
+    return (
+      <div ref={node} className="network-widget">
+        <a href="https://metamask.io" className="network-widget-button bold">
+          Go to metamask.io
+        </a>
+      </div>
+    )
+  } else if (
+    userWalletWeb3Status?.type === "has_web3" &&
+    props.network &&
+    props.network.name &&
+    !props.network.supported
+  ) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>
@@ -284,6 +275,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
       </div>
     )
   } else {
+    const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
     return (
       <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
         <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
@@ -301,10 +293,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
           <div className="network-widget-section address">{userAddressForDisplay}</div>
           <NetworkErrors currentErrors={props.currentErrors} />
           <div className="network-widget-section">
-            USDC balance{" "}
-            <span className="value">
-              {displayNumber(props.user ? usdcFromAtomic(props.user.info.value.usdcBalance) : undefined, 2)}
-            </span>
+            USDC balance <span className="value">{usdcBalance}</span>
           </div>
           {transactions}
         </div>

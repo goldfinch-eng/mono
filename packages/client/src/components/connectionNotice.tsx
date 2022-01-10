@@ -67,25 +67,6 @@ export const strategies: ConnectionNoticeStrategy[] = [
     ),
   },
   {
-    devName: "not_connected_to_metamask",
-    match: ({session, userWalletWeb3Status}) =>
-      userWalletWeb3Status?.type === "has_web3" ||
-      (userWalletWeb3Status?.type === "connected" && session.status === "unknown"),
-    render: (_props) => (
-      <TextBanner>
-        You are not currently connected to Metamask. To use Goldfinch, you first need to connect to Metamask.
-      </TextBanner>
-    ),
-  },
-  {
-    devName: "connected_user_with_expired_session",
-    match: ({session, userWalletWeb3Status}) =>
-      userWalletWeb3Status?.type === "connected" && session.status === "known",
-    render: (_props) => (
-      <TextBanner>Your session has expired. To use Goldfinch, you first need to reconnect to Metamask.</TextBanner>
-    ),
-  },
-  {
     devName: "no_credit_line",
     match: ({user, creditLine}) => !!user && !!creditLine && creditLine.loaded && !creditLine.address,
     render: (_props) => (
