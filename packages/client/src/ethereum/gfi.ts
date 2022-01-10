@@ -8,6 +8,9 @@ import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {BlockInfo} from "../utils"
 import {Web3IO} from "../types/web3"
 
+export const COINGECKO_API_GFI_PRICE_URL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=usd"
+
 type CoingeckoResponseJson = {
   goldfinch: {
     usd?: number
@@ -75,7 +78,7 @@ class GFI {
   }
 
   static async fetchGfiPrice(): Promise<FetchGFIPriceResult> {
-    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=usd")
+    const res = await fetch(COINGECKO_API_GFI_PRICE_URL)
     const responseJson: unknown = await res.json()
     if (isCoingeckoResponseJson(responseJson)) {
       if (isUndefined(responseJson.goldfinch.usd)) {
