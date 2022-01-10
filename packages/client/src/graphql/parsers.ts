@@ -137,24 +137,40 @@ export async function parseBackers(
     tranchedPools.map(async (tranchedPoolData) => {
       const tranchedPool = await parseTranchedPool(tranchedPoolData, _goldfinchProtocol, currentBlock)
 
-      // Defines the backer's address as the tranchedPool address in the absence of userAddress
-      // to show the list of pools when there's no web3 provider
-      const address = userAddress || tranchedPool.address
-      const backerData = tranchedPoolData.backers?.find((b) => b.user.id.toLowerCase() === address.toLowerCase())
-      const backer = new PoolBacker(address, tranchedPool, _goldfinchProtocol)
-      backer.principalAmount = new BigNumber(backerData?.principalAmount || 0)
-      backer.principalRedeemed = new BigNumber(backerData?.principalRedeemed || 0)
-      backer.interestRedeemed = new BigNumber(backerData?.interestRedeemed || 0)
-      backer.principalRedeemable = new BigNumber(backerData?.principalRedeemable || 0)
-      backer.interestRedeemable = new BigNumber(backerData?.interestRedeemable || 0)
-      backer.balance = new BigNumber(backerData?.balance || 0)
-      backer.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.balance)))
-      backer.principalAtRisk = new BigNumber(backerData?.principalAtRisk || 0)
-      backer.availableToWithdraw = new BigNumber(backerData?.availableToWithdraw || 0)
-      backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
-      backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
-      backer.tokenInfos = tokenInfo(backerData?.user.tokens || [])
-      return backer
+      if (userAddress) {
+        const backerData = tranchedPoolData.backers?.find((b) => b.user.id.toLowerCase() === userAddress.toLowerCase())
+        const backer = new PoolBacker(userAddress, tranchedPool, _goldfinchProtocol)
+        backer.principalAmount = new BigNumber(backerData?.principalAmount || 0)
+        backer.principalRedeemed = new BigNumber(backerData?.principalRedeemed || 0)
+        backer.interestRedeemed = new BigNumber(backerData?.interestRedeemed || 0)
+        backer.principalRedeemable = new BigNumber(backerData?.principalRedeemable || 0)
+        backer.interestRedeemable = new BigNumber(backerData?.interestRedeemable || 0)
+        backer.balance = new BigNumber(backerData?.balance || 0)
+        backer.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.balance)))
+        backer.principalAtRisk = new BigNumber(backerData?.principalAtRisk || 0)
+        backer.availableToWithdraw = new BigNumber(backerData?.availableToWithdraw || 0)
+        backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
+        backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
+        backer.tokenInfos = tokenInfo(backerData?.user.tokens || [])
+        return backer
+      } else {
+        // HACK: In the absence of a user address, use the tranched pool's address, so that we can still
+        // instantiate `PoolBacker` and show the list of pools.
+        const backer = new PoolBacker(tranchedPool.address, tranchedPool, _goldfinchProtocol)
+        backer.principalAmount = new BigNumber("")
+        backer.principalRedeemed = new BigNumber("")
+        backer.interestRedeemed = new BigNumber("")
+        backer.principalRedeemable = new BigNumber("")
+        backer.interestRedeemable = new BigNumber("")
+        backer.balance = new BigNumber("")
+        backer.balanceInDollars = new BigNumber("")
+        backer.principalAtRisk = new BigNumber("")
+        backer.availableToWithdraw = new BigNumber("")
+        backer.availableToWithdrawInDollars = new BigNumber("")
+        backer.unrealizedGainsInDollars = new BigNumber("")
+        backer.tokenInfos = tokenInfo([])
+        return backer
+      }
     })
   )
 }

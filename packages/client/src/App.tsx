@@ -67,6 +67,7 @@ import {
   VERIFY_ROUTE,
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
+import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
 
 interface GeolocationData {
   ip: string
@@ -110,6 +111,28 @@ export interface GlobalState {
   // point is that once it's done refreshing, we know that nothing else remains to be refreshed. In
   // practice, this means we'll want to call `setLeafCurrentBlock()` once per application route.
   setLeafCurrentBlock?: (route: AppRoute, leafCurrentBlock: BlockInfo) => void
+  // Given that we supplement our use of web3 data with data from The Graph, and given that *we do not
+  // pin our queries to The Graph to a particular block number*, we are not able to use only the `leavesCurrentBlock`
+  // data structure to track whether the data we have on some leaf is lagging behind `currentBlock`. We're not able
+  // to do so, because we have no guarantee about what block number the data we receive from The Graph will be for;
+  // The Graph could lag behind our web3 provider's understanding of the current block (or in theory vice versa).
+  // In using The Graph in this way, we are fundamentally accepting the possibility of
+  // inconsistency-with-respect-to-block-number between the data we get from The Graph and the data we get from web3.
+  // We accept this possibility on the ASSUMPTION that given what we actually use the data from The Graph for in
+  // the UI, such inconsistency does not pose a UX problem. It's our responsibility to satisfy this assumption.
+  //
+  // Given that the block number we get for The Graph data after fetch / refresh may lag behind `currentBlock` (and
+  // given that refreshing The Graph data indefinitely is not an acceptable mitigation), we can't incorporate
+  // the block number of our query results from The Graph into `leavesCurrentBlock`. So we use a separate data
+  // structure, to track (for a leaf of the component tree) what was the value of `currentBlock` that triggered
+  // the last successful refresh of The Graph data. In effect, we use this value as an identifier of our refreshes
+  // of The Graph data. When the value becomes equal to `currentBlock`, we know we're done refreshing The Graph
+  // data for that leaf.
+  leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh?: LeavesCurrentBlock
+  setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh?: (
+    route: AppRoute,
+    currentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo
+  ) => void
 
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
@@ -142,6 +165,11 @@ declare let window: any
 
 const AppContext = React.createContext<GlobalState>({})
 
+const earnProviderGraphQuerierConfig: UseGraphQuerierConfig = {
+  route: EARN_ROUTE,
+  setAsLeaf: true,
+}
+
 function App() {
   const [userWalletWeb3Status, setUserWalletWeb3Status] = useState<UserWalletWeb3Status>()
   const [_gfi, setGfi] = useState<GFILoaded>()
@@ -159,6 +187,23 @@ function App() {
   const [user, setUser] = useState<UserLoaded>()
   const [currentBlock, setCurrentBlock] = useState<BlockInfo>()
   const [leavesCurrentBlock, setLeavesCurrentBlock] = useState<LeavesCurrentBlock>({
+    [INDEX_ROUTE]: undefined,
+    [EARN_ROUTE]: undefined,
+    [ABOUT_ROUTE]: undefined,
+    [GFI_ROUTE]: undefined,
+    [BORROW_ROUTE]: undefined,
+    [TRANSACTIONS_ROUTE]: undefined,
+    [SENIOR_POOL_ROUTE]: undefined,
+    [TRANCHED_POOL_ROUTE]: undefined,
+    [VERIFY_ROUTE]: undefined,
+    [TERMS_OF_SERVICE_ROUTE]: undefined,
+    [PRIVACY_POLICY_ROUTE]: undefined,
+    [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+  })
+  const [
+    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+    setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+  ] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
@@ -435,14 +480,45 @@ function App() {
     setCurrentBlock(currentBlock)
   }
 
-  function setLeafCurrentBlock(route: AppRoute, leafCurrentBlock: BlockInfo) {
-    setLeavesCurrentBlock({...leavesCurrentBlock, [route]: leafCurrentBlock})
+  function setLeafCurrentBlock(route: AppRoute, newLeafCurrentBlock: BlockInfo) {
+    setLeavesCurrentBlock(
+      // NOTE: We must use the functional approach to updating state here (cf.
+      // https://reactjs.org/docs/hooks-reference.html#functional-updates), because
+      // otherwise `setLeavesCurrentBlock` returned by `useState` will not necessarily
+      // merge the new state object into the existing state object (instead it may
+      // replace the object entirely -- which is problematic for two synchronous calls
+      // of `setLeafCurrentBlock()`, as they're liable to clobber each other).
+      (prevState) => {
+        const existing = prevState[route]
+        if (!existing || existing.number < newLeafCurrentBlock.number) {
+          return {...prevState, [route]: newLeafCurrentBlock}
+        }
+        return prevState
+      }
+    )
+  }
+
+  function setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh(
+    route: AppRoute,
+    newCurrentBlockTriggeringLastSuccessfulGraphRefresh: BlockInfo
+  ) {
+    setLeavesCurrentBlockTriggeringLastSuccessfulGraphRefresh((prevState) => {
+      const existing = prevState[route]
+      if (!existing || existing.number < newCurrentBlockTriggeringLastSuccessfulGraphRefresh.number) {
+        return {
+          ...prevState,
+          [route]: newCurrentBlockTriggeringLastSuccessfulGraphRefresh,
+        }
+      }
+      return prevState
+    })
   }
 
   const store: GlobalState = {
     userWalletWeb3Status,
     currentBlock,
     leavesCurrentBlock,
+    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
     stakingRewards,
     gfi,
     communityRewards,
@@ -465,6 +541,7 @@ function App() {
     setSessionData,
     refreshCurrentBlock,
     setLeafCurrentBlock,
+    setLeafCurrentBlockTriggeringLastSuccessfulGraphRefresh,
     hasGraphError,
     setHasGraphError,
   }
@@ -473,9 +550,9 @@ function App() {
     <ApolloProvider client={apolloClient}>
       <AppContext.Provider value={store}>
         <ThemeProvider theme={defaultTheme}>
-          <EarnProvider>
-            <BorrowProvider>
-              <Router>
+          <Router>
+            <EarnProvider graphQuerierConfig={earnProviderGraphQuerierConfig}>
+              <BorrowProvider>
                 <NetworkIndicators
                   user={user}
                   network={network}
@@ -484,6 +561,9 @@ function App() {
                   connectionComplete={setupUserWalletWeb3}
                   rootCurrentBlock={currentBlock}
                   leavesCurrentBlock={leavesCurrentBlock}
+                  leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh={
+                    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh
+                  }
                   hasGraphError={hasGraphError}
                 />
                 {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
@@ -528,9 +608,9 @@ function App() {
                     </Route>
                   </Switch>
                 </div>
-              </Router>
-            </BorrowProvider>
-          </EarnProvider>
+              </BorrowProvider>
+            </EarnProvider>
+          </Router>
           <Footer />
         </ThemeProvider>
       </AppContext.Provider>
