@@ -4,14 +4,15 @@ import {render, screen, waitFor} from "@testing-library/react"
 import {SeniorPoolCard} from "../../components/earn"
 import BigNumber from "bignumber.js"
 
-function renderSeniorPoolCard(remainingCapacity) {
+function renderSeniorPoolCard(remainingCapacity: BigNumber | undefined) {
   const props = {
-    balance: 100,
-    userBalance: 200,
-    apy: 10,
-    limit: 300,
+    balance: "100",
+    userBalance: "200",
+    apy: "10",
+    limit: "300",
     remainingCapacity: remainingCapacity,
     disabled: false,
+    userBalanceDisabled: false,
   }
 
   const store = {
