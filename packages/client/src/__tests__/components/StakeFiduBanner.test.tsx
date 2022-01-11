@@ -110,7 +110,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   describe("senior pool eligibility", () => {
-    it("sets placeholder class if not eligible", async () => {
+    it("allows even if user is not eligible for senior pool", async () => {
       user.info.value.goListed = false
       await mockCapitalProviderCalls()
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -123,11 +123,13 @@ describe("Stake unstaked fidu", () => {
         currentBlock
       )
 
-      const message = await container.getElementsByClassName("placeholder")
-      expect(message.length).toEqual(1)
+      const placeholderSelected = await container.getElementsByClassName("placeholder")
+      expect(placeholderSelected.length).toEqual(0)
+      const disabledSelected = await container.getElementsByClassName("disabled")
+      expect(disabledSelected.length).toEqual(0)
     })
 
-    it("does not set placeholder class if eligible", async () => {
+    it("allows if user is eligible for senior pool", async () => {
       user.info.value.goListed = true
       await mockCapitalProviderCalls()
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -140,8 +142,10 @@ describe("Stake unstaked fidu", () => {
         currentBlock
       )
 
-      const message = await container.getElementsByClassName("placeholder")
-      expect(message.length).toEqual(0)
+      const placeholderSelected = await container.getElementsByClassName("placeholder")
+      expect(placeholderSelected.length).toEqual(0)
+      const disabledSelected = await container.getElementsByClassName("disabled")
+      expect(disabledSelected.length).toEqual(0)
     })
   })
 

@@ -4,11 +4,10 @@ import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {CapitalProvider} from "../ethereum/pool"
-import {FIDU_APPROVAL_TX_TYPE, STAKE_TX_TYPE} from "../types/transactions"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
-import {eligibleForSeniorPool} from "../hooks/useKYC"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {displayDollars, displayNumber, displayPercent, assertNonNullable} from "../utils"
+import {FIDU_APPROVAL_TX_TYPE, STAKE_TX_TYPE} from "../types/transactions"
+import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "../utils"
 import LoadingButton from "./loadingButton"
 
 interface StakeFiduBannerProps {
@@ -64,15 +63,13 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
   }
 
   if (consistent) {
-    const [pool, user, stakingRewards] = consistent
+    const pool = consistent[0]
+    const stakingRewards = consistent[2]
 
-    // Being eligible for supplying into the senior pool is logically independent of, and therefore not
-    // necessary for, being able to stake any unstaked FIDU you may have. But for consistency of UX in
-    // relation to the other actions on the senior pool page, we condition here on having satisfied the
-    // same base requirement(s) that the other actions require.
-    const userSatisfiesSeniorPoolRequirements = eligibleForSeniorPool(user)
-    const disabled =
-      props.disabled || !userSatisfiesSeniorPoolRequirements || !stakingRewards || stakingRewards.info.value.isPaused
+    // Being eligible for supplying into the senior pool is logically independent of being able to
+    // stake any unstaked FIDU you have. So we allow the user to stake here even if
+    // `!eligibleForSeniorPool(user)`.
+    const disabled = props.disabled || !stakingRewards || stakingRewards.info.value.isPaused
 
     const placeholderClass = disabled ? "placeholder" : ""
 
