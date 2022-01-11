@@ -319,11 +319,10 @@ function Transactions(props: TransactionsProps) {
   let allTxs
   allTxs = _.sortBy(compactTxs, ["blockNumber", "transactionIndex"])
   allTxs = _.uniqBy(allTxs, "eventId")
-  allTxs = _.reverse(allTxs)
 
   // When you supply and stake, it adds a $0.00 Approval transaction that we want to remove so that we do not confuse the user with an approval amount that they did not explicitly take an action on
   // this only removes approval events that are in the same block number as the supply event
-  allTxs = _.reverse(allTxs).reduce(
+  allTxs = allTxs.reduce(
     ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
       hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
       hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
@@ -339,6 +338,9 @@ function Transactions(props: TransactionsProps) {
     },
     {acc: [] as any[], hasSeenSupplyInCurrentBlock: false, previousBlock: 0}
   ).acc
+
+  // sort by block number descending (newest first)
+  allTxs = _.reverse(allTxs)
 
   let transactionRows: React.ReactNode[] = [
     <tr key="empty-row" className="empty-row">
