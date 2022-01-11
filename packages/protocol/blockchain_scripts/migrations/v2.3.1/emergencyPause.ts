@@ -1,12 +1,23 @@
-import {CommunityRewards, MerkleDirectDistributor, StakingRewards} from "@goldfinch-eng/protocol/typechain/ethers"
+import {
+  CommunityRewards,
+  MerkleDirectDistributor,
+  SeniorPool,
+  StakingRewards,
+} from "@goldfinch-eng/protocol/typechain/ethers"
 import {deployments} from "hardhat"
+import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "../../baseDeploy"
 import {getEthersContract} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
 
 export async function main() {
   const effects = await getDeployEffects({
-    title: "Token launch: Unpause contracts",
-    description: "Unpause the following contracts: CommunityRewards, MerkleDirectDistributor, StakingRewards",
+    title: "Emergency Pause",
+    description:
+      "Emergency pause the following contracts: SeniorPool, StakingRewards, CommunityRewards, MerkleDirectDistributor",
+  })
+
+  const seniorPool = await getEthersContract<SeniorPool>("SeniorPool", {
+    at: (await deployments.get("SeniorPool")).address,
   })
 
   const communityRewards = await getEthersContract<CommunityRewards>("CommunityRewards", {
@@ -23,9 +34,10 @@ export async function main() {
 
   await effects.add({
     deferred: [
-      await communityRewards.populateTransaction.unpause(),
-      await merkleDirectDistributor.populateTransaction.unpause(),
-      await stakingRewards.populateTransaction.unpause(),
+      await seniorPool.populateTransaction.pause(),
+      await communityRewards.populateTransaction.pause(),
+      await merkleDirectDistributor.populateTransaction.pause(),
+      await stakingRewards.populateTransaction.pause(),
     ],
   })
 
