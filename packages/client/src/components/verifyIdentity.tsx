@@ -6,15 +6,15 @@ import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
 import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../App"
-import {User, UserLoaded} from "../ethereum/user"
+import {UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
-import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {Session, useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {MINT_UID_TX_TYPE} from "../types/transactions"
+import {UserWalletWeb3Status} from "../types/web3"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck} from "./icons"
@@ -455,19 +455,21 @@ async function fetchTrustedSignature({
   network,
   session,
   setSessionData,
-  user,
+  userWalletWeb3Status,
 }: {
   network: NetworkConfig
   session: Session
   setSessionData: SetSessionFn
-  user: User
+  userWalletWeb3Status: UserWalletWeb3Status
 }): Promise<SignatureResponse> {
   assertNonNullable(network.name)
   if (session.status !== "authenticated") {
     throw new Error("not authenticated")
   }
+  const userAddress = userWalletWeb3Status.address
+  assertNonNullable(userAddress)
   const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
-  const auth = client._getAuthHeaders(user.address)
+  const auth = client._getAuthHeaders(userAddress)
 
   const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
     headers: {"Content-Type": "application/json"},
@@ -480,8 +482,8 @@ async function fetchTrustedSignature({
 
 function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const formMethods = useForm()
-  const {user, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
-    useNonNullContext(AppContext)
+  const {user, userWalletWeb3Status, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
+    useContext(AppContext)
   const [session] = useSignIn()
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
@@ -498,12 +500,17 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 
   const action = async () => {
     assertNonNullable(currentBlock)
+    assertNonNullable(refreshCurrentBlock)
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(network)
+    assertNonNullable(setSessionData)
+    assertNonNullable(userWalletWeb3Status)
     try {
       const trustedSignature = await fetchTrustedSignature({
         network,
         session,
         setSessionData,
-        user,
+        userWalletWeb3Status,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
       const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
