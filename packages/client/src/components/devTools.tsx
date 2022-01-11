@@ -4,6 +4,7 @@ import {iconX} from "./icons"
 import {AppContext} from "../App"
 import {useForm} from "react-hook-form"
 import useNonNullContext from "../hooks/useNonNullContext"
+import {UserLoaded} from "../ethereum/user"
 
 function SetKycStatus() {
   const formMethods = useForm({mode: "onChange"})
@@ -48,6 +49,132 @@ function SetKycStatus() {
   )
 }
 
+function SetUserAddress() {
+  const formMethods = useForm({mode: "onChange"})
+  const {handleSubmit, register} = formMethods
+  const [disabled, setDisabled] = useState<boolean>(false)
+
+  return (
+    <form>
+      <div className="actions">
+        <DevToolsButton
+          disabled={disabled}
+          setDisabled={setDisabled}
+          onClick={async () => {
+            handleSubmit(
+              async (data) => {
+                setDisabled(true)
+                ;(window as any).setUserAddress("0xf6f62bab35907565c5ad3d4c1093b7f90762c021")
+                setDisabled(false)
+              },
+              (errors) => {
+                console.log("errors", errors)
+              }
+            )()
+          }}
+        >
+          Senior Pool Whale
+        </DevToolsButton>
+        <DevToolsButton
+          disabled={disabled}
+          setDisabled={setDisabled}
+          onClick={async () => {
+            handleSubmit(
+              async (data) => {
+                setDisabled(true)
+                ;(window as any).setUserAddress("0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC")
+                setDisabled(false)
+              },
+              (errors) => {
+                console.log("errors", errors)
+              }
+            )()
+          }}
+        >
+          Aspire
+        </DevToolsButton>
+        <DevToolsButton
+          disabled={disabled}
+          setDisabled={setDisabled}
+          onClick={async () => {
+            handleSubmit(
+              async (data) => {
+                setDisabled(true)
+                ;(window as any).setUserAddress("0x8652854C25bd553d522d118AC2bee6FFA3Cce317")
+                setDisabled(false)
+              },
+              (errors) => {
+                console.log("errors", errors)
+              }
+            )()
+          }}
+        >
+          QuickCheck
+        </DevToolsButton>
+        <DevToolsButton
+          disabled={disabled}
+          setDisabled={setDisabled}
+          onClick={async () => {
+            handleSubmit(
+              async (data) => {
+                setDisabled(true)
+                ;(window as any).setUserAddress("0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6")
+                setDisabled(false)
+              },
+              (errors) => {
+                console.log("errors", errors)
+              }
+            )()
+          }}
+        >
+          Alma
+        </DevToolsButton>
+        <DevToolsButton
+          disabled={disabled}
+          setDisabled={setDisabled}
+          onClick={async () => {
+            handleSubmit(
+              async (data) => {
+                setDisabled(true)
+                ;(window as any).setUserAddress("0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF")
+                setDisabled(false)
+              },
+              (errors) => {
+                console.log("errors", errors)
+              }
+            )()
+          }}
+        >
+          Active LP
+        </DevToolsButton>
+      </div>
+
+      <br />
+      <br />
+      <label htmlFor="overrideAddress">Wallet Address</label>
+      <input name="overrideAddress" id="overrideAddress" type="text" ref={(ref) => register(ref)} />
+      <DevToolsButton
+        disabled={disabled}
+        setDisabled={setDisabled}
+        onClick={async () => {
+          handleSubmit(
+            async (data) => {
+              setDisabled(true)
+              ;(window as any).setUserAddress(data.overrideAddress)
+              setDisabled(false)
+            },
+            (errors) => {
+              console.log("errors", errors)
+            }
+          )()
+        }}
+      >
+        Set
+      </DevToolsButton>
+    </form>
+  )
+}
+
 function DevToolsButton({
   disabled,
   setDisabled,
@@ -74,12 +201,12 @@ function DevToolsButton({
   )
 }
 
-export default function DevTools(props) {
+export default function DevTools() {
   const {open: showDevTools, setOpen: setShowDevTools} = useCloseOnClickOrEsc()
 
   const {user} = useContext(AppContext)
   const [disabled, setDisabled] = useState<boolean>(false)
-  const [panel, setPanel] = useState<"default" | "kyc">("default")
+  const [panel, setPanel] = useState<"default" | "kyc" | "setUserAddress">("default")
 
   function toggleDevTools() {
     if (showDevTools === "") {
@@ -91,7 +218,7 @@ export default function DevTools(props) {
     }
   }
 
-  function renderPanel() {
+  function renderPanel(user: UserLoaded) {
     if (panel === "default") {
       return (
         <div className="actions">
@@ -125,19 +252,52 @@ export default function DevTools(props) {
           >
             fundWithWhales
           </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () =>
+              fetch("/advanceTimeOneDay", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+              })
+            }
+          >
+            advanceTimeOneDay
+          </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () =>
+              fetch("/advanceTimeThirtyDays", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+              })
+            }
+          >
+            advanceTimeThirtyDays
+          </DevToolsButton>
           <DevToolsButton disabled={disabled} setDisabled={setDisabled} onClick={async () => setPanel("kyc")}>
             KYC
+          </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () => setPanel("setUserAddress")}
+          >
+            setUserAddress
           </DevToolsButton>
         </div>
       )
     } else if (panel === "kyc") {
       return <SetKycStatus></SetKycStatus>
+    } else if (panel === "setUserAddress") {
+      return <SetUserAddress></SetUserAddress>
     }
 
     return
   }
 
-  return (
+  return user ? (
     <div
       className={`devTools ${showDevTools}`}
       onClick={() => {
@@ -155,9 +315,9 @@ export default function DevTools(props) {
               {iconX}
             </button>
           </div>
-          {renderPanel()}
+          {renderPanel(user)}
         </div>
       )}
     </div>
-  )
+  ) : null
 }

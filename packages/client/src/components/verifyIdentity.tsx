@@ -1,22 +1,25 @@
+import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {ErrorMessage} from "@hookform/error-message"
 import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import {AppContext, NetworkConfig, SetSessionFn} from "../App"
-import {User} from "../ethereum/user"
+import Web3Library from "web3"
+import {AppContext, SetSessionFn} from "../App"
+import {UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
-import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {Session, useSignIn} from "../hooks/useSignIn"
+import {NetworkConfig} from "../types/network"
+import {MINT_UID_TX_TYPE} from "../types/transactions"
+import {UserWalletWeb3Status} from "../types/web3"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
-import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import web3 from "web3"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -253,12 +256,15 @@ function ErrorCard({title}: {title: string}) {
   )
 }
 
-function isElligible(kyc: KYC | undefined, user: User) {
-  return (kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") || user.goListed
+function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
+  return (
+    (!!kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") ||
+    (!!user && user.info.value.goListed)
+  )
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
-  const {user, network, setSessionData} = useContext(AppContext)
+  const {user, userWalletWeb3Status, network, setSessionData} = useContext(AppContext)
   const [kyc, setKYC] = useState<KYC>()
   // Determines the form to show. Can be empty, "US" or "entity"
   const [entityType, setEntityType] = useState<string>("")
@@ -273,7 +279,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
 
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
-    } else if (isElligible(kyc, user) && !disabled) {
+    } else if (isEligible(kyc, user) && !disabled) {
       dispatch({type: CREATE_UID})
     }
   })
@@ -282,19 +288,24 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     if (session.status !== "authenticated") {
       return
     }
+    // If the session status is "authenticated", we expect `userWalletWeb3Status?.address` to
+    // be non-nullable, as that address should have been necessary in determining the
+    // session status.
+    const userAddress = userWalletWeb3Status?.address
+    assertNonNullable(userAddress)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     setLoading(true)
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     try {
-      const response = await client.fetchKYCStatus(user.address)
+      const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {
         setKYC(response.json)
         if (response.json.countryCode === "US") {
           setEntityType("US")
         }
       }
-    } catch (error: any) {
+    } catch (err: unknown) {
       setErrored(true)
     } finally {
       setLoading(false)
@@ -306,21 +317,8 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
   }
 
   function renderForm() {
-    if (user.goListed) {
-      return (
-        <VerificationNotice
-          icon={iconCircleCheck}
-          notice={
-            <>
-              Your verification was approved to participate in the{" "}
-              <Link className="form-link" to="/pools/senior">
-                Senior Pool
-              </Link>
-              .
-            </>
-          }
-        />
-      )
+    if (user && user.info.value.goListed) {
+      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
     } else if (loading) {
       return <LoadingCard title="Verify your address" />
     } else if (errored) {
@@ -338,35 +336,22 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
           kycStatus={kyc?.status}
           entityType={entityType}
           onClose={() => setEntityType("")}
-          network={network?.name!}
-          address={user.address}
+          network={network?.name}
+          address={user?.address}
           onEvent={() => fetchKYCStatus(session)}
         />
       )
     } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
-    } else if (isElligible(kyc, user)) {
-      return (
-        <VerificationNotice
-          icon={iconCircleCheck}
-          notice={
-            <>
-              Your verification was approved to participate in the{" "}
-              <Link className="form-link" to="/pools/senior">
-                Senior Pool
-              </Link>
-              .
-            </>
-          }
-        />
-      )
+    } else if (isEligible(kyc, user)) {
+      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
     } else if (entityType === "non-US") {
       return (
         <NonUSForm
           onClose={() => setEntityType("")}
           entityType={entityType}
-          network={network?.name!}
-          address={user.address}
+          network={network?.name}
+          address={user?.address}
           onEvent={() => fetchKYCStatus(session)}
         />
       )
@@ -412,7 +397,7 @@ const UNIQUE_IDENTITY_SIGNER_URLS = {
     "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe",
 }
 
-const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
+const UNIQUE_IDENTITY_MINT_PRICE = Web3Library.utils.toWei("0.00083", "ether")
 
 const START = "start"
 const SIGN_IN = "sign_in"
@@ -470,19 +455,21 @@ async function fetchTrustedSignature({
   network,
   session,
   setSessionData,
-  user,
+  userWalletWeb3Status,
 }: {
   network: NetworkConfig
   session: Session
   setSessionData: SetSessionFn
-  user: User
+  userWalletWeb3Status: UserWalletWeb3Status
 }): Promise<SignatureResponse> {
   assertNonNullable(network.name)
   if (session.status !== "authenticated") {
     throw new Error("not authenticated")
   }
+  const userAddress = userWalletWeb3Status.address
+  assertNonNullable(userAddress)
   const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
-  const auth = client._getAuthHeaders(user.address)
+  const auth = client._getAuthHeaders(userAddress)
 
   const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
     headers: {"Content-Type": "application/json"},
@@ -495,7 +482,8 @@ async function fetchTrustedSignature({
 
 function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const formMethods = useForm()
-  const {user, network, setSessionData, goldfinchProtocol, refreshUserData} = useNonNullContext(AppContext)
+  const {user, userWalletWeb3Status, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
+    useContext(AppContext)
   const [session] = useSignIn()
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
@@ -505,36 +493,43 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       return
     }
 
-    if (user.hasUID) {
+    if (user && user.info.value.hasUID) {
       dispatch({type: END})
     }
   })
 
   const action = async () => {
+    assertNonNullable(currentBlock)
+    assertNonNullable(refreshCurrentBlock)
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(network)
+    assertNonNullable(setSessionData)
+    assertNonNullable(userWalletWeb3Status)
     try {
       const trustedSignature = await fetchTrustedSignature({
         network,
         session,
         setSessionData,
-        user,
+        userWalletWeb3Status,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = 0 // Hardcoding for v2.2 migration (constant name changed from ID_VERSION_0 to ID_TYPE_0)
+      const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
       await sendFromUser(
-        uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
+        uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
-          type: "Mint UID",
+          type: MINT_UID_TX_TYPE,
+          data: {},
         },
         {value: UNIQUE_IDENTITY_MINT_PRICE}
       )
-      refreshUserData()
-    } catch (error: any) {
+      refreshCurrentBlock()
+    } catch (err: unknown) {
       setErrored(true)
-      console.error(error)
+      console.error(err)
     }
   }
 
-  if (user.hasUID) {
+  if (user && user.info.value.hasUID) {
     return (
       <VerificationNotice
         icon={iconCircleCheck}
@@ -558,7 +553,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         }
       />
     )
-  } else if (user.legacyGolisted) {
+  } else if (user && user.info.value.legacyGolisted) {
     return (
       <FormProvider {...formMethods}>
         <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
@@ -566,13 +561,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
           <div className="info-banner subtle">
             <div className="message">
               <div>
-                <p className="font-small mb-2">
-                  Your verification was approved to participate in{" "}
-                  <Link className="form-link" to="/">
-                    Borrower Pools
-                  </Link>
-                  . However, there may be future opportunities that require you to mint a UID.
-                </p>
+                <p className="font-small mb-2">Your verification was approved.</p>
               </div>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />
@@ -591,7 +580,11 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
             <div className="message">
               <p className="font-small">
                 Your UID, or "Unique Identity", is an NFT that represents your unique identity and grants you access to
-                participate in Borrower Pools. You do not need your UID to participate in the Senior Pool.
+                participate in Borrower Pools and the{" "}
+                <Link className="form-link" to="/pools/senior">
+                  Senior Pool
+                </Link>
+                .
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />
@@ -603,9 +596,10 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 }
 
 function VerifyIdentity() {
-  const {user} = useContext(AppContext)
+  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
+  const currentRoute = useCurrentRoute()
 
   useEffect(() => {
     if (state.step === START && session.status !== "authenticated") {
@@ -615,13 +609,26 @@ function VerifyIdentity() {
     }
   })
 
+  useEffect(
+    () => {
+      if (currentBlock) {
+        assertNonNullable(setLeafCurrentBlock)
+        assertNonNullable(currentRoute)
+        setLeafCurrentBlock(currentRoute, currentBlock)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentBlock?.number]
+  )
+
   let children: JSX.Element
   if (state.step === START) {
     children = <></>
   } else if (state.step === SIGN_IN) {
+    const userAddress = userWalletWeb3Status?.address
     children = (
       <SignInForm
-        disabled={!user.address}
+        disabled={!userAddress}
         action={async () => {
           const session = await signIn()
           if (session.status !== "authenticated") {
@@ -643,7 +650,7 @@ function VerifyIdentity() {
   return (
     <div className="content-section verify-identity">
       <div className="page-header">Verify your identity</div>
-      <ConnectionNotice />
+      <ConnectionNotice requireUnlock={false} />
       {children}
     </div>
   )

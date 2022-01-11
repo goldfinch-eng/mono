@@ -16,23 +16,24 @@ import "../../interfaces/IUniqueIdentity.sol";
 contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
-  uint256 public constant ID_VERSION_0 = 0;
-  uint256 public constant ID_VERSION_1 = 1;
-  uint256 public constant ID_VERSION_2 = 2;
-  uint256 public constant ID_VERSION_3 = 3;
-  uint256 public constant ID_VERSION_4 = 4;
-  uint256 public constant ID_VERSION_5 = 5;
-  uint256 public constant ID_VERSION_6 = 6;
-  uint256 public constant ID_VERSION_7 = 7;
-  uint256 public constant ID_VERSION_8 = 8;
-  uint256 public constant ID_VERSION_9 = 9;
-  uint256 public constant ID_VERSION_10 = 10;
+  uint256 public constant ID_TYPE_0 = 0;
+  uint256 public constant ID_TYPE_1 = 1;
+  uint256 public constant ID_TYPE_2 = 2;
+  uint256 public constant ID_TYPE_3 = 3;
+  uint256 public constant ID_TYPE_4 = 4;
+  uint256 public constant ID_TYPE_5 = 5;
+  uint256 public constant ID_TYPE_6 = 6;
+  uint256 public constant ID_TYPE_7 = 7;
+  uint256 public constant ID_TYPE_8 = 8;
+  uint256 public constant ID_TYPE_9 = 9;
+  uint256 public constant ID_TYPE_10 = 10;
 
   uint256 public constant MINT_COST_PER_TOKEN = 830000 gwei;
 
   /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
   /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
   mapping(address => uint256) public nonces;
+  mapping(uint256 => bool) public supportedUIDTypes;
 
   function initialize(address owner, string memory uri) public initializer {
     require(owner != address(0), "Owner address cannot be empty");
@@ -41,13 +42,38 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     __UniqueIdentity_init(owner);
   }
 
+  // solhint-disable-next-line func-name-mixedcase
   function __UniqueIdentity_init(address owner) internal initializer {
     __UniqueIdentity_init_unchained(owner);
   }
 
+  // solhint-disable-next-line func-name-mixedcase
   function __UniqueIdentity_init_unchained(address owner) internal initializer {
     _setupRole(SIGNER_ROLE, owner);
     _setRoleAdmin(SIGNER_ROLE, OWNER_ROLE);
+  }
+
+  function setSupportedUIDTypes(uint256[] calldata ids, bool[] calldata values) public onlyAdmin {
+    require(ids.length == values.length, "accounts and ids length mismatch");
+    for (uint256 i = 0; i < ids.length; ++i) {
+      supportedUIDTypes[ids[i]] = values[i];
+    }
+  }
+
+  /**
+   * @dev Gets the token name.
+   * @return string representing the token name
+   */
+  function name() public pure returns (string memory) {
+    return "Unique Identity";
+  }
+
+  /**
+   * @dev Gets the token symbol.
+   * @return string representing the token symbol
+   */
+  function symbol() public pure returns (string memory) {
+    return "UID";
   }
 
   function mint(
@@ -56,7 +82,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     bytes calldata signature
   ) public payable override onlySigner(_msgSender(), id, expiresAt, signature) incrementNonce(_msgSender()) {
     require(msg.value >= MINT_COST_PER_TOKEN, "Token mint requires 0.00083 ETH");
-    require(id == ID_VERSION_0, "Token id not supported");
+    require(supportedUIDTypes[id] == true, "Token id not supported");
     require(balanceOf(_msgSender(), id) == 0, "Balance before mint must be 0");
 
     _mint(_msgSender(), id, 1, "");

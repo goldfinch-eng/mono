@@ -14,6 +14,9 @@ type Ethers = typeof ethers
 import hre, {web3, artifacts} from "hardhat"
 import BN from "bn.js"
 const USDCDecimals = new BN(String(1e6))
+const FIDU_DECIMALS = new BN(String(1e18))
+const GFI_DECIMALS = new BN(String(1e18))
+const STAKING_REWARDS_MULTIPLIER_DECIMALS = new BN(String(1e18))
 const ETHDecimals = new BN(String(1e18))
 const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
@@ -23,9 +26,10 @@ import {AdminClient} from "defender-admin-client"
 import PROTOCOL_CONFIG from "../../protocol_config.json"
 import {CONFIG_KEYS} from "../configKeys"
 import {GoldfinchConfig} from "../../typechain/ethers"
-import {DeploymentsExtension, DeployResult, DeployOptions} from "hardhat-deploy/types"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {Contract, BaseContract, Signer} from "ethers"
 import {
+  asNonNullable,
   AssertionError,
   assertIsString,
   assertNonNullable,
@@ -33,8 +37,6 @@ import {
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
 import {getExistingContracts, MAINNET_MULTISIG} from "../mainnetForkingHelpers"
-import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {Logger} from "../types"
 
 import {ContractDeployer} from "./contractDeployer"
 import {ContractUpgrader} from "./contractUpgrader"
@@ -117,9 +119,15 @@ const SAFE_CONFIG_CHAIN_IDS = genExhaustiveTuple<SafeConfigChainId>()(MAINNET_CH
 export const isSafeConfigChainId = (val: unknown): val is SafeConfigChainId =>
   (SAFE_CONFIG_CHAIN_IDS as unknown[]).includes(val)
 
-const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString}> = {
-  [MAINNET_CHAIN_ID]: {safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"},
-  [RINKEBY_CHAIN_ID]: {safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976"},
+const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString; executor: AddressString}> = {
+  [MAINNET_CHAIN_ID]: {
+    safeAddress: "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f",
+    executor: "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5",
+  },
+  [RINKEBY_CHAIN_ID]: {
+    safeAddress: "0xAA96CA940736e937A8571b132992418c7d220976",
+    executor: "0xeF3fAA47e1b0515f640c588a0bc3D268d5aa29B9",
+  },
 }
 
 // WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
@@ -326,11 +334,11 @@ async function updateConfig(config: GoldfinchConfig, type: any, key: any, newVal
   }
 }
 
-function fromAtomic(amount: BN, decimals = USDCDecimals) {
+function fromAtomic(amount: BN, decimals = USDCDecimals): string {
   return new BN(String(amount)).div(decimals).toString(10)
 }
 
-function toAtomic(amount: BN, decimals = USDCDecimals) {
+function toAtomic(amount: BN, decimals = USDCDecimals): string {
   return new BN(String(amount)).mul(decimals).toString(10)
 }
 
@@ -342,8 +350,10 @@ function getDefenderClient() {
 }
 
 const ETHERS_CONTRACT_PROVIDER = "ethers"
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type ETHERS_CONTRACT_PROVIDER = typeof ETHERS_CONTRACT_PROVIDER
 const TRUFFLE_CONTRACT_PROVIDER = "truffle"
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type TRUFFLE_CONTRACT_PROVIDER = typeof TRUFFLE_CONTRACT_PROVIDER
 type ContractProvider = ETHERS_CONTRACT_PROVIDER | TRUFFLE_CONTRACT_PROVIDER
 
@@ -381,22 +391,17 @@ async function getContract<
     opts.at = await getExistingAddress(contractName)
   }
   const at = opts.at
+  const from = opts.from || (await getProtocolOwner())
   switch (as) {
     case ETHERS_CONTRACT_PROVIDER: {
       const abi = await artifacts.require(contractName).abi
       const contract = await ethers.getContractAt(abi, at)
-      if (opts.from) {
-        const signer = await ethers.getSigner(opts.from)
-        return contract.connect(signer) as unknown as ProvidedContract<P, E, T>
-      } else {
-        return contract as unknown as ProvidedContract<P, E, T>
-      }
+      const signer = await ethers.getSigner(from)
+      return contract.connect(signer) as unknown as ProvidedContract<P, E, T>
     }
     case TRUFFLE_CONTRACT_PROVIDER: {
       const contract = await artifacts.require(contractName)
-      if (opts.from) {
-        contract.defaults({from: opts.from})
-      }
+      contract.defaults({from})
       return contract.at(at) as unknown as ProvidedContract<P, E, T>
     }
     default:
@@ -420,6 +425,11 @@ async function getExistingAddress(contractName: string): Promise<string> {
   }
   assertIsString(existingAddress)
   return existingAddress
+}
+
+export async function getTempMultisig(): Promise<string> {
+  const {temp_multisig} = await hre.getNamedAccounts()
+  return asNonNullable(temp_multisig)
 }
 
 async function getProtocolOwner(): Promise<string> {
@@ -478,6 +488,9 @@ export {
   ETHDecimals,
   LEVERAGE_RATIO_DECIMALS,
   INTEREST_DECIMALS,
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  STAKING_REWARDS_MULTIPLIER_DECIMALS,
   getUSDCAddress,
   getERC20Address,
   getDeployedContract,

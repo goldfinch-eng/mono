@@ -42,7 +42,7 @@ const TypedData = {
 }
 
 async function submitGaslessTransaction(contractAddress, unsentAction) {
-  const provider = new ethers.providers.Web3Provider(web3.currentProvider)
+  const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider)
   const signer = provider.getSigner()
   const from = await signer.getAddress()
 
@@ -51,7 +51,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
   // If we're on a purely local deployment, or murmuration, use the TestForwarder.
   if (
     (network.chainId === 31337 && !process.env.REACT_APP_HARDHAT_FORK) ||
-    (network.chainId === 31337 && process.env.MURMURATION === "yes")
+    (network.chainId === 31337 && process.env.REACT_APP_MURMURATION === "yes")
   ) {
     const config = await getDeployments(chainIdToNetworkID[network.chainId])
     const deployedForwarder = config.contracts.TestForwarder

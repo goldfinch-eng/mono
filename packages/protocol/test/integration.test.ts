@@ -5,7 +5,6 @@ import {
   BN,
   usdcVal,
   getBalance,
-  deployAllContracts,
   erc20Approve,
   erc20Transfer,
   SECONDS_PER_DAY,
@@ -19,10 +18,9 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} from "../blockchain_scripts/deployHelpers"
 import {time} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
-
-const TEST_TIMEOUT = 40_000
 
 // eslint-disable-next-line no-unused-vars
 let accounts, owner, underwriter, borrower, investor1, investor2
@@ -30,18 +28,25 @@ let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, 
 
 const ONE_HUNDRED = new BN(100)
 
-describe("Goldfinch", async () => {
+const TEST_TIMEOUT = 60000
+
+describe("Goldfinch", async function () {
+  this.timeout(TEST_TIMEOUT)
+
   let limit = usdcVal(10000)
   let interestApr = interestAprAsBN("25")
   let lateFeeApr = interestAprAsBN("0")
   const juniorFeePercent = new BN(20)
+  const allowedUIDTypes = [0]
   let paymentPeriodInDays = new BN(1)
   let termInDays = new BN(365)
+  const principalGracePeriod = new BN(185)
+  const fundableAt = new BN(0)
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} =
-      await deployAllContracts(deployments)
+      await deployBaseFixture()
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
@@ -87,6 +92,7 @@ describe("Goldfinch", async () => {
       _interestApr,
       _termInDays,
       _lateFeesApr,
+      _allowedUIDTypes,
     }: {
       _paymentPeriodInDays?: Numberish
       _borrower?: string
@@ -94,6 +100,7 @@ describe("Goldfinch", async () => {
       _interestApr?: Numberish
       _termInDays?: Numberish
       _lateFeesApr?: Numberish
+      _allowedUIDTypes?: Array<Numberish>
     } = {}) {
       const result = await goldfinchFactory.createPool(
         borrower || _borrower,
@@ -103,6 +110,9 @@ describe("Goldfinch", async () => {
         _paymentPeriodInDays || paymentPeriodInDays,
         termInDays || _termInDays,
         lateFeeApr || _lateFeesApr,
+        principalGracePeriod,
+        fundableAt,
+        allowedUIDTypes || _allowedUIDTypes,
         {from: owner}
       )
       const poolCreatedEvent = result.logs[result.logs.length - 1]
@@ -284,7 +294,7 @@ describe("Goldfinch", async () => {
           [() => getBalance(investor1, usdc), {byCloseTo: expectedJuniorReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedJuniorReturn}],
         ])
-      }).timeout(TEST_TIMEOUT)
+      })
 
       it("should handle writedowns correctly", async () => {
         const amount = usdcVal(10000)
@@ -315,7 +325,7 @@ describe("Goldfinch", async () => {
         await depositToSeniorPool(new BN(10))
         await withdrawFromSeniorPool(new BN(10))
         await makePayment(tranchedPool, new BN(10))
-      }).timeout(TEST_TIMEOUT)
+      })
 
       // This test fails now, but should pass once we fix late fee logic.
       // We *should* charge interest after term end date, when you're so late that

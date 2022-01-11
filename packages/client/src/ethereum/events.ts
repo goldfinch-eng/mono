@@ -1,94 +1,156 @@
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import web3 from "../web3"
-import moment from "moment"
 import _ from "lodash"
-import {usdcFromAtomic} from "./erc20"
+import moment from "moment"
 import {EventData} from "web3-eth-contract"
-import {assertNumber} from "../utils"
+import {
+  DEPOSIT_MADE_EVENT,
+  isKnownEventData,
+  KnownEventData,
+  KnownEventName,
+  PoolEventType,
+  WITHDRAWAL_MADE_EVENT,
+} from "../types/events"
+import {assertNumber, defaultSum} from "../utils"
+import web3 from "../web3"
+import {usdcFromAtomic} from "./erc20"
+import {fiduFromAtomic} from "./fidu"
+import {gfiFromAtomic} from "./gfi"
+import {RichAmount, AmountWithUnits, HistoricalTx, TxName} from "../types/transactions"
+import {CombinedRepaymentTx} from "./pool"
 
-const EVENT_TYPE_MAP = {
-  DepositMade: "Supply",
-  WithdrawalMade: "Withdrawal",
-  DrawdownMade: "Borrow",
-  PaymentCollected: "Payment",
-  Approval: "Approval",
-  InterestCollected: "Interest Collected",
-  PrincipalCollected: "Principal Collected",
-  ReserveFundsCollected: "Reserve Funds Collected",
+async function mapEventsToTx<T extends KnownEventName>(
+  events: EventData[],
+  known: T[],
+  config: EventParserConfig<T>
+): Promise<HistoricalTx<T>[]> {
+  const txs = await Promise.all(_.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config)))
+  return _.reverse(_.sortBy(_.compact(txs), ["blockNumber", "transactionIndex"]))
 }
 
-const EVENT_AMOUNT_FIELD = {
-  WithdrawalMade: "userAmount",
-  DepositMade: "amount",
-  DrawdownMade: "drawdownAmount",
-  PaymentCollected: "paymentAmount",
-  InterestCollected: "amount",
-  PrincipalCollected: "amount",
-  ReserveFundsCollected: "amount",
-  Approval: "value",
+type EventParserConfig<T extends KnownEventName> = {
+  parseName: (eventData: KnownEventData<T>) => TxName
+  parseAmount: (eventData: KnownEventData<T>) => AmountWithUnits
 }
 
-function getEventAmount(eventData: EventData): string {
-  return eventData.returnValues[EVENT_AMOUNT_FIELD[eventData.event]]
-}
-export function getEventAmountBN(eventData: EventData): BigNumber {
-  const amount = getEventAmount(eventData)
-  return new BigNumber(amount)
-}
-
-async function mapEventsToTx(events) {
-  const txs = await Promise.all(_.map(_.compact(events), mapEventToTx))
-  return _.reverse(_.sortBy(txs, "blockNumber"))
-}
-
-function mapEventToTx(event) {
-  return web3.eth.getBlock(event.blockNumber).then((block) => {
-    let amount = getEventAmount(event)
-
-    // For the interest collected event, we need to support the v1 pool as well, which had a
-    // different name for the amount field
-    if (event.event === "InterestCollected" && !amount) {
-      amount = event.returnValues["poolAmount"]
-    }
-
-    // Tranched pool drawdown made events have a different name for the amount field
-    if (event.event === "DrawdownMade" && !amount) {
-      amount = event.returnValues["amount"]
-    }
-
-    assertNumber(block.timestamp)
-    return {
-      type: event.event,
-      name: EVENT_TYPE_MAP[event.event],
-      amount: usdcFromAtomic(amount),
-      amountBN: new BigNumber(amount),
-      id: event.transactionHash,
-      blockNumber: event.blockNumber,
-      blockTime: block.timestamp,
-      date: moment.unix(block.timestamp).format("MMM D, h:mma"),
-      status: "successful",
-      eventId: event.id,
-      erc20: event.erc20,
-    }
-  })
-}
-
-function getBalanceAsOf(events: EventData[], blockNumExclusive: number, subtractiveEventName: string): BigNumber {
-  const filtered = events.filter((eventData: EventData) => eventData.blockNumber < blockNumExclusive)
-  if (!filtered.length) {
-    return new BigNumber(0)
+function getRichAmount(amount: AmountWithUnits): RichAmount {
+  if (!amount.amount) {
+    console.error("Empty string amount parses as NaN BigNumber.")
   }
-  return BigNumber.sum.apply(
-    null,
+  const atomic = new BigNumber(amount.amount)
+  let display: string
+  switch (amount.units) {
+    case "usdc":
+      display = usdcFromAtomic(atomic)
+      break
+    case "fidu":
+      display = fiduFromAtomic(atomic)
+      break
+    case "gfi":
+      display = gfiFromAtomic(atomic)
+      break
+    default:
+      assertUnreachable(amount.units)
+  }
+  return {atomic, display, units: amount.units}
+}
+
+async function populateDates<T extends KnownEventName, U extends HistoricalTx<T> | CombinedRepaymentTx>(txs: U[]) {
+  return await Promise.all(
+    txs.map((tx) => {
+      return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
+        assertNumber(block.timestamp)
+        tx.date = moment.unix(block.timestamp).format("MMM D, h:mma")
+        return tx
+      })
+    })
+  )
+}
+
+async function mapEventToTx<T extends KnownEventName>(
+  eventData: EventData,
+  known: T[],
+  config: EventParserConfig<T>
+): Promise<HistoricalTx<T> | undefined> {
+  if (isKnownEventData<T>(eventData, known)) {
+    const parsedName = config.parseName(eventData)
+    const parsedAmount = config.parseAmount(eventData)
+
+    return {
+      current: false,
+      type: eventData.event,
+      name: parsedName,
+      amount: getRichAmount(parsedAmount),
+      id: eventData.transactionHash,
+      blockNumber: eventData.blockNumber,
+      transactionIndex: eventData.transactionIndex,
+      status: "successful",
+      eventId: (eventData as any).id,
+      erc20: (eventData as any).erc20,
+    }
+  } else {
+    console.error(`Unexpected event type: ${eventData.event}. Expected: ${known}`)
+    return
+  }
+}
+
+function getBalanceAsOf<T extends KnownEventName, U extends T>(
+  events: KnownEventData<T>[],
+  blockNumExclusive: number,
+  subtractiveEventName: U,
+  getEventAmount: (eventData: KnownEventData<T>) => BigNumber
+): BigNumber {
+  const filtered = events.filter((eventData: KnownEventData<T>) => eventData.blockNumber < blockNumExclusive)
+  return defaultSum(
     filtered.map((eventData) => {
-      const amountBN = getEventAmountBN(eventData)
+      const amount = getEventAmount(eventData)
       if (eventData.event === subtractiveEventName) {
-        return amountBN.multipliedBy(new BigNumber(-1))
+        return amount.multipliedBy(new BigNumber(-1))
       } else {
-        return amountBN
+        return amount
       }
     })
   )
 }
 
-export {mapEventsToTx, getBalanceAsOf}
+function getPoolEventAmount(eventData: KnownEventData<PoolEventType>): BigNumber {
+  switch (eventData.event) {
+    case DEPOSIT_MADE_EVENT:
+      return new BigNumber(eventData.returnValues.amount)
+    case WITHDRAWAL_MADE_EVENT:
+      return new BigNumber(eventData.returnValues.userAmount)
+
+    default:
+      assertUnreachable(eventData.event)
+  }
+}
+
+function reduceToKnown<T extends KnownEventName>(events: EventData[], knownEventNames: T[]) {
+  const reduced = events.reduce<{
+    known: KnownEventData<T>[]
+    unknown: EventData[]
+  }>(
+    (acc, curr) => {
+      if (isKnownEventData(curr, knownEventNames)) {
+        acc.known.push(curr)
+      } else {
+        acc.unknown.push(curr)
+      }
+      return acc
+    },
+    {
+      known: [],
+      unknown: [],
+    }
+  )
+  if (reduced.unknown.length) {
+    console.error(
+      `Unexpected event types: ${reduced.unknown.map(
+        (eventData: EventData) => eventData.event
+      )}. Expected: ${knownEventNames}`
+    )
+  }
+  return reduced.known
+}
+
+export {mapEventsToTx, getBalanceAsOf, getPoolEventAmount, reduceToKnown, populateDates}

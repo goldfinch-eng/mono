@@ -3,7 +3,7 @@ import BN from "bn.js"
 import hre from "hardhat"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {DISTRIBUTOR_ROLE, OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
-import {GFIInstance} from "../typechain/truffle"
+import {GFIInstance, GoldfinchConfigInstance} from "../typechain/truffle"
 import {
   CommunityRewardsInstance,
   Granted,
@@ -16,8 +16,10 @@ import {
   expectStateAfterGetReward,
   mintAndLoadRewards,
 } from "./communityRewardsHelpers"
-import {advanceTime, decodeLogs, deployAllContracts, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
+import {advanceTime, decodeLogs, expect, getCurrentTimestamp, getOnlyLog} from "./testHelpers"
 import {asNonNullable} from "../../utils/src"
+import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "../blockchain_scripts/baseDeploy"
+import {deployBaseFixture} from "./util/fixtures"
 const {ethers} = hre
 const {deployments} = hre
 
@@ -26,16 +28,21 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const owner = asNonNullable(_owner)
   const anotherUser = asNonNullable(_anotherUser)
 
-  const deployed = await deployAllContracts(deployments)
-  return {owner, anotherUser, gfi: deployed.gfi, communityRewards: deployed.communityRewards}
+  const deployed = await deployBaseFixture()
+  return {owner, anotherUser, ...deployed}
 })
 
 describe("CommunityRewards", () => {
-  let owner: string, anotherUser: string, gfi: GFIInstance, communityRewards: CommunityRewardsInstance
+  let owner: string,
+    anotherUser: string,
+    gfi: GFIInstance,
+    communityRewards: CommunityRewardsInstance,
+    goldfinchConfig: GoldfinchConfigInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({owner, anotherUser, gfi, communityRewards} = await setupTest())
+    ;({owner, anotherUser, gfi, communityRewards, goldfinchConfig} = await setupTest())
+    await advanceTime({toSecond: TOKEN_LAUNCH_TIME_IN_SECONDS})
   })
 
   async function grant({
@@ -73,12 +80,12 @@ describe("CommunityRewards", () => {
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
 
     // Verify grant state.
-    const currentTimestamp = await getCurrentTimestamp()
+    const expectedStartTime = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
     const grantState = await communityRewards.grants(tokenId)
     assertCommunityRewardsVestingRewards(grantState)
     expect(grantState.totalGranted).to.bignumber.equal(amount)
     expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
-    expect(grantState.startTime).to.bignumber.equal(currentTimestamp)
+    expect(grantState.startTime).to.bignumber.equal(expectedStartTime)
     expect(grantState.endTime).to.bignumber.equal(new BN(grantState.startTime).add(vestingLength))
     expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
     expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
@@ -97,6 +104,24 @@ describe("CommunityRewards", () => {
     return new BN(tokenId)
   }
 
+  it("sets tokenLaunchTimeInSeconds to TOKEN_LAUNCH_TIME_IN_SECONDS by default", async () => {
+    expect(await communityRewards.tokenLaunchTimeInSeconds()).to.bignumber.eq(new BN(TOKEN_LAUNCH_TIME_IN_SECONDS))
+  })
+
+  describe("setTokenLaunchTimeInSeconds", async () => {
+    it("sets tokenLaunchTimeInSeconds", async () => {
+      await communityRewards.setTokenLaunchTimeInSeconds("47")
+      expect(await communityRewards.tokenLaunchTimeInSeconds()).to.bignumber.eq("47")
+    })
+
+    it("rejects sender who lacks owner role", async () => {
+      expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
+      await expect(communityRewards.setTokenLaunchTimeInSeconds(47, {from: anotherUser})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
+    })
+  })
+
   describe("grants", () => {
     it("returns the state for a grant", async () => {
       const amount = new BN(1e6)
@@ -111,13 +136,13 @@ describe("CommunityRewards", () => {
         cliffLength,
         vestingInterval,
       })
-      const currentTimestamp = await getCurrentTimestamp()
+      const expectedStartTime = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
       const grantState = await communityRewards.grants(tokenId)
       assertCommunityRewardsVestingRewards(grantState)
       expect(grantState.totalGranted).to.bignumber.equal(amount)
       expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
-      expect(grantState.startTime).to.bignumber.equal(currentTimestamp)
-      expect(grantState.endTime).to.bignumber.equal(currentTimestamp.add(vestingLength))
+      expect(grantState.startTime).to.bignumber.equal(expectedStartTime)
+      expect(grantState.endTime).to.bignumber.equal(expectedStartTime.add(vestingLength))
       expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
       expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
       expect(grantState.revokedAt).to.bignumber.equal(new BN(0))
@@ -275,7 +300,7 @@ describe("CommunityRewards", () => {
       const receipt = await communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {
         from: owner,
       })
-      expect(receipt.receipt.gasUsed).to.eq(319172)
+      expect(receipt.receipt.gasUsed).to.be.lte(321454)
     })
 
     context("paused", async () => {
@@ -357,8 +382,8 @@ describe("CommunityRewards", () => {
         cliffLength: new BN(0),
         vestingInterval: new BN(1),
       })
-      grantedAt = await getCurrentTimestamp()
-      await advanceTime({seconds: vestingLength.div(new BN(2))})
+      grantedAt = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+      await advanceTime({toSecond: grantedAt.add(vestingLength.div(new BN(2)))})
     })
 
     it("rejects sender who lacks owner role", async () => {
@@ -439,10 +464,12 @@ describe("CommunityRewards", () => {
 
   describe("getReward", async () => {
     let amount: BN
+    let grantedAt: BN
 
     beforeEach(async () => {
       amount = new BN(1e6)
       await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+      grantedAt = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
     })
     it("rejects sender who is not owner of the token", async () => {
       const tokenId = await grant({
@@ -508,9 +535,8 @@ describe("CommunityRewards", () => {
         cliffLength,
         vestingInterval: new BN(1),
       })
-      const grantedAt = await getCurrentTimestamp()
 
-      await advanceTime({seconds: cliffLength})
+      await advanceTime({toSecond: grantedAt.add(cliffLength)})
       await ethers.provider.send("evm_mine", [])
 
       const expectedClaimableAtCliff = amount.mul(cliffLength).div(vestingLength)
@@ -593,7 +619,7 @@ describe("CommunityRewards", () => {
               vestingInterval,
             })
 
-            await advanceTime({seconds: vestingLength.div(new BN(2))})
+            await advanceTime({toSecond: grantedAt.add(vestingLength.div(new BN(2)))})
 
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
@@ -694,7 +720,7 @@ describe("CommunityRewards", () => {
               vestingInterval,
             })
 
-            await advanceTime({seconds: cliffLength.sub(new BN(1))})
+            await advanceTime({toSecond: grantedAt.add(cliffLength.sub(new BN(1)))})
 
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
@@ -746,7 +772,7 @@ describe("CommunityRewards", () => {
               vestingInterval,
             })
 
-            await advanceTime({seconds: cliffLength.sub(new BN(1))})
+            await advanceTime({toSecond: grantedAt.add(cliffLength.sub(new BN(1)))})
 
             await communityRewards.getReward(tokenId, {from: anotherUser})
 
@@ -820,8 +846,8 @@ describe("CommunityRewards", () => {
           cliffLength: new BN(0),
           vestingInterval: new BN(1),
         })
-        grantedAt = await getCurrentTimestamp()
-        await advanceTime({seconds: vestingLength.div(new BN(2))})
+        grantedAt = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+        await advanceTime({toSecond: grantedAt.add(vestingLength.div(new BN(2)))})
       })
 
       it("after revocation, vested amount is still claimable", async () => {
@@ -921,6 +947,32 @@ describe("CommunityRewards", () => {
     context("reentrancy", async () => {
       it("reverts", async () => {
         // TODO
+      })
+    })
+  })
+
+  describe("updateGoldfinchConfig", async () => {
+    let otherConfig: GoldfinchConfigInstance
+
+    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
+      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
+      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
+      return {goldfinchConfig}
+    })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
+    })
+
+    describe("setting it", async () => {
+      it("emits an event", async () => {
+        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
+        const tx = await communityRewards.updateGoldfinchConfig({from: owner})
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: otherConfig.address,
+        })
       })
     })
   })

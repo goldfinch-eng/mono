@@ -1,136 +1,118 @@
-import {useState, useEffect, useContext} from "react"
-import EarnActionsContainer from "../earnActionsContainer"
-import PoolStatus from "../poolStatus"
-import ConnectionNotice from "../connectionNotice"
-import {CapitalProvider, fetchCapitalProviderData, PoolData, SeniorPool} from "../../ethereum/pool"
+import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../../App"
-import InvestorNotice from "../investorNotice"
-import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {useStaleWhileRevalidating} from "../../hooks/useAsync"
-import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
-import BigNumber from "bignumber.js"
-import {GraphSeniorPoolData, GraphUserData, isGraphSeniorPoolData, isGraphUserData} from "../../graphql/utils"
-import {GET_SENIOR_POOL_AND_PROVIDER_DATA} from "../../graphql/queries"
-import {parseSeniorPool, parseUser} from "../../graphql/parsers"
-import {useGraphQuerier} from "../../hooks/useGraphQuerier"
+import {GFILoaded} from "../../ethereum/gfi"
+import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {UserLoaded} from "../../ethereum/user"
+import {useCurrentRoute} from "../../hooks/useCurrentRoute"
+import {useSession} from "../../hooks/useSignIn"
+import {Loadable} from "../../types/loadable"
+import {assertNonNullable, displayDollars} from "../../utils"
+import ConnectionNotice from "../connectionNotice"
+import EarnActionsContainer from "../earnActionsContainer"
+import InvestorNotice from "../investorNotice"
+import SeniorPoolStatus from "../seniorPoolStatus"
+import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider | GraphUserData>()
-  const [poolData, setPoolData] = useState<PoolData | GraphSeniorPoolData>()
-  const kycResult = useKYC()
-  const kyc = useStaleWhileRevalidating(kycResult)
-  const {data, fetchGraphData, setGraphBlockNumber, refetch} = useGraphQuerier(
-    GET_SENIOR_POOL_AND_PROVIDER_DATA,
-    setGraphData
+  const {
+    userWalletWeb3Status,
+    pool,
+    user,
+    goldfinchConfig,
+    stakingRewards,
+    gfi,
+    refreshCurrentBlock,
+    setLeafCurrentBlock,
+  } = useContext(AppContext)
+  const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
+    loaded: false,
+    value: undefined,
+  })
+  const session = useSession()
+  const currentRoute = useCurrentRoute()
+
+  useEffect(
+    () => {
+      if (pool && stakingRewards && gfi && user) {
+        refreshCapitalProviderData(pool, stakingRewards, gfi, user)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pool, stakingRewards, gfi, user]
   )
 
-  const enableSeniorPoolV2 = process.env.REACT_APP_TOGGLE_THE_GRAPH === "true"
+  async function refreshCapitalProviderData(
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    gfi: GFILoaded,
+    user: UserLoaded
+  ) {
+    assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
 
-  const loadedCapitalProvider = isGraphUserData(capitalProvider) || capitalProvider?.loaded
-  const loadedPoolData = isGraphSeniorPoolData(poolData) || poolData?.loaded
-  const isPaused = isGraphSeniorPoolData(poolData) ? poolData.isPaused : !!poolData?.pool?.isPaused
-
-  useEffect(() => {
-    if (enableSeniorPoolV2) {
-      fetchGraphData({
-        variables: {userID: ""},
-      })
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    const capitalProviderAddress = user.loaded && user.address
-    if (pool) {
-      fetchData(capitalProviderAddress)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool, user])
-
-  async function setGraphData() {
-    assertNonNullable(data)
-
-    const {seniorPools, user, _meta} = data
-    let seniorPool = seniorPools[0]!
-    setPoolData(await parseSeniorPool(seniorPool, pool))
-    setCapitalProvider(await parseUser(user, seniorPool, pool?.fidu))
-    setGraphBlockNumber(_meta?.block.number)
-  }
-
-  async function refreshAllData(capitalProviderAddress) {
-    assertNonNullable(pool)
-
-    refreshPoolData(pool)
-    refreshCapitalProviderData(pool, capitalProviderAddress)
-  }
-
-  async function fetchData(capitalProviderAddress) {
-    if (enableSeniorPoolV2) {
-      fetchGraphData({
-        variables: {userID: capitalProviderAddress ? capitalProviderAddress.toLowerCase() : ""},
-      })
-    } else {
-      refreshAllData(capitalProviderAddress)
+    // To ensure `pool`, `stakingRewards`, `gfi`, `user`, and `capitalProvider` are from
+    // the same block, we'd use `useFromSameBlock()` in this component. But holding off
+    // on that due to the decision to abandon https://github.com/warbler-labs/mono/pull/140.
+    const poolBlockNumber = pool.info.value.currentBlock.number
+    const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
+    const gfiBlockNumber = gfi.info.value.currentBlock.number
+    const userBlockNumber = user.info.value.currentBlock.number
+    if (
+      poolBlockNumber === stakingRewardsBlockNumber &&
+      poolBlockNumber === gfiBlockNumber &&
+      poolBlockNumber === userBlockNumber
+    ) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
+      setCapitalProvider(capitalProvider)
+      setLeafCurrentBlock(currentRoute, pool.info.value.currentBlock)
     }
   }
 
   async function actionComplete() {
-    if (refetch) {
-      refetch({userID: capitalProvider!.address.toLowerCase()})
-    } else {
-      refreshAllData(capitalProvider!.address)
-    }
+    assertNonNullable(refreshCurrentBlock)
+    refreshCurrentBlock()
   }
 
-  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
-    setCapitalProvider(capitalProvider)
-  }
-
-  async function refreshPoolData(pool: SeniorPool) {
-    await pool.initialize()
-    setPoolData(pool.gf)
-  }
-
-  let earnMessage = "Loading..."
-  if (loadedCapitalProvider || user.noWeb3) {
-    earnMessage = "Pools / Senior Pool"
-  }
+  const earnMessage =
+    userWalletWeb3Status?.type === "no_web3" || capitalProvider.loaded ? "Pools / Senior Pool" : "Loading..."
 
   let maxCapacityNotice = <></>
-  let maxCapacity = goldfinchConfig.totalFundsLimit
-  let remainingCapacity = poolData?.remainingCapacity(maxCapacity) || new BigNumber("0")
-  if (loadedPoolData && goldfinchConfig && remainingCapacity.isZero()) {
+  if (
+    pool &&
+    goldfinchConfig &&
+    pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit).isEqualTo("0")
+  ) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
           <span>
-            The pool has reached its max capacity of {displayDollars(usdcFromAtomic(maxCapacity))}. Join our{" "}
-            <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when the cap is raised.
+            The pool has reached its max capacity of {displayDollars(usdcFromAtomic(goldfinchConfig.totalFundsLimit))}.
+            Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when the cap is raised.
           </span>
         </div>
       </div>
     )
   }
 
+  const disabled = session.status !== "authenticated"
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice
-        requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}}
-        isPaused={isPaused}
-      />
+      <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
-        poolData={poolData}
-        capitalProvider={capitalProvider}
+        disabled={disabled}
+        capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
-        kyc={kyc}
       />
-      <PoolStatus poolData={poolData} />
+      <StakeFiduBanner
+        disabled={disabled}
+        capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
+        actionComplete={actionComplete}
+      />
+      <SeniorPoolStatus pool={pool} />
     </div>
   )
 }

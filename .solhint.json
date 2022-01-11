@@ -73,12 +73,15 @@
           "drawdown": []
         },
         "**/TranchedPool.sol:TranchedPool": {
+          "setAllowedUIDTypes": ["onlyLocker"],
           "deposit": ["whenNotPaused"],
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
           "lockPool": ["whenNotPaused", "onlyLocker"],
-          "withdraw": ["whenNotPaused", "onlyTokenHolder"],
-          "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "setFundableAt": ["onlyLocker"],
+          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
+          "withdraw": ["whenNotPaused"],
+          "withdrawMax": ["whenNotPaused"],
           "withdrawMultiple": [],
           "drawdown": ["whenNotPaused"],
           "assess": ["whenNotPaused"],
@@ -92,8 +95,11 @@
         "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
           "depositWithPermit": [],
+          "invest": [],
           "withdraw": [],
-          "withdrawInFidu": []
+          "withdrawInFidu": [],
+          "redeem": [],
+          "writedown": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
@@ -141,9 +147,24 @@
           "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
           "getReward": []
         },
+        "**/Go.sol:Go": {
+          "go": [],
+          "goOnlyIdTypes": [],
+          "goSeniorPool": []
+        },
+        "**/BackerRewards.sol:BackerRewards": {
+          "allocateRewards": ["onlyPool"],
+          "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
+          "withdraw": [],
+          "withdrawMultiple": []
+        },
+        "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": []
+        },
         "**/MerkleDistributor.sol:MerkleDistributor": {
           "_setGrantAccepted": [],
-          "acceptGrant": ["onlyGrantRecipient"]
+          "acceptGrant": []
         },
         "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
           "pause": [],
@@ -154,6 +175,16 @@
           "safeTransferFrom": [],
           "safeBatchTransferFrom": [],
           "burn": ["onlySigner"]
+        },
+        "**/TranchingLogic.sol:*": {
+          "applyToAllSeniorTranches":  [],
+          "applyToAllJuniorTranches": [],
+          "applyToSeniorTranche":  [],
+          "applyToJuniorTranche": [],
+          "applyBySharePrice":  [],
+          "applyByAmount": [],
+          "migrateAccountingVariables":  [],
+          "closeCreditLine": []
         },
         "**/contracts/test/**": {
           "*.*": []

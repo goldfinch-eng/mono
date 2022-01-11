@@ -10,7 +10,7 @@ class FakeERC20 {
     this.allowance = allowance || new BigNumber(100)
   }
 
-  async getAllowance(opts) {
+  async getAllowance(opts, currentBlock) {
     return this.allowance
   }
 }
@@ -105,7 +105,6 @@ describe("useCurrencyUnlocked", () => {
 
       // Simulate user approving for greater than minimum
       erc20.allowance = allowance.plus(2)
-      // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
       await act(() => refreshUnlocked())
       ;[unlocked, refreshUnlocked] = result.current
       expect(unlocked).toBe(true)
