@@ -411,10 +411,19 @@ function WithdrawalForm(props: WithdrawalFormProps) {
                 type="button"
                 onClick={() => {
                   const displayAmount = roundDownPenny(availableToWithdrawInDollars).toString(10)
-                  setTransactionConfig({
-                    displayAmount,
-                    max: true,
-                  })
+                  const newConfig: TransactionConfig =
+                    // Use `max: true` in the new config if and only if we're not limiting the withdrawable
+                    // amount by some applicable limit (e.g. such as `goldfinchConfig.transactionLimit`).
+                    availableToWithdrawInDollars === props.capitalProvider?.availableToWithdrawInDollars.toString(10)
+                      ? {
+                          displayAmount,
+                          max: true,
+                        }
+                      : {
+                          displayAmount,
+                          max: false,
+                        }
+                  setTransactionConfig(newConfig)
                   formMethods.setValue("transactionAmount", displayAmount, {
                     shouldValidate: true,
                     shouldDirty: true,
