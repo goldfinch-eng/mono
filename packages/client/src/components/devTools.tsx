@@ -56,37 +56,6 @@ function SetUserAddress() {
 
   return (
     <form>
-      <label htmlFor="overrideAddress">Wallet Address</label>
-      <input name="overrideAddress" id="overrideAddress" type="text" ref={(ref) => register(ref)} />
-      <DevToolsButton
-        disabled={disabled}
-        setDisabled={setDisabled}
-        onClick={async () => {
-          handleSubmit(
-            async (data) => {
-              setDisabled(true)
-              ;(window as any).setUserAddress(data.overrideAddress)
-              setDisabled(false)
-            },
-            (errors) => {
-              console.log("errors", errors)
-            }
-          )()
-        }}
-      >
-        Set
-      </DevToolsButton>
-    </form>
-  )
-}
-
-function BecomeUser() {
-  const formMethods = useForm({mode: "onChange"})
-  const {handleSubmit, register} = formMethods
-  const [disabled, setDisabled] = useState<boolean>(false)
-
-  return (
-    <form>
       <div className="actions">
         <DevToolsButton
           disabled={disabled}
@@ -161,6 +130,29 @@ function BecomeUser() {
           Alma
         </DevToolsButton>
       </div>
+
+      <br />
+      <br />
+      <label htmlFor="overrideAddress">Wallet Address</label>
+      <input name="overrideAddress" id="overrideAddress" type="text" ref={(ref) => register(ref)} />
+      <DevToolsButton
+        disabled={disabled}
+        setDisabled={setDisabled}
+        onClick={async () => {
+          handleSubmit(
+            async (data) => {
+              setDisabled(true)
+              ;(window as any).setUserAddress(data.overrideAddress)
+              setDisabled(false)
+            },
+            (errors) => {
+              console.log("errors", errors)
+            }
+          )()
+        }}
+      >
+        Set
+      </DevToolsButton>
     </form>
   )
 }
@@ -276,17 +268,12 @@ export default function DevTools() {
           >
             setUserAddress
           </DevToolsButton>
-          <DevToolsButton disabled={disabled} setDisabled={setDisabled} onClick={async () => setPanel("becomeUser")}>
-            becomeUser
-          </DevToolsButton>
         </div>
       )
     } else if (panel === "kyc") {
       return <SetKycStatus></SetKycStatus>
     } else if (panel === "setUserAddress") {
       return <SetUserAddress></SetUserAddress>
-    } else if (panel === "becomeUser") {
-      return <BecomeUser></BecomeUser>
     }
 
     return
