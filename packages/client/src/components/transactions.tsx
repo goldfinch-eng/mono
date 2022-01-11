@@ -315,13 +315,33 @@ function Transactions(props: TransactionsProps) {
 
   // Only show txs from currentTxs that are not already in user.pastTxs
   let pendingTxs = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
-  let allTxs = _.reverse(
-    _.sortBy(_.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])]), [
-      "blockNumber",
-      "transactionIndex",
-    ])
-  )
+  const compactTxs = _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])])
+  let allTxs
+  allTxs = _.sortBy(compactTxs, ["blockNumber", "transactionIndex"])
   allTxs = _.uniqBy(allTxs, "eventId")
+
+  // When you supply and stake, it adds a $0.00 Approval transaction that we want to remove so that we do not confuse the user with an approval amount that they did not explicitly take an action on
+  // this only removes approval events that are in the same block number as the supply event
+  allTxs = allTxs.reduce(
+    ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
+      hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
+      hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
+
+      if (
+        hasSeenSupplyInCurrentBlock &&
+        [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
+      ) {
+        return {acc, previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
+      } else {
+        return {acc: acc.concat(curr), previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
+      }
+    },
+    {acc: [] as any[], hasSeenSupplyInCurrentBlock: false, previousBlock: 0}
+  ).acc
+
+  // sort by block number descending (newest first)
+  allTxs = _.reverse(allTxs)
+
   let transactionRows: React.ReactNode[] = [
     <tr key="empty-row" className="empty-row">
       <td>No transactions</td>
