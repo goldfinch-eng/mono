@@ -324,6 +324,13 @@ function Earn() {
     limitToDisplay = displayDollars(undefined)
   }
 
+  let apyToDisplay
+  if (pool?.info.value.poolData.estimatedApyFromGfi && seniorPoolStatus?.value?.estimatedApy) {
+    apyToDisplay = pool.info.value.poolData.estimatedApyFromGfi.plus(seniorPoolStatus.value.estimatedApy)
+  } else {
+    apyToDisplay = seniorPoolStatus.value?.estimatedApy
+  }
+
   return (
     <div className="content-section">
       <div className="page-header">
@@ -345,7 +352,7 @@ function Earn() {
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
               userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
-              apy={displayPercent(seniorPoolStatus.value.estimatedApy)}
+              apy={displayPercent(apyToDisplay)}
               limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}
