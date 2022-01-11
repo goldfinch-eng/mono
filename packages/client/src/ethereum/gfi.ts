@@ -1,12 +1,10 @@
-import * as Sentry from "@sentry/react"
 import {GFI as GFIContract} from "@goldfinch-eng/protocol/typechain/web3/GFI"
-import {isPlainObject, isNumberOrUndefined, isUndefined, isStringOrUndefined} from "@goldfinch-eng/utils/src/type"
-
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {isNumberOrUndefined, isPlainObject, isStringOrUndefined, isUndefined} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
-import {BlockInfo} from "../utils"
 import {Web3IO} from "../types/web3"
+import {BlockInfo} from "../utils"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
 
 export const COINGECKO_API_GFI_PRICE_URL =
   "https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=usd"
@@ -129,8 +127,7 @@ class GFI {
     try {
       return await this.fetchCoingeckoPrice()
     } catch (err: unknown) {
-      console.error("Failed to retrieve Coingecko GFI price. Falling back to Coinbase.")
-      Sentry.captureException(err)
+      console.log("Failed to retrieve Coingecko GFI price. Falling back to Coinbase.")
       return await this.fetchCoinbasePrice()
     }
   }
@@ -176,10 +173,14 @@ async function getGFIPrice(): Promise<BigNumber | undefined> {
 
   try {
     const fetchResult = await GFI.fetchGfiPrice()
-    return new BigNumber(fetchResult.usd).multipliedBy(GFI_DECIMALS)
+    if (fetchResult.usd === 0) {
+      console.log("Retrieved GFI price of 0. Handling as `undefined`.")
+      return undefined
+    } else {
+      return new BigNumber(fetchResult.usd).multipliedBy(GFI_DECIMALS)
+    }
   } catch (err: unknown) {
     console.error("Failed to retrieve GFI price.")
-    Sentry.captureException(err)
     return undefined
   }
 }
