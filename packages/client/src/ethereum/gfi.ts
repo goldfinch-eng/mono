@@ -176,7 +176,12 @@ async function getGFIPrice(): Promise<BigNumber | undefined> {
 
   try {
     const fetchResult = await GFI.fetchGfiPrice()
-    return new BigNumber(fetchResult.usd).multipliedBy(GFI_DECIMALS)
+    if (fetchResult.usd === 0) {
+      console.log("Retrieved GFI price of 0. Handling as `undefined`.")
+      return undefined
+    } else {
+      return new BigNumber(fetchResult.usd).multipliedBy(GFI_DECIMALS)
+    }
   } catch (err: unknown) {
     console.error("Failed to retrieve GFI price.")
     Sentry.captureException(err)
