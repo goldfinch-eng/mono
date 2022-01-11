@@ -167,8 +167,19 @@ export type SeniorPoolStatus = {
   remainingCapacity: BigNumber | undefined
 }
 
-export function SeniorPoolCard({balance, userBalance, apy, limit, remainingCapacity, disabled}) {
-  const disabledClass = disabled ? "disabled" : ""
+type SeniorPoolCardProps = {
+  balance: string
+  userBalance: string
+  apy: string
+  limit: string
+  remainingCapacity: BigNumber | undefined
+  disabled: boolean
+  userBalanceDisabled: boolean
+}
+
+export function SeniorPoolCard(props: SeniorPoolCardProps) {
+  const disabledClass = props.disabled ? "disabled" : ""
+  const userBalanceDisabledClass = props.userBalanceDisabled ? "disabled" : ""
   const history = useHistory()
   return (
     <div
@@ -177,14 +188,14 @@ export function SeniorPoolCard({balance, userBalance, apy, limit, remainingCapac
       onClick={() => history.push("/pools/senior")}
     >
       <div className="table-cell col40">
-        {balance}
+        {props.balance}
         <span className={`subheader ${disabledClass}`}>Total Pool Balance</span>
       </div>
-      <div className="table-cell col22 numeric balance">{userBalance}</div>
-      <div className="table-cell col22 numeric limit">{limit}</div>
-      <div className="table-cell col16 numeric apy">{apy}</div>
+      <div className={`table-cell col22 numeric balance ${userBalanceDisabledClass}`}>{props.userBalance}</div>
+      <div className="table-cell col22 numeric limit">{props.limit}</div>
+      <div className="table-cell col16 numeric apy">{props.apy}</div>
       <div className="pool-capacity">
-        {remainingCapacity?.isZero() ? (
+        {props.remainingCapacity?.isZero() ? (
           <Badge text="Full" variant="gray" fixedWidth />
         ) : (
           <Badge text="Open" variant="blue" fixedWidth />
@@ -338,6 +349,7 @@ function Earn() {
               limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}
+              userBalanceDisabled={!seniorPoolStatus.value.availableToWithdrawInDollars}
             />
           ) : (
             <SeniorPoolCardSkeleton />
