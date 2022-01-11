@@ -21,6 +21,20 @@ function isCoingeckoResponseJson(obj: unknown): obj is CoingeckoResponseJson {
   return isPlainObject(obj) && isPlainObject(obj.goldfinch) && isNumberOrUndefined(obj.goldfinch.usd)
 }
 
+export const COINBASE_API_GFI_PRICE_URL = "https://api.coinbase.com/v2/prices/GFI-USD/spot"
+
+type CoinbaseResponseJson = {
+  data: {
+    base: string
+    currency: string
+    amount: string
+  }
+}
+
+function isCoinbaseResponseJson(obj: unknown): obj is CoinbaseResponseJson {
+  return isPlainObject(obj) && isPlainObject(obj.data) && isNumberOrUndefined(obj.data.amount)
+}
+
 type FetchGFIPriceResult = {
   usd: number
 }
@@ -77,7 +91,7 @@ class GFI {
     }
   }
 
-  static async fetchGfiPrice(): Promise<FetchGFIPriceResult> {
+  static async fetchCoingeckoPrice(): Promise<FetchGFIPriceResult> {
     const res = await fetch(COINGECKO_API_GFI_PRICE_URL)
     const responseJson: unknown = await res.json()
     if (isCoingeckoResponseJson(responseJson)) {
@@ -88,6 +102,30 @@ class GFI {
       }
     } else {
       throw new Error("Coingecko response JSON failed type guard.")
+    }
+  }
+
+  static async fetchCoinbasePrice(): Promise<FetchGFIPriceResult> {
+    const res = await fetch(COINBASE_API_GFI_PRICE_URL)
+    const responseJson: unknown = await res.json()
+    if (isCoinbaseResponseJson(responseJson)) {
+      if (isUndefined(responseJson.data.amount)) {
+        throw new Error("Coinbase response lacks GFI price in USD.")
+      } else {
+        return {usd: parseFloat(responseJson.data.amount)}
+      }
+    } else {
+      throw new Error("Coinbase response JSON failed type guard.")
+    }
+  }
+
+  static async fetchGfiPrice(): Promise<FetchGFIPriceResult> {
+    try {
+      return await this.fetchCoingeckoPrice()
+    } catch (err: unknown) {
+      console.error("Failed to retrieve Coingecko GFI price. Falling back to Coinbase.")
+      Sentry.captureException(err)
+      return await this.fetchCoinbasePrice()
     }
   }
 }
