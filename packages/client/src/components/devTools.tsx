@@ -129,6 +129,24 @@ function SetUserAddress() {
         >
           Alma
         </DevToolsButton>
+        <DevToolsButton
+          disabled={disabled}
+          setDisabled={setDisabled}
+          onClick={async () => {
+            handleSubmit(
+              async (data) => {
+                setDisabled(true)
+                ;(window as any).setUserAddress("0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF")
+                setDisabled(false)
+              },
+              (errors) => {
+                console.log("errors", errors)
+              }
+            )()
+          }}
+        >
+          Active LP
+        </DevToolsButton>
       </div>
 
       <br />
