@@ -127,14 +127,11 @@ export function useGraphQuerier<T extends GraphData>(
     }
 
     if (error) {
-      const {graphQLErrors, networkError} = error
+      const {graphQLErrors} = error
       if (graphQLErrors) {
         graphQLErrors.forEach(({message, locations}) =>
           console.error(`[The Graph] GraphQL error: Message: ${message}, Location: ${locations}`)
         )
-      }
-      if (networkError) {
-        console.error(`[The Graph] Network error: ${networkError}`)
       }
       setHasQueryError(true)
     }

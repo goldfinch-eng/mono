@@ -7,10 +7,20 @@ const API_URLS = {
 }
 
 const getApolloClient = (network: NetworkConfig | undefined): ApolloClient<NormalizedCacheObject> => {
-  const networkName = network?.name || "mainnet"
+  let networkName: string
+  if (!network) {
+    networkName = "mainnet"
+  } else if (network.name === "localhost" && process.env.NODE_ENV === "production") {
+    // Any private network is marked as localhost, check `mapNetworkToID`, for production we
+    // want default to mainnet
+    networkName = "mainnet"
+  } else {
+    networkName = network.name
+  }
+
   const uri = API_URLS[networkName]
   if (!uri) {
-    console.error("On a not supported network, subgraph queries will not work")
+    console.error("On a not supported network, subgraph queries will not work. Network: ", networkName)
   }
 
   return new ApolloClient({
