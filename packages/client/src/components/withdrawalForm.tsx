@@ -451,7 +451,10 @@ function WithdrawalForm(props: WithdrawalFormProps) {
   return (
     <TransactionForm
       title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(props.capitalProvider?.availableToWithdrawInDollars)}`}
+      headerMessage={`Available to withdraw: ${displayDollars(
+        roundDownPenny(props.capitalProvider?.availableToWithdrawInDollars),
+        2
+      )}`}
       render={renderForm}
       closeForm={props.closeForm}
     />
