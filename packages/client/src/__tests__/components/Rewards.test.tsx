@@ -6,7 +6,7 @@ import {MemoryRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {AppContext, LeavesCurrentBlock} from "../../App"
 import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
-import {COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
+import {COINBASE_API_GFI_PRICE_URL, COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
@@ -684,7 +684,7 @@ describe("Rewards list and detail", () => {
             }),
         } as Response)
       } else {
-        throw new Error(`Unexpected fetch url: ${url}`)
+        fail(`Unexpected fetch url: ${url}`)
       }
     })
 
@@ -782,9 +782,9 @@ describe("Rewards list and detail", () => {
       jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
-          throw new Error("Expected this not to be called.")
+          fail("Expected this not to be called.")
         } else {
-          throw new Error(`Unexpected fetch url: ${url}`)
+          fail(`Unexpected fetch url: ${url}`)
         }
       })
 
@@ -799,13 +799,15 @@ describe("Rewards list and detail", () => {
       })
     })
 
-    it("shows empty value when request to Coingecko fails", async () => {
+    it("shows empty value when request to Coingecko and fallback fail", async () => {
       jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
           return Promise.reject("Request failed")
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.reject("Request failed")
         } else {
-          throw new Error(`Unexpected fetch url: ${url}`)
+          fail(`Unexpected fetch url: ${url}`)
         }
       })
 
@@ -828,8 +830,13 @@ describe("Rewards list and detail", () => {
             ok: true,
             json: () => Promise.reject("JSON parsing failed."),
           } as Response)
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.reject("JSON parsing failed."),
+          } as Response)
         } else {
-          throw new Error(`Unexpected fetch url: ${url}`)
+          fail(`Unexpected fetch url: ${url}`)
         }
       })
 
@@ -855,8 +862,21 @@ describe("Rewards list and detail", () => {
                 goldfinch: {usd: undefined},
               }),
           } as Response)
+        }
+        if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  base: "GFI",
+                  currency: "USD",
+                  amount: undefined,
+                },
+              }),
+          } as Response)
         } else {
-          throw new Error(`Unexpected fetch url: ${url}`)
+          fail(`Unexpected fetch url: ${url}`)
         }
       })
 
@@ -884,8 +904,20 @@ describe("Rewards list and detail", () => {
                 },
               }),
           } as Response)
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  base: "BTC",
+                  currency: "USD",
+                  amount: "1.23",
+                },
+              }),
+          } as Response)
         } else {
-          throw new Error(`Unexpected fetch url: ${url}`)
+          fail(`Unexpected fetch url: ${url}`)
         }
       })
 
@@ -898,7 +930,38 @@ describe("Rewards list and detail", () => {
       expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
     })
 
-    it("uses GFI price if the request returns as expected", async () => {
+    it("uses GFI price if the Coingecko request returns as expected", async () => {
+      const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+      renderRewards(deps, currentBlock)
+
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      expect(await screen.findByText("Claim status")).toBeVisible()
+      expect(await screen.findByText("$1.64 (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
+    })
+
+    it("uses GFI price if the fallback request returns as expected", async () => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          return Promise.reject("Request failed")
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  base: "GFI",
+                  currency: "USD",
+                  amount: "2.00",
+                },
+              }),
+          } as Response)
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
+      })
+
       const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
 
       renderRewards(deps, currentBlock)
