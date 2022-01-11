@@ -129,8 +129,7 @@ class GFI {
     try {
       return await this.fetchCoingeckoPrice()
     } catch (err: unknown) {
-      console.error("Failed to retrieve Coingecko GFI price. Falling back to Coinbase.")
-      Sentry.captureException(err)
+      console.log("Failed to retrieve Coingecko GFI price. Falling back to Coinbase.")
       return await this.fetchCoinbasePrice()
     }
   }
@@ -184,7 +183,6 @@ async function getGFIPrice(): Promise<BigNumber | undefined> {
     }
   } catch (err: unknown) {
     console.error("Failed to retrieve GFI price.")
-    Sentry.captureException(err)
     return undefined
   }
 }
