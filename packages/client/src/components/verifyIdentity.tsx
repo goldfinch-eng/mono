@@ -264,7 +264,7 @@ function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
-  const {user, network, setSessionData} = useContext(AppContext)
+  const {user, userWalletWeb3Status, network, setSessionData} = useContext(AppContext)
   const [kyc, setKYC] = useState<KYC>()
   // Determines the form to show. Can be empty, "US" or "entity"
   const [entityType, setEntityType] = useState<string>("")
@@ -288,13 +288,17 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     if (session.status !== "authenticated") {
       return
     }
-    assertNonNullable(user)
+    // If the session status is "authenticated", we expect `userWalletWeb3Status?.address` to
+    // be non-nullable, as that address should have been necessary in determining the
+    // session status.
+    const userAddress = userWalletWeb3Status?.address
+    assertNonNullable(userAddress)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     setLoading(true)
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     try {
-      const response = await client.fetchKYCStatus(user.address)
+      const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {
         setKYC(response.json)
         if (response.json.countryCode === "US") {
@@ -585,7 +589,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 }
 
 function VerifyIdentity() {
-  const {user, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
+  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
   const currentRoute = useCurrentRoute()
@@ -614,9 +618,10 @@ function VerifyIdentity() {
   if (state.step === START) {
     children = <></>
   } else if (state.step === SIGN_IN) {
+    const userAddress = userWalletWeb3Status?.address
     children = (
       <SignInForm
-        disabled={!user?.address}
+        disabled={!userAddress}
         action={async () => {
           const session = await signIn()
           if (session.status !== "authenticated") {
