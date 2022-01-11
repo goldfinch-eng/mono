@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/react"
 import {GFI as GFIContract} from "@goldfinch-eng/protocol/typechain/web3/GFI"
-import {isPlainObject, isNumberOrUndefined, isUndefined} from "@goldfinch-eng/utils/src/type"
+import {isPlainObject, isNumberOrUndefined, isUndefined, isStringOrUndefined} from "@goldfinch-eng/utils/src/type"
 
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import BigNumber from "bignumber.js"
@@ -25,14 +25,20 @@ export const COINBASE_API_GFI_PRICE_URL = "https://api.coinbase.com/v2/prices/GF
 
 type CoinbaseResponseJson = {
   data: {
-    base: string
-    currency: string
-    amount: string
+    base: "GFI"
+    currency: "USD"
+    amount?: string
   }
 }
 
 function isCoinbaseResponseJson(obj: unknown): obj is CoinbaseResponseJson {
-  return isPlainObject(obj) && isPlainObject(obj.data) && isNumberOrUndefined(obj.data.amount)
+  return (
+    isPlainObject(obj) &&
+    isPlainObject(obj.data) &&
+    isStringOrUndefined(obj.data.amount) &&
+    obj.data.base === "GFI" &&
+    obj.data.currency === "USD"
+  )
 }
 
 type FetchGFIPriceResult = {
