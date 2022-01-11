@@ -12,9 +12,20 @@ import useCurrencyUnlocked from "../hooks/useCurrencyUnlocked"
 import {useOneInchQuote, formatQuote} from "../hooks/useOneInchQuote"
 import useDebounce from "../hooks/useDebounce"
 import BigNumber from "bignumber.js"
-import {assertNonNullable} from "../utils"
+import {assertNonNullable, displayDollars} from "../utils"
+import {PAYMENT_TX_TYPE} from "../types/transactions"
+import {CreditLine, MultipleCreditLines} from "../ethereum/creditLine"
+import {BorrowerInterface} from "../ethereum/borrower"
 
-function PaymentForm(props) {
+type PaymentFormProps = {
+  borrower: BorrowerInterface
+  creditLine: CreditLine | MultipleCreditLines
+  actionComplete: () => void
+  closeForm: () => void
+  title: string
+}
+
+function PaymentForm(props: PaymentFormProps) {
   const {borrower, creditLine, actionComplete} = props
   const {usdc, user, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
 
@@ -53,14 +64,21 @@ function PaymentForm(props) {
   useEffect(
     () => {
       const fetchBalance = async () => {
+        assertNonNullable(user)
         assertNonNullable(erc20)
-        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address)))
+        const decimalAmount = new BigNumber(erc20.decimalAmount(await erc20.getBalance(user.address, undefined)))
         setErc20UserBalance(decimalAmount)
         setValidations({
           wallet: (value) => decimalAmount.gte(value) || `You do not have enough ${erc20.ticker}`,
           transactionLimit: (value) =>
-            goldfinchConfig.transactionLimit.gte(usdcToAtomic(value)) ||
-            `This is over the per-transaction limit of $${usdcFromAtomic(goldfinchConfig.transactionLimit)}`,
+            goldfinchConfig
+              ? goldfinchConfig.transactionLimit.gte(usdcToAtomic(value))
+                ? undefined
+                : `This is over the per-transaction limit of ${displayDollars(
+                    usdcFromAtomic(goldfinchConfig.transactionLimit),
+                    0
+                  )}`
+              : "Invalid transaction limit.",
           // @ts-expect-error ts-migrate(7030) FIXME: Not all code paths return a value.
           creditLine: (value) => {
             if (!isSwapping() && props.creditLine.remainingTotalDueAmountInDollars.lt(value)) {
@@ -74,7 +92,7 @@ function PaymentForm(props) {
     // HACK: Disable eslint's complaint about exhaustive-deps, since it doesn't understand our intention
     // with `remainingTotalDueAmountInDollarsDependency`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [erc20, user, goldfinchConfig.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency]
+    [erc20, user, goldfinchConfig?.transactionLimit, isSwapping, remainingTotalDueAmountInDollarsDependency]
   )
 
   function getSelectedUSDCAmount() {
@@ -92,27 +110,26 @@ function PaymentForm(props) {
     const erc20Amount = erc20.atomicAmount(transactionAmount)
     let unsentAction
     if (creditLine.isMultiple) {
-      let addresses = []
-      let usdcAmounts = []
+      let addresses: string[] = []
+      let usdcAmounts: BigNumber[] = []
       if (paymentOption === "totalDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingTotalDueAmount.gt(0)) {
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
             addresses.push(cl.address)
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
-            usdcAmounts.push(usdcToAtomic(cl.remainingTotalDueAmountInDollars))
+            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingTotalDueAmountInDollars)))
           }
         })
       } else if (paymentOption === "periodDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'any' is not assignable to parame... Remove this comment to see the full error message
             addresses.push(cl.address)
-            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
-            usdcAmounts.push(usdcToAtomic(cl.remainingPeriodDueAmountInDollars))
+            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingPeriodDueAmountInDollars)))
           }
         })
       } else {
+        if (!(creditLine instanceof MultipleCreditLines)) {
+          throw new Error("Expected instance of MultipleCreditLines.")
+        }
         // Other amount. Split across all credit lines depending on what's due. If we're swapping then
         // we need to split the USDC value (the quote) rather than the user provided input. Since the USDC
         // value will be what's used to pay
@@ -144,8 +161,10 @@ function PaymentForm(props) {
       }
     }
     return sendFromUser(unsentAction, {
-      type: "Payment",
-      amount: transactionAmount,
+      type: PAYMENT_TX_TYPE,
+      data: {
+        amount: transactionAmount,
+      },
       gasless: borrower.shouldUseGasless,
     }).then(actionComplete)
   }
@@ -164,7 +183,6 @@ function PaymentForm(props) {
           <CurrencyDropdown onChange={changeTicker} />
         </div>
         {unlocked || (
-          // @ts-expect-error ts-migrate(2349) FIXME: This expression is not callable.
           <UnlockERC20Form erc20={erc20} onUnlock={() => refreshUnlocked()} unlockAddress={borrower.borrowerAddress} />
         )}
         <div className="form-inputs">
@@ -200,13 +218,16 @@ function PaymentForm(props) {
               }}
               validations={validations}
               inputClass={inputClass}
-              notes={[
-                transactionAmountQuote &&
-                  !isQuoteLoading && {
-                    key: "quote",
-                    content: <p>~${formatQuote({erc20: usdc, quote: transactionAmountQuote})}</p>,
-                  },
-              ]}
+              notes={
+                transactionAmountQuote && !isQuoteLoading
+                  ? [
+                      {
+                        key: "quote",
+                        content: <p>~${formatQuote({erc20: usdc, quote: transactionAmountQuote})}</p>,
+                      },
+                    ]
+                  : undefined
+              }
             />
             <LoadingButton action={action} disabled={!unlocked || isQuoteLoading} />
           </div>

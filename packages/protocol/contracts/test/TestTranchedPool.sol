@@ -18,10 +18,14 @@ contract TestTranchedPool is TranchedPool {
   }
 
   function _setSeniorTranchePrincipalDeposited(uint256 principalDeposited) public {
-    seniorTranche.principalDeposited = principalDeposited;
+    poolSlices[poolSlices.length - 1].seniorTranche.principalDeposited = principalDeposited;
   }
 
   function _setLimit(uint256 limit) public {
     creditLine.setLimit(limit);
+  }
+
+  function _modifyJuniorTrancheLockedUntil(uint256 lockedUntil) public {
+    poolSlices[poolSlices.length - 1].juniorTranche.lockedUntil = lockedUntil;
   }
 }

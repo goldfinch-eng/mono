@@ -15,6 +15,10 @@ import {
   currentChainId,
   assertIsChainId,
   assertIsTicker,
+  ContractDeployer,
+  getEthersContract,
+  getProtocolOwner,
+  fixProvider,
 } from "../blockchain_scripts/deployHelpers"
 import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
@@ -28,6 +32,15 @@ const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
+import {mergeABIs} from "hardhat-deploy/dist/src/utils"
+import {FormatTypes} from "ethers/lib/utils"
+import {Logger} from "./types"
+import {
+  openzeppelin_assertIsValidImplementation,
+  openzeppelin_assertIsValidUpgrade,
+  openzeppelin_saveDeploymentManifest,
+} from "./deployHelpers/openzeppelin-upgrade-validation"
+
 async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
     return null
@@ -37,25 +50,41 @@ async function getProxyImplAddress(proxyContract: Contract) {
   return ethers.utils.hexStripZeros(currentImpl)
 }
 
-async function upgradeContracts(
-  contractsToUpgrade: string[],
-  contracts: ExistingContracts,
-  signer: string | Signer,
-  deployFrom: any,
-  deployments: DeploymentsExtension,
-  changeImplementation = true
-): Promise<UpgradedContracts> {
-  console.log("Deploying the accountant")
-  const accountantDeployResult = await deployments.deploy("Accountant", {from: deployFrom, gasLimit: 4000000, args: []})
-  console.log("Deployed...")
-  // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
-  // gives us the ability to debug the forwarded transactions.
-  console.log("Deploying test forwarder...")
-  await deployments.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
-  console.log("Deployed...")
+async function upgradeContracts({
+  contractsToUpgrade = [],
+  contracts,
+  signer,
+  deployFrom,
+  deployer,
+  deployTestForwarder = false,
+  logger = console.log,
+}: {
+  contractsToUpgrade: string[]
+  contracts: ExistingContracts
+  signer: string | Signer
+  deployFrom: any
+  deployer: ContractDeployer
+  deployTestForwarder?: boolean
+  logger: Logger
+}): Promise<UpgradedContracts> {
+  logger("Deploying accountant")
+  const accountantDeployResult = await deployer.deployLibrary("Accountant", {
+    from: deployFrom,
+    gasLimit: 4000000,
+    args: [],
+  })
+
+  if (deployTestForwarder) {
+    logger("Deploying test forwarder")
+    // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
+    // gives us the ability to debug the forwarded transactions.
+    await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
+  }
 
   const dependencies: DepList = {
-    CreditDesk: {["Accountant"]: accountantDeployResult.address},
+    CreditLine: {["Accountant"]: accountantDeployResult.address},
+    SeniorPool: {["Accountant"]: accountantDeployResult.address},
+    GoldfinchFactory: {["Accountant"]: accountantDeployResult.address},
   }
 
   const upgradedContracts: UpgradedContracts = {}
@@ -68,35 +97,64 @@ async function upgradeContracts(
       contractToDeploy = `Test${contractName}`
     }
 
-    console.log("Trying to deploy", contractToDeploy)
-    const deployResult = await deployments.deploy(contractToDeploy, {
+    logger("📡 Trying to deploy", contractToDeploy)
+    const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
+    await deployer.deploy(contractToDeploy, {
       from: deployFrom,
-      args: [],
+      proxy: {
+        owner: await getProtocolOwner(),
+      },
       libraries: dependencies[contractName],
     })
-    console.log("Deployed...")
-    // Get a contract object with the latest ABI, attached to the signer
-    const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
-    let upgradedContract = await ethers.getContractAt(deployResult.abi, deployResult.address, ethersSigner)
-    const upgradedImplAddress = deployResult.address
 
-    if (contract.ProxyContract && changeImplementation) {
-      if (!isTestEnv()) {
-        console.log(
-          `Changing implementation of ${contractName} from ${contract.ExistingImplAddress} to ${deployResult.address}`
-        )
-      }
-      await contract.ProxyContract.connect(ethersSigner).changeImplementation(deployResult.address, "0x")
-      upgradedContract = upgradedContract.attach(contract.ProxyContract.address)
-    }
+    logger("Assert valid implementation and upgrade", contractToDeploy)
+    const proxyDeployment = await hre.deployments.get(`${contractToDeploy}`)
+    const implDeployment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
+    await openzeppelin_assertIsValidImplementation(implDeployment)
+    // await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
+
+    const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDeployment.address})).connect(
+      ethersSigner
+    )
+    // Get a contract object with the latest ABI, attached to the signer
+    const upgradedImplAddress = upgradedContract.address
 
     upgradedContracts[contractName] = {
       ...contract,
       UpgradedContract: upgradedContract,
       UpgradedImplAddress: upgradedImplAddress,
     }
+
+    await rewriteUpgradedDeployment(contractName)
+    await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
   }
   return upgradedContracts
+}
+
+/**
+ * Rewrite a proxy upgrade in the deployments directory. hardhat-deploy creates 3 different deployment files for a proxied contract:
+ *
+ *   - Contract_Proxy.json. Proxy ABI.
+ *   - Contract_Implementation.json. Implementation ABI.
+ *   - Contract.json. Combined Proxy and Implementation ABI.
+ *
+ * When using `hre.deployments.deploy` with the `proxy` key, hardhat-deploy will write out the combined ABI. But since
+ * we use a multisig to change the proxy's implementation, only the implementation ABI is written out by hardhat-deploy.
+ * Work around this by rewriting the combined ABI ourselves.
+ */
+export async function rewriteUpgradedDeployment(deploymentName: string) {
+  const implDeployment = await hre.deployments.get(`${deploymentName}_Implementation`)
+  const proxyDeployment = await hre.deployments.get(`${deploymentName}_Proxy`)
+
+  const mergedABI = mergeABIs([implDeployment.abi, proxyDeployment.abi], {
+    check: false,
+    skipSupportsInterface: false,
+  })
+
+  const deployment = await hre.deployments.get(deploymentName)
+  deployment.abi = mergedABI
+  deployment.implementation = implDeployment.address
+  await hre.deployments.save(deploymentName, deployment)
 }
 
 export type ContractHolder = {
@@ -139,80 +197,25 @@ async function getExistingContracts(
   return contracts
 }
 
-async function fundWithWhales(currencies: string[], recipients: string[], amount?: any) {
-  const whales: Record<Ticker, AddressString> = {
-    USDC: "0xf977814e90da44bfa03b6295a0616a897441acec",
-    USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
-    BUSD: "0x28c6c06298d514db089934071355e5743bf21d60",
-    ETH: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-  }
-  const chainId = await currentChainId()
-  assertIsChainId(chainId)
-
-  for (const currency of currencies) {
-    if (!whales[currency]) {
-      throw new Error(`We don't have a whale mapping for ${currency}`)
-    }
-    for (const recipient of _.compact(recipients)) {
-      assertIsTicker(currency)
-      if (currency === "ETH") {
-        const whale = whales[currency]
-        await impersonateAccount(hre, whale)
-        const signer = ethers.provider.getSigner(whale)
-        assertNonNullable(signer)
-        await signer.sendTransaction({to: recipient, value: ethers.utils.parseEther("5.0")})
-      } else {
-        const erc20Address = getERC20Address(currency, chainId)
-        assertIsString(erc20Address)
-        await fundWithWhale({
-          erc20: await ethers.getContractAt("IERC20withDec", erc20Address),
-          whale: whales[currency],
-          recipient: recipient,
-          amount: amount || new BN("200000"),
-        })
-      }
-    }
-  }
-}
-
-async function fundWithWhale({
-  whale,
-  recipient,
-  erc20,
-  amount,
-}: {
-  whale: string
-  recipient: string
-  erc20: any
-  amount: BN
-}) {
-  await impersonateAccount(hre, whale)
-  const signer = await ethers.provider.getSigner(whale)
-  const contract = erc20.connect(signer)
-
-  const ten = new BN(10)
-  const d = new BN((await contract.decimals()).toString())
-  const decimals = ten.pow(new BN(d))
-
-  await contract.transfer(recipient, new BN(amount).mul(decimals).toString())
-}
-
-async function impersonateAccount(hre: HardhatRuntimeEnvironment, account: string) {
-  return await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [account],
-  })
-}
-
 async function performPostUpgradeMigration(upgradedContracts: any, deployments: DeploymentsExtension) {
   const deployed = await deployments.getOrNull("TestForwarder")
   assertNonNullable(deployed)
   const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
   await forwarder.registerDomainSeparator("Defender", "1")
-  await migrateToNewConfig(upgradedContracts)
+  await migrateToNewConfig(upgradedContracts, [
+    "CreditDesk",
+    "CreditLine",
+    "Fidu",
+    "FixedLeverageRatioStrategy",
+    "Go",
+    "MigratedTranchedPool",
+    "Pool",
+    "PoolTokens",
+    "SeniorPool",
+  ])
 }
 
-async function migrateToNewConfig(upgradedContracts: any) {
+export async function migrateToNewConfig(upgradedContracts: any, contractsToUpgrade: string[]) {
   const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
   const existingConfig = upgradedContracts.GoldfinchConfig.ExistingContract
   const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
@@ -222,7 +225,6 @@ async function migrateToNewConfig(upgradedContracts: any) {
   await newConfig.initializeFromOtherConfig(existingConfig.address)
   await updateConfig(existingConfig, "address", CONFIG_KEYS.GoldfinchConfig, newConfig.address)
 
-  const contractsToUpgrade = ["Fidu", "Pool", "CreditDesk", "CreditLineFactory"]
   await Promise.all(
     contractsToUpgrade.map(async (contract) => {
       await (await upgradedContracts[contract].UpgradedContract.updateGoldfinchConfig()).wait()
@@ -261,10 +263,8 @@ async function getAllExistingContracts(chainId: ChainId = MAINNET_CHAIN_ID): Pro
 export {
   MAINNET_MULTISIG,
   MAINNET_UNDERWRITER,
-  fundWithWhales,
   getExistingContracts,
   upgradeContracts,
-  impersonateAccount,
   getCurrentlyDeployedContracts,
   performPostUpgradeMigration,
   getAllExistingContracts,

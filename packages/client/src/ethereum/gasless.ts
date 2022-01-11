@@ -6,7 +6,7 @@ const {ethers} = require("ethers")
 const RELAY_URLS = {
   1: "https://api.defender.openzeppelin.com/autotasks/9d2053fd-507a-473f-8b5a-b079a694723a/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/MiuRjp5Lnd6fjjYARR4j4r",
   4: "https://api.defender.openzeppelin.com/autotasks/348209ac-8cfd-41a4-be60-e97eab073f29/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/Ug7a1WChPSLRPtcT4PCUnQ",
-  31337: "/relay", // Proxied by webpack to server.js
+  31337: "/relay", // Proxied by webpack to packages/server/index.ts
 }
 const MAX_GAS = 2e6
 
@@ -42,7 +42,7 @@ const TypedData = {
 }
 
 async function submitGaslessTransaction(contractAddress, unsentAction) {
-  const provider = new ethers.providers.Web3Provider(web3.currentProvider)
+  const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider)
   const signer = provider.getSigner()
   const from = await signer.getAddress()
 
@@ -51,7 +51,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
   // If we're on a purely local deployment, or murmuration, use the TestForwarder.
   if (
     (network.chainId === 31337 && !process.env.REACT_APP_HARDHAT_FORK) ||
-    (network.chainId === 31337 && process.env.MURMURATION === "yes")
+    (network.chainId === 31337 && process.env.REACT_APP_MURMURATION === "yes")
   ) {
     const config = await getDeployments(chainIdToNetworkID[network.chainId])
     const deployedForwarder = config.contracts.TestForwarder

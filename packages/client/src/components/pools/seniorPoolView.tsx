@@ -1,92 +1,118 @@
-import {useState, useEffect, useContext} from "react"
-import EarnActionsContainer from "../earnActionsContainer"
-import PoolStatus from "../poolStatus"
-import ConnectionNotice from "../connectionNotice"
-import {
-  CapitalProvider,
-  emptyCapitalProvider,
-  fetchCapitalProviderData,
-  PoolData,
-  SeniorPool,
-} from "../../ethereum/pool"
+import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../../App"
-import InvestorNotice from "../investorNotice"
-import {assertNonNullable, displayDollars} from "../../utils"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {useStaleWhileRevalidating} from "../../hooks/useAsync"
-import {eligibleForSeniorPool, useKYC} from "../../hooks/useKYC"
+import {GFILoaded} from "../../ethereum/gfi"
+import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {UserLoaded} from "../../ethereum/user"
+import {useCurrentRoute} from "../../hooks/useCurrentRoute"
+import {useSession} from "../../hooks/useSignIn"
+import {Loadable} from "../../types/loadable"
+import {assertNonNullable, displayDollars} from "../../utils"
+import ConnectionNotice from "../connectionNotice"
+import EarnActionsContainer from "../earnActionsContainer"
+import InvestorNotice from "../investorNotice"
+import SeniorPoolStatus from "../seniorPoolStatus"
+import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
-  const {pool, user, goldfinchConfig} = useContext(AppContext)
-  const [capitalProvider, setCapitalProvider] = useState<CapitalProvider>(emptyCapitalProvider())
-  const [poolData, setPoolData] = useState<PoolData>()
-  const kycResult = useKYC()
-  const kyc = useStaleWhileRevalidating(kycResult)
+  const {
+    userWalletWeb3Status,
+    pool,
+    user,
+    goldfinchConfig,
+    stakingRewards,
+    gfi,
+    refreshCurrentBlock,
+    setLeafCurrentBlock,
+  } = useContext(AppContext)
+  const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
+    loaded: false,
+    value: undefined,
+  })
+  const session = useSession()
+  const currentRoute = useCurrentRoute()
 
-  useEffect(() => {
-    async function refreshAllData() {
-      const capitalProviderAddress = user.loaded && user.address
-      assertNonNullable(pool)
+  useEffect(
+    () => {
+      if (pool && stakingRewards && gfi && user) {
+        refreshCapitalProviderData(pool, stakingRewards, gfi, user)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pool, stakingRewards, gfi, user]
+  )
 
-      refreshPoolData(pool)
-      refreshCapitalProviderData(pool, capitalProviderAddress)
+  async function refreshCapitalProviderData(
+    pool: SeniorPoolLoaded,
+    stakingRewards: StakingRewardsLoaded,
+    gfi: GFILoaded,
+    user: UserLoaded
+  ) {
+    assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
+
+    // To ensure `pool`, `stakingRewards`, `gfi`, `user`, and `capitalProvider` are from
+    // the same block, we'd use `useFromSameBlock()` in this component. But holding off
+    // on that due to the decision to abandon https://github.com/warbler-labs/mono/pull/140.
+    const poolBlockNumber = pool.info.value.currentBlock.number
+    const stakingRewardsBlockNumber = stakingRewards.info.value.currentBlock.number
+    const gfiBlockNumber = gfi.info.value.currentBlock.number
+    const userBlockNumber = user.info.value.currentBlock.number
+    if (
+      poolBlockNumber === stakingRewardsBlockNumber &&
+      poolBlockNumber === gfiBlockNumber &&
+      poolBlockNumber === userBlockNumber
+    ) {
+      const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
+      setCapitalProvider(capitalProvider)
+      setLeafCurrentBlock(currentRoute, pool.info.value.currentBlock)
     }
-
-    if (pool) {
-      refreshAllData()
-    }
-  }, [pool, user])
+  }
 
   async function actionComplete() {
-    assertNonNullable(pool)
-
-    await refreshPoolData(pool)
-    return refreshCapitalProviderData(pool, capitalProvider!.address)
+    assertNonNullable(refreshCurrentBlock)
+    refreshCurrentBlock()
   }
 
-  async function refreshCapitalProviderData(pool: SeniorPool, address: string | boolean) {
-    const capitalProvider = await fetchCapitalProviderData(pool, address)
-    setCapitalProvider(capitalProvider)
-  }
-
-  async function refreshPoolData(pool: SeniorPool) {
-    await pool.initialize()
-    setPoolData(pool.gf)
-  }
-
-  let earnMessage = "Loading..."
-  if (capitalProvider.loaded || user.noWeb3) {
-    earnMessage = "Pools / Senior Pool"
-  }
+  const earnMessage =
+    userWalletWeb3Status?.type === "no_web3" || capitalProvider.loaded ? "Pools / Senior Pool" : "Loading..."
 
   let maxCapacityNotice = <></>
-  let maxCapacity = goldfinchConfig.totalFundsLimit
-  if (poolData?.loaded && goldfinchConfig && poolData.remainingCapacity(maxCapacity).isEqualTo("0")) {
+  if (
+    pool &&
+    goldfinchConfig &&
+    pool.info.value.poolData.remainingCapacity(goldfinchConfig.totalFundsLimit).isEqualTo("0")
+  ) {
     maxCapacityNotice = (
       <div className="info-banner background-container">
         <div className="message">
           <span>
-            The pool has reached its max capacity of {displayDollars(usdcFromAtomic(maxCapacity))}. Join our{" "}
-            <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when the cap is raised.
+            The pool has reached its max capacity of {displayDollars(usdcFromAtomic(goldfinchConfig.totalFundsLimit))}.
+            Join our <a href="https://discord.gg/HVeaca3fN8">Discord</a> for updates on when the cap is raised.
           </span>
         </div>
       </div>
     )
   }
 
+  const disabled = session.status !== "authenticated"
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice requireKYC={{kyc: kycResult, condition: (kyc) => eligibleForSeniorPool(kyc, user)}} />
+      <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
-        poolData={poolData}
-        capitalProvider={capitalProvider}
+        disabled={disabled}
+        capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
-        kyc={kyc}
       />
-      <PoolStatus poolData={poolData} />
+      <StakeFiduBanner
+        disabled={disabled}
+        capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
+        actionComplete={actionComplete}
+      />
+      <SeniorPoolStatus pool={pool} />
     </div>
   )
 }

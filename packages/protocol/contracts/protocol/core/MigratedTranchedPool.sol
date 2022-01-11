@@ -58,17 +58,17 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     uint256 balancePaid = creditLine.limit().sub(creditLine.balance());
 
     // Account for the implicit redemptions already made by the Legacy Pool
-    _lockJuniorCapital();
+    _lockJuniorCapital(poolSlices.length - 1);
     _lockPool();
-
-    juniorTranche.lockedUntil = block.timestamp - 1;
+    PoolSlice storage currentSlice = poolSlices[poolSlices.length - 1];
+    currentSlice.juniorTranche.lockedUntil = block.timestamp - 1;
     poolTokens.redeem(tokenId, balancePaid, totalInterestPaid);
 
     // Simulate the drawdown
-    juniorTranche.principalSharePrice = 0;
-    seniorTranche.principalSharePrice = 0;
+    currentSlice.juniorTranche.principalSharePrice = 0;
+    currentSlice.seniorTranche.principalSharePrice = 0;
 
     // Set junior's sharePrice correctly
-    applyToTrancheByAmount(totalInterestPaid, balancePaid, totalInterestPaid, balancePaid, juniorTranche);
+    currentSlice.juniorTranche.applyByAmount(totalInterestPaid, balancePaid, totalInterestPaid, balancePaid);
   }
 }

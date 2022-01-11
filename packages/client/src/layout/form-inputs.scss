@@ -1,4 +1,4 @@
-@import './utils.scss';
+@import "./utils.scss";
 
 .form .form-show-optional {
   font-size: $sans-size-xs;
@@ -34,39 +34,39 @@
   }
 }
 
-.form-optional{
-  &.hidden{
+.form-optional {
+  &.hidden {
     display: none;
   }
-  &.showing{
+  &.showing {
     display: block;
   }
 
   @include space-y(30px);
 }
 
-.form-separator{
+.form-separator {
   border-bottom: 2px solid $sand;
 }
 
-.form-inputs{
+.form-inputs {
   @include space-y(30px);
 }
 
-.form-input-container{
+.form-input-container {
   position: relative;
   width: 100%;
 
-  &.disabled .form-input{
+  &.disabled .form-input {
     color: $purp-xlight;
   }
 
-  &.pre-filled .form-input{
+  &.pre-filled .form-input {
     color: $purp-xlight;
   }
 }
 
-.transaction-input{
+.transaction-input {
   display: flex;
   align-items: center;
   border: 2px solid $sand;
@@ -90,15 +90,15 @@
     color: $purp-dark;
   }
 
-  .ticker{
+  .ticker {
     flex-shrink: 0;
 
-    &.before{
+    &.before {
       margin: 0 5px 0 0px;
       font-size: $sans-size-l;
     }
 
-    &.after{
+    &.after {
       margin: 0 5px 0 5px;
       font-size: $sans-size-ml;
       color: $purp-light;
@@ -106,12 +106,12 @@
   }
 }
 
-.form-input-label{
+.form-input-label {
   font-size: $sans-size-xs;
   margin-bottom: 6px;
 }
 
-.form-input{
+.form-input {
   border: 2px solid $sand;
   border-radius: 6px;
   background-color: $sand;
@@ -121,17 +121,17 @@
   padding: 0 14px 0 14px;
   width: 100%;
 
-  &.small-text{
+  &.small-text {
     font-size: $sans-size-s;
   }
 
-  &:focus{
+  &:focus {
     border: 2px solid $purp-dark;
     color: $purp-dark;
   }
 }
 
-.enter-max-amount{
+.enter-max-amount {
   background-color: $sand;
   border: 1px solid $sand-xdark;
   border-radius: 4px;
@@ -144,19 +144,19 @@
   letter-spacing: 0.05em;
   flex-shrink: 0;
 
-  &:hover{
+  &:hover {
     border: 1px solid $purp-dark;
     color: $purp-dark;
   }
 }
 
-.form-input-note{
+.form-input-note {
   color: $purp-light;
   font-size: $sans-size-xs;
   margin: 8px 0 0;
   width: 100%;
 
-  &.verified-value{
+  &.verified-value {
     color: $blue;
     text-align: right;
 
@@ -168,19 +168,19 @@
       vertical-align: top;
     }
 
-    path{
+    path {
       fill: $blue;
     }
   }
 }
 
-.submit-form{
+.submit-form {
   // Matches line-height + border of .form-input
   height: 58px;
   width: 100%;
 }
 
-.form-inputs-footer{
+.form-inputs-footer {
   display: flex;
   flex-direction: column;
   @include space-x(0px);
@@ -188,46 +188,47 @@
 }
 
 @media only screen and (min-width: $screen-m) {
-  .form-optional{
+  .form-optional {
     margin: 0 0 35px;
   }
 }
 
 @media only screen and (min-width: $screen-l) {
-  .form-field{
+  .form-field {
     width: calc(70% - 50px);
   }
 
-  .form-inputs-footer{
+  .form-inputs-footer {
     flex-direction: row;
     @include space-x(50px);
     @include space-y(0px);
   }
 
-  .form-input-label{
+  .form-input-label {
     margin-bottom: 8px;
   }
 
-  .form-input{
+  .form-input {
     font-size: $sans-size-xl;
     line-height: 68px;
 
-    &.small-text{
+    &.small-text {
       font-size: $sans-size-base;
     }
   }
 
-  .enter-max-amount{
+  .enter-max-amount {
     border-radius: 5px;
     font-size: $sans-size-xs;
     padding: 8px 10px;
   }
 
-  .form-input-note{
-    margin: 10px 0 0;
+  .form-input-note {
+    font-size: $sans-size-xs;
+    margin: 2px 0 0;
   }
 
-  .submit-form{
+  .submit-form {
     // Matches line-height + border of .form-input
     height: 72px;
     min-width: 30%;
@@ -236,8 +237,8 @@
   }
 
   .transaction-input {
-    .ticker{
-      &.before{
+    .ticker {
+      &.before {
         margin: 0 8px 0 0px;
         font-size: $sans-size-xl;
       }

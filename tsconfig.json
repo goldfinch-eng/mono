@@ -4,7 +4,12 @@
     "baseUrl": ".",
     "paths": {
       "@goldfinch-eng/utils": ["packages/utils/src"],
+      "@goldfinch-eng/utils/*": ["packages/utils/*"],
       "@goldfinch-eng/protocol": ["packages/protocol"],
+      "@goldfinch-eng/protocol/*": ["packages/protocol/*"],
+      "@goldfinch-eng/client": ["packages/client"],
+      "@goldfinch-eng/client/*": ["packages/client/*"],
+      "@goldfinch-eng/server": ["packages/server"],
       "@goldfinch-eng/autotasks": ["packages/autotasks"],
       "@goldfinch-eng/subgraph": ["packages/subgraph"],
       "@goldfinch-eng/functions": ["packages/functions/src"],

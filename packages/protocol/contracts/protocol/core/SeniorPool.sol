@@ -36,6 +36,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
   event InvestmentMadeInJunior(address indexed tranchedPool, uint256 amount);
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
 
@@ -62,11 +64,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param amount The amount of USDC to deposit
    */
   function deposit(uint256 amount) public override whenNotPaused nonReentrant returns (uint256 depositShares) {
+    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
     require(amount > 0, "Must deposit more than zero");
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
-    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the fund over the total limit.");
+    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the senior pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
@@ -99,6 +102,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param usdcAmount The amount of USDC to withdraw
    */
   function withdraw(uint256 usdcAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
+    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
     require(usdcAmount > 0, "Must withdraw more than zero");
     // This MUST happen before calculating withdrawShares, otherwise the share price
     // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
@@ -114,6 +118,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param fiduAmount The amount of USDC to withdraw in terms of FIDU shares
    */
   function withdrawInFidu(uint256 fiduAmount) external override whenNotPaused nonReentrant returns (uint256 amount) {
+    require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
     require(fiduAmount > 0, "Must withdraw more than zero");
     // This MUST happen before calculating withdrawShares, otherwise the share price
     // changes between calculation and burning of Fidu, which creates a asset/liability mismatch
@@ -130,6 +135,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**
@@ -167,10 +173,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Invest in an ITranchedPool's senior tranche using the fund's strategy
+   * @notice Invest in an ITranchedPool's senior tranche using the senior pool's strategy
    * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
-  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant onlyAdmin {
+  function invest(ITranchedPool pool) public override whenNotPaused nonReentrant {
     require(validPool(pool), "Pool must be valid");
 
     if (compoundBalance > 0) {
@@ -196,40 +202,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Invest in an ITranchedPool's junior tranche.
-   * @param pool An ITranchedPool whose junior tranche to invest in
-   */
-  function investJunior(ITranchedPool pool, uint256 amount) public override whenNotPaused nonReentrant onlyAdmin {
-    require(validPool(pool), "Pool must be valid");
-
-    // We don't intend to support allowing the senior fund to invest in the junior tranche if it
-    // has already invested in the senior tranche, so we prohibit that here. Note though that we
-    // don't care to prohibit the inverse order, of the senior fund investing in the senior
-    // tranche after investing in the junior tranche.
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
-    require(
-      seniorTranche.principalDeposited == 0,
-      "SeniorFund cannot invest in junior tranche of tranched pool with non-empty senior tranche."
-    );
-
-    if (compoundBalance > 0) {
-      _sweepFromCompound();
-    }
-
-    require(amount > 0, "Investment amount must be positive");
-
-    approvePool(pool, amount);
-    pool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
-
-    emit InvestmentMadeInJunior(address(pool), amount);
-    totalLoansOutstanding = totalLoansOutstanding.add(amount);
-  }
-
-  /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolTokens token to be redeemed
    */
-  function redeem(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
+  function redeem(uint256 tokenId) public override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -240,14 +216,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Write down an ITranchedPool investment. This will adjust the fund's share price
+   * @notice Write down an ITranchedPool investment. This will adjust the senior pool's share price
    *  down if we're considering the investment a loss, or up if the borrower has subsequently
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param tokenId the ID of an IPoolTokens token to be considered for writedown
    */
-  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant onlyAdmin {
+  function writedown(uint256 tokenId) public override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
-    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior fund can be written down");
+    require(address(this) == poolTokens.ownerOf(tokenId), "Only tokens owned by the senior pool can be written down");
 
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
@@ -285,7 +261,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
 
     uint256 principalRemaining = tokenInfo.principalAmount.sub(tokenInfo.principalRedeemed);
-    (uint256 _, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
+
+    (, uint256 writedownAmount) = _calculateWritedown(pool, principalRemaining);
     return writedownAmount;
   }
 

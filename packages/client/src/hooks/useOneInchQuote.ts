@@ -5,7 +5,7 @@ import {AppContext} from "../App"
 import {getOneInchContract} from "../ethereum/oneInch"
 import {roundUpPenny, displayNumber, assertNonNullable} from "../utils"
 
-function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
+function useOneInchQuote({from, to, decimalAmount, parts = 10}): [null, boolean] {
   const {network} = useContext(AppContext)
   const [expectedReturn, setExpectedReturn] = useState(null)
   const [isLoading, setLoading] = useState(false)
@@ -23,7 +23,9 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}) {
       setLoading(true)
 
       let atomicAmount = from.atomicAmount(decimalAmount)
-      const result = await oneInch.methods.getExpectedReturn(from.address, to.address, atomicAmount, parts, 0).call()
+      const result = await oneInch.readOnly.methods
+        .getExpectedReturn(from.address, to.address, atomicAmount, parts, 0)
+        .call(undefined, "latest")
 
       setLoading(false)
       setExpectedReturn(result)

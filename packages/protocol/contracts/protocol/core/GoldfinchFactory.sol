@@ -18,16 +18,32 @@ import "./ConfigHelper.sol";
 
 contract GoldfinchFactory is BaseUpgradeablePausable {
   GoldfinchConfig public config;
+
+  /// Role to allow for pool creation
+  bytes32 public constant BORROWER_ROLE = keccak256("BORROWER_ROLE");
+
   using ConfigHelper for GoldfinchConfig;
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
   event PoolCreated(address indexed pool, address indexed borrower);
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event CreditLineCreated(address indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = _config;
+    _performUpgrade();
+  }
+
+  function performUpgrade() external onlyAdmin {
+    _performUpgrade();
+  }
+
+  function _performUpgrade() internal {
+    if (getRoleAdmin(BORROWER_ROLE) != OWNER_ROLE) {
+      _setRoleAdmin(BORROWER_ROLE, OWNER_ROLE);
+    }
   }
 
   /**
@@ -79,8 +95,11 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
-  ) external onlyAdmin returns (address pool) {
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external onlyAdminOrBorrower returns (address pool) {
     address tranchedPoolImplAddress = config.tranchedPoolAddress();
     pool = deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
@@ -91,7 +110,10 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       _interestApr,
       _paymentPeriodInDays,
       _termInDays,
-      _lateFeeApr
+      _lateFeeApr,
+      _principalGracePeriodInDays,
+      _fundableAt,
+      _allowedUIDTypes
     );
     emit PoolCreated(pool, _borrower);
     config.getPoolTokens().onPoolCreated(pool);
@@ -105,7 +127,10 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _interestApr,
     uint256 _paymentPeriodInDays,
     uint256 _termInDays,
-    uint256 _lateFeeApr
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
   ) external onlyCreditDesk returns (address pool) {
     address tranchedPoolImplAddress = config.migratedTranchedPoolAddress();
     pool = deployMinimal(tranchedPoolImplAddress);
@@ -117,7 +142,10 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       _interestApr,
       _paymentPeriodInDays,
       _termInDays,
-      _lateFeeApr
+      _lateFeeApr,
+      _principalGracePeriodInDays,
+      _fundableAt,
+      _allowedUIDTypes
     );
     emit PoolCreated(pool, _borrower);
     config.getPoolTokens().onPoolCreated(pool);
@@ -126,6 +154,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   // Stolen from:
@@ -141,6 +170,15 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       proxy := create(0, clone, 0x37)
     }
     return proxy;
+  }
+
+  function isBorrower() public view returns (bool) {
+    return hasRole(BORROWER_ROLE, _msgSender());
+  }
+
+  modifier onlyAdminOrBorrower() {
+    require(isAdmin() || isBorrower(), "Must have admin or borrower role to perform this action");
+    _;
   }
 
   modifier onlyCreditDesk() {

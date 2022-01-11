@@ -1,16 +1,16 @@
-footer{
+footer {
   font-size: $sans-size-xs;
   padding: 30px 0;
 
-  a{
+  a {
     color: $sand-xxdark;
   }
 
-  a:hover{
+  a:hover {
     color: $purp;
   }
 
-  .divider{
+  .divider {
     color: $sand-xxdark;
     margin: 0 7px;
   }
@@ -42,7 +42,7 @@ footer{
 }
 
 @media only screen and (min-width: $screen-m) {
-  footer{
+  footer {
     bottom: 0;
     left: 0;
     position: fixed;

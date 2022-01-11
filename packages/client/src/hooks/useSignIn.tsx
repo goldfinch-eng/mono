@@ -1,9 +1,11 @@
+import {isNumber, PlainObject} from "@goldfinch-eng/utils/src/type"
 import {ethers} from "ethers"
-import {useCallback, useContext, useState, useEffect} from "react"
+import difference from "lodash/difference"
+import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {assertNonNullable, getBlockInfo, getCurrentBlock, secondsSinceEpoch} from "../utils"
-import web3 from "../web3"
 import {SESSION_DATA_VERSION} from "../types/session"
+import {assertNonNullable} from "../utils"
+import web3, {getUserWalletWeb3Status} from "../web3"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
@@ -29,90 +31,124 @@ interface SessionLocalStorageType {
   setLocalStorageValue: (value: any) => void
 }
 
-function getSession(info: GetSessionInfo): Session {
-  if (info.address && info.signature) {
+function getSession(info: GetSessionInfo | undefined): Session {
+  if (info?.signature && info?.address) {
     const signature = info.signature
     const signatureBlockNum = info.signatureBlockNum
     return {status: "authenticated", signature, signatureBlockNum}
-  }
-  if (info.address && !info.signature) {
+  } else if (info && !info.signature) {
     return {status: "known"}
+  } else {
+    return {status: "unknown"}
   }
-  return {status: "unknown"}
 }
 
 export function useSession(): Session {
-  const {sessionData, user} = useContext(AppContext)
-  return getSession(
-    sessionData
-      ? {
-          address: user.address,
-          signature: sessionData.signature,
-          signatureBlockNum: sessionData.signatureBlockNum,
-          signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
-          version: sessionData.version,
-        }
-      : {address: user.address, signature: undefined, signatureBlockNum: undefined}
-  )
+  const {sessionData, userWalletWeb3Status} = useContext(AppContext)
+  if (userWalletWeb3Status?.type === "connected" && sessionData) {
+    return getSession({
+      address: userWalletWeb3Status.address,
+      signature: sessionData.signature,
+      signatureBlockNum: sessionData.signatureBlockNum,
+      signatureBlockNumTimestamp: sessionData.signatureBlockNumTimestamp,
+      version: sessionData.version,
+    })
+  } else {
+    return getSession(undefined)
+  }
 }
 
 export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
-  const {setSessionData, user} = useContext(AppContext)
+  const {setSessionData, currentBlock} = useContext(AppContext)
   const session = useSession()
-
   const signIn = useCallback(
     async function () {
+      const userWalletWeb3Status = await getUserWalletWeb3Status()
+      assertNonNullable(userWalletWeb3Status)
       assertNonNullable(setSessionData)
+      assertNonNullable(currentBlock)
+      const userAddress = userWalletWeb3Status.address
+      if (!userAddress) {
+        setSessionData(undefined)
+        return getSession(undefined)
+      }
+      const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
+      const signer = provider.getSigner(userAddress)
 
-      const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
-      const signer = provider.getSigner(user.address)
-
-      const currentBlock = getBlockInfo(await getCurrentBlock())
       const signatureBlockNum = currentBlock.number
       const signatureBlockNumTimestamp = currentBlock.timestamp
       const version = SESSION_DATA_VERSION
-      const signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
-      setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
-      return getSession({address: user.address, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+      let signature: string | undefined
+      try {
+        signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
+      } catch (err: unknown) {
+        if ((err as any).code === 4001) {
+          // The user denied the request.
+        } else {
+          throw err
+        }
+      }
+      if (signature) {
+        setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+        return getSession({address: userAddress, signature, signatureBlockNum, signatureBlockNumTimestamp, version})
+      } else {
+        setSessionData(undefined)
+        return getSession({address: userAddress, signature: undefined, signatureBlockNum: undefined})
+      }
     },
-    [user, setSessionData]
+    [setSessionData, currentBlock]
   )
 
   return [session, signIn]
 }
 
-function isSessionDataFormatInvalid(storedInfo: Object): boolean {
-  if (!Boolean(storedInfo)) {
+const sessionDataFormatSchema = {
+  signature: (value: unknown) => typeof value === "string" && value !== undefined,
+  signatureBlockNum: (value: unknown) => typeof value === "number" && value !== undefined,
+  signatureBlockNumTimestamp: (value: unknown) => typeof value === "number" && value !== undefined,
+  version: (value: unknown) => typeof value === "number" && value !== undefined,
+}
+
+const validateSessionDataFormat = (object: PlainObject): Error[] => {
+  const requiredKeys = Object.keys(sessionDataFormatSchema)
+  const requiredKeysErrors = Object.keys(sessionDataFormatSchema)
+    .filter((key) => !sessionDataFormatSchema[key](object[key]))
+    .map((key) => new Error(`${key} is invalid.`))
+
+  const extraKeys = difference(Object.keys(object), requiredKeys)
+  const extraKeysErrors = extraKeys.length ? [new Error(`${extraKeys} are invalid.`)] : []
+
+  return requiredKeysErrors.concat(extraKeysErrors)
+}
+
+function isSessionDataFormatInvalid(storedInfo: PlainObject | undefined): boolean {
+  if (!storedInfo) {
     return true
   }
-
-  const schema = {
-    signature: (value) => typeof value === "string" && value !== undefined,
-    signatureBlockNum: (value) => typeof value === "number" && value !== undefined,
-    signatureBlockNumTimestamp: (value) => typeof value === "number" && value !== undefined,
-    version: (value) => typeof value === "number" && value !== undefined,
-  }
-
-  const validate = (object, schema) =>
-    Object.keys(schema)
-      .filter((key) => !schema[key](object[key]))
-      .map((key) => new Error(`${key} is invalid.`))
-
-  const errors = validate(storedInfo, schema)
-
+  const errors = validateSessionDataFormat(storedInfo)
   return errors.length > 0
 }
 
 const EXPIRY_IN_SECONDS = 24 * 60 * 60 // 24 hours in seconds
 
-function isSessionDataExpired(timestamp: number): boolean {
-  const currentTimestamp = secondsSinceEpoch()
-  const difference = currentTimestamp - timestamp
-
-  return EXPIRY_IN_SECONDS < difference
+function isSessionDataExpired(timestamp: number | undefined, currentTimestamp: number | undefined): boolean {
+  if (currentTimestamp) {
+    if (timestamp) {
+      const difference = currentTimestamp - timestamp
+      return EXPIRY_IN_SECONDS < difference
+    } else {
+      return true
+    }
+  } else {
+    return false
+  }
 }
 
-function getLocalStorageOrDefault(key: string, defaultValue: any): any {
+function getLocalStorageOrDefault(
+  key: string,
+  defaultValue: PlainObject,
+  currentTimestamp: number | undefined
+): PlainObject {
   const stored = localStorage.getItem(key)
   if (!stored) {
     return defaultValue
@@ -120,7 +156,7 @@ function getLocalStorageOrDefault(key: string, defaultValue: any): any {
   try {
     const sessionData = JSON.parse(stored)
 
-    if (isSessionDataInvalid(sessionData)) {
+    if (isSessionDataInvalid(sessionData, currentTimestamp)) {
       localStorage.removeItem(key)
       return defaultValue
     }
@@ -133,17 +169,27 @@ function getLocalStorageOrDefault(key: string, defaultValue: any): any {
   }
 }
 
-export function isSessionDataInvalid(sessionData) {
-  return isSessionDataFormatInvalid(sessionData) || isSessionDataExpired(sessionData?.signatureBlockNumTimestamp)
+export function isSessionDataInvalid(sessionData: PlainObject | undefined, currentTimestamp: number | undefined) {
+  const signatureBlockNumTimestamp =
+    sessionData && "signatureBlockNumTimestamp" in sessionData && isNumber(sessionData.signatureBlockNumTimestamp)
+      ? sessionData.signatureBlockNumTimestamp
+      : undefined
+  return isSessionDataFormatInvalid(sessionData) || isSessionDataExpired(signatureBlockNumTimestamp, currentTimestamp)
 }
 
-export function useSessionLocalStorage(key: string, defaultValue: any): SessionLocalStorageType {
-  const [localStorageValue, setLocalStorageValue] = useState(getLocalStorageOrDefault(key, defaultValue))
+export function useSessionLocalStorage(
+  key: string,
+  defaultValue: PlainObject,
+  currentTimestamp: number | undefined
+): SessionLocalStorageType {
+  const [localStorageValue, setLocalStorageValue] = useState(
+    getLocalStorageOrDefault(key, defaultValue, currentTimestamp)
+  )
 
   useEffect(() => {
-    const value = isSessionDataInvalid(localStorageValue) ? defaultValue : localStorageValue
+    const value = isSessionDataInvalid(localStorageValue, currentTimestamp) ? defaultValue : localStorageValue
     localStorage.setItem(key, JSON.stringify(value))
-  }, [key, localStorageValue, defaultValue])
+  }, [key, localStorageValue, defaultValue, currentTimestamp])
 
   return {localStorageValue, setLocalStorageValue}
 }

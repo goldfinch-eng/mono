@@ -32,7 +32,7 @@ To use the client with the murmuration blockchain, you will need to add a custom
       --project=goldfinch-frontends-dev
     ```
 1. In the Google Cloud console, create a Compute Engine instance group using the template from the previous step.
-    - Turn off autoscaling. Set the number of instances to 1.
+    - Configure the min number and max number of instances to `1`. There's no point to having more than one instance, because the blockchain served by hardhat lives in memory on an instance.
 1. Create a firewall rule that will allow the load balancer's health checking and request forwarding. The firewall rule's target tags should be the tags of the instance group template.
     ```
     gcloud compute firewall-rules create \
@@ -49,11 +49,17 @@ To use the client with the murmuration blockchain, you will need to add a custom
 1. In the Google Cloud console, create an HTTPS load balancer that uses the health check you created when creating the instance group.
     - In doing this, create an SSL certificate for `murmuration.goldfinch.finance` and use that as the load balancer's certificate.
     - Be sure to specify that the load balancer have a static IP address, rather than ephemeral IP address.
-1. For continuous deployment, the deploy command in `cloudbuild.yaml` should use the appropriate instance group and template name, i.e. `murmuration-goldfinch-finance-3`.
+1. For continuous deployment, the deploy command in `cloudbuild.yaml` should use the appropriate instance group name and template name (NOTE: over time these names might diverge, due to creating new instance templates but continuing to use the same instance group).
 1. Wherever DNS records are maintained, create an `A` record and an `AAAA` record for `murmuration.goldfinch.finance`, where the value is the static IP address that was assigned to the load balancer.
 
 # Debugging
 
+## Remote
+
 When viewing the Compute Engine instance group in the Google Cloud console (i.e. https://console.cloud.google.com/compute/instanceGroups/list?project=goldfinch-frontends-dev), you can SSH into an instance, from within your web browser.
 
-Once you've SSH'ed into an instance, you can see what Docker process are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run murmuration-start` command!
+Once you've SSH'ed into an instance, you can see what Docker processes are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run start:murmuration` command!
+
+## Local
+
+To build the Docker image locally, run this command from the repo root: `docker build . -f ./murmuration/Dockerfile -t murmuration:latest`

@@ -3,9 +3,12 @@ import {NavLink} from "react-router-dom"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import logoPurp from "../images/logomark-purp.svg"
 import {iconMenu} from "./icons"
+import {EARN_ROUTE, BORROW_ROUTE, GFI_ROUTE, TRANSACTIONS_ROUTE} from "../types/routes"
 
 function Sidebar(props) {
   const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()
+
+  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
   function closeSidebar() {
     setShowSidebar("")
@@ -29,13 +32,18 @@ function Sidebar(props) {
         <img className="sidebar-logo" src={logoPurp} alt="Goldfinch" />
       </a>
       <nav>
-        <NavLink to="/earn" onClick={closeSidebar}>
+        <NavLink to={EARN_ROUTE} onClick={closeSidebar}>
           Earn
         </NavLink>
-        <NavLink to="/borrow" onClick={closeSidebar}>
+        <NavLink to={BORROW_ROUTE} onClick={closeSidebar}>
           Borrow
         </NavLink>
-        <NavLink to="/transactions" onClick={closeSidebar}>
+        {toggleRewards && (
+          <NavLink to={GFI_ROUTE} onClick={closeSidebar}>
+            GFI
+          </NavLink>
+        )}
+        <NavLink to={TRANSACTIONS_ROUTE} onClick={closeSidebar}>
           Transactions
         </NavLink>
       </nav>

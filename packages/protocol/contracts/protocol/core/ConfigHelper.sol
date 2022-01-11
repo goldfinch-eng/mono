@@ -12,7 +12,9 @@ import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
 import "../../interfaces/IPoolTokens.sol";
+import "../../interfaces/IBackerRewards.sol";
 import "../../interfaces/IGoldfinchFactory.sol";
+import "../../interfaces/IGo.sol";
 
 /**
  * @title ConfigHelper
@@ -54,8 +56,20 @@ library ConfigHelper {
     return IPoolTokens(poolTokensAddress(config));
   }
 
+  function getBackerRewards(GoldfinchConfig config) internal view returns (IBackerRewards) {
+    return IBackerRewards(backerRewardsAddress(config));
+  }
+
   function getGoldfinchFactory(GoldfinchConfig config) internal view returns (IGoldfinchFactory) {
     return IGoldfinchFactory(goldfinchFactoryAddress(config));
+  }
+
+  function getGFI(GoldfinchConfig config) internal view returns (IERC20withDec) {
+    return IERC20withDec(gfiAddress(config));
+  }
+
+  function getGo(GoldfinchConfig config) internal view returns (IGo) {
+    return IGo(goAddress(config));
   }
 
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {
@@ -82,6 +96,10 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
 
+  function backerRewardsAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.BackerRewards));
+  }
+
   function seniorPoolAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.SeniorPool));
   }
@@ -96,6 +114,10 @@ library ConfigHelper {
 
   function goldfinchFactoryAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchFactory));
+  }
+
+  function gfiAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.GFI));
   }
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
@@ -128,6 +150,14 @@ library ConfigHelper {
 
   function borrowerImplementationAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.BorrowerImplementation));
+  }
+
+  function goAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.Go));
+  }
+
+  function stakingRewardsAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.StakingRewards));
   }
 
   function getReserveDenominator(GoldfinchConfig config) internal view returns (uint256) {

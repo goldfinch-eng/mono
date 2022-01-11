@@ -44,12 +44,26 @@
   }
 
   .button {
+    width: 100%;
+  }
+
+  .button:not(.disabled) {
     background-color: $blue-xlight;
     color: $purp-dark;
-    width: 100%;
 
     &:hover {
       background-color: $blue-light;
+    }
+
+    &.disabled,
+    &.disabled.dark {
+      background-color: $sand;
+      color: $sand-xxdark;
+      cursor: auto;
+
+      & .icon path {
+        fill: $sand-xxdark;
+      }
     }
   }
 }

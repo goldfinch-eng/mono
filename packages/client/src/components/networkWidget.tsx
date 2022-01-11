@@ -1,50 +1,61 @@
-import React, {useContext, useEffect, useState} from "react"
+import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
-import web3 from "../web3"
-import {croppedAddress, displayNumber} from "../utils"
-import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
-import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
-import NetworkErrors from "./networkErrors"
-import {iconCheck, iconOutArrow} from "./icons"
+import React, {useContext} from "react"
+import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
-import {User} from "../ethereum/user"
-import {AppContext, NetworkConfig} from "../App"
-import {isSessionDataInvalid, useSession, useSignIn} from "../hooks/useSignIn"
+import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
+import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
+import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
+import {useSignIn} from "../hooks/useSignIn"
+import {NetworkConfig} from "../types/network"
+import {
+  ACCEPT_TX_TYPE,
+  BORROW_TX_TYPE,
+  CLAIM_TX_TYPE,
+  CurrentTx,
+  DRAWDOWN_TX_NAME,
+  ERC20_APPROVAL_TX_TYPE,
+  FIDU_APPROVAL_TX_TYPE,
+  INTEREST_COLLECTED_TX_NAME,
+  INTEREST_PAYMENT_TX_NAME,
+  MINT_UID_TX_TYPE,
+  PAYMENT_TX_TYPE,
+  PRINCIPAL_COLLECTED_TX_NAME,
+  RESERVE_FUNDS_COLLECTED_TX_NAME,
+  STAKE_TX_TYPE,
+  SUPPLY_AND_STAKE_TX_TYPE,
+  SUPPLY_TX_TYPE,
+  TxType,
+  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  UNSTAKE_TX_NAME,
+  USDC_APPROVAL_TX_TYPE,
+  WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+} from "../types/transactions"
+import {ArrayItemType, BlockInfo, croppedAddress, displayDollars, displayNumber} from "../utils"
+import web3 from "../web3"
+import {iconCheck, iconOutArrow} from "./icons"
+import NetworkErrors from "./networkErrors"
 
 interface NetworkWidgetProps {
-  user: User
-  network: NetworkConfig
+  user: UserLoaded | undefined
+  currentBlock: BlockInfo | undefined
+  network: NetworkConfig | undefined
   currentErrors: any[]
-  currentTXs: any[]
-
+  currentTxs: CurrentTx<TxType>[]
   connectionComplete: () => any
 }
 
 function NetworkWidget(props: NetworkWidgetProps) {
-  const {sessionData} = useContext(AppContext)
-  const session = useSession()
-  const [, signIn] = useSignIn()
-  const [showSignIn, setShowSignIn] = useState<Boolean>(false)
+  const {userWalletWeb3Status} = useContext(AppContext)
+  const [session, signIn] = useSignIn()
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
 
-  useEffect(() => {
-    if (props.user.address && session.status !== "authenticated" && showSignIn) {
-      signIn()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.user.address, showSignIn])
-
-  function enableMetamask() {
-    if (session.status === "known" && !isSessionDataInvalid(sessionData)) {
-      return Promise.resolve()
-    }
-
+  async function enableMetamask(): Promise<void> {
     return (window as any).ethereum
       .request({method: "eth_requestAccounts"})
-      .then(() => {
-        props.connectionComplete()
-        setShowSignIn(true)
-      })
+      .then(signIn)
+      .then(props.connectionComplete)
       .catch((error) => {
         console.error("Error connecting to metamask", error)
       })
@@ -59,28 +70,92 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }
 
   let transactions: JSX.Element = <></>
-  let enabledText = croppedAddress(props.user.address)
-  let userAddressForDisplay = croppedAddress(props.user.address)
+  let enabledText = croppedAddress(userWalletWeb3Status?.address)
+  let userAddressForDisplay = croppedAddress(userWalletWeb3Status?.address)
   let enabledClass = ""
 
-  function transactionItem(tx) {
-    const transactionlabel = tx.name === "Approval" ? tx.name : `$${tx.amount} ${tx.name}`
-    let etherscanSubdomain
-    if (props.network.name === "mainnet") {
-      etherscanSubdomain = ""
+  function transactionItem(tx: CurrentTx<TxType> | ArrayItemType<UserLoadedInfo["pastTxs"]>) {
+    let transactionLabel: string
+    if (tx.current) {
+      switch (tx.name) {
+        case MINT_UID_TX_TYPE:
+        case USDC_APPROVAL_TX_TYPE:
+        case FIDU_APPROVAL_TX_TYPE:
+        case ERC20_APPROVAL_TX_TYPE:
+        case CLAIM_TX_TYPE:
+        case ACCEPT_TX_TYPE:
+          transactionLabel = tx.name
+          break
+        case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
+        case SUPPLY_AND_STAKE_TX_TYPE:
+        case SUPPLY_TX_TYPE:
+        case PAYMENT_TX_TYPE:
+        case BORROW_TX_TYPE: {
+          transactionLabel = `${displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} ${tx.name}`
+          break
+        }
+        case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE: {
+          transactionLabel = `${displayDollars(
+            (tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount
+          )} ${tx.name}`
+          break
+        }
+        case STAKE_TX_TYPE: {
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
+            tx.name
+          }`
+          break
+        }
+        default:
+          assertUnreachable(tx)
+      }
     } else {
-      etherscanSubdomain = `${props.network}.`
+      switch (tx.name) {
+        case CLAIM_TX_TYPE:
+        case ACCEPT_TX_TYPE:
+        case MINT_UID_TX_TYPE:
+        case USDC_APPROVAL_TX_TYPE:
+        case FIDU_APPROVAL_TX_TYPE:
+        case ERC20_APPROVAL_TX_TYPE:
+          transactionLabel = tx.name
+          break
+        case SUPPLY_TX_TYPE:
+        case PAYMENT_TX_TYPE:
+        case SUPPLY_AND_STAKE_TX_TYPE:
+        case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
+        case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case BORROW_TX_TYPE:
+        case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case STAKE_TX_TYPE:
+        case INTEREST_COLLECTED_TX_NAME:
+        case PRINCIPAL_COLLECTED_TX_NAME:
+        case RESERVE_FUNDS_COLLECTED_TX_NAME:
+        case INTEREST_PAYMENT_TX_NAME:
+        case DRAWDOWN_TX_NAME:
+        case UNSTAKE_TX_NAME:
+          switch (tx.amount.units) {
+            case "usdc":
+              transactionLabel = `${displayDollars(tx.amount.display)} ${tx.name}`
+              break
+            case "fidu":
+              transactionLabel = `${displayNumber(tx.amount.display)} FIDU ${tx.name}`
+              break
+            case "gfi":
+              transactionLabel = `${displayNumber(tx.amount.display)} GFI ${tx.name}`
+              break
+            default:
+              assertUnreachable(tx.amount.units)
+          }
+          break
+        default:
+          assertUnreachable(tx)
+      }
     }
+
+    const etherscanSubdomain = getEtherscanSubdomain(props.network)
 
     let confirmationMessage: JSX.Element = <></>
-
-    if (tx.status === "awaiting_signers") {
-      confirmationMessage = (
-        <span>
-          <span className="small-network-message">Awaiting signers</span>
-        </span>
-      )
-    }
 
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
@@ -91,119 +166,57 @@ function NetworkWidget(props: NetworkWidgetProps) {
             <div className="double-bounce2"></div>
           </div>
         </div>
-        {transactionlabel}&nbsp;
-        <a
-          className="inline-button"
-          href={`https://${etherscanSubdomain}etherscan.io/tx/${tx.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {iconOutArrow}
-        </a>
+        {transactionLabel}&nbsp;
+        {web3.readOnly.utils.isHexStrict(tx.id) && (
+          <a
+            className="inline-button"
+            href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {iconOutArrow}
+          </a>
+        )}
         {confirmationMessage}
       </div>
     )
   }
 
   // Only show the error state when the most recent transaction is errored
-  if (props.currentErrors.length > 0 && props.currentTXs[0].status === "error") {
+  if (props.currentErrors.length > 0 && props.currentTxs[0]?.status === "error") {
     enabledClass = "error"
     enabledText = "Error"
-  } else if (_.some(props.currentTXs, {status: "awaiting_signers"})) {
-    enabledClass = "pending"
-    enabledText = "Awaiting signers"
-  } else if (_.some(props.currentTXs, {status: "pending"})) {
-    const pendingTXCount: number = _.countBy(props.currentTXs, {status: "pending"}).true || 0
+  } else if (_.some(props.currentTxs, {status: "pending"})) {
+    const pendingTXCount: number = _.countBy(props.currentTxs, {status: "pending"}).true || 0
     const confirmingCount: number =
-      _.countBy(props.currentTXs, (item) => {
+      _.countBy(props.currentTxs, (item) => {
         return item.status === "pending" && item.confirmations > 0
       }).true || 0
     enabledClass = "pending"
     if (confirmingCount > 0) {
-      const pendingTX = props.currentTXs[0]
-      enabledText = `Confirming (${pendingTX.confirmations} of ${CONFIRMATION_THRESHOLD})`
+      const pendingTX = props.currentTxs[0]
+      enabledText = `Confirming (${pendingTX!.confirmations} of ${CONFIRMATION_THRESHOLD})`
     } else if (pendingTXCount > 0) {
       enabledText = pendingTXCount === 1 ? "Processing" : pendingTXCount + " Processing"
     }
-  } else if (props.currentTXs.length > 0 && _.every(props.currentTXs, {status: "successful"})) {
+  } else if (props.currentTxs.length > 0 && _.every(props.currentTxs, {status: "successful"})) {
     enabledClass = "success"
   }
 
-  let allTx = _.compact(_.concat(props.currentTXs, _.slice(props.user.pastTxs, 0, 5)))
-  allTx = _.uniqBy(allTx, "id")
-  if (allTx.length > 0) {
+  let allTxs = _.compact([...props.currentTxs, ..._.slice(props.user ? props.user.info.value.pastTxs : [], 0, 5)])
+  allTxs = _.uniqBy(allTxs, "id")
+  if (allTxs.length > 0) {
     transactions = (
       <div className="network-widget-section">
         <div className="network-widget-header">
           Recent Transactions
           <a href="/transactions">view all</a>
         </div>
-        {allTx.map(transactionItem)}
+        {allTxs.map(transactionItem)}
       </div>
     )
   }
-
-  const connectMetamaskNetworkWidget = (
-    <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-      <button className="network-widget-button bold" onClick={toggleOpenWidget}>
-        Connect Metamask
-      </button>
-      <div className="network-widget-info">
-        <div className="network-widget-section">
-          <div className="agree-to-terms">
-            <p>
-              By connecting, I accept Goldfinch's{" "}
-              <a href="/terms" target="_blank">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a href="/privacy" target="_blank">
-                Privacy Policy
-              </a>
-              .
-            </p>
-          </div>
-          <button className="button bold" onClick={enableMetamask}>
-            Connect Metamask
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
-  const enabledNetworkWidget = (
-    <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-      <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
-        <div className="status-icon">
-          <div className="indicator"></div>
-          <div className="spinner">
-            <div className="double-bounce1"></div>
-            <div className="double-bounce2"></div>
-          </div>
-        </div>
-        {enabledText}
-        <div className="success-indicator">{iconCheck}Success</div>
-      </button>
-      <div className="network-widget-info">
-        <div className="network-widget-section address">{userAddressForDisplay}</div>
-        <NetworkErrors currentErrors={props.currentErrors} />
-        <div className="network-widget-section">
-          USDC balance <span className="value">{displayNumber(usdcFromAtomic(props.user.usdcBalance), 2)}</span>
-        </div>
-        {transactions}
-      </div>
-    </div>
-  )
-
-  if (!(window as any).ethereum) {
-    return (
-      <div ref={node} className="network-widget">
-        <a href="https://metamask.io" className="network-widget-button bold">
-          Go to metamask.io
-        </a>
-      </div>
-    )
-  } else if (!props.user.loaded && !props.user.web3Connected) {
+  if (!userWalletWeb3Status) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button">
@@ -214,16 +227,78 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (web3 && props.network.name && !props.network.supported) {
+  } else if (userWalletWeb3Status?.type === "no_web3") {
+    return (
+      <div ref={node} className="network-widget">
+        <a href="https://metamask.io" className="network-widget-button bold">
+          Go to metamask.io
+        </a>
+      </div>
+    )
+  } else if (
+    userWalletWeb3Status?.type === "has_web3" &&
+    props.network &&
+    props.network.name &&
+    !props.network.supported
+  ) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (props.user.web3Connected && session.status !== "authenticated" && isSessionDataInvalid(sessionData)) {
-    return connectMetamaskNetworkWidget
+  } else if (session.status !== "authenticated") {
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
+          Connect Metamask
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section">
+            <div className="agree-to-terms">
+              <p>
+                By connecting, I accept Goldfinch's{" "}
+                <a href="/terms" target="_blank">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a href="/privacy" target="_blank">
+                  Privacy Policy
+                </a>
+                .
+              </p>
+            </div>
+            <button className="button bold" onClick={enableMetamask}>
+              Connect Metamask
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   } else {
-    return enabledNetworkWidget
+    const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
+          <div className="status-icon">
+            <div className="indicator"></div>
+            <div className="spinner">
+              <div className="double-bounce1"></div>
+              <div className="double-bounce2"></div>
+            </div>
+          </div>
+          {enabledText}
+          <div className="success-indicator">{iconCheck}Success</div>
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section address">{userAddressForDisplay}</div>
+          <NetworkErrors currentErrors={props.currentErrors} />
+          <div className="network-widget-section">
+            USDC balance <span className="value">{usdcBalance}</span>
+          </div>
+          {transactions}
+        </div>
+      </div>
+    )
   }
 }
 

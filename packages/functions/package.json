@@ -8,6 +8,8 @@
     "serve": "npm run build && npx firebase emulators:exec --ui --project=dev \"tsc -w --preserveWatchOutput\"",
     "shell": "npm run build && npx firebase functions:shell",
     "start": "npm run serve",
+    "start:murmuration": "npm run start",
+    "start:murmuration:liquidity-mining": "npm run start",
     "logs": "firebase functions:log",
     "test": "NODE_OPTIONS=\"--unhandled-rejections=strict\" NODE_ENV=test mocha --require ts-node/register test/**",
     "ci_test": "npx firebase emulators:exec --project=dev \"COMMIT_ID_FOR_TEST=$GITHUB_SHA npm test\"",
@@ -15,7 +17,7 @@
     "ci_functions_config_set_dev": "npm run ci_functions_config_set -- --project=dev",
     "ci_functions_config_set_prod": "npm run ci_functions_config_set -- --project=prod",
     "pre-push": "",
-    "pre-commit": "lint-staged",
+    "pre-commit": "npx lint-staged",
     "pre-deploy": "npx ts-node scripts/preDeploy.ts && npm install"
   },
   "engines": {

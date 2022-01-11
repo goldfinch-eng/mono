@@ -1,4 +1,4 @@
-.sidebar{
+.sidebar {
   background-color: $sand-light;
   border-bottom: 1px solid $sand;
   font-size: $sans-size-s;
@@ -6,15 +6,14 @@
   position: fixed;
   top: 0;
   width: 100%;
-  z-index: 1;
 }
 
-.sidebar-logo{
+.sidebar-logo {
   margin: 16px 0 16px 16px;
   height: 28px;
 }
 
-.sidebar nav{
+.sidebar nav {
   box-shadow: 0px 10px 15px rgba(180, 173, 167, 0.3);
   display: none;
   border-top: 1px solid $sand;
@@ -22,28 +21,28 @@
   text-align: right;
 }
 
-.sidebar.open nav{
+.sidebar.open nav {
   display: block;
 }
 
-.sidebar nav a{
+.sidebar nav a {
   color: $purp-light;
   display: block;
   padding: 9px 20px;
   margin: 4px 0;
 
-  &:hover{
+  &:hover {
     color: $purp-dark;
   }
 
-  &.active{
+  &.active {
     color: $purp-dark;
     cursor: auto;
     font-weight: 500;
   }
 }
 
-.open-sidebar{
+.open-sidebar {
   border: 1px solid $sand-dark;
   border-radius: 10px;
   height: $widget-button-height;
@@ -54,46 +53,45 @@
   right: 12px;
   width: $widget-button-height;
 
-  & .icon{
+  & .icon {
     height: 22px;
     width: 22px;
   }
 
-  &:hover{
+  &:hover {
     background: $sand;
   }
 }
 
-.open .open-sidebar{
+.open .open-sidebar {
   background: $sand;
 }
 
-
 @media only screen and (min-width: $screen-m) {
-  .sidebar{
+  .sidebar {
     border: none;
     bottom: 0;
     width: $nav-width;
   }
 
   .sidebar nav,
-  .sidebar.open nav{
+  .sidebar.open nav {
     border: none;
     box-shadow: none;
     display: block;
     text-align: left;
   }
 
-  .sidebar-logo{
+  .sidebar-logo {
     margin: 22px 0 30px 20px;
     height: 32px;
   }
 
-  .sidebar nav a.active{
+  .sidebar nav a.active {
     border-right: 3px solid $purp-dark;
   }
 
-  .open-sidebar{
+  .open-sidebar {
     display: none;
   }
 }

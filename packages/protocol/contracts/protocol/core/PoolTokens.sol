@@ -50,6 +50,8 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
 
   event TokenBurned(address indexed owner, address indexed pool, uint256 indexed tokenId);
 
+  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
   /*
     We are using our own initializer function so that OZ doesn't automatically
     set owner as msg.sender. Also, it lets us set our config contract
@@ -92,6 +94,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     address poolAddress = _msgSender();
     tokenId = createToken(params, poolAddress);
     _mint(to, tokenId);
+    config.getBackerRewards().setPoolTokenAccRewardsPerPrincipalDollarAtMint(_msgSender(), tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
     return tokenId;
   }
@@ -189,15 +192,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     _burn(tokenId);
   }
 
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual override(ERC721PresetMinterPauserAutoIdUpgradeSafe) whenNotPaused {
-    require(config.goList(to) || to == address(0), "This address has not been go-listed");
-    super._beforeTokenTransfer(from, to, tokenId);
-  }
-
   function _validPool(address poolAddress) internal view virtual returns (bool) {
     return pools[poolAddress].created;
   }
@@ -211,6 +205,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
    */
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
+    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   modifier onlyAdmin() {
