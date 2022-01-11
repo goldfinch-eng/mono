@@ -656,33 +656,43 @@ export function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): B
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
 
+/**
+ * Returns the amount of interest that the senior pool will accrue from tranched pools
+ */
 async function getEstimatedTotalInterest(pool: SeniorPool, currentBlock: BlockInfo): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
   const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
-  const creditLineAddresses = await Promise.all(
-    tranchedPools.map((p) => p.readOnly.methods.creditLine().call(undefined, currentBlock.number))
-  )
-  const creditLines = creditLineAddresses.map((a) => buildCreditLineReadOnly(a))
-  const creditLineData = await Promise.all(
-    creditLines.map(async (cl) => {
-      let balance = new BigNumber(await cl.methods.balance().call(undefined, currentBlock.number))
-      let interestApr = new BigNumber(await cl.methods.interestApr().call(undefined, currentBlock.number))
-      return {balance, interestApr}
-    })
-  )
-  return getEstimatedTotalInterestForCreditLines(creditLineData)
-}
+  const poolMetadata = await getMetadataStore(pool.chain)
+  const protocolFee = new BigNumber("0.1")
 
-export function getEstimatedTotalInterestForCreditLines(
-  creditLineData: {balance: BigNumber; interestApr: BigNumber}[]
-): BigNumber {
-  return BigNumber.sum.apply(
-    null,
-    creditLineData.map((cl) => cl.balance.multipliedBy(cl.interestApr.dividedBy(INTEREST_DECIMALS.toString())))
-  )
+  const getEstimatedInterestForPool = async (pool: Web3IO<TranchedPool>) => {
+    const creditLineAddress = await pool.readOnly.methods.creditLine().call(undefined, currentBlock.number)
+    const creditLine = await buildCreditLineReadOnly(creditLineAddress)
+
+    const balance = new BigNumber(await creditLine.methods.balance().call(undefined, currentBlock.number))
+    const interestApr = new BigNumber(
+      await creditLine.methods.interestApr().call(undefined, currentBlock.number)
+    ).dividedBy(INTEREST_DECIMALS.toString())
+    const juniorFeePercentage = new BigNumber(
+      await pool.readOnly.methods.juniorFeePercent().call(undefined, currentBlock.number)
+    ).dividedBy("100")
+
+    const address = pool.readOnly.options.address.toLowerCase()
+    const isV1Pool = poolMetadata[address]?.v1StyleDeal === true
+    const seniorPoolPercentageOfInterest = new BigNumber("1")
+      // dont include the junior fee percentage in v1 pools
+      .minus(isV1Pool ? new BigNumber("0") : juniorFeePercentage)
+      .minus(protocolFee)
+
+    return balance.multipliedBy(interestApr).multipliedBy(seniorPoolPercentageOfInterest)
+  }
+
+  const estimatedInterestPerPool = await Promise.all(tranchedPools.map((x) => getEstimatedInterestForPool(x)))
+
+  return BigNumber.sum.apply(null, estimatedInterestPerPool)
 }
 
 /**
