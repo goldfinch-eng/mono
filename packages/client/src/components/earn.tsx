@@ -91,6 +91,10 @@ export function PortfolioOverview({
     totalBalance,
     globalEstimatedApyFromGfi
   )
+  estimatedAnnualGrowth = estimatedAnnualGrowth.plus(
+    estimatedApyFromGfi ? totalBalance.multipliedBy(estimatedApyFromGfi) : new BigNumber(0)
+  )
+
   const estimatedApy = estimatedApyFromGfi
     ? estimatedApyFromSupplying.plus(estimatedApyFromGfi)
     : estimatedApyFromSupplying

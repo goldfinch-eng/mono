@@ -111,17 +111,17 @@ describe("Senior pool page deposit status", () => {
     jest.clearAllMocks()
   })
 
-  it("shows deposit status without capital provider", async () => {
+  it("shows empty deposit status, if capital provider data are undefined", async () => {
     const poolData = {}
     renderDepositStatus(poolData, undefined, currentBlock)
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$--.--")
     expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$--.--")
   })
 
-  it("shows deposit status without GFI rewards", async () => {
+  it("shows deposit status without contributions from GFI, if `estimatedApyFromGfi` is undefined", async () => {
     const poolData = {
       estimatedApy: new BigNumber("0.00483856000534281158"),
-      estimatedApyFromGfi: new BigNumber("0"),
+      estimatedApyFromGfi: undefined,
     }
     renderDepositStatus(poolData, capitalProvider, currentBlock)
 
@@ -138,7 +138,7 @@ describe("Senior pool page deposit status", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("0.00%")
+    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 
@@ -150,28 +150,37 @@ describe("Senior pool page deposit status", () => {
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
     const totalSeniorPoolBalanceInDollars = capitalProvider.value.totalSeniorPoolBalanceInDollars
-    expect(stakedSeniorPoolBalanceInDollars.lt(totalSeniorPoolBalanceInDollars)).toEqual(true)
-
-    const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
-    const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
-      .multipliedBy(stakedSeniorPoolBalanceInDollars)
-      .dividedBy(totalSeniorPoolBalanceInDollars)
+    expect(stakedSeniorPoolBalanceInDollars.toString(10)).toEqual("50022.830849")
+    expect(totalSeniorPoolBalanceInDollars.toString(10)).toEqual("50072.853679849")
 
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
+    const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData = {
+    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
+
     renderDepositStatus(poolData, capitalProvider, currentBlock)
 
+    const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
+      .multipliedBy(stakedSeniorPoolBalanceInDollars)
+      .dividedBy(totalSeniorPoolBalanceInDollars)
+    const expectedApyFromGfi = expectedUserEstimatedApyFromGfi
+    const expectedTotalApy = estimatedPoolApy.plus(expectedApyFromGfi)
+
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
-    const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
-    const expectedDisplayTotalApy = toDisplayPercent(estimatedPoolApy.plus(expectedUserEstimatedApyFromGfi))
+    const expectedDisplayGfiApy = toDisplayPercent(expectedApyFromGfi)
+    const expectedDisplayTotalApy = toDisplayPercent(expectedTotalApy)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$50,072.85")
-    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$23,894.28")
     expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toContain("$22.85 (0.05%)")
+
+    expect(totalSeniorPoolBalanceInDollars.multipliedBy(expectedTotalApy).toString(10)).toEqual(
+      "23894.28050716869999971224"
+    )
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$23,894.28")
+    expect(expectedDisplayTotalApy).toEqual("47.72%")
     expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual(
       `${expectedDisplayTotalApy} APY (with GFI)`
     )
@@ -195,28 +204,36 @@ describe("Senior pool page deposit status", () => {
 
     const stakedSeniorPoolBalanceInDollars = capitalProvider.value.stakedSeniorPoolBalanceInDollars
     const totalSeniorPoolBalanceInDollars = capitalProvider.value.totalSeniorPoolBalanceInDollars
-    expect(stakedSeniorPoolBalanceInDollars.lt(totalSeniorPoolBalanceInDollars)).toEqual(true)
-
-    const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
-    const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
-      .multipliedBy(stakedSeniorPoolBalanceInDollars)
-      .dividedBy(totalSeniorPoolBalanceInDollars)
+    expect(stakedSeniorPoolBalanceInDollars.toString(10)).toEqual("50022.830849")
+    expect(totalSeniorPoolBalanceInDollars.toString(10)).toEqual("50072.853679849")
 
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
+    const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData = {
+    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
     renderDepositStatus(poolData, capitalProvider, currentBlock)
 
+    const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
+      .multipliedBy(stakedSeniorPoolBalanceInDollars)
+      .dividedBy(totalSeniorPoolBalanceInDollars)
+    const expectedApyFromGfi = expectedUserEstimatedApyFromGfi
+    const expectedTotalApy = estimatedPoolApy.plus(expectedApyFromGfi)
+
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
-    const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
-    const expectedDisplayTotalApy = toDisplayPercent(estimatedPoolApy.plus(expectedUserEstimatedApyFromGfi))
+    const expectedDisplayGfiApy = toDisplayPercent(expectedApyFromGfi)
+    const expectedDisplayTotalApy = toDisplayPercent(expectedTotalApy)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$50,072.85")
-    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$23,894.28")
     expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toContain("$22.85 (0.05%)")
+
+    expect(totalSeniorPoolBalanceInDollars.multipliedBy(expectedTotalApy).toString(10)).toEqual(
+      "23894.28050716869999971224"
+    )
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$23,894.28")
+    expect(expectedDisplayTotalApy).toEqual("47.72%")
     expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual(
       `${expectedDisplayTotalApy} APY (with GFI)`
     )
@@ -247,26 +264,34 @@ describe("Senior pool page deposit status", () => {
     const totalSeniorPoolBalanceInDollars = capitalProvider.value.totalSeniorPoolBalanceInDollars
     expect(stakedSeniorPoolBalanceInDollars.lt(totalSeniorPoolBalanceInDollars)).toEqual(true)
 
-    const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
-    const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
-      .multipliedBy(stakedSeniorPoolBalanceInDollars)
-      .dividedBy(totalSeniorPoolBalanceInDollars)
-
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
+    const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData = {
+    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
+
     renderDepositStatus(poolData, capitalProvider, currentBlock)
 
+    const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
+      .multipliedBy(stakedSeniorPoolBalanceInDollars)
+      .dividedBy(totalSeniorPoolBalanceInDollars)
+    const expectedApyFromGfi = expectedUserEstimatedApyFromGfi
+    const expectedTotalApy = estimatedPoolApy.plus(expectedApyFromGfi)
+
     const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
-    const expectedDisplayGfiApy = toDisplayPercent(expectedUserEstimatedApyFromGfi)
-    const expectedDisplayTotalApy = toDisplayPercent(estimatedPoolApy.plus(expectedUserEstimatedApyFromGfi))
+    const expectedDisplayGfiApy = toDisplayPercent(expectedApyFromGfi)
+    const expectedDisplayTotalApy = toDisplayPercent(expectedTotalApy)
 
     expect(screen.getByTestId("portfolio-total-balance").textContent).toContain("$50,072.85")
-    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$23,894.28")
     expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toContain("$22.85 (0.05%)")
+
+    expect(totalSeniorPoolBalanceInDollars.multipliedBy(expectedTotalApy).toString(10)).toEqual(
+      "23894.28050716869999971224"
+    )
+    expect(screen.getByTestId("portfolio-est-growth").textContent).toContain("$23,894.28")
+    expect(expectedDisplayTotalApy).toEqual("47.72%")
     expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual(
       `${expectedDisplayTotalApy} APY (with GFI)`
     )
