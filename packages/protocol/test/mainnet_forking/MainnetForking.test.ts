@@ -15,8 +15,8 @@ import {
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as uniqueIdentitySigner from "../../../autotasks/unique-identity-signer"
-import {FetchKYCFunction, KYC} from "../../../autotasks/unique-identity-signer"
+import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-signer"
+import {FetchKYCFunction, KYC} from "@goldfinch-eng/autotasks/unique-identity-signer"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")

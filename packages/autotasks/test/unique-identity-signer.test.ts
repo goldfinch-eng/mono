@@ -8,10 +8,10 @@ import {hardhat} from "@goldfinch-eng/protocol"
 import {BN, deployAllContracts, toEthers} from "@goldfinch-eng/protocol/test/testHelpers"
 const {deployments, web3} = hardhat
 import * as uniqueIdentitySigner from "../unique-identity-signer"
+import {FetchKYCFunction, KYC} from "../unique-identity-signer"
 import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
-import {FetchKYCFunction, KYC} from "../unique-identity-signer"
 
 const TEST_TIMEOUT = 30000
 
@@ -173,7 +173,7 @@ describe("unique-identity-signer", () => {
               fetchKYCStatus: fetchKYCFunction,
             })
 
-            // mint accredited investor
+            // mint non-accredited investor
             await uniqueIdentity.mint(usNonAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
               value: web3.utils.toWei("0.00083"),
