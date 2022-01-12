@@ -32,7 +32,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-1
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-2
       - run:
           name: Update Ubuntu
           command: |
@@ -48,10 +48,11 @@ jobs:
           name: Build
           command: npx lerna run build --scope @goldfinch-eng/protocol --scope @goldfinch-eng/utils
       - save_cache:
-          key: deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-1
+          key: deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-2
           paths:
             - ~/.npm
             - ./packages/protocol/node_modules/
+            - ./packages/autotasks/node_modules/
             - ./packages/utils/node_modules/
             - ./packages/protocol/artifacts
             - ./packages/protocol/cache
@@ -70,7 +71,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-1
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-2
       - run:
           name: Test
           command: |
@@ -90,7 +91,7 @@ jobs:
           # See the configuration reference documentation for more details on using restore_cache and save_cache steps
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
-            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-1
+            - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}-2
       - run:
           name: Test
           command: |
