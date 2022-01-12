@@ -25,6 +25,7 @@ import BigNumber from "bignumber.js"
 import {BlockInfo} from "../../../utils"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../ethereum/merkleDirectDistributor"
+import {Web3IO} from "../../../types/web3"
 
 export async function prepareUserRelatedDeps(
   deps: {
@@ -38,7 +39,13 @@ export async function prepareUserRelatedDeps(
   },
   rewardsMock: RewardsMockData
 ) {
-  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, deps.goldfinchProtocol, undefined)
+  const user = new User(
+    recipient,
+    network.name,
+    undefined as unknown as Web3IO<CreditDesk>,
+    deps.goldfinchProtocol,
+    undefined
+  )
   const userMerkleDistributor = new UserMerkleDistributor(recipient, deps.goldfinchProtocol)
   const userMerkleDirectDistributor = new UserMerkleDirectDistributor(recipient, deps.goldfinchProtocol)
   const userCommunityRewards = new UserCommunityRewards(recipient, deps.goldfinchProtocol)
@@ -457,7 +464,13 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
   currentBlock: BlockInfo
 ) {
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-  const user = new User(recipient, network.name, undefined as unknown as CreditDesk, goldfinchProtocol, undefined)
+  const user = new User(
+    recipient,
+    network.name,
+    undefined as unknown as Web3IO<CreditDesk>,
+    goldfinchProtocol,
+    undefined
+  )
   const amount = "5000000000000000000000"
   const leverageMultiplier = "1000000000000000000"
   const lockedUntil = "0"

@@ -1,20 +1,56 @@
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {GFI as GFIContract} from "@goldfinch-eng/protocol/typechain/web3/GFI"
+import {isNumberOrUndefined, isPlainObject, isStringOrUndefined, isUndefined} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
+import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+
+export const COINGECKO_API_GFI_PRICE_URL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=usd"
+
+type CoingeckoResponseJson = {
+  goldfinch: {
+    usd?: number
+  }
+}
+
+function isCoingeckoResponseJson(obj: unknown): obj is CoingeckoResponseJson {
+  return isPlainObject(obj) && isPlainObject(obj.goldfinch) && isNumberOrUndefined(obj.goldfinch.usd)
+}
+
+export const COINBASE_API_GFI_PRICE_URL = "https://api.coinbase.com/v2/prices/GFI-USD/spot"
+
+type CoinbaseResponseJson = {
+  data: {
+    base: "GFI"
+    currency: "USD"
+    amount?: string
+  }
+}
+
+function isCoinbaseResponseJson(obj: unknown): obj is CoinbaseResponseJson {
+  return (
+    isPlainObject(obj) &&
+    isPlainObject(obj.data) &&
+    isStringOrUndefined(obj.data.amount) &&
+    obj.data.base === "GFI" &&
+    obj.data.currency === "USD"
+  )
+}
+
+type FetchGFIPriceResult = {
+  usd: number
+}
 
 type GFILoadedInfo = {
   currentBlock: BlockInfo
   price: BigNumber | undefined
 }
 
-interface FetchGfiPriceResult {
-  goldfinch: {usd: number | undefined}
-}
 class GFI {
   goldfinchProtocol: GoldfinchProtocol
-  contract: GFIContract
+  contract: Web3IO<GFIContract>
   address: string
   info: Loadable<GFILoadedInfo>
 
@@ -59,14 +95,40 @@ class GFI {
     }
   }
 
-  static async fetchGfiPrice() {
-    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=usd")
-    const responseJson = await res.json()
-    if (responseJson.goldfinch?.usd) {
-      return await responseJson
+  static async fetchCoingeckoPrice(): Promise<FetchGFIPriceResult> {
+    const res = await fetch(COINGECKO_API_GFI_PRICE_URL)
+    const responseJson: unknown = await res.json()
+    if (isCoingeckoResponseJson(responseJson)) {
+      if (isUndefined(responseJson.goldfinch.usd)) {
+        throw new Error("Coingecko response lacks GFI price in USD.")
+      } else {
+        return {usd: responseJson.goldfinch.usd}
+      }
     } else {
-      console.error("[GFI Price] No USD price returned")
-      return {goldfinch: {usd: undefined}}
+      throw new Error("Coingecko response JSON failed type guard.")
+    }
+  }
+
+  static async fetchCoinbasePrice(): Promise<FetchGFIPriceResult> {
+    const res = await fetch(COINBASE_API_GFI_PRICE_URL)
+    const responseJson: unknown = await res.json()
+    if (isCoinbaseResponseJson(responseJson)) {
+      if (isUndefined(responseJson.data.amount)) {
+        throw new Error("Coinbase response lacks GFI price in USD.")
+      } else {
+        return {usd: parseFloat(responseJson.data.amount)}
+      }
+    } else {
+      throw new Error("Coinbase response JSON failed type guard.")
+    }
+  }
+
+  static async fetchGfiPrice(): Promise<FetchGFIPriceResult> {
+    try {
+      return await this.fetchCoingeckoPrice()
+    } catch (err: unknown) {
+      console.log("Failed to retrieve Coingecko GFI price. Falling back to Coinbase.")
+      return await this.fetchCoinbasePrice()
     }
   }
 }
@@ -104,16 +166,23 @@ export function gfiInDollars(gfiInDollarsAtomic: BigNumber | undefined): BigNumb
 }
 
 async function getGFIPrice(): Promise<BigNumber | undefined> {
-  const toggleGFIPrice = process.env.REACT_APP_TOGGLE_GET_GFI_PRICE === "true"
-  if (!toggleGFIPrice) {
-    return new BigNumber(1).multipliedBy(GFI_DECIMALS)
-  }
-
-  const fetchResult: FetchGfiPriceResult = await GFI.fetchGfiPrice()
-  if (fetchResult.goldfinch.usd === undefined) {
+  const toggleGetGFIPrice = process.env.REACT_APP_TOGGLE_GET_GFI_PRICE === "true"
+  if (!toggleGetGFIPrice) {
     return undefined
   }
-  return new BigNumber(fetchResult.goldfinch.usd).multipliedBy(GFI_DECIMALS)
+
+  try {
+    const fetchResult = await GFI.fetchGfiPrice()
+    if (fetchResult.usd === 0) {
+      console.log("Retrieved GFI price of 0. Handling as `undefined`.")
+      return undefined
+    } else {
+      return new BigNumber(fetchResult.usd).multipliedBy(GFI_DECIMALS)
+    }
+  } catch (err: unknown) {
+    console.error("Failed to retrieve GFI price.")
+    return undefined
+  }
 }
 
 export {GFI, GFI_DECIMAL_PLACES, GFI_DECIMALS, gfiFromAtomic, gfiToAtomic}

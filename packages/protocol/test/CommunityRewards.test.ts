@@ -32,6 +32,9 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   return {owner, anotherUser, ...deployed}
 })
 
+const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
+const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
+
 describe("CommunityRewards", () => {
   let owner: string,
     anotherUser: string,
@@ -42,7 +45,8 @@ describe("CommunityRewards", () => {
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({owner, anotherUser, gfi, communityRewards, goldfinchConfig} = await setupTest())
-    await advanceTime({toSecond: TOKEN_LAUNCH_TIME_IN_SECONDS})
+    await communityRewards.setTokenLaunchTimeInSeconds(TOKEN_LAUNCH_TIME)
+    await advanceTime({toSecond: TOKEN_LAUNCH_TIME})
   })
 
   async function grant({
@@ -80,7 +84,7 @@ describe("CommunityRewards", () => {
     expect(rewardsAvailableBefore.sub(rewardsAvailableAfter)).to.bignumber.equal(amount)
 
     // Verify grant state.
-    const expectedStartTime = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+    const expectedStartTime = new BN(TOKEN_LAUNCH_TIME)
     const grantState = await communityRewards.grants(tokenId)
     assertCommunityRewardsVestingRewards(grantState)
     expect(grantState.totalGranted).to.bignumber.equal(amount)
@@ -88,7 +92,11 @@ describe("CommunityRewards", () => {
     expect(grantState.startTime).to.bignumber.equal(expectedStartTime)
     expect(grantState.endTime).to.bignumber.equal(new BN(grantState.startTime).add(vestingLength))
     expect(grantState.cliffLength).to.bignumber.equal(cliffLength)
-    expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
+    if (vestingInterval.isZero()) {
+      expect(grantState.vestingInterval).to.bignumber.equal(vestingLength)
+    } else {
+      expect(grantState.vestingInterval).to.bignumber.equal(vestingInterval)
+    }
     expect(grantState.revokedAt).to.bignumber.equal(new BN(0))
 
     // Verify that NFT was minted that is owned by recipient.
@@ -99,13 +107,18 @@ describe("CommunityRewards", () => {
     expect(grantedEvent.args.amount).to.bignumber.equal(amount)
     expect(grantedEvent.args.vestingLength).to.bignumber.equal(vestingLength)
     expect(grantedEvent.args.cliffLength).to.bignumber.equal(cliffLength)
-    expect(grantedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
+
+    if (vestingInterval.isZero()) {
+      expect(grantedEvent.args.vestingInterval).to.bignumber.equal(vestingLength)
+    } else {
+      expect(grantedEvent.args.vestingInterval).to.bignumber.equal(vestingInterval)
+    }
 
     return new BN(tokenId)
   }
 
-  it("sets tokenLaunchTimeInSeconds to TOKEN_LAUNCH_TIME_IN_SECONDS by default", async () => {
-    expect(await communityRewards.tokenLaunchTimeInSeconds()).to.bignumber.eq(new BN(TOKEN_LAUNCH_TIME_IN_SECONDS))
+  it("sets tokenLaunchTimeInSeconds to TOKEN_LAUNCH_TIME by default", async () => {
+    expect(await communityRewards.tokenLaunchTimeInSeconds()).to.bignumber.eq(new BN(TOKEN_LAUNCH_TIME))
   })
 
   describe("setTokenLaunchTimeInSeconds", async () => {
@@ -136,7 +149,7 @@ describe("CommunityRewards", () => {
         cliffLength,
         vestingInterval,
       })
-      const expectedStartTime = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+      const expectedStartTime = new BN(TOKEN_LAUNCH_TIME)
       const grantState = await communityRewards.grants(tokenId)
       assertCommunityRewardsVestingRewards(grantState)
       expect(grantState.totalGranted).to.bignumber.equal(amount)
@@ -232,10 +245,46 @@ describe("CommunityRewards", () => {
       ).to.be.rejectedWith(/Cliff length cannot exceed vesting length/)
     })
 
-    it("rejects a vesting interval of 0", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(0), {from: owner})
-      ).to.be.rejectedWith(/SafeMath: modulo by zero/)
+    context("vesting interval is 0", async () => {
+      it("defaults vesting interval to vesting length", async () => {
+        const gfiAmount = new BN(1e3)
+        const vestingInterval = new BN(0)
+        const vestingLength = new BN(15768000)
+
+        const tokenId = await grant({
+          recipient: anotherUser,
+          amount: gfiAmount,
+          vestingLength,
+          cliffLength: new BN(0),
+          vestingInterval,
+        })
+
+        // Initial claimable should be 0
+        let claimable = await communityRewards.claimableRewards(tokenId)
+        expect(claimable).to.bignumber.equal(new BN(0))
+
+        await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME).add(vestingLength.div(new BN(2)))})
+        await ethers.provider.send("evm_mine", [])
+
+        // Should still be 0
+        claimable = await communityRewards.claimableRewards(tokenId)
+        expect(claimable).to.bignumber.equal(new BN(0))
+
+        await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME).add(vestingLength)})
+        await ethers.provider.send("evm_mine", [])
+
+        // Should be fully claimable
+        claimable = await communityRewards.claimableRewards(tokenId)
+        expect(claimable).to.bignumber.equal(gfiAmount)
+
+        const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
+        expect(gfiBalanceBefore).to.bignumber.eq(new BN(0))
+
+        await communityRewards.getReward(tokenId, {from: anotherUser})
+        const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
+
+        expect(gfiBalanceAfter).to.bignumber.eq(gfiAmount)
+      })
     })
 
     it("allows a vesting interval of 1", async () => {
@@ -248,10 +297,38 @@ describe("CommunityRewards", () => {
         .be.fulfilled
     })
 
-    it("rejects a > 1 vesting interval that is not a factor of vesting length", async () => {
-      await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(6), new BN(0), new BN(4), {from: owner})
-      ).to.be.rejectedWith(/Vesting interval must be a factor of vesting length/)
+    context("> 1 vesting interval is not a factor of vesting length", async () => {
+      it("grants the reward, fully claimable in the last whole period", async () => {
+        const gfiAmount = new BN(1e3)
+        const vestingInterval = new BN(2628000)
+        const vestingLength = new BN(21508223)
+        // Total periods is 21508223 / 2628000 = 8.184255327245053
+        // but grant should be claimable in 8 periods
+        const wholePeriodsElapsed = vestingLength.div(vestingInterval)
+        expect(wholePeriodsElapsed).to.bignumber.eq(new BN(8))
+        const wholePeriodsInSeconds = wholePeriodsElapsed.mul(vestingInterval)
+
+        const tokenId = await grant({
+          recipient: anotherUser,
+          amount: gfiAmount,
+          vestingLength,
+          cliffLength: new BN(0),
+          vestingInterval,
+        })
+
+        await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME).add(wholePeriodsInSeconds)})
+        await ethers.provider.send("evm_mine", [])
+        const claimable = await communityRewards.claimableRewards(tokenId)
+        expect(claimable).to.bignumber.equal(gfiAmount)
+
+        const gfiBalanceBefore = await gfi.balanceOf(anotherUser)
+        expect(gfiBalanceBefore).to.bignumber.eq(new BN(0))
+
+        await communityRewards.getReward(tokenId, {from: anotherUser})
+        const gfiBalanceAfter = await gfi.balanceOf(anotherUser)
+
+        expect(gfiBalanceAfter).to.bignumber.eq(gfiAmount)
+      })
     })
 
     it("rejects granting an amount that exceeds the available rewards", async () => {
@@ -382,7 +459,7 @@ describe("CommunityRewards", () => {
         cliffLength: new BN(0),
         vestingInterval: new BN(1),
       })
-      grantedAt = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+      grantedAt = new BN(TOKEN_LAUNCH_TIME)
       await advanceTime({toSecond: grantedAt.add(vestingLength.div(new BN(2)))})
     })
 
@@ -469,7 +546,7 @@ describe("CommunityRewards", () => {
     beforeEach(async () => {
       amount = new BN(1e6)
       await mintAndLoadRewards(gfi, communityRewards, owner, amount)
-      grantedAt = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+      grantedAt = new BN(TOKEN_LAUNCH_TIME)
     })
     it("rejects sender who is not owner of the token", async () => {
       const tokenId = await grant({
@@ -846,7 +923,7 @@ describe("CommunityRewards", () => {
           cliffLength: new BN(0),
           vestingInterval: new BN(1),
         })
-        grantedAt = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS)
+        grantedAt = new BN(TOKEN_LAUNCH_TIME)
         await advanceTime({toSecond: grantedAt.add(vestingLength.div(new BN(2)))})
       })
 

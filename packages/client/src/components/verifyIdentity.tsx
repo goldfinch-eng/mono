@@ -4,17 +4,17 @@ import Persona from "persona"
 import {useContext, useEffect, useReducer, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import {Link} from "react-router-dom"
-import web3 from "web3"
+import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../App"
-import {User, UserLoaded} from "../ethereum/user"
+import {UserLoaded} from "../ethereum/user"
 import {LOCAL, MAINNET} from "../ethereum/utils"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
-import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {Session, useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {MINT_UID_TX_TYPE} from "../types/transactions"
+import {UserWalletWeb3Status} from "../types/web3"
 import {assertNonNullable} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck} from "./icons"
@@ -247,7 +247,7 @@ function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
-  const {user, network, setSessionData} = useContext(AppContext)
+  const {user, userWalletWeb3Status, network, setSessionData} = useContext(AppContext)
   const [kyc, setKYC] = useState<KYC>()
   // Determines the form to show. Can be empty, "US" or "entity"
   const [entityType, setEntityType] = useState<string>("")
@@ -271,13 +271,17 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
     if (session.status !== "authenticated") {
       return
     }
-    assertNonNullable(user)
+    // If the session status is "authenticated", we expect `userWalletWeb3Status?.address` to
+    // be non-nullable, as that address should have been necessary in determining the
+    // session status.
+    const userAddress = userWalletWeb3Status?.address
+    assertNonNullable(userAddress)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     setLoading(true)
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     try {
-      const response = await client.fetchKYCStatus(user.address)
+      const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {
         setKYC(response.json)
         if (response.json.countryCode === "US") {
@@ -376,7 +380,7 @@ const UNIQUE_IDENTITY_SIGNER_URLS = {
     "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe",
 }
 
-const UNIQUE_IDENTITY_MINT_PRICE = web3.utils.toWei("0.00083", "ether")
+const UNIQUE_IDENTITY_MINT_PRICE = Web3Library.utils.toWei("0.00083", "ether")
 
 const START = "start"
 const SIGN_IN = "sign_in"
@@ -434,19 +438,21 @@ async function fetchTrustedSignature({
   network,
   session,
   setSessionData,
-  user,
+  userWalletWeb3Status,
 }: {
   network: NetworkConfig
   session: Session
   setSessionData: SetSessionFn
-  user: User
+  userWalletWeb3Status: UserWalletWeb3Status
 }): Promise<SignatureResponse> {
   assertNonNullable(network.name)
   if (session.status !== "authenticated") {
     throw new Error("not authenticated")
   }
+  const userAddress = userWalletWeb3Status.address
+  assertNonNullable(userAddress)
   const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
-  const auth = client._getAuthHeaders(user.address)
+  const auth = client._getAuthHeaders(userAddress)
 
   const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
     headers: {"Content-Type": "application/json"},
@@ -459,8 +465,8 @@ async function fetchTrustedSignature({
 
 function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const formMethods = useForm()
-  const {user, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
-    useNonNullContext(AppContext)
+  const {user, userWalletWeb3Status, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
+    useContext(AppContext)
   const [session] = useSignIn()
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
@@ -477,17 +483,22 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 
   const action = async () => {
     assertNonNullable(currentBlock)
+    assertNonNullable(refreshCurrentBlock)
+    assertNonNullable(goldfinchProtocol)
+    assertNonNullable(network)
+    assertNonNullable(setSessionData)
+    assertNonNullable(userWalletWeb3Status)
     try {
       const trustedSignature = await fetchTrustedSignature({
         network,
         session,
         setSessionData,
-        user,
+        userWalletWeb3Status,
       })
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = await uniqueIdentity.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+      const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
       await sendFromUser(
-        uniqueIdentity.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
+        uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
           type: MINT_UID_TX_TYPE,
           data: {},
@@ -568,7 +579,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
 }
 
 function VerifyIdentity() {
-  const {user, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
+  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
   const currentRoute = useCurrentRoute()
@@ -597,9 +608,10 @@ function VerifyIdentity() {
   if (state.step === START) {
     children = <></>
   } else if (state.step === SIGN_IN) {
+    const userAddress = userWalletWeb3Status?.address
     children = (
       <SignInForm
-        disabled={!user?.address}
+        disabled={!userAddress}
         action={async () => {
           const session = await signIn()
           if (session.status !== "authenticated") {

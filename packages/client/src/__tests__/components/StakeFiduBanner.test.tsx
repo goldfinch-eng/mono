@@ -30,7 +30,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderStakeFiduBanner(
   pool: SeniorPoolLoaded,
@@ -109,7 +110,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   describe("senior pool eligibility", () => {
-    it("sets placeholder class if not eligible", async () => {
+    it("allows even if user is not eligible for senior pool", async () => {
       user.info.value.goListed = false
       await mockCapitalProviderCalls()
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -122,11 +123,13 @@ describe("Stake unstaked fidu", () => {
         currentBlock
       )
 
-      const message = await container.getElementsByClassName("placeholder")
-      expect(message.length).toEqual(1)
+      const placeholderSelected = await container.getElementsByClassName("placeholder")
+      expect(placeholderSelected.length).toEqual(0)
+      const disabledSelected = await container.getElementsByClassName("disabled")
+      expect(disabledSelected.length).toEqual(0)
     })
 
-    it("does not set placeholder class if eligible", async () => {
+    it("allows if user is eligible for senior pool", async () => {
       user.info.value.goListed = true
       await mockCapitalProviderCalls()
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -139,8 +142,10 @@ describe("Stake unstaked fidu", () => {
         currentBlock
       )
 
-      const message = await container.getElementsByClassName("placeholder")
-      expect(message.length).toEqual(0)
+      const placeholderSelected = await container.getElementsByClassName("placeholder")
+      expect(placeholderSelected.length).toEqual(0)
+      const disabledSelected = await container.getElementsByClassName("disabled")
+      expect(disabledSelected.length).toEqual(0)
     })
   })
 
@@ -168,7 +173,7 @@ describe("Stake unstaked fidu", () => {
     const message = await container.getElementsByClassName("message")
     expect(message.length).toEqual(1)
     expect(message[0]?.textContent).toBe(
-      "You have 50.00 FIDU ($50.02) that is not staked. Stake your FIDU to earn an estimated 10.00% APY in GFI rewards."
+      "You have 50.00 FIDU ($50.02) that is not staked. Stake your FIDU to earn an additional estimated 10.00% APY in GFI."
     )
   })
 
@@ -190,7 +195,7 @@ describe("Stake unstaked fidu", () => {
     const message = await container.getElementsByClassName("message")
     expect(message.length).toEqual(1)
     expect(message[0]?.textContent).toBe(
-      "You have <0.01 FIDU (<$0.01) that is not staked. Stake your FIDU to earn an estimated 10.00% APY in GFI rewards."
+      "You have <0.01 FIDU (<$0.01) that is not staked. Stake your FIDU to earn an additional estimated 10.00% APY in GFI."
     )
   })
 

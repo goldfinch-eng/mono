@@ -2,8 +2,8 @@ import "@testing-library/jest-dom"
 import {render, screen} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
 import {mock} from "depay-web3-mock"
-import sinon from "sinon"
 import {BrowserRouter as Router} from "react-router-dom"
+import sinon from "sinon"
 import {AppContext} from "../../App"
 import DepositStatus from "../../components/depositStatus"
 import {GFILoaded} from "../../ethereum/gfi"
@@ -37,7 +37,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderDepositStatus(
   poolData: Partial<PoolData>,
@@ -131,7 +132,9 @@ describe("Senior pool page deposit status", () => {
 
     // tooltip
     expect(
-      await screen.getByText("Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:")
+      await screen.getByText(
+        "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
+      )
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
@@ -174,7 +177,9 @@ describe("Senior pool page deposit status", () => {
     )
     // tooltip
     expect(
-      await screen.getByText("Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:")
+      await screen.getByText(
+        "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
+      )
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
@@ -217,7 +222,9 @@ describe("Senior pool page deposit status", () => {
     )
     // tooltip
     expect(
-      await screen.getByText("Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:")
+      await screen.getByText(
+        "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
+      )
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
@@ -265,7 +272,9 @@ describe("Senior pool page deposit status", () => {
     )
     // tooltip
     expect(
-      await screen.getByText("Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:")
+      await screen.getByText(
+        "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
+      )
     ).toBeInTheDocument()
     expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
     expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
@@ -286,7 +295,9 @@ describe("Senior pool page deposit status", () => {
       renderDepositStatus(poolData, capitalProvider, currentBlock)
 
       expect(
-        await screen.queryByText("Includes the senior pool yield from allocating to borrower pools, plus GFI rewards:")
+        await screen.queryByText(
+          "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
+        )
       ).not.toBeInTheDocument()
       expect(screen.queryByText("Senior Pool APY")).not.toBeInTheDocument()
     })

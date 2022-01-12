@@ -7,7 +7,7 @@ interface DetailsContainerProps {
 }
 
 export const DetailsContainer = styled.div<DetailsContainerProps>`
-  margin: -28px -30px 24px -30px;
+  margin: -28px -35px 24px -25px;
   background-color: ${({theme}) => theme.colors.sandLight};
   padding: 30px;
   border-bottom-right-radius: 6px;

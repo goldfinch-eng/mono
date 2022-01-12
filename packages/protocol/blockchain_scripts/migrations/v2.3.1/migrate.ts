@@ -4,7 +4,10 @@ import {getEthersContract} from "../../deployHelpers"
 import {getDeployEffects} from "../deployEffects"
 
 export async function main() {
-  const effects = await getDeployEffects()
+  const effects = await getDeployEffects({
+    title: "Token launch: Unpause contracts",
+    description: "Unpause the following contracts: CommunityRewards, MerkleDirectDistributor, StakingRewards",
+  })
 
   const communityRewards = await getEthersContract<CommunityRewards>("CommunityRewards", {
     at: (await deployments.get("CommunityRewards")).address,

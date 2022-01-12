@@ -11,12 +11,20 @@ import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "../earnActionsContainer"
 import InvestorNotice from "../investorNotice"
-import PoolStatus from "../poolStatus"
+import SeniorPoolStatus from "../seniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 
 function SeniorPoolView(): JSX.Element {
-  const {web3Status, pool, user, goldfinchConfig, stakingRewards, gfi, refreshCurrentBlock, setLeafCurrentBlock} =
-    useContext(AppContext)
+  const {
+    userWalletWeb3Status,
+    pool,
+    user,
+    goldfinchConfig,
+    stakingRewards,
+    gfi,
+    refreshCurrentBlock,
+    setLeafCurrentBlock,
+  } = useContext(AppContext)
   const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
@@ -66,7 +74,8 @@ function SeniorPoolView(): JSX.Element {
     refreshCurrentBlock()
   }
 
-  const earnMessage = web3Status?.type === "no_web3" || capitalProvider.loaded ? "Pools / Senior Pool" : "Loading..."
+  const earnMessage =
+    userWalletWeb3Status?.type === "no_web3" || capitalProvider.loaded ? "Pools / Senior Pool" : "Loading..."
 
   let maxCapacityNotice = <></>
   if (
@@ -90,11 +99,7 @@ function SeniorPoolView(): JSX.Element {
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
-      <ConnectionNotice
-        requireUnlock={false}
-        requireGolist
-        isPaused={pool?.info.loaded ? pool.info.value.isPaused : undefined}
-      />
+      <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
       <InvestorNotice />
       <EarnActionsContainer
@@ -107,7 +112,7 @@ function SeniorPoolView(): JSX.Element {
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
       />
-      <PoolStatus />
+      <SeniorPoolStatus pool={pool} />
     </div>
   )
 }

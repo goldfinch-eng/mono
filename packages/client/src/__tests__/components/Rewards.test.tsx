@@ -6,7 +6,7 @@ import {MemoryRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {AppContext, LeavesCurrentBlock} from "../../App"
 import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
-import {GFILoaded} from "../../ethereum/gfi"
+import {COINBASE_API_GFI_PRICE_URL, COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
@@ -27,9 +27,9 @@ import {
   AppRoute,
   BORROW_ROUTE,
   EARN_ROUTE,
+  GFI_ROUTE,
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
-  GFI_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
   SENIOR_POOL_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
@@ -38,6 +38,7 @@ import {
   VERIFY_ROUTE,
 } from "../../types/routes"
 import {SessionData} from "../../types/session"
+import {UserWalletWeb3Status} from "../../types/web3"
 import {BlockInfo} from "../../utils"
 import web3 from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
@@ -66,7 +67,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderRewards(
   deps: {
@@ -84,7 +86,8 @@ function renderRewards(
   refreshCurrentBlock?: () => Promise<void>,
   networkMonitor?: NetworkMonitor,
   sessionData?: SessionData,
-  leavesCurrentBlock?: LeavesCurrentBlock
+  leavesCurrentBlock?: LeavesCurrentBlock,
+  userWalletWeb3Status?: UserWalletWeb3Status
 ) {
   sessionData = sessionData || {
     signature: "foo",
@@ -92,6 +95,21 @@ function renderRewards(
     signatureBlockNumTimestamp: currentBlock.timestamp,
     version: 1,
   }
+  let defaultUserWalletWeb3Status
+  if (deps.user) {
+    defaultUserWalletWeb3Status = {
+      type: "connected",
+      networkName: "localhost",
+      address: deps.user.address,
+    }
+  } else {
+    defaultUserWalletWeb3Status = {
+      type: "no_web3",
+      networkName: undefined,
+      address: undefined,
+    }
+  }
+  userWalletWeb3Status = userWalletWeb3Status || defaultUserWalletWeb3Status
   const setLeafCurrentBlock = (route: AppRoute, currentBlock: BlockInfo) => {
     // pass
   }
@@ -103,6 +121,7 @@ function renderRewards(
     network,
     networkMonitor,
     sessionData,
+    userWalletWeb3Status,
     ...deps,
   }
 
@@ -348,9 +367,9 @@ describe("Rewards portfolio overview", () => {
     const userRelated = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
     renderRewards({...baseDeps, ...userRelated}, currentBlock)
 
-    expect(await screen.findByText("Total rewards")).toBeVisible()
+    expect(await screen.findByText("Total")).toBeVisible()
     expect(await screen.findByText("Claimable")).toBeVisible()
-    expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+    expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
     expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
     expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -365,9 +384,9 @@ describe("Rewards portfolio overview", () => {
     )
     renderRewards({...baseDeps, ...userRelated}, currentBlock)
 
-    expect(await screen.findByText("Total rewards")).toBeVisible()
+    expect(await screen.findByText("Total")).toBeVisible()
     expect(await screen.findByText("Claimable")).toBeVisible()
-    expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+    expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
     expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
     expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -380,9 +399,9 @@ describe("Rewards portfolio overview", () => {
 
       renderRewards(deps, currentBlock)
 
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -418,9 +437,9 @@ describe("Rewards portfolio overview", () => {
 
       renderRewards(deps, currentBlock)
 
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.71")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
@@ -438,8 +457,8 @@ describe("Rewards portfolio overview", () => {
         renderRewards(deps, currentBlock)
 
         expect(await screen.findByText("Claimable")).toBeVisible()
-        expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
-        expect(await screen.findByText("Total rewards")).toBeVisible()
+        expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
+        expect(await screen.findByText("Total")).toBeVisible()
 
         expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
         expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
@@ -462,8 +481,8 @@ describe("Rewards portfolio overview", () => {
         renderRewards(deps, currentBlock)
 
         expect(await screen.findByText("Claimable")).toBeVisible()
-        expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
-        expect(await screen.findByText("Total rewards")).toBeVisible()
+        expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
+        expect(await screen.findByText("Total")).toBeVisible()
 
         expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2.24")
         expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("265.94")
@@ -482,9 +501,9 @@ describe("Rewards portfolio overview", () => {
 
       renderRewards(deps, currentBlock)
 
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -506,9 +525,9 @@ describe("Rewards portfolio overview", () => {
 
       renderRewards(deps, currentBlock)
 
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("500.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("500.00")
@@ -524,8 +543,8 @@ describe("Rewards portfolio overview", () => {
       renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("1,000.00")
@@ -541,8 +560,8 @@ describe("Rewards portfolio overview", () => {
       renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -563,8 +582,8 @@ describe("Rewards portfolio overview", () => {
       renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("10.96")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("983.56")
@@ -582,9 +601,9 @@ describe("Rewards portfolio overview", () => {
 
       renderRewards(deps, currentBlock)
 
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("2,500.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -600,8 +619,8 @@ describe("Rewards portfolio overview", () => {
       renderRewards(deps, currentBlock)
 
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("0.00")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("0.00")
@@ -619,9 +638,9 @@ describe("Rewards portfolio overview", () => {
 
       renderRewards(deps, currentBlock)
 
-      expect(await screen.findByText("Total rewards")).toBeVisible()
+      expect(await screen.findByText("Total")).toBeVisible()
       expect(await screen.findByText("Claimable")).toBeVisible()
-      expect(await screen.findByText("Vesting", {selector: "span"})).toBeVisible()
+      expect(await screen.findByText("Still Locked", {selector: "span"})).toBeVisible()
 
       expect(await screen.getByTestId("summary-claimable").textContent).toEqual("1,000.71")
       expect(await screen.getByTestId("summary-still-vesting").textContent).toEqual("128.89")
@@ -650,6 +669,25 @@ describe("Rewards list and detail", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
+
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      const url = input.toString()
+      if (url === COINGECKO_API_GFI_PRICE_URL) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              goldfinch: {
+                usd: 2,
+              },
+            }),
+        } as Response)
+      } else {
+        fail(`Unexpected fetch url: ${url}`)
+      }
+    })
+
     resetAirdropMocks()
 
     await goldfinchProtocol.initialize()
@@ -712,23 +750,23 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Staked 50K FIDU")).toBeVisible()
     expect(screen.getByText("0.00 GFI to date • Dec 29, 2021")).toBeVisible()
-    expect(await screen.findByText("Vesting", {selector: "button"})).toBeVisible()
+    expect(await screen.findByText("Still Locked", {selector: "button"})).toBeVisible()
     expect((await screen.findAllByText("0.00")).length).toBe(6)
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     await waitFor(async () => {
       expect(await screen.findByText("Transaction details")).toBeVisible()
-      expect(await screen.findByText("Vesting schedule")).toBeVisible()
+      expect(await screen.findByText("Unlock schedule")).toBeVisible()
       expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.00 GFI")).toBeVisible()
+      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.00 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
       expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
-      expect(await screen.findByText("Vesting status")).toBeVisible()
-      expect(await screen.findByText("--.--% (0.00 GFI) vested")).toBeVisible()
+      expect(await screen.findByText("Unlock status")).toBeVisible()
+      expect(await screen.findByText("--.--% (0.00 GFI) unlocked")).toBeVisible()
 
       expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
         "href",
@@ -737,63 +775,201 @@ describe("Rewards list and detail", () => {
     })
   })
 
-  it("shows default value when GFI price is undefined", async () => {
-    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+  describe("GFI Price", () => {
+    it("shows empty value when getting GFI price is toggled off", async () => {
+      process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "false"
 
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({goldfinch: {usd: undefined}}),
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          fail("Expected this not to be called.")
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
       })
-    ) as jest.Mock
 
-    const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(deps, currentBlock)
+      renderRewards(deps, currentBlock)
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU"))
-    await waitFor(async () => {
-      expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      await waitFor(async () => {
+        expect(await screen.findByText("Claim status")).toBeVisible()
+        expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
+      })
     })
-  })
 
-  it("shows default value if the request returns an empty object", async () => {
-    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
-
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
+    it("shows empty value when request to Coingecko and fallback fail", async () => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          return Promise.reject("Request failed")
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.reject("Request failed")
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
       })
-    ) as jest.Mock
 
-    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    renderRewards(deps, currentBlock)
+      renderRewards(deps, currentBlock)
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU"))
-    expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
-  })
-
-  it("shows GFI price from Coingecko API", async () => {
-    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
-
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({goldfinch: {usd: 200}}),
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      await waitFor(async () => {
+        expect(await screen.findByText("Claim status")).toBeVisible()
+        expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
       })
-    ) as jest.Mock
+    })
 
-    const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+    it("shows empty value when JSON parsing fails", async () => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.reject("JSON parsing failed."),
+          } as Response)
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.reject("JSON parsing failed."),
+          } as Response)
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
+      })
 
-    renderRewards(deps, currentBlock)
+      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    fireEvent.click(screen.getByText("Staked 50K FIDU"))
-    expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$164.33 (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+      renderRewards(deps, currentBlock)
+
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      await waitFor(async () => {
+        expect(await screen.findByText("Claim status")).toBeVisible()
+        expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
+      })
+    })
+
+    it("shows empty value when GFI price is undefined", async () => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                goldfinch: {usd: undefined},
+              }),
+          } as Response)
+        }
+        if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  base: "GFI",
+                  currency: "USD",
+                  amount: undefined,
+                },
+              }),
+          } as Response)
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
+      })
+
+      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+
+      renderRewards(deps, currentBlock)
+
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      await waitFor(async () => {
+        expect(await screen.findByText("Claim status")).toBeVisible()
+        expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
+      })
+    })
+
+    it("shows empty value if the request returns an unexpected object", async () => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                foo: {
+                  usd: 1,
+                },
+              }),
+          } as Response)
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  base: "BTC",
+                  currency: "USD",
+                  amount: "1.23",
+                },
+              }),
+          } as Response)
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
+      })
+
+      const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+      renderRewards(deps, currentBlock)
+
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      expect(await screen.findByText("Claim status")).toBeVisible()
+      expect(await screen.findByText("$--.-- (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
+    })
+
+    it("uses GFI price if the Coingecko request returns as expected", async () => {
+      const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+      renderRewards(deps, currentBlock)
+
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      expect(await screen.findByText("Claim status")).toBeVisible()
+      expect(await screen.findByText("$1.64 (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
+    })
+
+    it("uses GFI price if the fallback request returns as expected", async () => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+        const url = input.toString()
+        if (url === COINGECKO_API_GFI_PRICE_URL) {
+          return Promise.reject("Request failed")
+        } else if (url === COINBASE_API_GFI_PRICE_URL) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  base: "GFI",
+                  currency: "USD",
+                  amount: "2.00",
+                },
+              }),
+          } as Response)
+        } else {
+          fail(`Unexpected fetch url: ${url}`)
+        }
+      })
+
+      const deps = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
+
+      renderRewards(deps, currentBlock)
+
+      fireEvent.click(screen.getByText("Staked 50K FIDU"))
+      expect(await screen.findByText("Claim status")).toBeVisible()
+      expect(await screen.findByText("$1.64 (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
+    })
   })
 
   it("shows claimable staking reward on rewards list", async () => {
@@ -811,17 +987,17 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     await waitFor(async () => {
       expect(await screen.findByText("Transaction details")).toBeVisible()
-      expect(await screen.findByText("Vesting schedule")).toBeVisible()
+      expect(await screen.findByText("Unlock schedule")).toBeVisible()
       expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+      expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
       expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
-      expect(await screen.findByText("Vesting status")).toBeVisible()
-      expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+      expect(await screen.findByText("Unlock status")).toBeVisible()
+      expect(await screen.findByText("0.55% (0.71 GFI) unlocked")).toBeVisible()
 
       expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
         "href",
@@ -848,14 +1024,14 @@ describe("Rewards list and detail", () => {
       await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
     ).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 1,000.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -870,7 +1046,7 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Goldfinch Investment")).toBeVisible()
     expect(screen.getByText("1,000.00 GFI • Dec 29, 2021")).toBeVisible()
-    expect(await screen.findByText("Vesting", {selector: "button"})).toBeVisible()
+    expect(await screen.findByText("Still Locked", {selector: "button"})).toBeVisible()
 
     expect(screen.getByTestId("detail-unvested").textContent).toEqual("1,000.00")
     expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
@@ -881,14 +1057,14 @@ describe("Rewards list and detail", () => {
       await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
     ).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("0.00% (0.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("0.00% (0.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Dec 29, 2021")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -910,13 +1086,16 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch investor")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI for participating as a Goldfinch investor")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$1,000.00 (1,000.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("$2,000.00 (1,000.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("Unclaimed")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -944,13 +1123,16 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("1,000.00 GFI reward for participating as a Goldfinch investor")).toBeVisible()
+    expect(await screen.findByText("1,000.00 GFI for participating as a Goldfinch investor")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$500.00 (500.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("$1,000.00 (500.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Jan 11, 2023")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("Unclaimed")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -972,13 +1154,16 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Flight Academy"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("2,500.00 GFI reward for participating in Flight Academy")).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI for participating in Flight Academy")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$2,500.00 (2,500.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("$5,000.00 (2,500.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("Unclaimed")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1004,17 +1189,17 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) unlocked")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1028,14 +1213,14 @@ describe("Rewards list and detail", () => {
       await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
     ).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 1,000.00 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1052,8 +1237,8 @@ describe("Rewards list and detail", () => {
     expect(screen.getByText("129.60 GFI to date • Dec 29, 2021")).toBeVisible()
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
-    expect(await screen.getAllByText("Claim GFI").length).toBe(1)
-    expect(await screen.getAllByText("Claimed").length).toBe(1)
+    expect(screen.getAllByTestId("action-button")[0]?.textContent).toEqual("Claim GFI")
+    expect(screen.getAllByTestId("action-button")[1]?.textContent).toEqual("Claimed")
 
     expect(screen.getAllByTestId("detail-unvested")[0]?.textContent).toEqual("128.89")
     expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.71")
@@ -1062,17 +1247,19 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
-    expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual(
+      "$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI"
+    )
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) unlocked")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1082,13 +1269,16 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Flight Academy"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("2,500.00 GFI reward for participating in Flight Academy")).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI for participating in Flight Academy")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$2,500.00 (2,500.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("$5,000.00 (2,500.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual("Claimed")
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1119,17 +1309,17 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 0.71 GFI")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
 
     expect(await screen.findByText("Current earn rate")).toBeVisible()
     expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("0.55% (0.71 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("0.55% (0.71 GFI) unlocked")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1143,14 +1333,16 @@ describe("Rewards list and detail", () => {
       await screen.findByText("1,000.00 GFI reward on Dec 29, 2021 for participating as a Goldfinch investor")
     ).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("100.00% (1,000.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("100.00% (1,000.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
 
-    expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total vested 1,000.00 GFI")).toBeVisible()
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual(
+      "$0.00 (0.00 GFI) claimed of your total unlocked 1,000.00 GFI"
+    )
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1160,13 +1352,16 @@ describe("Rewards list and detail", () => {
 
     fireEvent.click(screen.getByText("Flight Academy"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("2,500.00 GFI reward for participating in Flight Academy")).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI for participating in Flight Academy")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$2,500.00 (2,500.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("$5,000.00 (2,500.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual("Claimed")
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1189,17 +1384,17 @@ describe("Rewards list and detail", () => {
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
     await waitFor(async () => {
       expect(await screen.findByText("Transaction details")).toBeVisible()
-      expect(await screen.findByText("Vesting schedule")).toBeVisible()
+      expect(await screen.findByText("Unlock schedule")).toBeVisible()
       expect(await screen.findByText("Linear until 100% on Dec 29, 2022")).toBeVisible()
 
       expect(await screen.findByText("Claim status")).toBeVisible()
-      expect(await screen.findByText("$0.82 (0.82 GFI) claimed of your total vested 3.06 GFI")).toBeVisible()
+      expect(await screen.findByText("$1.64 (0.82 GFI) claimed of your total unlocked 3.06 GFI")).toBeVisible()
 
       expect(await screen.findByText("Current earn rate")).toBeVisible()
       expect(await screen.findByText("+453.60 GFI granted per week")).toBeVisible()
 
-      expect(await screen.findByText("Vesting status")).toBeVisible()
-      expect(await screen.findByText("1.14% (3.06 GFI) vested")).toBeVisible()
+      expect(await screen.findByText("Unlock status")).toBeVisible()
+      expect(await screen.findByText("1.14% (3.06 GFI) unlocked")).toBeVisible()
 
       expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
         "href",
@@ -1226,14 +1421,14 @@ describe("Rewards list and detail", () => {
       await screen.findByText("1,000.00 GFI reward on Dec 23, 2021 for participating as a Goldfinch investor")
     ).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("1.64% (16.44 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("1.64% (16.44 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Linear until 100% on Dec 8, 2022")).toBeVisible()
 
     expect(await screen.findByText("Claim status")).toBeVisible()
-    expect(await screen.findByText("$5.48 (5.48 GFI) claimed of your total vested 16.44 GFI")).toBeVisible()
+    expect(await screen.findByText("$10.96 (5.48 GFI) claimed of your total unlocked 16.44 GFI")).toBeVisible()
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1248,20 +1443,23 @@ describe("Rewards list and detail", () => {
 
     expect(await screen.findByText("Flight Academy")).toBeVisible()
     expect(screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
-    expect(screen.getAllByText("Claimed").length).toBe(1)
+    expect(screen.getByTestId("action-button").textContent).toEqual("Claimed")
 
     expect(screen.getAllByTestId("detail-unvested")[0]?.textContent).toEqual("0.00")
     expect(screen.getAllByTestId("detail-claimable")[0]?.textContent).toEqual("0.00")
 
     fireEvent.click(screen.getByText("Flight Academy"))
     expect(await screen.findByText("Transaction details")).toBeVisible()
-    expect(await screen.findByText("2,500.00 GFI reward for participating in Flight Academy")).toBeVisible()
+    expect(await screen.findByText("2,500.00 GFI for participating in Flight Academy")).toBeVisible()
 
-    expect(await screen.findByText("Vesting status")).toBeVisible()
-    expect(await screen.findByText("$2,500.00 (2,500.00 GFI) vested")).toBeVisible()
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("$5,000.00 (2,500.00 GFI) unlocked")).toBeVisible()
 
-    expect(await screen.findByText("Vesting schedule")).toBeVisible()
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
     expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.getByTestId("claim-status-label").textContent).toEqual("Claim status")
+    expect(await screen.getByTestId("claim-status-value").textContent).toEqual("Claimed")
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
@@ -1285,7 +1483,7 @@ describe("Rewards list and detail", () => {
       expect(screen.getByText("1,000.00 GFI • Jan 11, 2022")).toBeVisible()
       expect(await screen.findByText("Accept")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1348,7 +1546,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.getByText("2,500.00 GFI • Jan 11, 2022")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1408,7 +1606,7 @@ describe("Rewards list and detail", () => {
       expect(await screen.getByText("1,000.00 GFI • Dec 29, 2021")).toBeVisible()
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()
@@ -1463,7 +1661,7 @@ describe("Rewards list and detail", () => {
 
       expect(await screen.findByText("Claim GFI")).toBeVisible()
 
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const DEPLOYMENTS = await getDeployments()

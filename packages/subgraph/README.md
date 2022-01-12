@@ -114,7 +114,7 @@ tranchedPools(block: {number: 13845148}) {
 - On `usePoolsData`, disable the skip flag from web3 and add the validation scripts
 ```
   // Fetch data from subgraph
-  const {error, backers: backersSubgraph, seniorPoolStatus, data} = useTranchedPoolSubgraphData(false)
+  const {error, backers: backersSubgraph, seniorPoolStatus, data} = useTranchedPoolSubgraphData(..., false)
 
   // Fetch data from web3 provider
   const {backers: backersWeb3, poolsAddresses} = usePoolBackersWeb3({skip: false})

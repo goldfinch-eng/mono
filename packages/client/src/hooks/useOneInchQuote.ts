@@ -23,7 +23,7 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}): [null, boolean]
       setLoading(true)
 
       let atomicAmount = from.atomicAmount(decimalAmount)
-      const result = await oneInch.methods
+      const result = await oneInch.readOnly.methods
         .getExpectedReturn(from.address, to.address, atomicAmount, parts, 0)
         .call(undefined, "latest")
 

@@ -10,8 +10,7 @@ import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
 import {KYC} from "../hooks/useGoldfinchClient"
-import {SessionData} from "../types/session"
-import {Web3Status} from "../types/web3"
+import {UserWalletWeb3Status} from "../types/web3"
 import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
 
 interface Scenario {
@@ -30,17 +29,17 @@ interface Scenario {
 }
 
 const testUserAddress = "0xtest"
-const noWeb3: Web3Status = {
+const noWeb3: UserWalletWeb3Status = {
   type: "no_web3",
   networkName: undefined,
   address: undefined,
 }
-const hasWeb3: Web3Status = {
+const hasWeb3: UserWalletWeb3Status = {
   type: "has_web3",
   networkName: "localhost",
   address: undefined,
 }
-const connected: Web3Status = {
+const connected: UserWalletWeb3Status = {
   type: "connected",
   networkName: "localhost",
   address: testUserAddress,
@@ -50,10 +49,10 @@ const scenarios: Scenario[] = [
   {
     devName: "install_metamask",
     setUpMatch: ({store}) => {
-      store.web3Status = noWeb3
+      store.userWalletWeb3Status = noWeb3
     },
     setUpFallthrough: ({store}) => {
-      store.web3Status = hasWeb3
+      store.userWalletWeb3Status = hasWeb3
     },
     expectedText: /you'll first need to download and install the Metamask plug-in/,
   },
@@ -74,37 +73,12 @@ const scenarios: Scenario[] = [
     expectedText: /You are on an unsupported network, please switch to Ethereum mainnet/,
   },
   {
-    devName: "not_connected_to_metamask",
-    setUpMatch: ({store}) => {
-      store.web3Status = hasWeb3
-    },
-    setUpFallthrough: ({store}) => {
-      store.web3Status = connected
-      store.user = {
-        address: testUserAddress,
-        info: {loaded: true, value: {goListed: false}},
-      } as UserLoaded
-    },
-    expectedText: /You are not currently connected to Metamask./,
-  },
-  {
-    devName: "connected_user_with_expired_session",
-    setUpMatch: ({store, props}) => {
-      store.web3Status = connected
-      store.user = {
-        address: testUserAddress,
-        info: {loaded: true, value: {goListed: false}},
-      } as UserLoaded
-      store.sessionData = {signatureBlockNum: 42, signatureBlockNumTimestamp: 47} as SessionData
-    },
-    setUpFallthrough: ({store}) => {
-      store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
-    },
-    expectedText: /Your session has expired. To use Goldfinch, you first need to reconnect to Metamask./,
-  },
-  {
     devName: "no_credit_line",
     setUpMatch: ({store, props}) => {
+      store.user = {
+        address: testUserAddress,
+        info: {loaded: true, value: {goListed: false}},
+      } as UserLoaded
       store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
       defaultCreditLine.loaded = true
       props.creditLine = defaultCreditLine as unknown as CreditLine
@@ -117,6 +91,10 @@ const scenarios: Scenario[] = [
   {
     devName: "no_golist",
     setUpMatch: ({store, props}) => {
+      store.user = {
+        address: testUserAddress,
+        info: {loaded: true, value: {goListed: false}},
+      } as UserLoaded
       props.requireGolist = true
     },
     setUpFallthrough: ({props}) => {

@@ -26,6 +26,7 @@ const INTEREST_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = 60 * 60 * 24
 const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+const ONE_QUADRILLION_USDC = "1000000000000000000000"
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
 export const RINKEBY = "rinkeby"
@@ -212,7 +213,7 @@ async function getPoolEvents<T extends PoolEventType>(
   const fromBlock = getFromBlock(pool.chain)
   const events = await Promise.all(
     eventNames.map((eventName) => {
-      return pool.contract.getPastEvents(eventName, {
+      return pool.contract.readOnly.getPastEvents(eventName, {
         filter: address ? {capitalProvider: address} : undefined,
         fromBlock,
         toBlock,
@@ -257,4 +258,5 @@ export {
   getPoolEvents,
   getEtherscanSubdomain,
   ONE_YEAR_SECONDS,
+  ONE_QUADRILLION_USDC,
 }

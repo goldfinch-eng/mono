@@ -119,7 +119,7 @@ export function assertBigNumber(val: unknown): asserts val is BigNumber {
 }
 
 export async function getCurrentBlock() {
-  return await web3.eth.getBlock("latest")
+  return await web3.readOnly.eth.getBlock("latest")
 }
 
 export type BlockInfo = {
@@ -143,4 +143,12 @@ export type ArrayItemType<T> = T extends Array<infer U> ? U : never
 
 export function defaultSum(values: BigNumber[]): BigNumber {
   return values.length ? BigNumber.sum.apply(null, values) : new BigNumber(0)
+}
+
+export function shouldUseWeb3(): boolean {
+  if (process.env.NODE_ENV !== "production" && process.env.REACT_APP_HARDHAT_FORK) {
+    console.warn("Cannot use subgraph locally with mainnet forking. Using web3 instead.")
+    return true
+  }
+  return process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
 }

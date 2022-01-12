@@ -43,9 +43,10 @@ import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
-import {mapEventsToTx} from "../ethereum/events"
+import {mapEventsToTx, populateDates} from "../ethereum/events"
 import BigNumber from "bignumber.js"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
+import {assertIsString} from "@goldfinch-eng/utils"
 
 type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]
@@ -69,7 +70,7 @@ function Transactions(props: TransactionsProps) {
       await Promise.all(
         tranchedPoolsAddresses.map((address) =>
           goldfinchProtocol.queryEvents(
-            tranchedPools[address]!.contract,
+            tranchedPools[address]!.contract.readOnly,
             TRANCHED_POOL_EVENT_TYPES,
             undefined,
             currentBlock.number
@@ -77,7 +78,7 @@ function Transactions(props: TransactionsProps) {
         )
       )
     )
-    const poolTxs = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
+    let poolTxs = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
       parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
         switch (eventData.event) {
           case DEPOSIT_MADE_EVENT:
@@ -126,6 +127,7 @@ function Transactions(props: TransactionsProps) {
         }
       },
     })
+    poolTxs = await populateDates(poolTxs)
     setTranchedPoolTxs(poolTxs)
     setLeafCurrentBlock(currentRoute, currentBlock)
   }
@@ -192,6 +194,7 @@ function Transactions(props: TransactionsProps) {
           assertUnreachable(tx)
       }
     } else {
+      assertIsString(tx.date)
       txDate = tx.date
 
       switch (tx.amount.units) {
@@ -312,13 +315,33 @@ function Transactions(props: TransactionsProps) {
 
   // Only show txs from currentTxs that are not already in user.pastTxs
   let pendingTxs = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
-  let allTxs = _.reverse(
-    _.sortBy(
-      _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])]),
-      "blockNumber"
-    )
-  )
+  const compactTxs = _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])])
+  let allTxs
+  allTxs = _.sortBy(compactTxs, ["blockNumber", "transactionIndex"])
   allTxs = _.uniqBy(allTxs, "eventId")
+
+  // When you supply and stake, it adds a $0.00 Approval transaction that we want to remove so that we do not confuse the user with an approval amount that they did not explicitly take an action on
+  // this only removes approval events that are in the same block number as the supply event
+  allTxs = allTxs.reduce(
+    ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
+      hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
+      hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
+
+      if (
+        hasSeenSupplyInCurrentBlock &&
+        [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
+      ) {
+        return {acc, previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
+      } else {
+        return {acc: acc.concat(curr), previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
+      }
+    },
+    {acc: [] as any[], hasSeenSupplyInCurrentBlock: false, previousBlock: 0}
+  ).acc
+
+  // sort by block number descending (newest first)
+  allTxs = _.reverse(allTxs)
+
   let transactionRows: React.ReactNode[] = [
     <tr key="empty-row" className="empty-row">
       <td>No transactions</td>

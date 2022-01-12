@@ -6,13 +6,10 @@ import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../App"
 import WithdrawalForm from "../../components/withdrawalForm"
-import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {usdcToAtomic} from "../../ethereum/erc20"
-import {GFILoaded} from "../../ethereum/gfi"
+import {COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
-import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
 import {
   CapitalProvider,
@@ -48,7 +45,8 @@ mock({
   blockchain: "ethereum",
 })
 
-web3.setProvider((global.window as any).ethereum)
+web3.readOnly.setProvider((global.window as any).ethereum)
+web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderWithdrawalForm(
   poolData: Partial<PoolData>,
@@ -110,6 +108,25 @@ describe("withdrawal form", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
+
+    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
+    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      const url = input.toString()
+      if (url === COINGECKO_API_GFI_PRICE_URL) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              goldfinch: {
+                usd: 2,
+              },
+            }),
+        } as Response)
+      } else {
+        throw new Error(`Unexpected fetch url: ${url}`)
+      }
+    })
+
     resetAirdropMocks()
 
     await goldfinchProtocol.initialize()
@@ -174,71 +191,84 @@ describe("withdrawal form", () => {
     const formParagraph = await container.getElementsByClassName("paragraph")
 
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 128.89 GFI ($128.89) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI."
+      "You have 128.89 GFI ($257.78) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI."
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
     )
   })
 
-  it("fills max amount with `transactionLimit` when appropriate", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+  describe("Max button", () => {
+    it("uses `transactionLimit` for withdrawal amount when applicable", async () => {
+      const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    await mockCapitalProviderCalls()
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      await mockCapitalProviderCalls()
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
-    const poolData = {
-      balance: new BigNumber(usdcToAtomic("50000000")),
-    }
-    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+      }
+      renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
+      fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
-      expect(screen.getByText("receive $19,900.00")).toBeVisible()
-      expect(screen.getByText("forfeit 51.40 GFI ($51.40)")).toBeVisible()
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "20,000")
+        expect(screen.getByText("receive $19,900.00")).toBeVisible()
+        expect(screen.getByText("forfeit 51.40 GFI ($102.81)")).toBeVisible()
+      })
     })
-  })
 
-  it("fills max amount with pool balance when appropriate", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    it("uses pool balance for withdrawal amount when applicable", async () => {
+      const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    await mockCapitalProviderCalls()
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      await mockCapitalProviderCalls()
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
 
-    const poolData = {
-      balance: new BigNumber(usdcToAtomic("10000")),
-    }
-    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("10000")),
+      }
+      renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
+      fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "10,000")
-      expect(screen.getByText("receive $9,950.00")).toBeVisible()
-      expect(screen.getByText("forfeit 25.64 GFI ($25.64)")).toBeVisible()
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "10,000")
+        expect(screen.getByText("receive $9,950.00")).toBeVisible()
+        expect(screen.getByText("forfeit 25.64 GFI ($51.27)")).toBeVisible()
+      })
     })
-  })
 
-  it("fills max amount with `availableToWithdrawInDollars` when appropriate", async () => {
-    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    it("uses the user's number of withdrawable FIDU for the withdrawal amount, when the user's `availableToWithdrawInDollars` is the applicable limit on the withdrawal", async () => {
+      // The purpose of this test is to establish that when the user's `availableToWithdrawInDollars` amount is the applicable limit
+      // on how much they can withdraw, we actually use their number of withdrawable FIDU directly as the amount we
+      // want to withdraw in FIDU -- rather than converting `availableToWithdrawInDollars` into FIDU, which would be
+      // liable to leave dust due to imprecision in the conversion.
 
-    await mockCapitalProviderCalls()
-    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-    capitalProvider.value.availableToWithdrawInDollars = new BigNumber("8000")
+      const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
 
-    const poolData = {
-      balance: new BigNumber(usdcToAtomic("50000000")),
-    }
-    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
+      await mockCapitalProviderCalls()
+      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+      expect(capitalProvider.value.availableToWithdrawInDollars.toString(10)).toEqual("50072.853679849")
+      capitalProvider.value.availableToWithdrawInDollars = new BigNumber("8000")
 
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
+      const poolData = {
+        balance: new BigNumber(usdcToAtomic("50000000")),
+      }
+      renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "8,000")
-      expect(screen.getByText("receive $7,960.00")).toBeVisible()
-      expect(screen.getByText("forfeit 20.48 GFI ($20.48)")).toBeVisible()
+      fireEvent.click(screen.getByText("Max", {selector: "button"}))
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "8,000")
+        expect(screen.getByText("receive $7,960.00")).toBeVisible()
+        // HACK: We expect unvested GFI to be forfeited in the same proportion as the user's FIDU that
+        // is being unstaked-and-withdrawn. So we infer here, from the fact that all of the user's unvested
+        // GFI would be forfeited, that the withdrawal is configured to unstake-and-withdraw all of the
+        // user's FIDU -- which is the Max button behavior this test aims to establish.
+        expect(capitalProvider.value.rewardsInfo.unvested?.toString(10)).toEqual("128889863013698630137")
+        expect(screen.getByText("forfeit 128.89 GFI ($257.78)")).toBeVisible()
+      })
     })
   })
 
@@ -261,7 +291,7 @@ describe("withdrawal form", () => {
 
     const formParagraph = await container.getElementsByClassName("paragraph")
     expect(formParagraph[0]?.textContent).toContain(
-      "You have 265.94 GFI ($265.94) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+      "You have 265.94 GFI ($531.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
     )
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
@@ -292,7 +322,7 @@ describe("withdrawal form", () => {
 
       const formParagraph = await container.getElementsByClassName("paragraph")
       expect(formParagraph[0]?.textContent).not.toContain(
-        "You have 265.94 GFI ($265.94) that is still vesting until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your unvested GFI"
+        "You have 265.94 GFI ($531.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
       )
     })
   })
@@ -321,7 +351,7 @@ describe("withdrawal form", () => {
           params: {tokenId: "1", fiduAmount: "19990871828478113245933"},
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()
@@ -370,7 +400,7 @@ describe("withdrawal form", () => {
           params: "19990871828478113245933",
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()
@@ -429,7 +459,7 @@ describe("withdrawal form", () => {
           params: {tokenId: "1", fiduAmount: "9990871828478113245933"},
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()
@@ -490,7 +520,7 @@ describe("withdrawal form", () => {
           params: {tokenIds: ["2", "1"], fiduAmounts: ["5000000000000000000000", "4999998169337911394299"]},
         },
       })
-      web3.eth.getGasPrice = () => {
+      web3.userWallet.eth.getGasPrice = () => {
         return Promise.resolve("100000000")
       }
       const refreshCurrentBlock = jest.fn()

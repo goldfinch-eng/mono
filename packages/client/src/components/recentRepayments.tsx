@@ -7,6 +7,7 @@ import {CombinedRepaymentTx} from "../ethereum/pool"
 import {getEtherscanSubdomain} from "../ethereum/utils"
 import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
 import {iconOutArrow} from "./icons"
+import {populateDates} from "../ethereum/events"
 
 function RecentRepayments() {
   const {pool, user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
@@ -16,7 +17,9 @@ function RecentRepayments() {
   useEffect(() => {
     if (pool && goldfinchProtocol && currentBlock) {
       pool.info.value.poolData.getRepaymentEvents(pool, goldfinchProtocol, currentBlock).then((repayments) => {
-        setRepayments(_.slice(repayments, 0, 3))
+        populateDates(_.slice(repayments, 0, 3)).then((richRepayments) => {
+          setRepayments(richRepayments)
+        })
       })
     }
   }, [pool, goldfinchProtocol, currentBlock])

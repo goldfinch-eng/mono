@@ -16,7 +16,12 @@ function configureSentry() {
 
     Sentry.init({
       dsn,
-      integrations: [new Integrations.BrowserTracing(), new CaptureConsoleIntegration()],
+      integrations: [
+        new Integrations.BrowserTracing(),
+        new CaptureConsoleIntegration({
+          levels: [Sentry.Severity.Error, Sentry.Severity.Warning],
+        }),
+      ],
       release,
       environment,
       tracesSampleRate: process.env.NODE_ENV === "production" ? 0.25 : 1.0,
