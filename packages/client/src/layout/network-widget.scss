@@ -269,6 +269,13 @@
   .network-widget-button {
     position: absolute;
     right: 48px;
+    width: 170px;
+  }
+
+  .network-widget.open {
+    .network-widget-button {
+      width: 160px;
+    }
   }
 
   .network-widget-info {
