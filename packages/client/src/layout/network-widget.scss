@@ -264,3 +264,9 @@
     border: none;
   }
 }
+
+@media only screen and (max-width: $screen-m) {
+  .network-widget-button {
+    margin-right: 48px;
+  }
+}
