@@ -63,14 +63,12 @@ function DepositStatus(props: DepositStatusProps) {
             estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
-        {toggleRewards && (
-          <AnnualGrowthTooltipContent
-            supplyingCombined={false}
-            estimatedApyFromSupplying={estimatedApyFromSupplying}
-            estimatedApyFromGfi={estimatedApyFromGfi}
-            estimatedApy={estimatedApy}
-          />
-        )}
+        <AnnualGrowthTooltipContent
+          supplyingCombined={false}
+          estimatedApyFromSupplying={estimatedApyFromSupplying}
+          estimatedApyFromGfi={estimatedApyFromGfi}
+          estimatedApy={estimatedApy}
+        />
       </div>
     )
   } else {

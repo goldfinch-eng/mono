@@ -355,7 +355,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
           withdrawalInfo && withdrawalInfo.unstakeAndWithdraw
             ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
             : new BigNumber(0)
-        const forfeitedGfiNotesSuffix = toggleRewards ? (
+        const forfeitedGfiNotesSuffix = (
           <span>
             {" and "}
             <span className="font-bold">
@@ -367,7 +367,7 @@ function WithdrawalForm(props: WithdrawalFormProps) {
             </span>
             {" that is still locked"}
           </span>
-        ) : undefined
+        )
         notes = [
           {
             key: "advisory",

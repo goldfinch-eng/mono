@@ -125,18 +125,16 @@ export function PortfolioOverview({
             {displayDollars(roundDownPenny(estimatedAnnualGrowth))}
           </div>
           <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${displayPercent(estimatedApy)} APY${
-            toggleRewards && estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
+            estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
       </div>
-      {toggleRewards && (
-        <AnnualGrowthTooltipContent
-          supplyingCombined={true}
-          estimatedApyFromSupplying={estimatedApyFromSupplying}
-          estimatedApyFromGfi={estimatedApyFromGfi}
-          estimatedApy={estimatedApy}
-        />
-      )}
+      <AnnualGrowthTooltipContent
+        supplyingCombined={true}
+        estimatedApyFromSupplying={estimatedApyFromSupplying}
+        estimatedApyFromGfi={estimatedApyFromGfi}
+        estimatedApy={estimatedApy}
+      />
     </div>
   )
 }
