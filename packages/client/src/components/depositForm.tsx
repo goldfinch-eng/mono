@@ -239,6 +239,9 @@ function DepositForm(props: DepositFormProps) {
             />
             <LoadingButton action={action} disabled={submitDisabled} />
           </div>
+          <div className="form-footer-message purp-light">
+            Note: the protocol deducts a 0.50% fee on withdrawal for protocol reserves.
+          </div>
         </div>
       </div>
     )
