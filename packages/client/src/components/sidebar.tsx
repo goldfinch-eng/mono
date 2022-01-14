@@ -8,8 +8,6 @@ import {EARN_ROUTE, BORROW_ROUTE, GFI_ROUTE, TRANSACTIONS_ROUTE} from "../types/
 function Sidebar(props) {
   const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()
 
-  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-
   function closeSidebar() {
     setShowSidebar("")
   }
@@ -38,11 +36,9 @@ function Sidebar(props) {
         <NavLink to={BORROW_ROUTE} onClick={closeSidebar}>
           Borrow
         </NavLink>
-        {toggleRewards && (
-          <NavLink to={GFI_ROUTE} onClick={closeSidebar}>
-            GFI
-          </NavLink>
-        )}
+        <NavLink to={GFI_ROUTE} onClick={closeSidebar}>
+          GFI
+        </NavLink>
         <NavLink to={TRANSACTIONS_ROUTE} onClick={closeSidebar}>
           Transactions
         </NavLink>
