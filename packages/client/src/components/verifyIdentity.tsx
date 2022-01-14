@@ -21,6 +21,8 @@ import {iconAlert, iconCircleCheck} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
 
+const US_COUNTRY_CODE = "US"
+
 function VerificationNotice({icon, notice}) {
   return (
     <div className="verify-card info-banner background-container subtle">
@@ -132,7 +134,7 @@ function PersonaForm({entityType, onEvent, network, address, formMethods}) {
       prefill: {
         emailAddress: data.email,
         discord_name: data.discord,
-        country_us: entityType === "US",
+        country_us: entityType === US_COUNTRY_CODE,
       } as any,
       onLoad: (_error) => client.open(),
       onComplete: () => {
@@ -240,10 +242,7 @@ function ErrorCard({title}: {title: string}) {
 }
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
-  return (
-    (!!kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") ||
-    (!!user && user.info.value.goListed)
-  )
+  return (!!kyc && kyc.status === "approved" && kyc.countryCode !== "") || (!!user && user.info.value.goListed)
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
@@ -284,8 +283,8 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
       const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {
         setKYC(response.json)
-        if (response.json.countryCode === "US") {
-          setEntityType("US")
+        if (response.json.countryCode === US_COUNTRY_CODE) {
+          setEntityType(US_COUNTRY_CODE)
         }
       }
     } catch (err: unknown) {
@@ -313,7 +312,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
           notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
         />
       )
-    } else if (entityType === "US") {
+    } else if (entityType === US_COUNTRY_CODE) {
       return (
         <USForm
           kycStatus={kyc?.status}
@@ -339,19 +338,15 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
         />
       )
     } else {
-      const nonUSDisabled = kyc?.countryCode === "US" ? "disabled" : ""
+      // const nonUSDisabled = kyc?.countryCode === US_COUNTRY_CODE ? "disabled" : ""
       return (
         <VerifyCard title="Verify your address" disabled={disabled}>
           <div className="form-message">Who is verifying this address?</div>
           <div className="verify-types">
-            <button
-              className={`button ${nonUSDisabled}`}
-              disabled={nonUSDisabled === "disabled"}
-              onClick={() => chooseEntity("non-US")}
-            >
+            <button className={"button"} onClick={() => chooseEntity("non-US")}>
               Non-U.S. Individual
             </button>
-            <button className={"button"} onClick={() => chooseEntity("US")}>
+            <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
               U.S. Individual
             </button>
             <button className={"button"} onClick={() => chooseEntity("entity")}>
