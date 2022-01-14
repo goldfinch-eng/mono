@@ -96,10 +96,6 @@ describe("withdrawal form", () => {
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded, capitalProvider: Loaded<CapitalProvider>
   const currentBlock = defaultCurrentBlock
 
-  beforeEach(() => {
-    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
-  })
-
   afterEach(() => {
     sandbox.restore()
   })
@@ -296,35 +292,6 @@ describe("withdrawal form", () => {
     expect(formParagraph[1]?.textContent).toContain(
       "Also as a reminder, the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."
     )
-  })
-
-  describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
-    beforeEach(() => {
-      sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
-    })
-
-    it("does not show staking messaging", async () => {
-      const {user} = await setupPartiallyClaimedStakingReward(goldfinchProtocol, seniorPool, undefined, currentBlock)
-
-      await mockCapitalProviderCalls()
-      const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-
-      const poolData = {
-        balance: new BigNumber(usdcToAtomic("50000000")),
-      }
-      const {container} = renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
-
-      expect(await screen.findByText("Available to withdraw: $50,072.85")).toBeVisible()
-      expect(await screen.findByText("Max")).toBeVisible()
-      expect(await screen.findByText("Submit")).toBeVisible()
-      expect(await screen.findByText("Cancel")).toBeVisible()
-      expect(await screen.findByText("Withdraw")).toBeVisible()
-
-      const formParagraph = await container.getElementsByClassName("paragraph")
-      expect(formParagraph[0]?.textContent).not.toContain(
-        "You have 265.94 GFI ($531.89) that is still locked until Dec 29, 2022. If you withdraw before then, you might forfeit a portion of your locked GFI"
-      )
-    })
   })
 
   describe("withdrawal transaction(s)", () => {

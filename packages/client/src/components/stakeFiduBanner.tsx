@@ -73,7 +73,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
 
     const placeholderClass = disabled ? "placeholder" : ""
 
-    return process.env.REACT_APP_TOGGLE_REWARDS === "true" && props.capitalProvider?.shares.parts.notStaked.gt(0) ? (
+    return props.capitalProvider?.shares.parts.notStaked.gt(0) ? (
       <FormProvider {...formMethods}>
         <div className={`info-banner subtle background-container ${placeholderClass}`}>
           <div className="message">

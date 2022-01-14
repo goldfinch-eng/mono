@@ -14,7 +14,7 @@ import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
-  [STAKING_FORM_VAL]: process.env.REACT_APP_TOGGLE_REWARDS === "true",
+  [STAKING_FORM_VAL]: true,
 }
 
 interface DepositFormProps {
@@ -138,37 +138,33 @@ function DepositForm(props: DepositFormProps) {
       )
     )
 
-    const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-
     return (
       <div className="form-inputs">
         {warningMessage}
-        {toggleRewards && (
-          <div className="checkbox-container form-input-label">
-            <input
-              className="checkbox"
-              type="checkbox"
-              name={STAKING_FORM_VAL}
-              id={STAKING_FORM_VAL}
-              ref={(ref) => formMethods.register(ref)}
-            />
-            <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
-              <div>
-                <div className="checkbox-label-primary">
-                  <div>{`I want to stake my supply to earn GFI (additional ${displayPercent(
-                    pool.info.value.poolData.estimatedApyFromGfi
-                  )} APY).`}</div>
-                </div>
-                <div className="form-input-note">
-                  <p>
-                    Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
-                    maximum GFI by staking for at least 12 months.
-                  </p>
-                </div>
+        <div className="checkbox-container form-input-label">
+          <input
+            className="checkbox"
+            type="checkbox"
+            name={STAKING_FORM_VAL}
+            id={STAKING_FORM_VAL}
+            ref={(ref) => formMethods.register(ref)}
+          />
+          <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
+            <div>
+              <div className="checkbox-label-primary">
+                <div>{`I want to stake my supply to earn GFI (additional ${displayPercent(
+                  pool.info.value.poolData.estimatedApyFromGfi
+                )} APY).`}</div>
               </div>
-            </label>
-          </div>
-        )}
+              <div className="form-input-note">
+                <p>
+                  Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
+                  maximum GFI by staking for at least 12 months.
+                </p>
+              </div>
+            </div>
+          </label>
+        </div>
         <div className="checkbox-container form-input-label">
           <input
             className="checkbox"

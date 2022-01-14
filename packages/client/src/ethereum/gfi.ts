@@ -76,9 +76,6 @@ class GFI {
     portfolioBalanceInDollars: BigNumber,
     globalEstimatedApyFromGfi: BigNumber | undefined
   ): BigNumber | undefined {
-    if (process.env.REACT_APP_TOGGLE_REWARDS !== "true") {
-      return undefined
-    }
     if (globalEstimatedApyFromGfi) {
       if (portfolioBalanceInDollars.gt(0)) {
         const balancePortionEarningGfi = stakedBalanceInDollars.div(portfolioBalanceInDollars)
