@@ -11,6 +11,7 @@ import {decimalPlaces, MAX_UINT} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
 import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE, SUPPLY_TX_TYPE} from "../types/transactions"
 import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
+import {iconOutArrow} from "./icons"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
@@ -159,7 +160,15 @@ function DepositForm(props: DepositFormProps) {
               <div className="form-input-note">
                 <p>
                   Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
-                  maximum GFI by staking for at least 12 months.
+                  maximum GFI by staking for at least 12 months.{" "}
+                  <a
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="form-link"
+                  >
+                    Learn more<span className="outbound-link">{iconOutArrow}</span>
+                  </a>
                 </p>
               </div>
             </div>
