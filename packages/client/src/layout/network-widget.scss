@@ -13,6 +13,9 @@
   text-align: left;
   outline: none;
   padding: 0 18px;
+  position: absolute;
+  right: 48px;
+  width: 170px;
 
   &:hover {
     background: $sand;
@@ -91,7 +94,7 @@
   display: none;
   font-size: $sans-size-xs;
   line-height: 1.2;
-  margin: 12px 0 0 0;
+  margin: 52px 0 0 0;
   position: fixed;
   right: 0;
   width: 100%;
@@ -262,5 +265,11 @@
 
   .network-widget-button {
     border: none;
+  }
+}
+
+@media only screen and (min-width: $screen-m) {
+  .network-widget-button {
+    right: 0px;
   }
 }
