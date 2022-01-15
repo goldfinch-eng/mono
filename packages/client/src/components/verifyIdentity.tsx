@@ -11,7 +11,7 @@ import {LOCAL, MAINNET} from "../ethereum/utils"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {Session, useSignIn} from "../hooks/useSignIn"
+import {AuthenticatedSession, Session, useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {MINT_UID_TX_TYPE} from "../types/transactions"
 import {UserWalletWeb3Status} from "../types/web3"
@@ -338,7 +338,6 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
         />
       )
     } else {
-      // const nonUSDisabled = kyc?.countryCode === US_COUNTRY_CODE ? "disabled" : ""
       return (
         <VerifyCard title="Verify your address" disabled={disabled}>
           <div className="form-message">Who is verifying this address?</div>
@@ -490,8 +489,21 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         setSessionData,
         userWalletWeb3Status,
       })
+
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+
+      const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
+      const userAddress = userWalletWeb3Status.address
+      assertNonNullable(userAddress)
+      const response = await client.fetchKYCStatus(userAddress)
+      let version
+
+      if (response.json.countryCode === US_COUNTRY_CODE) {
+        version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call(undefined, currentBlock.number)
+      } else {
+        version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+      }
+
       await sendFromUser(
         uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {

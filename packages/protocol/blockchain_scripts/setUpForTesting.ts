@@ -111,22 +111,22 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], 75000)
     logger("🐳 Finished funding with whales.")
-
-    // Grant local signer role
-    await impersonateAccount(hre, protocol_owner)
-    const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
-      protocolOwnerSigner
-    )
-    const {protocol_owner: trustedSigner} = await getNamedAccounts()
-    assertNonNullable(trustedSigner)
-    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
-    await tx.wait()
-
-    await migratev231.main()
-
-    // TODO: temporary while GoldfinchFactory upgrade hasn't been deployed
-    return
   }
+
+  // Grant local signer role
+  await impersonateAccount(hre, protocol_owner)
+  const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
+    protocolOwnerSigner
+  )
+  const {protocol_owner: trustedSigner} = await getNamedAccounts()
+  assertNonNullable(trustedSigner)
+  const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+  await tx.wait()
+  await uniqueIdentity.setSupportedUIDTypes(
+    [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_2()],
+    [true, true]
+  )
+
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 

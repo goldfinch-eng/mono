@@ -1037,29 +1037,27 @@ export class User {
   }
 
   async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
-    if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
-      const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
+    const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
+    const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
 
-      const go = this.goldfinchProtocol.getContract<Go>("Go")
-      const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const go = this.goldfinchProtocol.getContract<Go>("Go")
+    const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
-      const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-      const hasUID = !new BigNumber(
-        await uniqueIdentity.readOnly.methods.balanceOf(address, 0).call(undefined, currentBlock.number)
+    const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
+    const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+    const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+    const hasUID =
+      !new BigNumber(
+        await uniqueIdentity.readOnly.methods.balanceOf(address, ID_TYPE_0).call(undefined, currentBlock.number)
+      ).isZero() ||
+      !new BigNumber(
+        await uniqueIdentity.readOnly.methods.balanceOf(address, ID_TYPE_2).call(undefined, currentBlock.number)
       ).isZero()
 
-      return {
-        legacyGolisted,
-        golisted,
-        hasUID,
-      }
-    } else {
-      return {
-        legacyGolisted: true,
-        golisted: true,
-        hasUID: true,
-      }
+    return {
+      legacyGolisted,
+      golisted,
+      hasUID,
     }
   }
 
