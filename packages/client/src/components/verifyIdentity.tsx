@@ -574,7 +574,7 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
                 <br />
                 <br />
                 Note: U.S. individuals are only eligible to participate in Goldfinch governance-related activities. They
-                may not participate in investing activities.
+                may not participate in the senior pool and borrower pools.
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />
