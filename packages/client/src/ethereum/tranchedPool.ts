@@ -21,6 +21,7 @@ import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
+import {isMainnetForking} from "./utils"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -39,7 +40,7 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
 
     let loadedStore = await import(`../../config/pool-metadata/${networkId}.json`)
     // If mainnet-forking, merge local metadata with mainnet
-    if (process.env.REACT_APP_HARDHAT_FORK) {
+    if (isMainnetForking()) {
       let mainnetMetadata = await import("../../config/pool-metadata/mainnet.json")
       loadedStore = _.merge(loadedStore, mainnetMetadata)
     }

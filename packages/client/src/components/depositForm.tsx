@@ -58,39 +58,26 @@ function DepositForm(props: DepositFormProps) {
     const depositAmountString = usdcToAtomic(transactionAmount)
     if (staking) {
       // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
-      if (process.env.REACT_APP_HARDHAT_FORK) {
-        return approve(depositAmountString, stakingRewards)
-          .then(() =>
-            sendFromUser(stakingRewards.contract.userWallet.methods.depositAndStake(depositAmountString), {
-              type: SUPPLY_AND_STAKE_TX_TYPE,
-              data: {
-                amount: transactionAmount,
-              },
-            })
-          )
-          .then(props.actionComplete)
-      } else {
-        let signatureData = await gatherPermitSignature({
-          token: usdc,
-          value: new BigNumber(depositAmountString),
-          spender: stakingRewards.address,
-        })
-        return sendFromUser(
-          stakingRewards.contract.userWallet.methods.depositWithPermitAndStake(
-            signatureData.value,
-            signatureData.deadline,
-            signatureData.v,
-            signatureData.r,
-            signatureData.s
-          ),
-          {
-            type: SUPPLY_AND_STAKE_TX_TYPE,
-            data: {
-              amount: transactionAmount,
-            },
-          }
-        ).then(props.actionComplete)
-      }
+      let signatureData = await gatherPermitSignature({
+        token: usdc,
+        value: new BigNumber(depositAmountString),
+        spender: stakingRewards.address,
+      })
+      return sendFromUser(
+        stakingRewards.contract.userWallet.methods.depositWithPermitAndStake(
+          signatureData.value,
+          signatureData.deadline,
+          signatureData.v,
+          signatureData.r,
+          signatureData.s
+        ),
+        {
+          type: SUPPLY_AND_STAKE_TX_TYPE,
+          data: {
+            amount: transactionAmount,
+          },
+        }
+      ).then(props.actionComplete)
     } else {
       return approve(depositAmountString, pool)
         .then(() =>

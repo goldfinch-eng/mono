@@ -1,5 +1,5 @@
 import web3 from "../web3"
-import {getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES} from "./utils"
+import {getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES, isMainnetForking} from "./utils"
 const ForwarderAbi = require("../../../autotasks/relayer/Forwarder.json")
 const {ethers} = require("ethers")
 
@@ -50,7 +50,7 @@ async function submitGaslessTransaction(contractAddress, unsentAction) {
   let ForwarderAddress = FORWARDER_ADDRESSES[network.chainId]
   // If we're on a purely local deployment, or murmuration, use the TestForwarder.
   if (
-    (network.chainId === 31337 && !process.env.REACT_APP_HARDHAT_FORK) ||
+    (network.chainId === 31337 && !isMainnetForking()) ||
     (network.chainId === 31337 && process.env.REACT_APP_MURMURATION === "yes")
   ) {
     const config = await getDeployments(chainIdToNetworkID[network.chainId])
