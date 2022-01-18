@@ -90,28 +90,26 @@ function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
     <TransactionForm
       headerMessage="U.S. Individual"
       render={({formMethods}) => {
-        let verifyIdSection
         if (kycStatus === "approved") {
-          verifyIdSection = (
+          return (
             <div className="placeholder">
               <span className="verify-step-label">Step 1: Verify ID {iconCircleCheck}</span>
             </div>
           )
-        } else {
-          verifyIdSection = (
-            <>
-              <PersonaForm
-                entityType={entityType}
-                network={network}
-                address={address}
-                onEvent={onEvent}
-                formMethods={formMethods}
-              />
-              <div className="form-separator background-container-inner"></div>
-            </>
-          )
         }
-        return <>{verifyIdSection}</>
+
+        return (
+          <>
+            <PersonaForm
+              entityType={entityType}
+              network={network}
+              address={address}
+              onEvent={onEvent}
+              formMethods={formMethods}
+            />
+            <div className="form-separator background-container-inner"></div>
+          </>
+        )
       }}
       closeForm={onClose}
     />
@@ -495,13 +493,19 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      const response = await client.fetchKYCStatus(userAddress)
       let version
-
-      if (response.json.countryCode === US_COUNTRY_CODE) {
-        version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call(undefined, currentBlock.number)
-      } else {
-        version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+      try {
+        const response = await client.fetchKYCStatus(userAddress)
+        if (response.ok) {
+          if (response.json.countryCode === US_COUNTRY_CODE) {
+            version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call(undefined, currentBlock.number)
+          } else {
+            version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+          }
+        }
+      } catch (err: unknown) {
+        setErrored(true)
+        console.error(err)
       }
 
       await sendFromUser(
