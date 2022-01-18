@@ -31,8 +31,8 @@ function DepositForm(props: DepositFormProps) {
     const alreadyApprovedAmount = new BigNumber(
       await usdc.contract.userWallet.methods.allowance(user.address, operator.address).call(undefined, "latest")
     )
-    const amountRequiringApproval = new BigNumber(depositAmount).minus(alreadyApprovedAmount)
-    return amountRequiringApproval.gt(0)
+    const requiresApproval = new BigNumber(depositAmount).gt(alreadyApprovedAmount)
+    return requiresApproval
       ? sendFromUser(
           usdc.contract.userWallet.methods.approve(
             operator.address,

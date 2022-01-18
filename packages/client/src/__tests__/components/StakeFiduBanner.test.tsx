@@ -263,7 +263,7 @@ describe("Stake unstaked fidu", () => {
           networkMonitor
         )
 
-        const toApproveAmount = "25000000000000000000"
+        const toApproveAmount = "50000000000000000000"
         const allowanceAmount = "25000000000000000000"
         const notStakedFidu = "50000000000000000000"
         const {balanceMock, allowanceMock, approvalMock, stakeMock} = await mockStakeFiduBannerCalls(
