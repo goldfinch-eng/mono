@@ -45,7 +45,6 @@ import {
   UniqueIdentity,
 } from "../typechain/ethers"
 
-import * as migratev231 from "../blockchain_scripts/migrations/v2.3.1/migrate"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {fundWithWhales} from "./helpers/fundWithWhales"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
@@ -113,6 +112,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     underwriter = protocol_owner
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], 75000)
     logger("🐳 Finished funding with whales.")
+
+    // Patch USDC DOMAIN_SEPARATOR to make permit work locally
+    await overrideUsdcDomainSeparator()
   }
 
   // Grant local signer role
@@ -128,11 +130,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_2()],
     [true, true]
   )
-
-  // Patch USDC DOMAIN_SEPARATOR to make permit work locally
-  await overrideUsdcDomainSeparator()
-
-  await migratev231.main()
 
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
