@@ -165,9 +165,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   await addUsersToGoList(config, [borrower])
 
-  if (!requestFromClient) {
-    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
-  }
   if (requestFromClient) {
     await createBorrowerContractAndPool({
       erc20,
@@ -179,6 +176,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   if (!requestFromClient) {
+    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
+
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
     const txn = await commonPool.lockJuniorCapital()
