@@ -10,7 +10,6 @@ interface DepositStatusProps {
 }
 
 function DepositStatus(props: DepositStatusProps) {
-  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
   if (props.poolData && props.capitalProvider) {
     const portfolioBalance = props.capitalProvider.totalSeniorPoolBalanceInDollars
     const portfolioBalanceDisplay = displayDollars(portfolioBalance)
@@ -53,16 +52,9 @@ function DepositStatus(props: DepositStatusProps) {
         <div className="deposit-status-item">
           <div className="deposit-status-item-flex">
             <div className="label">Est. Annual Growth</div>
-            {toggleRewards && (
-              <span
-                data-tip=""
-                data-for="annual-growth-tooltip"
-                data-offset="{'top': 0, 'left': 0}"
-                data-place="bottom"
-              >
-                <InfoIcon />
-              </span>
-            )}
+            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+              <InfoIcon />
+            </span>
           </div>
           <div className="value" data-testid="portfolio-est-growth">
             {estimatedGrowthDisplay}
@@ -71,14 +63,12 @@ function DepositStatus(props: DepositStatusProps) {
             estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
-        {toggleRewards && (
-          <AnnualGrowthTooltipContent
-            supplyingCombined={false}
-            estimatedApyFromSupplying={estimatedApyFromSupplying}
-            estimatedApyFromGfi={estimatedApyFromGfi}
-            estimatedApy={estimatedApy}
-          />
-        )}
+        <AnnualGrowthTooltipContent
+          supplyingCombined={false}
+          estimatedApyFromSupplying={estimatedApyFromSupplying}
+          estimatedApyFromGfi={estimatedApyFromGfi}
+          estimatedApy={estimatedApy}
+        />
       </div>
     )
   } else {

@@ -14,6 +14,7 @@ import {
   assertIsChainId,
   ContractDeployer,
   FIDU_DECIMALS,
+  getERC20Address,
   getProtocolOwner,
   getUSDCAddress,
   interestAprAsBN,
@@ -47,6 +48,7 @@ import {
 import * as migratev231 from "../blockchain_scripts/migrations/v2.3.1/migrate"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {fundWithWhales} from "./helpers/fundWithWhales"
+import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -126,6 +128,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_2()],
     [true, true]
   )
+
+  // Patch USDC DOMAIN_SEPARATOR to make permit work locally
+  await overrideUsdcDomainSeparator()
+
+  await migratev231.main()
 
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)

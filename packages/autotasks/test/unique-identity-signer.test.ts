@@ -1,17 +1,18 @@
 import chai from "chai"
+import hre from "hardhat"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 
-import {OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {ethers, Signer} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
-import {BN, deployAllContracts, toEthers} from "@goldfinch-eng/protocol/test/testHelpers"
+import {BN, deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
 const {deployments, web3} = hardhat
 import * as uniqueIdentitySigner from "../unique-identity-signer"
-import {FetchKYCFunction, KYC} from "../unique-identity-signer"
 import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
+import {FetchKYCFunction, KYC, UniqueIdentityAbi} from "../unique-identity-signer"
 
 const TEST_TIMEOUT = 30000
 
@@ -48,8 +49,8 @@ describe("unique-identity-signer", () => {
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({uniqueIdentity, owner, anotherUser} = await setupTest())
-    ethersUniqueIdentity = await toEthers<UniqueIdentity>(uniqueIdentity)
-    signer = ethersUniqueIdentity.signer
+    signer = hre.ethers.provider.getSigner(await getProtocolOwner())
+    ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UniqueIdentityAbi, signer) as UniqueIdentity
     assertNonNullable(signer.provider, "Signer provider is null")
     network = await signer.provider.getNetwork()
 
