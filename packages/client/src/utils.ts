@@ -1,6 +1,7 @@
 import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
+import {isMainnetForking} from "./ethereum/utils"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
 
@@ -169,7 +170,7 @@ export function defaultSum(values: BigNumber[]): BigNumber {
 }
 
 export function shouldUseWeb3(): boolean {
-  if (process.env.NODE_ENV !== "production" && process.env.REACT_APP_HARDHAT_FORK) {
+  if (process.env.NODE_ENV !== "production" && isMainnetForking()) {
     console.warn("Cannot use subgraph locally with mainnet forking. Using web3 instead.")
     return true
   }

@@ -156,6 +156,22 @@
   margin: 8px 0 0;
   width: 100%;
 
+  .form-link {
+    color: $purp-light;
+
+    .icon {
+      display: inline-block;
+      height: 15px;
+      margin: 0 0 0 3px;
+      vertical-align: top;
+      width: 15px;
+
+      path {
+        fill: $purp-light;
+      }
+    }
+  }
+
   &.verified-value {
     color: $blue;
     text-align: right;

@@ -87,7 +87,7 @@ async function getDeployments(networkId) {
     .then((result) => {
       config = transformedConfig(result)
 
-      if (networkId === "localhost" && process.env.REACT_APP_HARDHAT_FORK) {
+      if (networkId === "localhost" && isMainnetForking()) {
         // If we're on the fork, then need to use the mainnet proxy contract addresses instead of the
         // freshly deployed version
         const mainnetContracts = ["CreditDesk", "Pool", "Fidu", "GoldfinchFactory"]
@@ -108,11 +108,13 @@ async function getDeployments(networkId) {
     .catch(console.error)
 }
 
+export function isMainnetForking(): boolean {
+  return process.env.REACT_APP_HARDHAT_FORK === MAINNET
+}
+
 async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
   const fileNameSuffix =
-    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
-      ? ".dev"
-      : ""
+    process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
 
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
@@ -133,9 +135,7 @@ async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistri
 
 async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
   const fileNameSuffix =
-    process.env.NODE_ENV === "development" && networkId === LOCAL && process.env.REACT_APP_HARDHAT_FORK !== MAINNET
-      ? ".dev"
-      : ""
+    process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
 
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`

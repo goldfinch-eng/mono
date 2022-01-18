@@ -170,8 +170,11 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
   ) internal returns (uint256 tokenId) {
     require(amount > 0, "Cannot grant 0 amount");
     require(cliffLength <= vestingLength, "Cliff length cannot exceed vesting length");
-    require(vestingLength.mod(vestingInterval) == 0, "Vesting interval must be a factor of vesting length");
     require(amount <= rewardsAvailable, "Cannot grant amount due to insufficient funds");
+
+    if (vestingInterval == 0) {
+      vestingInterval = vestingLength;
+    }
 
     rewardsAvailable = rewardsAvailable.sub(amount);
 

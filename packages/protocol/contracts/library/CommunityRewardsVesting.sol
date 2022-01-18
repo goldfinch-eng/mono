@@ -14,11 +14,8 @@ library CommunityRewardsVesting {
   /// values (i.e. `startTime`, `endTime`, `revokedAt`) are seconds since the unix epoch.
   /// @dev `cliffLength` is the duration from the start of the grant, before which has elapsed
   /// the vested amount remains 0.
-  /// @dev `vestingInterval` is the interval at which vesting occurs. For rewards to have
-  /// vested fully only at `endTime`, `vestingInterval` must be a factor of
-  /// `endTime.sub(startTime)`. If `vestingInterval` is not thusly a factor, the calculation
-  /// of `totalVestedAt()` would calculate rewards to have fully vested as of the time of the
-  /// last whole `vestingInterval`'s elapsing before `endTime`.
+  /// @dev `vestingInterval` is the interval at which vesting occurs. If `vestingInterval` is not a
+  /// factor of `vestingLength`, rewards are fully vested at the time of the last whole `vestingInterval`.
   struct Rewards {
     uint256 totalGranted;
     uint256 totalClaimed;

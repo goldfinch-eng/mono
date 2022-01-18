@@ -91,13 +91,16 @@ export function PortfolioOverview({
     totalBalance,
     globalEstimatedApyFromGfi
   )
+  estimatedAnnualGrowth = estimatedAnnualGrowth.plus(
+    estimatedApyFromGfi ? totalBalance.multipliedBy(estimatedApyFromGfi) : new BigNumber(0)
+  )
+
   const estimatedApy = estimatedApyFromGfi
     ? estimatedApyFromSupplying.plus(estimatedApyFromGfi)
     : estimatedApyFromSupplying
 
   const unrealizedGainsPercent = totalUnrealizedGains.dividedBy(totalBalance)
   const displayUnrealizedGains = roundDownPenny(totalUnrealizedGains)
-  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
 
   return (
     <div className="background-container">
@@ -114,33 +117,24 @@ export function PortfolioOverview({
         <div className="deposit-status-item">
           <div className="deposit-status-item-flex">
             <div className="label">Est. Annual Growth</div>
-            {toggleRewards && (
-              <span
-                data-tip=""
-                data-for="annual-growth-tooltip"
-                data-offset="{'top': 0, 'left': 0}"
-                data-place="bottom"
-              >
-                <InfoIcon />
-              </span>
-            )}
+            <span data-tip="" data-for="annual-growth-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+              <InfoIcon />
+            </span>
           </div>
           <div className="value" data-testid="portfolio-est-growth">
             {displayDollars(roundDownPenny(estimatedAnnualGrowth))}
           </div>
           <div className="sub-value" data-testid="portfolio-est-growth-perc">{`${displayPercent(estimatedApy)} APY${
-            toggleRewards && estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
+            estimatedApyFromGfi && estimatedApyFromGfi.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
       </div>
-      {toggleRewards && (
-        <AnnualGrowthTooltipContent
-          supplyingCombined={true}
-          estimatedApyFromSupplying={estimatedApyFromSupplying}
-          estimatedApyFromGfi={estimatedApyFromGfi}
-          estimatedApy={estimatedApy}
-        />
-      )}
+      <AnnualGrowthTooltipContent
+        supplyingCombined={true}
+        estimatedApyFromSupplying={estimatedApyFromSupplying}
+        estimatedApyFromGfi={estimatedApyFromGfi}
+        estimatedApy={estimatedApy}
+      />
     </div>
   )
 }
@@ -324,6 +318,13 @@ function Earn() {
     limitToDisplay = displayDollars(undefined)
   }
 
+  let apyToDisplay
+  if (pool?.info.value.poolData.estimatedApyFromGfi && seniorPoolStatus?.value?.estimatedApy) {
+    apyToDisplay = pool.info.value.poolData.estimatedApyFromGfi.plus(seniorPoolStatus.value.estimatedApy)
+  } else {
+    apyToDisplay = seniorPoolStatus.value?.estimatedApy
+  }
+
   return (
     <div className="content-section">
       <div className="page-header">
@@ -345,7 +346,7 @@ function Earn() {
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
               userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
-              apy={displayPercent(seniorPoolStatus.value.estimatedApy)}
+              apy={displayPercent(apyToDisplay)}
               limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}

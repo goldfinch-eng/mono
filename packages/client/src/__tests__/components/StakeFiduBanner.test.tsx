@@ -70,10 +70,6 @@ describe("Stake unstaked fidu", () => {
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded
   const currentBlock = defaultCurrentBlock
 
-  beforeEach(() => {
-    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
-  })
-
   afterEach(() => {
     sandbox.restore()
   })
@@ -110,7 +106,7 @@ describe("Stake unstaked fidu", () => {
   })
 
   describe("senior pool eligibility", () => {
-    it("sets placeholder class if not eligible", async () => {
+    it("allows even if user is not eligible for senior pool", async () => {
       user.info.value.goListed = false
       await mockCapitalProviderCalls()
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -123,11 +119,13 @@ describe("Stake unstaked fidu", () => {
         currentBlock
       )
 
-      const message = await container.getElementsByClassName("placeholder")
-      expect(message.length).toEqual(1)
+      const placeholderSelected = await container.getElementsByClassName("placeholder")
+      expect(placeholderSelected.length).toEqual(0)
+      const disabledSelected = await container.getElementsByClassName("disabled")
+      expect(disabledSelected.length).toEqual(0)
     })
 
-    it("does not set placeholder class if eligible", async () => {
+    it("allows if user is eligible for senior pool", async () => {
       user.info.value.goListed = true
       await mockCapitalProviderCalls()
       const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
@@ -140,8 +138,10 @@ describe("Stake unstaked fidu", () => {
         currentBlock
       )
 
-      const message = await container.getElementsByClassName("placeholder")
-      expect(message.length).toEqual(0)
+      const placeholderSelected = await container.getElementsByClassName("placeholder")
+      expect(placeholderSelected.length).toEqual(0)
+      const disabledSelected = await container.getElementsByClassName("disabled")
+      expect(disabledSelected.length).toEqual(0)
     })
   })
 
@@ -259,7 +259,7 @@ describe("Stake unstaked fidu", () => {
           networkMonitor
         )
 
-        const toApproveAmount = "25000000000000000000"
+        const toApproveAmount = "50000000000000000000"
         const allowanceAmount = "25000000000000000000"
         const notStakedFidu = "50000000000000000000"
         const {balanceMock, allowanceMock, approvalMock, stakeMock} = await mockStakeFiduBannerCalls(
@@ -318,35 +318,6 @@ describe("Stake unstaked fidu", () => {
         expect(allowanceMock).toHaveBeenCalled()
         expect(approvalMock).not.toHaveBeenCalled()
         expect(stakeMock).toHaveBeenCalled()
-      })
-    })
-
-    describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
-      beforeEach(() => {
-        sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
-      })
-
-      it("hide the stake button", async () => {
-        await mockCapitalProviderCalls()
-        const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-        const networkMonitor = {
-          addPendingTX: () => {},
-          watch: () => {},
-          markTXErrored: () => {},
-        }
-        const refreshCurrentBlock = jest.fn()
-        renderStakeFiduBanner(
-          seniorPool,
-          stakingRewards,
-          gfi,
-          user,
-          capitalProvider.value,
-          currentBlock,
-          refreshCurrentBlock,
-          networkMonitor
-        )
-
-        expect(await screen.queryByText(stakeButtonCopy)).not.toBeInTheDocument()
       })
     })
   })
