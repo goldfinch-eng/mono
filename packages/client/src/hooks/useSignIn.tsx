@@ -4,7 +4,7 @@ import difference from "lodash/difference"
 import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SESSION_DATA_VERSION} from "../types/session"
-import {assertNonNullable} from "../utils"
+import {assertCodedError, assertNonNullable} from "../utils"
 import web3, {getUserWalletWeb3Status} from "../web3"
 
 export type UnknownSession = {status: "unknown"}
@@ -82,7 +82,8 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       try {
         signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
       } catch (err: unknown) {
-        if ((err as any).code === 4001) {
+        assertCodedError(err)
+        if (err.code === 4001) {
           // The user denied the request.
         } else {
           throw err

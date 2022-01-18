@@ -6,7 +6,7 @@ import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
 import {AbstractProvider} from "web3-core"
-import {assertNonNullable, BlockInfo} from "../utils"
+import {assertCodedError, assertNonNullable, BlockInfo} from "../utils"
 import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "../types/transactions"
 import {PlainObject} from "@goldfinch-eng/utils/src/type"
 
@@ -53,7 +53,8 @@ class NetworkMonitor {
           method: "wallet_switchEthereumChain",
           params: [{chainId: MURMURATION_CHAIN_ID_HEX}],
         })
-      } catch (error: any) {
+      } catch (error: unknown) {
+        assertCodedError(error)
         // This error code indicates the chain has not yet been added to Metamask.
         // In that case, prompt the user to add a new chain.
         // https://docs.metamask.io/guide/rpc-api.html#usage-with-wallet-switchethereumchain
@@ -129,7 +130,8 @@ class NetworkMonitor {
         blockNumber: transaction.blockNumber,
       })
     })
-    emitter.on("txFailed", (error: any) => {
+    emitter.on("txFailed", (error: unknown) => {
+      assertCodedError(error)
       if (error.code === -32603) {
         error.message = "Something went wrong with your transaction."
       }

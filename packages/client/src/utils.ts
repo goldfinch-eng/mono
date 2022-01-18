@@ -94,6 +94,15 @@ export function roundDownPenny(val) {
 
 export class AssertionError extends Error {}
 
+export class CodedError extends Error {
+  code: number
+
+  constructor(message: string, code: number) {
+    super(message)
+    this.code = code
+  }
+}
+
 export function assertNumber(val: unknown): asserts val is number {
   if (typeof val !== "number") {
     throw new AssertionError(`Value ${val} is not a number.`)
@@ -101,8 +110,22 @@ export function assertNumber(val: unknown): asserts val is number {
 }
 
 export function assertError(val: unknown): asserts val is Error {
-  if (!(val instanceof Error)) {
+  if (!isError(val)) {
     throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
+}
+
+export function isError(val: unknown): val is Error {
+  return val instanceof Error
+}
+
+export function isCodedError(val: unknown): val is CodedError {
+  return val instanceof CodedError
+}
+
+export function assertCodedError(val: unknown): asserts val is CodedError {
+  if (!isCodedError(val)) {
+    throw new AssertionError(`Value ${val} failed CodedError type guard.`)
   }
 }
 
