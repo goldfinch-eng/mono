@@ -1043,16 +1043,14 @@ export class User {
     const go = this.goldfinchProtocol.getContract<Go>("Go")
     const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
+    // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
     const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
     const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
-    const hasUID =
-      !new BigNumber(
-        await uniqueIdentity.readOnly.methods.balanceOf(address, ID_TYPE_0).call(undefined, currentBlock.number)
-      ).isZero() ||
-      !new BigNumber(
-        await uniqueIdentity.readOnly.methods.balanceOf(address, ID_TYPE_2).call(undefined, currentBlock.number)
-      ).isZero()
+    const balances = await uniqueIdentity.readOnly.methods
+      .balanceOfBatch([address, address], [ID_TYPE_0, ID_TYPE_2])
+      .call(undefined, currentBlock.number)
+    const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
 
     return {
       legacyGolisted,
