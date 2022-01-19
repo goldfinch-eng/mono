@@ -1045,10 +1045,11 @@ describe("mainnet forking tests", async function () {
               const recipientBalanceAfter = await gfi.balanceOf(recipient)
               expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(web3.utils.toBN(amount)))
             } catch (e: any) {
-              if (e.includes(/Grant already accepted/)) {
+              if (e instanceof Error && String(e).indexOf("Grant already accepted")) {
                 console.log("Skipping grant, already accepted")
                 continue
               }
+
               console.error(e)
             }
           }
