@@ -240,7 +240,7 @@ function ErrorCard({title}: {title: string}) {
 }
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
-  return (!!kyc && kyc.status === "approved" && kyc.countryCode !== "") || (!!user && user.info.value.goListed)
+  return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
@@ -493,15 +493,11 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      let version
+      let version: string = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
       try {
         const response = await client.fetchKYCStatus(userAddress)
-        if (response.ok) {
-          if (response.json.countryCode === US_COUNTRY_CODE) {
-            version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call(undefined, currentBlock.number)
-          } else {
-            version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
-          }
+        if (response.ok && response.json.countryCode === US_COUNTRY_CODE) {
+          version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
         }
       } catch (err: unknown) {
         setErrored(true)
