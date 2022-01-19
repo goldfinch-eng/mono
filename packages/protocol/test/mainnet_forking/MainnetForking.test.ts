@@ -886,45 +886,53 @@ describe("mainnet forking tests", async function () {
 
             await impersonateAccount(hre, recipient)
             await fundWithWhales(["ETH"], [recipient])
+            try {
+              const receipt = await merkleDistributor.acceptGrant(
+                index,
+                amount,
+                vestingLength,
+                cliffLength,
+                vestingInterval,
+                proof,
+                {from: recipient}
+              )
+              const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
+              const tokenId = grantedEvent.args.tokenId
 
-            const receipt = await merkleDistributor.acceptGrant(
-              index,
-              amount,
-              vestingLength,
-              cliffLength,
-              vestingInterval,
-              proof,
-              {from: recipient}
-            )
-            const grantedEvent = getOnlyLog<Granted>(decodeLogs(receipt.receipt.rawLogs, communityRewards, "Granted"))
-            const tokenId = grantedEvent.args.tokenId
+              // verify grant properties
+              const grantState = await communityRewards.grants(tokenId)
+              assertCommunityRewardsVestingRewards(grantState)
+              expect(grantState.totalGranted).to.bignumber.equal(web3.utils.toBN(amount))
+              expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
+              expect(grantState.vestingInterval).to.bignumber.equal(web3.utils.toBN(vestingInterval))
+              expect(grantState.cliffLength).to.bignumber.equal(web3.utils.toBN(cliffLength))
 
-            // verify grant properties
-            const grantState = await communityRewards.grants(tokenId)
-            assertCommunityRewardsVestingRewards(grantState)
-            expect(grantState.totalGranted).to.bignumber.equal(web3.utils.toBN(amount))
-            expect(grantState.totalClaimed).to.bignumber.equal(new BN(0))
-            expect(grantState.vestingInterval).to.bignumber.equal(web3.utils.toBN(vestingInterval))
-            expect(grantState.cliffLength).to.bignumber.equal(web3.utils.toBN(cliffLength))
+              // advance time to end of grant
+              if ((await time.latest()).lt(new BN(TOKEN_LAUNCH_TIME).add(web3.utils.toBN(vestingLength)))) {
+                await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME).add(web3.utils.toBN(vestingLength))})
+                await ethers.provider.send("evm_mine", [])
+              }
 
-            // advance time to end of grant
-            if ((await time.latest()).lt(new BN(TOKEN_LAUNCH_TIME).add(web3.utils.toBN(vestingLength)))) {
-              await advanceTime({toSecond: new BN(TOKEN_LAUNCH_TIME).add(web3.utils.toBN(vestingLength))})
-              await ethers.provider.send("evm_mine", [])
+              // verify fully vested claimable rewards
+              const claimable = await communityRewards.claimableRewards(tokenId)
+              expect(claimable).to.bignumber.equal(web3.utils.toBN(amount))
+
+              // claim all awards
+              await communityRewards.getReward(tokenId, {from: recipient})
+
+              const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
+              expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore.sub(claimable))
+
+              const recipientBalanceAfter = await gfi.balanceOf(recipient)
+              expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(claimable))
+            } catch (e: any) {
+              if (e instanceof Error && String(e).indexOf("Grant already accepted")) {
+                console.log("Skipping grant, already accepted")
+                continue
+              }
+
+              console.error(e)
             }
-
-            // verify fully vested claimable rewards
-            const claimable = await communityRewards.claimableRewards(tokenId)
-            expect(claimable).to.bignumber.equal(web3.utils.toBN(amount))
-
-            // claim all awards
-            await communityRewards.getReward(tokenId, {from: recipient})
-
-            const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
-            expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore.sub(claimable))
-
-            const recipientBalanceAfter = await gfi.balanceOf(recipient)
-            expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(claimable))
           }
         }).timeout(TEST_TIMEOUT)
 
