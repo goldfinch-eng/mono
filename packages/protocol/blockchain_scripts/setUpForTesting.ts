@@ -127,8 +127,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     // Patch USDC DOMAIN_SEPARATOR to make permit work locally
     await overrideUsdcDomainSeparator()
 
-    await migratev231.main()
-
     // TODO: temporary while GoldfinchFactory upgrade hasn't been deployed
     return
   }

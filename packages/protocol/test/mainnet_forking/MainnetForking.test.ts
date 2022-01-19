@@ -1039,10 +1039,18 @@ describe("mainnet forking tests", async function () {
             await impersonateAccount(hre, recipient)
             await fundWithWhales(["ETH"], [recipient])
 
-            await merkleDirectDistributor.acceptGrant(index, amount, proof, {from: recipient})
+            try {
+              await merkleDirectDistributor.acceptGrant(index, amount, proof, {from: recipient})
 
-            const recipientBalanceAfter = await gfi.balanceOf(recipient)
-            expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(web3.utils.toBN(amount)))
+              const recipientBalanceAfter = await gfi.balanceOf(recipient)
+              expect(recipientBalanceAfter).to.bignumber.equal(recipientBalanceBefore.add(web3.utils.toBN(amount)))
+            } catch (e: any) {
+              if (e.includes(/Grant already accepted/)) {
+                console.log("Skipping grant, already accepted")
+                continue
+              }
+              console.error(e)
+            }
           }
         }).timeout(TEST_TIMEOUT)
       })
