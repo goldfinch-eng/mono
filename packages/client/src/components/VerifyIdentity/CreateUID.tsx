@@ -15,9 +15,9 @@ import {UserWalletWeb3Status} from "../../types/web3"
 import {assertNonNullable} from "../../utils"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
+import {Action, END, US_COUNTRY_CODE} from "./constants"
 import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
-import {Action, END, US_COUNTRY_CODE} from "./constants"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
