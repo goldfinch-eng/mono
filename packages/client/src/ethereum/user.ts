@@ -74,7 +74,7 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo, MAINNET} from "./utils"
+import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 

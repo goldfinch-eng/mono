@@ -120,8 +120,7 @@ We've configured webpack to proxy to this server when running `npm run start` fo
 - If you want to run tests for a specific package, say just the protocol contracts, you can use lerna's `--scope` flag e.g. `npm run test -- --scope @goldfinch-eng/protocol`.
 
 ### Testing UID Locally
-- In packages/client/package.json set `"start": "REACT_APP_GCLOUD_FUNCTIONS_URL=\"http://localhost:5001/goldfinch-frontends-dev/us-central1\" react-app-rewired start",`
-- In packages/functions/package.json set `"start": "CHAIN_IDENTIFIER=http://localhost:8545 npm run serve",`
+- In package.json prepend to "start" command with `REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 CHAIN_IDENTIFIER=http://localhost:8545`
 - In SetupForTesting, disable the `addUsersToGoList()` calls
 - Start the app with mainnet forking `npm run start`
 - Connect with an account that is not golisted and no UID
