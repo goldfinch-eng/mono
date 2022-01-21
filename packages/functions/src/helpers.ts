@@ -52,6 +52,7 @@ const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} =
 }
 const overrideBlockchainIdentifier = (): string | number | undefined => {
   const override = process.env.CHAIN_IDENTIFIER
+  console.log("CHAIN_IDENTIFIER", process.env.CHAIN_IDENTIFIER)
   const overrideNumber = override ? parseInt(override, 10) : undefined
   return overrideNumber && !isNaN(overrideNumber) ? overrideNumber : override
 }
@@ -68,7 +69,7 @@ const _getBlockchain = (origin: string): BaseProvider => {
   let blockchain = overrideBlockchainIdentifier() || defaultBlockchainIdentifierByOrigin[origin]
   if (!blockchain) {
     console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
-    blockchain = 1
+    blockchain = "http://localhost:8545"
   }
   const network = typeof blockchain === "number" ? getNetwork(blockchain) : blockchain
   // If we're using urls for the network (hardhat or murmuration) use the default provider
@@ -173,6 +174,7 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
 
   // Don't allow signatures more than a day old.
   if (signatureTime + ONE_DAY_SECONDS < now) {
+    console.error("Signature expired", {signatureTime, now})
     return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
   }
 
