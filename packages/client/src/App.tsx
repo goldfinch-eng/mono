@@ -19,6 +19,7 @@ import Transactions from "./components/transactions"
 import VerifyIdentity from "./components/verifyIdentity"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import {EarnProvider} from "./contexts/EarnContext"
+import {BackerRewards} from "./ethereum/backerRewards"
 import {CommunityRewards, CommunityRewardsLoaded} from "./ethereum/communityRewards"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
@@ -68,6 +69,7 @@ import {
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
+import {BackerRewardsLoaded} from "./ethereum/backerRewards"
 
 interface GeolocationData {
   ip: string
@@ -142,6 +144,7 @@ export interface GlobalState {
   userMerkleDistributor?: UserMerkleDistributorLoaded
   userMerkleDirectDistributor?: UserMerkleDirectDistributorLoaded
   userCommunityRewards?: UserCommunityRewardsLoaded
+  backerRewards?: BackerRewardsLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: Web3IO<CreditDesk>
   user?: UserLoaded
@@ -177,6 +180,7 @@ function App() {
   const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
   const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
   const [_merkleDirectDistributor, setMerkleDirectDistributor] = useState<MerkleDirectDistributorLoaded>()
+  const [_backerRewards, setBackerRewards] = useState<BackerRewardsLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
   const [creditDesk, setCreditDesk] = useState<Web3IO<CreditDesk>>()
   const [userMerkleDistributor, setUserMerkleDistributor] = useState<UserMerkleDistributorLoaded>()
@@ -236,18 +240,20 @@ function App() {
     _stakingRewards,
     _communityRewards,
     _merkleDistributor,
-    _merkleDirectDistributor
+    _merkleDirectDistributor,
+    _backerRewards
   )
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
   const communityRewards = consistent?.[2]
   const merkleDistributor = consistent?.[3]
   const merkleDirectDistributor = consistent?.[4]
+  const backerRewards = consistent?.[5]
 
   // To ensure `gfi`, `stakingRewards`, `communityRewards`, `merkleDistributor`,
-  // `merkleDirectDistributor`, and `pool` are from the same block, we'd use `useFromSameBlock()`
-  // again here. But holding off on that due to the decision to abandon
-  // https://github.com/warbler-labs/mono/pull/140.
+  // `merkleDirectDistributor`, `backerRewards`, and `pool` are from the same block,
+  // we'd use `useFromSameBlock()` again here. But holding off on that due to the
+  // decision to abandon https://github.com/warbler-labs/mono/pull/140.
 
   const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient(undefined))
   const [hasGraphError, setHasGraphError] = useState<boolean>(false)
@@ -370,6 +376,7 @@ function App() {
     const communityRewards = new CommunityRewards(goldfinchProtocol)
     const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
     const merkleDirectDistributor = new MerkleDirectDistributor(goldfinchProtocol)
+    const backerRewards = new BackerRewards(goldfinchProtocol)
 
     await Promise.all([
       gfi.initialize(currentBlock),
@@ -377,6 +384,7 @@ function App() {
       communityRewards.initialize(currentBlock),
       merkleDistributor.initialize(currentBlock),
       merkleDirectDistributor.initialize(currentBlock),
+      backerRewards.initialize(currentBlock),
     ])
 
     assertWithLoadedInfo(gfi)
@@ -384,12 +392,14 @@ function App() {
     assertWithLoadedInfo(communityRewards)
     assertWithLoadedInfo(merkleDistributor)
     assertWithLoadedInfo(merkleDirectDistributor)
+    assertWithLoadedInfo(backerRewards)
 
     setGfi(gfi)
     setStakingRewards(stakingRewards)
     setCommunityRewards(communityRewards)
     setMerkleDistributor(merkleDistributor)
     setMerkleDirectDistributor(merkleDirectDistributor)
+    setBackerRewards(backerRewards)
   }
 
   async function refreshPool(): Promise<void> {
@@ -523,6 +533,7 @@ function App() {
     communityRewards,
     merkleDistributor,
     merkleDirectDistributor,
+    backerRewards,
     pool,
     creditDesk,
     user,

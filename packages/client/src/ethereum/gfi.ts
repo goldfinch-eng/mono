@@ -46,6 +46,7 @@ type FetchGFIPriceResult = {
 type GFILoadedInfo = {
   currentBlock: BlockInfo
   price: BigNumber | undefined
+  supply: BigNumber
 }
 
 class GFI {
@@ -67,6 +68,7 @@ class GFI {
       value: {
         currentBlock,
         price: await getGFIPrice(),
+        supply: new BigNumber(await this.contract.readOnly.methods.totalSupply().call(undefined, currentBlock.number)),
       },
     }
   }

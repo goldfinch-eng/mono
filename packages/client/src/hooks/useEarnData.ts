@@ -5,7 +5,7 @@ import {AppContext} from "../App"
 import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
 import {parseBackers} from "../graphql/parsers"
 import {SeniorPoolStatus} from "../components/earn"
-import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {BlockInfo} from "../utils"
 import {Loadable} from "../types/loadable"
@@ -21,7 +21,7 @@ import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
 
-function sortPoolBackers(poolBackers: PoolBacker[]): PoolBacker[] {
+function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[] {
   return poolBackers.sort(
     (a, b) =>
       // Primary sort: ascending by tranched pool status (Open -> JuniorLocked -> ...)
@@ -37,12 +37,12 @@ export function useTranchedPoolSubgraphData(
   graphQuerierConfig: UseGraphQuerierConfig,
   skip = false
 ): {
-  backers: Loadable<PoolBacker[]>
+  backers: Loadable<TranchedPoolBacker[]>
   loading: boolean
   error: ApolloError | undefined
 } {
   const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useNonNullContext(AppContext)
-  const [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
+  const [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
   })
@@ -84,11 +84,11 @@ export function useTranchedPoolSubgraphData(
 }
 
 export function usePoolBackersWeb3(skip = false): {
-  backers: Loadable<PoolBacker[]>
+  backers: Loadable<TranchedPoolBacker[]>
   poolsAddresses: Loadable<string[]>
 } {
   const {user, goldfinchProtocol, currentBlock, network} = useNonNullContext(AppContext)
-  let [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
+  let [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
   })
@@ -122,7 +122,7 @@ export function usePoolBackersWeb3(skip = false): {
       tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
-        .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
+        .map((p) => new TranchedPoolBacker(user.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize(currentBlock)))
       setBackers({
         loaded: true,

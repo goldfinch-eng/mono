@@ -138,6 +138,10 @@ export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): Bl
   }
 }
 
+export function sameBlock(blockA: BlockInfo | undefined, blockB: BlockInfo | undefined): boolean {
+  return !!blockA && !!blockB && blockA.number === blockB.number
+}
+
 export type WithCurrentBlock<T> = T & {currentBlock: BlockInfo}
 
 export type ArrayItemType<T> = T extends Array<infer U> ? U : never

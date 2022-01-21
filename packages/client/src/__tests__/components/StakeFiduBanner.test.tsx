@@ -12,7 +12,7 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -86,7 +86,7 @@ describe("Stake unstaked fidu", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {estimatedApyFromGfi: new BigNumber(0.1)} as PoolData,
+        poolData: {estimatedApyFromGfi: new BigNumber(0.1)} as SeniorPoolData,
         isPaused: false,
       },
     }

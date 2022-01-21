@@ -1,6 +1,6 @@
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {RefreshFn, useAsync, useAsyncFn, useStaleWhileRevalidating} from "./useAsync"
-import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker, TranchedPool} from "../ethereum/tranchedPool"
 import {useContext, useEffect} from "react"
 import {UserLoaded} from "../ethereum/user"
 import {AppContext} from "../App"
@@ -30,14 +30,20 @@ function useTranchedPool({
   return [tranchedPool, refresh]
 }
 
-function useBacker({user, tranchedPool}: {user?: UserLoaded; tranchedPool?: TranchedPool}): PoolBacker | undefined {
+function useBacker({
+  user,
+  tranchedPool,
+}: {
+  user?: UserLoaded
+  tranchedPool?: TranchedPool
+}): TranchedPoolBacker | undefined {
   const {goldfinchProtocol, currentBlock} = useContext(AppContext)
-  let backerResult = useAsync<PoolBacker>(() => {
+  let backerResult = useAsync<TranchedPoolBacker>(() => {
     if (!user || !tranchedPool || !goldfinchProtocol || !currentBlock) {
       return
     }
 
-    let backer = new PoolBacker(user.address, tranchedPool, goldfinchProtocol)
+    let backer = new TranchedPoolBacker(user.address, tranchedPool, goldfinchProtocol)
     return backer.initialize(currentBlock).then(() => backer)
   }, [user, tranchedPool, goldfinchProtocol, currentBlock])
 

@@ -58,7 +58,7 @@ class Pool {
 
 type SeniorPoolLoadedInfo = {
   currentBlock: BlockInfo
-  poolData: PoolData
+  poolData: SeniorPoolData
   isPaused: boolean
 }
 
@@ -87,7 +87,7 @@ class SeniorPool {
   }
 
   async initialize(stakingRewards: StakingRewardsLoaded, gfi: GFILoaded, currentBlock: BlockInfo): Promise<void> {
-    const poolData = await fetchPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
+    const poolData = await fetchSeniorPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
     const isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.info = {
       loaded: true,
@@ -314,7 +314,7 @@ async function fetchCapitalProviderData(
   }
 }
 
-type PoolData = {
+type SeniorPoolData = {
   rawBalance: BigNumber
   compoundBalance: BigNumber
   balance: BigNumber
@@ -333,13 +333,13 @@ type PoolData = {
   remainingCapacity: typeof remainingCapacity
 }
 
-async function fetchPoolData(
+async function fetchSeniorPoolData(
   pool: SeniorPool,
   erc20: Web3IO<Contract>,
   stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
   currentBlock: BlockInfo
-): Promise<PoolData> {
+): Promise<SeniorPoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(
     pool.contract.readOnly,
@@ -378,12 +378,8 @@ async function fetchPoolData(
       // same as `FIDU_DECIMALS`.
       FIDU_DECIMALS
     )
-    .dividedBy(
-      // This might be better thought of as the GFI-price mantissa, which happens to be the
-      // same as `GFI_DECIMALS`.
-      GFI_DECIMALS
-    )
     .dividedBy(sharePrice)
+    .dividedBy(GFI_DECIMALS)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   return {
@@ -640,7 +636,7 @@ async function getAllPoolEvents(pool: SeniorPool, currentBlock: BlockInfo): Prom
   return poolEvents
 }
 
-function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
+function assetsAsOf(this: SeniorPoolData, blockNumExclusive: number): BigNumber {
   return getBalanceAsOf(this.poolEvents, blockNumExclusive, WITHDRAWAL_MADE_EVENT, getPoolEventAmount)
 }
 
@@ -651,7 +647,7 @@ function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
  * @param maxPoolCapacity - Maximum capacity of the pool
  * @returns Remaining capacity of pool in atomic units
  */
-export function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumber {
+export function remainingCapacity(this: SeniorPoolData, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
@@ -923,5 +919,5 @@ export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverage
   getWeightedAverageSharePrice = mock || _getWeightedAverageSharePrice
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}
-export type {PoolData, CapitalProvider}
+export {fetchCapitalProviderData, fetchSeniorPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}
+export type {SeniorPoolData, CapitalProvider}

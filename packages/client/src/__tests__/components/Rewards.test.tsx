@@ -11,7 +11,7 @@ import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
-import {PoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
+import {SeniorPoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {
   UserCommunityRewardsLoaded,
   UserLoaded,
@@ -155,7 +155,7 @@ describe("Rewards portfolio overview", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }
@@ -696,7 +696,7 @@ describe("Rewards list and detail", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }

@@ -2,17 +2,17 @@ import {ApolloError} from "@apollo/client"
 import React, {useEffect, useState} from "react"
 import {SeniorPoolStatus} from "../components/earn"
 import {CapitalProvider} from "../ethereum/pool"
-import {PoolBacker} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker} from "../ethereum/tranchedPool"
 import {usePoolBackersWeb3, useSeniorPoolStatusWeb3, useTranchedPoolSubgraphData} from "../hooks/useEarnData"
 import {UseGraphQuerierConfig} from "../hooks/useGraphQuerier"
 import {Loadable} from "../types/loadable"
 import {shouldUseWeb3} from "../utils"
 
 interface EarnStoreType {
-  capitalProvider: Loadable<CapitalProvider>
-  backers: Loadable<PoolBacker[]>
   seniorPoolStatus: Loadable<SeniorPoolStatus>
+  capitalProvider: Loadable<CapitalProvider>
   poolsAddresses: Loadable<string[]>
+  backers: Loadable<TranchedPoolBacker[]>
 }
 interface EarnProviderProps {
   graphQuerierConfig: UseGraphQuerierConfig
@@ -26,25 +26,27 @@ interface EarnContextType {
 
 const EarnContext = React.createContext<EarnContextType | undefined>(undefined)
 
-export function usePoolsData(
-  capitalProvider: Loadable<CapitalProvider>,
+function useSeniorPoolData(capitalProvider: Loadable<CapitalProvider>): {
+  seniorPoolStatus: Loadable<SeniorPoolStatus>
+} {
+  const {seniorPoolStatus} = useSeniorPoolStatusWeb3(capitalProvider)
+  return {
+    seniorPoolStatus,
+  }
+}
+
+function useTranchedPoolsData(
   graphQuerierConfig: UseGraphQuerierConfig,
   useWeb3 = false
 ): {
-  backers: Loadable<PoolBacker[]>
-  seniorPoolStatus: Loadable<SeniorPoolStatus>
+  backers: Loadable<TranchedPoolBacker[]>
   poolsAddresses: Loadable<string[]>
   graphError: ApolloError | undefined
 } {
-  // Fetch data from subgraph
   const {error: graphError, backers: backersSubgraph} = useTranchedPoolSubgraphData(graphQuerierConfig, useWeb3)
-
-  // Fetch data from web3 provider
   const {backers: backersWeb3, poolsAddresses: poolsAddressesWeb3} = usePoolBackersWeb3(!useWeb3)
-  const {seniorPoolStatus: seniorPoolStatusWeb3} = useSeniorPoolStatusWeb3(capitalProvider)
+  const backers = useWeb3 ? backersWeb3 : backersSubgraph
 
-  const seniorPoolStatusData = seniorPoolStatusWeb3
-  const backersData = useWeb3 ? backersWeb3 : backersSubgraph
   const poolsAddressesData: Loadable<string[]> = useWeb3
     ? poolsAddressesWeb3
     : {
@@ -53,21 +55,20 @@ export function usePoolsData(
       }
 
   return {
-    backers: backersData,
+    backers,
     graphError,
     poolsAddresses: poolsAddressesData,
-    seniorPoolStatus: seniorPoolStatusData,
   }
 }
 
 function EarnProvider(props: EarnProviderProps) {
   const [useWeb3, setUseWeb3] = useState<boolean>(shouldUseWeb3())
   const [earnStore, setEarnStore] = useState<EarnStoreType>({
-    capitalProvider: {
+    seniorPoolStatus: {
       loaded: false,
       value: undefined,
     },
-    backers: {
+    capitalProvider: {
       loaded: false,
       value: undefined,
     },
@@ -75,17 +76,14 @@ function EarnProvider(props: EarnProviderProps) {
       loaded: false,
       value: undefined,
     },
-    seniorPoolStatus: {
+    backers: {
       loaded: false,
       value: undefined,
     },
   })
 
-  const {backers, poolsAddresses, graphError, seniorPoolStatus} = usePoolsData(
-    earnStore.capitalProvider,
-    props.graphQuerierConfig,
-    useWeb3
-  )
+  const {seniorPoolStatus} = useSeniorPoolData(earnStore.capitalProvider)
+  const {backers, poolsAddresses, graphError} = useTranchedPoolsData(props.graphQuerierConfig, useWeb3)
 
   useEffect(() => {
     if (graphError) {
@@ -97,9 +95,9 @@ function EarnProvider(props: EarnProviderProps) {
   const value = {
     earnStore: {
       ...earnStore,
-      backers,
-      poolsAddresses,
       seniorPoolStatus,
+      poolsAddresses,
+      backers,
     },
     setEarnStore,
   }

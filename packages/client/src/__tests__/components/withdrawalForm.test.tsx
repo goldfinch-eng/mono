@@ -15,7 +15,7 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -49,7 +49,7 @@ web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderWithdrawalForm(
-  poolData: Partial<PoolData>,
+  poolData: Partial<SeniorPoolData>,
   capitalProvider: Loaded<CapitalProvider>,
   stakingRewards: StakingRewardsLoaded | undefined,
   pool: SeniorPoolLoaded | undefined,
@@ -74,7 +74,7 @@ function renderWithdrawalForm(
     <AppContext.Provider value={store}>
       <Router>
         <WithdrawalForm
-          poolData={poolData as PoolData}
+          poolData={poolData as SeniorPoolData}
           capitalProvider={capitalProvider.value}
           actionComplete={() => {}}
           closeForm={() => {}}
@@ -131,7 +131,7 @@ describe("withdrawal form", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }

@@ -10,7 +10,7 @@ import {
   getTranchedPoolsData_tranchedPools_seniorTranches as SeniorTrancheGQL,
 } from "./types"
 import {BlockInfo, roundDownPenny} from "../utils"
-import {PoolBacker, TokenInfo, TranchedPool, TrancheInfo} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker, TokenInfo, TranchedPool, TrancheInfo} from "../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {CreditLine} from "../ethereum/creditLine"
 import {usdcFromAtomic} from "../ethereum/erc20"
@@ -130,7 +130,7 @@ export async function parseBackers(
   goldfinchProtocol?: GoldfinchProtocol,
   currentBlock?: BlockInfo,
   userAddress?: string
-): Promise<PoolBacker[]> {
+): Promise<TranchedPoolBacker[]> {
   const _goldfinchProtocol = await defaultGoldfinchProtocol(goldfinchProtocol)
 
   return Promise.all(
@@ -139,7 +139,7 @@ export async function parseBackers(
 
       if (userAddress) {
         const backerData = tranchedPoolData.backers?.find((b) => b.user.id.toLowerCase() === userAddress.toLowerCase())
-        const backer = new PoolBacker(userAddress, tranchedPool, _goldfinchProtocol)
+        const backer = new TranchedPoolBacker(userAddress, tranchedPool, _goldfinchProtocol)
         backer.principalAmount = new BigNumber(backerData?.principalAmount || 0)
         backer.principalRedeemed = new BigNumber(backerData?.principalRedeemed || 0)
         backer.interestRedeemed = new BigNumber(backerData?.interestRedeemed || 0)
@@ -156,7 +156,7 @@ export async function parseBackers(
       } else {
         // HACK: In the absence of a user address, use the tranched pool's address, so that we can still
         // instantiate `PoolBacker` and show the list of pools.
-        const backer = new PoolBacker(tranchedPool.address, tranchedPool, _goldfinchProtocol)
+        const backer = new TranchedPoolBacker(tranchedPool.address, tranchedPool, _goldfinchProtocol)
         backer.principalAmount = new BigNumber("")
         backer.principalRedeemed = new BigNumber("")
         backer.interestRedeemed = new BigNumber("")

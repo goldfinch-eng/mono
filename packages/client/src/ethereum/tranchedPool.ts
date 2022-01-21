@@ -5,11 +5,6 @@ import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/type
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
-import web3 from "../web3"
-import {getCreditDeskReadOnly} from "./creditDesk"
-import {CreditLine} from "./creditLine"
-import {usdcFromAtomic} from "./erc20"
 import {
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
@@ -17,11 +12,18 @@ import {
   PAYMENT_APPLIED_EVENT,
   SHARE_PRICE_UPDATED_EVENT,
 } from "../types/events"
-import {fiduFromAtomic} from "./fidu"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
-import {isMainnetForking} from "./utils"
+import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
+import web3 from "../web3"
+import {getCreditDeskReadOnly} from "./creditDesk"
+import {CreditLine} from "./creditLine"
+import {usdcFromAtomic} from "./erc20"
+import {fiduFromAtomic} from "./fidu"
+import {gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR} from "./utils"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -352,6 +354,45 @@ class TranchedPool {
     return result
   }
 
+  async getRepaymentSchedule(currentBlock: BlockInfo): Promise<ScheduledRepayment[]> {
+    // How much interest do we expect to be repaid in the remaining term of the loan (assuming the loan gets fully paid off)?
+    // (Our approach to calculating this here follows `Accountant.calculateInterestAccruedOverPeriod()`.)
+    const lastAccrualTimestamp = new BigNumber(
+      await this.creditLine.creditLine.readOnly.methods.interestAccruedAsOf().call(undefined, currentBlock.number)
+    )
+    const interestAccruingSecondsRemaining = this.creditLine.termEndTime.minus(lastAccrualTimestamp)
+    const totalInterestPerYear = this.creditLine.balance
+      .multipliedBy(this.creditLine.interestApr)
+      .dividedBy(INTEREST_DECIMALS.toString())
+    const interestToBeAccruedSinceLastAccrual = totalInterestPerYear
+      .multipliedBy(interestAccruingSecondsRemaining)
+      .div(SECONDS_PER_YEAR)
+    const expectedRemainingInterest = this.creditLine.interestOwed.plus(interestToBeAccruedSinceLastAccrual)
+
+    // On what schedule do we expect the remaining repayments to occur?
+    const secondsRemaining = this.creditLine.termEndTime.minus(currentBlock.timestamp)
+    const secondsPerPaymentPeriod = this.creditLine.paymentPeriodInDays.multipliedBy(SECONDS_PER_DAY)
+    const numRepaymentsRemaining = secondsRemaining.dividedToIntegerBy(secondsPerPaymentPeriod)
+    const expectedRepaymentPerPeriod = expectedRemainingInterest.dividedBy(numRepaymentsRemaining)
+
+    const scheduledRepayments: ScheduledRepayment[] = []
+    let i = this.creditLine.termEndTime
+    let workingRemainingInterest = expectedRemainingInterest
+    while (i.gte(currentBlock.timestamp)) {
+      scheduledRepayments.push({timestamp: i.toNumber(), usdcAmount: expectedRepaymentPerPeriod})
+
+      i = i.minus(secondsPerPaymentPeriod)
+      workingRemainingInterest = workingRemainingInterest.minus(expectedRepaymentPerPeriod)
+    }
+    if (!workingRemainingInterest.eq(0)) {
+      throw new Error("Failed to fully account for expected remaining interest.")
+    }
+
+    scheduledRepayments.reverse()
+
+    return scheduledRepayments
+  }
+
   get isFull(): boolean {
     return this.remainingCapacity().isZero()
   }
@@ -364,7 +405,7 @@ class TranchedPool {
   }
 }
 
-class PoolBacker {
+class TranchedPoolBacker {
   address: string
   tranchedPool: TranchedPool
   goldfinchProtocol: GoldfinchProtocol
@@ -463,4 +504,4 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
   }
 }
 
-export {getMetadataStore, TranchedPool, PoolBacker, PoolState, TRANCHES}
+export {getMetadataStore, TranchedPool, TranchedPoolBacker, PoolState, TRANCHES}

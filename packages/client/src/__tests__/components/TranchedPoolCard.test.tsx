@@ -22,6 +22,7 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
     tranchedPool,
     tokenInfos: ["info"],
   }
+  const poolEstimatedApyFromGfi = undefined
 
   const store = {
     user: undefined,
@@ -29,7 +30,11 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
 
   return render(
     <AppContext.Provider value={store}>
-      <TranchedPoolCard poolBacker={poolBacker as any} disabled={false} />
+      <TranchedPoolCard
+        poolBacker={poolBacker as any}
+        poolEstimatedApyFromGfi={poolEstimatedApyFromGfi}
+        disabled={false}
+      />
     </AppContext.Provider>
   )
 }

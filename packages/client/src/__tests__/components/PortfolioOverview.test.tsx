@@ -12,12 +12,12 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../../ethereum/pool"
-import {PoolBacker, TranchedPool} from "../../ethereum/tranchedPool"
+import {TranchedPoolBacker, TranchedPool} from "../../ethereum/tranchedPool"
 import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
@@ -42,13 +42,13 @@ web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderPortfolioOverview(
-  poolData: Partial<PoolData>,
+  seniorPoolData: Partial<SeniorPoolData>,
   capitalProvider: Loaded<CapitalProvider>,
-  poolBackers: Loaded<PoolBacker[]> | undefined,
+  tranchedPoolBackers: Loaded<TranchedPoolBacker[]> | undefined,
   currentBlock: BlockInfo
 ) {
   const store = {currentBlock}
-  const defaultPoolBackers: Loaded<PoolBacker[]> = {
+  const defaultTranchedPoolBackers: Loaded<TranchedPoolBacker[]> = {
     loaded: true,
     value: [
       {
@@ -60,16 +60,16 @@ function renderPortfolioOverview(
           },
           estimatedLeverageRatio: new BigNumber(4),
         },
-      } as PoolBacker,
+      } as TranchedPoolBacker,
     ],
   }
   return render(
     <AppContext.Provider value={store}>
       <Router>
         <PortfolioOverview
-          poolData={poolData as PoolData}
+          seniorPoolData={seniorPoolData as SeniorPoolData}
           capitalProvider={capitalProvider}
-          poolBackers={poolBackers ? poolBackers : defaultPoolBackers}
+          tranchedPoolBackers={tranchedPoolBackers ? tranchedPoolBackers : defaultTranchedPoolBackers}
         />
       </Router>
     </AppContext.Provider>
@@ -95,7 +95,7 @@ describe("Earn page portfolio overview", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }
@@ -182,7 +182,7 @@ describe("Earn page portfolio overview", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
@@ -237,7 +237,7 @@ describe("Earn page portfolio overview", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
@@ -297,7 +297,7 @@ describe("Earn page portfolio overview", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
@@ -352,14 +352,14 @@ describe("Earn page portfolio overview", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
 
     const tranchedPoolBalanceInDollars = new BigNumber("10013.86")
     const estimatedTranchedPoolApy = new BigNumber("0.085")
-    const poolBackers: Loaded<PoolBacker[]> = {
+    const poolBackers: Loaded<TranchedPoolBacker[]> = {
       loaded: true,
       value: [
         {
@@ -371,7 +371,7 @@ describe("Earn page portfolio overview", () => {
             },
             estimatedLeverageRatio: new BigNumber(4),
           } as TranchedPool,
-        } as PoolBacker,
+        } as TranchedPoolBacker,
       ],
     }
 

@@ -1,27 +1,29 @@
 import BigNumber from "bignumber.js"
+import mapValues from "lodash/mapValues"
 import React, {useContext, useEffect, useState} from "react"
 import {useHistory} from "react-router-dom"
 import {AppContext} from "../App"
 import {useEarn} from "../contexts/EarnContext"
+import {BackerRewardsLoaded} from "../ethereum/backerRewards"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {GFI, GFILoaded} from "../ethereum/gfi"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
-  PoolData,
+  SeniorPoolData,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
 } from "../ethereum/pool"
-import {PoolBacker} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker} from "../ethereum/tranchedPool"
 import {UserLoaded} from "../ethereum/user"
+import {ONE_QUADRILLION_USDC} from "../ethereum/utils"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {Loadable, Loaded} from "../types/loadable"
 import {InfoIcon} from "../ui/icons"
-import {assertNonNullable, displayDollars, displayPercent, roundDownPenny} from "../utils"
+import {assertNonNullable, BlockInfo, displayDollars, displayPercent, roundDownPenny, sameBlock} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 import Badge from "./badge"
 import ConnectionNotice from "./connectionNotice"
-import {useCurrentRoute} from "../hooks/useCurrentRoute"
-import {ONE_QUADRILLION_USDC} from "../ethereum/utils"
 
 function PoolList({title, children}) {
   return (
@@ -58,25 +60,25 @@ function PortfolioOverviewSkeleton() {
 }
 
 export function PortfolioOverview({
-  poolData,
+  seniorPoolData,
   capitalProvider,
-  poolBackers,
+  tranchedPoolBackers,
 }: {
-  poolData: PoolData | undefined
+  seniorPoolData: SeniorPoolData | undefined
   capitalProvider: Loaded<CapitalProvider>
-  poolBackers: Loaded<PoolBacker[]>
+  tranchedPoolBackers: Loaded<TranchedPoolBacker[]>
 }) {
-  const loaded = poolData && capitalProvider.loaded && poolBackers.loaded
+  const loaded = seniorPoolData && capitalProvider.loaded && tranchedPoolBackers.loaded
   if (!loaded) {
     return <></>
   }
 
-  const globalEstimatedApyFromSupplying = poolData.estimatedApy
+  const globalEstimatedApyFromSupplying = seniorPoolData.estimatedApy
 
   let totalBalance = capitalProvider.value.totalSeniorPoolBalanceInDollars
   let totalUnrealizedGains = capitalProvider.value.unrealizedGainsInDollars
   let estimatedAnnualGrowth = totalBalance.multipliedBy(globalEstimatedApyFromSupplying)
-  poolBackers.value.forEach((p) => {
+  tranchedPoolBackers.value.forEach((p) => {
     totalBalance = totalBalance.plus(p.balanceInDollars)
     totalUnrealizedGains = totalUnrealizedGains.plus(p.unrealizedGainsInDollars)
     const estimatedJuniorApy = p.tranchedPool.estimateJuniorAPY(p.tranchedPool.estimatedLeverageRatio)
@@ -85,7 +87,7 @@ export function PortfolioOverview({
   const userEstimatedApyFromSupplying = estimatedAnnualGrowth.dividedBy(totalBalance)
   const estimatedApyFromSupplying = totalBalance.gt(0) ? userEstimatedApyFromSupplying : globalEstimatedApyFromSupplying
 
-  const globalEstimatedApyFromGfi = poolData.estimatedApyFromGfi
+  const globalEstimatedApyFromGfi = seniorPoolData.estimatedApyFromGfi
   const estimatedApyFromGfi = GFI.estimateApyFromGfi(
     capitalProvider.value.stakedSeniorPoolBalanceInDollars,
     totalBalance,
@@ -215,13 +217,25 @@ function TranchedPoolCardSkeleton() {
   )
 }
 
-export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker; disabled: boolean}) {
+export function TranchedPoolCard({
+  poolBacker,
+  poolEstimatedApyFromGfi,
+  disabled,
+}: {
+  poolBacker: TranchedPoolBacker
+  poolEstimatedApyFromGfi: BigNumber | undefined
+  disabled: boolean
+}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
-  const estimatedApy = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : new BigNumber(NaN)
+  const estimatedApyFromSupplying = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : undefined
+  const estimatedApy =
+    estimatedApyFromSupplying || poolEstimatedApyFromGfi
+      ? (estimatedApyFromSupplying || new BigNumber(0)).plus(poolEstimatedApyFromGfi || new BigNumber(0))
+      : new BigNumber(NaN)
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
@@ -255,23 +269,44 @@ export function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker
   )
 }
 
+type TranchedPoolsEstimatedApyFromGfi = {
+  currentBlock: BlockInfo
+  estimatedApyFromGfi: {[tranchedPoolAddress: string]: BigNumber | undefined}
+}
+
 function Earn() {
-  const {userWalletWeb3Status, pool, usdc, user, stakingRewards, gfi, setLeafCurrentBlock} = useContext(AppContext)
+  const {
+    userWalletWeb3Status,
+    pool,
+    usdc,
+    user,
+    stakingRewards,
+    backerRewards,
+    gfi,
+    currentBlock,
+    setLeafCurrentBlock,
+  } = useContext(AppContext)
   const {earnStore, setEarnStore} = useEarn()
-  const [capitalProvider, setCapitalProvider] = useState<Loadable<CapitalProvider>>({
+  const [_capitalProvider, _setCapitalProvider] = useState<Loadable<CapitalProvider>>({
     loaded: false,
     value: undefined,
   })
-  const {backers: backersData, seniorPoolStatus, poolsAddresses, capitalProvider: capitalProviderData} = earnStore
+  const [tranchedPoolsEstimatedApyFromGfi, setTranchedPoolsEstimatedApyFromGfi] = useState<
+    Loadable<TranchedPoolsEstimatedApyFromGfi>
+  >({
+    loaded: false,
+    value: undefined,
+  })
+  const {backers, seniorPoolStatus, poolsAddresses, capitalProvider} = earnStore
   const currentRoute = useCurrentRoute()
 
   useEffect(() => {
     setEarnStore({
       ...earnStore,
-      capitalProvider,
+      capitalProvider: _capitalProvider,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [capitalProvider])
+  }, [_capitalProvider])
 
   useEffect(() => {
     if (pool && stakingRewards && gfi && user) {
@@ -286,9 +321,6 @@ function Earn() {
     gfi: GFILoaded,
     user: UserLoaded
   ) {
-    assertNonNullable(setLeafCurrentBlock)
-    assertNonNullable(currentRoute)
-
     // To ensure `pool`, `stakingRewards`, `gfi`, `user`, and `capitalProvider` are from
     // the same block, we'd use `useFromSameBlock()` in this component. But holding off
     // on that due to the decision to abandon https://github.com/warbler-labs/mono/pull/140.
@@ -302,12 +334,59 @@ function Earn() {
       poolBlockNumber === userBlockNumber
     ) {
       const capitalProvider = await fetchCapitalProviderData(pool, stakingRewards, gfi, user)
-      setCapitalProvider(capitalProvider)
-      setLeafCurrentBlock(currentRoute, pool.info.value.currentBlock)
+      _setCapitalProvider(capitalProvider)
     }
   }
 
-  const loaded = pool && backersData.loaded
+  useEffect(() => {
+    if (backers.loaded && gfi && backerRewards) {
+      refreshTranchedPoolsEstimatedApyFromGfi(backers, gfi, backerRewards)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backers, gfi, backerRewards])
+
+  async function refreshTranchedPoolsEstimatedApyFromGfi(
+    backers: Loaded<TranchedPoolBacker[]>,
+    gfi: GFILoaded,
+    backerRewards: BackerRewardsLoaded
+  ) {
+    assertNonNullable(setLeafCurrentBlock)
+    assertNonNullable(currentRoute)
+
+    if (gfi.info.value.currentBlock.number === backerRewards.info.value.currentBlock.number) {
+      const estimatedApyFromGfi = await backerRewards.estimateApyFromGfiByTranchedPool(
+        backers.value.map((backer) => backer.tranchedPool),
+        gfi.info.value.supply,
+        gfi.info.value.price,
+        gfi.info.value.currentBlock
+      )
+      setTranchedPoolsEstimatedApyFromGfi({
+        loaded: true,
+        value: {currentBlock: gfi.info.value.currentBlock, estimatedApyFromGfi},
+      })
+    }
+  }
+
+  useEffect(() => {
+    // Once capital provider data and tranched pools' estimated APY-from-GFI are finished refreshing,
+    // call `setLeafCurrentBlock()`, as no more data remains to be refreshed.
+    if (
+      capitalProvider.loaded &&
+      tranchedPoolsEstimatedApyFromGfi.loaded &&
+      sameBlock(capitalProvider.value.currentBlock, tranchedPoolsEstimatedApyFromGfi.value.currentBlock) &&
+      sameBlock(capitalProvider.value.currentBlock, currentBlock)
+    ) {
+      assertNonNullable(setLeafCurrentBlock)
+      assertNonNullable(currentRoute)
+
+      const leafCurrentBlock = capitalProvider.value.currentBlock
+
+      setLeafCurrentBlock(currentRoute, leafCurrentBlock)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capitalProvider, tranchedPoolsEstimatedApyFromGfi, currentBlock])
+
+  const loaded = pool && backers.loaded
   const earnMessage = userWalletWeb3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
   let limitToDisplay: string
   if (seniorPoolStatus.value?.totalFundsLimit?.gte(ONE_QUADRILLION_USDC)) {
@@ -318,11 +397,11 @@ function Earn() {
     limitToDisplay = displayDollars(undefined)
   }
 
-  let apyToDisplay
+  let seniorPoolDisplayApy: BigNumber | undefined
   if (pool?.info.value.poolData.estimatedApyFromGfi && seniorPoolStatus?.value?.estimatedApy) {
-    apyToDisplay = pool.info.value.poolData.estimatedApyFromGfi.plus(seniorPoolStatus.value.estimatedApy)
+    seniorPoolDisplayApy = pool.info.value.poolData.estimatedApyFromGfi.plus(seniorPoolStatus.value.estimatedApy)
   } else {
-    apyToDisplay = seniorPoolStatus.value?.estimatedApy
+    seniorPoolDisplayApy = seniorPoolStatus.value?.estimatedApy
   }
 
   return (
@@ -331,13 +410,13 @@ function Earn() {
         <div>{earnMessage}</div>
       </div>
       <ConnectionNotice requireUnlock={false} />
-      {userWalletWeb3Status?.type === "no_web3" || !pool || !capitalProviderData.loaded || !backersData.loaded ? (
+      {userWalletWeb3Status?.type === "no_web3" || !pool || !capitalProvider.loaded || !backers.loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview
-          poolData={pool.info.value.poolData}
-          capitalProvider={capitalProviderData}
-          poolBackers={backersData}
+          seniorPoolData={pool.info.value.poolData}
+          capitalProvider={capitalProvider}
+          tranchedPoolBackers={backers}
         />
       )}
       <div className="pools">
@@ -346,7 +425,7 @@ function Earn() {
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
               userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
-              apy={displayPercent(apyToDisplay)}
+              apy={displayPercent(seniorPoolDisplayApy)}
               limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}
@@ -357,7 +436,7 @@ function Earn() {
           )}
         </PoolList>
         <PoolList title="Borrower Pools">
-          {!poolsAddresses.loaded && !backersData.loaded ? (
+          {!poolsAddresses.loaded && !backers.loaded ? (
             <>
               <TranchedPoolCardSkeleton />
               <TranchedPoolCardSkeleton />
@@ -366,12 +445,19 @@ function Earn() {
           ) : undefined}
 
           {poolsAddresses.loaded &&
-            !backersData.loaded &&
+            !backers.loaded &&
             poolsAddresses.value.map((a) => <TranchedPoolCardSkeleton key={a} />)}
 
-          {backersData.loaded &&
-            backersData.value.map((p) => (
-              <TranchedPoolCard key={`${p.tranchedPool.address}`} poolBacker={p} disabled={!loaded} />
+          {backers.loaded &&
+            backers.value.map((p) => (
+              <TranchedPoolCard
+                key={`${p.tranchedPool.address}`}
+                poolBacker={p}
+                poolEstimatedApyFromGfi={
+                  tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi?.[p.tranchedPool.address]
+                }
+                disabled={!loaded}
+              />
             ))}
         </PoolList>
       </div>
