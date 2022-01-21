@@ -99,7 +99,13 @@ export async function main({
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
 
-  const kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
+  let kycStatus
+  try {
+    kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
+  } catch (e) {
+    console.error("fetchKYCStatus failed", e)
+    throw new Error("fetchKYCStatus failed")
+  }
 
   if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
     throw new Error("Does not meet mint requirements")
