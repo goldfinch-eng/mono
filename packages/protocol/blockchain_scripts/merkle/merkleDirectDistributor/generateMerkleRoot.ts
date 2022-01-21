@@ -55,5 +55,5 @@ if (require.main === module) {
   const options = program.opts()
   const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
-  console.log(JSON.stringify(generateMerkleRoot(json)))
+  console.log(JSON.stringify(generateMerkleRoot(json), null, 2))
 }
