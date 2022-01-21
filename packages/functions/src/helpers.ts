@@ -69,7 +69,7 @@ const _getBlockchain = (origin: string): BaseProvider => {
   let blockchain = overrideBlockchainIdentifier() || defaultBlockchainIdentifierByOrigin[origin]
   if (!blockchain) {
     console.warn(`Failed to identify appropriate blockchain for request origin: ${origin}. Defaulting to mainnet.`)
-    blockchain = "http://localhost:8545"
+    blockchain = 1
   }
   const network = typeof blockchain === "number" ? getNetwork(blockchain) : blockchain
   // If we're using urls for the network (hardhat or murmuration) use the default provider

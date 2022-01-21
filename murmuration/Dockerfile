@@ -7,19 +7,19 @@ RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-stat
 
 # Install Java 8 (cf. https://hub.docker.com/r/picoded/ubuntu-openjdk-8-jdk/dockerfile/). This is needed by the Firestore emulator.
 RUN apt-get update && \
-	apt-get install -y openjdk-8-jdk && \
-	apt-get install -y ant && \
-	apt-get clean && \
-	rm -rf /var/lib/apt/lists/* && \
-	rm -rf /var/cache/oracle-jdk8-installer;
+  apt-get install -y openjdk-8-jdk && \
+  apt-get install -y ant && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -rf /var/cache/oracle-jdk8-installer;
 # Fix certificate issues, found as of
 # https://bugs.launchpad.net/ubuntu/+source/ca-certificates-java/+bug/983302
 RUN apt-get update && \
-	apt-get install -y ca-certificates-java && \
-	apt-get clean && \
-	update-ca-certificates -f && \
-	rm -rf /var/lib/apt/lists/* && \
-	rm -rf /var/cache/oracle-jdk8-installer;
+  apt-get install -y ca-certificates-java && \
+  apt-get clean && \
+  update-ca-certificates -f && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -rf /var/cache/oracle-jdk8-installer;
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 
 # Install Google Cloud SDK (cf. https://stackoverflow.com/a/28372329)
@@ -46,6 +46,7 @@ RUN cp ./murmuration/.env.murmuration ./.env.local
 RUN sed -i -e "s/REACT_APP_SENTRY_RELEASE=REPLACE_ME_IN_BUILD/REACT_APP_SENTRY_RELEASE=${SENTRY_RELEASE}/g" ./.env.local
 # Copy .env.local to the client dir, so the client can use its variables.
 RUN cp ./.env.local ./packages/client/.env.local
+RUN cp ./.env.local ./packages/functions/.env.local
 
 # We observed `postinstall` not running automatically (which seems to be
 # understood behavior in a Docker container: https://stackoverflow.com/q/47748075),
