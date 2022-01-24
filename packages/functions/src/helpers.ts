@@ -52,7 +52,6 @@ const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} =
 }
 const overrideBlockchainIdentifier = (): string | number | undefined => {
   const override = process.env.CHAIN_IDENTIFIER
-  console.log("CHAIN_IDENTIFIER", process.env.CHAIN_IDENTIFIER)
   const overrideNumber = override ? parseInt(override, 10) : undefined
   return overrideNumber && !isNaN(overrideNumber) ? overrideNumber : override
 }
