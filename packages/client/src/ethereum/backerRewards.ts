@@ -18,7 +18,7 @@ import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, sameBlock} from "../utils"
 import {gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {TranchedPool} from "./tranchedPool"
+import {PoolState, TranchedPool} from "./tranchedPool"
 import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 type BackerRewardsLoadedInfo = {
@@ -170,7 +170,7 @@ export class BackerRewards {
     currentBlock: BlockInfo
   ): Promise<ByTranchedPool<BigNumber>> {
     const repaymentSchedules: RepaymentSchedule[] = await Promise.all(
-      tranchedPools.map((tranchedPool) => tranchedPool.getRepaymentSchedule(currentBlock))
+      tranchedPools.map((tranchedPool) => tranchedPool.getOptimisticRepaymentSchedule(currentBlock))
     )
     const repaymentSchedulesByTranchedPool: RepaymentSchedulesByTranchedPool = zipObject(
       tranchedPools.map((tranchedPool) => tranchedPool.address),
@@ -200,29 +200,38 @@ export class BackerRewards {
       difference(
         Object.keys(estimatedRewardsFromScheduledRepayments),
         Object.keys(actualRewardsPerPrincipalDollarFromRepayments)
-      )
+      ).length
     ) {
       throw new Error("Sets of tranched pools differ.")
     }
     return mapValues(
       estimatedRewardsFromScheduledRepayments,
       (estimated, tranchedPoolAddress): ForTranchedPool<EstimatedRewards> => {
-        const estimatedPerPrincipalDollar = estimated.value.multipliedBy(USDC_DECIMALS.toString()).dividedBy(
-          // HACK: For now, because no tranched pools yet exist that have more than one slice, we
-          // can get away with using (i.e. it remains correct to use) simply a tranched pool's first
-          // slice's junior tranche's `principalDeposited`.
-          // TODO: Once tranched pools exist having more than one slice, we MUST refactor this
-          // to sum the junior tranche's principal-deposited across slices.
+        // HACK: For now, because no tranched pools yet exist that have more than one slice, we
+        // can get away with using (i.e. it remains correct to use) simply a tranched pool's first
+        // slice's junior tranche's `principalDeposited`.
+        // TODO: Once tranched pools exist having more than one slice, we MUST refactor this
+        // to sum the junior tranche's principal-deposited across slices.
+        const juniorPrincipalAlreadyBorrowed = estimated.tranchedPool.juniorTranche.principalDeposited
 
-          // TODO[PR] Is this actually-deposited amount the correct one to use? We need to use a principal amount
-          // that corresponds to the amount used as the basis for projecting interest repayments.  The actually-deposited
-          // amount would be correct if scheduled interest repayments were calculated using the actual balance
-          // on the credit line -- which is a fine approach, except that a new pool that is still open won't
-          // have a balance yet (similarly, the balance of an existing pool with an open non-first slice wouldn't
-          // reflect what the pool balance *would be* if it were to be fully funded), so we'd project 0 in interest
-          // repayments for it, so it would earn an estimated 0 rewards, so its APY-from-GFI would be 0...
-          estimated.tranchedPool.juniorTranche.principalDeposited
+        const optimisticAdditionalPrincipalToBeBorrowed =
+          estimated.tranchedPool.poolState < PoolState.SeniorLocked
+            ? estimated.tranchedPool.creditLine.currentLimit.minus(estimated.tranchedPool.totalDeployed)
+            : new BigNumber(0)
+        const juniorOptimisticAdditionalPrincipalToBeBorrowed = optimisticAdditionalPrincipalToBeBorrowed.dividedBy(
+          estimated.tranchedPool.estimatedLeverageRatio.plus(1)
         )
+
+        // NOTE: The basic idea here is that we must calculate principal dollars in a way that is logically
+        // consistent with how we calculated the repayment schedule from which the `estimated` rewards were
+        // estimated. So the total principal consists of two parts -- that already borrowed, plus an
+        // optimistic amount if the pool is not locked -- analogously to how we do in
+        // `TranchedPool.getOptimisticRepaymentSchedule()`.
+        const principalDollars = juniorPrincipalAlreadyBorrowed.plus(juniorOptimisticAdditionalPrincipalToBeBorrowed)
+
+        const estimatedPerPrincipalDollar = estimated.value
+          .multipliedBy(USDC_DECIMALS.toString())
+          .dividedBy(principalDollars)
 
         const actualPerPrincipalDollar = actualRewardsPerPrincipalDollarFromRepayments[tranchedPoolAddress]
         assertNonNullable(actualPerPrincipalDollar)

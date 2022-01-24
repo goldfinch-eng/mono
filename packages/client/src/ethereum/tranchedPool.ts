@@ -21,9 +21,8 @@ import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
 import {fiduFromAtomic} from "./fidu"
-import {gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR} from "./utils"
+import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -133,6 +132,8 @@ class TranchedPool {
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
   totalDeposited!: BigNumber
+  totalDeployed!: BigNumber
+  fundableAt!: BigNumber
 
   isV1StyleDeal!: boolean
   isMigrated!: boolean
@@ -179,6 +180,13 @@ class TranchedPool {
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
 
     this.poolState = this.getPoolState(currentBlock)
+
+    this.totalDeployed = new BigNumber(
+      await this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number)
+    )
+    this.fundableAt = new BigNumber(
+      await this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number)
+    )
   }
 
   getPoolState(currentBlock: BlockInfo): PoolState {
@@ -354,9 +362,15 @@ class TranchedPool {
     return result
   }
 
-  async getRepaymentSchedule(currentBlock: BlockInfo): Promise<ScheduledRepayment[]> {
-    // How much interest do we expect to be repaid in the remaining term of the loan (assuming the loan gets fully paid off)?
-    // (Our approach to calculating this here follows `Accountant.calculateInterestAccruedOverPeriod()`.)
+  async getOptimisticRepaymentSchedule(currentBlock: BlockInfo): Promise<ScheduledRepayment[]> {
+    // 1. How much interest do we expect to be repaid in the remaining term of the loan?
+    // The answer consists of two parts: (i) the expected interest on funds that have
+    // *already* been borrowed (i.e. the current balance of the pool); plus (ii) if the
+    // pool is currently open, interest on the additional funds that would be borrowed
+    // assuming the pool fills up.
+
+    // (i)
+    // Our approach to calculating this here follows `Accountant.calculateInterestAccruedOverPeriod()`.
     const lastAccrualTimestamp = new BigNumber(
       await this.creditLine.creditLine.readOnly.methods.interestAccruedAsOf().call(undefined, currentBlock.number)
     )
@@ -366,27 +380,69 @@ class TranchedPool {
       .dividedBy(INTEREST_DECIMALS.toString())
     const interestToBeAccruedSinceLastAccrual = totalInterestPerYear
       .multipliedBy(interestAccruingSecondsRemaining)
-      .div(SECONDS_PER_YEAR)
-    const expectedRemainingInterest = this.creditLine.interestOwed.plus(interestToBeAccruedSinceLastAccrual)
+      .dividedBy(SECONDS_PER_YEAR)
+    const expectedRemainingInterestFromAlreadyBorrowed = this.creditLine.interestOwed.plus(
+      interestToBeAccruedSinceLastAccrual
+    )
 
-    // On what schedule do we expect the remaining repayments to occur?
+    // (ii)
+    // NOTE: For simplicity, we don't worry here about, if we're in the possible window
+    // of time after the senior pool is locked but before the borrower has drawndown, trying
+    // to infer that the borrower *will* drawdown.
+    let expectedRemainingInterestFromToBeBorrowed = new BigNumber(0)
+    if (this.poolState < PoolState.SeniorLocked) {
+      const optimisticAdditionalBalance = this.creditLine.currentLimit.minus(this.totalDeployed)
+      // When should we say that interest could start being earned on this additional balance?
+      // We can't be sure exactly, because there's currently no notion of a deadline for funding
+      // the pool, nor hard start time of the borrowing. So we'll make a reasonable supposition: one
+      // week after the later of the current time and the pool's `fundableAt` timestamp.
+      // TODO[PR] Confirm this behavior is desired.
+      const interestAccrualStart = BigNumber.min(
+        BigNumber.max(this.fundableAt, currentBlock.timestamp).plus(SECONDS_PER_DAY * 7),
+        this.creditLine.termEndTime
+      )
+      const interestAccruingSecondsRemaining = this.creditLine.termEndTime.minus(interestAccrualStart)
+      const totalInterestPerYear = optimisticAdditionalBalance
+        .multipliedBy(this.creditLine.interestApr)
+        .dividedBy(INTEREST_DECIMALS.toString())
+      expectedRemainingInterestFromToBeBorrowed = totalInterestPerYear
+        .multipliedBy(interestAccruingSecondsRemaining)
+        .dividedBy(SECONDS_PER_YEAR)
+    }
+
+    const expectedRemainingInterest = expectedRemainingInterestFromAlreadyBorrowed.plus(
+      expectedRemainingInterestFromToBeBorrowed
+    )
+
+    // 2. On what schedule do we expect the remaining repayments to occur?
     const secondsRemaining = this.creditLine.termEndTime.minus(currentBlock.timestamp)
     const secondsPerPaymentPeriod = this.creditLine.paymentPeriodInDays.multipliedBy(SECONDS_PER_DAY)
     const numRepaymentsRemaining = secondsRemaining.dividedToIntegerBy(secondsPerPaymentPeriod)
     const expectedRepaymentPerPeriod = expectedRemainingInterest.dividedBy(numRepaymentsRemaining)
 
     const scheduledRepayments: ScheduledRepayment[] = []
-    let i = this.creditLine.termEndTime
+    let expectedRepaymentTimestamp = this.creditLine.termEndTime
     let workingRemainingInterest = expectedRemainingInterest
-    while (i.gte(currentBlock.timestamp)) {
-      scheduledRepayments.push({timestamp: i.toNumber(), usdcAmount: expectedRepaymentPerPeriod})
+    for (let i = 0, ii = numRepaymentsRemaining.toNumber(); i < ii; i++) {
+      scheduledRepayments.push({
+        timestamp: expectedRepaymentTimestamp.toNumber(),
+        usdcAmount: expectedRepaymentPerPeriod,
+      })
 
-      i = i.minus(secondsPerPaymentPeriod)
+      expectedRepaymentTimestamp = expectedRepaymentTimestamp.minus(secondsPerPaymentPeriod)
       workingRemainingInterest = workingRemainingInterest.minus(expectedRepaymentPerPeriod)
     }
-    if (!workingRemainingInterest.eq(0)) {
+
+    if (
+      !(
+        workingRemainingInterest.gte(0) &&
+        workingRemainingInterest.lt(new BigNumber(1).dividedBy(USDC_DECIMALS.toString()))
+      )
+    ) {
       throw new Error("Failed to fully account for expected remaining interest.")
     }
+    // TODO[PR] Seems desirable also to sanity-check the first expected repayment's timestamp against
+    // the credit line's `nextDueTime`.
 
     scheduledRepayments.reverse()
 
