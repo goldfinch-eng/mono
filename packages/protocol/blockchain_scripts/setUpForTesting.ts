@@ -215,6 +215,60 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await bwrCon.pay(commonPool.address, payAmount.toString())
 
     await seniorPool.redeem(tokenId)
+
+    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+      await setUpRewards(erc20, getOrNull, protocol_owner)
+    }
+  }
+}
+
+async function setUpRewards(
+  erc20: any,
+  getOrNull: (name: string) => Promise<Deployment | null>,
+  protocolOwner: string
+) {
+  const amount = new BN(String(1e8)).mul(GFI_DECIMALS)
+  const communityRewards = await getDeployedAsEthersContract<CommunityRewards>(getOrNull, "CommunityRewards")
+  const stakingRewards = await getDeployedAsEthersContract<StakingRewards>(getOrNull, "StakingRewards")
+  const merkleDirectDistributor = await getDeployedAsEthersContractOrNull<MerkleDirectDistributor>(
+    getOrNull,
+    "MerkleDirectDistributor"
+  )
+  const rewardsAmount = amount.div(new BN(3))
+
+  const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
+  await gfi.mint(protocolOwner, amount.toString(10))
+  await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
+  await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
+
+  await communityRewards.loadRewards(rewardsAmount.toString(10))
+
+  await stakingRewards.loadRewards(rewardsAmount.toString(10))
+  await stakingRewards.setRewardsParameters(
+    toAtomic(new BN(1000), FIDU_DECIMALS),
+    new BigNumber("10000000000")
+      .multipliedBy(
+        // This is just an arbitrary number meant to be in the same ballpark as how many FIDU the test user might
+        // stake, so that given a GFI price around $1, the APY from GFI can work out to a reasonable-looking
+        // double-digit percent.
+        new BigNumber(75000)
+      )
+      .toString(10),
+    new BigNumber("20000000000").multipliedBy(new BigNumber(75000)).toString(10),
+    toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
+    toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
+  )
+
+  // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
+  // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
+  const signer = ethers.provider.getSigner(protocolOwner)
+  const usdcAmount = String(usdcVal(50000))
+  await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
+  await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+
+  // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
+  if (merkleDirectDistributor) {
+    await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
   }
 }
 
