@@ -203,7 +203,7 @@ async function fetchDataFromAttributes(
     })
 }
 
-const POOL_EVENTS_CHUNK_SIZE = 1000000
+const POOL_EVENTS_BLOCKS_CHUNK_SIZE = 3000000
 type PoolEventsChunk = {fromBlock: string; toBlock: number}
 
 function chunkPoolEvents(pool: SeniorPool | Pool, fromBlock: string, toBlock: number): PoolEventsChunk[] {
@@ -219,9 +219,9 @@ function chunkPoolEvents(pool: SeniorPool | Pool, fromBlock: string, toBlock: nu
     while (working < end) {
       chunks.push({
         fromBlock: working.toString(10),
-        toBlock: Math.min(end, working + POOL_EVENTS_CHUNK_SIZE),
+        toBlock: Math.min(end, working + POOL_EVENTS_BLOCKS_CHUNK_SIZE),
       })
-      working += POOL_EVENTS_CHUNK_SIZE
+      working += POOL_EVENTS_BLOCKS_CHUNK_SIZE
     }
     return chunks
   } else {
