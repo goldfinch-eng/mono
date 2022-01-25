@@ -103,7 +103,7 @@ class SeniorPool {
     address: string | undefined,
     eventNames: T[],
     includeV1Pool: boolean = true,
-    toBlock: BlockNumber
+    toBlock: number
   ): Promise<KnownEventData<T>[]> {
     if (includeV1Pool) {
       // In migrating from v1 to v2 (i.e. from the `Pool` contract as modeling the senior pool,
