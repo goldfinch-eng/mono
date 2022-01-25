@@ -10,8 +10,7 @@ import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
 import _ from "lodash"
-import {BlockNumber} from "web3-core"
-import {Contract} from "web3-eth-contract"
+import {Contract, EventData} from "web3-eth-contract"
 import {KnownEventData, PoolEventType} from "../types/events"
 import {NetworkConfig} from "../types/network"
 import {reduceToKnown} from "./events"
@@ -167,8 +166,8 @@ function transformedConfig(config) {
   )
 }
 
-function getFromBlock(chain) {
-  if (chain === "mainnet") {
+function getFromBlock(chain: string): string {
+  if (chain === MAINNET) {
     return MAINNET_LAUNCH_BLOCK
   } else {
     return "earliest"
@@ -204,21 +203,61 @@ async function fetchDataFromAttributes(
     })
 }
 
+const POOL_EVENTS_CHUNK_SIZE = 1000000
+type PoolEventsChunk = {fromBlock: string; toBlock: number}
+
+function chunkPoolEvents(pool: SeniorPool | Pool, fromBlock: string, toBlock: number): PoolEventsChunk[] {
+  if (pool.chain === MAINNET) {
+    const start = parseInt(fromBlock, 10)
+    if (!_.isInteger(start)) {
+      throw new Error("Expected mainnet from-block to be an integer.")
+    }
+    const end = toBlock
+
+    const chunks: PoolEventsChunk[] = []
+    let working = start
+    while (working < end) {
+      chunks.push({
+        fromBlock: working.toString(10),
+        toBlock: Math.min(end, working + POOL_EVENTS_CHUNK_SIZE),
+      })
+      working += POOL_EVENTS_CHUNK_SIZE
+    }
+    return chunks
+  } else {
+    return [
+      {
+        fromBlock,
+        toBlock,
+      },
+    ]
+  }
+}
+
 async function getPoolEvents<T extends PoolEventType>(
   pool: SeniorPool | Pool,
   address: string | undefined,
   eventNames: T[],
-  toBlock: BlockNumber
+  toBlock: number
 ): Promise<KnownEventData<T>[]> {
   const fromBlock = getFromBlock(pool.chain)
+  const chunks = chunkPoolEvents(pool, fromBlock, toBlock)
   const events = await Promise.all(
-    eventNames.map((eventName) => {
-      return pool.contract.readOnly.getPastEvents(eventName, {
-        filter: address ? {capitalProvider: address} : undefined,
-        fromBlock,
-        toBlock,
-      })
-    })
+    eventNames.map(
+      async (eventName): Promise<EventData[]> =>
+        _.flatten(
+          await Promise.all(
+            chunks.map(
+              (chunk): Promise<EventData[]> =>
+                pool.contract.readOnly.getPastEvents(eventName, {
+                  filter: address ? {capitalProvider: address} : undefined,
+                  fromBlock: chunk.fromBlock,
+                  toBlock: chunk.toBlock,
+                })
+            )
+          )
+        )
+    )
   )
   const compacted = _.compact(_.flatten(events))
   return reduceToKnown(compacted, eventNames)
