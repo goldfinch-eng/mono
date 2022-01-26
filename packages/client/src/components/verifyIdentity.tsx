@@ -11,7 +11,7 @@ import {LOCAL, MAINNET} from "../ethereum/utils"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import DefaultGoldfinchClient, {KYC} from "../hooks/useGoldfinchClient"
 import useSendFromUser from "../hooks/useSendFromUser"
-import {Session, useSignIn} from "../hooks/useSignIn"
+import {AuthenticatedSession, Session, useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {MINT_UID_TX_TYPE} from "../types/transactions"
 import {UserWalletWeb3Status} from "../types/web3"
@@ -20,6 +20,8 @@ import ConnectionNotice from "./connectionNotice"
 import {iconAlert, iconCircleCheck} from "./icons"
 import LoadingButton from "./loadingButton"
 import TransactionForm from "./transactionForm"
+
+const US_COUNTRY_CODE = "US"
 
 function VerificationNotice({icon, notice}) {
   return (
@@ -88,43 +90,24 @@ function USForm({kycStatus, entityType, onClose, onEvent, network, address}) {
     <TransactionForm
       headerMessage="U.S. Individual"
       render={({formMethods}) => {
-        let verifyIdSection
         if (kycStatus === "approved") {
-          verifyIdSection = (
+          return (
             <div className="placeholder">
               <span className="verify-step-label">Step 1: Verify ID {iconCircleCheck}</span>
             </div>
           )
-        } else {
-          verifyIdSection = (
-            <>
-              <div> Step 1: Verify ID</div>
-              <PersonaForm
-                entityType={entityType}
-                network={network}
-                address={address}
-                onEvent={onEvent}
-                formMethods={formMethods}
-              />
-              <div className="form-separator background-container-inner"></div>
-            </>
-          )
         }
+
         return (
           <>
-            <div className="form-message paragraph">
-              Goldfinch may soon have opportunities for U.S. individuals who qualify as accredited investors. You can
-              pre-verify your address.
-            </div>
-            {verifyIdSection}
-            <h2>Step 2: Verify Accredited Status</h2>
-            <div className="form-message paragraph">
-              To verify your accredited status, start by filling out{" "}
-              <a className="link" target="_blank" rel="noopener noreferrer" href="https://forms.gle/DmhWgpJUbMphtqC19">
-                this form
-              </a>
-              . Then we will reach out with next steps.
-            </div>
+            <PersonaForm
+              entityType={entityType}
+              network={network}
+              address={address}
+              onEvent={onEvent}
+              formMethods={formMethods}
+            />
+            <div className="form-separator background-container-inner"></div>
           </>
         )
       }}
@@ -149,7 +132,7 @@ function PersonaForm({entityType, onEvent, network, address, formMethods}) {
       prefill: {
         emailAddress: data.email,
         discord_name: data.discord,
-        country_us: entityType === "US",
+        country_us: entityType === US_COUNTRY_CODE,
       } as any,
       onLoad: (_error) => client.open(),
       onComplete: () => {
@@ -257,10 +240,7 @@ function ErrorCard({title}: {title: string}) {
 }
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
-  return (
-    (!!kyc && kyc.status === "approved" && kyc.countryCode !== "US" && kyc.countryCode !== "") ||
-    (!!user && user.info.value.goListed)
-  )
+  return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
 }
 
 function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
@@ -301,8 +281,8 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
       const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {
         setKYC(response.json)
-        if (response.json.countryCode === "US") {
-          setEntityType("US")
+        if (response.json.countryCode === US_COUNTRY_CODE) {
+          setEntityType(US_COUNTRY_CODE)
         }
       }
     } catch (err: unknown) {
@@ -330,7 +310,7 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
           notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
         />
       )
-    } else if (entityType === "US") {
+    } else if (entityType === US_COUNTRY_CODE) {
       return (
         <USForm
           kycStatus={kyc?.status}
@@ -356,19 +336,14 @@ function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React
         />
       )
     } else {
-      const nonUSDisabled = kyc?.countryCode === "US" ? "disabled" : ""
       return (
         <VerifyCard title="Verify your address" disabled={disabled}>
           <div className="form-message">Who is verifying this address?</div>
           <div className="verify-types">
-            <button
-              className={`button ${nonUSDisabled}`}
-              disabled={nonUSDisabled === "disabled"}
-              onClick={() => chooseEntity("non-US")}
-            >
+            <button className={"button"} onClick={() => chooseEntity("non-US")}>
               Non-U.S. Individual
             </button>
-            <button className={"button"} onClick={() => chooseEntity("US")}>
+            <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
               U.S. Individual
             </button>
             <button className={"button"} onClick={() => chooseEntity("entity")}>
@@ -512,8 +487,23 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
         setSessionData,
         userWalletWeb3Status,
       })
+
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
-      const version = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call(undefined, currentBlock.number)
+
+      const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
+      const userAddress = userWalletWeb3Status.address
+      assertNonNullable(userAddress)
+      let version: string = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+      try {
+        const response = await client.fetchKYCStatus(userAddress)
+        if (response.ok && response.json.countryCode === US_COUNTRY_CODE) {
+          version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+        }
+      } catch (err: unknown) {
+        setErrored(true)
+        console.error(err)
+      }
+
       await sendFromUser(
         uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
         {
@@ -579,12 +569,12 @@ function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dis
           <div className="info-banner subtle">
             <div className="message">
               <p className="font-small">
-                Your UID, or "Unique Identity", is an NFT that represents your unique identity and grants you access to
-                participate in Borrower Pools and the{" "}
-                <Link className="form-link" to="/pools/senior">
-                  Senior Pool
-                </Link>
-                .
+                Your UID is an NFT that represents your unique identity and grants you access to certain Goldfinch
+                community privileges.
+                <br />
+                <br />
+                Note: U.S. individuals are only eligible to participate in Goldfinch governance-related activities. They
+                may not participate in the senior pool and borrower pools.
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />
