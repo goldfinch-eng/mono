@@ -7,7 +7,7 @@ import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent, roundDownPenny} from "../../utils"
 import AnnualGrowthTooltipContent from "../AnnualGrowthTooltipContent"
 
-export function PortfolioOverview({
+export default function PortfolioOverview({
   poolData,
   capitalProvider,
   poolBackers,

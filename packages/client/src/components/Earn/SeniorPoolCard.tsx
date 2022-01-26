@@ -1,6 +1,16 @@
 import {useHistory} from "react-router-dom"
+import BigNumber from "bignumber.js"
 import Badge from "../badge"
-import {SeniorPoolCardProps} from "./types"
+
+type SeniorPoolCardProps = {
+  balance: string
+  userBalance: string
+  apy: string
+  limit: string
+  remainingCapacity: BigNumber | undefined
+  disabled: boolean
+  userBalanceDisabled: boolean
+}
 
 export default function SeniorPoolCard(props: SeniorPoolCardProps) {
   const disabledClass = props.disabled ? "disabled" : ""
