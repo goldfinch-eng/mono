@@ -15,7 +15,7 @@ import PoolList from "./PoolList"
 import SeniorPoolCardSkeleton from "./SeniorPoolCardSkeleton"
 import TranchedPoolCardSkeleton from "./TranchedPoolCardSkeleton"
 import SeniorPoolCard from "./SeniorPoolCard"
-import {PortfolioOverview} from "./PortfolioOverview"
+import PortfolioOverview from "./PortfolioOverview"
 import TranchedPoolCard from "./TranchedPoolCard"
 
 export default function Earn() {
