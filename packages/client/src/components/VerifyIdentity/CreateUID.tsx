@@ -2,7 +2,6 @@ import React from "react"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {useContext, useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
-import {Link} from "react-router-dom"
 import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../../App"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
@@ -141,12 +140,7 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
         icon={iconCircleCheck}
         notice={
           <>
-            Your UID has been created. You can now participate in{" "}
-            <Link className="form-link" to="/">
-              Borrower Pools
-            </Link>
-            .<br></br>
-            View your UID on{" "}
+            Your UID has been created. View your UID on{" "}
             <a
               className="form-link"
               target="_blank"
@@ -155,6 +149,11 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
             >
               OpenSea
             </a>
+            .
+            <br />
+            <br />
+            Note: Non-U.S. individuals are eligible to participate in Borrower Pools, the Senior Pool, and Goldfinch
+            governance. U.S. individuals are only eligible to participate in governance.
           </>
         }
       />
