@@ -3,6 +3,16 @@
 version: 2.1
 
 commands:
+  create_concatenated_sol_file:
+    description: "Concatenate all sol files into one file. Useful for detecting changes"
+    parameters:
+      filename:
+        type: string
+    steps:
+      - run:
+          name: Combine .sol files
+          command: find . -name *.sol -type f | grep -v node_modules | xargs cat > << parameters.filename >>
+
   create_concatenated_package_lock:
     description: "Concatenate all package-lock.json files recognized by lerna.js into single file. File is used as checksum source for part of caching key."
     parameters:
@@ -33,6 +43,11 @@ jobs:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
             - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+      - create_concatenated_sol_file:
+          filename: combined-contracts.txt
+      - restore_cache:
+          keys:
+            - contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
       - run:
           name: Update Ubuntu
           command: |
@@ -53,10 +68,15 @@ jobs:
             - ~/.npm
             - ./packages/protocol/node_modules/
             - ./packages/utils/node_modules/
+            - ./packages/utils/dist
+      - save_cache:
+          key: contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
+          paths:
             - ./packages/protocol/artifacts
             - ./packages/protocol/cache
             - ./packages/protocol/typechain
-            - ./packages/utils/dist
+
+
 
   test:
     docker:
@@ -71,6 +91,11 @@ jobs:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
             - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+      - create_concatenated_sol_file:
+          filename: combined-contracts.txt
+      - restore_cache:
+          keys:
+            - contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
       - run:
           name: Test
           command: |
@@ -91,6 +116,11 @@ jobs:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
             - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+      - create_concatenated_sol_file:
+          filename: combined-contracts.txt
+      - restore_cache:
+          keys:
+            - contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
       - run:
           name: Test
           command: |

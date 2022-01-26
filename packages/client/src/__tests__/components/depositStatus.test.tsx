@@ -74,7 +74,7 @@ describe("Senior pool page deposit status", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-    resetAirdropMocks()
+    resetAirdropMocks(goldfinchProtocol)
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)

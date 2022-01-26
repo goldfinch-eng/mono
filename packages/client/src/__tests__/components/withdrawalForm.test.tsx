@@ -123,7 +123,7 @@ describe("withdrawal form", () => {
       }
     })
 
-    resetAirdropMocks()
+    resetAirdropMocks(goldfinchProtocol)
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -265,6 +265,26 @@ describe("withdrawal form", () => {
         expect(capitalProvider.value.rewardsInfo.unvested?.toString(10)).toEqual("128889863013698630137")
         expect(screen.getByText("forfeit 128.89 GFI ($257.78)")).toBeVisible()
       })
+    })
+  })
+
+  it("fills max amount and is not limited by the user balance", async () => {
+    const {user} = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
+    user.info.value.usdcBalanceInDollars = new BigNumber(0)
+
+    await mockCapitalProviderCalls()
+    const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
+    capitalProvider.value.availableToWithdrawInDollars = new BigNumber("10000")
+
+    const poolData = {
+      balance: new BigNumber(usdcToAtomic("50000000")),
+    }
+    renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock, undefined, undefined, user)
+
+    fireEvent.click(screen.getByText("Max", {selector: "button"}))
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("0")).toHaveProperty("value", "10,000")
     })
   })
 
