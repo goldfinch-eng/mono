@@ -13,6 +13,7 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdent
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
+import {EventData} from "web3-eth-contract"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,
@@ -364,13 +365,16 @@ export class UserCommunityRewards {
                 currentBlock.number
               )
               if (events.length === 1) {
-                const grantAcceptedEvent = events[0]
-                assertNonNullable(grantAcceptedEvent)
+                const acceptanceEvent = events[0]
+                assertNonNullable(acceptanceEvent)
                 const airdrop = userMerkleDistributor.info.value.airdrops.accepted.find(
-                  (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.grantInfo.index
+                  (airdrop) => parseInt(acceptanceEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
-                  return airdrop.grantInfo
+                  return {
+                    event: acceptanceEvent,
+                    airdropGrantInfo: airdrop.grantInfo,
+                  }
                 } else {
                   throw new Error(
                     `Failed to identify airdrop corresponding to GrantAccepted event ${tokenId}, among user's accepted airdrops.`
@@ -393,14 +397,22 @@ export class UserCommunityRewards {
           ),
         ])
       )
-      .then(([tokenIds, rawGrants, claimables, grantInfos]) =>
+      .then(([tokenIds, rawGrants, claimables, acceptEventInfos]) =>
         tokenIds.map((tokenId, i): CommunityRewardsGrant => {
           const rawGrant = rawGrants[i]
           assertNonNullable(rawGrant)
           const claimable = claimables[i]
           assertNonNullable(claimable)
-          const grantInfo = grantInfos[i]
-          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, grantInfo)
+          const grantInfo = acceptEventInfos[i]?.airdropGrantInfo
+          const acceptEvent = acceptEventInfos[i]?.event
+          assertNonNullable(acceptEvent)
+          return UserCommunityRewards.parseCommunityRewardsGrant(
+            tokenId,
+            new BigNumber(claimable),
+            rawGrant,
+            grantInfo,
+            acceptEvent
+          )
         })
       )
 
@@ -444,7 +456,8 @@ export class UserCommunityRewards {
       5: string
       6: string
     },
-    grantInfo: MerkleDistributorGrantInfo | undefined
+    grantInfo: MerkleDistributorGrantInfo | undefined,
+    acceptEvent: EventData
   ): CommunityRewardsGrant {
     return new CommunityRewardsGrant(
       tokenId,
@@ -458,7 +471,8 @@ export class UserCommunityRewards {
         vestingInterval: new BigNumber(tuple[5]),
         revokedAt: parseInt(tuple[6], 10),
       },
-      grantInfo
+      grantInfo,
+      acceptEvent
     )
   }
 }
@@ -665,6 +679,7 @@ export class UserMerkleDirectDistributor {
       },
       {accepted: [], notAccepted: []}
     )
+
     const accepted = airdrops.accepted.map((grantInfo): AcceptedMerkleDirectDistributorGrant => {
       const granted = new BigNumber(grantInfo.grant.amount)
       const vested = granted
@@ -678,6 +693,30 @@ export class UserMerkleDirectDistributor {
         unvested: granted.minus(vested),
       }
     })
+
+    accepted.forEach(async (grant: AcceptedMerkleDirectDistributorGrant) => {
+      const events = await this.goldfinchProtocol.queryEvents(
+        merkleDirectDistributor.contract.readOnly,
+        [GRANT_ACCEPTED_EVENT],
+        {index: grant.grantInfo.index.toString()},
+        currentBlock.number
+      )
+      if (events.length === 1) {
+        const acceptanceEvent = events[0]
+        assertNonNullable(acceptanceEvent)
+        grant.acceptEvent = acceptanceEvent
+      } else if (events.length === 0) {
+        console.warn(
+          `Failed to identify GrantAccepted event corresponding to Merkle Direct Distributor grant ${grant.grantInfo.index}.`
+        )
+      } else {
+        throw new Error(
+          `Identified more than one GrantAccepted event corresponding to Merkle Direct Distributor grant ${grant.grantInfo.index}.`
+        )
+      }
+      return
+    })
+
     const notAccepted = airdrops.notAccepted.map((grantInfo): NotAcceptedMerkleDirectDistributorGrant => {
       const granted = new BigNumber(grantInfo.grant.amount)
       const vested = granted

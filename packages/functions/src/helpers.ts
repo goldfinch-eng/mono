@@ -173,6 +173,7 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
 
   // Don't allow signatures more than a day old.
   if (signatureTime + ONE_DAY_SECONDS < now) {
+    console.error("Signature expired", {signatureTime, now})
     return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
   }
 

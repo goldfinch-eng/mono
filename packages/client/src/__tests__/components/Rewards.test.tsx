@@ -147,7 +147,7 @@ describe("Rewards portfolio overview", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-    resetAirdropMocks()
+    resetAirdropMocks(goldfinchProtocol)
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -688,7 +688,7 @@ describe("Rewards list and detail", () => {
       }
     })
 
-    resetAirdropMocks()
+    resetAirdropMocks(goldfinchProtocol)
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -767,12 +767,12 @@ describe("Rewards list and detail", () => {
 
       expect(await screen.findByText("Unlock status")).toBeVisible()
       expect(await screen.findByText("--.--% (0.00 GFI) unlocked")).toBeVisible()
-
-      expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
-        "href",
-        `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
-      )
     })
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+    )
   })
 
   describe("GFI Price", () => {
@@ -998,12 +998,12 @@ describe("Rewards list and detail", () => {
 
       expect(await screen.findByText("Unlock status")).toBeVisible()
       expect(await screen.findByText("0.55% (0.71 GFI) unlocked")).toBeVisible()
-
-      expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
-        "href",
-        `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
-      )
     })
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+    )
   })
 
   it("shows claimable community reward on rewards list", async () => {
@@ -1035,7 +1035,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1068,7 +1068,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1097,10 +1097,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("Unclaimed")).toBeVisible()
 
-    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
-      "href",
-      `https://${network.name}.etherscan.io/address/${deps.merkleDistributor.address}`
-    )
+    expect(screen.queryByText("Etherscan")).not.toBeInTheDocument()
   })
 
   it("shows airdrop from MerkleDistributor with vesting", async () => {
@@ -1134,10 +1131,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("Unclaimed")).toBeVisible()
 
-    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
-      "href",
-      `https://${network.name}.etherscan.io/address/${deps.merkleDistributor.address}`
-    )
+    expect(screen.queryByText("Etherscan")).not.toBeInTheDocument()
   })
 
   it("shows airdrop from MerkleDirectDistributor", async () => {
@@ -1165,10 +1159,7 @@ describe("Rewards list and detail", () => {
     expect(await screen.findByText("Claim status")).toBeVisible()
     expect(await screen.findByText("Unclaimed")).toBeVisible()
 
-    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
-      "href",
-      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
-    )
+    expect(screen.queryByText("Etherscan")).not.toBeInTheDocument()
   })
 
   it("shows accepted community reward and staking reward", async () => {
@@ -1203,8 +1194,9 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
+
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
@@ -1224,7 +1216,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1263,8 +1255,9 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
+
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
 
     fireEvent.click(screen.getByText("Flight Academy"))
@@ -1282,7 +1275,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000002`
     )
   })
 
@@ -1323,8 +1316,9 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
+
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
@@ -1346,8 +1340,9 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
+
     fireEvent.click(screen.getByText("Goldfinch Investment"))
 
     fireEvent.click(screen.getByText("Flight Academy"))
@@ -1365,7 +1360,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1395,12 +1390,12 @@ describe("Rewards list and detail", () => {
 
       expect(await screen.findByText("Unlock status")).toBeVisible()
       expect(await screen.findByText("1.14% (3.06 GFI) unlocked")).toBeVisible()
-
-      expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
-        "href",
-        `https://${network.name}.etherscan.io/address/${deps.stakingRewards.address}`
-      )
     })
+
+    expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
+      "href",
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+    )
   })
 
   it("community reward partially claimed appears on list", async () => {
@@ -1432,7 +1427,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.communityRewards.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1463,7 +1458,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/${deps.merkleDirectDistributor.address}`
+      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000002`
     )
   })
 

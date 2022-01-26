@@ -2,7 +2,7 @@ import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scr
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import BigNumber from "bignumber.js"
 import {BlockNumber} from "web3-core"
-import {Filter} from "web3-eth-contract"
+import {Filter, EventData} from "web3-eth-contract"
 import {CommunityRewardsEventType, KnownEventData} from "../types/events"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {Web3IO} from "../types/web3"
@@ -26,17 +26,20 @@ export class CommunityRewardsGrant {
   claimable: BigNumber
   rewards: CommunityRewardsVestingRewards
   grantInfo: MerkleDistributorGrantInfo | undefined
+  acceptEvent: EventData
 
   constructor(
     tokenId: string,
     claimable: BigNumber,
     rewards: CommunityRewardsVestingRewards,
-    grantInfo: MerkleDistributorGrantInfo | undefined
+    grantInfo: MerkleDistributorGrantInfo | undefined,
+    acceptEvent: EventData
   ) {
     this.tokenId = tokenId
     this.rewards = rewards
     this.claimable = claimable
     this.grantInfo = grantInfo
+    this.acceptEvent = acceptEvent
   }
 
   get displayReason(): string {

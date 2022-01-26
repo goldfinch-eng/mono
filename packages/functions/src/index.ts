@@ -4,11 +4,13 @@ import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import * as crypto from "crypto"
 import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
-import {assertIsString} from "@goldfinch-eng/utils"
+import dotenv from "dotenv"
+import {findEnvLocal, assertIsString} from "@goldfinch-eng/utils"
 import {getAgreements, getConfig, getDb, getNDAs, getUsers} from "./db"
 import {genRequestHandler} from "./helpers"
 import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
+dotenv.config({path: findEnvLocal()})
 
 const _config = getConfig(functions)
 Sentry.GCPFunction.init({

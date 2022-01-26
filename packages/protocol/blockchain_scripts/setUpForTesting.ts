@@ -14,7 +14,6 @@ import {
   assertIsChainId,
   ContractDeployer,
   FIDU_DECIMALS,
-  getERC20Address,
   getProtocolOwner,
   getUSDCAddress,
   interestAprAsBN,
@@ -138,7 +137,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   config = config.connect(protocolOwnerSigner)
 
-  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(40000000)))
+  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
 
   await addUsersToGoList(config, [underwriter])
 
@@ -217,11 +216,12 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     await seniorPool.redeem(tokenId)
 
-    await setUpRewards(erc20, getOrNull, protocol_owner)
+    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+      await setUpRewards(erc20, getOrNull, protocol_owner)
+    }
   }
 }
 
-// TODO: need to deal with this in the migration script
 async function setUpRewards(
   erc20: any,
   getOrNull: (name: string) => Promise<Deployment | null>,
@@ -559,7 +559,7 @@ async function setupTestForwarder(
   }
   const forwarder = await deployer.deploy("TestForwarder", {
     from: protocol_owner,
-    gasLimit: 4000000,
+    gasLimit: 4_000_000,
   })
   logger(`Created Forwarder at ${forwarder.address}`)
 
