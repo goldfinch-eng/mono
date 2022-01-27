@@ -15,7 +15,7 @@ import {
 import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
-import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
+import {BlockInfo, croppedAddress, getBlockInfo, roundDownPenny} from "../utils"
 import web3 from "../web3"
 import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
@@ -366,8 +366,16 @@ class TranchedPool {
     // 1. How much interest do we expect to be repaid in the remaining term of the loan?
     // The answer consists of two parts: (i) the expected interest on funds that have
     // *already* been borrowed (i.e. the current balance of the pool); plus (ii) if the
-    // pool is currently open, interest on the additional funds that would be borrowed
-    // assuming the pool fills up.
+    // pool is currently open, interest on the additional funds that would be borrowed.
+    // How much additional funds will be borrowed? We can't know exactly; we'll optimistically
+    // assume the pool fills up.
+    // TODO: In future, when we may have multiple pools open at the same time, we may want to
+    // revise this optimistic repayment schedule calculation so that we don't assume that
+    // *all* open pools will fill up. Such an assumption means that any open pool could significantly
+    // impact the estimated rewards of every other pool; but such estimates seem likely
+    // flawed, because in practice not every proposed pool is equally likely to fill up. One
+    // alternative way to do the calculation would be to assume the given pool for which we're
+    // estimating rewards will fill up, but NOT to make that assumption for all the other open pools.
 
     // (i)
     // Our approach to calculating this here follows `Accountant.calculateInterestAccruedOverPeriod()`.
@@ -396,7 +404,7 @@ class TranchedPool {
       // We can't be sure exactly, because there's currently no notion of a deadline for funding
       // the pool, nor hard start time of the borrowing. So we'll make a reasonable supposition: one
       // week after the later of the current time and the pool's `fundableAt` timestamp.
-      // TODO[PR] Confirm this behavior is desired.
+      // TODO[PR]: Confirm this behavior is desired.
       const interestAccrualStart = BigNumber.min(
         BigNumber.max(this.fundableAt, currentBlock.timestamp).plus(SECONDS_PER_DAY * 7),
         this.creditLine.termEndTime
@@ -471,8 +479,8 @@ class TranchedPoolBacker {
   interestRedeemed!: BigNumber
   principalRedeemable!: BigNumber
   interestRedeemable!: BigNumber
-  balance!: BigNumber
   principalAtRisk!: BigNumber
+  balance!: BigNumber
   balanceInDollars!: BigNumber
   availableToWithdraw!: BigNumber
   availableToWithdrawInDollars!: BigNumber
