@@ -1,5 +1,6 @@
 import {DirectGrantReason} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
+import {BackerMerkleDirectDistributor as BackerMerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDirectDistributor"
 import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {KnownEventData, MerkleDirectDistributorEventType} from "../types/events"
@@ -69,5 +70,15 @@ export class MerkleDirectDistributor {
 
   static getDisplayReason(reason: DirectGrantReason): string {
     return MerkleDistributor.getDisplayReason(reason)
+  }
+}
+
+export class BackerMerkleDirectDistributor extends MerkleDirectDistributor {
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    super(goldfinchProtocol)
+    this.contract = goldfinchProtocol.getContract<BackerMerkleDirectDistributorContract>(
+      "BackerMerkleDirectDistributor"
+    )
+    this.address = goldfinchProtocol.getAddress("BackerMerkleDirectDistributor")
   }
 }
