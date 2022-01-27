@@ -5,7 +5,7 @@ import {mock} from "depay-web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../App"
-import {PortfolioOverview} from "../../components/earn"
+import PortfolioOverview from "../../components/Earn/PortfolioOverview"
 import {GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {

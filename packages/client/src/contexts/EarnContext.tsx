@@ -1,6 +1,6 @@
 import {ApolloError} from "@apollo/client"
 import React, {useEffect, useState} from "react"
-import {SeniorPoolStatus} from "../components/earn"
+import {SeniorPoolStatus} from "../components/Earn/types"
 import {CapitalProvider} from "../ethereum/pool"
 import {TranchedPoolBacker} from "../ethereum/tranchedPool"
 import {usePoolBackersWeb3, useSeniorPoolStatusWeb3, useTranchedPoolSubgraphData} from "../hooks/useEarnData"

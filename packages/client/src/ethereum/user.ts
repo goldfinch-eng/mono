@@ -75,7 +75,7 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo, MAINNET} from "./utils"
+import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -1076,29 +1076,25 @@ export class User {
   }
 
   async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
-    if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
-      const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
+    const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
+    const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
 
-      const go = this.goldfinchProtocol.getContract<Go>("Go")
-      const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const go = this.goldfinchProtocol.getContract<Go>("Go")
+    const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
-      const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-      const hasUID = !new BigNumber(
-        await uniqueIdentity.readOnly.methods.balanceOf(address, 0).call(undefined, currentBlock.number)
-      ).isZero()
+    // check if user has non-US or US non-accredited UID
+    const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
+    const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+    const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+    const balances = await uniqueIdentity.readOnly.methods
+      .balanceOfBatch([address, address], [ID_TYPE_0, ID_TYPE_2])
+      .call(undefined, currentBlock.number)
+    const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
 
-      return {
-        legacyGolisted,
-        golisted,
-        hasUID,
-      }
-    } else {
-      return {
-        legacyGolisted: true,
-        golisted: true,
-        hasUID: true,
-      }
+    return {
+      legacyGolisted,
+      golisted,
+      hasUID,
     }
   }
 

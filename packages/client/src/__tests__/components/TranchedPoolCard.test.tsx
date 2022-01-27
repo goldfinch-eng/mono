@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom"
 import {AppContext} from "../../App"
 import {render, screen, waitFor} from "@testing-library/react"
-import {TranchedPoolCard} from "../../components/earn"
+import TranchedPoolCard from "../../components/Earn/TranchedPoolCard"
 import {defaultCreditLine} from "../../ethereum/creditLine"
 import BigNumber from "bignumber.js"
 import {TranchedPool} from "../../ethereum/tranchedPool"
