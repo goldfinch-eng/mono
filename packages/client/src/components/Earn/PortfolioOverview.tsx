@@ -92,15 +92,23 @@ export default function PortfolioOverview({
 
   const seniorPoolBalanceEarningGfi = capitalProvider.value.stakedSeniorPoolBalanceInDollars
   const estimatedApyFromGfiSeniorPool = GFI.estimateApyFromGfi(
+    // NOTE: Because our frontend does not currently support staking with lockup, we do not
+    // worry here about adjusting for the portion of the user's balance that is not only earning
+    // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup.
     seniorPoolBalanceEarningGfi,
     seniorPoolBalance,
     seniorPoolData.estimatedApyFromGfi
   )
 
-  // Tranched pools' APY-from-GFI is the average of the APY-from-GFI for each tranched pool,
-  // weighted by how much the user has supplied (more precisely, how much they've supplied that
-  // is earning GFI) to each pool.
-  const estimatedApyFromGfiTranchedPools = tranchedPoolsBalanceEarningGfi.gt(0)
+  // Tranched pools' APY-from-GFI is a two-step calculation. First, we take the average of the
+  // APY-from-GFI for each tranched-pool-that-earns-GFI, weighted by how much the user has
+  // supplied to those pools that is earning GFI at that rate. That gives us a
+  // weighted average APY-from-GFI for the user's dollars that are earning GFI. But not all
+  // of the user's dollars supplied to tranched pools are earning GFI! Which points to the
+  // need for the second step in the calculation: we adjust the weighted average from the
+  // first step, for the percentage of dollars that are earning GFI, out of the user's
+  // total dollars supplied to tranched pools.
+  const estimatedApyFromGfiForTranchedPoolsEarningGfi = tranchedPoolsBalanceEarningGfi.gt(0)
     ? tranchedPoolsGfi.reduce<BigNumber>(
         (acc, curr) =>
           acc.plus(
@@ -109,26 +117,29 @@ export default function PortfolioOverview({
         new BigNumber(0)
       )
     : undefined
-
-  const totalBalanceEarningGfi = seniorPoolBalanceEarningGfi.plus(tranchedPoolsBalanceEarningGfi)
+  const estimatedApyFromGfiTranchedPools = GFI.estimateApyFromGfi(
+    tranchedPoolsBalanceEarningGfi,
+    tranchedPoolsBalance,
+    estimatedApyFromGfiForTranchedPoolsEarningGfi
+  )
 
   // Total APY-from-GFI is the average of the senior pool APY-from-GFI and
   // the tranched pools' APY-from-GFI, weighted by how much the user has supplied
   // to the senior pool vs. tranched pools.
   let estimatedApyFromGfi: BigNumber | undefined
-  if ((estimatedApyFromGfiSeniorPool || estimatedApyFromGfiTranchedPools) && totalBalanceEarningGfi.gt(0)) {
+  if ((estimatedApyFromGfiSeniorPool || estimatedApyFromGfiTranchedPools) && totalBalance.gt(0)) {
     const seniorPoolPortion = (estimatedApyFromGfiSeniorPool || new BigNumber(0))
-      .multipliedBy(seniorPoolBalanceEarningGfi)
-      .dividedBy(totalBalanceEarningGfi)
+      .multipliedBy(seniorPoolBalance)
+      .dividedBy(totalBalance)
     const tranchedPoolsPortion = (estimatedApyFromGfiTranchedPools || new BigNumber(0))
-      .multipliedBy(tranchedPoolsBalanceEarningGfi)
-      .dividedBy(totalBalanceEarningGfi)
+      .multipliedBy(tranchedPoolsBalance)
+      .dividedBy(totalBalance)
 
     estimatedApyFromGfi = seniorPoolPortion.plus(tranchedPoolsPortion)
   }
 
   const estimatedAnnualGrowthFromGfi = estimatedApyFromGfi
-    ? totalBalanceEarningGfi.multipliedBy(estimatedApyFromGfi)
+    ? totalBalance.multipliedBy(estimatedApyFromGfi)
     : new BigNumber(0)
   const estimatedAnnualGrowth = estimatedAnnualGrowthFromSupplying.plus(estimatedAnnualGrowthFromGfi)
 
