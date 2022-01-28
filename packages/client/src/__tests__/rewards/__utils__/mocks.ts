@@ -11,7 +11,7 @@ import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {BigNumber} from "bignumber.js"
 import {CommunityRewards} from "../../../ethereum/communityRewards"
-import {GFI} from "../../../ethereum/gfi"
+import {GFI, GFI_DECIMALS} from "../../../ethereum/gfi"
 import {
   mockGetWeightedAverageSharePrice,
   SeniorPoolLoaded,
@@ -452,6 +452,20 @@ export async function mockUserRelatedInitializationContractCalls(
     callClaimableRewardsMock,
     callCommunityRewardsTotalVestedAt,
   }
+}
+
+export async function mockGfiContractCalls(gfi: GFI) {
+  const callTotalSupply = mock({
+    blockchain,
+    call: {
+      to: gfi.address,
+      api: await getGfiAbi(),
+      method: "totalSupply",
+      return: new BigNumber(1e8).multipliedBy(GFI_DECIMALS).toString(10),
+    },
+  })
+
+  return {callTotalSupply}
 }
 
 export async function mockStakingRewardsContractCalls(
