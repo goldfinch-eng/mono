@@ -57,14 +57,14 @@ export async function deployMerkleDistributor(
     communityRewards,
     deployEffects,
     merkleDistributorInfoPath = process.env.MERKLE_DISTRIBUTOR_INFO_PATH,
+    contractName = "MerkleDistributor",
   }: {
     communityRewards: Deployed<CommunityRewardsInstance>
     deployEffects: DeployEffects
     merkleDistributorInfoPath?: string
+    contractName?: string
   }
 ): Promise<Deployed<MerkleDistributorInstance> | undefined> {
-  const contractName = "MerkleDistributor"
-
   const merkleRoot = await getMerkleDistributorRoot(merkleDistributorInfoPath)
   if (!merkleRoot) {
     logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)

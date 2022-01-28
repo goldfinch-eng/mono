@@ -27,16 +27,16 @@ export async function deployMerkleDirectDistributor(
     gfi,
     deployEffects,
     merkleDirectDistributorInfoPath = process.env.MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH,
+    contractName = "MerkleDirectDistributor",
   }: {
     gfi: Deployed<GFIInstance>
     deployEffects: DeployEffects
     merkleDirectDistributorInfoPath?: string
+    contractName?: string
   }
 ): Promise<Deployed<MerkleDirectDistributorInstance> | undefined> {
   const {gf_deployer} = await deployer.getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
-
-  const contractName = "MerkleDirectDistributor"
 
   const merkleRoot = await getMerkleDirectDistributorRoot(merkleDirectDistributorInfoPath)
   if (!merkleRoot) {

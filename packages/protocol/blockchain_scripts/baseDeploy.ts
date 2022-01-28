@@ -26,8 +26,6 @@ import {deployCreditDesk} from "./baseDeploy/deployCreditDesk"
 import {deployConfig} from "./baseDeploy/deployConfig"
 import {deployGo} from "./baseDeploy/deployGo"
 import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
-import {deployBackerMerkleDirectDistributor} from "./baseDeploy/deployBackerMerkleDirectDistributor"
-import {deployBackerMerkleDistributor} from "./baseDeploy/deployBackerMerkleDistributor"
 
 const logger: Logger = console.log
 
@@ -76,8 +74,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
   await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
   await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
-  await deployBackerMerkleDistributor(deployer, {communityRewards, deployEffects})
-  await deployBackerMerkleDirectDistributor(deployer, {gfi, deployEffects})
+  await deployMerkleDistributor(deployer, {communityRewards, deployEffects, contractName: "BackerMerkleDistributor"})
+  await deployMerkleDirectDistributor(deployer, {gfi, deployEffects, contractName: "BackerMerkleDirectDistributor"})
 
   const {protocol_owner: trustedSigner} = await deployer.getNamedAccounts()
   assertNonNullable(trustedSigner)
