@@ -15,7 +15,7 @@ import {
 import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
-import {BlockInfo, croppedAddress, getBlockInfo, roundDownPenny} from "../utils"
+import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
 import web3 from "../web3"
 import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
