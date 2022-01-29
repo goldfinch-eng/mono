@@ -10,7 +10,7 @@ import {
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
 import * as migrate2_4 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.4/migrate"
-import {expectOwnerRole, expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
+import {bigVal, expectOwnerRole, expectProxyOwner, expectRoles} from "@goldfinch-eng/protocol/test/testHelpers"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import {isMerkleDistributorInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
@@ -35,12 +35,17 @@ const setupTest = deployments.createFixture(async () => {
   await impersonateAccount(hre, await getProtocolOwner())
   await fundWithWhales(["ETH"], [await getProtocolOwner()])
 
+  const grantAddress1StartingBalance: BN = await gfi.balanceOf(migrate2_4.grantAddress1)
+  const grantAddress2StartingBalance: BN = await gfi.balanceOf(migrate2_4.grantAddress2)
+
   await migrate2_4.main()
 
   return {
     gfi,
     communityRewards,
     communityRewardsStartingBalance,
+    grantAddress1StartingBalance,
+    grantAddress2StartingBalance,
   }
 })
 
@@ -51,10 +56,18 @@ describe("v2.4", async function () {
   let communityRewards: CommunityRewardsInstance
   let communityRewardsStartingBalance: BN
 
+  let grantAddress1StartingBalance: BN
+  let grantAddress2StartingBalance: BN
+
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, communityRewards, communityRewardsStartingBalance} = await setupTest())
-    console.log("communityRewardsStartingBalance", communityRewardsStartingBalance.toString())
+    ;({
+      gfi,
+      communityRewards,
+      communityRewardsStartingBalance,
+      grantAddress1StartingBalance,
+      grantAddress2StartingBalance,
+    } = await setupTest())
   })
 
   it("deploys BackerMerkleDirectDistributor", async () => {
@@ -74,12 +87,12 @@ describe("v2.4", async function () {
   })
 
   expectProxyOwner({
-    toBe: async () => getProtocolOwner(),
+    toBe: getProtocolOwner,
     forContracts: ["BackerMerkleDirectDistributor"],
   })
 
   expectOwnerRole({
-    toBe: async () => getProtocolOwner(),
+    toBe: getProtocolOwner,
     forContracts: ["BackerMerkleDirectDistributor"],
   })
 
@@ -115,5 +128,13 @@ describe("v2.4", async function () {
     const directDistributor = await deployments.get("BackerMerkleDirectDistributor")
 
     expect(await gfi.balanceOf(directDistributor.address)).to.bignumber.eq(merkleDirectDistributorAmount)
+  })
+
+  it("distributes GFI grant to the two community contributors", async () => {
+    const grantAddress1EndingBalance: BN = await gfi.balanceOf(migrate2_4.grantAddress1)
+    const grantAddress2EndingBalance: BN = await gfi.balanceOf(migrate2_4.grantAddress2)
+
+    expect(grantAddress1EndingBalance.sub(grantAddress1StartingBalance)).to.bignumber.eq(bigVal(275))
+    expect(grantAddress2EndingBalance.sub(grantAddress2StartingBalance)).to.bignumber.eq(bigVal(275))
   })
 })
