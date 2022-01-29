@@ -1,13 +1,72 @@
 /* config-overrides.js */
+const path = require("path")
 const {solidityLoader} = require("./config/webpack")
 const {override, overrideDevServer} = require("customize-cra")
 
-const allowOutsideImports = () => (config) => {
-  // allow importing from outside of app/src folder, ModuleScopePlugin prevents this.
-  const scope = config.resolve.plugins.findIndex((o) => o.constructor.name === "ModuleScopePlugin")
-  if (scope > -1) {
-    config.resolve.plugins.splice(scope, 1)
+const findWebpackPlugin = (webpackConfig, pluginName) =>
+  webpackConfig.resolve.plugins.find(({constructor}) => constructor && constructor.name === pluginName)
+
+const genEnableImportsFromExternalPaths = (ruleStringPredicate) => (webpackConfig, newIncludePaths) => {
+  const oneOfRule = webpackConfig.module.rules.find((rule) => rule.oneOf)
+  if (oneOfRule) {
+    const tsRule = oneOfRule.oneOf.find((rule) => {
+      const ruleString = rule.test ? rule.test.toString() : undefined
+      return ruleStringPredicate(ruleString)
+    })
+    if (tsRule) {
+      // Include `newIncludePaths` in the "include" specification for `tsRule`, so that whatever loader(s)
+      // are applied for files matching the rule are also applied to the `newIncludePaths` files. This
+      // application of the loader(s) is necessary, for example, in the case of Typescript files
+      // specified in `newIncludePaths`: it transpiles those files, like the Typescript files in the
+      // `src` dir get transpiled.
+      tsRule.include = Array.isArray(tsRule.include)
+        ? [...tsRule.include, ...newIncludePaths]
+        : [tsRule.include, ...newIncludePaths]
+    }
   }
+}
+
+const enableJsonImportsFromExternalPaths = genEnableImportsFromExternalPaths(
+  (ruleString) => ruleString && ruleString.includes("json")
+)
+
+const enableTypescriptImportsFromExternalPaths = genEnableImportsFromExternalPaths(
+  (ruleString) => ruleString && (ruleString.includes("ts") || ruleString.includes("tsx"))
+)
+
+const addPathsToModuleScopePlugin = (webpackConfig, paths) => {
+  const moduleScopePlugin = findWebpackPlugin(webpackConfig, "ModuleScopePlugin")
+  if (!moduleScopePlugin) {
+    throw new Error("Expected to find plugin 'ModuleScopePlugin', but didn't.")
+  }
+  moduleScopePlugin.appSrcs = [...moduleScopePlugin.appSrcs, ...paths]
+}
+
+const allowOutsideImports = () => (config) => {
+  // Allow imports from above the `src` dir, which the ModuleScopePlugin otherwise prevents.
+  // Cf. https://stackoverflow.com/a/68017931. Allow-listing specific paths to allow to be
+  // imported seems preferable to disabling the ModuleScopePlugin altogether, so that Webpack
+  // can't arbitrarily reach anywhere in the repo.
+
+  const jsonPaths = [
+    path.resolve(__dirname, "../../packages/autotasks/relayer/Forwarder.json"),
+    path.resolve(__dirname, "../../packages/client/abi/Creditline.json"),
+    path.resolve(__dirname, "../../packages/client/abi/ERC20Permit.json"),
+    path.resolve(__dirname, "../../packages/client/abi/OneSplit.json"),
+    path.resolve(__dirname, "../../packages/client/config/pool-metadata/mainnet.json"),
+  ]
+  const tsPaths = [
+    path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/configKeys"),
+    path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkle/merkleDistributor/types.ts"),
+    path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types.ts"),
+    path.resolve(__dirname, "../../packages/utils/src/type.ts"),
+  ]
+  const paths = jsonPaths.concat(tsPaths)
+
+  enableJsonImportsFromExternalPaths(config, jsonPaths)
+  enableTypescriptImportsFromExternalPaths(config, tsPaths)
+  addPathsToModuleScopePlugin(config, paths)
+
   return config
 }
 
@@ -41,15 +100,44 @@ const murmuration = () => (config) => {
       // was in sharing the contracts definitions in `packages/protocol/deployments/all_dev.json` and in
       // maintaining the chain state held in memory by the hardhat node process.)
       "/_chain": "http://localhost:8545",
+
+      // Proxy for cloud functions running locally.
+      "/_gcloudfunctions": {
+        target: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
+        pathRewrite: {
+          // Rewrite the path of the proxied request, to drop the `/_gcloudfunctions` path segment, as
+          // that segment would otherwise cause the request to fail to match the paths of the cloud functions.
+          "^/_gcloudfunctions": "",
+        },
+        onProxyReq: (proxyReq, req, res) => {
+          // Because the request to `/_gcloudfunctions` is not cross-origin (i.e. whereas a request to
+          // e.g. `https://us-central1-goldfinch-frontends-dev.cloudfunctions.net` is cross-origin), we expect
+          // the `origin` header not to have been set by the user's browswer, and so we need to add that header
+          // ourselves, so that the cloud functions can infer from it which blockchain they should use.
+          if (req.headers.origin) {
+            console.warn(`Expected \`origin\` header not to be defined, but it was: ${req.headers.origin}`)
+          } else {
+            proxyReq.setHeader("origin", "https://murmuration.goldfinch.finance")
+          }
+        },
+      },
     }
   }
   return config
 }
 
+// https://webpack.js.org/configuration/dev-server/#devserverproxy
+// Proxy URLs for separate API backend development server and to send API requests to the same domain
 const localRelayer = () => (config) => {
   config.proxy = {
     ...(config.proxy || {}),
     "/relay": "http://localhost:4000",
+    "/setupForTesting": "http://localhost:4000",
+    "/fundWithWhales": "http://localhost:4000",
+    "/advanceTimeOneDay": "http://localhost:4000",
+    "/advanceTimeThirtyDays": "http://localhost:4000",
+    "/kycStatus": "http://localhost:4000",
+    "/uniqueIdentitySigner": "http://localhost:4000",
   }
   return config
 }

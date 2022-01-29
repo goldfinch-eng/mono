@@ -34,45 +34,54 @@ import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
  * roles, as well as the default admin role, which will let it grant both minter
  * and pauser roles to aother accounts
  */
-contract ERC721PresetMinterPauserAutoIdUpgradeSafe is Initializable, ContextUpgradeSafe, AccessControlUpgradeSafe, ERC721PausableUpgradeSafe {
-    using Counters for Counters.Counter;
+contract ERC721PresetMinterPauserAutoIdUpgradeSafe is
+  Initializable,
+  ContextUpgradeSafe,
+  AccessControlUpgradeSafe,
+  ERC721PausableUpgradeSafe
+{
+  using Counters for Counters.Counter;
 
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+  bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+  bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    Counters.Counter public _tokenIdTracker;
+  Counters.Counter public _tokenIdTracker;
 
-    /**
-     * @dev Pauses all token transfers.
-     *
-     * See {ERC721Pausable} and {Pausable-_pause}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `PAUSER_ROLE`.
-     */
-    function pause() public {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to pause");
-        _pause();
-    }
+  /**
+   * @dev Pauses all token transfers.
+   *
+   * See {ERC721Pausable} and {Pausable-_pause}.
+   *
+   * Requirements:
+   *
+   * - the caller must have the `PAUSER_ROLE`.
+   */
+  function pause() public {
+    require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to pause");
+    _pause();
+  }
 
-    /**
-     * @dev Unpauses all token transfers.
-     *
-     * See {ERC721Pausable} and {Pausable-_unpause}.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `PAUSER_ROLE`.
-     */
-    function unpause() public {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to unpause");
-        _unpause();
-    }
+  /**
+   * @dev Unpauses all token transfers.
+   *
+   * See {ERC721Pausable} and {Pausable-_unpause}.
+   *
+   * Requirements:
+   *
+   * - the caller must have the `PAUSER_ROLE`.
+   */
+  function unpause() public {
+    require(hasRole(PAUSER_ROLE, _msgSender()), "ERC721PresetMinterPauserAutoId: must have pauser role to unpause");
+    _unpause();
+  }
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override(ERC721PausableUpgradeSafe) {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual override(ERC721PausableUpgradeSafe) {
+    super._beforeTokenTransfer(from, to, tokenId);
+  }
 
-    uint256[49] private __gap;
+  uint256[49] private __gap;
 }

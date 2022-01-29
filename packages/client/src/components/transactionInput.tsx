@@ -7,18 +7,35 @@ import _ from "lodash"
 import {Tickers} from "../ethereum/erc20"
 import NumberFormat from "react-number-format"
 
-function TransactionInput(props) {
+type TransactionInputProps = {
+  name?: string
+  disabled?: boolean
+  onChange?: (val: unknown) => void
+  inputClass?: string
+  ticker?: string
+  notes?: Array<{
+    key: string
+    content: React.ReactNode
+  }>
+  formMethods: any
+  maxAmountInDollars?: string
+  validations?: {
+    [name: string]: (val: string) => boolean | string
+  }
+  rightDecoration?: React.ReactNode
+}
+
+function TransactionInput(props: TransactionInputProps) {
   let name = props.name || "transactionAmount"
   let inputClass = props.inputClass || ""
   if (props.disabled) {
     inputClass = "disabled"
   }
-  let propsOnChange = props.onChange || (() => {})
+  let propsOnChange = props.onChange || ((val: unknown) => {})
   let validations = props.validations || {}
   let notes = _.compact(props.notes || [])
   let ticker = props.ticker || Tickers.USDC
 
-  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '({ key, content }: { key: any; c... Remove this comment to see the full error message
   let noteEls = notes.map(({key, content}) => (
     <div key={key} className="form-input-note">
       {content}
@@ -48,14 +65,16 @@ function TransactionInput(props) {
           <Controller
             control={props.formMethods.control}
             name={name}
-            defaultValue="0"
+            defaultValue=""
             rules={{
               required: "Amount is required",
               min: {value: 0.0000001, message: "Must be greater than 0"},
-              max: {
-                value: props.maxAmount,
-                message: `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `,
-              },
+              max: props.maxAmountInDollars
+                ? {
+                    value: props.maxAmountInDollars,
+                    message: `Amount is above the max allowed (${displayDollars(props.maxAmountInDollars)}). `,
+                  }
+                : undefined,
               validate: {
                 decimals: (value) => new BigNumber(value).decimalPlaces() <= 6 || "Maximum allowed decimal places is 6",
                 ...validations,

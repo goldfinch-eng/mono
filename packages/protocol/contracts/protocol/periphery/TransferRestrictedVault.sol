@@ -70,7 +70,7 @@ contract TransferRestrictedVault is
   }
 
   function depositJunior(ITranchedPool tranchedPool, uint256 amount) public nonReentrant {
-    require(config.goList(msg.sender), "This address has not been go-listed");
+    require(config.getGo().go(msg.sender), "This address has not been go-listed");
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     approveSpender(address(tranchedPool), amount);
@@ -129,14 +129,21 @@ contract TransferRestrictedVault is
   }
 
   function withdrawSenior(uint256 tokenId, uint256 usdcAmount) public nonReentrant onlyTokenOwner(tokenId) {
+    IFidu fidu = config.getFidu();
     ISeniorPool seniorPool = config.getSeniorPool();
-    uint256 shares = seniorPool.getNumShares(usdcAmount);
-    FiduPosition storage fiduPosition = fiduPositions[tokenId];
-    uint256 fiduPositionAmount = fiduPosition.amount;
-    require(fiduPositionAmount >= shares, "Not enough Fidu for withdrawal");
 
-    fiduPosition.amount = fiduPositionAmount.sub(shares);
+    uint256 fiduBalanceBefore = fidu.balanceOf(address(this));
+
     uint256 receivedAmount = seniorPool.withdraw(usdcAmount);
+
+    uint256 fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
+
+    FiduPosition storage fiduPosition = fiduPositions[tokenId];
+
+    uint256 fiduPositionAmount = fiduPosition.amount;
+    require(fiduPositionAmount >= fiduUsed, "Not enough Fidu for withdrawal");
+    fiduPosition.amount = fiduPositionAmount.sub(fiduUsed);
+
     safeERC20Transfer(config.getUSDC(), msg.sender, receivedAmount);
   }
 

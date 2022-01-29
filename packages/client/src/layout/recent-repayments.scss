@@ -1,90 +1,79 @@
-.recent-repayments{
+.recent-repayments {
   border-top: 2px solid $sand;
   margin-top: 32px;
   padding-top: 32px;
 
-  .section-header{
+  .section-header {
     font-size: $sans-size-s;
     margin: 0 0 32px;
   }
 
-  .table{
-    td{
+  .table {
+    td {
       padding: 12px 0;
     }
 
-    .transaction-link-label{
+    .transaction-link-label {
       display: none;
     }
 
-    th.transaction-link{
+    th.transaction-link {
       opacity: 0;
     }
 
-    .transaction-link a path{
-      fill: $sand-xdark;
-    }
-
-    .transaction-link a:hover path{
+    .transaction-link a:hover path {
       fill: $purp-dark;
     }
 
-    .transaction-date{
+    .transaction-date {
       width: 125px;
     }
 
-    .transaction-portion.zero{
+    .transaction-portion.zero {
       color: $sand-xxdark;
     }
   }
 }
 
-
-@media
-  only screen
-  and (min-width: 550px)
-  and (max-width: $screen-m),
-  only screen
-  and (min-width: 750px) {
-  .recent-repayments .table{ 
-    th.transaction-link{
+@media only screen and (min-width: 550px) and (max-width: $screen-m), only screen and (min-width: 750px) {
+  .recent-repayments .table {
+    th.transaction-link {
       opacity: 1;
     }
 
-    .transaction-date{
+    .transaction-date {
       width: auto;
     }
 
-    .transaction-link{
+    .transaction-link {
       width: 125px;
     }
 
-    .transaction-link-label{
+    .transaction-link-label {
       display: inline;
     }
 
-    .transaction-link a{
+    .transaction-link a {
       float: right;
     }
 
-    .transaction-amount{
+    .transaction-amount {
       padding-left: 10px;
     }
   }
 }
 
-
 @media only screen and (min-width: $screen-l) {
-  .recent-repayments{
+  .recent-repayments {
     margin-top: 40px;
     padding-top: 32px;
 
-    .table{
-      td{
+    .table {
+      td {
         padding: 15px 0;
       }
 
-      .transaction-link{
+      .transaction-link {
         width: 150px;
       }
     }

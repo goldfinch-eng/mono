@@ -5,7 +5,7 @@ such as our server/functions trying to run typescript against all our src files,
 outside of the hardhat context and throwing all kinds of errors.
 */
 
-import {isPlainObject as _isPlainObject} from "lodash"
+import {every, isPlainObject as _isPlainObject} from "lodash"
 
 function getTypeof(obj: unknown) {
   return typeof obj
@@ -35,8 +35,29 @@ export function isNonEmptyString(obj: unknown): obj is string {
   return typeof obj === "string" && obj !== ""
 }
 export const isStringOrUndefined = orUndefined(isString)
+export const isArrayOfNonEmptyString = genIsArrayOf(isNonEmptyString)
 
 export const assertIsString: (obj: unknown) => asserts obj is string = genAssertIsTypeof("string")
+export const assertNonEmptyString: (obj: unknown) => asserts obj is string = (obj: unknown): asserts obj is string => {
+  assertIsString(obj)
+  if (!obj) {
+    throw new AssertionError("String value is not non-empty.")
+  }
+}
+
+export const assertArray: (obj: unknown) => asserts obj is unknown[] = (obj: unknown): asserts obj is unknown[] => {
+  if (!isArray(obj)) {
+    throw new AssertionError("Value is not an array.")
+  }
+}
+export const assertNonEmptyArray: (obj: unknown) => asserts obj is unknown[] = (
+  obj: unknown
+): asserts obj is unknown[] => {
+  assertArray(obj)
+  if (!obj.length) {
+    throw new AssertionError("Value is not a non-empty array.")
+  }
+}
 
 export class AssertionError extends Error {}
 
@@ -49,6 +70,16 @@ export function assertNonNullable<T>(val: T | null | undefined, errorMessage?: s
 export function asNonNullable<T>(val: T | null | undefined, errorMessage?: string): NonNullable<T> {
   assertNonNullable(val, errorMessage)
   return val
+}
+
+export const isNumber = (val: unknown): val is number => typeof val === "number"
+export const isNumberOrUndefined = orUndefined(isNumber)
+export const assertNumber: (val: unknown) => asserts val is number = genAssertIsTypeof("number")
+
+export function assertError(val: unknown): asserts val is Error {
+  if (!(val instanceof Error)) {
+    throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
 }
 
 /**
@@ -77,4 +108,25 @@ export function isUndefined(obj: unknown): obj is undefined {
 
 export function orUndefined<T>(typeGuard: (obj: unknown) => obj is T): (obj: unknown) => obj is T | undefined {
   return (obj: unknown): obj is T | undefined => typeGuard(obj) || isUndefined(obj)
+}
+
+export const isArray = (obj: unknown): obj is unknown[] => Array.isArray(obj)
+
+export function typeGuardedArray<T>(objs: unknown, typeGuard: (obj: unknown) => obj is T): objs is T[] {
+  return isArray(objs) && every(objs, typeGuard)
+}
+
+export function genIsArrayOf<T>(typeGuard: (obj: unknown) => obj is T): (objs: unknown) => objs is T[] {
+  return (things: unknown): things is T[] => typeGuardedArray(things, typeGuard)
+}
+
+export class UnreachableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "UnreachableError"
+  }
+}
+
+export function assertUnreachable(x: never): never {
+  throw new UnreachableError("Expected not to get here.")
 }

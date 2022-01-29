@@ -80,7 +80,14 @@ export function useAsyncFn<T>(
         .then(
           (result: T) => isMounted() && callId === lastCallId.current && setState({status: "succeeded", value: result})
         )
-        .catch((e) => isMounted() && callId === lastCallId.current && setState({status: "errored", error: e}))
+        .catch((e) => {
+          if (isMounted() && callId === lastCallId.current) {
+            console.error("Error caught in `useAsyncFn`:", e)
+            setState({status: "errored", error: e})
+          } else {
+            console.error("Obsolete error caught in `useAsyncFn`:", e)
+          }
+        })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted, ...deps])

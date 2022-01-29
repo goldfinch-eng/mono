@@ -1,12 +1,11 @@
+import {IERC20Permit} from "@goldfinch-eng/protocol/typechain/web3/IERC20Permit"
 import {BigNumber} from "bignumber.js"
+import {ethers} from "ethers"
+import ERC20PermitABI from "../../abi/ERC20Permit.json"
 import {AppContext} from "../App"
 import {ERC20} from "../ethereum/erc20"
-import {IERC20Permit} from "@goldfinch-eng/protocol/typechain/web3/IERC20Permit"
-import ERC20PermitABI from "../../abi/ERC20Permit.json"
-import useNonNullContext from "./useNonNullContext"
 import web3 from "../web3"
-import {ethers} from "ethers"
-import {secondsSinceEpoch} from "../utils"
+import useNonNullContext from "./useNonNullContext"
 const splitSignature = ethers.utils.splitSignature
 
 interface SignatureData {
@@ -48,7 +47,7 @@ export default function useERC20Permit(): {
     spender: string
   }) => Promise<SignatureData>
 } {
-  const {goldfinchProtocol, user} = useNonNullContext(AppContext)
+  const {goldfinchProtocol, user, currentBlock} = useNonNullContext(AppContext)
   const owner = user.address
 
   async function gatherPermitSignature({token, value, spender}: {token: ERC20; value: BigNumber; spender: string}) {
@@ -57,10 +56,11 @@ export default function useERC20Permit(): {
 
     // Default to one hour
     const deadlineFromNow = new BigNumber(process.env.REACT_APP_PERMIT_DEADLINE || 60 * 60)
-    const deadline = new BigNumber(secondsSinceEpoch()).plus(deadlineFromNow)
+    const now = currentBlock.timestamp
+    const deadline = new BigNumber(now).plus(deadlineFromNow)
 
-    const nonce = await contract.methods.nonces(owner).call()
-    const chainId = await web3.eth.getChainId()
+    const nonce = await contract.userWallet.methods.nonces(owner).call(undefined, "latest")
+    const chainId = await web3.userWallet.eth.getChainId()
     const message = {
       owner,
       spender,
@@ -85,7 +85,7 @@ export default function useERC20Permit(): {
       message,
     })
 
-    const provider = new ethers.providers.Web3Provider(web3.currentProvider as any)
+    const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
     const signature = await provider.send("eth_signTypedData_v4", [owner, data]).then(splitSignature)
     return {
       v: signature.v!,

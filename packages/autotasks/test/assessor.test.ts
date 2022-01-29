@@ -1,8 +1,6 @@
-/* global web3 */
-import hre from "hardhat"
 import {TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
-const {deployments} = hre
 import {
+  hardhat,
   BN,
   deployAllContracts,
   advanceTime,
@@ -12,6 +10,7 @@ import {
   createPoolWithCreditLine,
   toEthers,
 } from "@goldfinch-eng/protocol/test/testHelpers"
+const {deployments, web3, ethers} = hardhat
 import {assessIfRequired} from "../assessor"
 let accounts, owner, underwriter, borrower
 let creditLine, fakeProvider, fakeTimestamp
@@ -55,7 +54,7 @@ describe("assessor", () => {
     fakeProvider = {
       getBlock: async function () {
         if (!fakeTimestamp) {
-          return hre.ethers.provider.getBlock("latest")
+          return ethers.provider.getBlock("latest")
         }
         return {timestamp: fakeTimestamp}
       },
@@ -93,7 +92,7 @@ describe("assessor", () => {
 
       await expectAction(() =>
         assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
-      ).toChange([[creditLine.nextDueTime, {by: 0}]])
+      ).toChange([[creditLine.nextDueTime, {by: "0"}]])
     })
 
     it("assesses if beyond the term end block", async () => {
@@ -114,7 +113,7 @@ describe("assessor", () => {
     it("does not assess if no balance", async () => {
       await expectAction(() =>
         assessIfRequired(tranchedPoolAsEthers, creditLineAsEthers, fakeProvider, seniorPoolAsEthers, poolTokensAsEthers)
-      ).toChange([[creditLine.nextDueTime, {by: 0}]])
+      ).toChange([[creditLine.nextDueTime, {by: "0"}]])
     })
   })
 })

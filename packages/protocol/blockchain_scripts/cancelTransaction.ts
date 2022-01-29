@@ -19,7 +19,7 @@ async function main() {
       nonce: nonce,
       gasPrice: ethers.utils.parseUnits(gasPrice, "gwei"),
     }
-    const wallet = new ethers.Wallet(deployerKey, ethers.getDefaultProvider())
+    const wallet = new ethers.Wallet(deployerKey, hre.ethers.provider)
     console.log("Sending transaction...", tx)
     const txn = await wallet.sendTransaction(tx)
     console.log("Txn is:", txn, "now waiting...")

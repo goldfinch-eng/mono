@@ -1,11 +1,8 @@
 /* global web3  */
 import BN from "bn.js"
-import hre from "hardhat"
-const {deployments} = hre
 import {
   createPoolWithCreditLine,
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   erc20Approve,
   expect,
@@ -21,6 +18,8 @@ import {interestAprAsBN, MAX_UINT} from "../blockchain_scripts/deployHelpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {GoldfinchFactoryInstance} from "../typechain/truffle"
+import {deployBaseFixture} from "./util/fixtures"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 let owner,
@@ -32,7 +31,7 @@ let owner,
   tranchedPool,
   transferRestrictedVault,
   treasury,
-  goldfinchFactory,
+  goldfinchFactory: GoldfinchFactoryInstance,
   seniorPool,
   fidu
 
@@ -41,7 +40,7 @@ describe("TransferRestrictedVault", async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, borrower, treasury, otherPerson] = await web3.eth.getAccounts()
     ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, transferRestrictedVault, seniorPool, fidu} =
-      await deployAllContracts(deployments))
+      await deployBaseFixture())
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson, transferRestrictedVault.address])
     await goldfinchConfig.setTreasuryReserve(treasury)
     await erc20Transfer(usdc, [otherPerson], usdcVal(10000), owner)
@@ -243,6 +242,9 @@ describe("TransferRestrictedVault", async () => {
     const amount = usdcVal(1000)
 
     beforeEach(async () => {
+      await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(10000), [otherPerson])
+      await transferRestrictedVault.depositSenior(usdcVal(10000), {from: otherPerson})
+
       await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])
       const receipt = await transferRestrictedVault.depositSenior(amount)
       tokenId = getFirstLog(decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")).args.tokenId
@@ -293,6 +295,9 @@ describe("TransferRestrictedVault", async () => {
     const amount = usdcVal(1000)
 
     beforeEach(async () => {
+      await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(10000), [otherPerson])
+      await transferRestrictedVault.depositSenior(usdcVal(10000), {from: otherPerson})
+
       await erc20Approve(usdc, transferRestrictedVault.address, usdcVal(100000), [owner])
       const receipt = await transferRestrictedVault.depositSenior(amount)
       tokenId = getFirstLog(decodeLogs(receipt.receipt.rawLogs, transferRestrictedVault, "Transfer")).args.tokenId

@@ -5,15 +5,18 @@ import {
   BN,
   advanceTime,
   usdcVal,
-  deployAllContracts,
   erc20Transfer,
   expectAction,
   SECONDS_PER_DAY,
+  decodeLogs,
+  getFirstLog,
   Numberish,
 } from "./testHelpers"
+import {expectEvent} from "@openzeppelin/test-helpers"
 import {OWNER_ROLE, PAUSER_ROLE, interestAprAsBN} from "../blockchain_scripts/deployHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 
 let accounts, owner, person2, person3, goldfinchConfig
 
@@ -23,6 +26,7 @@ describe("CreditLine", () => {
   const interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
   const lateFeeApr = new BN(0)
+  const principalGracePeriod = new BN(185)
   let termEndTime, termInDays
   let usdc
   let creditLine
@@ -79,6 +83,7 @@ describe("CreditLine", () => {
       paymentPeriodInDays,
       termInDays,
       lateFeeApr,
+      principalGracePeriod,
       {from: thisOwner}
     )
 
@@ -95,7 +100,7 @@ describe("CreditLine", () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {usdc, fidu, goldfinchConfig} = await deployAllContracts(deployments)
+    const {usdc, fidu, goldfinchConfig} = await deployBaseFixture()
 
     await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
     await goldfinchConfig.bulkAddToGoList(accounts)
@@ -158,8 +163,21 @@ describe("CreditLine", () => {
           [() => creditLine.config(), {to: person2, bignumber: false}],
         ])
       })
+
       it("should disallow non-owner to set", async () => {
         return expect(creditLine.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
+      })
+
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address)
+        const tx = await creditLine.updateGoldfinchConfig()
+        const logs = decodeLogs(tx.receipt.rawLogs, creditLine, "GoldfinchConfigUpdated")
+        const firstLog = getFirstLog(logs)
+        expect(firstLog.event).to.equal("GoldfinchConfigUpdated")
+        expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
+        expect(firstLog.args.configAddress).to.match(new RegExp(newConfig.address, "i"))
       })
     })
   })
@@ -352,6 +370,18 @@ describe("CreditLine", () => {
       expect(await creditLine.termStartTime()).to.bignumber.equal(
         termEndTime.sub(SECONDS_PER_DAY.mul(new BN(termInDays)))
       )
+    })
+  })
+
+  describe("updateGoldfinchConfig", () => {
+    it("emits an event", async () => {
+      const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+      await goldfinchConfig.setGoldfinchConfig(newConfig.address)
+      const tx = await creditLine.updateGoldfinchConfig({from: owner})
+      expectEvent(tx, "GoldfinchConfigUpdated", {
+        who: owner,
+        configAddress: newConfig.address,
+      })
     })
   })
 })

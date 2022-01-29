@@ -5,7 +5,6 @@ import {
   BN,
   usdcVal,
   getBalance,
-  deployAllContracts,
   erc20Approve,
   erc20Transfer,
   SECONDS_PER_DAY,
@@ -19,6 +18,7 @@ import {
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} from "../blockchain_scripts/deployHelpers"
 import {time} from "@openzeppelin/test-helpers"
+import {deployBaseFixture} from "./util/fixtures"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
 
@@ -28,18 +28,25 @@ let fidu, goldfinchConfig, reserve, usdc, seniorPool, creditLine, tranchedPool, 
 
 const ONE_HUNDRED = new BN(100)
 
-describe("Goldfinch", async () => {
+const TEST_TIMEOUT = 60000
+
+describe("Goldfinch", async function () {
+  this.timeout(TEST_TIMEOUT)
+
   let limit = usdcVal(10000)
   let interestApr = interestAprAsBN("25")
   let lateFeeApr = interestAprAsBN("0")
   const juniorFeePercent = new BN(20)
+  const allowedUIDTypes = [0]
   let paymentPeriodInDays = new BN(1)
   let termInDays = new BN(365)
+  const principalGracePeriod = new BN(185)
+  const fundableAt = new BN(0)
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} =
-      await deployAllContracts(deployments)
+      await deployBaseFixture()
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
@@ -85,6 +92,7 @@ describe("Goldfinch", async () => {
       _interestApr,
       _termInDays,
       _lateFeesApr,
+      _allowedUIDTypes,
     }: {
       _paymentPeriodInDays?: Numberish
       _borrower?: string
@@ -92,6 +100,7 @@ describe("Goldfinch", async () => {
       _interestApr?: Numberish
       _termInDays?: Numberish
       _lateFeesApr?: Numberish
+      _allowedUIDTypes?: Array<Numberish>
     } = {}) {
       const result = await goldfinchFactory.createPool(
         borrower || _borrower,
@@ -101,6 +110,9 @@ describe("Goldfinch", async () => {
         _paymentPeriodInDays || paymentPeriodInDays,
         termInDays || _termInDays,
         lateFeeApr || _lateFeesApr,
+        principalGracePeriod,
+        fundableAt,
+        allowedUIDTypes || _allowedUIDTypes,
         {from: owner}
       )
       const poolCreatedEvent = result.logs[result.logs.length - 1]
@@ -111,7 +123,7 @@ describe("Goldfinch", async () => {
       return tranchedPool
     }
 
-    async function depositToFund(amount, investor?) {
+    async function depositToSeniorPool(amount, investor?) {
       investor = investor || investor1
       await seniorPool.deposit(amount, {from: investor})
     }
@@ -185,7 +197,7 @@ describe("Goldfinch", async () => {
       return grossAmount.sub(grossAmount.div(feeDenominator))
     }
 
-    async function withdrawFromFund(usdcAmount, investor?) {
+    async function withdrawFromSeniorPool(usdcAmount, investor?) {
       investor = investor || investor1
       if (usdcAmount === "max") {
         const numShares = await getBalance(investor, fidu)
@@ -195,7 +207,7 @@ describe("Goldfinch", async () => {
       return seniorPool.withdraw(usdcAmount, {from: investor})
     }
 
-    async function withdrawFromFundInFidu(fiduAmount, investor) {
+    async function withdrawFromSeniorPoolInFidu(fiduAmount, investor) {
       return seniorPool.withdrawInFidu(fiduAmount, {from: investor})
     }
 
@@ -218,8 +230,8 @@ describe("Goldfinch", async () => {
         tranchedPool = await createTranchedPool({_paymentPeriodInDays: paymentPeriodInDays})
 
         await expectAction(async () => {
-          await depositToFund(amount)
-          await depositToFund(amount, investor2)
+          await depositToSeniorPool(amount)
+          await depositToSeniorPool(amount, investor2)
           await depositToPool(tranchedPool, juniorAmount)
           await depositToPool(tranchedPool, juniorAmount, investor2)
         }).toChange([
@@ -264,8 +276,8 @@ describe("Goldfinch", async () => {
         const expectedReturn = await afterWithdrawalFees(grossExpectedReturn)
         const availableFidu = await getBalance(investor2, fidu)
         await expectAction(async () => {
-          await withdrawFromFund("max")
-          await withdrawFromFundInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
+          await withdrawFromSeniorPool("max")
+          await withdrawFromSeniorPoolInFidu(availableFidu, investor2) // Withdraw everything in fidu terms
         }).toChange([
           [() => getBalance(investor1, usdc), {byCloseTo: expectedReturn}],
           [() => getBalance(investor2, usdc), {byCloseTo: expectedReturn}], // Also ensures share price is correctly incorporated
@@ -289,8 +301,8 @@ describe("Goldfinch", async () => {
         const juniorAmount = usdcVal(1000)
         const drawdownAmount = amount.div(new BN(2))
 
-        await depositToFund(amount)
-        await depositToFund(amount, investor2)
+        await depositToSeniorPool(amount)
+        await depositToSeniorPool(amount, investor2)
         await createTranchedPool({_paymentPeriodInDays: paymentPeriodInDays})
         await depositToPool(tranchedPool, juniorAmount)
         await depositToPool(tranchedPool, juniorAmount, investor2)
@@ -310,8 +322,8 @@ describe("Goldfinch", async () => {
 
         // All the main actions should still work as expected!
         await expect(drawdown(tranchedPool, new BN(10))).to.be.rejected
-        await depositToFund(new BN(10))
-        await withdrawFromFund(new BN(10))
+        await depositToSeniorPool(new BN(10))
+        await withdrawFromSeniorPool(new BN(10))
         await makePayment(tranchedPool, new BN(10))
       })
 
@@ -322,8 +334,8 @@ describe("Goldfinch", async () => {
         const amount = usdcVal(10000)
         const drawdownAmount = amount.div(new BN(2))
 
-        await depositToFund(amount)
-        await depositToFund(amount, investor2)
+        await depositToSeniorPool(amount)
+        await depositToSeniorPool(amount, investor2)
         const creditLine = await createTranchedPool({
           _paymentPeriodInDays: paymentPeriodInDays,
           _lateFeesApr: interestAprAsBN("3.0"),

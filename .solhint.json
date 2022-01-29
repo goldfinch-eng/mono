@@ -1,12 +1,13 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "^0.6.12"],
+    "compiler-version": ["error", "^0.6.12 || ^0.8.4"],
     "prettier/prettier": "error",
     "not-rely-on-time": "off",
     "reason-string": ["warn",{"maxLength":120}],
     "max-line-length": ["error", 120],
     "modifiers/ensure-modifiers": ["error", {
+      "ignoreContractKind": ["interface"],
       "required": {
         "*": ["onlyAdmin"]
       },
@@ -72,12 +73,15 @@
           "drawdown": []
         },
         "**/TranchedPool.sol:TranchedPool": {
+          "setAllowedUIDTypes": ["onlyLocker"],
           "deposit": ["whenNotPaused"],
           "depositWithPermit": [],
           "lockJuniorCapital": ["whenNotPaused", "onlyLocker"],
           "lockPool": ["whenNotPaused", "onlyLocker"],
-          "withdraw": ["whenNotPaused", "onlyTokenHolder"],
-          "withdrawMax": ["whenNotPaused", "onlyTokenHolder"],
+          "setFundableAt": ["onlyLocker"],
+          "initializeNextSlice": ["whenNotPaused", "onlyLocker"],
+          "withdraw": ["whenNotPaused"],
+          "withdrawMax": ["whenNotPaused"],
           "withdrawMultiple": [],
           "drawdown": ["whenNotPaused"],
           "assess": ["whenNotPaused"],
@@ -91,8 +95,11 @@
         "**/SeniorPool.sol:SeniorPool": {
           "deposit": [],
           "depositWithPermit": [],
+          "invest": [],
           "withdraw": [],
-          "withdrawInFidu": []
+          "withdrawInFidu": [],
+          "redeem": [],
+          "writedown": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
@@ -110,8 +117,74 @@
           "withdrawSeniorInFidu": [],
           "transferPosition": []
         },
-        "**/FixedLeverageRatioStrategy.sol:FixedLeverageRatioStrategy": {
-          "invest": []
+        "**/DynamicLeverageRatioStrategy.sol:DynamicLeverageRatioStrategy": {
+          "setLeverageRatio": ["onlySetterRole"]
+        },
+        "**/GFI.sol:GFI": {
+          "mint": ["onlyMinter"],
+          "setCap": ["onlyOwner"],
+          "pause": ["onlyPauser"],
+          "unpause": ["onlyPauser"]
+        },
+        "**/StakingRewards.sol:StakingRewards": {
+          "stake": [],
+          "stakeWithLockup": [],
+          "depositAndStake": [],
+          "depositWithPermitAndStake": [],
+          "depositAndStakeWithLockup": [],
+          "depositWithPermitAndStakeWithLockup": [],
+          "unstake": [],
+          "unstakeAndWithdraw": [],
+          "unstakeAndWithdrawMultiple": [],
+          "unstakeAndWithdrawInFidu": [],
+          "unstakeAndWithdrawMultipleInFidu": [],
+          "getReward": [],
+          "kick": [],
+          "exit": [],
+          "exitAndWithdraw": []
+        },
+        "**/CommunityRewards.sol:CommunityRewards": {
+          "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
+          "getReward": []
+        },
+        "**/Go.sol:Go": {
+          "go": [],
+          "goOnlyIdTypes": [],
+          "goSeniorPool": []
+        },
+        "**/BackerRewards.sol:BackerRewards": {
+          "allocateRewards": ["onlyPool"],
+          "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
+          "withdraw": [],
+          "withdrawMultiple": []
+        },
+        "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": []
+        },
+        "**/MerkleDistributor.sol:MerkleDistributor": {
+          "_setGrantAccepted": [],
+          "acceptGrant": []
+        },
+        "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
+          "pause": [],
+          "unpause": []
+        },
+        "**/UniqueIdentity.sol:UniqueIdentity": {
+          "mint": ["onlySigner"],
+          "safeTransferFrom": [],
+          "safeBatchTransferFrom": [],
+          "burn": ["onlySigner"]
+        },
+        "**/TranchingLogic.sol:*": {
+          "applyToAllSeniorTranches":  [],
+          "applyToAllJuniorTranches": [],
+          "applyToSeniorTranche":  [],
+          "applyToJuniorTranche": [],
+          "applyBySharePrice":  [],
+          "applyByAmount": [],
+          "migrateAccountingVariables":  [],
+          "closeCreditLine": []
         },
         "**/contracts/test/**": {
           "*.*": []

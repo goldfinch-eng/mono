@@ -47,6 +47,7 @@ async function buildAndDeploy(id, name, dir, autoTaskClient) {
     {id: "9d2053fd-507a-473f-8b5a-b079a694723a", name: "MainnetRelayer", dir: "relayer"},
     {id: "0157e8f0-3e4b-4510-af27-364207d8fdbd", name: "RinkebyAssessor", dir: "assessor"},
     {id: "98e14e44-4137-4f25-9560-984c000445c6", name: "MainnetAssessor", dir: "assessor"},
+    {id: "bc31d6f7-0ab4-4170-9ba0-4978a6ed6034", name: "Mainnet Unique Identity Signer", dir: "unique-identity-signer"},
   ]
 
   const autotaskClient = new AutotaskClient({

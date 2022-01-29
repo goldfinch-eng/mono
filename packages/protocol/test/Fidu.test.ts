@@ -1,8 +1,10 @@
 /* global artifacts web3 */
-import {expect, bigVal, getDeployedAsTruffleContract, expectAction} from "./testHelpers"
+import {expectEvent} from "@openzeppelin/test-helpers"
+import {expect, bigVal, expectAction} from "./testHelpers"
 import {OWNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
 const GoldfinchConfig = artifacts.require("GoldfinchConfig")
 const Fidu = artifacts.require("Fidu")
@@ -13,22 +15,17 @@ describe("Fidu", () => {
     const {protocol_owner} = await getNamedAccounts()
     owner = protocol_owner
 
-    await deployments.run("base_deploy")
-    const fidu = await getDeployedAsTruffleContract(deployments, "Fidu")
-    const goldfinchConfig = await getDeployedAsTruffleContract(deployments, "GoldfinchConfig")
+    const {fidu, goldfinchConfig} = await deployBaseFixture()
 
     return {fidu, goldfinchConfig}
   })
 
-  let owner, person2, goldfinchConfig, fidu, accounts
+  let owner, person2, goldfinchConfig, fidu
   beforeEach(async () => {
     // Pull in our unlocked accounts
-    accounts = await web3.eth.getAccounts()
-    ;[owner, person2] = accounts
-
-    const deployments = await testSetup()
-    fidu = deployments.fidu
-    goldfinchConfig = deployments.goldfinchConfig
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;[owner, person2] = await web3.eth.getAccounts()
+    ;({fidu, goldfinchConfig} = await testSetup())
   })
 
   describe("Initialization", async () => {
@@ -63,6 +60,18 @@ describe("Fidu", () => {
           [() => fidu.config(), {to: person2, bignumber: false}],
         ])
       })
+
+      it("emits an event", async () => {
+        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
+        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address, {from: owner})
+        const tx = await fidu.updateGoldfinchConfig()
+
+        expectEvent(tx, "GoldfinchConfigUpdated", {
+          who: owner,
+          configAddress: newConfig.address,
+        })
+      })
+
       it("should disallow non-owner to set", async () => {
         return expect(fidu.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have minter role/)
       })

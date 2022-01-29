@@ -7,40 +7,32 @@ import {
   usdcVal,
   SECONDS_PER_DAY,
   SECONDS_PER_YEAR,
-  deployAllContracts,
   Numberish,
 } from "./testHelpers"
 import hre from "hardhat"
-const {deployments, artifacts, web3} = hre
+const {deployments, web3} = hre
 import {interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} from "../blockchain_scripts/deployHelpers"
-const Accountant = artifacts.require("Accountant")
-const TestAccountant = artifacts.require("TestAccountant")
-const CreditLine = artifacts.require("CreditLine")
+import {deployBaseFixture, deployUninitializedCreditLineFixture} from "./util/fixtures"
 
 describe("Accountant", async () => {
-  let accountant, owner, borrower, testAccountant, goldfinchConfig
-  before(async () => {
-    // Linking can only happen once, so we do it in a before block, rather than beforeEach
-    accountant = await Accountant.new({from: owner})
-    CreditLine.link(accountant)
-    TestAccountant.link(accountant)
-  })
+  let accountant, owner, borrower, testAccountant, goldfinchConfig, creditLine
 
-  const setupTest = deployments.createFixture(async ({deployments}) => {
-    return await deployAllContracts(deployments)
+  const testSetup = deployments.createFixture(async () => {
+    const baseFixtures = await deployBaseFixture()
+    const creditLineFixture = await deployUninitializedCreditLineFixture()
+
+    return {...baseFixtures, ...creditLineFixture}
   })
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, borrower] = await web3.eth.getAccounts()
-    const contracts = await setupTest()
-    goldfinchConfig = contracts.goldfinchConfig
-    testAccountant = await TestAccountant.new({from: owner})
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+    ;({goldfinchConfig, testAccountant, accountant, creditLine} = await testSetup())
   })
 
   describe("calculateInterestAndPrincipalAccrued", async () => {
-    let creditLine,
-      balance,
+    let balance,
       timestamp,
       lateFeeApr,
       lateFeeGracePeriod,
@@ -48,6 +40,7 @@ describe("Accountant", async () => {
       paymentPeriodInDays,
       termInDays,
       interestApr
+
     const calculateInterestAndPrincipalAccrued = async (timestamp) => {
       const result = await testAccountant.calculateInterestAndPrincipalAccrued(
         creditLine.address,
@@ -64,10 +57,10 @@ describe("Accountant", async () => {
       interestApr = interestAprAsBN("3.00")
       lateFeeApr = interestAprAsBN("3")
       lateFeeGracePeriod = new BN(1)
+      const principalGracePeriod = new BN(185)
       termInDays = new BN(360)
       paymentPeriodInDays = new BN(30)
       lateFeeGracePeriodInDays = lateFeeGracePeriod.mul(paymentPeriodInDays)
-      creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
         goldfinchConfig.address,
         owner,
@@ -76,7 +69,8 @@ describe("Accountant", async () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        principalGracePeriod
       )
       const currentTime = new BN(Date.now() / 1000)
       await creditLine.setInterestAccruedAsOf(currentTime)
@@ -160,11 +154,7 @@ describe("Accountant", async () => {
   })
 
   describe("writedowns", async () => {
-    let creditLine, balance, interestApr, paymentPeriodInDays, termEndTime, timestamp, gracePeriod, maxLatePeriods
-
-    beforeEach(async () => {
-      await setupCreditLine()
-    })
+    let balance, interestApr, paymentPeriodInDays, termEndTime, timestamp, gracePeriod, maxLatePeriods
 
     async function setupCreditLine({_paymentPeriodInDays}: {_paymentPeriodInDays?: Numberish} = {}) {
       balance = usdcVal(10)
@@ -173,10 +163,10 @@ describe("Accountant", async () => {
       paymentPeriodInDays = _paymentPeriodInDays || new BN(30)
       gracePeriod = new BN(30)
       maxLatePeriods = new BN(120)
+      const principalGracePeriod = new BN(185)
       termEndTime = new BN(Date.now() / 1000) // Current time in seconds
       const lateFeeApr = interestAprAsBN("0")
 
-      creditLine = await CreditLine.new({from: owner})
       await creditLine.initialize(
         goldfinchConfig.address,
         owner,
@@ -185,7 +175,8 @@ describe("Accountant", async () => {
         interestApr,
         paymentPeriodInDays,
         termInDays,
-        lateFeeApr
+        lateFeeApr,
+        principalGracePeriod
       )
       await creditLine.setBalance(balance)
       await creditLine.setTermEndTime(termEndTime) // Some time in the future
@@ -211,6 +202,7 @@ describe("Accountant", async () => {
 
     describe("calculateAmountOwedForOnePeriod", async () => {
       beforeEach(async () => await setupCreditLine())
+
       it("calculates amount owed for one period for the credit line", async () => {
         const result = await testAccountant.calculateAmountOwedForOneDay(creditLine.address)
         const calculatedInterestPerDay = new BN(result[0]).div(new BN(ETHDecimals))
@@ -221,9 +213,8 @@ describe("Accountant", async () => {
     })
 
     describe("when the payment period is greater than the max grace period in days", async () => {
-      let creditLine
       beforeEach(async () => {
-        creditLine = await setupCreditLine({_paymentPeriodInDays: new BN(90)})
+        await setupCreditLine({_paymentPeriodInDays: new BN(90)})
       })
 
       it("should respect the maximum number of grace period days", async () => {
