@@ -166,10 +166,6 @@
           "_setGrantAccepted": [],
           "acceptGrant": []
         },
-        "**/BackerMerkleDistributor.sol:BackerMerkleDistributor": {
-          "_setGrantAccepted": [],
-          "acceptGrant": []
-        },
         "**/ERC1155PresetPauserUpgradeable.sol:ERC1155PresetPauserUpgradeable": {
           "pause": [],
           "unpause": []
