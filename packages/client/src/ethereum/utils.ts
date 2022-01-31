@@ -111,12 +111,13 @@ export function isMainnetForking(): boolean {
   return process.env.REACT_APP_HARDHAT_FORK === MAINNET
 }
 
-async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
+async function getMerkleDistributorInfo(networkId: string, backer = false): Promise<MerkleDistributorInfo | undefined> {
   const fileNameSuffix =
     process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
+  const folderName = backer ? "backerMerkleDistributor" : "merkleDistributor"
 
   return import(
-    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/${folderName}/merkleDistributorInfo${fileNameSuffix}.json`
   )
     .then((result: unknown): MerkleDistributorInfo => {
       const plain = _.toPlainObject(result)
@@ -132,12 +133,16 @@ async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistri
     })
 }
 
-async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
+async function getMerkleDirectDistributorInfo(
+  networkId: string,
+  backer = false
+): Promise<MerkleDirectDistributorInfo | undefined> {
   const fileNameSuffix =
     process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
+  const folderName = backer ? "backerMerkleDirectDistributor" : "merkleDirectDistributor"
 
   return import(
-    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/${folderName}/merkleDirectDistributorInfo${fileNameSuffix}.json`
   )
     .then((result: unknown): MerkleDirectDistributorInfo => {
       const plain = _.toPlainObject(result)

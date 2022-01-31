@@ -7,8 +7,12 @@ import {useMediaQuery} from "react-responsive"
 import {AppContext} from "../App"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
-import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../ethereum/merkleDirectDistributor"
-import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
+import {
+  BackerMerkleDirectDistributorLoaded,
+  MerkleDirectDistributor,
+  MerkleDirectDistributorLoaded,
+} from "../ethereum/merkleDirectDistributor"
+import {BackerMerkleDistributorLoaded, MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {UserLoaded} from "../ethereum/user"
@@ -542,8 +546,8 @@ type RewardActionsContainerProps = {
   disabled: boolean
   user: UserLoaded
   gfi: GFILoaded
-  merkleDistributor: MerkleDistributorLoaded
-  merkleDirectDistributor: MerkleDirectDistributorLoaded
+  merkleDistributor: MerkleDistributorLoaded | BackerMerkleDistributorLoaded
+  merkleDirectDistributor: MerkleDirectDistributorLoaded | BackerMerkleDirectDistributorLoaded
   stakingRewards: StakingRewardsLoaded
   communityRewards: CommunityRewardsLoaded
 } & (

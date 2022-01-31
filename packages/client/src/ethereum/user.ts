@@ -72,8 +72,8 @@ import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
-import {MerkleDistributorLoaded} from "./merkleDistributor"
+import {BackerMerkleDirectDistributorLoaded, MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
+import {BackerMerkleDistributorLoaded, MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
 
@@ -321,7 +321,9 @@ export class UserCommunityRewards {
   async initialize(
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    backerMerkleDistributor: BackerMerkleDistributorLoaded,
     userMerkleDistributor: UserMerkleDistributorLoaded,
+    userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
     // NOTE: In defining `grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
@@ -358,16 +360,19 @@ export class UserCommunityRewards {
           ),
           Promise.all(
             tokenIds.map(async (tokenId) => {
-              const events = await this.goldfinchProtocol.queryEvents(
-                merkleDistributor.contract.readOnly,
-                [GRANT_ACCEPTED_EVENT],
-                {tokenId},
-                currentBlock.number
+              let {events, userDistributor} = await this.getAcceptedEventsForMerkleDistributorScenarios(
+                merkleDistributor,
+                backerMerkleDistributor,
+                tokenId,
+                currentBlock,
+                userMerkleDistributor,
+                userBackerMerkleDistributor
               )
+
               if (events.length === 1) {
                 const acceptanceEvent = events[0]
                 assertNonNullable(acceptanceEvent)
-                const airdrop = userMerkleDistributor.info.value.airdrops.accepted.find(
+                const airdrop = userDistributor.info.value.airdrops.accepted.find(
                   (airdrop) => parseInt(acceptanceEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
@@ -430,6 +435,35 @@ export class UserCommunityRewards {
         granted,
       },
     }
+  }
+
+  private async getAcceptedEventsForMerkleDistributorScenarios(
+    merkleDistributor: MerkleDistributorLoaded,
+    backerMerkleDistributor: BackerMerkleDistributorLoaded,
+    tokenId: string,
+    currentBlock: BlockInfo,
+    userMerkleDistributor: UserMerkleDistributorLoaded,
+    userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded
+  ) {
+    let events, userDistributor
+    events = await this.goldfinchProtocol.queryEvents(
+      merkleDistributor.contract.readOnly,
+      [GRANT_ACCEPTED_EVENT],
+      {tokenId, account: this.address},
+      currentBlock.number
+    )
+    userDistributor = userMerkleDistributor
+
+    if (events.length === 0) {
+      events = await this.goldfinchProtocol.queryEvents(
+        backerMerkleDistributor.contract.readOnly,
+        [GRANT_ACCEPTED_EVENT],
+        {tokenId, account: this.address},
+        currentBlock.number
+      )
+      userDistributor = userBackerMerkleDistributor
+    }
+    return {events, userDistributor}
   }
 
   static calculateClaimable(grants: CommunityRewardsGrant[]): BigNumber {
@@ -507,12 +541,16 @@ export class UserMerkleDistributor {
     }
   }
 
+  async getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
+    return await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
   async initialize(
-    merkleDistributor: MerkleDistributorLoaded,
+    merkleDistributor: MerkleDistributorLoaded | BackerMerkleDistributorLoaded,
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    const merkleDistributorInfo = await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+    const merkleDistributorInfo = await this.getMerkleDistributorInfo()
     if (!merkleDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
@@ -620,7 +658,18 @@ export class UserMerkleDistributor {
   }
 }
 
+export class UserBackerMerkleDistributor extends UserMerkleDistributor {
+  async getMerkleDistributorInfo() {
+    return await getMerkleDistributorInfo(this.goldfinchProtocol.networkId, true)
+  }
+}
+
 export type UserMerkleDistributorLoaded = WithLoadedInfo<UserMerkleDistributor, UserMerkleDistributorLoadedInfo>
+
+export type UserBackerMerkleDistributorLoaded = WithLoadedInfo<
+  UserBackerMerkleDistributor,
+  UserMerkleDistributorLoadedInfo
+>
 
 type UserMerkleDirectDistributorLoadedInfo = {
   currentBlock: BlockInfo
@@ -650,8 +699,15 @@ export class UserMerkleDirectDistributor {
     }
   }
 
-  async initialize(merkleDirectDistributor: MerkleDirectDistributorLoaded, currentBlock: BlockInfo): Promise<void> {
-    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+  async getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+    return await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async initialize(
+    merkleDirectDistributor: MerkleDirectDistributorLoaded | BackerMerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ): Promise<void> {
+    const merkleDirectDistributorInfo = await this.getMerkleDirectDistributorInfo()
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
     }
@@ -776,8 +832,19 @@ export class UserMerkleDirectDistributor {
   }
 }
 
+export class UserBackerMerkleDirectDistributor extends UserMerkleDirectDistributor {
+  async getMerkleDirectDistributorInfo() {
+    return await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId, true)
+  }
+}
+
 export type UserMerkleDirectDistributorLoaded = WithLoadedInfo<
   UserMerkleDirectDistributor,
+  UserMerkleDirectDistributorLoadedInfo
+>
+
+export type UserBackerMerkleDirectDistributorLoaded = WithLoadedInfo<
+  UserBackerMerkleDirectDistributor,
   UserMerkleDirectDistributorLoadedInfo
 >
 

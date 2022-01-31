@@ -10,6 +10,15 @@ import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDistributor} from "./merkleDistributor"
 
+type BackerMerkleDirectDistributorLoadedInfo = {
+  currentBlock: BlockInfo
+}
+
+export type BackerMerkleDirectDistributorLoaded = WithLoadedInfo<
+  BackerMerkleDirectDistributor,
+  BackerMerkleDirectDistributorLoadedInfo
+>
+
 type MerkleDirectDistributorLoadedInfo = {
   currentBlock: BlockInfo
 }

@@ -15,7 +15,13 @@ type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
 }
 
+type BackerMerkleDistributorLoadedInfo = {
+  currentBlock: BlockInfo
+}
+
 export type MerkleDistributorLoaded = WithLoadedInfo<MerkleDistributor, MerkleDistributorLoadedInfo>
+
+export type BackerMerkleDistributorLoaded = WithLoadedInfo<BackerMerkleDistributor, BackerMerkleDistributorLoadedInfo>
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
@@ -83,6 +89,12 @@ export class MerkleDistributor {
       case "goldfinch_investment":
         return "as a Goldfinch investor"
       case "liquidity_provider":
+        return "as a Liquidity Provider"
+      case "backer_flight_academy":
+        return "in Flight Academy"
+      case "backer_goldfinch_investment":
+        return "as a Goldfinch investor"
+      case "backer_liquidity_provider":
         return "as a Liquidity Provider"
       case "flight_academy_and_liquidity_provider":
         return "in Flight Academy and as a Liquidity Provider"
