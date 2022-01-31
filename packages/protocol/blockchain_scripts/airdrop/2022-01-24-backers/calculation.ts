@@ -97,8 +97,8 @@ if (require.main === module) {
   program
     .version("0.0.0")
     .requiredOption("-i, --input <path>", "input CSV file with grants")
-    .requiredOption("-a, --available <path>", "ourput CSV file with data for immediately available tokens")
-    .requiredOption("-v, --vesting <path>", "ourput CSV file with data for tokens available with vesting")
+    .requiredOption("-a, --available <path>", "output CSV file with data for immediately available tokens")
+    .requiredOption("-v, --vesting <path>", "output CSV file with data for tokens available with vesting")
 
   program.parse(process.argv)
 
