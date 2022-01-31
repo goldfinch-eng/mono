@@ -6,13 +6,14 @@ import {
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
   KnownEventData,
+  KnownEventName,
   PAYMENT_APPLIED_EVENT,
   TranchedPoolEventType,
   TRANCHED_POOL_EVENT_TYPES,
   WITHDRAWAL_MADE_EVENT,
+  POOL_CREATED_EVENT,
 } from "../types/events"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
-import {TranchedPool} from "../ethereum/tranchedPool"
 import {
   ACCEPT_TX_TYPE,
   BORROW_TX_TYPE,
@@ -21,7 +22,6 @@ import {
   DRAWDOWN_TX_NAME,
   ERC20_APPROVAL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
-  HistoricalTx,
   INTEREST_COLLECTED_TX_NAME,
   INTEREST_PAYMENT_TX_NAME,
   MINT_UID_TX_TYPE,
@@ -33,6 +33,7 @@ import {
   SUPPLY_TX_TYPE,
   Tx,
   TxType,
+  HistoricalTx,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
@@ -52,33 +53,70 @@ type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]
 }
 
+type TransactionsTypes = HistoricalTx<KnownEventName> | CurrentTx<TxType>
+
+const noTransactionRow: React.ReactNode = (
+  <tr key="empty-row" className="empty-row">
+    <td>No transactions</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+)
+
 function Transactions(props: TransactionsProps) {
   const {user, network, goldfinchProtocol, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
-  const [tranchedPoolTxs, setTranchedPoolTxs] = useState<HistoricalTx<TranchedPoolEventType>[]>()
+  const [transactionRows, setTransactionRows] = useState<TransactionsTypes[]>([])
   const currentRoute = useCurrentRoute()
 
+  async function loadTranchedPoolAddresses(
+    goldfinchProtocol: GoldfinchProtocol,
+    currentBlock: BlockInfo
+  ): Promise<string[]> {
+    let poolEvents = await goldfinchProtocol.queryEvents(
+      "GoldfinchFactory",
+      [POOL_CREATED_EVENT],
+      undefined,
+      currentBlock.number
+    )
+    return poolEvents.map((e) => e.returnValues.pool)
+  }
+
   async function loadTranchedPoolEvents(
-    tranchedPools: {[address: string]: TranchedPool},
+    userAddress: string,
+    borrowerTranchedPools: string[],
     goldfinchProtocol: GoldfinchProtocol,
     currentBlock: BlockInfo
   ) {
     assertNonNullable(setLeafCurrentBlock)
     assertNonNullable(currentRoute)
 
-    const tranchedPoolsAddresses = Object.keys(tranchedPools)
+    let tranchedPoolsAddresses: string[] = await loadTranchedPoolAddresses(goldfinchProtocol, currentBlock)
     let combinedEvents = _.flatten(
-      await Promise.all(
-        tranchedPoolsAddresses.map((address) =>
+      await Promise.all([
+        ...borrowerTranchedPools.map((address: string) =>
           goldfinchProtocol.queryEvents(
-            tranchedPools[address]!.contract.readOnly,
-            TRANCHED_POOL_EVENT_TYPES,
+            goldfinchProtocol.getContract("TranchedPool", address).readOnly,
+            [PAYMENT_APPLIED_EVENT, DRAWDOWN_MADE_EVENT],
             undefined,
             currentBlock.number
           )
-        )
-      )
+        ),
+        ...tranchedPoolsAddresses.map((address: string) =>
+          goldfinchProtocol.queryEvents(
+            goldfinchProtocol.getContract("TranchedPool", address).readOnly,
+            TRANCHED_POOL_EVENT_TYPES,
+            {
+              owner: userAddress,
+              payer: userAddress,
+              borrower: userAddress,
+            },
+            currentBlock.number
+          )
+        ),
+      ])
     )
-    let poolTxs = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
+    let poolTxs: HistoricalTx<KnownEventName>[] = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
       parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
         switch (eventData.event) {
           case DEPOSIT_MADE_EVENT:
@@ -127,16 +165,55 @@ function Transactions(props: TransactionsProps) {
         }
       },
     })
-    poolTxs = await populateDates(poolTxs)
-    setTranchedPoolTxs(poolTxs)
     setLeafCurrentBlock(currentRoute, currentBlock)
+    return await populateDates(poolTxs)
   }
 
   useEffect(() => {
-    if (!user || !user.borrower || !goldfinchProtocol || !currentBlock) {
+    if (!user || !goldfinchProtocol || !currentBlock) {
       return
     }
-    loadTranchedPoolEvents(user.borrower.tranchedPools, goldfinchProtocol, currentBlock)
+    loadTranchedPoolEvents(
+      user.address,
+      user.borrower ? Object.keys(user.borrower.tranchedPools) : [],
+      goldfinchProtocol,
+      currentBlock
+    ).then((tranchedPoolTxs: HistoricalTx<KnownEventName>[]) => {
+      // Only show txs from currentTxs that are not already in user.pastTxs
+      let pendingTxs: TransactionsTypes[] = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
+      const compactTxs: TransactionsTypes[] = _.compact([
+        ...pendingTxs,
+        ...(user ? user.info.value.pastTxs : []),
+        ...(tranchedPoolTxs || []),
+      ])
+      let allTxs: TransactionsTypes[]
+      allTxs = _.sortBy(compactTxs, ["blockNumber", "transactionIndex"])
+      allTxs = _.uniqBy(allTxs, "eventId")
+
+      // When you supply and stake, it adds a $0.00 Approval transaction that we want to remove so that we do not
+      // confuse the user with an approval amount that they did not explicitly take an action on
+      // this only removes approval events that are in the same block number as the supply event
+      allTxs = allTxs.reduce(
+        ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
+          hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
+          hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
+
+          if (
+            hasSeenSupplyInCurrentBlock &&
+            [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
+          ) {
+            return {acc, previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
+          } else {
+            return {acc: acc.concat(curr), previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
+          }
+        },
+        {acc: [] as TransactionsTypes[], hasSeenSupplyInCurrentBlock: false, previousBlock: 0}
+      ).acc
+
+      // sort by block number descending (newest first)
+      allTxs = _.reverse(allTxs)
+      setTransactionRows(allTxs)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, goldfinchProtocol, currentBlock])
 
@@ -313,47 +390,6 @@ function Transactions(props: TransactionsProps) {
     )
   }
 
-  // Only show txs from currentTxs that are not already in user.pastTxs
-  let pendingTxs = _.differenceBy(props.currentTxs, user ? user.info.value.pastTxs : [], "id")
-  const compactTxs = _.compact([...pendingTxs, ...(user ? user.info.value.pastTxs : []), ...(tranchedPoolTxs || [])])
-  let allTxs
-  allTxs = _.sortBy(compactTxs, ["blockNumber", "transactionIndex"])
-  allTxs = _.uniqBy(allTxs, "eventId")
-
-  // When you supply and stake, it adds a $0.00 Approval transaction that we want to remove so that we do not confuse the user with an approval amount that they did not explicitly take an action on
-  // this only removes approval events that are in the same block number as the supply event
-  allTxs = allTxs.reduce(
-    ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
-      hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
-      hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
-
-      if (
-        hasSeenSupplyInCurrentBlock &&
-        [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
-      ) {
-        return {acc, previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
-      } else {
-        return {acc: acc.concat(curr), previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
-      }
-    },
-    {acc: [] as any[], hasSeenSupplyInCurrentBlock: false, previousBlock: 0}
-  ).acc
-
-  // sort by block number descending (newest first)
-  allTxs = _.reverse(allTxs)
-
-  let transactionRows: React.ReactNode[] = [
-    <tr key="empty-row" className="empty-row">
-      <td>No transactions</td>
-      <td></td>
-      <td></td>
-      <td></td>
-    </tr>,
-  ]
-  if (allTxs.length > 0) {
-    transactionRows = allTxs.map(transactionRow)
-  }
-
   return (
     <div className="content-section">
       <div className="page-header">Transactions</div>
@@ -367,7 +403,7 @@ function Transactions(props: TransactionsProps) {
             <th className="transaction-link"></th>
           </tr>
         </thead>
-        <tbody>{transactionRows}</tbody>
+        <tbody>{transactionRows.length ? transactionRows.map(transactionRow) : noTransactionRow}</tbody>
       </table>
     </div>
   )
