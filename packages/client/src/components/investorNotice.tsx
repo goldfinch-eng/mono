@@ -5,20 +5,16 @@ export default function InvestorNotice() {
   const [open, setOpen] = useState<boolean>(false)
 
   return (
-    <div className="investor-notice info-banner subtle background-container">
+    <div className="investor-notice info-banner subtle background-container" onClick={() => setOpen(!open)}>
       <div className="inner-banner">
         <div className="message">
           {iconInfo}
           <p>This offering is only available to non-U.S. persons.</p>
         </div>
         {open ? (
-          <button className="expand close" onClick={() => setOpen(false)}>
-            {iconCarrotUp}
-          </button>
+          <button className="expand close">{iconCarrotUp}</button>
         ) : (
-          <button className="expand" onClick={() => setOpen(true)}>
-            {iconCarrotDown}
-          </button>
+          <button className="expand open">{iconCarrotDown}</button>
         )}
       </div>
       <div className={`hidden-message ${open ? "show" : "hide"}`}>
