@@ -4,6 +4,7 @@ import {parseCsv} from "../community/parseCsv"
 import {program} from "commander"
 import {decimals} from "@goldfinch-eng/protocol/test/testHelpers"
 import {BACKER_GRANT_REASON} from "../../merkle/merkleDistributor/types"
+import {BACKER_GRANT_REASON as BACKER_DIRECT_GRANT_REASON} from "../../merkle/merkleDirectDistributor/types"
 
 interface RawCSV {
   poolName: string
@@ -43,7 +44,7 @@ async function saveImmediateData(data: PreparedRow[], path: string) {
     JSON.stringify(
       data.map((row) => ({
         account: row.backerAddress,
-        reason: BACKER_GRANT_REASON,
+        reason: BACKER_DIRECT_GRANT_REASON,
         grant: {
           amount: row.immediatelyAvailable.toFixed(),
           cliffLength: "0",
