@@ -4,7 +4,7 @@ import {parseCsv} from "../community/parseCsv"
 import {program} from "commander"
 import {decimals} from "@goldfinch-eng/protocol/test/testHelpers"
 import {BACKER_GRANT_REASON} from "../../merkle/merkleDistributor/types"
-import {BACKER_GRANT_REASON as BACKER_DIRECT_GRANT_REASON} from "../../merkle/merkleDirectDistributor/types"
+import {BACKER_DIRECT_GRANT_REASON} from "../../merkle/merkleDirectDistributor/types"
 
 interface RawCSV {
   poolName: string
