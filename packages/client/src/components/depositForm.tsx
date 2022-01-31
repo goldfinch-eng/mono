@@ -131,6 +131,7 @@ function DepositForm(props: DepositFormProps) {
         {warningMessage}
         <div className="checkbox-container form-input-label">
           <input
+            data-testid="staking"
             className="checkbox"
             type="checkbox"
             name={STAKING_FORM_VAL}
@@ -163,6 +164,7 @@ function DepositForm(props: DepositFormProps) {
         </div>
         <div className="checkbox-container form-input-label">
           <input
+            data-testid="agreement"
             className="checkbox"
             type="checkbox"
             name="agreement"
