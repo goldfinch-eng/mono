@@ -210,7 +210,7 @@ describe("deposit transactions", () => {
       return getDeployments()
     })
 
-    resetAirdropMocks()
+    resetAirdropMocks(goldfinchProtocol)
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
