@@ -4,10 +4,14 @@ import {render, screen, waitFor} from "@testing-library/react"
 import TranchedPoolCard from "../../components/Earn/TranchedPoolCard"
 import {defaultCreditLine} from "../../ethereum/creditLine"
 import BigNumber from "bignumber.js"
-import {TranchedPool} from "../../ethereum/tranchedPool"
+import {TranchedPool, TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 
-function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber) {
+function renderTranchedPoolCard(
+  isPaused: boolean,
+  remainingCapacity: BigNumber,
+  poolEstimatedApyFromGfi: BigNumber | undefined
+) {
   // Mock tranched pool.
   const tranchedPool = new TranchedPool("0xasdf", {
     getContract: () => {
@@ -17,12 +21,13 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
   tranchedPool.creditLine = defaultCreditLine as any
   tranchedPool.remainingCapacity = () => remainingCapacity
   tranchedPool.isPaused = isPaused
+  tranchedPool.estimatedLeverageRatio = new BigNumber(4)
+  tranchedPool.estimateJuniorAPY = (v) => new BigNumber("0.085")
 
   const poolBacker = {
     tranchedPool,
     tokenInfos: ["info"],
   }
-  const poolEstimatedApyFromGfi = undefined
 
   const store = {
     user: undefined,
@@ -31,7 +36,7 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
   return render(
     <AppContext.Provider value={store}>
       <TranchedPoolCard
-        poolBacker={poolBacker as any}
+        poolBacker={poolBacker as unknown as TranchedPoolBacker}
         poolEstimatedApyFromGfi={poolEstimatedApyFromGfi}
         disabled={false}
       />
@@ -40,43 +45,61 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
 }
 
 describe("Tranched pool card", () => {
-  describe("pool is paused", () => {
-    describe("remaining capacity is 0", () => {
-      it("should show paused badge", async () => {
-        renderTranchedPoolCard(true, new BigNumber(0))
+  describe("Badge", () => {
+    describe("pool is paused", () => {
+      describe("remaining capacity is 0", () => {
+        it("should show paused badge", async () => {
+          renderTranchedPoolCard(true, new BigNumber(0), undefined)
 
-        await waitFor(() => {
-          expect(screen.getByText("Paused")).toBeInTheDocument()
+          await waitFor(() => {
+            expect(screen.getByText("Paused")).toBeInTheDocument()
+          })
+        })
+      })
+      describe("remaining capacity is not 0", () => {
+        it("should show paused badge", async () => {
+          renderTranchedPoolCard(true, new BigNumber(100), undefined)
+
+          await waitFor(() => {
+            expect(screen.getByText("Paused")).toBeInTheDocument()
+          })
         })
       })
     })
-    describe("remaining capacity is not 0", () => {
-      it("should show paused badge", async () => {
-        renderTranchedPoolCard(true, new BigNumber(100))
+    describe("pool is not paused", () => {
+      describe("remaining capacity is 0", () => {
+        it("should show full badge", async () => {
+          renderTranchedPoolCard(false, new BigNumber(0), undefined)
 
-        await waitFor(() => {
-          expect(screen.getByText("Paused")).toBeInTheDocument()
+          await waitFor(() => {
+            expect(screen.getByText("Full")).toBeInTheDocument()
+          })
+        })
+      })
+      describe("remaining capacity is not 0", () => {
+        it("should show open badge", async () => {
+          renderTranchedPoolCard(false, new BigNumber(100), undefined)
+
+          await waitFor(() => {
+            expect(screen.getByText("Open")).toBeInTheDocument()
+          })
         })
       })
     })
   })
-  describe("pool is not paused", () => {
-    describe("remaining capacity is 0", () => {
-      it("should show full badge", async () => {
-        renderTranchedPoolCard(false, new BigNumber(0))
+  describe("Estimated APY", () => {
+    it("shows only the pool's base APY, if APY-from-GFI is undefined", async () => {
+      renderTranchedPoolCard(false, new BigNumber(0), undefined)
 
-        await waitFor(() => {
-          expect(screen.getByText("Full")).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(screen.getByText("8.50%")).toBeInTheDocument()
       })
     })
-    describe("remaining capacity is not 0", () => {
-      it("should show open badge", async () => {
-        renderTranchedPoolCard(false, new BigNumber(100))
+    it("shows the sum of base APY and APY-from-GFI, if APY-from-GFI is defined", async () => {
+      renderTranchedPoolCard(true, new BigNumber(0), new BigNumber(0.9))
 
-        await waitFor(() => {
-          expect(screen.getByText("Open")).toBeInTheDocument()
-        })
+      await waitFor(() => {
+        expect(screen.getByText("98.50%")).toBeInTheDocument()
       })
     })
   })
