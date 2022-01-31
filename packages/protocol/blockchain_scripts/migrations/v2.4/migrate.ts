@@ -28,7 +28,7 @@ export const grantAddress2 = "0xddbd3514F1cf38E1cdd332746B70c7325fbCcd04"
 export async function main() {
   const deployEffects = await getDeployEffects({
     title: "Backer airdrop",
-    description: "https://gov.goldfinch.finance/t/retroactive-backer-distribution-proposal-3-with-data/252",
+    description: "https://gov.goldfinch.finance/t/retroactive-backer-distribution-proposal-4-same-as-3-with-ammendment/505",
   })
 
   const deployer = new ContractDeployer(console.log, hre)
