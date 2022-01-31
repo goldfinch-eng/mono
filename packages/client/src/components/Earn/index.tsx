@@ -104,9 +104,7 @@ export default function Earn() {
     if (gfi.info.value.currentBlock.number === backerRewards.info.value.currentBlock.number) {
       const estimatedApyFromGfi = await backerRewards.estimateApyFromGfiByTranchedPool(
         backers.value.map((backer) => backer.tranchedPool),
-        gfi.info.value.supply,
-        gfi.info.value.price,
-        gfi.info.value.currentBlock
+        gfi
       )
       setTranchedPoolsEstimatedApyFromGfi({
         loaded: true,

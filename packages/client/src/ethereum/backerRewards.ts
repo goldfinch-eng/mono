@@ -6,17 +6,17 @@ import zipObject from "lodash/zipObject"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {
   ByTranchedPool,
-  ScheduledRepaymentEstimatedReward,
+  EstimatedRewards,
   EstimatedRewardsByTranchedPool,
   ForTranchedPool,
+  RepaymentSchedule,
   RepaymentSchedulesByTranchedPool,
   ScheduledRepayment,
-  EstimatedRewards,
-  RepaymentSchedule,
+  ScheduledRepaymentEstimatedReward,
 } from "../types/tranchedPool"
 import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, sameBlock} from "../utils"
-import {gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {PoolState, TranchedPool} from "./tranchedPool"
 import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
@@ -320,21 +320,23 @@ export class BackerRewards {
 
   async estimateApyFromGfiByTranchedPool(
     tranchedPools: TranchedPool[],
-    gfiSupply: BigNumber,
-    gfiPrice: BigNumber | undefined,
-    currentBlock: BlockInfo
+    gfi: GFILoaded
   ): Promise<{[tranchedPoolAddress: string]: BigNumber | undefined}> {
-    if (!sameBlock(currentBlock, this.info.value?.currentBlock)) {
-      throw new Error("`currentBlock` is not consistent with BackerRewards' current block.")
+    if (!sameBlock(gfi.info.value.currentBlock, this.info.value?.currentBlock)) {
+      throw new Error("GFI `currentBlock` is not consistent with BackerRewards' current block.")
     }
 
     const tranchedPoolAddresses = tranchedPools.map((tranchedPool) => tranchedPool.address)
     const noEstimate = tranchedPools.map(() => undefined)
     const defaultEstimatedApyFromGfi = zipObject(tranchedPoolAddresses, noEstimate)
 
-    const estimatedRewards = await this.estimateRewardsByTranchedPool(tranchedPools, gfiSupply, currentBlock)
+    const estimatedRewards = await this.estimateRewardsByTranchedPool(
+      tranchedPools,
+      gfi.info.value.supply,
+      gfi.info.value.currentBlock
+    )
     const estimatedApyFromGfi = mapValues(estimatedRewards, (rewards) =>
-      this.estimateApyFromAnnualizedRewards(rewards.value.annualizedPerPrincipalDollar, gfiPrice)
+      this.estimateApyFromAnnualizedRewards(rewards.value.annualizedPerPrincipalDollar, gfi.info.value.price)
     )
 
     return {
