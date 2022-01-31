@@ -360,7 +360,7 @@ export class UserCommunityRewards {
           ),
           Promise.all(
             tokenIds.map(async (tokenId) => {
-              let {events, userDistributor} = await this.getAcceptedEventsForMerkleDistributorScenarios(
+              const {events, userDistributor} = await this.getAcceptedEventsForMerkleDistributorScenarios(
                 merkleDistributor,
                 backerMerkleDistributor,
                 tokenId,
@@ -444,7 +444,10 @@ export class UserCommunityRewards {
     currentBlock: BlockInfo,
     userMerkleDistributor: UserMerkleDistributorLoaded,
     userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded
-  ) {
+  ): Promise<{
+    events: EventData[]
+    userDistributor: UserMerkleDistributorLoaded | UserBackerMerkleDistributorLoaded
+  }> {
     let events, userDistributor
     events = await this.goldfinchProtocol.queryEvents(
       merkleDistributor.contract.readOnly,
@@ -659,7 +662,7 @@ export class UserMerkleDistributor {
 }
 
 export class UserBackerMerkleDistributor extends UserMerkleDistributor {
-  async getMerkleDistributorInfo() {
+  async getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
     return await getMerkleDistributorInfo(this.goldfinchProtocol.networkId, true)
   }
 }
@@ -833,7 +836,7 @@ export class UserMerkleDirectDistributor {
 }
 
 export class UserBackerMerkleDirectDistributor extends UserMerkleDirectDistributor {
-  async getMerkleDirectDistributorInfo() {
+  async getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
     return await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId, true)
   }
 }
