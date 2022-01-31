@@ -74,8 +74,18 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
   await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
   await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
-  await deployMerkleDistributor(deployer, {communityRewards, deployEffects, contractName: "BackerMerkleDistributor"})
-  await deployMerkleDirectDistributor(deployer, {gfi, deployEffects, contractName: "BackerMerkleDirectDistributor"})
+  await deployMerkleDistributor(deployer, {
+    communityRewards,
+    deployEffects,
+    contractName: "BackerMerkleDistributor",
+    merkleDistributorInfoPath: process.env.BACKER_MERKLE_DISTRIBUTOR_INFO_PATH,
+  })
+  await deployMerkleDirectDistributor(deployer, {
+    gfi,
+    deployEffects,
+    contractName: "BackerMerkleDirectDistributor",
+    merkleDirectDistributorInfoPath: process.env.BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH,
+  })
 
   const {protocol_owner: trustedSigner} = await deployer.getNamedAccounts()
   assertNonNullable(trustedSigner)
