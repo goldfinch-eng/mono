@@ -35,7 +35,11 @@ export const getStakingRewardsAbi = () => getAbi("StakingRewards")
 
 export const getMerkleDistributorAbi = () => getAbi("MerkleDistributor")
 
+export const getBackerMerkleDistributorAbi = () => getAbi("MerkleDistributor")
+
 export const getMerkleDirectDistributorAbi = () => getAbi("MerkleDirectDistributor")
+
+export const getBackerMerkleDirectDistributorAbi = () => getAbi("BackerMerkleDirectDistributor")
 
 export const getCommunityRewardsAbi = () => getAbi("CommunityRewards")
 
@@ -59,6 +63,8 @@ type ContractName =
   | "Fidu"
   | "Pool"
   | "TestERC20"
+  | "BackerMerkleDistributor"
+  | "BackerMerkleDirectDistributor"
 type Deployments = {
   contracts: Record<ContractName, {address: string; abi: PlainObject[]}>
 }
@@ -69,6 +75,14 @@ export const getDeployments = async () => {
   if (!_deployments) {
     _deployments = {
       contracts: {
+        BackerMerkleDirectDistributor: {
+          address: "0x0000000000000000000000000000000000000012",
+          abi: await getBackerMerkleDirectDistributorAbi(),
+        },
+        BackerMerkleDistributor: {
+          address: "0x0000000000000000000000000000000000000011",
+          abi: await getBackerMerkleDistributorAbi(),
+        },
         MerkleDirectDistributor: {
           address: "0x0000000000000000000000000000000000000010",
           abi: await getMerkleDirectDistributorAbi(),

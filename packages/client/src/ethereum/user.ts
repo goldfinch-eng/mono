@@ -75,7 +75,13 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {BackerMerkleDirectDistributorLoaded, MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {BackerMerkleDistributorLoaded, MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
+import {
+  getBackerMerkleDirectDistributorInfo,
+  getBackerMerkleDistributorInfo,
+  getFromBlock,
+  getMerkleDirectDistributorInfo,
+  getMerkleDistributorInfo,
+} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -544,8 +550,16 @@ export class UserMerkleDistributor {
     }
   }
 
-  async getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
+  async getMerkleInfo(): Promise<MerkleDistributorInfo | undefined> {
     return await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return await UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock)
   }
 
   async initialize(
@@ -553,7 +567,7 @@ export class UserMerkleDistributor {
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    const merkleDistributorInfo = await this.getMerkleDistributorInfo()
+    const merkleDistributorInfo = await this.getMerkleInfo()
     if (!merkleDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
@@ -563,7 +577,7 @@ export class UserMerkleDistributor {
       this.address
     )
     const [withAcceptance, _tokenLaunchTime] = await Promise.all([
-      UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
+      this._getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
       communityRewards.contract.readOnly.methods.tokenLaunchTimeInSeconds().call(undefined, currentBlock.number),
     ])
     const tokenLaunchTime = new BigNumber(_tokenLaunchTime)
@@ -662,8 +676,20 @@ export class UserMerkleDistributor {
 }
 
 export class UserBackerMerkleDistributor extends UserMerkleDistributor {
-  async getMerkleDistributorInfo(): Promise<MerkleDistributorInfo | undefined> {
-    return await getMerkleDistributorInfo(this.goldfinchProtocol.networkId, true)
+  async getMerkleInfo(): Promise<MerkleDistributorInfo | undefined> {
+    return await getBackerMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return await UserBackerMerkleDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDistributor,
+      currentBlock
+    )
   }
 }
 
@@ -702,15 +728,27 @@ export class UserMerkleDirectDistributor {
     }
   }
 
-  async getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+  async getMerkleInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
     return await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDirectDistributor,
+      currentBlock
+    )
   }
 
   async initialize(
     merkleDirectDistributor: MerkleDirectDistributorLoaded | BackerMerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    const merkleDirectDistributorInfo = await this.getMerkleDirectDistributorInfo()
+    const merkleDirectDistributorInfo = await this.getMerkleInfo()
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
     }
@@ -719,7 +757,7 @@ export class UserMerkleDirectDistributor {
       merkleDirectDistributorInfo.grants,
       this.address
     )
-    const withAcceptance = await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
+    const withAcceptance = await this._getAirdropsWithAcceptance(
       airdropsForRecipient,
       merkleDirectDistributor,
       currentBlock
@@ -836,8 +874,20 @@ export class UserMerkleDirectDistributor {
 }
 
 export class UserBackerMerkleDirectDistributor extends UserMerkleDirectDistributor {
-  async getMerkleDirectDistributorInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
-    return await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId, true)
+  async getMerkleInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+    return await getBackerMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return await UserBackerMerkleDirectDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDirectDistributor,
+      currentBlock
+    )
   }
 }
 

@@ -274,10 +274,6 @@ function Rewards() {
       const sortedStakingRewards: StakingRewardsPosition[] =
         userStakingRewards.info.value.positions.sort(compareStakingRewards)
       const sortedMerkleDistributorRewards: SortableMerkleDistributorRewards[] = [
-        ...userCommunityRewards.info.value.grants.map<SortableMerkleDistributorRewards>((grant) => ({
-          type: "communityRewards",
-          value: grant,
-        })),
         ...userMerkleDistributor.info.value.airdrops.notAccepted.map<SortableMerkleDistributorRewards>((grantInfo) => ({
           type: "merkleDistributor",
           value: grantInfo,
@@ -288,6 +284,10 @@ function Rewards() {
             value: grantInfo,
           })
         ),
+        ...userCommunityRewards.info.value.grants.map<SortableMerkleDistributorRewards>((grant) => ({
+          type: "communityRewards",
+          value: grant,
+        })),
       ].sort(compareMerkleDistributorRewards)
       const sortedMerkleDirectDistributorRewards: SortableMerkleDirectDistributorRewards[] = [
         ...userMerkleDirectDistributor.info.value.airdrops.accepted.map<SortableMerkleDirectDistributorRewards>(
