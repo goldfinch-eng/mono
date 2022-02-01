@@ -20,7 +20,7 @@ to generate data about the airdrop.
 After that run
 
 ```shell
-$ node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot.ts \
+$ cd ../../.. && node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot.ts \
     -i blockchain_scripts/airdrop/2022-01-24-backers/grants.vesting.json \
      > blockchain_scripts/merkle/merkleDistributor/2022-01-24-backers-airdrop-merkleDistributorInfo.json
 
