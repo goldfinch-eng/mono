@@ -3,8 +3,9 @@ import {BigNumber as BigNum} from "bignumber.js"
 import {parseCsv} from "../community/parseCsv"
 import {program} from "commander"
 import {decimals} from "@goldfinch-eng/protocol/test/testHelpers"
-import {BACKER_GRANT_REASON} from "../../merkle/merkleDistributor/types"
+import {JsonAccountedGrant, BACKER_GRANT_REASON} from "../../merkle/merkleDistributor/types"
 import {BACKER_DIRECT_GRANT_REASON} from "../../merkle/merkleDirectDistributor/types"
+import {combineGrants} from "../community/calculation"
 
 interface RawCSV {
   poolName: string
@@ -28,6 +29,19 @@ interface PreparedRow {
 }
 
 function sanitizeData(data: RawCSV[]): PreparedRow[] {
+  let duplicates = 0
+  const addresses = new Set<string>()
+  data.forEach((d) => {
+    if (addresses.has(d["Backer Address"])) {
+      console.log("Duplicate address", d["Backer Address"])
+      duplicates++
+    }
+
+    addresses.add(d["Backer Address"])
+  })
+
+  console.log("Total duplicate addresses", duplicates)
+
   const toBigInt = (s: string) => new BigNum(s.replace(/,/g, "")).multipliedBy(decimals.toString())
 
   return data.map((row) => ({
@@ -37,60 +51,59 @@ function sanitizeData(data: RawCSV[]): PreparedRow[] {
   }))
 }
 
-async function saveImmediateData(data: PreparedRow[], path: string) {
-  console.log(`Saving ${data.length} rows for no-vesting data to ${path}`)
-  await fs.writeFile(
-    path,
-    JSON.stringify(
-      data.map((row) => ({
-        account: row.backerAddress,
-        reason: BACKER_DIRECT_GRANT_REASON,
-        grant: {
-          amount: row.immediatelyAvailable.toFixed(),
-          cliffLength: "0",
-          vestingInterval: "0",
-          vestingLength: "0",
-        },
-      })),
-      null,
-      2
-    )
-  )
+async function saveImmediateData(grants: JsonAccountedGrant[], path: string) {
+  console.log(`Saving ${grants.length} rows for no-vesting data to ${path}`)
+  await fs.writeFile(path, JSON.stringify(grants, null, 2))
 }
 
-async function saveVestingData(data: PreparedRow[], path: string) {
-  console.log(`Saving ${data.length} rows for no-vesting data to ${path}`)
-  await fs.writeFile(
-    path,
-    JSON.stringify(
-      data.map((row) => ({
-        account: row.backerAddress,
-        reason: BACKER_GRANT_REASON,
-        grant: {
-          amount: row.vesting.toFixed(),
-          cliffLength: "0",
-          vestingInterval: "2628000", //  1 month
-          vestingLength: "31536000", // 12 months
-        },
-      })),
-      null,
-      2
-    )
-  )
+async function saveVestingData(grants: JsonAccountedGrant[], path: string) {
+  console.log(`Saving ${grants.length} rows for vesting data to ${path}`)
+  await fs.writeFile(path, JSON.stringify(grants, null, 2))
 }
 
 async function main(inputFile: string, immediatelyAvailableFile: string, vestingFile: string) {
   const data = await parseCsv<RawCSV>(inputFile)
   const sanitizedData = sanitizeData(data)
+
+  const immediatelyAvailableGrants: JsonAccountedGrant[] = sanitizedData
+    .filter((row) => !row.immediatelyAvailable.isZero())
+    .map((row) => ({
+      account: row.backerAddress,
+      reason: BACKER_DIRECT_GRANT_REASON,
+      grant: {
+        amount: row.immediatelyAvailable.toFixed(),
+        cliffLength: "0",
+        vestingInterval: "0",
+        vestingLength: "0",
+      },
+    }))
+
+  const vestingGrants: JsonAccountedGrant[] = sanitizedData
+    .filter((row) => !row.vesting.isZero())
+    .map((row) => ({
+      account: row.backerAddress,
+      reason: BACKER_GRANT_REASON,
+      grant: {
+        amount: row.vesting.toFixed(),
+        cliffLength: "0",
+        vestingInterval: "2628000", //  1 month
+        vestingLength: "31536000", // 12 months
+      },
+    }))
+
+  const immediatelyAvailableCombinedGrants = combineGrants({
+    grants: immediatelyAvailableGrants,
+    reason: BACKER_DIRECT_GRANT_REASON,
+  })
+
+  const vestingCombinedGrants = combineGrants({
+    grants: vestingGrants,
+    reason: BACKER_GRANT_REASON,
+  })
+
   await Promise.all([
-    saveImmediateData(
-      sanitizedData.filter((row) => !row.immediatelyAvailable.isZero()),
-      immediatelyAvailableFile
-    ),
-    saveVestingData(
-      sanitizedData.filter((row) => !row.vesting.isZero()),
-      vestingFile
-    ),
+    saveImmediateData(immediatelyAvailableCombinedGrants, immediatelyAvailableFile),
+    saveVestingData(vestingCombinedGrants, vestingFile),
   ])
 }
 

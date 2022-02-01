@@ -1,901 +1,713 @@
 {
-  "merkleRoot": "0x72568887cd41a3c847223bfe83319479d5404bd1d42387baf6677dfbb2c1b57e",
-  "amountTotal": "0xdb0e0a363597ed9d0000",
+  "merkleRoot": "0xcfc4805def5ade3413382920a66cfe852ff39fa7a7c94293de8f0db18c56a401",
+  "amountTotal": "0xdb0e09001feb119ab280",
   "grants": [
     {
       "index": 0,
       "account": "0x07f82CEa5770723207f8544a00023DEb8968755E",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a50e06e33188c50000",
+        "amount": "0x01a50dfe983dc8515300",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x7ffbecd1b2e4f089f3cf182a07d55ac18f086b288a692fff8b3395aaa2fa73cf",
-        "0xcc66328d56fbea733ea4ec9895b508b0853263ae217802cd13abce82dc0d6139",
-        "0x7ddae98ac5af96ba222a3c314e7acdf080e29a432e641218b6a08a2a2a478157",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xc5bc90b7fda2e4d57cf476901a2d977b178ded599bb263cd4677006ea974b900",
+        "0x68063fdb6c3488bf0ed004916cc8aad2e9c49fe423ef99c126cc1d2862335848",
+        "0xa783569b71218229978af1a9158123bb725316a22f6d24fe5d220fcc12267d34",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 1,
-      "account": "0x0Ae9b28ccBe5CFE2BD4E6731392441023c9d6cB9",
+      "account": "0x0ae9b28ccbe5cfe2bd4e6731392441023c9d6cb9",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0437626fe94fdf890000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x10eb4e952744b4268b80",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0xc87c29b863ca1cf66b3cfb792f13e8a10fcfac3bd68528a95020ac91b463e0ec",
-        "0xc618c12b0852bb6b420fa52d25960be011fa154f4385892356f8a147b95d4463",
-        "0x4bfe447b7157de3e0228229778685d48556b33ad09ebc29d6ae7c6796016325a",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0xba1180426371c3e87d71a9dbfc1d3ea7e7ccf0c6929ee9d8a0fbe1337460fe12",
+        "0x41e65ba78b1496e2aae5a884605433fa983e4c3dc52daa37f56845ffd1f8d3a6",
+        "0xa783569b71218229978af1a9158123bb725316a22f6d24fe5d220fcc12267d34",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 2,
-      "account": "0x0Ae9b28ccBe5CFE2BD4E6731392441023c9d6cB9",
+      "account": "0x111b46bfae308be4570cb9f17d051b58022d7c89",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0b0e6b9cb4c196540000",
+        "amount": "0x1ea0eb79b05c6d7b4a00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xc882c5067fc3e172006a65f603ddab67e6061567561ed68c282a5b4031602a43",
-        "0x2b954599c2584c1a94f1cf86a0b253ef93102b27869ae6da58ebd6a34ead2369",
-        "0x2f6a60b8d89d4c0c40ac54f9f6b7459403600ff95fda3f722ccf9e4acfc5a0be",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0xf2009af8da9746c9d8a919ac14ce0507ba2e8a92983953337b23e9912207e288",
+        "0x5f8a82d9ffb509818e0d8ad82a1384f04cdadafe4ca75881f04b215c3900dc25",
+        "0xaab60ca200b023c3625f8f3bfe217a6bc71ea763e901b294269e38929645f115",
+        "0xd52c129fbf801c86b3f0e4eb1ea4416d44725b37a118b4b1e4768a44ec3792f6"
       ]
     },
     {
       "index": 3,
-      "account": "0x0Ae9b28ccBe5CFE2BD4E6731392441023c9d6cB9",
+      "account": "0x1E5d6CFb3EeaC9c21065296927BF4D155b3d64C8",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x01297c410c15f3c97780",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x4e42daef49af3773c04ce11fea3e68822974461072c9f584a27cd235dc7ad314",
-        "0x1f7b73b5aadd89385c8c00fed3c5fbf068c378e2b6a32f76a682e8b610f4334e",
-        "0xd43db3f967773fc3c436bfd394263b111262835e58e3f4c3759a7436ed5542b5",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xf55c4b722492aebd88db4a1ed42c2000bb43f2bb9aed4b01449f4758fa26eab3",
+        "0xdc2c31f4adf1d72b8c09d139eea85a7c39e0ded9ea5505d07e2bd7ae02302cc5",
+        "0xd52c129fbf801c86b3f0e4eb1ea4416d44725b37a118b4b1e4768a44ec3792f6"
       ]
     },
     {
       "index": 4,
-      "account": "0x111b46bfae308be4570cb9f17d051b58022d7c89",
+      "account": "0x1c2CdDC58EAE7A9d6CFd2aA7b8ed7dDaD9900179",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x1ea0eb74fb6741c80000",
+        "amount": "0x0166c7ff1e75e1673780",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x26b7a87d24e2c3556ac8ff49d1d59e6f518a0e5a631b8dcac9459f3da231b8c9",
-        "0xc7f80ada4630b434d5f16bc3b21290fef747aedc408caba46611d0b297b2c780",
-        "0xbbf1cdfaa9a2cef1a80a6d9d6e8871b4272d373bf66a624d7696aba1674df123",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x93ee917553d8a37024b03bdfd6ee690fe6e90fad6d7425c3b018839a7fcb18a2",
+        "0x7f82a67e25bf4dd79c3a78295fd2dde48855ef9f89e9ad57256f43a21c177c62",
+        "0x80d7a5a297a0f26c6f6335c08acb2a5ab6b9de2726da5ac463f7faddeb741a8f",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 5,
-      "account": "0x1E5d6CFb3EeaC9c21065296927BF4D155b3d64C8",
+      "account": "0x25fb88e70f420aDDb51f9a99B484bE66DFBea327",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01297c4db13cb89c0000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x866227bf1fc2f8e7c41028be92fc97cd7ca875af8b20e1965ec57601ff037157",
-        "0xebb33d8bbf61607d1a7a65eb2b9a3fbfa00458659240106bcb07542f33cbdecc",
-        "0x7ddae98ac5af96ba222a3c314e7acdf080e29a432e641218b6a08a2a2a478157",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x886f2317e501eccadf5c452459271e5f8b5d04e0cbe6e85f2286ca879d6d2074",
+        "0xcfdd402919b8b483494298cfa9ce6994fe7232706b3b7d2145dd9a70d2a567bb",
+        "0x8b9e61662adbe48e08bba5b323a54706b6ee8f563bf3222548526cbc51e2f05d",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 6,
-      "account": "0x1c2CdDC58EAE7A9d6CFd2aA7b8ed7dDaD9900179",
+      "account": "0x2b2b7fec2ba5854aef243c21a583d8e61ee82c32",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0166c80e937a968b0000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x33e67cd55a57baedb880",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0xb3a0639d838114fd559ec398a5c6cb8dc3f5037b956d69d5bb906bb41d6b8079",
-        "0x5a4ceedfd2985bb0cdc1a7330937772c98e109e088875a40e55e30b92efc0585",
-        "0x4bfe447b7157de3e0228229778685d48556b33ad09ebc29d6ae7c6796016325a",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x4704760ff3dcac1aad20d53ccbd850513aa2c3b7cf91e3e5928501347533ddf8",
+        "0xe0fe788f5e9b8210daef2338c68402a3cafcbe4d03f939802071cbfa25544dac",
+        "0x6dafcff983f9656d2ea98d382e093ed8364a7ab5fd4d861d5b38357dc77f5c7f",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 7,
-      "account": "0x25fb88e70f420aDDb51f9a99B484bE66DFBea327",
+      "account": "0x3E7ea126d6aAAe70F5A1bB2bbDf4c321E0fbaaF3",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x01990862a598c1a35e80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xe487fa8fbc9e3f916e6bf0598d090a222cba13208504c7af1372775a0c98aa3d",
-        "0x8a13eda7159c90be59be97a988232475ef268d6561c5b00528a3b7de49584ad1",
-        "0x504dbcddccf1bb26c5f23058db95a868a45b8d94c684576306c16f904fad561e",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x6c9c319e738ac0f7c05646b0ec8c2a681f1275860ba195ea40e3560704566bbf",
+        "0x4696fc6ff02a409e5a9a80ccac3b6e517f7d684a079a4001cd2f023af631b176",
+        "0xa3f1a9f635a5d33b8d377a3bcbbac1cbb3fe96513113b27efc16d6288107750c",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 8,
-      "account": "0x2b2B7fEC2Ba5854AeF243C21a583d8e61Ee82c32",
+      "account": "0x3Ed23D80c7B9e3a159316b3F47bbDaB738Ba893E",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x24ac6dba039072420000",
+        "amount": "0x016727823efffb0b2880",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x90651e9a66d52c75edc09a857722c25a93ad932ab5528d4df7858fe072cb659f",
-        "0x095e28c17bec6e2a13dbed92b4997c106d0209dcf45ac65ec5188884904231c4",
-        "0x3bbbd9c8b277866c6e0fbf30c962ab0a5c2846978ac175dfbdb90fe4c2ea561f",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x3c2f803386b24cc5d1657cd7773aff5ae31e8727097735500aa3ef93dcb8e57e",
+        "0x227327a6c5a74ee45a059e857ce70389afe4812a85ece5e07ded605b40974f7f",
+        "0x6dafcff983f9656d2ea98d382e093ed8364a7ab5fd4d861d5b38357dc77f5c7f",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 9,
-      "account": "0x2b2B7fEC2Ba5854AeF243C21a583d8e61Ee82c32",
+      "account": "0x416E367b6DFa99B04bD38fb3725c78ABb7132429",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0d948e7dd79adc7b0000",
+        "amount": "0x019f447ecce8622a9600",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x741f6893d9271af1c655dc50872a0edc6b2cf0005f1fa188ba2038c475e0d3cb",
-        "0xaa9381dd4925ee01e7d3e51453681e3cf200620cf80a0162d6d3bf9bc0f12979",
-        "0x1095c96c55f16c06d59409e21122fb2003a8a1484482fe01f2af45ab2f40563b",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xb9c08ee10afbc663dc309a42d8fd4873d18a76dc7a85f6bd9c8cde38c9f3b11b",
+        "0xa1ecf8cb25ee5ccb0a7654dafdb9f8b16a638ca6229082d0af9ccb65b97da58f",
+        "0x2aab29e1bb4311a6c89c0ccccd0401db47001256be3d905f91e0a4279aa64f32",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 10,
-      "account": "0x2b2B7fEC2Ba5854AeF243C21a583d8e61Ee82c32",
+      "account": "0x4902b20bB3B8e7776CBcDCB6e3397E7F6b4e449E",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x030e3c00629ba0aa2d00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x0efa91c804df60b804414d48bd7a27abe74dcddb52170baaa4fbc0082131536c",
-        "0xba911beb77efa8da75ef5b9e02247460e77096979e0623e7807e9475d002ea65",
-        "0x5be4c3782dff1c5aa96a53feab75b54ff8bdbb377de1048ff9c9412a59ed394b",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xfa6fdf022ae94771263e9d14ae4a5c9fd673bdc44d51c4c52630e0ec44ea136c",
+        "0xdc2c31f4adf1d72b8c09d139eea85a7c39e0ded9ea5505d07e2bd7ae02302cc5",
+        "0xd52c129fbf801c86b3f0e4eb1ea4416d44725b37a118b4b1e4768a44ec3792f6"
       ]
     },
     {
       "index": 11,
-      "account": "0x3E7ea126d6aAAe70F5A1bB2bbDf4c321E0fbaaF3",
+      "account": "0x526c7665c5dd9cd7102c6d42d407a0d9dc1e431d",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01990859932e6a640000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x0a2423e133aae7377a00",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0x89862c4ad8c38a0a7371a49b39bac8f71bd163e87612dfb3edf4d9a84b196ea1",
-        "0xebb33d8bbf61607d1a7a65eb2b9a3fbfa00458659240106bcb07542f33cbdecc",
-        "0x7ddae98ac5af96ba222a3c314e7acdf080e29a432e641218b6a08a2a2a478157",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x9137449a5a6e20587256fbfd978f5e84a6dbd6d724aabcce241c3892acaf5b4e",
+        "0xc2c7325a3d2596098800d470b2ac0ba23ef03216d31f0c11a2deceea57865085",
+        "0x80d7a5a297a0f26c6f6335c08acb2a5ab6b9de2726da5ac463f7faddeb741a8f",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 12,
-      "account": "0x3Ed23D80c7B9e3a159316b3F47bbDaB738Ba893E",
+      "account": "0x560feFC8f45b8d43f86F79F718dd0364d42037BD",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x016727893f06ed3b0000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xbc4cf46d91fc8173e9a94657eb81822d8a9cae63647da875ef66ae5e0263dd19",
-        "0xc618c12b0852bb6b420fa52d25960be011fa154f4385892356f8a147b95d4463",
-        "0x4bfe447b7157de3e0228229778685d48556b33ad09ebc29d6ae7c6796016325a",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x862d746e1fbd217f2bac40b71de3c70f02cc390a33d845f6fca02ae7e8231e73",
+        "0xcfdd402919b8b483494298cfa9ce6994fe7232706b3b7d2145dd9a70d2a567bb",
+        "0x8b9e61662adbe48e08bba5b323a54706b6ee8f563bf3222548526cbc51e2f05d",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 13,
-      "account": "0x416E367b6DFa99B04bD38fb3725c78ABb7132429",
+      "account": "0x5725a458b319d73B8Ec84c47de80620E7B191B0C",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x019f446f2cd50c110000",
+        "amount": "0x022199fd8bcd94f45d00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xaba81a970d4741beaf1ef140ec931bddb0bed1100ee0124f2ea1f921b6f199d7",
-        "0x5fa6be34100564d60c8c4b7a2fdf50279f34e48f7c744fee8f574c28f75da7de",
-        "0xf86f46def09661c0278b36ee3ed9bb46218a882bcdb2d28ef41835ec5a9eba12",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x01599dd3543d4b679ce263640034e10b07c7fc5f552758d148283f8c3ed8532b",
+        "0x2556c5928d37f5439eed4f25b696831f2afb2e78ff9a894639f62f9477860c96",
+        "0x871518a5eb053006892be24e660f630104bd74d0c7893fb05742ba573d4488d6",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 14,
-      "account": "0x4902b20bB3B8e7776CBcDCB6e3397E7F6b4e449E",
+      "account": "0x5b4e28133aab99Ee9FC77B649127A6CFacf28793",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x030e3c0984475e980000",
+        "amount": "0x012bcd8d5db06a839c80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x51cf21eedee6a6812870ec2f1afbfaf35a7e33597e1bb4789b2a9d37fbe70a2f",
-        "0x940654661c2ab238f429c31bdba396ef1ad15509898a7d424db9496ab62395e2",
-        "0xd43db3f967773fc3c436bfd394263b111262835e58e3f4c3759a7436ed5542b5",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xc9d6acbabdd1cbddda011fd0f596f5898d97e10731a54920bac503fb515ca879",
+        "0x2dc5b95af58c34f6fffbda898e09e4dad9a3bf4c5bee647ef5cce2fbcd56d76a",
+        "0xaab60ca200b023c3625f8f3bfe217a6bc71ea763e901b294269e38929645f115",
+        "0xd52c129fbf801c86b3f0e4eb1ea4416d44725b37a118b4b1e4768a44ec3792f6"
       ]
     },
     {
       "index": 15,
-      "account": "0x526C7665C5dd9cD7102C6d42D407a0d9DC1e431d",
+      "account": "0x64CEe4d9D5F4f7A231dD53d48c1d19BEBd71DbE0",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x037d7d24bed555440000",
+        "amount": "0x050e6003c354cc1b1100",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x138b278a01f6fca9ad87371ff366c40949a1a99a0385cac24756b1170b39ee18",
-        "0x40498a8eab64043a347f892e3cf345bf123402387556bdb0b9226a6ed46022cc",
-        "0x5be4c3782dff1c5aa96a53feab75b54ff8bdbb377de1048ff9c9412a59ed394b",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x7ce89fa40a7a791c53907aee3ca4729cdbdff533abf56bf49971108b8406400b",
+        "0x219505f8836ad1adc85ceed276e123ad4ff9d8a365b0765818acf32f651201cc",
+        "0x8b9e61662adbe48e08bba5b323a54706b6ee8f563bf3222548526cbc51e2f05d",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 16,
-      "account": "0x526C7665C5dd9cD7102C6d42D407a0d9DC1e431d",
+      "account": "0x68476977382d9cb85d11775b79252ee7d2859738",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x06a6a6b1ba52e3a50000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x034a8e998c75cb032080",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0x52b57f9096f28265f80cdf853c0eeb30ed7db05d40f8ee4782d8bcbebf106eda",
-        "0x940654661c2ab238f429c31bdba396ef1ad15509898a7d424db9496ab62395e2",
-        "0xd43db3f967773fc3c436bfd394263b111262835e58e3f4c3759a7436ed5542b5",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x3ac2cf59a81ccf72c6cd8c0cdc5e6eabade64e8178855605dfffe1204e825289",
+        "0x98685d150f427bf3a3c015a297f87f3019300688409f12593c3a3f962276f128",
+        "0x48370fc811341db18f4c339bf7dbc89a7fc4ccfcc2e133ad23323fceb05001ad",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 17,
-      "account": "0x560feFC8f45b8d43f86F79F718dd0364d42037BD",
+      "account": "0x6a5dbf2fb5206ec8192620810c3edb6d5e62b188",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x054d2959558c424d9600",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0x5a371a911daf37a34e682d2676c7f2f0ec686047570fc35278144e9348e7cb7d",
-        "0xdb10fa0c2effdf0640125d889fbbc918a532b0478a0d7914315ddb6301dcb9cb",
-        "0xa8999c43374242d5219cdf3a5e142770cb51a764f94f469e61acff0ba4669923",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xbdce58204b72caef8f55dff2bdf921b5ad0632d00cc111ae874e4c362a0d64f3",
+        "0x41e65ba78b1496e2aae5a884605433fa983e4c3dc52daa37f56845ffd1f8d3a6",
+        "0xa783569b71218229978af1a9158123bb725316a22f6d24fe5d220fcc12267d34",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 18,
-      "account": "0x5725a458b319d73B8Ec84c47de80620E7B191B0C",
+      "account": "0x7cf20a1bb4cae92df714eaf760814860ed5f785f",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x022199f7829f6d390000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x0d037d3fadcdea3d8f00",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0x596fd3aa4416e3170347be5d87fb13c43dae978d73db8256fda188e6b017ba08",
-        "0xdb10fa0c2effdf0640125d889fbbc918a532b0478a0d7914315ddb6301dcb9cb",
-        "0xa8999c43374242d5219cdf3a5e142770cb51a764f94f469e61acff0ba4669923",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x9aca9150aaa0571355651f1fea10bf821a68db8eb1778d59890a3bb5fde6975b",
+        "0x7f82a67e25bf4dd79c3a78295fd2dde48855ef9f89e9ad57256f43a21c177c62",
+        "0x80d7a5a297a0f26c6f6335c08acb2a5ab6b9de2726da5ac463f7faddeb741a8f",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 19,
-      "account": "0x5b4e28133aab99Ee9FC77B649127A6CFacf28793",
+      "account": "0x8100311305c9f81330d23c33fD9f6FF0093D12D3",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x012bcd9433bcec8f0000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xa214c569b95514c9da784ac2ca3cfe3b6b2594ce070cf9d514697373c194bb01",
-        "0x5fa6be34100564d60c8c4b7a2fdf50279f34e48f7c744fee8f574c28f75da7de",
-        "0xf86f46def09661c0278b36ee3ed9bb46218a882bcdb2d28ef41835ec5a9eba12",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x20399a0c0c4cfd97d52f051036df2885c2d2f375babb1e47a0900cd0c5511566",
+        "0xe1242b0d95fc08597c90225751be4ca61019a68f23a343e9acc4ec2318662a30",
+        "0x48370fc811341db18f4c339bf7dbc89a7fc4ccfcc2e133ad23323fceb05001ad",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 20,
-      "account": "0x64CEe4d9D5F4f7A231dD53d48c1d19BEBd71DbE0",
+      "account": "0x9688e30E7A78A7fb2Ec28ec492194120BeEd5942",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x050e6014092de1b50000",
+        "amount": "0x0b978f4c101525547900",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x8e6326d70880f00bab4db530a55eea2d02576f78bd3f2c1d81958ab9651b4a10",
-        "0x1162e6ef2856209fc34c88dc58d857ddbf4e4346efed204db99726393f1b83da",
-        "0x3bbbd9c8b277866c6e0fbf30c962ab0a5c2846978ac175dfbdb90fe4c2ea561f",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xc11476b1a5de6ab294c3933fca2e73f79e0b13349ebab454c4e7e14861451a65",
+        "0x68063fdb6c3488bf0ed004916cc8aad2e9c49fe423ef99c126cc1d2862335848",
+        "0xa783569b71218229978af1a9158123bb725316a22f6d24fe5d220fcc12267d34",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 21,
-      "account": "0x68476977382d9cb85d11775B79252ee7d2859738",
+      "account": "0xA231a5Ae629a0F15e1C1EB3FfBf813589e206926",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a50e06e33188c50000",
+        "amount": "0x022199fd8bcd94f45d00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x6cabbd3adb5ee6d5071157e88709394c697476e53b0340b29d6e96df83007d3c",
-        "0x4349957594e92cbf2002d920e913ec9e24c9c2ac37e5f2b69e391ab73386fadb",
-        "0x1095c96c55f16c06d59409e21122fb2003a8a1484482fe01f2af45ab2f40563b",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x838adebb8a03730c4c0b4f523b59452ebf99a035d5a9fd76206890c3db0da76e",
+        "0x219505f8836ad1adc85ceed276e123ad4ff9d8a365b0765818acf32f651201cc",
+        "0x8b9e61662adbe48e08bba5b323a54706b6ee8f563bf3222548526cbc51e2f05d",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 22,
-      "account": "0x68476977382d9cb85d11775B79252ee7d2859738",
+      "account": "0xB5a790758Cdb6644305d1Cf368b67bbbA4c9a68C",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x022232cf597757d14e00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xeda077efb8b3069f373c11209617e5b2097d683d3132c1227822d7902187f6c9",
-        "0x88e7d667b8cfef478153ddf181a0961a4e42c0f7fb41b3e9bc32d01306326676",
-        "0x88bb17585a9c6c5cb6cf0efbe81322f881ee45ee0dda7e1a7cb1a921de4f22ee",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x1f5420df96719fe8c8c70fd7aebb0658fb873e82d94917e196591cb50dd39852",
+        "0xe1242b0d95fc08597c90225751be4ca61019a68f23a343e9acc4ec2318662a30",
+        "0x48370fc811341db18f4c339bf7dbc89a7fc4ccfcc2e133ad23323fceb05001ad",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 23,
-      "account": "0x6a5dBF2Fb5206EC8192620810C3edB6d5e62B188",
+      "account": "0xB6605F98A5562b1AC821Bc5f2B75934239e8c6D6",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x03a98798dd802c5d0000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xe34da9e11ee9726e4cdbecdc69ed05ffeb92322e97c19a9a2ed5944d0ad69baa",
-        "0xa8513ddeba9056ee77e804369acb10753bc2aa45ae2450675849f3c45a913277",
-        "0x2f6a60b8d89d4c0c40ac54f9f6b7459403600ff95fda3f722ccf9e4acfc5a0be",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x1f27f8195cf838bb5c24fc6f960001987277f4a9ba9317f6b9025b9898b51595",
+        "0x55d1dd5f4756b7a37bc1dfb423bec03444df69c890bf8ff8cc7407f0fd90fbbf",
+        "0x871518a5eb053006892be24e660f630104bd74d0c7893fb05742ba573d4488d6",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 24,
-      "account": "0x6a5dBF2Fb5206EC8192620810C3edB6d5e62B188",
+      "account": "0xD5a41BFe8e373C94434eaB2fC81034eC00572b09",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a3a1bc27459ec40000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x2ab77569f8a5e44012999bb34bb6045eb64b287b4bf9c464d57b22aea3c0e459",
-        "0x626ad40daf5566497de41e37589ceca25824fb3480c8af8464dfd7c4b2a78c63",
-        "0xbbf1cdfaa9a2cef1a80a6d9d6e8871b4272d373bf66a624d7696aba1674df123",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xc6e3f8d860f4f0a671a84b3ad01b41ab1686f6dcefd77ff100b4936c2ad4d6c8",
+        "0x2dc5b95af58c34f6fffbda898e09e4dad9a3bf4c5bee647ef5cce2fbcd56d76a",
+        "0xaab60ca200b023c3625f8f3bfe217a6bc71ea763e901b294269e38929645f115",
+        "0xd52c129fbf801c86b3f0e4eb1ea4416d44725b37a118b4b1e4768a44ec3792f6"
       ]
     },
     {
       "index": 25,
-      "account": "0x7Cf20A1BB4CAE92Df714eAf760814860eD5f785F",
+      "account": "0xE539cd6F9DB04fE3c40Ff4a1C24A7453e7cf265D",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0588a73b9756dc100000",
+        "amount": "0x01653972550415c07a80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x10f3cde3711a57a7350ecead378cb5748a810715866153eac026136a888f5562",
-        "0x40498a8eab64043a347f892e3cf345bf123402387556bdb0b9226a6ed46022cc",
-        "0x5be4c3782dff1c5aa96a53feab75b54ff8bdbb377de1048ff9c9412a59ed394b",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xa43ac189bf42ab2f161f2a9c60e564b2b1445df8f08c0746dc3d910efba19ae7",
+        "0xb4f1a703e6d34e0e162c9b07df60fc03c4d17c8aed9726028e59b2c3a7db0cc4",
+        "0x2aab29e1bb4311a6c89c0ccccd0401db47001256be3d905f91e0a4279aa64f32",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 26,
-      "account": "0x7Cf20A1BB4CAE92Df714eAf760814860eD5f785F",
+      "account": "0xF212cE21a97dbe30999a4c2B309d278BCcBb686A",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x077ad605646d5f990000",
+        "amount": "0x050e6003c354cc1b1100",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x68830da76eb8b1651905da8801179017b22ebb9d946a75bb1e223ce260f20bca",
-        "0x4349957594e92cbf2002d920e913ec9e24c9c2ac37e5f2b69e391ab73386fadb",
-        "0x1095c96c55f16c06d59409e21122fb2003a8a1484482fe01f2af45ab2f40563b",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x5f080a54b21c72fe90de6d1c118b055aae5928cf61435451a761ce2d3f5244df",
+        "0xc8d0a5bb6853f7390091fe93040339542a6e35630c6bcf1fb0c19cb48ef0d2d8",
+        "0xa3f1a9f635a5d33b8d377a3bcbbac1cbb3fe96513113b27efc16d6288107750c",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 27,
-      "account": "0x8100311305c9f81330d23c33fD9f6FF0093D12D3",
+      "account": "0xFB40932271Fc9Db9DbF048E80697E2Da4AA57250",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x02a3e17cbfea45599900",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x6177a4f499bee572914d58266344e74f7a27f5015d2f9bf3ee98c8a2f28f4a51",
-        "0x02b0e46f1eadd3f28a9a280f43c4f44f7ea2bd3430b8dc802384b6a17ebc9ee9",
-        "0xa8999c43374242d5219cdf3a5e142770cb51a764f94f469e61acff0ba4669923",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x1c5a8ee452f3e2892cbaa0f2ba3301cd1881969c72fc48b9c3287383abf615a6",
+        "0x55d1dd5f4756b7a37bc1dfb423bec03444df69c890bf8ff8cc7407f0fd90fbbf",
+        "0x871518a5eb053006892be24e660f630104bd74d0c7893fb05742ba573d4488d6",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 28,
-      "account": "0x9688e30E7A78A7fb2Ec28ec492194120BeEd5942",
+      "account": "0xa05967ed87d17ac0978101b73cf784573a801be7",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0b978f5cb76846060000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x040d39490fcd99cf2d80",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0xd09bbb1d830f3ae30f7230a4e596c40636b25d02082f658cca8d5e83dc0a980f",
-        "0x2b954599c2584c1a94f1cf86a0b253ef93102b27869ae6da58ebd6a34ead2369",
-        "0x2f6a60b8d89d4c0c40ac54f9f6b7459403600ff95fda3f722ccf9e4acfc5a0be",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x3fe1a787e9cd68eb3ba8d62b1166ef27c15b77f1e2e6e4f31f89f95d1f54bcae",
+        "0x227327a6c5a74ee45a059e857ce70389afe4812a85ece5e07ded605b40974f7f",
+        "0x6dafcff983f9656d2ea98d382e093ed8364a7ab5fd4d861d5b38357dc77f5c7f",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 29,
-      "account": "0xA05967ed87D17aC0978101B73Cf784573A801bE7",
+      "account": "0xa2dD0ed4C27B27e6Dbf4d1E07C956599F0251b81",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0267b8bf206b453e0000",
+        "amount": "0x012c5c30ec0397a20080",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xefd54c9c188824d7dc7fc73a2f33de7617c5e4b2db7d524b10e2fb888ffcda83",
-        "0x61759de5697c1dc1e596715313fb336ec5653163f07a6566c3308c2b6f283624",
-        "0x88bb17585a9c6c5cb6cf0efbe81322f881ee45ee0dda7e1a7cb1a921de4f22ee",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x924d4202a1c1807a9177bd7011bdb7dd43944e157a7b89f68a08e5e0a4db9c87",
+        "0xc2c7325a3d2596098800d470b2ac0ba23ef03216d31f0c11a2deceea57865085",
+        "0x80d7a5a297a0f26c6f6335c08acb2a5ab6b9de2726da5ac463f7faddeb741a8f",
+        "0x59e7b4908812466c47cf95e57001a1038a733feed035e3214c934d7262d16ec1",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 30,
-      "account": "0xA05967ed87D17aC0978101B73Cf784573A801bE7",
+      "account": "0xa70e6fE4488104Be32B9B657F5Be7B68aFc17f9a",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x016727823efffb0b2880",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x840f55481f805f2d29ff7a0fd299f0c68131d56e8afe6f3510011dd7c3bdc3ef",
-        "0xcc66328d56fbea733ea4ec9895b508b0853263ae217802cd13abce82dc0d6139",
-        "0x7ddae98ac5af96ba222a3c314e7acdf080e29a432e641218b6a08a2a2a478157",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x64903e5b9fb3ef7e26aab9b8a0828999877ea170af21cc4afea78a4ff2ec7f3d",
+        "0xc8d0a5bb6853f7390091fe93040339542a6e35630c6bcf1fb0c19cb48ef0d2d8",
+        "0xa3f1a9f635a5d33b8d377a3bcbbac1cbb3fe96513113b27efc16d6288107750c",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 31,
-      "account": "0xA231a5Ae629a0F15e1C1EB3FfBf813589e206926",
+      "account": "0xb39Fbb76E7677fF97397a1683D01F04df4cFeD82",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x022199f7829f6d390000",
+        "amount": "0x01a2289bbaae045b1b00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0xbbdbecd8c57c8eec5bbd7cb0cf93f4b20cf97bb48e87546ab48d111becbdbeb1",
-        "0x5a4ceedfd2985bb0cdc1a7330937772c98e109e088875a40e55e30b92efc0585",
-        "0x4bfe447b7157de3e0228229778685d48556b33ad09ebc29d6ae7c6796016325a",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0xee714bc54dfb6186f32c1cac410b902388ece0960d1d90824f8ce50e42c353ee",
+        "0x5f8a82d9ffb509818e0d8ad82a1384f04cdadafe4ca75881f04b215c3900dc25",
+        "0xaab60ca200b023c3625f8f3bfe217a6bc71ea763e901b294269e38929645f115",
+        "0xd52c129fbf801c86b3f0e4eb1ea4416d44725b37a118b4b1e4768a44ec3792f6"
       ]
     },
     {
       "index": 32,
-      "account": "0xB5a790758Cdb6644305d1Cf368b67bbbA4c9a68C",
+      "account": "0xb4522eB2cA49963De9c3dC69023cBe6D53489C98",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x022232c2e34a0e460000",
+        "amount": "0x0166c7ff1e75e1673780",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x9564736d7e9d862ebf8e263e6d8d657257b0dc3fb5e20a44bd80be9bf574c34f",
-        "0x095e28c17bec6e2a13dbed92b4997c106d0209dcf45ac65ec5188884904231c4",
-        "0x3bbbd9c8b277866c6e0fbf30c962ab0a5c2846978ac175dfbdb90fe4c2ea561f",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x6dbef5d17885dfad7ae476ab2fa93ca94be75c51db7b949fca1e3200b49079ae",
+        "0x4696fc6ff02a409e5a9a80ccac3b6e517f7d684a079a4001cd2f023af631b176",
+        "0xa3f1a9f635a5d33b8d377a3bcbbac1cbb3fe96513113b27efc16d6288107750c",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 33,
-      "account": "0xB6605F98A5562b1AC821Bc5f2B75934239e8c6D6",
+      "account": "0xc8Fd7C330e31f2635F4a67790f391Edf2e493DDb",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x050823e797c84d85fa00",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x9f866b003386e794656b1b71d4ee7403bdb3e79af41b1737f2e2fea5c1694199",
-        "0xedd168b650fea38a6961d7bdba2c4493b11b0c3cff81bcec57c85281a848f4b5",
-        "0xf86f46def09661c0278b36ee3ed9bb46218a882bcdb2d28ef41835ec5a9eba12",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0xb21b7b3ef9b357620135a27455e815256e7e439d557d8e07a4beaf4da8c3515e",
+        "0xa1ecf8cb25ee5ccb0a7654dafdb9f8b16a638ca6229082d0af9ccb65b97da58f",
+        "0x2aab29e1bb4311a6c89c0ccccd0401db47001256be3d905f91e0a4279aa64f32",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 34,
-      "account": "0xD5a41BFe8e373C94434eaB2fC81034eC00572b09",
+      "account": "0xcAc59F91E4536Bc0E79aB816a5cD54e89f10433C",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x062696bd5f94d47f7ce60e674e8dd96fffe6722d9ea906d5c815bbd6b49de78b",
-        "0xba911beb77efa8da75ef5b9e02247460e77096979e0623e7807e9475d002ea65",
-        "0x5be4c3782dff1c5aa96a53feab75b54ff8bdbb377de1048ff9c9412a59ed394b",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x54de1092904d581dc6655ad93ee2e4a5430c981abeda2e2ff40d76f787f1450f",
+        "0xe0fe788f5e9b8210daef2338c68402a3cafcbe4d03f939802071cbfa25544dac",
+        "0x6dafcff983f9656d2ea98d382e093ed8364a7ab5fd4d861d5b38357dc77f5c7f",
+        "0x57cfa5d9c9e7da0e413d9cf5f9fc0768a18395a05bf63d19ba99654f5c9f8128",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 35,
-      "account": "0xE11bb2df7F004F190F75E6EC77528Cf30b6afBfb",
+      "account": "0xdB86B02928C47CB1c1D231B21732E6C639b28051",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x0c5915f4552918860000",
+        "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x453c1a4d897f8cfd7bbbd1b0e144e619a9a7b15940387a735ee8170a823608f9",
-        "0x1f7b73b5aadd89385c8c00fed3c5fbf068c378e2b6a32f76a682e8b610f4334e",
-        "0xd43db3f967773fc3c436bfd394263b111262835e58e3f4c3759a7436ed5542b5",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x29037168a0ed403de43d2a6624e81b697c757fc60a5ba662923f2788f03c0344",
+        "0x98685d150f427bf3a3c015a297f87f3019300688409f12593c3a3f962276f128",
+        "0x48370fc811341db18f4c339bf7dbc89a7fc4ccfcc2e133ad23323fceb05001ad",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 36,
-      "account": "0xE11bb2df7F004F190F75E6EC77528Cf30b6afBfb",
+      "account": "0xe11bb2df7f004f190f75e6ec77528cf30b6afbfb",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
-        "vestingLength": "0x01e13380",
+        "amount": "0x0dfe96827ad17a0ead80",
+        "vestingLength": "0x00",
         "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
+        "vestingInterval": "0x00"
       },
       "proof": [
-        "0xf198b7aab7aa062057a961116ce359acc21589e730302ec12a6dc5a9d49951e2",
-        "0x61759de5697c1dc1e596715313fb336ec5653163f07a6566c3308c2b6f283624",
-        "0x88bb17585a9c6c5cb6cf0efbe81322f881ee45ee0dda7e1a7cb1a921de4f22ee",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
+        "0x9d5bc5513653f8c2652edeeb2976b7cbd4611796f54ec692929085f3de57f402",
+        "0xb4f1a703e6d34e0e162c9b07df60fc03c4d17c8aed9726028e59b2c3a7db0cc4",
+        "0x2aab29e1bb4311a6c89c0ccccd0401db47001256be3d905f91e0a4279aa64f32",
+        "0xf077cd520ec3027ac001d942d88b511a2bc99caecf454c64d9aa2dcdd440c55e",
+        "0x4e1e392a1b46e1e45bf426d56124f16ac5cfb5ca878619a4fe71b4b439deb221",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     },
     {
       "index": 37,
-      "account": "0xE539cd6F9DB04fE3c40Ff4a1C24A7453e7cf265D",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x0165397ca3a4d9530000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0xe614c23458b6dba243723d5e16113a0d8b797407f27b3ce831afe6c7cba43fc0",
-        "0x8a13eda7159c90be59be97a988232475ef268d6561c5b00528a3b7de49584ad1",
-        "0x504dbcddccf1bb26c5f23058db95a868a45b8d94c684576306c16f904fad561e",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
-      ]
-    },
-    {
-      "index": 38,
-      "account": "0xF212cE21a97dbe30999a4c2B309d278BCcBb686A",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x050e6014092de1b50000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0xdda72df0e6cb1c8e9782bd7e0dd52f9a0665340cbccbb00817bba7bf2e7f251c",
-        "0xa8513ddeba9056ee77e804369acb10753bc2aa45ae2450675849f3c45a913277",
-        "0x2f6a60b8d89d4c0c40ac54f9f6b7459403600ff95fda3f722ccf9e4acfc5a0be",
-        "0x24193e9df380302f1eb34a07501d75148000ff755e2625201ab5228db92c6042",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
-      ]
-    },
-    {
-      "index": 39,
-      "account": "0xFB40932271Fc9Db9DbF048E80697E2Da4AA57250",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x02a3e17b9ac3b73c0000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0xeb87cffa8f8dd4204e030f48f6b773d4e65f8dcba692b2ba83cedfb8ddd55a69",
-        "0xbcc5779f501b3436169851471f6b62f4f96ae52570868b4cdd1ff39488c7bdc4",
-        "0x504dbcddccf1bb26c5f23058db95a868a45b8d94c684576306c16f904fad561e",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
-      ]
-    },
-    {
-      "index": 40,
-      "account": "0xa2dD0ed4C27B27e6Dbf4d1E07C956599F0251b81",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x012c5c3e1945af930000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0x8e265d8dc221ed4efdd35b54050d530dd2a21dabf90fc63104849d8750cfe43c",
-        "0x1162e6ef2856209fc34c88dc58d857ddbf4e4346efed204db99726393f1b83da",
-        "0x3bbbd9c8b277866c6e0fbf30c962ab0a5c2846978ac175dfbdb90fe4c2ea561f",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
-      ]
-    },
-    {
-      "index": 41,
-      "account": "0xa70e6fE4488104Be32B9B657F5Be7B68aFc17f9a",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x016727893f06ed3b0000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0xed74e9e1c64f3324b197ab5eed3a40793dbc9f5a30baf2b248493fb67f0124b3",
-        "0x88e7d667b8cfef478153ddf181a0961a4e42c0f7fb41b3e9bc32d01306326676",
-        "0x88bb17585a9c6c5cb6cf0efbe81322f881ee45ee0dda7e1a7cb1a921de4f22ee",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
-      ]
-    },
-    {
-      "index": 42,
-      "account": "0xb39Fbb76E7677fF97397a1683D01F04df4cFeD82",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x01a228acec398b670000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0x9dd76eccc04d0dc85d4661dc2b830f8ccec9eddaa381bc4d9fb10e86c7e03587",
-        "0xedd168b650fea38a6961d7bdba2c4493b11b0c3cff81bcec57c85281a848f4b5",
-        "0xf86f46def09661c0278b36ee3ed9bb46218a882bcdb2d28ef41835ec5a9eba12",
-        "0x751036eb191705ef18ebdc0e7d01f9ef9db7514fa2de7c9c3af69fad68497399",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
-      ]
-    },
-    {
-      "index": 43,
-      "account": "0xb4522eB2cA49963De9c3dC69023cBe6D53489C98",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x0166c80e937a968b0000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0xe91c8c0fc33f25ddcae93aebb25e8e0f2753ec68fda7c9a94de9399c9e35e606",
-        "0xbcc5779f501b3436169851471f6b62f4f96ae52570868b4cdd1ff39488c7bdc4",
-        "0x504dbcddccf1bb26c5f23058db95a868a45b8d94c684576306c16f904fad561e",
-        "0x37b02bf74fc513a033f5bd571907b00776d1bf11686cc6a405dda325f2d25101",
-        "0xd189f11da2812d35563c5b79c9bd81580fc855ad5d6cffed32439e6c7ab64e82"
-      ]
-    },
-    {
-      "index": 44,
-      "account": "0xc8Fd7C330e31f2635F4a67790f391Edf2e493DDb",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x050823dae894d0470000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0x66df6e7f6168155e76a80686e1f4845c3d1ae47525b125a6bf10f73533edd534",
-        "0x02b0e46f1eadd3f28a9a280f43c4f44f7ea2bd3430b8dc802384b6a17ebc9ee9",
-        "0xa8999c43374242d5219cdf3a5e142770cb51a764f94f469e61acff0ba4669923",
-        "0x2f7a22171ebd429d9654cd40a2666dd30fd243a475b233c0ee32b0efdb9c7305",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
-      ]
-    },
-    {
-      "index": 45,
-      "account": "0xcAc59F91E4536Bc0E79aB816a5cD54e89f10433C",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0x1dfcddddedb3706c3e8a382bc13e91abd9a23747935677746b54c4341b09de42",
-        "0xc7f80ada4630b434d5f16bc3b21290fef747aedc408caba46611d0b297b2c780",
-        "0xbbf1cdfaa9a2cef1a80a6d9d6e8871b4272d373bf66a624d7696aba1674df123",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
-      ]
-    },
-    {
-      "index": 46,
-      "account": "0xdB86B02928C47CB1c1D231B21732E6C639b28051",
-      "reason": "liquidity_provider",
-      "grant": {
-        "amount": "0x01a580a84d6e1d7f0000",
-        "vestingLength": "0x01e13380",
-        "cliffLength": "0x00",
-        "vestingInterval": "0x2819a0"
-      },
-      "proof": [
-        "0x3487d5c779b32adceb6349f0d56d7a74edd723a6f88fc02a76ad0f45ec4e3f2a",
-        "0x626ad40daf5566497de41e37589ceca25824fb3480c8af8464dfd7c4b2a78c63",
-        "0xbbf1cdfaa9a2cef1a80a6d9d6e8871b4272d373bf66a624d7696aba1674df123",
-        "0xd75da2beba60fd45af9f6013a644c4706e62cc850ec2dfb630139f15f5145d84",
-        "0xf00bf8545e3932fd448f25abb3dbc0b774ed9333aa6820879f9b413730efad3f",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
-      ]
-    },
-    {
-      "index": 47,
       "account": "0xeB1346bb4a15e5b6923E7C002fb4D09eA98a04A0",
       "reason": "liquidity_provider",
       "grant": {
-        "amount": "0x02736b92bd0fc68a0000",
+        "amount": "0x02736b8d050a07add700",
         "vestingLength": "0x01e13380",
         "cliffLength": "0x00",
         "vestingInterval": "0x2819a0"
       },
       "proof": [
-        "0x7ce8c1785964c51cf25977003643b84b7abb5cbab4d4195048fab696bb7bdb2a",
-        "0xaa9381dd4925ee01e7d3e51453681e3cf200620cf80a0162d6d3bf9bc0f12979",
-        "0x1095c96c55f16c06d59409e21122fb2003a8a1484482fe01f2af45ab2f40563b",
-        "0x4edbead48cc05983a5878e808effa0ee14b17ec90782df6367b4f5a175ee139f",
-        "0xe5de9efea508ec0b66628a0f5c9052d7b643cd81c255f5f10737ce06a6c1b264",
-        "0x79fb96cb693a8f3d3bfb984580dd3404533e23d671b0211f98edd7754617b35e"
+        "0x0eec4051644323fa9bcc3ce43a4b72b3378ba9df289f135a5e65c61e017d50ae",
+        "0x2556c5928d37f5439eed4f25b696831f2afb2e78ff9a894639f62f9477860c96",
+        "0x871518a5eb053006892be24e660f630104bd74d0c7893fb05742ba573d4488d6",
+        "0x66fc58f643a9f23a9e4a62376f5d81216d41888591b566d8f62a808baaeead35",
+        "0x9a05ef1f3fb33952e4a1dd73cee274265641837e8cd0796342fbaa47cff81fc5",
+        "0x705c86ee2b94bf42878a9c7c8b59e64f7e3744f1e992cd8ad6276dd33b91973f"
       ]
     }
   ]
