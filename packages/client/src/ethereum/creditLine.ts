@@ -176,7 +176,9 @@ class CreditLine extends BaseCreditLine {
     const interestOwed = this._calculateInterestOwed()
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
-    this.termStartTime = this.termEndTime.minus(this.termInDays.multipliedBy(new BigNumber(24 * 60 * 60)))
+    this.termStartTime = this.termEndTime.gt(0)
+      ? this.termEndTime.minus(this.termInDays.multipliedBy(SECONDS_PER_DAY))
+      : new BigNumber(0)
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
     this.maxLimit = await this._getMaxLimit(currentBlock)
     this.collectedPaymentBalance = new BigNumber(
@@ -194,7 +196,7 @@ class CreditLine extends BaseCreditLine {
   async _getMaxLimit(currentBlock: BlockInfo): Promise<BigNumber> {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
     const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
-    if (this.termStartTime.toNumber() < V2_2_MIGRATION_TIME) {
+    if (this.termStartTime.gt(0) && this.termStartTime.toNumber() < V2_2_MIGRATION_TIME) {
       return this.currentLimit
     } else {
       const maxLimit = await this.creditLine.readOnly.methods.maxLimit().call(undefined, currentBlock.number)
