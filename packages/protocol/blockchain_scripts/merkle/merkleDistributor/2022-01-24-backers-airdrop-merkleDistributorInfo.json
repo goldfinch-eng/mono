@@ -5,7 +5,7 @@
     {
       "index": 0,
       "account": "0x07f82CEa5770723207f8544a00023DEb8968755E",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a50dfe983dc8515300",
         "vestingLength": "0x01e13380",
@@ -24,7 +24,7 @@
     {
       "index": 1,
       "account": "0x0ae9b28ccbe5cfe2bd4e6731392441023c9d6cb9",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x10eb4e952744b4268b80",
         "vestingLength": "0x00",
@@ -43,7 +43,7 @@
     {
       "index": 2,
       "account": "0x111b46bfae308be4570cb9f17d051b58022d7c89",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x1ea0eb79b05c6d7b4a00",
         "vestingLength": "0x01e13380",
@@ -60,7 +60,7 @@
     {
       "index": 3,
       "account": "0x1E5d6CFb3EeaC9c21065296927BF4D155b3d64C8",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01297c410c15f3c97780",
         "vestingLength": "0x01e13380",
@@ -76,7 +76,7 @@
     {
       "index": 4,
       "account": "0x1c2CdDC58EAE7A9d6CFd2aA7b8ed7dDaD9900179",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x0166c7ff1e75e1673780",
         "vestingLength": "0x01e13380",
@@ -95,7 +95,7 @@
     {
       "index": 5,
       "account": "0x25fb88e70f420aDDb51f9a99B484bE66DFBea327",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -114,7 +114,7 @@
     {
       "index": 6,
       "account": "0x2b2b7fec2ba5854aef243c21a583d8e61ee82c32",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x33e67cd55a57baedb880",
         "vestingLength": "0x00",
@@ -133,7 +133,7 @@
     {
       "index": 7,
       "account": "0x3E7ea126d6aAAe70F5A1bB2bbDf4c321E0fbaaF3",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01990862a598c1a35e80",
         "vestingLength": "0x01e13380",
@@ -152,7 +152,7 @@
     {
       "index": 8,
       "account": "0x3Ed23D80c7B9e3a159316b3F47bbDaB738Ba893E",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x016727823efffb0b2880",
         "vestingLength": "0x01e13380",
@@ -171,7 +171,7 @@
     {
       "index": 9,
       "account": "0x416E367b6DFa99B04bD38fb3725c78ABb7132429",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x019f447ecce8622a9600",
         "vestingLength": "0x01e13380",
@@ -190,7 +190,7 @@
     {
       "index": 10,
       "account": "0x4902b20bB3B8e7776CBcDCB6e3397E7F6b4e449E",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x030e3c00629ba0aa2d00",
         "vestingLength": "0x01e13380",
@@ -206,7 +206,7 @@
     {
       "index": 11,
       "account": "0x526c7665c5dd9cd7102c6d42d407a0d9dc1e431d",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x0a2423e133aae7377a00",
         "vestingLength": "0x00",
@@ -225,7 +225,7 @@
     {
       "index": 12,
       "account": "0x560feFC8f45b8d43f86F79F718dd0364d42037BD",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -244,7 +244,7 @@
     {
       "index": 13,
       "account": "0x5725a458b319d73B8Ec84c47de80620E7B191B0C",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x022199fd8bcd94f45d00",
         "vestingLength": "0x01e13380",
@@ -263,7 +263,7 @@
     {
       "index": 14,
       "account": "0x5b4e28133aab99Ee9FC77B649127A6CFacf28793",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x012bcd8d5db06a839c80",
         "vestingLength": "0x01e13380",
@@ -280,7 +280,7 @@
     {
       "index": 15,
       "account": "0x64CEe4d9D5F4f7A231dD53d48c1d19BEBd71DbE0",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x050e6003c354cc1b1100",
         "vestingLength": "0x01e13380",
@@ -299,7 +299,7 @@
     {
       "index": 16,
       "account": "0x68476977382d9cb85d11775b79252ee7d2859738",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x034a8e998c75cb032080",
         "vestingLength": "0x00",
@@ -318,7 +318,7 @@
     {
       "index": 17,
       "account": "0x6a5dbf2fb5206ec8192620810c3edb6d5e62b188",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x054d2959558c424d9600",
         "vestingLength": "0x00",
@@ -337,7 +337,7 @@
     {
       "index": 18,
       "account": "0x7cf20a1bb4cae92df714eaf760814860ed5f785f",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x0d037d3fadcdea3d8f00",
         "vestingLength": "0x00",
@@ -356,7 +356,7 @@
     {
       "index": 19,
       "account": "0x8100311305c9f81330d23c33fD9f6FF0093D12D3",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -375,7 +375,7 @@
     {
       "index": 20,
       "account": "0x9688e30E7A78A7fb2Ec28ec492194120BeEd5942",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x0b978f4c101525547900",
         "vestingLength": "0x01e13380",
@@ -394,7 +394,7 @@
     {
       "index": 21,
       "account": "0xA231a5Ae629a0F15e1C1EB3FfBf813589e206926",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x022199fd8bcd94f45d00",
         "vestingLength": "0x01e13380",
@@ -413,7 +413,7 @@
     {
       "index": 22,
       "account": "0xB5a790758Cdb6644305d1Cf368b67bbbA4c9a68C",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x022232cf597757d14e00",
         "vestingLength": "0x01e13380",
@@ -432,7 +432,7 @@
     {
       "index": 23,
       "account": "0xB6605F98A5562b1AC821Bc5f2B75934239e8c6D6",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -451,7 +451,7 @@
     {
       "index": 24,
       "account": "0xD5a41BFe8e373C94434eaB2fC81034eC00572b09",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -468,7 +468,7 @@
     {
       "index": 25,
       "account": "0xE539cd6F9DB04fE3c40Ff4a1C24A7453e7cf265D",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01653972550415c07a80",
         "vestingLength": "0x01e13380",
@@ -487,7 +487,7 @@
     {
       "index": 26,
       "account": "0xF212cE21a97dbe30999a4c2B309d278BCcBb686A",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x050e6003c354cc1b1100",
         "vestingLength": "0x01e13380",
@@ -506,7 +506,7 @@
     {
       "index": 27,
       "account": "0xFB40932271Fc9Db9DbF048E80697E2Da4AA57250",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x02a3e17cbfea45599900",
         "vestingLength": "0x01e13380",
@@ -525,7 +525,7 @@
     {
       "index": 28,
       "account": "0xa05967ed87d17ac0978101b73cf784573a801be7",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x040d39490fcd99cf2d80",
         "vestingLength": "0x00",
@@ -544,7 +544,7 @@
     {
       "index": 29,
       "account": "0xa2dD0ed4C27B27e6Dbf4d1E07C956599F0251b81",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x012c5c30ec0397a20080",
         "vestingLength": "0x01e13380",
@@ -563,7 +563,7 @@
     {
       "index": 30,
       "account": "0xa70e6fE4488104Be32B9B657F5Be7B68aFc17f9a",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x016727823efffb0b2880",
         "vestingLength": "0x01e13380",
@@ -582,7 +582,7 @@
     {
       "index": 31,
       "account": "0xb39Fbb76E7677fF97397a1683D01F04df4cFeD82",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a2289bbaae045b1b00",
         "vestingLength": "0x01e13380",
@@ -599,7 +599,7 @@
     {
       "index": 32,
       "account": "0xb4522eB2cA49963De9c3dC69023cBe6D53489C98",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x0166c7ff1e75e1673780",
         "vestingLength": "0x01e13380",
@@ -618,7 +618,7 @@
     {
       "index": 33,
       "account": "0xc8Fd7C330e31f2635F4a67790f391Edf2e493DDb",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x050823e797c84d85fa00",
         "vestingLength": "0x01e13380",
@@ -637,7 +637,7 @@
     {
       "index": 34,
       "account": "0xcAc59F91E4536Bc0E79aB816a5cD54e89f10433C",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -656,7 +656,7 @@
     {
       "index": 35,
       "account": "0xdB86B02928C47CB1c1D231B21732E6C639b28051",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x01a5809af43802b1cd80",
         "vestingLength": "0x01e13380",
@@ -675,7 +675,7 @@
     {
       "index": 36,
       "account": "0xe11bb2df7f004f190f75e6ec77528cf30b6afbfb",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x0dfe96827ad17a0ead80",
         "vestingLength": "0x00",
@@ -694,7 +694,7 @@
     {
       "index": 37,
       "account": "0xeB1346bb4a15e5b6923E7C002fb4D09eA98a04A0",
-      "reason": "liquidity_provider",
+      "reason": "backer",
       "grant": {
         "amount": "0x02736b8d050a07add700",
         "vestingLength": "0x01e13380",
