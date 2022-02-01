@@ -877,30 +877,3 @@ export async function setupAcceptedDirectReward(
   )
   return {...baseDeps, ...userRelatedDeps}
 }
-
-export async function setupBackerMerkleDistributorAirdropNoVesting(
-  goldfinchProtocol: GoldfinchProtocol,
-  seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
-) {
-  setupMocksForMerkleDistributorAirdrop({
-    backerDistributor: {airdrop: backerMerkleDistributorAirdropNoVesting, isAccepted: false},
-  })
-  const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-  const userRelatedDeps = await prepareUserRelatedDeps(
-    {goldfinchProtocol, seniorPool, ...baseDeps},
-    {
-      currentBlock,
-      notAcceptedMerkleDistributorGrant: {
-        amount: new BigNumber(merkleDistributorAirdropNoVesting.grant.amount).toString(10),
-        vestingLength: new BigNumber(merkleDistributorAirdropNoVesting.grant.vestingLength).toString(10),
-        cliffLength: new BigNumber(merkleDistributorAirdropNoVesting.grant.cliffLength).toString(10),
-        vestingInterval: new BigNumber(merkleDistributorAirdropNoVesting.grant.vestingInterval).toString(10),
-        revokedAt: "0",
-        totalVestedAt: new BigNumber(merkleDistributorAirdropNoVesting.grant.amount).toString(10),
-      },
-    }
-  )
-
-  return {...baseDeps, ...userRelatedDeps}
-}
