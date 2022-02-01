@@ -4,9 +4,9 @@
     "reason": "backer",
     "grant": {
       "amount": "245092436958468690000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -14,9 +14,9 @@
     "reason": "backer",
     "grant": {
       "amount": "66087082637920390000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -24,9 +24,9 @@
     "reason": "backer",
     "grant": {
       "amount": "79898511058518590000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -34,9 +34,9 @@
     "reason": "backer",
     "grant": {
       "amount": "61455129632804700000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -44,9 +44,9 @@
     "reason": "backer",
     "grant": {
       "amount": "47890333019820200000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -54,9 +54,9 @@
     "reason": "backer",
     "grant": {
       "amount": "25035211214713240000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -84,9 +84,9 @@
     "reason": "backer",
     "grant": {
       "amount": "19133401452345990000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
@@ -124,9 +124,9 @@
     "reason": "backer",
     "grant": {
       "amount": "15542433908525810000000",
-      "vestingLength": "0",
+      "vestingLength": "31536000",
       "cliffLength": "0",
-      "vestingInterval": "0"
+      "vestingInterval": "2628000"
     }
   },
   {
