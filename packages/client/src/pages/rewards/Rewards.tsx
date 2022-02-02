@@ -8,13 +8,12 @@ import {AppContext} from "../../App"
 import ConnectionNotice from "../../components/connectionNotice"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
+import {BackerMerkleDirectDistributorLoaded} from "../../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "../../ethereum/backerMerkleDistributor"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
-import {
-  BackerMerkleDirectDistributorLoaded,
-  MerkleDirectDistributorLoaded,
-} from "../../ethereum/merkleDirectDistributor"
-import {BackerMerkleDistributorLoaded, MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
+import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {
   UserCommunityRewardsLoaded,
@@ -127,7 +126,7 @@ const compareStakingRewards = (a: StakingRewardsPosition, b: StakingRewardsPosit
   a.storedPosition.rewards.startTime - b.storedPosition.rewards.startTime
 
 const compareMerkleDistributorRewards = (a: SortableMerkleDistributorRewards, b: SortableMerkleDistributorRewards) => {
-  // Order MerkleDistributor rewards by grant index.
+  // Order MerkleDistributor rewards by grant index and type.
   const aIndex = getMerkleDistributorGrantIndex(a)
   const bIndex = getMerkleDistributorGrantIndex(b)
   if (isUndefined(aIndex) && isUndefined(bIndex)) {
@@ -145,7 +144,7 @@ const compareMerkleDirectDistributorGrants = (
   a: SortableMerkleDirectDistributorRewards,
   b: SortableMerkleDirectDistributorRewards
 ) =>
-  // Order MerkleDirectDistributor rewards by grant index.
+  // Order MerkleDirectDistributor rewards by grant index and type.
   a.value.grantInfo.index - b.value.grantInfo.index
 
 function Rewards() {

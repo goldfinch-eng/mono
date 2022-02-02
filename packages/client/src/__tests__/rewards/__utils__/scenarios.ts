@@ -32,19 +32,14 @@ import omit from "lodash/omit"
 import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import BigNumber from "bignumber.js"
 import {BlockInfo} from "../../../utils"
-import {
-  BackerMerkleDistributor,
-  BackerMerkleDistributorLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
-} from "../../../ethereum/merkleDistributor"
-import {
-  BackerMerkleDirectDistributor,
-  BackerMerkleDirectDistributorLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "../../../ethereum/merkleDirectDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../ethereum/merkleDirectDistributor"
 import {Web3IO} from "../../../types/web3"
+import {
+  BackerMerkleDirectDistributorLoaded,
+  BackerMerkleDirectDistributor,
+} from "../../../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded, BackerMerkleDistributor} from "../../../ethereum/backerMerkleDistributor"
 
 export async function prepareUserRelatedDeps(
   deps: {

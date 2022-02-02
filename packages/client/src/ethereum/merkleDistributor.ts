@@ -1,6 +1,5 @@
 import {GrantReason} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
-import {BackerMerkleDistributor as BackerMerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDistributor"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import startCase from "lodash/startCase"
 import {BlockNumber} from "web3-core"
@@ -15,13 +14,7 @@ type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
 }
 
-type BackerMerkleDistributorLoadedInfo = {
-  currentBlock: BlockInfo
-}
-
 export type MerkleDistributorLoaded = WithLoadedInfo<MerkleDistributor, MerkleDistributorLoadedInfo>
-
-export type BackerMerkleDistributorLoaded = WithLoadedInfo<BackerMerkleDistributor, BackerMerkleDistributorLoadedInfo>
 
 export class MerkleDistributor {
   goldfinchProtocol: GoldfinchProtocol
@@ -101,13 +94,5 @@ export class MerkleDistributor {
       default:
         assertUnreachable(reason)
     }
-  }
-}
-
-export class BackerMerkleDistributor extends MerkleDistributor {
-  constructor(goldfinchProtocol: GoldfinchProtocol) {
-    super(goldfinchProtocol)
-    this.contract = goldfinchProtocol.getContract<BackerMerkleDistributorContract>("BackerMerkleDistributor")
-    this.address = goldfinchProtocol.getAddress("BackerMerkleDistributor")
   }
 }

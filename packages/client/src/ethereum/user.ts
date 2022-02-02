@@ -454,7 +454,7 @@ export class UserCommunityRewards {
     events: EventData[]
     userDistributor: UserMerkleDistributorLoaded | UserBackerMerkleDistributorLoaded
   }> {
-    let events, userDistributor
+    let events: EventData[], userDistributor: UserMerkleDistributorLoaded | UserBackerMerkleDistributorLoaded
     events = await this.goldfinchProtocol.queryEvents(
       merkleDistributor.contract.readOnly,
       [GRANT_ACCEPTED_EVENT],
