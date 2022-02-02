@@ -53,7 +53,7 @@
     "_generate-backer-merkle-info:client-test": "npm run _generate-backer-merkle-distributor-info:client-test && npm run _generate-backer-merkle-direct-distributor-info:client-test",
     "generate-merkle-root:local": "npm run _generate-merkle-grants:local && npm run _generate-backer-merkle-grants:local && npm run _generate-merkle-info:local && npm run _generate-backer-merkle-info:local",
     "generate-merkle-root:murmuration": "npm run generate-merkle-root:local",
-    "generate-merkle-root:client-test": "MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-merkle-grants:client-test && npm run _generate-backer-merkle-grants:client-test && npm run _generate-merkle-info:client-test && npm run _generate-backer-merkle-info:client-test"
+    "generate-merkle-root:client-test": "MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-merkle-grants:client-test && MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-backer-merkle-grants:client-test && npm run _generate-merkle-info:client-test && npm run _generate-backer-merkle-info:client-test"
   },
   "lint-staged": {
     "*.(js(x)?|ts(x)?)": [
