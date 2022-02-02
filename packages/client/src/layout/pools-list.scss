@@ -49,6 +49,14 @@
     .icon.disabled {
       opacity: 50%;
     }
+
+    .name, .apy, .limit, .balance {
+      font-size: $sans-size-s;
+    }
+
+    .subheader {
+      font-size: $sans-size-xs;
+    }
   }
 
   .fallback-content {
@@ -96,7 +104,7 @@
     }
   }
 
-  .table-spaced .table-cell.col16.apy {
+  .table-spaced .table-cell.col22.apy {
     white-space: nowrap;
   }
 }

@@ -23,12 +23,12 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
       onClick={() => history.push("/pools/senior")}
     >
       <div className="table-cell col40">
-        {props.balance}
+        <span className="name">{props.balance}</span>
         <span className={`subheader ${disabledClass}`}>Total Pool Balance</span>
       </div>
-      <div className={`table-cell col22 numeric balance ${userBalanceDisabledClass}`}>{props.userBalance}</div>
-      <div className="table-cell col22 numeric limit">{props.limit}</div>
       <div className="table-cell col16 numeric apy">{props.apy}</div>
+      <div className="table-cell col22 numeric limit">{props.limit}</div>
+      <div className={`table-cell col22 numeric balance ${userBalanceDisabledClass}`}>{props.userBalance}</div>
       <div className="pool-capacity">
         {props.remainingCapacity?.isZero() ? (
           <Badge text="Full" variant="gray" fixedWidth />

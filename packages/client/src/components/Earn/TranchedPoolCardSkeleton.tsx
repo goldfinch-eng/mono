@@ -7,9 +7,9 @@ export default function TranchedPoolCardSkeleton() {
           <span>Loading...</span>
         </div>
       </div>
-      <div className="disabled table-cell col22 numeric balance">$--.--</div>
-      <div className="disabled table-cell col22 numeric limit">$--.--</div>
       <div className="disabled table-cell col16 numeric apy">--.--%</div>
+      <div className="disabled table-cell col22 numeric limit">$--.--</div>
+      <div className="disabled table-cell col22 numeric balance">$--.--</div>
     </div>
   )
 }
