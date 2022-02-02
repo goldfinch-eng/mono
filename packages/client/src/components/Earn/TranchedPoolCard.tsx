@@ -27,13 +27,18 @@ export default function TranchedPoolCard({
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
-  const badge = tranchedPool.isPaused ? (
-    <Badge text="Paused" variant="gray" fixedWidth={false} />
-  ) : tranchedPool.isFull ? (
-    <Badge text="Full" variant="gray" fixedWidth={true} />
-  ) : (
-    <Badge text="Open" variant="blue" fixedWidth={true} />
-  )
+  const getBadge = () => {
+    if (tranchedPool.isPaused) {
+      return <Badge text="Paused" variant="gray" fixedWidth={false} />
+    } else if (tranchedPool.isRepaid) {
+      return <Badge text="Repaid" variant="green" fixedWidth={false} />
+    } else if (tranchedPool.isFull) {
+      return <Badge text="Full" variant="gray" fixedWidth={true} />
+    } else {
+      return <Badge text="Open" variant="blue" fixedWidth={true} />
+    }
+  }
+  const badge = getBadge()
 
   return (
     <div

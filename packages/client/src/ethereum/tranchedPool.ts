@@ -207,6 +207,10 @@ class TranchedPool {
     return store[this.address.toLowerCase()]
   }
 
+  get isRepaid(): boolean {
+    return this.creditLine.balance.isZero() && this.seniorTranche.lockedUntil !== 0
+  }
+
   estimateJuniorAPY(leverageRatio: BigNumber): BigNumber {
     if (this.isV1StyleDeal) {
       return this.creditLine.interestAprDecimal
