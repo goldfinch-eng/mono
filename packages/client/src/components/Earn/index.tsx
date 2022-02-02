@@ -88,6 +88,9 @@ export default function Earn() {
     apyToDisplay = seniorPoolStatus.value?.estimatedApy
   }
 
+  console.log(pool?.info.value.poolData.estimatedApy, "estimatedApy")
+  console.log(pool?.info.value.poolData.estimatedApyFromGfi, "estimatedApyFromGfi")
+
   return (
     <div className="content-section">
       <div className="page-header">
@@ -104,7 +107,10 @@ export default function Earn() {
         />
       )}
       <div className="pools">
-        <PoolList title="Senior Pool">
+        <PoolList
+          title="Senior Pool"
+          subtitle="The simple, lower risk, lower return option. Capital is automatically diversified across Borrower pools, and protected by Backer capital."
+        >
           {seniorPoolStatus.loaded ? (
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
@@ -119,7 +125,10 @@ export default function Earn() {
             <SeniorPoolCardSkeleton />
           )}
         </PoolList>
-        <PoolList title="Borrower Pools">
+        <PoolList
+          title="Borrower Pools"
+          subtitle="The more active, higher risk, higher return option. Earn higher APYs by vetting borrowers and supplying first-loss capital directly to individual pools."
+        >
           {!poolsAddresses.loaded && !backersData.loaded ? (
             <>
               <TranchedPoolCardSkeleton />

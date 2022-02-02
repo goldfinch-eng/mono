@@ -3,6 +3,17 @@
   margin-bottom: 0px;
 
   .title {
+    font-size: $sans-size-base;
+    font-weight: 500;
+  }
+
+  .subtitle {
+    font-size: $sans-size-xs;
+    color: $purp;
+    margin: 12px 0 36px;
+  }
+
+  .title {
     color: $purp-dark;
   }
 
