@@ -224,9 +224,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function earnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
-    uint256 leveredAmount = positionToLeveredAmount(position);
+    uint256 effectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
     return
-      leveredAmount.mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId])).div(
+      effectiveLeveredAmount.mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId])).div(
         stakingTokenMantissa()
       );
   }
@@ -290,8 +290,38 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return maxRate.sub(maxRate.sub(minRate).mul(x.sub(intervalStart)).div(intervalEnd.sub(intervalStart)));
   }
 
-  function positionToLeveredAmount(StakedPosition storage position) internal view returns (uint256) {
-    return toLeveredAmount(position.amount, position.leverageMultiplier);
+  function positionToEffectiveLeveredAmount(StakedPosition storage position) internal view returns (uint256) {
+    uint256 effectiveAmountMultiplier = getEffectiveAmountMultiplier(position.positionType);
+    uint256 effectiveAmount = toEffectiveAmount(
+      position.amount,
+      position.baseTokenExchangeRate,
+      effectiveAmountMultiplier
+    );
+
+    return toLeveredAmount(effectiveAmount, position.leverageMultiplier);
+  }
+
+  function positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
+    uint256 effectiveAmountMultiplier = getEffectiveAmountMultiplier(position.positionType);
+    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, effectiveAmountMultiplier);
+  }
+
+  function getEffectiveAmountMultiplier(StakedPositionType positionType) internal pure returns (uint256) {
+    if (positionType == StakedPositionType.Fidu) {
+      return 1;
+    } else if (positionType == StakedPositionType.CurveLP) {
+      return 1;
+    } else {
+      revert("unsupported StakedPositionType");
+    }
+  }
+
+  function toEffectiveAmount(
+    uint256 amount,
+    uint256 baseTokenExchangeRate,
+    uint256 effectiveAmountMultiplier
+  ) internal pure returns (uint256) {
+    return amount * baseTokenExchangeRate * effectiveAmountMultiplier;
   }
 
   function toLeveredAmount(uint256 amount, uint256 leverageMultiplier) internal pure returns (uint256) {
@@ -319,8 +349,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function positionCurrentEarnRate(uint256 tokenId) external view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
-    uint256 leveredAmount = positionToLeveredAmount(position);
-    return currentEarnRatePerToken().mul(leveredAmount).div(stakingTokenMantissa());
+    uint256 effectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
+    return currentEarnRatePerToken().mul(effectiveLeveredAmount).div(stakingTokenMantissa());
   }
 
   /* ========== MUTATIVE FUNCTIONS ========== */
@@ -512,9 +542,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     });
     _mint(nftRecipient, tokenId);
 
-    uint256 leveredAmount = positionToLeveredAmount(positions[tokenId]);
-    totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(leveredAmount);
-    totalStakedSupply = totalStakedSupply.add(amount);
+    uint256 effectiveAmount = positionToEffectiveAmount(positions[tokenId]);
+    uint256 effectiveLeveredAmount = positionToEffectiveLeveredAmount(positions[tokenId]);
+    totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(effectiveLeveredAmount);
+    totalStakedSupply = totalStakedSupply.add(effectiveAmount);
 
     // Staker is address(this) when using depositAndStake or other convenience functions
     if (staker != address(this)) {
@@ -628,11 +659,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     require(block.timestamp >= position.lockedUntil, "staked funds are locked");
 
+    uint256 effectiveAmount = toEffectiveAmount(
+      amount,
+      position.baseTokenExchangeRate,
+      getEffectiveAmountMultiplier(position.positionType)
+    );
     // By this point, leverageMultiplier should always be 1x due to the reset logic in updateReward.
     // But we subtract leveredAmount from totalLeveragedStakedSupply anyway, since that is technically correct.
-    uint256 leveredAmount = toLeveredAmount(amount, position.leverageMultiplier);
-    totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(leveredAmount);
-    totalStakedSupply = totalStakedSupply.sub(amount);
+    uint256 effectiveLeveredAmount = toLeveredAmount(effectiveAmount, position.leverageMultiplier);
+    totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(effectiveLeveredAmount);
+    totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
     position.amount = prevAmount.sub(amount);
 
     // Slash unvested rewards
@@ -763,10 +799,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       // If position is unlocked, reset its leverageMultiplier back to 1x
       uint256 lockedUntil = position.lockedUntil;
       uint256 leverageMultiplier = position.leverageMultiplier;
-      uint256 amount = position.amount;
+      uint256 effectiveAmount = positionToEffectiveAmount(position);
       if (lockedUntil > 0 && block.timestamp >= lockedUntil && leverageMultiplier > MULTIPLIER_DECIMALS) {
-        uint256 prevLeveredAmount = toLeveredAmount(amount, leverageMultiplier);
-        uint256 newLeveredAmount = toLeveredAmount(amount, MULTIPLIER_DECIMALS);
+        uint256 prevLeveredAmount = toLeveredAmount(effectiveAmount, leverageMultiplier);
+        uint256 newLeveredAmount = toLeveredAmount(effectiveAmount, MULTIPLIER_DECIMALS);
         position.leverageMultiplier = MULTIPLIER_DECIMALS;
         totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(prevLeveredAmount).add(newLeveredAmount);
       }
