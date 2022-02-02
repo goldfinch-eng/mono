@@ -40,6 +40,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     StakedPositionType positionType;
     // @notice Staked amount denominated in `stakingToken().decimals()`
     uint256 amount;
+    // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
+    uint256 baseTokenExchangeRate;
     // @notice Struct describing rewards owed with vesting
     StakingRewardsVesting.Rewards rewards;
     // @notice Multiplier applied to staked amount when locking up position
@@ -429,6 +431,19 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 leverageMultiplier = leverageMultipliers[lockupPeriod];
     require(leverageMultiplier > 0, "unsupported LockupPeriod");
     return leverageMultiplier;
+  }
+
+  /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
+  ///   `baseStakingToken()` amount
+  /// @param positionType Type of the staked postion
+  function getBaseTokenExchangeRate(StakedPositionType positionType) public view returns (uint256) {
+    if (positionType == StakedPositionType.CurveLP) {
+      return config.getFiduUSDCCurveLP().getVirtualPrice() / config.getSeniorPool().sharePrice();
+    } else if (positionType == StakedPositionType.Fidu) {
+      return 1;
+    } else {
+      revert("unsupported StakedPositionType");
+    }
   }
 
   /// @notice Identical to `depositAndStakeWithLockup`, except it allows for a signature to be passed that permits
