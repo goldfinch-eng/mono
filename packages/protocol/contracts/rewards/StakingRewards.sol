@@ -30,7 +30,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     TwentyFourMonths
   }
 
+  enum StakedPositionType {
+    Fidu,
+    CurveLP
+  }
+
   struct StakedPosition {
+    // @notice Type of the staked position
+    StakedPositionType positionType;
     // @notice Staked amount denominated in `stakingToken().decimals()`
     uint256 amount;
     // @notice Struct describing rewards owed with vesting
@@ -160,8 +167,19 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return config.getGFI();
   }
 
-  /// @notice The address of the token that can be staked
-  function stakingToken() public view returns (IERC20withDec) {
+  /// @notice The address of the token that is staked for a given position type
+  function stakingToken(StakedPositionType positionType) public view returns (IERC20withDec) {
+    if (positionType == StakedPositionType.Fidu) {
+      return config.getFidu();
+    } else if (positionType == StakedPositionType.CurveLP) {
+      return config.getFiduUSDCCurveLP();
+    } else {
+      revert("unsupported StakedPositionType");
+    }
+  }
+
+  /// @notice The address of the base token used to denominate staking rewards
+  function baseStakingToken() public view returns (IERC20withDec) {
     return config.getFidu();
   }
 
