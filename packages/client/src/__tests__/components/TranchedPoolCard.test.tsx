@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js"
 import {TranchedPool} from "../../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 
-function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber) {
+function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber, isRepaid: boolean) {
   // Mock tranched pool.
   const tranchedPool = new TranchedPool("0xasdf", {
     getContract: () => {
@@ -17,6 +17,9 @@ function renderTranchedPoolCard(isPaused: boolean, remainingCapacity: BigNumber)
   tranchedPool.creditLine = defaultCreditLine as any
   tranchedPool.remainingCapacity = () => remainingCapacity
   tranchedPool.isPaused = isPaused
+  Object.defineProperty(tranchedPool, "isRepaid", {
+    get: () => isRepaid,
+  })
 
   const poolBacker = {
     tranchedPool,
@@ -38,7 +41,7 @@ describe("Tranched pool card", () => {
   describe("pool is paused", () => {
     describe("remaining capacity is 0", () => {
       it("should show paused badge", async () => {
-        renderTranchedPoolCard(true, new BigNumber(0))
+        renderTranchedPoolCard(true, new BigNumber(0), false)
 
         await waitFor(() => {
           expect(screen.getByText("Paused")).toBeInTheDocument()
@@ -47,7 +50,16 @@ describe("Tranched pool card", () => {
     })
     describe("remaining capacity is not 0", () => {
       it("should show paused badge", async () => {
-        renderTranchedPoolCard(true, new BigNumber(100))
+        renderTranchedPoolCard(true, new BigNumber(100), false)
+
+        await waitFor(() => {
+          expect(screen.getByText("Paused")).toBeInTheDocument()
+        })
+      })
+    })
+    describe("is repaid", () => {
+      it("should show the paused badge", async () => {
+        renderTranchedPoolCard(true, new BigNumber(100), true)
 
         await waitFor(() => {
           expect(screen.getByText("Paused")).toBeInTheDocument()
@@ -58,7 +70,7 @@ describe("Tranched pool card", () => {
   describe("pool is not paused", () => {
     describe("remaining capacity is 0", () => {
       it("should show full badge", async () => {
-        renderTranchedPoolCard(false, new BigNumber(0))
+        renderTranchedPoolCard(false, new BigNumber(0), false)
 
         await waitFor(() => {
           expect(screen.getByText("Full")).toBeInTheDocument()
@@ -67,10 +79,18 @@ describe("Tranched pool card", () => {
     })
     describe("remaining capacity is not 0", () => {
       it("should show open badge", async () => {
-        renderTranchedPoolCard(false, new BigNumber(100))
+        renderTranchedPoolCard(false, new BigNumber(100), false)
 
         await waitFor(() => {
           expect(screen.getByText("Open")).toBeInTheDocument()
+        })
+      })
+    })
+    describe("has been repaid", async () => {
+      it("shows the repaid badge", async () => {
+        renderTranchedPoolCard(false, new BigNumber(100), true)
+        await waitFor(() => {
+          expect(screen.getByText("Repaid")).toBeInTheDocument()
         })
       })
     })
