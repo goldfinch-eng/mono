@@ -530,7 +530,7 @@ function getStakingOrCommunityRewardsDetails(
       claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: undefined,
       vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: item.acceptEvent.transactionHash,
+      etherscanAddress: item.acceptanceContext?.event.transactionHash,
     }
   }
 }

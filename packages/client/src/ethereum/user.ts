@@ -13,7 +13,6 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdent
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {EventData} from "web3-eth-contract"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,
@@ -69,7 +68,7 @@ import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../uti
 import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {CommunityRewardsGrant, CommunityRewardsLoaded} from "./communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
@@ -367,8 +366,8 @@ export class UserCommunityRewards {
             )
           ),
           Promise.all(
-            tokenIds.map(async (tokenId) => {
-              const {events, userDistributor} = await this.getAcceptedEventsForMerkleDistributorScenarios(
+            tokenIds.map(async (tokenId): Promise<CommunityRewardsGrantAcceptanceContext | undefined> => {
+              const {events, source, userDistributor} = await this.getAcceptedEventsForMerkleDistributorScenarios(
                 merkleDistributor,
                 backerMerkleDistributor,
                 tokenId,
@@ -385,8 +384,9 @@ export class UserCommunityRewards {
                 )
                 if (airdrop) {
                   return {
+                    grantInfo: airdrop.grantInfo,
                     event: acceptanceEvent,
-                    airdropGrantInfo: airdrop.grantInfo,
+                    source,
                   }
                 } else {
                   throw new Error(
@@ -410,21 +410,18 @@ export class UserCommunityRewards {
           ),
         ])
       )
-      .then(([tokenIds, rawGrants, claimables, acceptEventInfos]) =>
+      .then(([tokenIds, rawGrants, claimables, acceptanceContexts]) =>
         tokenIds.map((tokenId, i): CommunityRewardsGrant => {
           const rawGrant = rawGrants[i]
           assertNonNullable(rawGrant)
           const claimable = claimables[i]
           assertNonNullable(claimable)
-          const grantInfo = acceptEventInfos[i]?.airdropGrantInfo
-          const acceptEvent = acceptEventInfos[i]?.event
-          assertNonNullable(acceptEvent)
+          const acceptanceContext = acceptanceContexts[i]
           return UserCommunityRewards.parseCommunityRewardsGrant(
             tokenId,
             new BigNumber(claimable),
             rawGrant,
-            grantInfo,
-            acceptEvent
+            acceptanceContext
           )
         })
       )
@@ -452,29 +449,39 @@ export class UserCommunityRewards {
     currentBlock: BlockInfo,
     userMerkleDistributor: UserMerkleDistributorLoaded,
     userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded
-  ): Promise<{
-    events: EventData[]
-    userDistributor: UserMerkleDistributorLoaded | UserBackerMerkleDistributorLoaded
-  }> {
-    let events: EventData[], userDistributor: UserMerkleDistributorLoaded | UserBackerMerkleDistributorLoaded
-    events = await this.goldfinchProtocol.queryEvents(
+  ): Promise<
+    | {
+        events: KnownEventData<typeof GRANT_ACCEPTED_EVENT>[]
+        source: "merkleDistributor"
+        userDistributor: UserMerkleDistributorLoaded
+      }
+    | {
+        events: KnownEventData<typeof GRANT_ACCEPTED_EVENT>[]
+        source: "backerMerkleDistributor"
+        userDistributor: UserBackerMerkleDistributorLoaded
+      }
+  > {
+    const merkleDistributorEvents = await this.goldfinchProtocol.queryEvents(
       merkleDistributor.contract.readOnly,
       [GRANT_ACCEPTED_EVENT],
       {tokenId, account: this.address},
       currentBlock.number
     )
-    userDistributor = userMerkleDistributor
-
-    if (events.length === 0) {
-      events = await this.goldfinchProtocol.queryEvents(
+    if (merkleDistributorEvents.length === 0) {
+      const backerMerkleDistributorEvents = await this.goldfinchProtocol.queryEvents(
         backerMerkleDistributor.contract.readOnly,
         [GRANT_ACCEPTED_EVENT],
         {tokenId, account: this.address},
         currentBlock.number
       )
-      userDistributor = userBackerMerkleDistributor
+      return {
+        events: backerMerkleDistributorEvents,
+        source: "backerMerkleDistributor",
+        userDistributor: userBackerMerkleDistributor,
+      }
+    } else {
+      return {events: merkleDistributorEvents, source: "merkleDistributor", userDistributor: userMerkleDistributor}
     }
-    return {events, userDistributor}
   }
 
   static calculateClaimable(grants: CommunityRewardsGrant[]): BigNumber {
@@ -501,8 +508,7 @@ export class UserCommunityRewards {
       5: string
       6: string
     },
-    grantInfo: MerkleDistributorGrantInfo | undefined,
-    acceptEvent: EventData
+    acceptanceContext: CommunityRewardsGrantAcceptanceContext | undefined
   ): CommunityRewardsGrant {
     return new CommunityRewardsGrant(
       tokenId,
@@ -516,8 +522,7 @@ export class UserCommunityRewards {
         vestingInterval: new BigNumber(tuple[5]),
         revokedAt: parseInt(tuple[6], 10),
       },
-      grantInfo,
-      acceptEvent
+      acceptanceContext
     )
   }
 }
