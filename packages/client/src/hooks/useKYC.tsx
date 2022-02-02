@@ -24,7 +24,7 @@ export function useKYC(): AsyncResult<KYC> {
 }
 
 export function eligibleForSeniorPool(user: UserLoaded | undefined): boolean {
-  const goListed =
-    user?.info.value.goListed || user?.info.value.hasUSNonAccreditedUID || user?.info.value.hasUSNonAccreditedUID
+  const goListed = user?.info.value.goListed || user?.info.value.hasNonUSUID || user?.info.value.hasUSAccreditedUID
+
   return !!goListed
 }
