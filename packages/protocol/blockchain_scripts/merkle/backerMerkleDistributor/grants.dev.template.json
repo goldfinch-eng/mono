@@ -1,7 +1,7 @@
 [
   {
     "account": "REPLACE_ME",
-    "reason": "backer_flight_academy",
+    "reason": "backer",
     "grant": {
         "amount": "1000000000000000000000",
         "vestingLength": "0",
@@ -11,7 +11,7 @@
   },
   {
     "account": "REPLACE_ME",
-    "reason": "backer_flight_academy",
+    "reason": "backer",
     "grant": {
         "amount": "1000000000000000000000",
         "vestingLength": "31536000",
@@ -21,7 +21,7 @@
   },
   {
     "account": "REPLACE_ME",
-    "reason": "backer_goldfinch_investment",
+    "reason": "backer",
     "grant": {
         "amount": "1000000000000000000000",
         "vestingLength": "31536000",
@@ -31,7 +31,7 @@
   },
   {
     "account": "REPLACE_ME",
-    "reason": "backer_liquidity_provider",
+    "reason": "backer",
     "grant": {
         "amount": "1000000000000000000000",
         "vestingLength": "31536000",
@@ -41,7 +41,7 @@
   },
   {
     "account": "REPLACE_ME",
-    "reason": "backer_liquidity_provider",
+    "reason": "backer",
     "grant": {
         "amount": "1000000000000000000000",
         "vestingLength": "31536000",

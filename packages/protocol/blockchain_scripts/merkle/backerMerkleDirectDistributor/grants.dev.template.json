@@ -1,21 +1,21 @@
 [
   {
     "account": "REPLACE_ME",
-    "reason": "backer_flight_academy",
+    "reason": "backer",
     "grant": {
       "amount": "1500000000000000000000"
     }
   },
   {
     "account": "REPLACE_ME",
-    "reason": "backer_flight_academy",
+    "reason": "backer",
     "grant": {
       "amount": "2500000000000000000000"
     }
   },
   {
     "account": "REPLACE_ME",
-    "reason": "backer_flight_academy",
+    "reason": "backer",
     "grant": {
       "amount": "3500000000000000000000"
     }
