@@ -15,7 +15,9 @@
   padding: 0 18px;
   position: absolute;
   right: 48px;
-  width: 195px;
+  width: auto;
+  max-width: 235px;
+  white-space: nowrap;
 
   &:hover {
     background: $sand;
