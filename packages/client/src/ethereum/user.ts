@@ -66,14 +66,16 @@ import {
 } from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
+import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {BackerMerkleDirectDistributorLoaded, MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
-import {BackerMerkleDistributorLoaded, MerkleDistributorLoaded} from "./merkleDistributor"
+import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
+import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
 import {
   getBackerMerkleDirectDistributorInfo,
