@@ -35,7 +35,7 @@ export const getStakingRewardsAbi = () => getAbi("StakingRewards")
 
 export const getMerkleDistributorAbi = () => getAbi("MerkleDistributor")
 
-export const getBackerMerkleDistributorAbi = () => getAbi("MerkleDistributor")
+export const getBackerMerkleDistributorAbi = () => getAbi("BackerMerkleDistributor")
 
 export const getMerkleDirectDistributorAbi = () => getAbi("MerkleDirectDistributor")
 

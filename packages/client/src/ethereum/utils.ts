@@ -134,11 +134,7 @@ async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistri
 
 async function getBackerMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
   let fileNameSuffix = ""
-  if (
-    (process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development") &&
-    networkId === LOCAL &&
-    !isMainnetForking()
-  ) {
+  if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
     fileNameSuffix = ".dev"
   }
 
@@ -184,11 +180,7 @@ async function getBackerMerkleDirectDistributorInfo(
   networkId: string
 ): Promise<MerkleDirectDistributorInfo | undefined> {
   let fileNameSuffix = ""
-  if (
-    (process.env.NODE_ENV === "test" || process.env.NODE_ENV === "development") &&
-    networkId === LOCAL &&
-    !isMainnetForking()
-  ) {
+  if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
     fileNameSuffix = ".dev"
   }
   return import(
