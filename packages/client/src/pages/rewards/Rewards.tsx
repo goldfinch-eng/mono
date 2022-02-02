@@ -126,7 +126,7 @@ const compareStakingRewards = (a: StakingRewardsPosition, b: StakingRewardsPosit
   a.storedPosition.rewards.startTime - b.storedPosition.rewards.startTime
 
 const compareMerkleDistributorRewards = (a: SortableMerkleDistributorRewards, b: SortableMerkleDistributorRewards) => {
-  // Order MerkleDistributor rewards by grant index and type.
+  // Order MerkleDistributor rewards by grant index.
   const aIndex = getMerkleDistributorGrantIndex(a)
   const bIndex = getMerkleDistributorGrantIndex(b)
   if (isUndefined(aIndex) && isUndefined(bIndex)) {
@@ -144,7 +144,7 @@ const compareMerkleDirectDistributorGrants = (
   a: SortableMerkleDirectDistributorRewards,
   b: SortableMerkleDirectDistributorRewards
 ) =>
-  // Order MerkleDirectDistributor rewards by grant index and type.
+  // Order MerkleDirectDistributor rewards by grant index.
   a.value.grantInfo.index - b.value.grantInfo.index
 
 function Rewards() {
