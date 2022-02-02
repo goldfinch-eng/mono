@@ -1,7 +1,7 @@
 ### Backers Airdrop
 
 This folder contains scripts for generating everything for
-[this](https://gov.goldfinch.finance/t/retroactive-backer-distribution-proposal-3-with-data/252) airdrop proposal.
+[this](https://gov.goldfinch.finance/t/retroactive-backer-distribution-proposal-4-same-as-3-with-ammendment/505) airdrop proposal.
 
 The file with data is this [Google Sheet](https://docs.google.com/spreadsheets/d/1zYEHLx1lOQSEfBSyCp1WFWIPKon4PD5kF4dod7Bhl4I/edit#gid=645166810), downloaded as CSV.
 
@@ -20,7 +20,7 @@ to generate data about the airdrop.
 After that run
 
 ```shell
-$ node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot.ts \
+$ cd ../../.. && node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot.ts \
     -i blockchain_scripts/airdrop/2022-01-24-backers/grants.vesting.json \
      > blockchain_scripts/merkle/merkleDistributor/2022-01-24-backers-airdrop-merkleDistributorInfo.json
 

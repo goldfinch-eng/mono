@@ -39,11 +39,6 @@ const hasWeb3: UserWalletWeb3Status = {
   networkName: "localhost",
   address: undefined,
 }
-const connected: UserWalletWeb3Status = {
-  type: "connected",
-  networkName: "localhost",
-  address: testUserAddress,
-}
 
 const scenarios: Scenario[] = [
   {
