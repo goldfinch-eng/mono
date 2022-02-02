@@ -186,7 +186,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   if (!requestFromClient) {
-    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool, go, goldfinchConfig})
+    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
 
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
