@@ -33,7 +33,8 @@ function isCloseTo(num: BN, target: BN, tolerance: BN) {
 export async function main() {
   const deployEffects = await getDeployEffects({
     title: "Backer airdrop",
-    description: "https://gov.goldfinch.finance/t/retroactive-backer-distribution-proposal-4-same-as-3-with-ammendment/505",
+    description:
+      "https://gov.goldfinch.finance/t/retroactive-backer-distribution-proposal-4-same-as-3-with-ammendment/505",
   })
 
   const deployer = new ContractDeployer(console.log, hre)
