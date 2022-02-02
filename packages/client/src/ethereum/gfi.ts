@@ -75,23 +75,22 @@ class GFI {
     stakedBalanceInDollars: BigNumber,
     portfolioBalanceInDollars: BigNumber,
     globalEstimatedApyFromGfi: BigNumber | undefined
-  ) {
-    if (process.env.REACT_APP_TOGGLE_REWARDS !== "true") {
-      return new BigNumber(0)
-    }
-    if (portfolioBalanceInDollars.gt(0)) {
-      const balancePortionEarningGfi = stakedBalanceInDollars.div(portfolioBalanceInDollars)
-      // NOTE: Because our frontend does not currently support staking with lockup, we do not
-      // worry here about adjusting for the portion of the user's balance that is not only earning
-      // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
-      // (which they could have achieved by interacting with the contract directly, rather than using
-      // our frontend).
-      const userEstimatedApyFromGfi = globalEstimatedApyFromGfi
-        ? balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
-        : undefined
-      return userEstimatedApyFromGfi
+  ): BigNumber | undefined {
+    if (globalEstimatedApyFromGfi) {
+      if (portfolioBalanceInDollars.gt(0)) {
+        const balancePortionEarningGfi = stakedBalanceInDollars.div(portfolioBalanceInDollars)
+        // NOTE: Because our frontend does not currently support staking with lockup, we do not
+        // worry here about adjusting for the portion of the user's balance that is not only earning
+        // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup
+        // (which they could have achieved by interacting with the contract directly, rather than using
+        // our frontend).
+        const userEstimatedApyFromGfi = balancePortionEarningGfi.multipliedBy(globalEstimatedApyFromGfi)
+        return userEstimatedApyFromGfi
+      } else {
+        return globalEstimatedApyFromGfi
+      }
     } else {
-      return globalEstimatedApyFromGfi
+      return undefined
     }
   }
 

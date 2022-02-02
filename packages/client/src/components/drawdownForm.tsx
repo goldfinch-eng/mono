@@ -24,7 +24,7 @@ type DrawdownFormProps = {
 }
 
 function DrawdownForm(props: DrawdownFormProps) {
-  const {pool, usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
+  const {usdc, goldfinchConfig, goldfinchProtocol} = useContext(AppContext)
   const sendFromUser = useSendFromUser()
   const [erc20, setErc20] = useState(usdc)
   const [unlocked, refreshUnlocked] = useCurrencyUnlocked(erc20, {
@@ -76,7 +76,6 @@ function DrawdownForm(props: DrawdownFormProps) {
 
   const maxAmountInDollars = minimumNumber(
     props.creditLine.availableCreditInDollars,
-    pool ? usdcFromAtomic(pool.info.value.poolData.balance) : undefined,
     goldfinchConfig ? usdcFromAtomic(goldfinchConfig.transactionLimit) : undefined
   )
 

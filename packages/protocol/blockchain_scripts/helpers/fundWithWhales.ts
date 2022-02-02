@@ -15,7 +15,7 @@ export async function fundWithWhales(
   logger("💰🐋 Begin fundWithWhales")
 
   const whales: Record<Ticker, AddressString> = {
-    USDC: "0xf977814e90da44bfa03b6295a0616a897441acec",
+    USDC: "0x72a53cdbbcc1b9efa39c834a540550e23463aacb",
     USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
     BUSD: "0x28c6c06298d514db089934071355e5743bf21d60",
     ETH: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
@@ -67,7 +67,7 @@ async function fundWithWhale({
   amount: number
   logger: typeof console.log
 }) {
-  logger(`💰🐋 funding erc20 ${erc20.name}`)
+  logger(`💰🐋 funding erc20 ${erc20.address}`)
   logger(`💰🐋 recipient:${recipient}`)
   logger(`💰🐋 whale:${whale}`)
   await impersonateAccount(hre, whale)

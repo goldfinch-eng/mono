@@ -4,6 +4,7 @@ import {
   MerkleDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
+import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
 import {BlockNumber} from "web3-core"
@@ -17,7 +18,7 @@ import {
   StakingRewards,
   StakingRewardsLoaded,
 } from "../../../ethereum/pool"
-import {User, UserCommunityRewards, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
+import {User, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
 import {BlockInfo} from "../../../utils"
@@ -41,6 +42,7 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../ethereum/merkleDirectDistributor"
+import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 
 class ImproperlyConfiguredMockError extends Error {}
 
@@ -121,6 +123,7 @@ export async function mockUserRelatedInitializationContractCalls(
   gfi: GFI,
   communityRewards: CommunityRewards,
   merkleDistributor: MerkleDistributor,
+  merkleDirectDistributor: MerkleDirectDistributor,
   rewardsMock: RewardsMockData
 ): Promise<ContractCallsMocks> {
   user._fetchTxs = (usdc, pool, currentBlock) => {
@@ -219,6 +222,7 @@ export async function mockUserRelatedInitializationContractCalls(
         (_val, i: number) =>
           ({
             returnValues: {tokenId: String(i + 1), amount: stakedAmount},
+            transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
           } as unknown as KnownEventData<typeof STAKED_EVENT>)
       )
     const granted = rewardsMock.staking?.granted || earnedSince
@@ -328,6 +332,7 @@ export async function mockUserRelatedInitializationContractCalls(
         index: rewardsMock.community?.airdrop?.index || 0,
         account: recipient,
       },
+      transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000001",
     }
     const communityRewardsTokenId = "1"
     callCommunityRewardsTokenOfOwnerMock = mock({
@@ -361,7 +366,7 @@ export async function mockUserRelatedInitializationContractCalls(
       },
     })
     const mockQueryEvents = <T extends KnownEventName>(
-      contract: MerkleDistributorContract,
+      contract: MerkleDistributorContract | MerkleDirectDistributorContract,
       eventNames: T[],
       filter: Filter | undefined,
       toBlock: BlockNumber
@@ -369,6 +374,20 @@ export async function mockUserRelatedInitializationContractCalls(
       if (contract === merkleDistributor.contract.readOnly) {
         if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
           if (isEqual(filter, {tokenId: communityRewardsTokenId})) {
+            if (toBlock === 94) {
+              return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
+            } else {
+              throw new Error(`Unexpected toBlock: ${toBlock}`)
+            }
+          } else {
+            throw new Error(`Unexpected filter: ${filter}`)
+          }
+        } else {
+          throw new Error(`Unexpected event names: ${eventNames}`)
+        }
+      } else if (contract === merkleDirectDistributor.contract.readOnly) {
+        if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
+          if (isEqual(filter, {index: "0"})) {
             if (toBlock === 94) {
               return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
             } else {
@@ -521,6 +540,7 @@ export function setupMocksForMerkleDistributorAirdrop(
 }
 
 export function setupMocksForMerkleDirectDistributorAirdrop(
+  goldfinchProtocol: GoldfinchProtocol,
   airdrop: MerkleDirectDistributorGrantInfo | undefined,
   isAccepted: boolean
 ) {
@@ -541,11 +561,42 @@ export function setupMocksForMerkleDirectDistributorAirdrop(
     const airdropsAccepted = grants.map((val) => ({grantInfo: val, isAccepted}))
     return Promise.resolve(airdropsAccepted)
   }
+  const mockQueryEvents = async <T extends KnownEventName>(
+    contract: MerkleDirectDistributorContract,
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: BlockNumber
+  ): Promise<KnownEventData<T>[]> => {
+    if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
+      const acceptedGrantRes =
+        airdrop !== undefined
+          ? {
+              returnValues: {
+                index: 0,
+                account: "0x0000000000000000000000000000000000000002",
+              },
+              transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000002",
+            }
+          : {}
+      if (isEqual(filter, {index: "0"})) {
+        if (toBlock === 94) {
+          return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
+        } else {
+          throw new Error(`Unexpected toBlock: ${toBlock}`)
+        }
+      } else {
+        throw new Error(`Unexpected filter: ${filter}`)
+      }
+    } else {
+      throw new Error(`Unexpected event names: ${eventNames}`)
+    }
+  }
+  goldfinchProtocol.queryEvents = mockQueryEvents
 }
 
-export function resetAirdropMocks(): void {
+export function resetAirdropMocks(goldfinchProtocol: GoldfinchProtocol): void {
   setupMocksForMerkleDistributorAirdrop(undefined, true)
-  setupMocksForMerkleDirectDistributorAirdrop(undefined, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, undefined, true)
 }
 
 export function assertAllMocksAreCalled(mocks: Partial<ContractCallsMocks>) {

@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js"
 import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
+import {EventData} from "web3-eth-contract"
 
 export type AcceptedMerkleDirectDistributorGrant = {
   accepted: true
@@ -8,6 +9,7 @@ export type AcceptedMerkleDirectDistributorGrant = {
   vested: BigNumber
   claimable: BigNumber
   unvested: BigNumber
+  acceptEvent?: EventData
 }
 export type NotAcceptedMerkleDirectDistributorGrant = {
   accepted: false
@@ -16,6 +18,7 @@ export type NotAcceptedMerkleDirectDistributorGrant = {
   vested: BigNumber
   claimable: BigNumber
   unvested: BigNumber
+  acceptEvent?: undefined
 }
 export type MerkleDirectDistributorGrant =
   | AcceptedMerkleDirectDistributorGrant

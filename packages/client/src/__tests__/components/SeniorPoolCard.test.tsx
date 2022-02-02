@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom"
 import {AppContext} from "../../App"
 import {render, screen, waitFor} from "@testing-library/react"
-import {SeniorPoolCard} from "../../components/earn"
+import SeniorPoolCard from "../../components/Earn/SeniorPoolCard"
 import BigNumber from "bignumber.js"
 
 function renderSeniorPoolCard(remainingCapacity: BigNumber | undefined) {

@@ -9,7 +9,7 @@ import web3 from "../web3"
 import * as ERC20Contract from "./ERC20.json"
 import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {BUSD_ADDRESSES, decimals, USDC_ADDRESSES, USDT_ADDRESSES} from "./utils"
+import {BUSD_ADDRESSES, decimals, isMainnetForking, USDC_ADDRESSES, USDT_ADDRESSES} from "./utils"
 
 const Tickers: Record<Ticker, Ticker> = {
   USDC: "USDC",
@@ -100,7 +100,8 @@ class USDC extends ERC20 {
     this.networksToAddress = USDC_ADDRESSES
     this.localContractName = "TestERC20"
     this.decimals = 6
-    this.permitVersion = this.goldfinchProtocol.networkId === "localhost" ? "1" : "2"
+
+    this.permitVersion = this.goldfinchProtocol.networkId === "localhost" && !isMainnetForking() ? "1" : "2"
   }
 }
 

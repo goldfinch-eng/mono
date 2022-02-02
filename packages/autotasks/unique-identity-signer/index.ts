@@ -7,7 +7,8 @@ import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
-import UniqueIdentityAbi from "./UniqueIdentity.json"
+import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
+export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
@@ -98,9 +99,15 @@ export async function main({
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
 
-  const kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
+  let kycStatus
+  try {
+    kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
+  } catch (e) {
+    console.error("fetchKYCStatus failed", e)
+    throw new Error("fetchKYCStatus failed")
+  }
 
-  if (kycStatus.status !== "approved" || kycStatus.countryCode === "US" || kycStatus.countryCode === "") {
+  if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
     throw new Error("Does not meet mint requirements")
   }
 
@@ -108,7 +115,14 @@ export async function main({
   const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = auth["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
-  const idVersion = await uniqueIdentity.ID_TYPE_0()
+  let idVersion
+  if (kycStatus.countryCode === "US") {
+    // US non accredited
+    idVersion = await uniqueIdentity.ID_TYPE_2()
+  } else {
+    // non US
+    idVersion = await uniqueIdentity.ID_TYPE_0()
+  }
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   const encoded = pack(signTypes, signParams)

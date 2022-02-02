@@ -125,10 +125,10 @@ interface OpenDetailsProps {
 
 function OpenDetails(props: OpenDetailsProps) {
   if (props.open) {
-    return <button className="expand close">{iconCarrotUp}</button>
+    return <button className="open-details close">{iconCarrotUp}</button>
   }
 
-  return <button className="expand">{iconCarrotDown}</button>
+  return <button className="open-details">{iconCarrotDown}</button>
 }
 
 type BaseItemDetails = {
@@ -137,7 +137,7 @@ type BaseItemDetails = {
   vestingSchedule: string
   vestingStatus: string
   claimStatus: string
-  etherscanAddress: string
+  etherscanAddress: string | undefined
 }
 type FullItemDetails<T> = BaseItemDetails & {
   type: T
@@ -474,13 +474,12 @@ function getNotAcceptedMerkleDistributorGrantDetails(
     vestingStatus: `${displayDollars(
       gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
     )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) unlocked`,
-    etherscanAddress: merkleDistributor.address,
+    etherscanAddress: undefined,
   }
 }
 function getMerkleDirectDistributorGrantDetails(
   item: MerkleDirectDistributorGrant,
-  gfi: GFILoaded,
-  merkleDirectDistributor: MerkleDirectDistributorLoaded
+  gfi: GFILoaded
 ): MerkleDirectDistributorGrantDetails {
   const displayReason = MerkleDirectDistributor.getDisplayReason(item.grantInfo.reason)
   return {
@@ -493,13 +492,11 @@ function getMerkleDirectDistributorGrantDetails(
     vestingStatus: `${displayDollars(
       gfiInDollars(gfiToDollarsAtomic(item.vested, gfi.info.value.price))
     )} (${displayNumber(gfiFromAtomic(item.vested))} GFI) unlocked`,
-    etherscanAddress: merkleDirectDistributor.address,
+    etherscanAddress: item.acceptEvent?.transactionHash,
   }
 }
 function getStakingOrCommunityRewardsDetails(
   item: StakingRewardsPosition | CommunityRewardsGrant,
-  stakingRewards: StakingRewardsLoaded,
-  communityRewards: CommunityRewardsLoaded,
   gfi: GFILoaded
 ): StakingRewardsDetails | CommunityRewardsDetails {
   if (item instanceof StakingRewardsPosition) {
@@ -511,7 +508,7 @@ function getStakingOrCommunityRewardsDetails(
       claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: getCurrentEarnRate(item.currentEarnRate),
       vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: stakingRewards.address,
+      etherscanAddress: item.stakedEvent.transactionHash,
     }
   } else {
     return {
@@ -531,7 +528,7 @@ function getStakingOrCommunityRewardsDetails(
       claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: undefined,
       vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: communityRewards.address,
+      etherscanAddress: item.acceptEvent.transactionHash,
     }
   }
 }
@@ -670,7 +667,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   if (props.type === "communityRewards" || props.type === "stakingRewards") {
     const item = props.item
     const title = item.title
-    const details = getStakingOrCommunityRewardsDetails(item, props.stakingRewards, props.communityRewards, props.gfi)
+    const details = getStakingOrCommunityRewardsDetails(item, props.gfi)
 
     if (item.claimable.eq(0)) {
       let status: RewardStatus
@@ -748,7 +745,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
   } else if (props.type === "merkleDirectDistributor") {
     const item = props.item
-    const details = getMerkleDirectDistributorGrantDetails(item, props.gfi, props.merkleDirectDistributor)
+    const details = getMerkleDirectDistributorGrantDetails(item, props.gfi)
     return (
       <RewardsListItem
         status={item.accepted ? RewardStatus.PermanentlyAllClaimed : RewardStatus.Claimable}

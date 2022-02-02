@@ -8,7 +8,6 @@ import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
 import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
 import {decimalPlaces} from "../../ethereum/utils"
 import {useAsync} from "../../hooks/useAsync"
-import useCurrencyUnlocked from "../../hooks/useCurrencyUnlocked"
 import useERC20Permit from "../../hooks/useERC20Permit"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import {useFetchNDA} from "../../hooks/useNDA"
@@ -38,7 +37,6 @@ import LoadingButton from "../loadingButton"
 import NdaPrompt from "../ndaPrompt"
 import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
-import UnlockERC20Form from "../unlockERC20Form"
 
 function useRecentPoolTransactions({
   tranchedPool,
@@ -115,37 +113,27 @@ function TranchedPoolDepositForm({backer, tranchedPool, actionComplete, closeFor
     }
 
     const depositAmount = usdcToAtomic(transactionAmount)
-    // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
-    if (process.env.REACT_APP_HARDHAT_FORK) {
-      return sendFromUser(tranchedPool.contract.userWallet.methods.deposit(TRANCHES.Junior, depositAmount), {
+    let signatureData = await gatherPermitSignature({
+      token: usdc,
+      value: new BigNumber(depositAmount),
+      spender: tranchedPool.address,
+    })
+    return sendFromUser(
+      tranchedPool.contract.userWallet.methods.depositWithPermit(
+        TRANCHES.Junior,
+        signatureData.value,
+        signatureData.deadline,
+        signatureData.v,
+        signatureData.r,
+        signatureData.s
+      ),
+      {
         type: SUPPLY_TX_TYPE,
         data: {
           amount: transactionAmount,
         },
-      }).then(actionComplete)
-    } else {
-      let signatureData = await gatherPermitSignature({
-        token: usdc,
-        value: new BigNumber(depositAmount),
-        spender: tranchedPool.address,
-      })
-      return sendFromUser(
-        tranchedPool.contract.userWallet.methods.depositWithPermit(
-          TRANCHES.Junior,
-          signatureData.value,
-          signatureData.deadline,
-          signatureData.v,
-          signatureData.r,
-          signatureData.s
-        ),
-        {
-          type: SUPPLY_TX_TYPE,
-          data: {
-            amount: transactionAmount,
-          },
-        }
-      ).then(actionComplete)
-    }
+      }
+    ).then(actionComplete)
   }
 
   function renderForm({formMethods}) {
@@ -778,19 +766,13 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, usdc, user, network, setSessionData, currentBlock} = useContext(AppContext)
+  const {goldfinchProtocol, user, network, setSessionData, currentBlock} = useContext(AppContext)
   const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
   const [nda, refreshNDA] = useFetchNDA({user, tranchedPool})
   const hasSignedNDA = nda && nda?.status === "success"
-
-  const [unlocked, refreshUnlocked] = useCurrencyUnlocked(usdc, {
-    owner: user?.address,
-    spender: tranchedPool?.address,
-    minimum: null,
-  })
 
   function openDetailsUrl() {
     window.open(tranchedPool?.metadata?.detailsUrl, "_blank")
@@ -829,13 +811,6 @@ function TranchedPoolView() {
     ? `Pools / ${tranchedPool.metadata?.name ?? croppedAddress(tranchedPool.address)}`
     : "Loading..."
 
-  const unlockForm =
-    tranchedPool && process.env.REACT_APP_HARDHAT_FORK && !unlocked ? (
-      <UnlockERC20Form erc20={usdc} onUnlock={() => refreshUnlocked()} unlockAddress={tranchedPool.address} />
-    ) : (
-      <></>
-    )
-
   const isAtMaxCapacity = tranchedPool?.remainingCapacity().isZero()
   const maxCapacityNotice = isAtMaxCapacity ? (
     <div className="info-banner background-container">
@@ -853,7 +828,6 @@ function TranchedPoolView() {
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
-      {unlockForm}
       {user && (
         <>
           {maxCapacityNotice}

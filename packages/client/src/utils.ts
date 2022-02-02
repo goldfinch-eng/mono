@@ -1,6 +1,7 @@
 import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
+import {isMainnetForking} from "./ethereum/utils"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
 
@@ -94,6 +95,15 @@ export function roundDownPenny(val) {
 
 export class AssertionError extends Error {}
 
+export class CodedError extends Error {
+  code: number
+
+  constructor(message: string, code: number) {
+    super(message)
+    this.code = code
+  }
+}
+
 export function assertNumber(val: unknown): asserts val is number {
   if (typeof val !== "number") {
     throw new AssertionError(`Value ${val} is not a number.`)
@@ -101,8 +111,22 @@ export function assertNumber(val: unknown): asserts val is number {
 }
 
 export function assertError(val: unknown): asserts val is Error {
-  if (!(val instanceof Error)) {
+  if (!isError(val)) {
     throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
+}
+
+export function isError(val: unknown): val is Error {
+  return val instanceof Error
+}
+
+export function isCodedError(val: unknown): val is CodedError {
+  return val instanceof CodedError
+}
+
+export function assertCodedError(val: unknown): asserts val is CodedError {
+  if (!isCodedError(val)) {
+    throw new AssertionError(`Value ${val} failed CodedError type guard.`)
   }
 }
 
@@ -146,7 +170,7 @@ export function defaultSum(values: BigNumber[]): BigNumber {
 }
 
 export function shouldUseWeb3(): boolean {
-  if (process.env.NODE_ENV !== "production" && process.env.REACT_APP_HARDHAT_FORK) {
+  if (process.env.NODE_ENV !== "production" && isMainnetForking()) {
     console.warn("Cannot use subgraph locally with mainnet forking. Using web3 instead.")
     return true
   }

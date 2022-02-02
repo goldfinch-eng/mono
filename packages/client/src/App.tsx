@@ -7,7 +7,7 @@ import {ThemeProvider} from "styled-components"
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import Borrow from "./components/borrow"
 import DevTools from "./components/devTools"
-import Earn from "./components/earn"
+import Earn from "./components/Earn"
 import Footer from "./components/footer"
 import SeniorPoolView from "./components/pools/seniorPoolView"
 import TranchedPoolView from "./components/pools/tranchedPoolView"
@@ -16,7 +16,7 @@ import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService"
 import Transactions from "./components/transactions"
-import VerifyIdentity from "./components/verifyIdentity"
+import VerifyIdentity from "./components/VerifyIdentity"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import {EarnProvider} from "./contexts/EarnContext"
 import {CommunityRewards, CommunityRewardsLoaded} from "./ethereum/communityRewards"
@@ -249,7 +249,6 @@ function App() {
   // again here. But holding off on that due to the decision to abandon
   // https://github.com/warbler-labs/mono/pull/140.
 
-  const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
   const [apolloClient, setApolloClient] = useState<ApolloClient<NormalizedCacheObject>>(getApolloClient(undefined))
   const [hasGraphError, setHasGraphError] = useState<boolean>(false)
 
@@ -577,11 +576,9 @@ function App() {
                     <Route path={EARN_ROUTE}>
                       <Earn />
                     </Route>
-                    {toggleRewards && (
-                      <Route path={GFI_ROUTE}>
-                        <Rewards />
-                      </Route>
-                    )}
+                    <Route path={GFI_ROUTE}>
+                      <Rewards />
+                    </Route>
                     <Route path={BORROW_ROUTE}>
                       <Borrow />
                     </Route>

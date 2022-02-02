@@ -70,10 +70,6 @@ describe("Stake unstaked fidu", () => {
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded
   const currentBlock = defaultCurrentBlock
 
-  beforeEach(() => {
-    sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "true"})
-  })
-
   afterEach(() => {
     sandbox.restore()
   })
@@ -82,7 +78,7 @@ describe("Stake unstaked fidu", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-    resetAirdropMocks()
+    resetAirdropMocks(goldfinchProtocol)
 
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -263,7 +259,7 @@ describe("Stake unstaked fidu", () => {
           networkMonitor
         )
 
-        const toApproveAmount = "25000000000000000000"
+        const toApproveAmount = "50000000000000000000"
         const allowanceAmount = "25000000000000000000"
         const notStakedFidu = "50000000000000000000"
         const {balanceMock, allowanceMock, approvalMock, stakeMock} = await mockStakeFiduBannerCalls(
@@ -322,35 +318,6 @@ describe("Stake unstaked fidu", () => {
         expect(allowanceMock).toHaveBeenCalled()
         expect(approvalMock).not.toHaveBeenCalled()
         expect(stakeMock).toHaveBeenCalled()
-      })
-    })
-
-    describe("REACT_APP_TOGGLE_REWARDS is set to false", () => {
-      beforeEach(() => {
-        sandbox.stub(process, "env").value({...process.env, REACT_APP_TOGGLE_REWARDS: "false"})
-      })
-
-      it("hide the stake button", async () => {
-        await mockCapitalProviderCalls()
-        const capitalProvider = await fetchCapitalProviderData(seniorPool, stakingRewards, gfi, user)
-        const networkMonitor = {
-          addPendingTX: () => {},
-          watch: () => {},
-          markTXErrored: () => {},
-        }
-        const refreshCurrentBlock = jest.fn()
-        renderStakeFiduBanner(
-          seniorPool,
-          stakingRewards,
-          gfi,
-          user,
-          capitalProvider.value,
-          currentBlock,
-          refreshCurrentBlock,
-          networkMonitor
-        )
-
-        expect(await screen.queryByText(stakeButtonCopy)).not.toBeInTheDocument()
       })
     })
   })

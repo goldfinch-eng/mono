@@ -37,14 +37,14 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
     const alreadyApprovedAmount = new BigNumber(
       await pool.fidu.userWallet.methods.allowance(user.address, stakingRewards.address).call(undefined, "latest")
     )
-    const amountRequiringApproval = amount.minus(alreadyApprovedAmount)
-    const approval = amountRequiringApproval.gt(0)
+    const requiresApproval = amount.gt(alreadyApprovedAmount)
+    const approval = requiresApproval
       ? sendFromUser(
-          pool.fidu.userWallet.methods.approve(stakingRewards.address, amountRequiringApproval.toString(10)),
+          pool.fidu.userWallet.methods.approve(stakingRewards.address, amount.toString(10)),
           {
             type: FIDU_APPROVAL_TX_TYPE,
             data: {
-              amount: fiduFromAtomic(amountRequiringApproval),
+              amount: fiduFromAtomic(amount),
             },
           },
           {rejectOnError: true}
@@ -73,7 +73,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
 
     const placeholderClass = disabled ? "placeholder" : ""
 
-    return process.env.REACT_APP_TOGGLE_REWARDS === "true" && props.capitalProvider?.shares.parts.notStaked.gt(0) ? (
+    return props.capitalProvider?.shares.parts.notStaked.gt(0) ? (
       <FormProvider {...formMethods}>
         <div className={`info-banner subtle background-container ${placeholderClass}`}>
           <div className="message">

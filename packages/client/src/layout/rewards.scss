@@ -83,7 +83,7 @@ button.action {
   }
 }
 
-button.expand {
+button.open-details {
   padding: 0;
   background: none;
   margin-left: 18px;
@@ -98,7 +98,7 @@ button.expand {
   }
 
   &:hover {
-    background-color: $sand;
+    background: none;
   }
 
   &.close {

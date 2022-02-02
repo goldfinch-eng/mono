@@ -55,6 +55,7 @@ export async function prepareUserRelatedDeps(
     deps.gfi,
     deps.communityRewards,
     deps.merkleDistributor,
+    deps.merkleDirectDistributor,
     rewardsMock
   )
   await user.initialize(
@@ -354,7 +355,7 @@ export async function setupDirectReward(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -374,7 +375,7 @@ export async function setupDirectRewardAndStakingReward(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -400,7 +401,7 @@ export async function setupCommunityRewardAndDirectRewardAndStakingReward(
 ) {
   setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
 
-  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -523,6 +524,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.gfi,
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
+    baseDeps.merkleDirectDistributor,
     {
       currentBlock,
       staking: mockedStaking1,
@@ -534,6 +536,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.gfi,
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
+    baseDeps.merkleDirectDistributor,
     {
       currentBlock,
       staking: mockedStaking2,
@@ -627,7 +630,7 @@ export async function setupMerkleDirectDistributorAirdrop(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, false)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, false)
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
   return {...baseDeps, ...userRelatedDeps}
@@ -638,7 +641,7 @@ export async function setupAcceptedDirectReward(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(merkleDirectDistributorAirdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(

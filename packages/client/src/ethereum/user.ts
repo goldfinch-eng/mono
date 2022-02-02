@@ -13,6 +13,7 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdent
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
+import {EventData} from "web3-eth-contract"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,
@@ -74,7 +75,7 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo, MAINNET} from "./utils"
+import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -364,13 +365,16 @@ export class UserCommunityRewards {
                 currentBlock.number
               )
               if (events.length === 1) {
-                const grantAcceptedEvent = events[0]
-                assertNonNullable(grantAcceptedEvent)
+                const acceptanceEvent = events[0]
+                assertNonNullable(acceptanceEvent)
                 const airdrop = userMerkleDistributor.info.value.airdrops.accepted.find(
-                  (airdrop) => parseInt(grantAcceptedEvent.returnValues.index, 10) === airdrop.grantInfo.index
+                  (airdrop) => parseInt(acceptanceEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
-                  return airdrop.grantInfo
+                  return {
+                    event: acceptanceEvent,
+                    airdropGrantInfo: airdrop.grantInfo,
+                  }
                 } else {
                   throw new Error(
                     `Failed to identify airdrop corresponding to GrantAccepted event ${tokenId}, among user's accepted airdrops.`
@@ -393,14 +397,22 @@ export class UserCommunityRewards {
           ),
         ])
       )
-      .then(([tokenIds, rawGrants, claimables, grantInfos]) =>
+      .then(([tokenIds, rawGrants, claimables, acceptEventInfos]) =>
         tokenIds.map((tokenId, i): CommunityRewardsGrant => {
           const rawGrant = rawGrants[i]
           assertNonNullable(rawGrant)
           const claimable = claimables[i]
           assertNonNullable(claimable)
-          const grantInfo = grantInfos[i]
-          return UserCommunityRewards.parseCommunityRewardsGrant(tokenId, new BigNumber(claimable), rawGrant, grantInfo)
+          const grantInfo = acceptEventInfos[i]?.airdropGrantInfo
+          const acceptEvent = acceptEventInfos[i]?.event
+          assertNonNullable(acceptEvent)
+          return UserCommunityRewards.parseCommunityRewardsGrant(
+            tokenId,
+            new BigNumber(claimable),
+            rawGrant,
+            grantInfo,
+            acceptEvent
+          )
         })
       )
 
@@ -444,7 +456,8 @@ export class UserCommunityRewards {
       5: string
       6: string
     },
-    grantInfo: MerkleDistributorGrantInfo | undefined
+    grantInfo: MerkleDistributorGrantInfo | undefined,
+    acceptEvent: EventData
   ): CommunityRewardsGrant {
     return new CommunityRewardsGrant(
       tokenId,
@@ -458,7 +471,8 @@ export class UserCommunityRewards {
         vestingInterval: new BigNumber(tuple[5]),
         revokedAt: parseInt(tuple[6], 10),
       },
-      grantInfo
+      grantInfo,
+      acceptEvent
     )
   }
 }
@@ -665,6 +679,7 @@ export class UserMerkleDirectDistributor {
       },
       {accepted: [], notAccepted: []}
     )
+
     const accepted = airdrops.accepted.map((grantInfo): AcceptedMerkleDirectDistributorGrant => {
       const granted = new BigNumber(grantInfo.grant.amount)
       const vested = granted
@@ -678,6 +693,30 @@ export class UserMerkleDirectDistributor {
         unvested: granted.minus(vested),
       }
     })
+
+    accepted.forEach(async (grant: AcceptedMerkleDirectDistributorGrant) => {
+      const events = await this.goldfinchProtocol.queryEvents(
+        merkleDirectDistributor.contract.readOnly,
+        [GRANT_ACCEPTED_EVENT],
+        {index: grant.grantInfo.index.toString()},
+        currentBlock.number
+      )
+      if (events.length === 1) {
+        const acceptanceEvent = events[0]
+        assertNonNullable(acceptanceEvent)
+        grant.acceptEvent = acceptanceEvent
+      } else if (events.length === 0) {
+        console.warn(
+          `Failed to identify GrantAccepted event corresponding to Merkle Direct Distributor grant ${grant.grantInfo.index}.`
+        )
+      } else {
+        throw new Error(
+          `Identified more than one GrantAccepted event corresponding to Merkle Direct Distributor grant ${grant.grantInfo.index}.`
+        )
+      }
+      return
+    })
+
     const notAccepted = airdrops.notAccepted.map((grantInfo): NotAcceptedMerkleDirectDistributorGrant => {
       const granted = new BigNumber(grantInfo.grant.amount)
       const vested = granted
@@ -1037,29 +1076,25 @@ export class User {
   }
 
   async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
-    if (process.env.REACT_APP_ENFORCE_GO_LIST || this.networkId === MAINNET) {
-      const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-      const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
+    const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
+    const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
 
-      const go = this.goldfinchProtocol.getContract<Go>("Go")
-      const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const go = this.goldfinchProtocol.getContract<Go>("Go")
+    const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
-      const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-      const hasUID = !new BigNumber(
-        await uniqueIdentity.readOnly.methods.balanceOf(address, 0).call(undefined, currentBlock.number)
-      ).isZero()
+    // check if user has non-US or US non-accredited UID
+    const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
+    const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+    const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+    const balances = await uniqueIdentity.readOnly.methods
+      .balanceOfBatch([address, address], [ID_TYPE_0, ID_TYPE_2])
+      .call(undefined, currentBlock.number)
+    const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
 
-      return {
-        legacyGolisted,
-        golisted,
-        hasUID,
-      }
-    } else {
-      return {
-        legacyGolisted: true,
-        golisted: true,
-        hasUID: true,
-      }
+    return {
+      legacyGolisted,
+      golisted,
+      hasUID,
     }
   }
 

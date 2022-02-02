@@ -11,10 +11,11 @@ import {decimalPlaces, MAX_UINT} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
 import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE, SUPPLY_TX_TYPE} from "../types/transactions"
 import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
+import {iconOutArrow} from "./icons"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
-  [STAKING_FORM_VAL]: process.env.REACT_APP_TOGGLE_REWARDS === "true",
+  [STAKING_FORM_VAL]: true,
 }
 
 interface DepositFormProps {
@@ -31,8 +32,8 @@ function DepositForm(props: DepositFormProps) {
     const alreadyApprovedAmount = new BigNumber(
       await usdc.contract.userWallet.methods.allowance(user.address, operator.address).call(undefined, "latest")
     )
-    const amountRequiringApproval = new BigNumber(depositAmount).minus(alreadyApprovedAmount)
-    return amountRequiringApproval.gt(0)
+    const requiresApproval = new BigNumber(depositAmount).gt(alreadyApprovedAmount)
+    return requiresApproval
       ? sendFromUser(
           usdc.contract.userWallet.methods.approve(
             operator.address,
@@ -57,39 +58,26 @@ function DepositForm(props: DepositFormProps) {
     const depositAmountString = usdcToAtomic(transactionAmount)
     if (staking) {
       // USDC permit doesn't work on mainnet forking due to mismatch between hardcoded chain id in the contract
-      if (process.env.REACT_APP_HARDHAT_FORK) {
-        return approve(depositAmountString, stakingRewards)
-          .then(() =>
-            sendFromUser(stakingRewards.contract.userWallet.methods.depositAndStake(depositAmountString), {
-              type: SUPPLY_AND_STAKE_TX_TYPE,
-              data: {
-                amount: transactionAmount,
-              },
-            })
-          )
-          .then(props.actionComplete)
-      } else {
-        let signatureData = await gatherPermitSignature({
-          token: usdc,
-          value: new BigNumber(depositAmountString),
-          spender: stakingRewards.address,
-        })
-        return sendFromUser(
-          stakingRewards.contract.userWallet.methods.depositWithPermitAndStake(
-            signatureData.value,
-            signatureData.deadline,
-            signatureData.v,
-            signatureData.r,
-            signatureData.s
-          ),
-          {
-            type: SUPPLY_AND_STAKE_TX_TYPE,
-            data: {
-              amount: transactionAmount,
-            },
-          }
-        ).then(props.actionComplete)
-      }
+      let signatureData = await gatherPermitSignature({
+        token: usdc,
+        value: new BigNumber(depositAmountString),
+        spender: stakingRewards.address,
+      })
+      return sendFromUser(
+        stakingRewards.contract.userWallet.methods.depositWithPermitAndStake(
+          signatureData.value,
+          signatureData.deadline,
+          signatureData.v,
+          signatureData.r,
+          signatureData.s
+        ),
+        {
+          type: SUPPLY_AND_STAKE_TX_TYPE,
+          data: {
+            amount: transactionAmount,
+          },
+        }
+      ).then(props.actionComplete)
     } else {
       return approve(depositAmountString, pool)
         .then(() =>
@@ -138,39 +126,45 @@ function DepositForm(props: DepositFormProps) {
       )
     )
 
-    const toggleRewards = process.env.REACT_APP_TOGGLE_REWARDS === "true"
-
     return (
       <div className="form-inputs">
         {warningMessage}
-        {toggleRewards && (
-          <div className="checkbox-container form-input-label">
-            <input
-              className="checkbox"
-              type="checkbox"
-              name={STAKING_FORM_VAL}
-              id={STAKING_FORM_VAL}
-              ref={(ref) => formMethods.register(ref)}
-            />
-            <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
-              <div>
-                <div className="checkbox-label-primary">
-                  <div>{`I want to stake my supply to earn GFI (additional ${displayPercent(
-                    pool.info.value.poolData.estimatedApyFromGfi
-                  )} APY).`}</div>
-                </div>
-                <div className="form-input-note">
-                  <p>
-                    Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
-                    maximum GFI by staking for at least 12 months.
-                  </p>
-                </div>
-              </div>
-            </label>
-          </div>
-        )}
         <div className="checkbox-container form-input-label">
           <input
+            data-testid="staking"
+            className="checkbox"
+            type="checkbox"
+            name={STAKING_FORM_VAL}
+            id={STAKING_FORM_VAL}
+            ref={(ref) => formMethods.register(ref)}
+          />
+          <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
+            <div>
+              <div className="checkbox-label-primary">
+                <div>{`I want to stake my supply to earn GFI (additional ${displayPercent(
+                  pool.info.value.poolData.estimatedApyFromGfi
+                )} APY).`}</div>
+              </div>
+              <div className="form-input-note">
+                <p>
+                  Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
+                  maximum GFI by staking for at least 12 months.{" "}
+                  <a
+                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="form-link"
+                  >
+                    Learn more<span className="outbound-link">{iconOutArrow}</span>
+                  </a>
+                </p>
+              </div>
+            </div>
+          </label>
+        </div>
+        <div className="checkbox-container form-input-label">
+          <input
+            data-testid="agreement"
             className="checkbox"
             type="checkbox"
             name="agreement"
@@ -233,6 +227,9 @@ function DepositForm(props: DepositFormProps) {
               }}
             />
             <LoadingButton action={action} disabled={submitDisabled} />
+          </div>
+          <div className="form-footer-message purp-light">
+            Note: the protocol deducts a 0.50% fee on withdrawal for protocol reserves.
           </div>
         </div>
       </div>

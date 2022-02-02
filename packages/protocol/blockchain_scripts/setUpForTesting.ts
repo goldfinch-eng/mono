@@ -44,9 +44,9 @@ import {
   UniqueIdentity,
 } from "../typechain/ethers"
 
-import * as migratev231 from "../blockchain_scripts/migrations/v2.3.1/migrate"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {fundWithWhales} from "./helpers/fundWithWhales"
+import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -112,21 +112,24 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await fundWithWhales(["USDT", "BUSD", "ETH", "USDC"], [protocol_owner, gf_deployer, borrower], 75000)
     logger("🐳 Finished funding with whales.")
 
-    // Grant local signer role
-    await impersonateAccount(hre, protocol_owner)
-    const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
-      protocolOwnerSigner
-    )
-    const {protocol_owner: trustedSigner} = await getNamedAccounts()
-    assertNonNullable(trustedSigner)
-    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
-    await tx.wait()
-
-    await migratev231.main()
-
-    // TODO: temporary while GoldfinchFactory upgrade hasn't been deployed
-    return
+    // Patch USDC DOMAIN_SEPARATOR to make permit work locally
+    await overrideUsdcDomainSeparator()
   }
+
+  // Grant local signer role
+  await impersonateAccount(hre, protocol_owner)
+  const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
+    protocolOwnerSigner
+  )
+  const {protocol_owner: trustedSigner} = await getNamedAccounts()
+  assertNonNullable(trustedSigner)
+  const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+  await tx.wait()
+  await uniqueIdentity.setSupportedUIDTypes(
+    [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_2()],
+    [true, true]
+  )
+
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
@@ -134,7 +137,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   config = config.connect(protocolOwnerSigner)
 
-  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(40000000)))
+  await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
 
   await addUsersToGoList(config, [underwriter])
 
@@ -165,9 +168,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   await addUsersToGoList(config, [borrower])
 
-  if (!requestFromClient) {
-    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
-  }
   if (requestFromClient) {
     await createBorrowerContractAndPool({
       erc20,
@@ -179,6 +179,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   if (!requestFromClient) {
+    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
+
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
     const txn = await commonPool.lockJuniorCapital()
@@ -214,11 +216,12 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     await seniorPool.redeem(tokenId)
 
-    await setUpRewards(erc20, getOrNull, protocol_owner)
+    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+      await setUpRewards(erc20, getOrNull, protocol_owner)
+    }
   }
 }
 
-// TODO: need to deal with this in the migration script
 async function setUpRewards(
   erc20: any,
   getOrNull: (name: string) => Promise<Deployment | null>,
@@ -556,7 +559,7 @@ async function setupTestForwarder(
   }
   const forwarder = await deployer.deploy("TestForwarder", {
     from: protocol_owner,
-    gasLimit: 4000000,
+    gasLimit: 4_000_000,
   })
   logger(`Created Forwarder at ${forwarder.address}`)
 
