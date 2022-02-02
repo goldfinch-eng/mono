@@ -48,6 +48,8 @@ const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
+// TODO(@emily-hsia): Update with real Curve LP address when ready
+const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x55a8a39bc9694714e2874c1ce77aa1e599461e18"
 const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
@@ -306,6 +308,7 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
+  await updateConfig(config, "address", CONFIG_KEYS.FiduUSDCCurveLP, MAINNET_FIDU_USDC_CURVE_LP_ADDRESS, {logger})
   if (TRUSTED_FORWARDER_CONFIG[chainId]) {
     await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainId], {logger})
   }
