@@ -14,6 +14,7 @@ import {
   assertIsChainId,
   ContractDeployer,
   FIDU_DECIMALS,
+  getEthersContract,
   getProtocolOwner,
   getUSDCAddress,
   interestAprAsBN,
@@ -34,6 +35,7 @@ import {
   CommunityRewards,
   CreditLine,
   GFI,
+  Go,
   GoldfinchConfig,
   GoldfinchFactory,
   MerkleDirectDistributor,
@@ -134,12 +136,17 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+  const go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
+  const goldfinchConfig = await getDeployedAsEthersContract<GoldfinchConfig>(getOrNull, "GoldfinchConfig")
+  const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
+    at: await go.legacyGoList(),
+  })
 
   config = config.connect(protocolOwnerSigner)
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
 
-  await addUsersToGoList(config, [underwriter])
+  await addUsersToGoList(config, legacyGoldfinchConfig, [underwriter])
 
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
 
@@ -166,7 +173,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   })
   await writePoolMetadata({pool: empty, borrower: "Empty"})
 
-  await addUsersToGoList(config, [borrower])
+  await addUsersToGoList(config, legacyGoldfinchConfig, [borrower])
 
   if (requestFromClient) {
     await createBorrowerContractAndPool({
@@ -179,7 +186,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   if (!requestFromClient) {
-    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
+    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool, go, goldfinchConfig})
 
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
@@ -424,9 +431,14 @@ function getLastEventArgs(result: ContractReceipt): Result {
   return lastEvent.args
 }
 
-async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[]) {
+async function addUsersToGoList(
+  goldfinchConfig: GoldfinchConfig,
+  legacyGoldfinchConfig: GoldfinchConfig,
+  users: string[]
+) {
   logger("Adding", users, "to the go-list... on config with address", goldfinchConfig.address)
   await (await goldfinchConfig.bulkAddToGoList(users)).wait()
+  await (await legacyGoldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
 export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logger}: {logger: typeof console.log}) {
