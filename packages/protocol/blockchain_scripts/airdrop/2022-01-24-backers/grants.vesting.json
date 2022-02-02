@@ -1,0 +1,482 @@
+[
+  {
+    "account": "0x2b2B7fEC2Ba5854AeF243C21a583d8e61Ee82c32",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "173185940000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xE11bb2df7F004F190F75E6EC77528Cf30b6afBfb",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "58311740000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x0Ae9b28ccBe5CFE2BD4E6731392441023c9d6cB9",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "52212040000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x7Cf20A1BB4CAE92Df714eAf760814860eD5f785F",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "35322490000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x526C7665C5dd9cD7102C6d42D407a0d9DC1e431d",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "31408370000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x7Cf20A1BB4CAE92Df714eAf760814860eD5f785F",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "26132640000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x6a5dBF2Fb5206EC8192620810C3edB6d5e62B188",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "17294370000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x526C7665C5dd9cD7102C6d42D407a0d9DC1e431d",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "16481960000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x4902b20bB3B8e7776CBcDCB6e3397E7F6b4e449E",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "14429680000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xeB1346bb4a15e5b6923E7C002fb4D09eA98a04A0",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "11573860000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xA05967ed87D17aC0978101B73Cf784573A801bE7",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "11358060000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x5725a458b319d73B8Ec84c47de80620E7B191B0C",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "10064570000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xA231a5Ae629a0F15e1C1EB3FfBf813589e206926",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "10064570000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x07f82CEa5770723207f8544a00023DEb8968755E",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7767090000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x68476977382d9cb85d11775B79252ee7d2859738",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7767090000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xb4522eB2cA49963De9c3dC69023cBe6D53489C98",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "6618350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x1c2CdDC58EAE7A9d6CFd2aA7b8ed7dDaD9900179",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "6618350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xE539cd6F9DB04fE3c40Ff4a1C24A7453e7cf265D",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "6589630000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x5b4e28133aab99Ee9FC77B649127A6CFacf28793",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "5530390000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x2b2B7fEC2Ba5854AeF243C21a583d8e61Ee82c32",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "64131150000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x9688e30E7A78A7fb2Ec28ec492194120BeEd5942",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "54741820000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xF212cE21a97dbe30999a4c2B309d278BCcBb686A",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "23877010000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x64CEe4d9D5F4f7A231dD53d48c1d19BEBd71DbE0",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "23877010000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xc8Fd7C330e31f2635F4a67790f391Edf2e493DDb",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "23761990000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x0Ae9b28ccBe5CFE2BD4E6731392441023c9d6cB9",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "19911130000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xFB40932271Fc9Db9DbF048E80697E2Da4AA57250",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "12467800000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xB5a790758Cdb6644305d1Cf368b67bbbA4c9a68C",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "10075580000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x3Ed23D80c7B9e3a159316b3F47bbDaB738Ba893E",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "6625230000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xa70e6fE4488104Be32B9B657F5Be7B68aFc17f9a",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "6625230000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xa2dD0ed4C27B27e6Dbf4d1E07C956599F0251b81",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "5540670000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x111b46bfae308be4570cb9f17d051b58022d7c89",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "144639440000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x2b2B7fEC2Ba5854AeF243C21a583d8e61Ee82c32",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x25fb88e70f420aDDb51f9a99B484bE66DFBea327",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xA05967ed87D17aC0978101B73Cf784573A801bE7",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x0Ae9b28ccBe5CFE2BD4E6731392441023c9d6cB9",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xdB86B02928C47CB1c1D231B21732E6C639b28051",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xE11bb2df7F004F190F75E6EC77528Cf30b6afBfb",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x8100311305c9f81330d23c33fD9f6FF0093D12D3",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xD5a41BFe8e373C94434eaB2fC81034eC00572b09",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x68476977382d9cb85d11775B79252ee7d2859738",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xB6605F98A5562b1AC821Bc5f2B75934239e8c6D6",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xcAc59F91E4536Bc0E79aB816a5cD54e89f10433C",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x560feFC8f45b8d43f86F79F718dd0364d42037BD",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7775350000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x6a5dBF2Fb5206EC8192620810C3edB6d5e62B188",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7740840000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0xb39Fbb76E7677fF97397a1683D01F04df4cFeD82",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7713670000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x416E367b6DFa99B04bD38fb3725c78ABb7132429",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7660330000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x3E7ea126d6aAAe70F5A1bB2bbDf4c321E0fbaaF3",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "7545320000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  },
+  {
+    "account": "0x1E5d6CFb3EeaC9c21065296927BF4D155b3d64C8",
+    "reason": "liquidity_provider",
+    "grant": {
+      "amount": "5487640000000000000000",
+      "cliffLength": "0",
+      "vestingInterval": "2628000",
+      "vestingLength": "31536000"
+    }
+  }
+]
