@@ -330,8 +330,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   to claim rewards or unstake your tokens respectively. Rewards vest over a schedule.
   /// @dev This function checkpoints rewards.
   /// @param amount The amount of `stakingToken()` to stake
-  function stake(uint256 amount) external nonReentrant whenNotPaused updateReward(0) {
-    _stakeWithLockup(msg.sender, msg.sender, amount, 0, MULTIPLIER_DECIMALS);
+  /// @param positionType The type of the staked position
+  function stake(uint256 amount, StakedPositionType positionType) external nonReentrant whenNotPaused updateReward(0) {
+    _stakeWithLockup(msg.sender, msg.sender, amount, positionType, 0, MULTIPLIER_DECIMALS);
   }
 
   /// @notice Stake `stakingToken()` and lock your position for a period of time to boost your rewards.
@@ -345,17 +346,17 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   unstaked until after the position's lockedUntil timestamp.
   /// @dev This function checkpoints rewards.
   /// @param amount The amount of `stakingToken()` to stake
+  /// @param positionType The type of the staked position
   /// @param lockupPeriod The period over which to lock staked tokens
-  function stakeWithLockup(uint256 amount, LockupPeriod lockupPeriod)
-    external
-    nonReentrant
-    whenNotPaused
-    updateReward(0)
-  {
+  function stakeWithLockup(
+    uint256 amount,
+    StakedPositionType positionType,
+    LockupPeriod lockupPeriod
+  ) external nonReentrant whenNotPaused updateReward(0) {
     uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
     uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
     uint256 lockedUntil = block.timestamp.add(lockDuration);
-    _stakeWithLockup(msg.sender, msg.sender, amount, lockedUntil, leverageMultiplier);
+    _stakeWithLockup(msg.sender, msg.sender, amount, positionType, lockedUntil, leverageMultiplier);
   }
 
   /// @notice Deposit to SeniorPool and stake your shares in the same transaction.
@@ -364,7 +365,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
     uint256 fiduAmount = depositToSeniorPool(usdcAmount);
     uint256 lockedUntil = 0;
-    uint256 tokenId = _stakeWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
+    uint256 tokenId = _stakeFiduWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
     emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
   }
 
@@ -409,7 +410,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
     uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
     uint256 lockedUntil = block.timestamp.add(lockDuration);
-    uint256 tokenId = _stakeWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, leverageMultiplier);
+    uint256 tokenId = _stakeFiduWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, leverageMultiplier);
     emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount, lockedUntil, leverageMultiplier);
   }
 
@@ -465,10 +466,21 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     depositAndStakeWithLockup(usdcAmount, lockupPeriod);
   }
 
+  function _stakeFiduWithLockup(
+    address staker,
+    address nftRecipient,
+    uint256 amount,
+    uint256 lockedUntil,
+    uint256 leverageMultiplier
+  ) internal returns (uint256 tokenId) {
+    return _stakeWithLockup(staker, nftRecipient, amount, StakedPositionType.Fidu, lockedUntil, leverageMultiplier);
+  }
+
   function _stakeWithLockup(
     address staker,
     address nftRecipient,
     uint256 amount,
+    StakedPositionType positionType,
     uint256 lockedUntil,
     uint256 leverageMultiplier
   ) internal returns (uint256 tokenId) {
@@ -484,6 +496,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _updateReward(tokenId);
 
     positions[tokenId] = StakedPosition({
+      positionType: positionType,
       amount: amount,
       rewards: StakingRewardsVesting.Rewards({
         totalUnvested: 0,
@@ -493,6 +506,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         startTime: block.timestamp,
         endTime: block.timestamp.add(vestingLength)
       }),
+      baseTokenExchangeRate: getBaseTokenExchangeRate(positionType),
       leverageMultiplier: leverageMultiplier,
       lockedUntil: lockedUntil
     });
