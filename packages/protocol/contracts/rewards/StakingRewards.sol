@@ -299,7 +299,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function stakingTokenMantissa() internal view returns (uint256) {
-    return uint256(10)**stakingToken().decimals();
+    return uint256(10)**baseStakingToken().decimals();
   }
 
   /// @notice The amount of rewards currently being earned per token per second. This amount takes into
@@ -518,7 +518,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     // Staker is address(this) when using depositAndStake or other convenience functions
     if (staker != address(this)) {
-      stakingToken().safeTransferFrom(staker, address(this), amount);
+      stakingToken(positionType).safeTransferFrom(staker, address(this), amount);
     }
 
     emit Staked(nftRecipient, tokenId, amount, lockedUntil, leverageMultiplier);
@@ -533,8 +533,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
   function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
+    StakedPositionType positionType = positions[tokenId].positionType;
     _unstake(tokenId, amount);
-    stakingToken().safeTransfer(msg.sender, amount);
+    stakingToken(positionType).safeTransfer(msg.sender, amount);
   }
 
   function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) public nonReentrant whenNotPaused {
