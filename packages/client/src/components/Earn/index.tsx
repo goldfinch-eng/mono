@@ -88,9 +88,6 @@ export default function Earn() {
     apyToDisplay = seniorPoolStatus.value?.estimatedApy
   }
 
-  console.log(pool?.info.value.poolData.estimatedApy, "estimatedApy")
-  console.log(pool?.info.value.poolData.estimatedApyFromGfi, "estimatedApyFromGfi")
-
   return (
     <div className="content-section">
       <div className="page-header">
