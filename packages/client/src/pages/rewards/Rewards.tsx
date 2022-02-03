@@ -427,8 +427,8 @@ function Rewards() {
                     item={sorted.value}
                     user={user}
                     gfi={gfi}
-                    merkleDistributor={merkleDistributor}
-                    merkleDirectDistributor={merkleDirectDistributor}
+                    merkleDistributor={backerMerkleDistributor}
+                    merkleDirectDistributor={backerMerkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
                   />
