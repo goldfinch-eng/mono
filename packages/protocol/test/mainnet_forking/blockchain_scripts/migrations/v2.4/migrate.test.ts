@@ -67,7 +67,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe("v2.4", async function () {
+xdescribe("v2.4", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let gfi: GFIInstance
