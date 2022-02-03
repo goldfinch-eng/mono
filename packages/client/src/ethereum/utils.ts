@@ -111,8 +111,13 @@ export function isMainnetForking(): boolean {
   return process.env.REACT_APP_HARDHAT_FORK === MAINNET
 }
 
-async function _getMerkleDistributorInfo(path: string): Promise<MerkleDistributorInfo | undefined> {
-  return import(path)
+async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+  )
     .then((result: unknown): MerkleDistributorInfo => {
       const plain = _.toPlainObject(result)
       if (isMerkleDistributorInfo(plain)) {
@@ -127,24 +132,36 @@ async function _getMerkleDistributorInfo(path: string): Promise<MerkleDistributo
     })
 }
 
-async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
-  const fileNameSuffix =
-    process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
-  const path = `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
-  return _getMerkleDistributorInfo(path)
-}
-
 async function getBackerMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
   let fileNameSuffix = ""
   if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
     fileNameSuffix = ".dev"
   }
-  const path = `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
-  return _getMerkleDistributorInfo(path)
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
 }
 
-async function _getMerkleDirectDistributorInfo(path: string): Promise<MerkleDirectDistributorInfo | undefined> {
-  return import(path)
+async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
+  const fileNameSuffix =
+    process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
     .then((result: unknown): MerkleDirectDistributorInfo => {
       const plain = _.toPlainObject(result)
       if (isMerkleDirectDistributorInfo(plain)) {
@@ -159,13 +176,6 @@ async function _getMerkleDirectDistributorInfo(path: string): Promise<MerkleDire
     })
 }
 
-async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
-  const fileNameSuffix =
-    process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
-  const path = `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
-  return _getMerkleDirectDistributorInfo(path)
-}
-
 async function getBackerMerkleDirectDistributorInfo(
   networkId: string
 ): Promise<MerkleDirectDistributorInfo | undefined> {
@@ -173,8 +183,21 @@ async function getBackerMerkleDirectDistributorInfo(
   if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
     fileNameSuffix = ".dev"
   }
-  const path = `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
-  return _getMerkleDirectDistributorInfo(path)
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDirectDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDirectDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle direct distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
 }
 
 function transformedConfig(config) {
