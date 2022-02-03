@@ -65,7 +65,6 @@ import {
 } from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
-import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
