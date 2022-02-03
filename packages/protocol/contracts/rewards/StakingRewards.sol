@@ -321,7 +321,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 baseTokenExchangeRate,
     uint256 effectiveAmountMultiplier
   ) internal pure returns (uint256) {
-    return amount * baseTokenExchangeRate * effectiveAmountMultiplier;
+    // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
+    uint256 exchangeRate = baseTokenExchangeRate == 0 ? 1 : baseTokenExchangeRate;
+    return amount.mul(exchangeRate).mul(effectiveAmountMultiplier);
   }
 
   function toLeveredAmount(uint256 amount, uint256 leverageMultiplier) internal pure returns (uint256) {
