@@ -5,8 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "./IERC20withDec.sol";
 
-interface ICurveLP is IERC20withDec {
-  /*** User Interface ***/
-
-  function getVirtualPrice() external pure returns (uint256);
+abstract contract ICurveLP is IERC20withDec {
+  function getVirtualPrice() external view virtual returns (uint256);
 }
