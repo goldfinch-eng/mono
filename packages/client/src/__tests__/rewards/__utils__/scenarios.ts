@@ -306,8 +306,16 @@ export async function setupMerkleDistributorAirdropNoVesting(
   return {...baseDeps, ...userRelatedDeps}
 }
 
-function getMerkleConfig(config: {distributor: boolean; backerDistributor: boolean}, vesting = false) {
-  let merkleConfig = {}
+type MerkleConfig = {
+  distributor: {airdrop: MerkleDistributorGrantInfo; isAccepted: false} | undefined
+  backerDistributor: {airdrop: MerkleDistributorGrantInfo; isAccepted: false} | undefined
+}
+
+function getMerkleConfig(config: {distributor: boolean; backerDistributor: boolean}, vesting = false): MerkleConfig {
+  let merkleConfig: MerkleConfig = {
+    distributor: undefined,
+    backerDistributor: undefined,
+  }
   if (config.distributor) {
     const airdrop = vesting ? merkleDistributorAirdropVesting : merkleDistributorAirdropNoVesting
     merkleConfig["distributor"] = {airdrop, isAccepted: false}
