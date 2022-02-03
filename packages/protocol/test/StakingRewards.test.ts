@@ -6,7 +6,7 @@ import {
   GFIInstance,
   GoldfinchConfigInstance,
   SeniorPoolInstance,
-  StakingRewardsInstance,
+  TestStakingRewardsInstance,
   TestFiduUSDCCurveLPInstance,
 } from "../typechain/truffle"
 const {ethers, deployments} = hre
@@ -81,7 +81,7 @@ describe("StakingRewards", function () {
     seniorPool: SeniorPoolInstance,
     fidu: FiduInstance,
     fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance,
-    stakingRewards: StakingRewardsInstance,
+    stakingRewards: TestStakingRewardsInstance,
     goldfinchConfig: GoldfinchConfigInstance
 
   let fiduAmount: BN

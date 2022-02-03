@@ -34,7 +34,6 @@ import {
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
   GFIInstance,
-  StakingRewardsInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
   GoInstance,
@@ -43,6 +42,7 @@ import {
   BackerRewardsInstance,
   ZapperInstance,
   TestFiduUSDCCurveLPInstance,
+  TestStakingRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -273,7 +273,7 @@ async function deployAllContracts(
   tranchedPool: TranchedPoolInstance
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
-  stakingRewards: StakingRewardsInstance
+  stakingRewards: TestStakingRewardsInstance
   backerRewards: TestBackerRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
@@ -316,7 +316,7 @@ async function deployAllContracts(
     "TransferRestrictedVault"
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
-  const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
