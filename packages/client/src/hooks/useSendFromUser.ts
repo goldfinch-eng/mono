@@ -1,7 +1,7 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
 import {CurrentTxDataByType, PendingCurrentTx, TxType} from "../types/transactions"
-import {assertCodedError, assertError, assertNonNullable} from "../utils"
+import {assertError, assertErrorLike, assertNonNullable, isCodedErrorLike} from "../utils"
 import web3 from "../web3"
 
 type UseSendFromUserOptions = {
@@ -97,9 +97,9 @@ function useSendFromUser() {
           }
         })
         .on("error", (err: unknown) => {
-          assertCodedError(err)
+          assertErrorLike(err)
           if (working) {
-            if (err.code === -32603) {
+            if (isCodedErrorLike(err) && err.code === -32603) {
               err.message = "Something went wrong with your transaction."
             }
             networkMonitor.markTXErrored(working, err)

@@ -558,7 +558,7 @@ export class UserMerkleDistributor {
   }
 
   async getMerkleInfo(): Promise<MerkleDistributorInfo | undefined> {
-    return await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+    return getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
   }
 
   async _getAirdropsWithAcceptance(
@@ -684,7 +684,7 @@ export class UserMerkleDistributor {
 
 export class UserBackerMerkleDistributor extends UserMerkleDistributor {
   async getMerkleInfo(): Promise<MerkleDistributorInfo | undefined> {
-    return await getBackerMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+    return getBackerMerkleDistributorInfo(this.goldfinchProtocol.networkId)
   }
 
   async _getAirdropsWithAcceptance(
@@ -692,11 +692,7 @@ export class UserBackerMerkleDistributor extends UserMerkleDistributor {
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    return await UserBackerMerkleDistributor.getAirdropsWithAcceptance(
-      airdropsForRecipient,
-      merkleDistributor,
-      currentBlock
-    )
+    return UserBackerMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock)
   }
 }
 
@@ -736,7 +732,7 @@ export class UserMerkleDirectDistributor {
   }
 
   async getMerkleInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
-    return await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+    return getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
   }
 
   async _getAirdropsWithAcceptance(
@@ -744,7 +740,7 @@ export class UserMerkleDirectDistributor {
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    return await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
+    return UserMerkleDirectDistributor.getAirdropsWithAcceptance(
       airdropsForRecipient,
       merkleDirectDistributor,
       currentBlock
@@ -882,7 +878,7 @@ export class UserMerkleDirectDistributor {
 
 export class UserBackerMerkleDirectDistributor extends UserMerkleDirectDistributor {
   async getMerkleInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
-    return await getBackerMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+    return getBackerMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
   }
 
   async _getAirdropsWithAcceptance(
