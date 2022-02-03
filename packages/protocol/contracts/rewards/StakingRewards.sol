@@ -525,6 +525,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // synthetix contract, where the modifier is called before any staking balance for that address is recorded
     _updateReward(tokenId);
 
+    uint256 baseTokenExchangeRate = getBaseTokenExchangeRate(positionType);
+
     positions[tokenId] = StakedPosition({
       positionType: positionType,
       amount: amount,
@@ -536,7 +538,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         startTime: block.timestamp,
         endTime: block.timestamp.add(vestingLength)
       }),
-      baseTokenExchangeRate: getBaseTokenExchangeRate(positionType),
+      baseTokenExchangeRate: baseTokenExchangeRate,
       leverageMultiplier: leverageMultiplier,
       lockedUntil: lockedUntil
     });
@@ -552,7 +554,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       stakingToken(positionType).safeTransferFrom(staker, address(this), amount);
     }
 
-    emit Staked(nftRecipient, tokenId, amount, lockedUntil, leverageMultiplier);
+    emit Staked(nftRecipient, tokenId, amount, positionType, baseTokenExchangeRate, lockedUntil, leverageMultiplier);
 
     return tokenId;
   }
@@ -677,7 +679,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       position.rewards.slash(slashingPercentage);
     }
 
-    emit Unstaked(msg.sender, tokenId, amount);
+    emit Unstaked(msg.sender, tokenId, amount, position.positionType);
   }
 
   /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
@@ -825,7 +827,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /* ========== EVENTS ========== */
 
   event RewardAdded(uint256 reward);
-  event Staked(address indexed user, uint256 indexed tokenId, uint256 amount, uint256 lockedUntil, uint256 multiplier);
+  event Staked(
+    address indexed user,
+    uint256 indexed tokenId,
+    uint256 amount,
+    StakedPositionType positionType,
+    uint256 baseTokenExchangeRate,
+    uint256 lockedUntil,
+    uint256 multiplier
+  );
   event DepositedAndStaked(
     address indexed user,
     uint256 depositedAmount,
@@ -834,7 +844,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 lockedUntil,
     uint256 multiplier
   );
-  event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount);
+  event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
   event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
   event UnstakedAndWithdrewMultiple(
     address indexed user,
