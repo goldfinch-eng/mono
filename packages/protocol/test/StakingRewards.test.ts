@@ -186,11 +186,11 @@ describe("StakingRewards", function () {
     await erc20Approve(usdc, anotherUser, usdcVal(50000), [owner])
     await erc20Transfer(usdc, [anotherUser], usdcVal(50000), owner)
 
-    await erc20Approve(fiduUSDCCurveLP, investor, bigVal(50000), [owner])
-    await erc20Transfer(fiduUSDCCurveLP, [investor], bigVal(50000), owner)
+    await erc20Approve(fiduUSDCCurveLP, investor, bigVal(100), [owner])
+    await erc20Transfer(fiduUSDCCurveLP, [investor], bigVal(100), owner)
 
-    await erc20Approve(fiduUSDCCurveLP, anotherUser, bigVal(50000), [owner])
-    await erc20Transfer(fiduUSDCCurveLP, [anotherUser], bigVal(50000), owner)
+    await erc20Approve(fiduUSDCCurveLP, anotherUser, bigVal(100), [owner])
+    await erc20Transfer(fiduUSDCCurveLP, [anotherUser], bigVal(100), owner)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(50000), [anotherUser])
     let receipt = await seniorPool.deposit(usdcVal(50000), {from: anotherUser})
@@ -446,7 +446,7 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2))
+        stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2).mul(new BN(String(1e18))))
 
         // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({

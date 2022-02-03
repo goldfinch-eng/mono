@@ -322,8 +322,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 effectiveAmountMultiplier
   ) internal pure returns (uint256) {
     // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
-    uint256 exchangeRate = baseTokenExchangeRate == 0 ? 1 : baseTokenExchangeRate;
-    return amount.mul(exchangeRate).mul(effectiveAmountMultiplier).div(MULTIPLIER_DECIMALS);
+    uint256 exchangeRate = baseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : baseTokenExchangeRate;
+    // Both the exchange rate and the effective amount multiplier is scaled by 1e18
+    return amount.mul(exchangeRate).mul(effectiveAmountMultiplier).div(MULTIPLIER_DECIMALS).div(MULTIPLIER_DECIMALS);
   }
 
   function toLeveredAmount(uint256 amount, uint256 leverageMultiplier) internal pure returns (uint256) {
@@ -466,14 +467,24 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return leverageMultiplier;
   }
 
-  /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
-  ///   `baseStakingToken()` amount
+  /// @notice Calculate the exchange rate (scaled by 1e18) that will be used to convert the original
+  ///   staked token amount to the `baseStakingToken()` amount
   /// @param positionType Type of the staked postion
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view virtual returns (uint256) {
     if (positionType == StakedPositionType.CurveLP) {
-      return config.getFiduUSDCCurveLP().getVirtualPrice() / config.getSeniorPool().sharePrice();
+      // Scale the Curve LP token price by 1e18. Curve LP tokens should already be scaled by 1e18,
+      // but making it explicit here.
+      uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().getVirtualPrice().mul(MULTIPLIER_DECIMALS).div(
+        uint256(10)**config.getFiduUSDCCurveLP().decimals()
+      );
+      // Scale the FIDU token price by 1e18. The FIDU token should already be scaled by 1e18,
+      // but making it explicit here.
+      uint256 fiduPrice = config.getSeniorPool().sharePrice().mul(MULTIPLIER_DECIMALS).div(
+        uint256(10)**config.getFidu().decimals()
+      );
+      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
     } else if (positionType == StakedPositionType.Fidu) {
-      return 1;
+      return MULTIPLIER_DECIMALS; // 1x
     } else {
       revert("unsupported StakedPositionType");
     }

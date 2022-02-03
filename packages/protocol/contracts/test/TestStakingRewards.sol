@@ -6,6 +6,8 @@ pragma experimental ABIEncoderV2;
 import "../rewards/StakingRewards.sol";
 
 contract TestStakingRewards is StakingRewards {
+  uint256 private constant MULTIPLIER_DECIMALS = 1e18;
+
   mapping(StakedPositionType => uint256) private exchangeRates;
 
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view override returns (uint256) {
@@ -16,9 +18,9 @@ contract TestStakingRewards is StakingRewards {
     }
 
     if (positionType == StakedPositionType.CurveLP) {
-      return 1;
+      return MULTIPLIER_DECIMALS; // 1x
     } else if (positionType == StakedPositionType.Fidu) {
-      return 1;
+      return MULTIPLIER_DECIMALS; // 1x
     } else {
       revert("unsupported StakedPositionType");
     }
