@@ -467,7 +467,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
   ///   `baseStakingToken()` amount
   /// @param positionType Type of the staked postion
-  function getBaseTokenExchangeRate(StakedPositionType positionType) public view returns (uint256) {
+  function getBaseTokenExchangeRate(StakedPositionType positionType) public view virtual returns (uint256) {
     if (positionType == StakedPositionType.CurveLP) {
       return config.getFiduUSDCCurveLP().getVirtualPrice() / config.getSeniorPool().sharePrice();
     } else if (positionType == StakedPositionType.Fidu) {
