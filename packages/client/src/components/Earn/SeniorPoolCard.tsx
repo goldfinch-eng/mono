@@ -1,6 +1,7 @@
 import {useHistory} from "react-router-dom"
 import BigNumber from "bignumber.js"
 import Badge from "../badge"
+import logoPurp from "../../images/logomark-purp.svg"
 
 type SeniorPoolCardProps = {
   balance: string
@@ -22,9 +23,14 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
       className={`table-row background-container-inner clickable pool-card ${disabledClass}`}
       onClick={() => history.push("/pools/senior")}
     >
-      <div className="table-cell col40">
-        <span className="name">{props.balance}</span>
-        <span className={`subheader ${disabledClass}`}>Total Pool Balance</span>
+      <div className="table-cell col40 pool-info">
+        <div>
+          <img className={`senior-pool-icon icon ${disabledClass}`} src={logoPurp} alt="Senior Pool icon" />
+        </div>
+        <div>
+          <span className="name">Goldfinch Senior Pool</span>
+          <span className={`subheader ${disabledClass}`}>Automated diversified portfolio</span>
+        </div>
       </div>
       <div className="table-cell col16 numeric apy">{props.apy}</div>
       <div className="table-cell col22 numeric limit">{props.limit}</div>

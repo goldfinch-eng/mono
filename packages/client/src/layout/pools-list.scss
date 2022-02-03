@@ -57,10 +57,18 @@
     .subheader {
       font-size: $sans-size-xs;
     }
+
+    .senior-pool-icon {
+      height: 40px;
+      background-color: #fff;
+      padding: 4px;
+      border-radius: 50%;
+    }
   }
 
   .fallback-content {
     height: 45px;
+    font-size: $sans-size-s;
   }
 
   .circle-icon {
