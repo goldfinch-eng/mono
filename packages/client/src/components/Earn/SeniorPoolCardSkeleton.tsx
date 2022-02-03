@@ -7,7 +7,7 @@ export default function SeniorPoolCardSkeleton() {
           <span>Loading...</span>
         </div>
       </div>
-      <div className="table-cell col16 numeric apy disabled">$--.--%</div>
+      <div className="table-cell col22 numeric apy disabled">$--.--%</div>
       <div className="table-cell col22 numeric limit disabled">$--.--</div>
       <div className="table-cell col22 numeric balance disabled">$--.--</div>
     </div>

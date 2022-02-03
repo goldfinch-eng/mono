@@ -74,6 +74,24 @@
       padding: 4px;
       border-radius: 50%;
     }
+
+    .gfi-apy {
+      font-size: $sans-size-xs;
+      color: $purp-light;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+
+      svg {
+        margin-left: 4px;
+        height: 14px;
+
+        path {
+          fill: $purp-light;
+        }
+      }
+    }
   }
 
   .fallback-content {
