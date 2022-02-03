@@ -570,7 +570,7 @@ export class UserMerkleDistributor {
   }
 
   async initialize(
-    merkleDistributor: MerkleDistributorLoaded | BackerMerkleDistributorLoaded,
+    merkleDistributor: MerkleDistributorLoaded,
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
@@ -747,10 +747,7 @@ export class UserMerkleDirectDistributor {
     )
   }
 
-  async initialize(
-    merkleDirectDistributor: MerkleDirectDistributorLoaded | BackerMerkleDirectDistributorLoaded,
-    currentBlock: BlockInfo
-  ): Promise<void> {
+  async initialize(merkleDirectDistributor: MerkleDirectDistributorLoaded, currentBlock: BlockInfo): Promise<void> {
     const merkleDirectDistributorInfo = await this.getMerkleInfo()
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
