@@ -48,6 +48,11 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
+enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
+
 async function quoteFiduToUSDC({
   fiduAmount,
   seniorPool,
@@ -95,13 +100,25 @@ describe("StakingRewards", function () {
     [LockupPeriod.TwentyFourMonths]: yearInSeconds.mul(new BN(2)),
   }
 
-  async function stake({from, amount}: {from: string; amount: BN | string}): Promise<BN> {
+  async function stake({
+    from,
+    amount,
+    positionType = StakedPositionType.Fidu,
+  }: {
+    from: string
+    amount: BN | string
+    positionType?: StakedPositionType
+  }): Promise<BN> {
     await fidu.approve(stakingRewards.address, amount, {from})
-    const receipt = await stakingRewards.stake(amount, {from})
+    const receipt = await stakingRewards.stake(amount, positionType, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
     // Verify Staked event has correct fields
+    expect(stakedEvent.args.positionType).to.bignumber.equal(new BN(positionType))
     expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+    expect(stakedEvent.args.baseTokenExchangeRate).to.bignumber.equal(
+      await stakingRewards.getBaseTokenExchangeRate(positionType)
+    )
     expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
     expect(stakedEvent.args.multiplier).to.bignumber.equal(new BN(String(1e18)))
     expect(stakedEvent.args.user).to.equal(from)
@@ -112,14 +129,16 @@ describe("StakingRewards", function () {
   async function stakeWithLockup({
     from,
     amount,
+    positionType = StakedPositionType.Fidu,
     lockupPeriod = LockupPeriod.SixMonths,
   }: {
     from: string
     amount: BN | string
+    positionType?: StakedPositionType
     lockupPeriod?: LockupPeriod
   }): Promise<BN> {
     await fidu.approve(stakingRewards.address, amount, {from})
-    const receipt = await stakingRewards.stakeWithLockup(amount, lockupPeriod, {from})
+    const receipt = await stakingRewards.stakeWithLockup(amount, positionType, lockupPeriod, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
     const now = await time.latest()
@@ -127,7 +146,11 @@ describe("StakingRewards", function () {
     const expectedLockedUntil = now.add(duration)
 
     // Verify Staked event has correct fields
+    expect(stakedEvent.args.positionType).to.bignumber.equal(new BN(positionType))
     expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+    expect(stakedEvent.args.baseTokenExchangeRate).to.bignumber.equal(
+      await stakingRewards.getBaseTokenExchangeRate(positionType)
+    )
     expect(stakedEvent.args.lockedUntil).to.bignumber.equal(expectedLockedUntil)
     expect(stakedEvent.args.multiplier).to.bignumber.equal(await stakingRewards.getLeverageMultiplier(lockupPeriod))
     expect(stakedEvent.args.user).to.equal(from)
