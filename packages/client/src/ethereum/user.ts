@@ -277,26 +277,26 @@ class UserStakingRewards {
 
   static parseStoredPosition(tuple: {
     0: string
-    1: string
+    1: [string, string, string, string, string, string]
     2: string
-    3: [string, string, string, string, string, string]
+    3: string
     4: string
     5: string
   }): StoredPosition {
     return {
-      positionType: parseInt(tuple[0]),
-      amount: new BigNumber(tuple[1]),
-      baseTokenExchangeRate: new BigNumber(tuple[2]),
+      amount: new BigNumber(tuple[0]),
       rewards: {
-        totalUnvested: new BigNumber(tuple[3][0]),
-        totalVested: new BigNumber(tuple[3][1]),
-        totalPreviouslyVested: new BigNumber(tuple[3][2]),
-        totalClaimed: new BigNumber(tuple[3][3]),
-        startTime: parseInt(tuple[3][4], 10),
-        endTime: parseInt(tuple[3][5], 10),
+        totalUnvested: new BigNumber(tuple[1][0]),
+        totalVested: new BigNumber(tuple[1][1]),
+        totalPreviouslyVested: new BigNumber(tuple[1][2]),
+        totalClaimed: new BigNumber(tuple[1][3]),
+        startTime: parseInt(tuple[1][4], 10),
+        endTime: parseInt(tuple[1][5], 10),
       },
-      leverageMultiplier: new BigNumber(tuple[4]),
-      lockedUntil: parseInt(tuple[5], 10),
+      leverageMultiplier: new BigNumber(tuple[2]),
+      lockedUntil: parseInt(tuple[3], 10),
+      positionType: parseInt(tuple[4]),
+      baseTokenExchangeRate: new BigNumber(tuple[5]),
     }
   }
 }

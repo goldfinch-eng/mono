@@ -36,18 +36,18 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   struct StakedPosition {
-    // @notice Type of the staked position
-    StakedPositionType positionType;
     // @notice Staked amount denominated in `stakingToken().decimals()`
     uint256 amount;
-    // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
-    uint256 baseTokenExchangeRate;
     // @notice Struct describing rewards owed with vesting
     StakingRewardsVesting.Rewards rewards;
     // @notice Multiplier applied to staked amount when locking up position
     uint256 leverageMultiplier;
     // @notice Time in seconds after which position can be unstaked
     uint256 lockedUntil;
+    // @notice Type of the staked position
+    StakedPositionType positionType;
+    // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
+    uint256 baseTokenExchangeRate;
   }
 
   /* ========== EVENTS =================== */
