@@ -127,10 +127,10 @@ interface OpenDetailsProps {
 
 function OpenDetails(props: OpenDetailsProps) {
   if (props.open) {
-    return <button className="expand close">{iconCarrotUp}</button>
+    return <button className="open-details close">{iconCarrotUp}</button>
   }
 
-  return <button className="expand">{iconCarrotDown}</button>
+  return <button className="open-details">{iconCarrotDown}</button>
 }
 
 type BaseItemDetails = {
