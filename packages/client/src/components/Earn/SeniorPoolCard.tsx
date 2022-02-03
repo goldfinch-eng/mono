@@ -33,7 +33,7 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
         </div>
       </div>
       <div className="table-cell col16 numeric apy">{props.apy}</div>
-      <div className="table-cell col22 numeric limit">{props.limit}</div>
+      <div className="table-cell col22 numeric limit senior-pool-limit">Unlimited</div>
       <div className={`table-cell col22 numeric balance ${userBalanceDisabledClass}`}>{props.userBalance}</div>
       <div className="pool-capacity">
         {props.remainingCapacity?.isZero() ? (

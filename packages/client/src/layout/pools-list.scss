@@ -1,3 +1,9 @@
+.pools-list.table-spaced {
+  .table-header {
+    font-size: 16px; 
+  }
+}
+
 .pools-list {
   margin-top: 0px;
   margin-bottom: 0px;
@@ -52,6 +58,10 @@
 
     .name, .apy, .limit, .balance {
       font-size: $sans-size-s;
+    }
+
+    .senior-pool-limit {
+      color: $sand-xdark;
     }
 
     .subheader {
