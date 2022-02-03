@@ -1,12 +1,9 @@
 import {BackerMerkleDistributor as BackerMerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDistributor"
 import {WithLoadedInfo} from "../types/loadable"
-import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {MerkleDistributor} from "./merkleDistributor"
+import {MerkleDistributor, MerkleDistributorLoadedInfo} from "./merkleDistributor"
 
-type BackerMerkleDistributorLoadedInfo = {
-  currentBlock: BlockInfo
-}
+type BackerMerkleDistributorLoadedInfo = MerkleDistributorLoadedInfo
 
 export type BackerMerkleDistributorLoaded = WithLoadedInfo<BackerMerkleDistributor, BackerMerkleDistributorLoadedInfo>
 
