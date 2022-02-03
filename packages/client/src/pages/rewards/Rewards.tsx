@@ -263,7 +263,7 @@ function Rewards() {
       )
       .plus(userMerkleDirectDistributor.info.value.claimable)
       .plus(
-        // Same comment as for `claimable`, regarding avoiding double-counting vis-a-vis `userCommunityRewards`.
+        // Same comment as for `userMerkleDistributor`, regarding avoiding double-counting vis-a-vis `userCommunityRewards`.
         userBackerMerkleDistributor.info.value.notAcceptedClaimable
       )
       .plus(userBackerMerkleDirectDistributor.info.value.claimable)
