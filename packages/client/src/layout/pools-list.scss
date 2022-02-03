@@ -1,3 +1,10 @@
+.pools-list.table-spaced {
+  .table-header {
+    align-items: center;
+  }
+}
+
+
 .pools-list {
   margin-top: 0px;
   margin-bottom: 0px;
@@ -15,6 +22,16 @@
 
   .title {
     color: $purp-dark;
+  }
+
+  .apy-column-name {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .tooltip-icon {
+    margin-left: 4px;
   }
 
   .pool-info {
