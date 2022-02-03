@@ -308,7 +308,6 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
-  await updateConfig(config, "address", CONFIG_KEYS.FiduUSDCCurveLP, MAINNET_FIDU_USDC_CURVE_LP_ADDRESS, {logger})
   if (TRUSTED_FORWARDER_CONFIG[chainId]) {
     await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainId], {logger})
   }
@@ -484,6 +483,7 @@ export {
   MAINNET_ONE_SPLIT_ADDRESS,
   MAINNET_CUSDC_ADDRESS,
   MAINNET_COMP_ADDRESS,
+  MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
   LOCAL,
   MAINNET,
   USDCDecimals,

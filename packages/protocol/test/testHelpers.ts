@@ -42,6 +42,7 @@ import {
   MerkleDirectDistributorInstance,
   BackerRewardsInstance,
   ZapperInstance,
+  TestFiduUSDCCurveLPInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -264,6 +265,7 @@ async function deployAllContracts(
   usdc: ERC20Instance
   creditDesk: CreditDeskInstance
   fidu: FiduInstance
+  fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
   goldfinchFactory: GoldfinchFactoryInstance
   forwarder: TestForwarderInstance | null
@@ -294,6 +296,10 @@ async function deployAllContracts(
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
+  const fiduUSDCCurveLP = await getDeployedAsTruffleContract<TestFiduUSDCCurveLPInstance>(
+    deployments,
+    "FiduUSDCCurveLP"
+  )
   const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
@@ -370,6 +376,7 @@ async function deployAllContracts(
     usdc,
     creditDesk,
     fidu,
+    fiduUSDCCurveLP,
     goldfinchConfig,
     goldfinchFactory,
     forwarder,
