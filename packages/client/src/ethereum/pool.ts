@@ -41,6 +41,7 @@ import {UserLoaded, UserStakingRewardsLoaded} from "./user"
 import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {Web3IO} from "../types/web3"
+import {StakedPositionType} from "./stakingRewards"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -817,7 +818,9 @@ class StakingRewardsPosition {
 }
 
 export type StoredPosition = {
+  positionType: StakedPositionType
   amount: BigNumber
+  baseTokenExchangeRate: BigNumber
   rewards: StakingRewardsVesting
   leverageMultiplier: BigNumber
   lockedUntil: number

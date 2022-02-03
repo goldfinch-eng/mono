@@ -4,6 +4,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import {AppContext} from "../App"
 import {fiduFromAtomic, FIDU_DECIMALS} from "../ethereum/fidu"
 import {CapitalProvider} from "../ethereum/pool"
+import {StakedPositionType} from "../ethereum/stakingRewards"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
 import useSendFromUser from "../hooks/useSendFromUser"
 import {FIDU_APPROVAL_TX_TYPE, STAKE_TX_TYPE} from "../types/transactions"
@@ -52,7 +53,7 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
       : Promise.resolve()
     return approval
       .then(() =>
-        sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10)), {
+        sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), StakedPositionType.Fidu), {
           type: STAKE_TX_TYPE,
           data: {
             fiduAmount: fiduFromAtomic(amount),
