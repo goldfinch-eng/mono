@@ -474,8 +474,8 @@ function Rewards() {
               item={info.value}
               user={user}
               gfi={gfi}
-              merkleDistributor={backerMerkleDistributor}
-              merkleDirectDistributor={backerMerkleDirectDistributor}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
             />
