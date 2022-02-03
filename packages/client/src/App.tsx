@@ -68,6 +68,7 @@ import {
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
+import NotFound from "./components/NotFound"
 
 interface GeolocationData {
   ip: string
@@ -602,6 +603,9 @@ function App() {
                     </Route>
                     <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
                       <SeniorPoolAgreementNonUS />
+                    </Route>
+                    <Route path="*">
+                      <NotFound />
                     </Route>
                   </Switch>
                 </div>
