@@ -155,6 +155,8 @@
         "**/BackerRewards.sol:BackerRewards": {
           "allocateRewards": ["onlyPool"],
           "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
+          "onTranchedPoolDrawdown": [],
+          "checkpointStakingRewards": [],
           "withdraw": [],
           "withdrawMultiple": []
         },
