@@ -566,7 +566,7 @@ export class UserMerkleDistributor {
     merkleDistributor: MerkleDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    return await UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock)
+    return UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock)
   }
 
   async initialize(
