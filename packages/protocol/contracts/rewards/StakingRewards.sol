@@ -308,9 +308,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function getEffectiveAmountMultiplier(StakedPositionType positionType) internal pure returns (uint256) {
     if (positionType == StakedPositionType.Fidu) {
-      return 1;
+      return MULTIPLIER_DECIMALS; // 100%
     } else if (positionType == StakedPositionType.CurveLP) {
-      return 1;
+      return MULTIPLIER_DECIMALS; // 100%
     } else {
       revert("unsupported StakedPositionType");
     }
@@ -323,7 +323,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ) internal pure returns (uint256) {
     // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
     uint256 exchangeRate = baseTokenExchangeRate == 0 ? 1 : baseTokenExchangeRate;
-    return amount.mul(exchangeRate).mul(effectiveAmountMultiplier);
+    return amount.mul(exchangeRate).mul(effectiveAmountMultiplier).div(MULTIPLIER_DECIMALS);
   }
 
   function toLeveredAmount(uint256 amount, uint256 leverageMultiplier) internal pure returns (uint256) {
