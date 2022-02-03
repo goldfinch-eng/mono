@@ -89,6 +89,8 @@ export class MerkleDistributor {
         return "as a Goldfinch advisor"
       case "contributor":
         return "as a Goldfinch contributor"
+      case "backer":
+        return "as a Backer"
       default:
         assertUnreachable(reason)
     }
