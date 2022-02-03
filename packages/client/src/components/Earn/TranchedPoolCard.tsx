@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js"
 import {useHistory} from "react-router-dom"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {PoolBacker} from "../../ethereum/tranchedPool"
+import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent} from "../../utils"
 import Badge from "../badge"
 
@@ -12,6 +13,7 @@ export default function TranchedPoolCard({poolBacker, disabled}: {poolBacker: Po
   const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
   const estimatedApy = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : new BigNumber(NaN)
+  const estimatedApyFromGfi = undefined
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
@@ -35,7 +37,15 @@ export default function TranchedPoolCard({poolBacker, disabled}: {poolBacker: Po
           <span className={`subheader ${disabledClass}`}>{tranchedPool.metadata?.category}</span>
         </div>
       </div>
-      <div className={`table-cell col22 numeric apy ${disabledClass}`}>{displayPercent(estimatedApy)}</div>
+      <div className={`table-cell col22 numeric apy ${disabledClass}`}>
+        <div className="usdc-apy">{displayPercent(estimatedApy)} USDC</div>
+        <div className="gfi-apy">
+          {displayPercent(estimatedApyFromGfi)} with GFI
+          <span data-tip="" data-for="" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+            <InfoIcon />
+          </span>
+        </div>
+      </div>
       <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
       <div className={`${balanceDisabledClass} ${disabledClass} table-cell col22 numeric balance`}>
         {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}

@@ -81,13 +81,6 @@ export default function Earn() {
     limitToDisplay = displayDollars(undefined)
   }
 
-  let apyToDisplay
-  if (pool?.info.value.poolData.estimatedApyFromGfi && seniorPoolStatus?.value?.estimatedApy) {
-    apyToDisplay = pool.info.value.poolData.estimatedApyFromGfi.plus(seniorPoolStatus.value.estimatedApy)
-  } else {
-    apyToDisplay = seniorPoolStatus.value?.estimatedApy
-  }
-
   return (
     <div className="content-section">
       <div className="page-header">

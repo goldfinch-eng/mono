@@ -2,6 +2,23 @@
   .table-header {
     font-size: 16px; 
   }
+
+  .table-row.pool-skeleton {
+    font-size: $sans-size-s;
+
+    .gfi-apy {
+      font-size: $sans-size-xs;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+
+      svg {
+        margin-left: 4px;
+        height: 14px;
+      }
+    }
+  }
 }
 
 .pools-list {
@@ -96,7 +113,6 @@
 
   .fallback-content {
     height: 45px;
-    font-size: $sans-size-s;
   }
 
   .circle-icon {
