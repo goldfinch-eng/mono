@@ -984,15 +984,30 @@ export function combineGrants({
   const combinedGrants: JsonAccountedGrant[] = []
   for (const [address, grants] of Object.entries(addressesToGrants)) {
     if (grants.length > 1) {
-      const amount = _.reduce(grants, (amt, grant) => amt.plus(new BigNum(grant.grant.amount)), new BigNum(0))
+      const vestingParametersGrant = grants[0]
+      assertNonNullable(vestingParametersGrant)
+      const amount = _.reduce(
+        grants,
+        (amt, grant) => {
+          if (
+            grant.grant.vestingLength !== vestingParametersGrant.grant.vestingLength ||
+            grant.grant.cliffLength !== vestingParametersGrant.grant.cliffLength ||
+            grant.grant.vestingInterval !== vestingParametersGrant.grant.vestingInterval
+          ) {
+            throw new Error("Vesting doesn't match for combined grants")
+          }
+          return amt.plus(new BigNum(grant.grant.amount))
+        },
+        new BigNum(0)
+      )
       combinedGrants.push({
         account: address.trim(),
         reason,
         grant: {
           amount: amount.toString(),
-          vestingLength: "0",
-          cliffLength: "0",
-          vestingInterval: "0",
+          vestingLength: vestingParametersGrant.grant.vestingLength,
+          cliffLength: vestingParametersGrant.grant.cliffLength,
+          vestingInterval: vestingParametersGrant.grant.vestingInterval,
         },
       })
     } else {
