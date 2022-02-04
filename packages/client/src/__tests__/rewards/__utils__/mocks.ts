@@ -5,6 +5,7 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {MerkleDistributor as MerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDistributor"
 import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/MerkleDirectDistributor"
+import {BackerMerkleDistributor as BackerMerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDistributor"
 import {BackerMerkleDirectDistributor as BackerMerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDirectDistributor"
 import "@testing-library/jest-dom"
 import {mock} from "depay-web3-mock"
@@ -401,30 +402,22 @@ export async function mockUserRelatedInitializationContractCalls(
       },
     })
     const mockQueryEvents = <T extends KnownEventName>(
-      contract: MerkleDistributorContract | MerkleDirectDistributorContract,
+      contract:
+        | MerkleDistributorContract
+        | MerkleDirectDistributorContract
+        | BackerMerkleDistributorContract
+        | BackerMerkleDirectDistributorContract,
       eventNames: T[],
       filter: Filter | undefined,
       toBlock: BlockNumber
     ): Promise<KnownEventData<T>[]> => {
-      if (contract === merkleDistributor.contract.readOnly && !rewardsMock.community?.isFromBacker) {
+      if (contract === merkleDistributor.contract.readOnly) {
         if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
           if (isEqual(filter, {tokenId: communityRewardsTokenId, account: recipient})) {
             if (toBlock === 94) {
-              return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
-            } else {
-              throw new Error(`Unexpected toBlock: ${toBlock}`)
-            }
-          } else {
-            throw new Error(`Unexpected filter: ${filter}`)
-          }
-        } else {
-          throw new Error(`Unexpected event names: ${eventNames}`)
-        }
-      } else if (contract === merkleDistributor.contract.readOnly && rewardsMock.community?.isFromBacker) {
-        if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
-          if (isEqual(filter, {tokenId: communityRewardsTokenId, account: recipient})) {
-            if (toBlock === 94) {
-              return Promise.resolve([])
+              return Promise.resolve(
+                rewardsMock.community?.isFromBacker ? [] : [acceptedGrantRes as unknown as KnownEventData<T>]
+              )
             } else {
               throw new Error(`Unexpected toBlock: ${toBlock}`)
             }
@@ -438,7 +431,9 @@ export async function mockUserRelatedInitializationContractCalls(
         if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
           if (isEqual(filter, {tokenId: communityRewardsTokenId, account: recipient})) {
             if (toBlock === 94) {
-              return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
+              return Promise.resolve(
+                rewardsMock.community?.isFromBacker ? [acceptedGrantRes as unknown as KnownEventData<T>] : []
+              )
             } else {
               throw new Error(`Unexpected toBlock: ${toBlock}`)
             }
@@ -452,7 +447,25 @@ export async function mockUserRelatedInitializationContractCalls(
         if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
           if (isEqual(filter, {index: "0"})) {
             if (toBlock === 94) {
-              return Promise.resolve([acceptedGrantRes as unknown as KnownEventData<T>])
+              return Promise.resolve(
+                rewardsMock.community?.isFromBacker ? [] : [acceptedGrantRes as unknown as KnownEventData<T>]
+              )
+            } else {
+              throw new Error(`Unexpected toBlock: ${toBlock}`)
+            }
+          } else {
+            throw new Error(`Unexpected filter: ${filter}`)
+          }
+        } else {
+          throw new Error(`Unexpected event names: ${eventNames}`)
+        }
+      } else if (contract === backerMerkleDirectDistributor.contract.readOnly) {
+        if (eventNames.length === 1 && eventNames[0] === GRANT_ACCEPTED_EVENT) {
+          if (isEqual(filter, {index: "0"})) {
+            if (toBlock === 94) {
+              return Promise.resolve(
+                rewardsMock.community?.isFromBacker ? [acceptedGrantRes as unknown as KnownEventData<T>] : []
+              )
             } else {
               throw new Error(`Unexpected toBlock: ${toBlock}`)
             }
