@@ -5,6 +5,7 @@
   align-items: space-between;
   @include space-x(0em);
   @include space-y(1.5em);
+  cursor: pointer;
 
   .inner-banner {
     display: flex;
@@ -37,17 +38,22 @@
   }
 
   .expand {
-    opacity: 0.4;
     margin: -12px -12px -12px 12px;
     padding: 6px 12px 6px;
     height: 44px;
 
-    &:hover {
-      opacity: 1;
-    }
-
     .icon {
       width: 20px;
+    }
+
+    svg path {
+      fill: $sand-xdark;
+    }
+  }
+
+  .expand.close {
+    svg path {
+      fill: $purp-dark;
     }
   }
 

@@ -54,12 +54,7 @@ import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
 import getApolloClient from "./graphql/client"
 import NetworkIndicators from "./components/networkIndicators"
-import {
-  BackerMerkleDistributor,
-  BackerMerkleDistributorLoaded,
-  MerkleDistributor,
-  MerkleDistributorLoaded,
-} from "./ethereum/merkleDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 import {
   ABOUT_ROUTE,
   AppRoute,
@@ -75,13 +70,13 @@ import {
   TRANSACTIONS_ROUTE,
   VERIFY_ROUTE,
 } from "./types/routes"
-import {
-  BackerMerkleDirectDistributor,
-  BackerMerkleDirectDistributorLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "./ethereum/merkleDirectDistributor"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
+import {
+  BackerMerkleDirectDistributorLoaded,
+  BackerMerkleDirectDistributor,
+} from "./ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded, BackerMerkleDistributor} from "./ethereum/backerMerkleDistributor"
 
 interface GeolocationData {
   ip: string
@@ -202,9 +197,9 @@ function App() {
   const [creditDesk, setCreditDesk] = useState<Web3IO<CreditDesk>>()
   const [userMerkleDistributor, setUserMerkleDistributor] = useState<UserMerkleDistributorLoaded>()
   const [userMerkleDirectDistributor, setUserMerkleDirectDistributor] = useState<UserMerkleDirectDistributorLoaded>()
-  const [userBackerMerkleDistributor, setUserBackerMerkleDistributor] = useState<UserMerkleDistributorLoaded>()
+  const [userBackerMerkleDistributor, setUserBackerMerkleDistributor] = useState<UserBackerMerkleDistributorLoaded>()
   const [userBackerMerkleDirectDistributor, setUserBackerMerkleDirectDistributor] =
-    useState<UserMerkleDirectDistributorLoaded>()
+    useState<UserBackerMerkleDirectDistributorLoaded>()
   const [userCommunityRewards, setUserCommunityRewards] = useState<UserCommunityRewardsLoaded>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
@@ -273,7 +268,8 @@ function App() {
   const backerMerkleDirectDistributor = consistent?.[6]
 
   // To ensure `gfi`, `stakingRewards`, `communityRewards`, `merkleDistributor`,
-  // `merkleDirectDistributor`, and `pool` are from the same block, we'd use `useFromSameBlock()`
+  // `merkleDirectDistributor`, `backerMerkleDistributor`, `backerMerkleDirectDistributor`
+  // and `pool` are from the same block, we'd use `useFromSameBlock()`
   // again here. But holding off on that due to the decision to abandon
   // https://github.com/warbler-labs/mono/pull/140.
 

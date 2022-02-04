@@ -5,14 +5,13 @@ import {mock, resetMocks} from "depay-web3-mock"
 import {MemoryRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {AppContext, LeavesCurrentBlock} from "../../App"
+import {BackerMerkleDirectDistributorLoaded} from "../../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "../../ethereum/backerMerkleDistributor"
 import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {COINBASE_API_GFI_PRICE_URL, COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
-import {
-  BackerMerkleDirectDistributorLoaded,
-  MerkleDirectDistributorLoaded,
-} from "../../ethereum/merkleDirectDistributor"
-import {BackerMerkleDistributorLoaded, MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
+import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
+import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
 import {PoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {

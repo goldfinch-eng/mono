@@ -1,3 +1,4 @@
+import {isPlainObject, isStringOrUndefined} from "@goldfinch-eng/utils"
 import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
@@ -101,9 +102,35 @@ export function assertNumber(val: unknown): asserts val is number {
   }
 }
 
+export function isError(val: unknown): val is Error {
+  return val instanceof Error
+}
+
 export function assertError(val: unknown): asserts val is Error {
-  if (!(val instanceof Error)) {
+  if (!isError(val)) {
     throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
+}
+
+export type CodedErrorLike = {
+  code: number
+  message: string
+  stack?: string
+}
+
+export function isCodedErrorLike(val: unknown): val is CodedErrorLike {
+  return isPlainObject(val) && isNumber(val.code) && isString(val.message) && isStringOrUndefined(val.stack)
+}
+
+export type ErrorLike = Error | CodedErrorLike
+
+export function isErrorLike(val: unknown): val is ErrorLike {
+  return isError(val) || isCodedErrorLike(val)
+}
+
+export function assertErrorLike(val: unknown): asserts val is ErrorLike {
+  if (!isErrorLike(val)) {
+    throw new AssertionError(`Value ${val} is not error-like.`)
   }
 }
 

@@ -1,17 +1,10 @@
 import fs from "fs"
 import {toEthers} from "@goldfinch-eng/protocol/test/testHelpers"
-import {CommunityRewards, MerkleDistributor} from "@goldfinch-eng/protocol/typechain/ethers"
+import {CommunityRewards} from "@goldfinch-eng/protocol/typechain/ethers"
 import {CommunityRewardsInstance, MerkleDistributorInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {Deployed} from "../baseDeploy"
-import {
-  ContractDeployer,
-  DISTRIBUTOR_ROLE,
-  getContract,
-  getProtocolOwner,
-  getTruffleContract,
-  TRUFFLE_CONTRACT_PROVIDER,
-} from "../deployHelpers"
+import {ContractDeployer, DISTRIBUTOR_ROLE, getProtocolOwner, getTruffleContract} from "../deployHelpers"
 import {isMerkleDistributorInfo} from "../merkle/merkleDistributor/types"
 import {DeployEffects} from "../migrations/deployEffects"
 

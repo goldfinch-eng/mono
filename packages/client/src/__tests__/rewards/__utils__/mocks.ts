@@ -48,13 +48,11 @@ import {
   MerkleDirectDistributorGrantInfo,
   MerkleDirectDistributorInfo,
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {BackerMerkleDistributor, MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
-import {
-  BackerMerkleDirectDistributor,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "../../../ethereum/merkleDirectDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../ethereum/merkleDirectDistributor"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
+import {BackerMerkleDirectDistributor} from "../../../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributor} from "../../../ethereum/backerMerkleDistributor"
 
 class ImproperlyConfiguredMockError extends Error {}
 

@@ -7,12 +7,8 @@ import {useMediaQuery} from "react-responsive"
 import {AppContext} from "../App"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../ethereum/gfi"
-import {
-  BackerMerkleDirectDistributorLoaded,
-  MerkleDirectDistributor,
-  MerkleDirectDistributorLoaded,
-} from "../ethereum/merkleDirectDistributor"
-import {BackerMerkleDistributorLoaded, MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../ethereum/merkleDirectDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "../ethereum/merkleDistributor"
 import {StakingRewardsLoaded, StakingRewardsPosition} from "../ethereum/pool"
 import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {UserLoaded} from "../ethereum/user"
@@ -37,6 +33,8 @@ import {getIsRefreshing} from "./refreshIndicator"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
+import {BackerMerkleDirectDistributorLoaded} from "../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "../ethereum/backerMerkleDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
@@ -129,10 +127,10 @@ interface OpenDetailsProps {
 
 function OpenDetails(props: OpenDetailsProps) {
   if (props.open) {
-    return <button className="expand close">{iconCarrotUp}</button>
+    return <button className="open-details close">{iconCarrotUp}</button>
   }
 
-  return <button className="expand">{iconCarrotDown}</button>
+  return <button className="open-details">{iconCarrotDown}</button>
 }
 
 type BaseItemDetails = {
@@ -532,7 +530,7 @@ function getStakingOrCommunityRewardsDetails(
       claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: undefined,
       vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: item.acceptEvent.transactionHash,
+      etherscanAddress: item.acceptanceContext?.event.transactionHash,
     }
   }
 }

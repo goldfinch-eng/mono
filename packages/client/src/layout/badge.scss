@@ -19,6 +19,14 @@
     }
   }
 
+  &.green {
+    background-color: $green-xlight;
+
+    .badge-content {
+      color: $green-dark;
+    }
+  }
+
   &.blue {
     background-color: $blue-xlight;
 
