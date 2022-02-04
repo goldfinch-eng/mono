@@ -217,7 +217,7 @@ describe("Rewards summary", () => {
     })
     it("shows loading message when all but three requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      const {user} = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
       renderRewards(
         {
           ...emptyDeps,
@@ -231,7 +231,7 @@ describe("Rewards summary", () => {
     })
     it("shows loading message when all but four requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      const {user} = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
       renderRewards(
         {
           ...emptyDeps,
@@ -246,7 +246,7 @@ describe("Rewards summary", () => {
     })
     it("shows loading message when all but five requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      const {user} = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
       renderRewards(
         {
           ...emptyDeps,
@@ -262,7 +262,7 @@ describe("Rewards summary", () => {
     })
     it("shows loading message when all but six requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-      const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      const {user} = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
       renderRewards(
         {
           ...emptyDeps,
@@ -280,7 +280,7 @@ describe("Rewards summary", () => {
     it("shows loading message when all but seven requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       const {user, userMerkleDistributor} = await prepareUserRelatedDeps(
-        {goldfinchProtocol, seniorPool, ...baseDeps},
+        {...baseDeps, goldfinchProtocol, seniorPool},
         {currentBlock}
       )
       renderRewards(
@@ -301,7 +301,7 @@ describe("Rewards summary", () => {
     it("shows loading message when all but eight requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       const {user, userMerkleDistributor, userMerkleDirectDistributor} = await prepareUserRelatedDeps(
-        {goldfinchProtocol, seniorPool, ...baseDeps},
+        {...baseDeps, goldfinchProtocol, seniorPool},
         {currentBlock}
       )
       renderRewards(
@@ -323,7 +323,7 @@ describe("Rewards summary", () => {
     it("shows loading message when all but nine requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       const {user, userMerkleDistributor, userMerkleDirectDistributor} = await prepareUserRelatedDeps(
-        {goldfinchProtocol, seniorPool, ...baseDeps},
+        {...baseDeps, goldfinchProtocol, seniorPool},
         {currentBlock}
       )
       renderRewards(
@@ -346,7 +346,7 @@ describe("Rewards summary", () => {
     it("shows loading message when two requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       const {user, userMerkleDistributor, userMerkleDirectDistributor} = await prepareUserRelatedDeps(
-        {goldfinchProtocol, seniorPool, ...baseDeps},
+        {...baseDeps, goldfinchProtocol, seniorPool},
         {currentBlock}
       )
       renderRewards(
@@ -370,7 +370,7 @@ describe("Rewards summary", () => {
     it("shows loading message when one requirements are empty", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       const {user, userMerkleDistributor, userMerkleDirectDistributor, userBackerMerkleDistributor} =
-        await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+        await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
       renderRewards(
         {
           ...emptyDeps,
@@ -400,7 +400,7 @@ describe("Rewards summary", () => {
         userCommunityRewards,
         userBackerMerkleDistributor,
         userBackerMerkleDirectDistributor,
-      } = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      } = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
       renderRewards(
         {
           stakingRewards: baseDeps.stakingRewards,
@@ -426,7 +426,7 @@ describe("Rewards summary", () => {
 
   it("shows empty portfolio", async () => {
     const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-    const userRelated = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+    const userRelated = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
     renderRewards({...baseDeps, ...userRelated}, currentBlock)
 
     expect(await screen.findByText("Total")).toBeVisible()
@@ -441,7 +441,7 @@ describe("Rewards summary", () => {
   it("shows wallet balance on portfolio", async () => {
     const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
     const userRelated = await prepareUserRelatedDeps(
-      {goldfinchProtocol, seniorPool, ...baseDeps},
+      {...baseDeps, goldfinchProtocol, seniorPool},
       {currentBlock, gfi: {gfiBalance: "1000000000000000000"}}
     )
     renderRewards({...baseDeps, ...userRelated}, currentBlock)
@@ -967,7 +967,7 @@ describe("Rewards list and detail", () => {
 
   it("shows empty list", async () => {
     const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-    const userRelatedDeps = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+    const userRelatedDeps = await prepareUserRelatedDeps({...baseDeps, goldfinchProtocol, seniorPool}, {currentBlock})
     const deps = {...baseDeps, ...userRelatedDeps}
 
     const {container} = renderRewards(deps, currentBlock)
