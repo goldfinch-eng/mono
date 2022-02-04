@@ -320,7 +320,12 @@ export class BackerRewards {
     return gfiToDollarsAtomic(annualizedRewardsPerPrincipalDollar, gfiPrice)?.dividedBy(GFI_DECIMALS)
   }
 
-  async estimateApyFromGfiByTranchedPool(
+  /**
+   * Estimates the APY-from-GFI from backing a tranched pool, for the GFI that is available uniquely / only
+   * to backers. That is, this estimation does NOT include the portion of total APY-from-GFI for backers
+   * that consists of matching the APY-from-GFI of investing in the Senior Pool.
+   */
+  async estimateBackersOnlyApyFromGfiByTranchedPool(
     tranchedPools: TranchedPool[],
     gfi: GFILoaded
   ): Promise<{[tranchedPoolAddress: string]: BigNumber | undefined}> {

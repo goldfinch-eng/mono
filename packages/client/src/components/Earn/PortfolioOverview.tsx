@@ -7,18 +7,18 @@ import {Loaded} from "../../types/loadable"
 import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent, roundDownPenny} from "../../utils"
 import AnnualGrowthTooltipContent from "../AnnualGrowthTooltipContent"
-import {TranchedPoolsEstimatedApyFromGfi} from "./types"
+import {TranchedPoolsEstimatedBackersOnlyApyFromGfi} from "./types"
 
 export default function PortfolioOverview({
   seniorPoolData,
   capitalProvider,
   tranchedPoolBackers,
-  tranchedPoolsEstimatedApyFromGfi,
+  tranchedPoolsEstimatedBackersOnlyApyFromGfi,
 }: {
   seniorPoolData: SeniorPoolData
   capitalProvider: Loaded<CapitalProvider>
   tranchedPoolBackers: Loaded<TranchedPoolBacker[]>
-  tranchedPoolsEstimatedApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi>
+  tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedBackersOnlyApyFromGfi>
 }) {
   const seniorPoolBalance = capitalProvider.value.totalSeniorPoolBalanceInDollars
   const estimatedAnnualGrowthFromSupplyingToSeniorPool = seniorPoolBalance.multipliedBy(seniorPoolData.estimatedApy)
@@ -42,7 +42,7 @@ export default function PortfolioOverview({
     )
 
     const tranchedPoolEstimatedApyFromGfi =
-      tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[p.tranchedPool.address]
+      tranchedPoolsEstimatedBackersOnlyApyFromGfi.value.estimatedBackersOnlyApyFromGfi[p.tranchedPool.address]
     if (tranchedPoolEstimatedApyFromGfi) {
       // How much of the principal the user has supplied has earned / is earning GFI rewards at the
       // `tranchedPoolEstimatedApyFromGfi` rate? The definition of this principal amount needs to

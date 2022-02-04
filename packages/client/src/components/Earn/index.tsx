@@ -17,7 +17,7 @@ import TranchedPoolCardSkeleton from "./TranchedPoolCardSkeleton"
 import SeniorPoolCard from "./SeniorPoolCard"
 import PortfolioOverview from "./PortfolioOverview"
 import TranchedPoolCard from "./TranchedPoolCard"
-import {TranchedPoolsEstimatedApyFromGfi} from "./types"
+import {TranchedPoolsEstimatedBackersOnlyApyFromGfi} from "./types"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import BigNumber from "bignumber.js"
@@ -39,8 +39,8 @@ export default function Earn() {
     loaded: false,
     value: undefined,
   })
-  const [tranchedPoolsEstimatedApyFromGfi, setTranchedPoolsEstimatedApyFromGfi] = useState<
-    Loadable<TranchedPoolsEstimatedApyFromGfi>
+  const [tranchedPoolsEstimatedBackersOnlyApyFromGfi, setTranchedPoolsEstimatedBackersOnlyApyFromGfi] = useState<
+    Loadable<TranchedPoolsEstimatedBackersOnlyApyFromGfi>
   >({
     loaded: false,
     value: undefined,
@@ -88,12 +88,12 @@ export default function Earn() {
 
   useEffect(() => {
     if (backers.loaded && gfi && backerRewards) {
-      refreshTranchedPoolsEstimatedApyFromGfi(backers, gfi, backerRewards)
+      refreshTranchedPoolsEstimatedBackersOnlyApyFromGfi(backers, gfi, backerRewards)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backers, gfi, backerRewards])
 
-  async function refreshTranchedPoolsEstimatedApyFromGfi(
+  async function refreshTranchedPoolsEstimatedBackersOnlyApyFromGfi(
     backers: Loaded<TranchedPoolBacker[]>,
     gfi: GFILoaded,
     backerRewards: BackerRewardsLoaded
@@ -102,13 +102,16 @@ export default function Earn() {
     assertNonNullable(currentRoute)
 
     if (gfi.info.value.currentBlock.number === backerRewards.info.value.currentBlock.number) {
-      const estimatedApyFromGfi = await backerRewards.estimateApyFromGfiByTranchedPool(
+      const estimatedBackersOnlyApyFromGfi = await backerRewards.estimateBackersOnlyApyFromGfiByTranchedPool(
         backers.value.map((backer) => backer.tranchedPool),
         gfi
       )
-      setTranchedPoolsEstimatedApyFromGfi({
+      setTranchedPoolsEstimatedBackersOnlyApyFromGfi({
         loaded: true,
-        value: {currentBlock: gfi.info.value.currentBlock, estimatedApyFromGfi},
+        value: {
+          currentBlock: gfi.info.value.currentBlock,
+          estimatedBackersOnlyApyFromGfi,
+        },
       })
     }
   }
@@ -118,8 +121,8 @@ export default function Earn() {
     // call `setLeafCurrentBlock()`, as no more data remains to be refreshed.
     if (
       capitalProvider.loaded &&
-      tranchedPoolsEstimatedApyFromGfi.loaded &&
-      sameBlock(capitalProvider.value.currentBlock, tranchedPoolsEstimatedApyFromGfi.value.currentBlock) &&
+      tranchedPoolsEstimatedBackersOnlyApyFromGfi.loaded &&
+      sameBlock(capitalProvider.value.currentBlock, tranchedPoolsEstimatedBackersOnlyApyFromGfi.value.currentBlock) &&
       sameBlock(capitalProvider.value.currentBlock, currentBlock)
     ) {
       assertNonNullable(setLeafCurrentBlock)
@@ -130,7 +133,7 @@ export default function Earn() {
       setLeafCurrentBlock(currentRoute, leafCurrentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [capitalProvider, tranchedPoolsEstimatedApyFromGfi, currentBlock])
+  }, [capitalProvider, tranchedPoolsEstimatedBackersOnlyApyFromGfi, currentBlock])
 
   const loaded = pool && backers.loaded
   const earnMessage = userWalletWeb3Status?.type === "no_web3" || loaded ? "Pools" : "Loading..."
@@ -160,14 +163,14 @@ export default function Earn() {
       !pool ||
       !capitalProvider.loaded ||
       !backers.loaded ||
-      !tranchedPoolsEstimatedApyFromGfi.loaded ? (
+      !tranchedPoolsEstimatedBackersOnlyApyFromGfi.loaded ? (
         <PortfolioOverviewSkeleton />
       ) : (
         <PortfolioOverview
           seniorPoolData={pool.info.value.poolData}
           capitalProvider={capitalProvider}
           tranchedPoolBackers={backers}
-          tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedApyFromGfi}
+          tranchedPoolsEstimatedBackersOnlyApyFromGfi={tranchedPoolsEstimatedBackersOnlyApyFromGfi}
         />
       )}
       <div className="pools">
@@ -204,8 +207,10 @@ export default function Earn() {
               <TranchedPoolCard
                 key={`${p.tranchedPool.address}`}
                 poolBacker={p}
-                poolEstimatedApyFromGfi={
-                  tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi?.[p.tranchedPool.address]
+                poolEstimatedBackersOnlyApyFromGfi={
+                  tranchedPoolsEstimatedBackersOnlyApyFromGfi.value?.estimatedBackersOnlyApyFromGfi?.[
+                    p.tranchedPool.address
+                  ]
                 }
                 disabled={!loaded}
               />

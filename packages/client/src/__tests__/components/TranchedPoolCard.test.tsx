@@ -11,7 +11,7 @@ function renderTranchedPoolCard(
   isPaused: boolean,
   remainingCapacity: BigNumber,
   isRepaid: boolean,
-  poolEstimatedApyFromGfi: BigNumber | undefined
+  poolEstimatedBackersOnlyApyFromGfi: BigNumber | undefined
 ) {
   // Mock tranched pool.
   const tranchedPool = new TranchedPool("0xasdf", {
@@ -41,7 +41,7 @@ function renderTranchedPoolCard(
     <AppContext.Provider value={store}>
       <TranchedPoolCard
         poolBacker={poolBacker as unknown as TranchedPoolBacker}
-        poolEstimatedApyFromGfi={poolEstimatedApyFromGfi}
+        poolEstimatedBackersOnlyApyFromGfi={poolEstimatedBackersOnlyApyFromGfi}
         disabled={false}
       />
     </AppContext.Provider>
