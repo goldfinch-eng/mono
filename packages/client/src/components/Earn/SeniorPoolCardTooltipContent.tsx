@@ -1,0 +1,35 @@
+import BigNumber from "bignumber.js"
+import Tooltip from "../../ui/components/Tooltip"
+import {displayPercent} from "../../utils"
+
+type SeniorPoolCardTooltipContentProps = {
+  estimatedApyFromGfi?: BigNumber | undefined
+  estimatedApy?: BigNumber
+}
+
+const SeniorPoolCardTooltipContent = ({estimatedApyFromGfi, estimatedApy}: SeniorPoolCardTooltipContentProps) => (
+  <Tooltip id="senior-pool-card-tooltip" className="senior-pool-card-tooltip">
+    <div>
+      <p className="tooltip-description">
+        Includes the Senior pool yield from allocating to borrower pools, plus GFI distributions.
+      </p>
+      <div className="tooltip-row">
+        <p>Senior Pool APY</p>
+        <span data-testid="tooltip-estimated-apy">{displayPercent(estimatedApy)}</span>
+      </div>
+      <div className="tooltip-row">
+        <p>GFI Distribution APY</p>
+        <span data-testid="tooltip-gfi-apy">
+          {estimatedApy && displayPercent(estimatedApyFromGfi?.minus(estimatedApy))}
+        </span>
+      </div>
+      <div className="tooltip-divider"></div>
+      <div className="tooltip-row">
+        <p>Total Est. APY</p>
+        <span data-testid="tooltip-total-apy">{displayPercent(estimatedApyFromGfi)}</span>
+      </div>
+    </div>
+  </Tooltip>
+)
+
+export default SeniorPoolCardTooltipContent

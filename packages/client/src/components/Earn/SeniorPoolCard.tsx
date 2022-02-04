@@ -3,12 +3,14 @@ import BigNumber from "bignumber.js"
 import Badge from "../badge"
 import logoPurp from "../../images/logomark-purp.svg"
 import {InfoIcon} from "../../ui/icons"
+import SeniorPoolCardTooltipContent from "./SeniorPoolCardTooltipContent"
+import {displayPercent} from "../../utils"
 
 type SeniorPoolCardProps = {
   balance: string
   userBalance: string
-  usdcApy: string
-  gfiApy: string
+  estimatedApy: BigNumber | undefined
+  estimatedApyFromGfi: BigNumber | undefined
   limit: string
   remainingCapacity: BigNumber | undefined
   disabled: boolean
@@ -35,10 +37,10 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
         </div>
       </div>
       <div className="table-cell col22 numeric apy">
-        <div className="usdc-apy">{props.usdcApy}</div>
+        <div className="usdc-apy">{displayPercent(props.estimatedApy)} USDC</div>
         <div className="gfi-apy">
-          {props.gfiApy}
-          <span data-tip="" data-for="" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+          {displayPercent(props.estimatedApyFromGfi)} with GFI
+          <span data-tip="" data-for="senior-pool-card-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
             <InfoIcon />
           </span>
         </div>
@@ -52,6 +54,7 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
           <Badge text="Open" variant="blue" fixedWidth />
         )}
       </div>
+      <SeniorPoolCardTooltipContent estimatedApy={props.estimatedApy} estimatedApyFromGfi={props.estimatedApyFromGfi} />
     </div>
   )
 }

@@ -105,8 +105,8 @@ export default function Earn() {
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
               userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
-              usdcApy={`${displayPercent(pool?.info.value.poolData.estimatedApy)} USDC`}
-              gfiApy={`${displayPercent(pool?.info.value.poolData.estimatedApyFromGfi)} with GFI`}
+              estimatedApy={pool?.info.value.poolData.estimatedApy}
+              estimatedApyFromGfi={pool?.info.value.poolData.estimatedApyFromGfi}
               limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}
