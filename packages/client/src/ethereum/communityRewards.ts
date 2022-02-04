@@ -2,8 +2,8 @@ import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scr
 import {CommunityRewards as CommunityRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/CommunityRewards"
 import BigNumber from "bignumber.js"
 import {BlockNumber} from "web3-core"
-import {Filter, EventData} from "web3-eth-contract"
-import {CommunityRewardsEventType, KnownEventData} from "../types/events"
+import {Filter} from "web3-eth-contract"
+import {CommunityRewardsEventType, GRANT_ACCEPTED_EVENT, KnownEventData} from "../types/events"
 import {Loadable, WithLoadedInfo} from "../types/loadable"
 import {Web3IO} from "../types/web3"
 import {BlockInfo, displayNumber} from "../utils"
@@ -21,33 +21,41 @@ interface CommunityRewardsVestingRewards {
   revokedAt: number
 }
 
+export type CommunityRewardsGrantSource = "merkleDistributor" | "backerMerkleDistributor"
+export type CommunityRewardsGrantAcceptanceContext = {
+  grantInfo: MerkleDistributorGrantInfo
+  event: KnownEventData<typeof GRANT_ACCEPTED_EVENT>
+  source: CommunityRewardsGrantSource
+}
+
 export class CommunityRewardsGrant {
   tokenId: string
   claimable: BigNumber
   rewards: CommunityRewardsVestingRewards
-  grantInfo: MerkleDistributorGrantInfo | undefined
-  acceptEvent: EventData
+  acceptanceContext: CommunityRewardsGrantAcceptanceContext | undefined
 
   constructor(
     tokenId: string,
     claimable: BigNumber,
     rewards: CommunityRewardsVestingRewards,
-    grantInfo: MerkleDistributorGrantInfo | undefined,
-    acceptEvent: EventData
+    acceptanceContext: CommunityRewardsGrantAcceptanceContext | undefined
   ) {
     this.tokenId = tokenId
     this.rewards = rewards
     this.claimable = claimable
-    this.grantInfo = grantInfo
-    this.acceptEvent = acceptEvent
+    this.acceptanceContext = acceptanceContext
   }
 
   get displayReason(): string {
-    return this.grantInfo ? MerkleDistributor.getDisplayReason(this.grantInfo.reason) : "in Community Rewards"
+    return this.acceptanceContext
+      ? MerkleDistributor.getDisplayReason(this.acceptanceContext.grantInfo.reason)
+      : "in Community Rewards"
   }
 
   get title(): string {
-    return this.grantInfo ? MerkleDistributor.getDisplayTitle(this.grantInfo.reason) : "Community Rewards"
+    return this.acceptanceContext
+      ? MerkleDistributor.getDisplayTitle(this.acceptanceContext.grantInfo.reason)
+      : "Community Rewards"
   }
 
   get description(): string {

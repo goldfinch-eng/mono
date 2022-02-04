@@ -22,9 +22,9 @@ After that run
 ```shell
 $ cd ../../.. && node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateMerkleRoot.ts \
     -i blockchain_scripts/airdrop/2022-01-24-backers/grants.vesting.json \
-     > blockchain_scripts/merkle/merkleDistributor/2022-01-24-backers-airdrop-merkleDistributorInfo.json
+     > blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.json
 
 $ node --require hardhat/register ./blockchain_scripts/merkle/merkleDirectDistributor/generateMerkleRoot.ts \
     -i blockchain_scripts/airdrop/2022-01-24-backers/grants.no_vesting.json \
-    > blockchain_scripts/merkle/merkleDirectDistributor/2022-01-24-backers-airdrop-merkleDirectDistributorInfo.json
+    > blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.json
 ```

@@ -1,0 +1,53 @@
+
+.senior-pool-overview {
+  .pool-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.senior-pool-overview-links {
+  font-size: $sans-size-xs;
+  padding: 6px 9px;
+  border-radius: 4px;
+
+  span {
+    margin-right: 4px;
+  }
+  
+  a {
+    color: $purp-dark;
+    display: flex;
+    align-items: center;
+  }
+  
+  svg {
+    height: 15px;
+    width: 15px;
+  }
+
+  &:hover {
+    background-color: $sand;
+  }
+}
+
+.senior-pool-overview-description {
+  font-size: $sans-size-xs;
+  line-height: normal;
+
+  .highlights {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .highlights-list li {
+    display: flex;
+    margin-top: 4px;
+  }
+
+  .list-dot {
+    margin: 0 6px;  
+  }
+}
