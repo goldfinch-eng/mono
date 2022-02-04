@@ -5,6 +5,8 @@ import {mock, resetMocks} from "depay-web3-mock"
 import {MemoryRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {AppContext, LeavesCurrentBlock} from "../../App"
+import {BackerMerkleDirectDistributorLoaded} from "../../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "../../ethereum/backerMerkleDistributor"
 import {CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {COINBASE_API_GFI_PRICE_URL, COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
@@ -13,6 +15,8 @@ import {MerkleDistributorLoaded} from "../../ethereum/merkleDistributor"
 import {NetworkMonitor} from "../../ethereum/networkMonitor"
 import {PoolData, SeniorPool, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {
+  UserBackerMerkleDirectDistributorLoaded,
+  UserBackerMerkleDistributorLoaded,
   UserCommunityRewardsLoaded,
   UserLoaded,
   UserMerkleDirectDistributorLoaded,
@@ -76,10 +80,14 @@ function renderRewards(
     gfi: GFILoaded | undefined
     user: UserLoaded | undefined
     merkleDistributor: MerkleDistributorLoaded | undefined
+    backerMerkleDistributor: BackerMerkleDistributorLoaded | undefined
     merkleDirectDistributor: MerkleDirectDistributorLoaded | undefined
+    backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded | undefined
     communityRewards: CommunityRewardsLoaded | undefined
     userMerkleDistributor: UserMerkleDistributorLoaded | undefined
     userMerkleDirectDistributor: UserMerkleDirectDistributorLoaded | undefined
+    userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded | undefined
+    userBackerMerkleDirectDistributor: UserBackerMerkleDirectDistributorLoaded | undefined
     userCommunityRewards: UserCommunityRewardsLoaded | undefined
   },
   currentBlock: BlockInfo,
@@ -140,6 +148,21 @@ describe("Rewards portfolio overview", () => {
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   const currentBlock = defaultCurrentBlock
+  const emptyDeps = {
+    stakingRewards: undefined,
+    gfi: undefined,
+    user: undefined,
+    backerMerkleDistributor: undefined,
+    merkleDistributor: undefined,
+    backerMerkleDirectDistributor: undefined,
+    merkleDirectDistributor: undefined,
+    communityRewards: undefined,
+    userMerkleDistributor: undefined,
+    userMerkleDirectDistributor: undefined,
+    userBackerMerkleDistributor: undefined,
+    userBackerMerkleDirectDistributor: undefined,
+    userCommunityRewards: undefined,
+  }
 
   beforeEach(resetMocks)
   beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
@@ -165,20 +188,7 @@ describe("Rewards portfolio overview", () => {
 
   describe("loading state", () => {
     it("shows loading message when all requirements are empty", async () => {
-      renderRewards(
-        {
-          stakingRewards: undefined,
-          gfi: undefined,
-          user: undefined,
-          merkleDistributor: undefined,
-          merkleDirectDistributor: undefined,
-          communityRewards: undefined,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
-        },
-        currentBlock
-      )
+      renderRewards({...emptyDeps}, currentBlock)
       expect(await screen.findByText("Loading...")).toBeVisible()
     })
 
@@ -186,15 +196,8 @@ describe("Rewards portfolio overview", () => {
       const {stakingRewards} = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards,
-          gfi: undefined,
-          user: undefined,
-          merkleDistributor: undefined,
-          merkleDirectDistributor: undefined,
-          communityRewards: undefined,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -204,15 +207,9 @@ describe("Rewards portfolio overview", () => {
       const {stakingRewards, gfi} = await prepareBaseDeps(goldfinchProtocol, currentBlock)
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards,
           gfi,
-          user: undefined,
-          merkleDistributor: undefined,
-          merkleDirectDistributor: undefined,
-          communityRewards: undefined,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -223,15 +220,10 @@ describe("Rewards portfolio overview", () => {
       const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
-          merkleDistributor: undefined,
-          merkleDirectDistributor: undefined,
-          communityRewards: undefined,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -242,15 +234,11 @@ describe("Rewards portfolio overview", () => {
       const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
           merkleDistributor: baseDeps.merkleDistributor,
-          merkleDirectDistributor: undefined,
-          communityRewards: undefined,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -261,15 +249,12 @@ describe("Rewards portfolio overview", () => {
       const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
           merkleDistributor: baseDeps.merkleDistributor,
           merkleDirectDistributor: baseDeps.merkleDirectDistributor,
-          communityRewards: undefined,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -280,15 +265,13 @@ describe("Rewards portfolio overview", () => {
       const {user} = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
           merkleDistributor: baseDeps.merkleDistributor,
           merkleDirectDistributor: baseDeps.merkleDirectDistributor,
           communityRewards: baseDeps.communityRewards,
-          userMerkleDistributor: undefined,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -302,6 +285,7 @@ describe("Rewards portfolio overview", () => {
       )
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
@@ -309,8 +293,6 @@ describe("Rewards portfolio overview", () => {
           merkleDirectDistributor: baseDeps.merkleDirectDistributor,
           communityRewards: baseDeps.communityRewards,
           userMerkleDistributor,
-          userMerkleDirectDistributor: undefined,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -324,6 +306,7 @@ describe("Rewards portfolio overview", () => {
       )
       renderRewards(
         {
+          ...emptyDeps,
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
@@ -332,7 +315,6 @@ describe("Rewards portfolio overview", () => {
           communityRewards: baseDeps.communityRewards,
           userMerkleDistributor,
           userMerkleDirectDistributor,
-          userCommunityRewards: undefined,
         },
         currentBlock
       )
@@ -341,18 +323,28 @@ describe("Rewards portfolio overview", () => {
 
     it("doesn't show loading message when all requirements are loaded", async () => {
       const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
-      const {user, userMerkleDistributor, userMerkleDirectDistributor, userCommunityRewards} =
-        await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
+      const {
+        user,
+        userMerkleDistributor,
+        userMerkleDirectDistributor,
+        userCommunityRewards,
+        userBackerMerkleDistributor,
+        userBackerMerkleDirectDistributor,
+      } = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
       renderRewards(
         {
           stakingRewards: baseDeps.stakingRewards,
           gfi: baseDeps.gfi,
           user,
+          backerMerkleDistributor: baseDeps.backerMerkleDistributor,
+          backerMerkleDirectDistributor: baseDeps.backerMerkleDirectDistributor,
           merkleDistributor: baseDeps.merkleDistributor,
           merkleDirectDistributor: baseDeps.merkleDirectDistributor,
           communityRewards: baseDeps.communityRewards,
           userMerkleDistributor,
           userMerkleDirectDistributor,
+          userBackerMerkleDistributor,
+          userBackerMerkleDirectDistributor,
           userCommunityRewards,
         },
         currentBlock

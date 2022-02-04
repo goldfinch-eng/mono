@@ -16,11 +16,11 @@ import BN from "bn.js"
 
 export const merkleDistributorInfoPath = path.join(
   __dirname,
-  "../../merkle/merkleDistributor/2022-01-24-backers-airdrop-merkleDistributorInfo.json"
+  "../../merkle/backerMerkleDistributor/merkleDistributorInfo.json"
 )
 export const merkleDirectDistributorInfoPath = path.join(
   __dirname,
-  "../../merkle/merkleDirectDistributor/2022-01-24-backers-airdrop-merkleDirectDistributorInfo.json"
+  "../../merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.json"
 )
 
 export const grantAddress1 = "0x379ED372c94CAe8B77dceb9987D7D6A04A31685D"

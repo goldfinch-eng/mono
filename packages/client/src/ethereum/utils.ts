@@ -132,12 +132,59 @@ async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistri
     })
 }
 
+async function getBackerMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
+  let fileNameSuffix = ""
+  if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
+    fileNameSuffix = ".dev"
+  }
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
 async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
   const fileNameSuffix =
     process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
 
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDirectDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDirectDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle direct distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
+async function getBackerMerkleDirectDistributorInfo(
+  networkId: string
+): Promise<MerkleDirectDistributorInfo | undefined> {
+  let fileNameSuffix = ""
+  if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
+    fileNameSuffix = ".dev"
+  }
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
   )
     .then((result: unknown): MerkleDirectDistributorInfo => {
       const plain = _.toPlainObject(result)
@@ -271,7 +318,9 @@ const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 export {
   getDeployments,
   getMerkleDistributorInfo,
+  getBackerMerkleDistributorInfo,
   getMerkleDirectDistributorInfo,
+  getBackerMerkleDirectDistributorInfo,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,

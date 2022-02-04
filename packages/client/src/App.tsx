@@ -29,6 +29,10 @@ import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from
 import {CurrentTx, TxType} from "./types/transactions"
 import {
   getUserData,
+  UserBackerMerkleDirectDistributor,
+  UserBackerMerkleDirectDistributorLoaded,
+  UserBackerMerkleDistributor,
+  UserBackerMerkleDistributorLoaded,
   UserCommunityRewards,
   UserCommunityRewardsLoaded,
   UserLoaded,
@@ -68,6 +72,11 @@ import {
 } from "./types/routes"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
+import {
+  BackerMerkleDirectDistributorLoaded,
+  BackerMerkleDirectDistributor,
+} from "./ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded, BackerMerkleDistributor} from "./ethereum/backerMerkleDistributor"
 
 interface GeolocationData {
   ip: string
@@ -139,9 +148,13 @@ export interface GlobalState {
   communityRewards?: CommunityRewardsLoaded
   merkleDistributor?: MerkleDistributorLoaded
   merkleDirectDistributor?: MerkleDirectDistributorLoaded
+  backerMerkleDistributor?: BackerMerkleDistributorLoaded
+  backerMerkleDirectDistributor?: BackerMerkleDirectDistributorLoaded
   userMerkleDistributor?: UserMerkleDistributorLoaded
   userMerkleDirectDistributor?: UserMerkleDirectDistributorLoaded
   userCommunityRewards?: UserCommunityRewardsLoaded
+  userBackerMerkleDirectDistributor?: UserBackerMerkleDirectDistributorLoaded
+  userBackerMerkleDistributor?: UserBackerMerkleDistributorLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: Web3IO<CreditDesk>
   user?: UserLoaded
@@ -177,10 +190,16 @@ function App() {
   const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
   const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
   const [_merkleDirectDistributor, setMerkleDirectDistributor] = useState<MerkleDirectDistributorLoaded>()
+  const [_backerMerkleDistributor, setBackerMerkleDistributor] = useState<BackerMerkleDistributorLoaded>()
+  const [_backerMerkleDirectDistributor, setBackerMerkleDirectDistributor] =
+    useState<BackerMerkleDirectDistributorLoaded>()
   const [pool, setPool] = useState<SeniorPoolLoaded>()
   const [creditDesk, setCreditDesk] = useState<Web3IO<CreditDesk>>()
   const [userMerkleDistributor, setUserMerkleDistributor] = useState<UserMerkleDistributorLoaded>()
   const [userMerkleDirectDistributor, setUserMerkleDirectDistributor] = useState<UserMerkleDirectDistributorLoaded>()
+  const [userBackerMerkleDistributor, setUserBackerMerkleDistributor] = useState<UserBackerMerkleDistributorLoaded>()
+  const [userBackerMerkleDirectDistributor, setUserBackerMerkleDirectDistributor] =
+    useState<UserBackerMerkleDirectDistributorLoaded>()
   const [userCommunityRewards, setUserCommunityRewards] = useState<UserCommunityRewardsLoaded>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
@@ -236,16 +255,21 @@ function App() {
     _stakingRewards,
     _communityRewards,
     _merkleDistributor,
-    _merkleDirectDistributor
+    _merkleDirectDistributor,
+    _backerMerkleDistributor,
+    _backerMerkleDirectDistributor
   )
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
   const communityRewards = consistent?.[2]
   const merkleDistributor = consistent?.[3]
   const merkleDirectDistributor = consistent?.[4]
+  const backerMerkleDistributor = consistent?.[5]
+  const backerMerkleDirectDistributor = consistent?.[6]
 
   // To ensure `gfi`, `stakingRewards`, `communityRewards`, `merkleDistributor`,
-  // `merkleDirectDistributor`, and `pool` are from the same block, we'd use `useFromSameBlock()`
+  // `merkleDirectDistributor`, `backerMerkleDistributor`, `backerMerkleDirectDistributor`
+  // and `pool` are from the same block, we'd use `useFromSameBlock()`
   // again here. But holding off on that due to the decision to abandon
   // https://github.com/warbler-labs/mono/pull/140.
 
@@ -287,6 +311,8 @@ function App() {
       communityRewards &&
       merkleDistributor &&
       merkleDirectDistributor &&
+      backerMerkleDistributor &&
+      backerMerkleDirectDistributor &&
       userWalletWeb3Status &&
       userWalletWeb3Status.type === "connected" &&
       currentBlock
@@ -294,7 +320,15 @@ function App() {
       refreshUserMerkleAndCommunityRewardsInfo(userWalletWeb3Status.address, overrideAddress)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [communityRewards, merkleDistributor, merkleDirectDistributor, userWalletWeb3Status?.address, overrideAddress])
+  }, [
+    communityRewards,
+    merkleDistributor,
+    merkleDirectDistributor,
+    backerMerkleDistributor,
+    backerMerkleDirectDistributor,
+    userWalletWeb3Status?.address,
+    overrideAddress,
+  ])
 
   useEffect(() => {
     if (
@@ -307,6 +341,8 @@ function App() {
       communityRewards &&
       merkleDistributor &&
       merkleDirectDistributor &&
+      backerMerkleDistributor &&
+      backerMerkleDirectDistributor &&
       userWalletWeb3Status &&
       userWalletWeb3Status.type === "connected" &&
       currentBlock
@@ -370,6 +406,8 @@ function App() {
     const communityRewards = new CommunityRewards(goldfinchProtocol)
     const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
     const merkleDirectDistributor = new MerkleDirectDistributor(goldfinchProtocol)
+    const backerMerkleDistributor = new BackerMerkleDistributor(goldfinchProtocol)
+    const backerMerkleDirectDistributor = new BackerMerkleDirectDistributor(goldfinchProtocol)
 
     await Promise.all([
       gfi.initialize(currentBlock),
@@ -377,6 +415,8 @@ function App() {
       communityRewards.initialize(currentBlock),
       merkleDistributor.initialize(currentBlock),
       merkleDirectDistributor.initialize(currentBlock),
+      backerMerkleDistributor.initialize(currentBlock),
+      backerMerkleDirectDistributor.initialize(currentBlock),
     ])
 
     assertWithLoadedInfo(gfi)
@@ -384,12 +424,16 @@ function App() {
     assertWithLoadedInfo(communityRewards)
     assertWithLoadedInfo(merkleDistributor)
     assertWithLoadedInfo(merkleDirectDistributor)
+    assertWithLoadedInfo(backerMerkleDistributor)
+    assertWithLoadedInfo(backerMerkleDirectDistributor)
 
     setGfi(gfi)
     setStakingRewards(stakingRewards)
     setCommunityRewards(communityRewards)
     setMerkleDistributor(merkleDistributor)
     setMerkleDirectDistributor(merkleDirectDistributor)
+    setBackerMerkleDistributor(backerMerkleDistributor)
+    setBackerMerkleDirectDistributor(backerMerkleDirectDistributor)
   }
 
   async function refreshPool(): Promise<void> {
@@ -414,25 +458,42 @@ function App() {
     assertNonNullable(communityRewards)
     assertNonNullable(merkleDistributor)
     assertNonNullable(merkleDirectDistributor)
+    assertNonNullable(backerMerkleDistributor)
+    assertNonNullable(backerMerkleDirectDistributor)
 
     const address = overrideAddress || userAddress
 
     const userMerkleDistributor = new UserMerkleDistributor(address, goldfinchProtocol)
     const userMerkleDirectDistributor = new UserMerkleDirectDistributor(address, goldfinchProtocol)
+    const userBackerMerkleDistributor = new UserBackerMerkleDistributor(address, goldfinchProtocol)
+    const userBackerMerkleDirectDistributor = new UserBackerMerkleDirectDistributor(address, goldfinchProtocol)
     await Promise.all([
       userMerkleDistributor.initialize(merkleDistributor, communityRewards, currentBlock),
       userMerkleDirectDistributor.initialize(merkleDirectDistributor, currentBlock),
+      userBackerMerkleDistributor.initialize(backerMerkleDistributor, communityRewards, currentBlock),
+      userBackerMerkleDirectDistributor.initialize(backerMerkleDirectDistributor, currentBlock),
     ])
     assertWithLoadedInfo(userMerkleDistributor)
     assertWithLoadedInfo(userMerkleDirectDistributor)
+    assertWithLoadedInfo(userBackerMerkleDistributor)
+    assertWithLoadedInfo(userBackerMerkleDirectDistributor)
 
     const userCommunityRewards = new UserCommunityRewards(address, goldfinchProtocol)
-    await userCommunityRewards.initialize(communityRewards, merkleDistributor, userMerkleDistributor, currentBlock)
+    await userCommunityRewards.initialize(
+      communityRewards,
+      merkleDistributor,
+      backerMerkleDistributor,
+      userMerkleDistributor,
+      userBackerMerkleDistributor,
+      currentBlock
+    )
     assertWithLoadedInfo(userCommunityRewards)
 
     setUserMerkleDistributor(userMerkleDistributor)
     setUserMerkleDirectDistributor(userMerkleDirectDistributor)
     setUserCommunityRewards(userCommunityRewards)
+    setUserBackerMerkleDistributor(userBackerMerkleDistributor)
+    setUserBackerMerkleDirectDistributor(userBackerMerkleDirectDistributor)
   }
 
   async function refreshUserData(userAddress: string, overrideAddress: string | undefined): Promise<void> {
@@ -523,12 +584,16 @@ function App() {
     communityRewards,
     merkleDistributor,
     merkleDirectDistributor,
+    backerMerkleDistributor,
+    backerMerkleDirectDistributor,
     pool,
     creditDesk,
     user,
     userMerkleDistributor,
     userMerkleDirectDistributor,
     userCommunityRewards,
+    userBackerMerkleDirectDistributor,
+    userBackerMerkleDistributor,
     usdc,
     goldfinchConfig,
     network,

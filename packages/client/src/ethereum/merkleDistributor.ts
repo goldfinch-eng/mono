@@ -10,7 +10,7 @@ import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 
-type MerkleDistributorLoadedInfo = {
+export type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
 }
 
