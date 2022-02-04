@@ -40,7 +40,7 @@ export default function TranchedPoolCard({poolBacker, disabled}: {poolBacker: Po
       <div className={`table-cell col22 numeric apy ${disabledClass}`}>
         <div className="usdc-apy">{displayPercent(estimatedApy)} USDC</div>
         <div className="gfi-apy">
-          {displayPercent(estimatedApyFromGfi)} with GFI
+          {estimatedApyFromGfi === undefined ? "0%" : displayPercent(estimatedApyFromGfi)} with GFI
           <span data-tip="" data-for="" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
             <InfoIcon />
           </span>
