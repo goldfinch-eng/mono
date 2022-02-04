@@ -25,6 +25,7 @@ import {
   defaultStakingRewardsVestingLength,
   mockBackerMerkleDistributorContractCalls,
   mockBackerMerkleDirectDistributorContractCalls,
+  MerkleDistributorConfigMock,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
@@ -301,8 +302,14 @@ export async function setupMerkleDistributorAirdropNoVesting(
   return {...baseDeps, ...userRelatedDeps}
 }
 
-function getMerkleConfig(config: {distributor: boolean; backerDistributor: boolean}, vesting = false) {
-  let merkleConfig = {}
+function getMerkleConfig(
+  config: {distributor: boolean; backerDistributor: boolean},
+  vesting = false
+): MerkleDistributorConfigMock {
+  let merkleConfig: MerkleDistributorConfigMock = {
+    distributor: undefined,
+    backerDistributor: undefined,
+  }
   if (config.distributor) {
     const airdrop = vesting ? merkleDistributorAirdropVesting : merkleDistributorAirdropNoVesting
     merkleConfig["distributor"] = {airdrop, isAccepted: false}
