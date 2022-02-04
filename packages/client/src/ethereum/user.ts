@@ -441,7 +441,7 @@ export class UserCommunityRewards {
     }
   }
 
-  private async getAcceptedEventsForMerkleDistributorScenarios(
+  async getAcceptedEventsForMerkleDistributorScenarios(
     merkleDistributor: MerkleDistributorLoaded,
     backerMerkleDistributor: BackerMerkleDistributorLoaded,
     tokenId: string,
