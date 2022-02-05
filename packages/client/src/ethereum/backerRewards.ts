@@ -18,6 +18,7 @@ import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, sameBlock} from "../utils"
 import {GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {SeniorPoolLoaded} from "./pool"
 import {PoolState, TranchedPool} from "./tranchedPool"
 import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
@@ -294,12 +295,11 @@ export class BackerRewards {
     return zipObject(tranchedPoolAddresses, actualPerPrincipalDollar)
   }
 
-  private async estimateRewardsByTranchedPool(
-    tranchedPools: TranchedPool[],
+  private async estimateBackersOnlyRewardsByTranchedPool(
+    rewardable: TranchedPool[],
     gfiSupply: BigNumber,
     currentBlock: BlockInfo
   ): Promise<EstimatedRewardsByTranchedPool> {
-    const rewardable = this.filterRewardableTranchedPools(tranchedPools)
     const estimatedRewardsFromScheduledRepayments = await this.estimateRewardsFromScheduledRepayments(
       rewardable,
       gfiSupply,
@@ -313,7 +313,7 @@ export class BackerRewards {
     return estimatedRewards
   }
 
-  private estimateApyFromAnnualizedRewards(
+  private estimateApyFromAnnualizedBackersOnlyRewards(
     annualizedRewardsPerPrincipalDollar: BigNumber,
     gfiPrice: BigNumber | undefined
   ): BigNumber | undefined {
@@ -321,34 +321,94 @@ export class BackerRewards {
   }
 
   /**
-   * Estimates the APY-from-GFI from backing a tranched pool, for the GFI that is available uniquely / only
+   * Estimates the APY-from-GFI from backing a tranched pool, for the GFI that is available natively / only
    * to backers. That is, this estimation does NOT include the portion of total APY-from-GFI for backers
    * that consists of matching the APY-from-GFI of investing in the Senior Pool.
+   *
+   * NOTE: This estimate is pool-wide; it is not done *specific to any pool tokens that are already held by
+   * the user*. Therefore it represents the APY-from-GFI for an "average dollar" in the pool. This is worth
+   * keeping in mind, because any given user's dollars in the pool may not be "average dollars"; the user
+   * might, for example, have participated in only some slices but not others. More specifically, because
+   * the backers-only rewards function is monotonically decreasing (all other things being equal, i.e.
+   * holding constant the max interest dollars eligible and the percent of GFI available for rewards), the
+   * user is sure to earn less than this pool-wide APY-from-GFI if they did not participate in all slices.
    */
-  async estimateBackersOnlyApyFromGfiByTranchedPool(
-    tranchedPools: TranchedPool[],
+  private async estimateBackersOnlyApyFromGfiByTranchedPool(
+    rewardable: TranchedPool[],
     gfi: GFILoaded
   ): Promise<{[tranchedPoolAddress: string]: BigNumber | undefined}> {
+    // NOTE: This calculation of total rewards is pool-wide; it is not done *specific to the user's
+    // particular pool tokens*. Therefore the
+    const estimatedBackersOnlyRewards = await this.estimateBackersOnlyRewardsByTranchedPool(
+      rewardable,
+      gfi.info.value.supply,
+      gfi.info.value.currentBlock
+    )
+    return mapValues(estimatedBackersOnlyRewards, (rewards) =>
+      this.estimateApyFromAnnualizedBackersOnlyRewards(rewards.value.annualizedPerPrincipalDollar, gfi.info.value.price)
+    )
+  }
+
+  /**
+   * Estimates the APY-from-GFI from backing a tranched pool, for the GFI that is earned from BackerRewards's behavior
+   * that "matches" the APY-from-GFI (i.e. via StakingRewards) of investing in the senior pool.
+   */
+  private async estimateSeniorPoolMatchingApyFromGfi(
+    rewardable: TranchedPool[],
+    seniorPool: SeniorPoolLoaded
+  ): Promise<{[tranchedPoolAddress: string]: BigNumber | undefined}> {
+    return zipObject(
+      rewardable.map((tranchedPool) => tranchedPool.address),
+      // TODO Once BackerRewards's senior-pool-matching behavior has been implemented, we MUST refine this estimate.
+      // At any given time in the life of a tranched pool, the estimated senior-pool-matching APY-from-GFI will consist
+      // of two parts: (i) the GFI actually earned on time already elapsed, plus (ii) an optimistic projection of the GFI
+      // that will be earned over the remaining term of the loan. Conceivably we could calculate (i) and (ii) by summing
+      // over the user's pool tokens, if they have any pool tokens; or else reverting to the pool-wide average if the
+      // user has no pool tokens. But for consistency with the backers-only APY-from-GFI, we should probably only do the
+      // latter, that is, compute it as a pool-wide average. This approach would have the same corollary as in the
+      // backers-only case: if the user has not participated in all slices of the pool, they would necessarily not earn
+      // this full APY-from-GFI rate. Also, note a couple nuances about the calculation: (1) in (i), there is a part that must be calculated for the partial
+      // payment period duration between the last payment time and the current time (i.e. we'll need to query for
+      // the current value of the staking rewards accumulator); (2) the calculation must "cut off" at the term end time,
+      // in both the case where the term end time belongs to (i) or the case where the term end time belongs to (ii).
+      rewardable.map((tranchedPool) => seniorPool.info.value.poolData.estimatedApyFromGfi)
+    )
+  }
+
+  async estimateApyFromGfiByTranchedPool(
+    tranchedPools: TranchedPool[],
+    seniorPool: SeniorPoolLoaded,
+    gfi: GFILoaded
+  ): Promise<{
+    [tranchedPoolAddress: string]: {
+      backersOnly: BigNumber | undefined
+      seniorPoolMatching: BigNumber | undefined
+    }
+  }> {
+    if (!sameBlock(seniorPool.info.value.currentBlock, this.info.value?.currentBlock)) {
+      throw new Error("Senior pool `currentBlock` is not consistent with BackerRewards' current block.")
+    }
     if (!sameBlock(gfi.info.value.currentBlock, this.info.value?.currentBlock)) {
       throw new Error("GFI `currentBlock` is not consistent with BackerRewards' current block.")
     }
 
     const tranchedPoolAddresses = tranchedPools.map((tranchedPool) => tranchedPool.address)
-    const noEstimate = tranchedPools.map(() => undefined)
+    const noEstimate = tranchedPools.map(() => ({
+      backersOnly: undefined,
+      seniorPoolMatching: undefined,
+    }))
     const defaultEstimatedApyFromGfi = zipObject(tranchedPoolAddresses, noEstimate)
 
-    const estimatedRewards = await this.estimateRewardsByTranchedPool(
-      tranchedPools,
-      gfi.info.value.supply,
-      gfi.info.value.currentBlock
-    )
-    const estimatedApyFromGfi = mapValues(estimatedRewards, (rewards) =>
-      this.estimateApyFromAnnualizedRewards(rewards.value.annualizedPerPrincipalDollar, gfi.info.value.price)
-    )
+    const rewardableTranchedPools = this.filterRewardableTranchedPools(tranchedPools)
 
-    return {
-      ...defaultEstimatedApyFromGfi,
-      ...estimatedApyFromGfi,
-    }
+    const [estimatedBackersOnlyApyFromGfi, estimatedSeniorPoolMatchingApyFromGfi] = await Promise.all([
+      this.estimateBackersOnlyApyFromGfiByTranchedPool(rewardableTranchedPools, gfi),
+      this.estimateSeniorPoolMatchingApyFromGfi(rewardableTranchedPools, seniorPool),
+    ])
+
+    return mapValues(defaultEstimatedApyFromGfi, (_, tranchedPoolAddress) => ({
+      backersOnly: estimatedBackersOnlyApyFromGfi[tranchedPoolAddress],
+      seniorPoolMatching: estimatedSeniorPoolMatchingApyFromGfi[tranchedPoolAddress],
+    }))
   }
 }

@@ -8,10 +8,12 @@ import Badge from "../badge"
 export default function TranchedPoolCard({
   poolBacker,
   poolEstimatedBackersOnlyApyFromGfi,
+  poolEstimatedSeniorPoolMatchingApyFromGfi,
   disabled,
 }: {
   poolBacker: TranchedPoolBacker
   poolEstimatedBackersOnlyApyFromGfi: BigNumber | undefined
+  poolEstimatedSeniorPoolMatchingApyFromGfi: BigNumber | undefined
   disabled: boolean
 }) {
   const history = useHistory()
@@ -21,8 +23,10 @@ export default function TranchedPoolCard({
 
   const estimatedApyFromSupplying = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : undefined
   const estimatedApy =
-    estimatedApyFromSupplying || poolEstimatedBackersOnlyApyFromGfi
-      ? (estimatedApyFromSupplying || new BigNumber(0)).plus(poolEstimatedBackersOnlyApyFromGfi || new BigNumber(0))
+    estimatedApyFromSupplying || poolEstimatedBackersOnlyApyFromGfi || poolEstimatedSeniorPoolMatchingApyFromGfi
+      ? (estimatedApyFromSupplying || new BigNumber(0))
+          .plus(poolEstimatedBackersOnlyApyFromGfi || new BigNumber(0))
+          .plus(poolEstimatedSeniorPoolMatchingApyFromGfi || new BigNumber(0))
       : new BigNumber(NaN)
 
   const disabledClass = disabled ? "disabled" : ""

@@ -7,18 +7,18 @@ import {Loaded} from "../../types/loadable"
 import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent, roundDownPenny} from "../../utils"
 import AnnualGrowthTooltipContent from "../AnnualGrowthTooltipContent"
-import {TranchedPoolsEstimatedBackersOnlyApyFromGfi} from "./types"
+import {TranchedPoolsEstimatedApyFromGfi} from "./types"
 
 export default function PortfolioOverview({
   seniorPoolData,
   capitalProvider,
   tranchedPoolBackers,
-  tranchedPoolsEstimatedBackersOnlyApyFromGfi,
+  tranchedPoolsEstimatedApyFromGfi,
 }: {
   seniorPoolData: SeniorPoolData
   capitalProvider: Loaded<CapitalProvider>
   tranchedPoolBackers: Loaded<TranchedPoolBacker[]>
-  tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedBackersOnlyApyFromGfi>
+  tranchedPoolsEstimatedApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi>
 }) {
   const seniorPoolBalance = capitalProvider.value.totalSeniorPoolBalanceInDollars
   const estimatedAnnualGrowthFromSupplyingToSeniorPool = seniorPoolBalance.multipliedBy(seniorPoolData.estimatedApy)
@@ -42,35 +42,82 @@ export default function PortfolioOverview({
     )
 
     const tranchedPoolEstimatedApyFromGfi =
-      tranchedPoolsEstimatedBackersOnlyApyFromGfi.value.estimatedBackersOnlyApyFromGfi[p.tranchedPool.address]
+      tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[p.tranchedPool.address]
     if (tranchedPoolEstimatedApyFromGfi) {
-      // How much of the principal the user has supplied has earned / is earning GFI rewards at the
-      // `tranchedPoolEstimatedApyFromGfi` rate? The definition of this principal amount needs to
-      // correspond to / be consistent with how we defined the total amount of (junior) principal
-      // dollars in the tranched pool that are earning GFI. The answer is: iterate over the
-      // user's pool tokens for a tranched pool, summing (a) if the token corresponds to a closed slice,
-      // the token's principal amount minus its redeemed amount minus its redeemable amount; or
-      // (b) if the token corresponds to an open slice, the token's principal amount minus its
-      // redeemed amount -- but not minus its redeemable amount, because we're assuming the user
-      // won't withdraw that withdrawable amount, as that assumption corresponds to our assumption
-      // that the pool as a whole fills up.
+      const {backersOnly, seniorPoolMatching} = tranchedPoolEstimatedApyFromGfi
+
       // HACK: For now, because no tranched pools yet exist that have more than one slice, we
       // can get away with using (i.e. it remains correct to use) `p`'s sums across all pool tokens.
       // TODO: Once tranched pools exist having more than one slice, we MUST refactor this
       // to distinguish, when we sum, between pool tokens belonging to slices that are closed vs.
       // pool tokens belonging to slices that are open.
-
       const _balanceAtomicEarningGfi =
         p.tranchedPool.poolState < PoolState.SeniorLocked
           ? p.principalAmount.minus(p.principalRedeemed)
           : p.principalAtRisk
       const _balanceInDollarsEarningGfi = new BigNumber(usdcFromAtomic(_balanceAtomicEarningGfi))
 
-      tranchedPoolsBalanceEarningGfi = tranchedPoolsBalanceEarningGfi.plus(_balanceInDollarsEarningGfi)
+      let balanceInDollarsEarningBackersOnlyGfi = new BigNumber(0)
+      if (backersOnly) {
+        // How much of the principal the user has supplied has earned / is earning GFI rewards at the
+        // `backersOnly` rate? The definition of this principal amount needs to
+        // correspond to / be consistent with how we defined the total amount of (junior) principal
+        // dollars in the tranched pool that are earning GFI. The answer is: iterate over the
+        // user's pool tokens for a tranched pool, summing (a) if the token corresponds to a closed slice,
+        // the token's "at-risk" principal amount (i.e. initial principal minus redeemed amount minus
+        // redeemable amount), because this amount corresponds to the size of the claim the token has on
+        // repaid interest (which is what these `backersOnly` rewards are earned on); or (b) if the token
+        // corresponds to an open slice, the token's principal amount minus its redeemed amount -- but
+        // not minus its redeemable amount, because we're assuming the user won't withdraw that withdrawable
+        // amount, as that assumption corresponds to our assumption that the pool as a whole fills up.
+        // TODO[PR] We should explain in the docs that this `backersOnly` rate is a pool-wide average,
+        // and therefore the user won't earn this much if they haven't participated in all slices in the pool.
+        balanceInDollarsEarningBackersOnlyGfi = _balanceInDollarsEarningGfi
+      }
+
+      let balanceInDollarsEarningSeniorPoolMatchingGfi = new BigNumber(0)
+      if (seniorPoolMatching) {
+        // How much of the principal the user has supplied has earned / is earning GFI rewards at the
+        // `seniorPoolMatching` rate? The user will actually earn senior-pool-matching GFI over the
+        // duration of time that we define as it being "virtually staked": after the loan principal
+        // has been drawndown, and until the term end time of the loan. For simplicity of implementation,
+        // and intuitiveness of the UX (i.e. we want the user's seeing this APY reflected in their portfolio
+        // overview to correspond to their knowledge of whether they have a balance in the pool; rather than
+        // also whether the pool has yet been drawndown, or has passed its term end time), we will not
+        // adjust this figure for whether we're before the first drawdown or after the term end time.
+        // Therefore the relevant principal amount is the same amount as that earning the `backersOnly`
+        // rate: it is the sum across the user's pool tokens of: (a) if the token corresponds to a closed
+        // slice, the token's "at-risk" principal amount (because this amount represents the opportunity
+        // cost of investing in the tranched pool, instead of in the senior pool, where it could have earned
+        // the senior pool's APY-from-GFI from staking); or (b) if the token corresponds to an open slice,
+        // the token's principal amount minus its redeemed amount, as we want to assume that the user won't
+        // withdraw their redeemable (i.e. withdrawable) amount and instead will earn GFI rewards on that
+        // amount.
+        // TODO[PR] We should explain in the docs that this `seniorPoolMatching` rate is a pool-wide average,
+        // and therefore the user won't earn this much if they haven't participated in all slices in the pool.
+        // And also explain that they don't start earning this rate until the principal is drawndown, and don't
+        // earn it after the term end time (i.e. even if the loan hasn't been repaid by that time).
+        balanceInDollarsEarningSeniorPoolMatchingGfi = _balanceInDollarsEarningGfi
+      }
+
+      // The overall APY-from-GFI for the tranched pool is the sum of the backers-only portion
+      // and the senior-pool-matching portion, with each of those portions *weighted by the
+      // respective percentage of the user's total balance in the pool that is earning that
+      // APY*.
+      const estimatedApyFromGfi = (backersOnly || new BigNumber(0))
+        .multipliedBy(balanceInDollarsEarningBackersOnlyGfi)
+        .dividedBy(p.balanceInDollars)
+        .plus(
+          (seniorPoolMatching || new BigNumber(0))
+            .multipliedBy(balanceInDollarsEarningSeniorPoolMatchingGfi)
+            .dividedBy(p.balanceInDollars)
+        )
+
+      tranchedPoolsBalanceEarningGfi = p.balanceInDollars
       tranchedPoolsGfi.push({
         address: p.tranchedPool.address,
-        balanceEarningGfi: _balanceInDollarsEarningGfi,
-        estimatedApyFromGfi: tranchedPoolEstimatedApyFromGfi,
+        balanceEarningGfi: p.balanceInDollars,
+        estimatedApyFromGfi,
       })
     }
   })
@@ -103,8 +150,8 @@ export default function PortfolioOverview({
   // Tranched pools' APY-from-GFI is a two-step calculation. First, we take the average of the
   // APY-from-GFI for each tranched-pool-that-earns-GFI, weighted by how much the user has
   // supplied to those pools that is earning GFI at that rate. That gives us a
-  // weighted average APY-from-GFI for the user's dollars that are earning GFI. But not all
-  // of the user's dollars supplied to tranched pools are earning GFI! Which points to the
+  // weighted average APY-from-GFI for the user's dollars that are earning GFI. But not necessarily
+  // all of the user's dollars supplied to tranched pools are earning GFI! Which points to the
   // need for the second step in the calculation: we adjust the weighted average from the
   // first step, for the percentage of dollars that are earning GFI, out of the user's
   // total dollars supplied to tranched pools.
@@ -112,7 +159,7 @@ export default function PortfolioOverview({
     ? tranchedPoolsGfi.reduce<BigNumber>(
         (acc, curr) =>
           acc.plus(
-            curr.balanceEarningGfi.multipliedBy(curr.estimatedApyFromGfi).dividedBy(tranchedPoolsBalanceEarningGfi)
+            curr.estimatedApyFromGfi.multipliedBy(curr.balanceEarningGfi).dividedBy(tranchedPoolsBalanceEarningGfi)
           ),
         new BigNumber(0)
       )

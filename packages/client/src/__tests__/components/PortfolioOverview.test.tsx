@@ -6,7 +6,7 @@ import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../App"
 import PortfolioOverview from "../../components/Earn/PortfolioOverview"
-import {TranchedPoolsEstimatedBackersOnlyApyFromGfi} from "../../components/Earn/types"
+import {TranchedPoolsEstimatedApyFromGfi} from "../../components/Earn/types"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {
   CapitalProvider,
@@ -38,7 +38,7 @@ function renderPortfolioOverview(
   seniorPoolData: SeniorPoolData,
   capitalProvider: Loaded<CapitalProvider>,
   tranchedPoolBackers: Loaded<TranchedPoolBacker[]>,
-  tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedBackersOnlyApyFromGfi>,
+  tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi>,
   currentBlock: BlockInfo
 ) {
   const store = {currentBlock}
@@ -49,7 +49,7 @@ function renderPortfolioOverview(
           seniorPoolData={seniorPoolData}
           capitalProvider={capitalProvider}
           tranchedPoolBackers={tranchedPoolBackers}
-          tranchedPoolsEstimatedBackersOnlyApyFromGfi={tranchedPoolsEstimatedBackersOnlyApyFromGfi}
+          tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedBackersOnlyApyFromGfi}
         />
       </Router>
     </AppContext.Provider>
@@ -170,11 +170,11 @@ describe("Earn page portfolio overview", () => {
               } as unknown as TranchedPoolBacker,
             ],
           }
-          const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedBackersOnlyApyFromGfi> = {
+          const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
             loaded: true,
             value: {
               currentBlock,
-              estimatedBackersOnlyApyFromGfi: {
+              estimatedApyFromGfi: {
                 [tranchedPool1Address]: singleTranchedPoolEstimatedApyFromGfi,
                 [tranchedPool2Address]: singleTranchedPoolEstimatedApyFromGfi,
                 [tranchedPool3Address]: undefined,
@@ -308,11 +308,11 @@ describe("Earn page portfolio overview", () => {
                 } as TranchedPoolBacker,
               ],
             }
-            const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedBackersOnlyApyFromGfi> = {
+            const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
               loaded: true,
               value: {
                 currentBlock,
-                estimatedBackersOnlyApyFromGfi: {
+                estimatedApyFromGfi: {
                   [tranchedPoolAddress]: undefined,
                 },
               },
@@ -434,11 +434,11 @@ describe("Earn page portfolio overview", () => {
               } as TranchedPoolBacker,
             ],
           }
-          const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedBackersOnlyApyFromGfi> = {
+          const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
             loaded: true,
             value: {
               currentBlock,
-              estimatedBackersOnlyApyFromGfi: {
+              estimatedApyFromGfi: {
                 [tranchedPoolAddress]: new BigNumber(1.25),
               },
             },

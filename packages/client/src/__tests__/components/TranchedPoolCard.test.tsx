@@ -11,7 +11,8 @@ function renderTranchedPoolCard(
   isPaused: boolean,
   remainingCapacity: BigNumber,
   isRepaid: boolean,
-  poolEstimatedBackersOnlyApyFromGfi: BigNumber | undefined
+  poolEstimatedBackersOnlyApyFromGfi: BigNumber | undefined,
+  poolEstimatedSeniorPoolMatchingApyFromGfi: BigNumber | undefined
 ) {
   // Mock tranched pool.
   const tranchedPool = new TranchedPool("0xasdf", {
@@ -42,6 +43,7 @@ function renderTranchedPoolCard(
       <TranchedPoolCard
         poolBacker={poolBacker as unknown as TranchedPoolBacker}
         poolEstimatedBackersOnlyApyFromGfi={poolEstimatedBackersOnlyApyFromGfi}
+        poolEstimatedSeniorPoolMatchingApyFromGfi={poolEstimatedSeniorPoolMatchingApyFromGfi}
         disabled={false}
       />
     </AppContext.Provider>
@@ -53,7 +55,7 @@ describe("Tranched pool card", () => {
     describe("pool is paused", () => {
       describe("remaining capacity is 0", () => {
         it("should show paused badge", async () => {
-          renderTranchedPoolCard(true, new BigNumber(0), false, undefined)
+          renderTranchedPoolCard(true, new BigNumber(0), false, undefined, undefined)
 
           await waitFor(() => {
             expect(screen.getByText("Paused")).toBeInTheDocument()
@@ -62,7 +64,7 @@ describe("Tranched pool card", () => {
       })
       describe("remaining capacity is not 0", () => {
         it("should show paused badge", async () => {
-          renderTranchedPoolCard(true, new BigNumber(100), false, undefined)
+          renderTranchedPoolCard(true, new BigNumber(100), false, undefined, undefined)
 
           await waitFor(() => {
             expect(screen.getByText("Paused")).toBeInTheDocument()
@@ -71,7 +73,7 @@ describe("Tranched pool card", () => {
       })
       describe("is repaid", () => {
         it("should show the paused badge", async () => {
-          renderTranchedPoolCard(true, new BigNumber(100), true, undefined)
+          renderTranchedPoolCard(true, new BigNumber(100), true, undefined, undefined)
 
           await waitFor(() => {
             expect(screen.getByText("Paused")).toBeInTheDocument()
@@ -82,7 +84,7 @@ describe("Tranched pool card", () => {
     describe("pool is not paused", () => {
       describe("remaining capacity is 0", () => {
         it("should show full badge", async () => {
-          renderTranchedPoolCard(false, new BigNumber(0), false, undefined)
+          renderTranchedPoolCard(false, new BigNumber(0), false, undefined, undefined)
 
           await waitFor(() => {
             expect(screen.getByText("Full")).toBeInTheDocument()
@@ -91,7 +93,7 @@ describe("Tranched pool card", () => {
       })
       describe("remaining capacity is not 0", () => {
         it("should show open badge", async () => {
-          renderTranchedPoolCard(false, new BigNumber(100), false, undefined)
+          renderTranchedPoolCard(false, new BigNumber(100), false, undefined, undefined)
 
           await waitFor(() => {
             expect(screen.getByText("Open")).toBeInTheDocument()
@@ -100,7 +102,7 @@ describe("Tranched pool card", () => {
       })
       describe("has been repaid", async () => {
         it("shows the repaid badge", async () => {
-          renderTranchedPoolCard(false, new BigNumber(100), true, undefined)
+          renderTranchedPoolCard(false, new BigNumber(100), true, undefined, undefined)
           await waitFor(() => {
             expect(screen.getByText("Repaid")).toBeInTheDocument()
           })
@@ -109,18 +111,25 @@ describe("Tranched pool card", () => {
     })
   })
   describe("Estimated APY", () => {
-    it("shows only the pool's base APY, if APY-from-GFI is undefined", async () => {
-      renderTranchedPoolCard(false, new BigNumber(0), false, undefined)
+    it("shows only the pool's base APY, if the senior-pool-matching APY-from-GFI and the backers-only APY-from-GFI are undefined", async () => {
+      renderTranchedPoolCard(false, new BigNumber(0), false, undefined, undefined)
 
       await waitFor(() => {
         expect(screen.getByText("8.50%")).toBeInTheDocument()
       })
     })
-    it("shows the sum of base APY and APY-from-GFI, if APY-from-GFI is defined", async () => {
-      renderTranchedPoolCard(true, new BigNumber(0), false, new BigNumber(0.9))
+    it("shows the sum of base APY and the senior-pool-matching APY-from-GFI, if the backers-only APY-from-GFI is undefined", async () => {
+      renderTranchedPoolCard(false, new BigNumber(0), false, undefined, new BigNumber(0.2))
 
       await waitFor(() => {
-        expect(screen.getByText("98.50%")).toBeInTheDocument()
+        expect(screen.getByText("28.50%")).toBeInTheDocument()
+      })
+    })
+    it("shows the sum of base APY, the senior-pool-matching APY-from-GFI, and the backers-only APY-from-GFI, if the latter two are defined", async () => {
+      renderTranchedPoolCard(true, new BigNumber(0), false, new BigNumber(0.9), new BigNumber(0.2))
+
+      await waitFor(() => {
+        expect(screen.getByText("118.50%")).toBeInTheDocument()
       })
     })
   })

@@ -9,7 +9,12 @@ export type SeniorPoolStatus = {
   remainingCapacity: BigNumber | undefined
 }
 
-export type TranchedPoolsEstimatedBackersOnlyApyFromGfi = {
+export type TranchedPoolsEstimatedApyFromGfi = {
   currentBlock: BlockInfo
-  estimatedBackersOnlyApyFromGfi: {[tranchedPoolAddress: string]: BigNumber | undefined}
+  estimatedApyFromGfi: {
+    [tranchedPoolAddress: string]: {
+      backersOnly: BigNumber | undefined
+      seniorPoolMatching: BigNumber | undefined
+    }
+  }
 }
