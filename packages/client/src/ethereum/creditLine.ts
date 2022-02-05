@@ -193,7 +193,7 @@ class CreditLine extends BaseCreditLine {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
     const V2_2_MIGRATION_DATE = "2022-01-04"
     const creditLineStart = moment(this.termEndDate, "MMM D, YYYY").subtract(this.termInDays.toNumber(), "days")
-    if (creditLineStart.isBefore(moment(V2_2_MIGRATION_DATE))) {
+    if (!this.termEndTime.eq(new BigNumber(0)) && creditLineStart.isBefore(moment(V2_2_MIGRATION_DATE))) {
       return this.currentLimit
     } else {
       const maxLimit = await this.creditLine.readOnly.methods.maxLimit().call(undefined, currentBlock.number)
