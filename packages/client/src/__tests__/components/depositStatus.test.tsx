@@ -59,16 +59,11 @@ function renderDepositStatus(
 }
 
 describe("Senior pool page deposit status", () => {
-  let sandbox = sinon.createSandbox()
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded, capitalProvider: Loaded<CapitalProvider>
 
   const currentBlock = defaultCurrentBlock
-
-  afterEach(() => {
-    sandbox.restore()
-  })
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {

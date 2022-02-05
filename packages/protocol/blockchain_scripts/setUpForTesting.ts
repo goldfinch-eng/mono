@@ -234,7 +234,11 @@ async function setUpRewards(
     getOrNull,
     "MerkleDirectDistributor"
   )
-  const rewardsAmount = amount.div(new BN(3))
+  const backerMerkleDirectDistributor = await getDeployedAsEthersContractOrNull<MerkleDirectDistributor>(
+    getOrNull,
+    "BackerMerkleDirectDistributor"
+  )
+  const rewardsAmount = amount.div(new BN(4))
 
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
   await gfi.mint(protocolOwner, amount.toString(10))
@@ -269,6 +273,11 @@ async function setUpRewards(
   // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
   if (merkleDirectDistributor) {
     await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+  }
+
+  // If the BackerMerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
+  if (backerMerkleDirectDistributor) {
+    await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
   }
 }
 

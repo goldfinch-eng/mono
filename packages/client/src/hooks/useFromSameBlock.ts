@@ -75,6 +75,20 @@ export function useFromSameBlock<
   W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   Y extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  Z extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [T | undefined, U | undefined, V | undefined, W | undefined, X | undefined, Y | undefined, Z | undefined]
+): [T, U, V, W, X, Y, Z] | undefined
+
+export function useFromSameBlock<
+  T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  Y extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   Z extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   A extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
@@ -117,6 +131,40 @@ export function useFromSameBlock<
     B | undefined
   ]
 ): [T, U, V, W, X, Y, Z, A, B] | undefined
+
+export function useFromSameBlock<
+  T extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  U extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  V extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  W extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  X extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  Y extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  Z extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  A extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  B extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  C extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  D extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  E extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  F extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
+>(
+  config: UseFromSameBlockConfig,
+  currentBlock: BlockInfo | undefined,
+  ...deps: [
+    T | undefined,
+    U | undefined,
+    V | undefined,
+    W | undefined,
+    X | undefined,
+    Y | undefined,
+    Z | undefined,
+    A | undefined,
+    B | undefined,
+    C | undefined,
+    D | undefined,
+    E | undefined,
+    F | undefined
+  ]
+): [T, U, V, W, X, Y, Z, A, B, C, D, E, F] | undefined
 
 /**
  * Hook for ensuring that the loadable items provided to it are all loaded with

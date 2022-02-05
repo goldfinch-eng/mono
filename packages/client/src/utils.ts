@@ -1,3 +1,4 @@
+import {isPlainObject, isStringOrUndefined} from "@goldfinch-eng/utils"
 import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
@@ -95,19 +96,14 @@ export function roundDownPenny(val) {
 
 export class AssertionError extends Error {}
 
-export class CodedError extends Error {
-  code: number
-
-  constructor(message: string, code: number) {
-    super(message)
-    this.code = code
-  }
-}
-
 export function assertNumber(val: unknown): asserts val is number {
   if (typeof val !== "number") {
     throw new AssertionError(`Value ${val} is not a number.`)
   }
+}
+
+export function isError(val: unknown): val is Error {
+  return val instanceof Error
 }
 
 export function assertError(val: unknown): asserts val is Error {
@@ -116,17 +112,25 @@ export function assertError(val: unknown): asserts val is Error {
   }
 }
 
-export function isError(val: unknown): val is Error {
-  return val instanceof Error
+export type CodedErrorLike = {
+  code: number
+  message: string
+  stack?: string
 }
 
-export function isCodedError(val: unknown): val is CodedError {
-  return val instanceof CodedError
+export function isCodedErrorLike(val: unknown): val is CodedErrorLike {
+  return isPlainObject(val) && isNumber(val.code) && isString(val.message) && isStringOrUndefined(val.stack)
 }
 
-export function assertCodedError(val: unknown): asserts val is CodedError {
-  if (!isCodedError(val)) {
-    throw new AssertionError(`Value ${val} failed CodedError type guard.`)
+export type ErrorLike = Error | CodedErrorLike
+
+export function isErrorLike(val: unknown): val is ErrorLike {
+  return isError(val) || isCodedErrorLike(val)
+}
+
+export function assertErrorLike(val: unknown): asserts val is ErrorLike {
+  if (!isErrorLike(val)) {
+    throw new AssertionError(`Value ${val} is not error-like.`)
   }
 }
 
