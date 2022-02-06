@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js"
 import difference from "lodash/difference"
 import mapValues from "lodash/mapValues"
 import zipObject from "lodash/zipObject"
-import {Loadable, WithLoadedInfo} from "../types/loadable"
+import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {
   ByTranchedPool,
   EstimatedRewards,
@@ -109,10 +109,9 @@ export class BackerRewards {
     scheduledRepayments: ForTranchedPool<ScheduledRepayment>[],
     gfiSupply: BigNumber
   ): Promise<ForTranchedPool<ScheduledRepaymentEstimatedReward>[]> {
-    const maxInterestDollarsEligible = this.info.value?.maxInterestDollarsEligible
-    assertNonNullable(maxInterestDollarsEligible)
-    const totalRewardPercentOfTotalGFI = this.info.value?.totalRewardPercentOfTotalGFI
-    assertNonNullable(totalRewardPercentOfTotalGFI)
+    assertWithLoadedInfo(this)
+    const maxInterestDollarsEligible = this.info.value.maxInterestDollarsEligible
+    const totalRewardPercentOfTotalGFI = this.info.value.totalRewardPercentOfTotalGFI
 
     const reduced = scheduledRepayments.reduce<{
       interestSumCapped: BigNumber
@@ -219,11 +218,15 @@ export class BackerRewards {
         // slice's junior tranche's `principalDeposited`.
         // TODO: Once tranched pools exist having more than one slice, we MUST refactor this
         // to sum the junior tranche's principal-deposited across slices.
-        const juniorPrincipalAlreadyBorrowed = estimated.tranchedPool.juniorTranche.principalDeposited
+        const juniorPrincipalAlreadyBorrowed = estimated.tranchedPool.totalDeposited.gt(0)
+          ? estimated.tranchedPool.totalDeployed
+              .multipliedBy(estimated.tranchedPool.juniorTranche.principalDeposited)
+              .dividedBy(estimated.tranchedPool.totalDeposited)
+          : new BigNumber(0)
 
         const optimisticAdditionalPrincipalToBeBorrowed =
           estimated.tranchedPool.poolState < PoolState.SeniorLocked
-            ? estimated.tranchedPool.creditLine.currentLimit.minus(estimated.tranchedPool.totalDeployed)
+            ? estimated.tranchedPool.creditLine.maxLimit.minus(estimated.tranchedPool.totalDeployed)
             : new BigNumber(0)
         const juniorOptimisticAdditionalPrincipalToBeBorrowed = optimisticAdditionalPrincipalToBeBorrowed.dividedBy(
           estimated.tranchedPool.estimatedLeverageRatio.plus(1)

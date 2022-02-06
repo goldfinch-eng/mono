@@ -769,7 +769,7 @@ export function resetAirdropMocks(goldfinchProtocol: GoldfinchProtocol): void {
   })
 }
 
-export function assertAllMocksAreCalled(mocks: Partial<ContractCallsMocks>) {
+export function assertAllMocksAreCalled(mocks: Record<string, ReturnType<typeof mock>>) {
   Object.keys(mocks).forEach((key: string) => {
     const mock = mocks[key as keyof typeof mocks]
     if (mock) {
