@@ -122,11 +122,12 @@ export class BackerRewards {
         const _newInterestSum = oldInterestSumCapped.plus(
           curr.value.usdcAmount.multipliedBy(GFI_DECIMALS).dividedBy(USDC_DECIMALS.toString())
         )
-        const newInterestSumCapped = BigNumber.max(_newInterestSum, maxInterestDollarsEligible)
+        const newInterestSumCapped = BigNumber.min(_newInterestSum, maxInterestDollarsEligible)
 
         const sqrtDiff = newInterestSumCapped.sqrt().minus(oldInterestSumCapped.sqrt())
         const gfiAmount = sqrtDiff
           .multipliedBy(totalRewardPercentOfTotalGFI)
+          // NOTE: We divide-to-integer as this replicates the contract's integer division.
           .dividedToIntegerBy(maxInterestDollarsEligible.sqrt())
           .dividedToIntegerBy(100)
           .multipliedBy(gfiSupply)
@@ -170,7 +171,7 @@ export class BackerRewards {
     )
   }
 
-  private async estimateRewardsFromScheduledRepayments(
+  async _estimateRewardsFromScheduledRepayments(
     tranchedPools: TranchedPool[],
     gfiSupply: BigNumber,
     currentBlock: BlockInfo
@@ -307,7 +308,7 @@ export class BackerRewards {
     gfiSupply: BigNumber,
     currentBlock: BlockInfo
   ): Promise<EstimatedRewardsByTranchedPool> {
-    const estimatedRewardsFromScheduledRepayments = await this.estimateRewardsFromScheduledRepayments(
+    const estimatedRewardsFromScheduledRepayments = await this._estimateRewardsFromScheduledRepayments(
       rewardable,
       gfiSupply,
       currentBlock

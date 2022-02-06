@@ -138,13 +138,179 @@ describe("BackerRewards", () => {
           // tranched pool eligible for rewards via the BackerRewards contract. The expected values can be
           // understood using this spreadsheet: https://docs.google.com/spreadsheets/d/1PgnD1RpwnxqiNDoiShX7_Gjl2TdgBN36oPM8HysRzH8/edit#gid=0
 
-          const result = await backerRewards.estimateApyFromGfiByTranchedPool([tranchedPool], seniorPool, gfi)
+          const tranchedPools = [tranchedPool]
+
+          const tranchedPoolScheduledRepayments = await tranchedPool.getOptimisticRepaymentSchedule(currentBlock)
+          expect(
+            tranchedPoolScheduledRepayments.map((scheduled) => ({
+              timestamp: scheduled.timestamp,
+              usdcAmount: scheduled.usdcAmount.toString(),
+            }))
+          ).toEqual([
+            {
+              timestamp: 1643980291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1646572291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1649164291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1651756291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1654348291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1656940291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1659532291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1662124291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1664716291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1667308291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1669900291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1672492291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1675084291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1677676291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1680268291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1682860291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1685452291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1688044291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1690636291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1693228291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1695820291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1698412291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1701004291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1703596291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1706188291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1708780291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1711372291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1713964291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1716556291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1719148291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1721740291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1724332291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1726924291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1729516291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1732108291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1734700291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1735996291,
+              usdcAmount: "41095890410.95890410958904109589",
+            },
+          ])
+
+          const estimatedRewards = await backerRewards._estimateRewardsFromScheduledRepayments(
+            tranchedPools,
+            gfi.info.value.supply,
+            currentBlock
+          )
+          expect(estimatedRewards[tranchedPool.address]?.value.toString(10)).toEqual("395897326454569024246362")
+
+          const result = await backerRewards.estimateApyFromGfiByTranchedPool(tranchedPools, seniorPool, gfi)
           expect(Object.keys(result)).toEqual([tranchedPoolAddress])
           const tranchedPoolResult = result[tranchedPoolAddress]
           expect(tranchedPoolResult).toBeTruthy()
           assertNonNullable(tranchedPoolResult)
           expect(Object.keys(tranchedPoolResult)).toEqual(["backersOnly", "seniorPoolMatching"])
-          expect(tranchedPoolResult.backersOnly?.toString()).toEqual("0.2143")
+          expect(tranchedPoolResult.backersOnly?.toString()).toEqual("0.21431241938740669846")
           expect(tranchedPoolResult.seniorPoolMatching?.toString()).toEqual("0.37")
 
           assertAllMocksAreCalled({callBackerRewardsPoolsMock})

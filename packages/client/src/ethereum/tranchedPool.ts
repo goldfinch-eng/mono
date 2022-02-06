@@ -485,10 +485,9 @@ class TranchedPool {
       .dividedBy(secondsPerPaymentPeriod)
       .integerValue(
         // Rounding up to the ceiling accounts for the payment due at `finalRepaymentTime`, in case it should
-        // somehow occur less than `paymentPeriodInDays` after the previous payment's due time. Based on my
-        // reading of the `CreditLine.calculateNextDueTime()`, I'm not sure how that would ever be possible,
-        // but this safety behavior accords with how `CreditLine.calculateNextDueTime()` always ensures that
-        // there can be no next-due-time after the term end time.
+        // occur less than `paymentPeriodInDays` after the previous payment's due time. This behavior accords
+        // with how `CreditLine.calculateNextDueTime()` always ensures that there can be no next-due-time
+        // after the term end time.
         BigNumber.ROUND_CEIL
       )
       .plus(
