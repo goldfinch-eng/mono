@@ -31,7 +31,7 @@ export default function PortfolioOverview({
   let tranchedPoolsGfi: Array<{
     address: string
     balanceEarningGfi: BigNumber
-    estimatedApyFromGfi: BigNumber
+    estimatedApyFromGfi: BigNumber | undefined
   }> = []
   tranchedPoolBackers.value.forEach((p) => {
     tranchedPoolsBalance = tranchedPoolsBalance.plus(p.balanceInDollars)
@@ -104,16 +104,19 @@ export default function PortfolioOverview({
       // and the senior-pool-matching portion, with each of those portions *weighted by the
       // respective percentage of the user's total balance in the pool that is earning that
       // APY*.
-      const estimatedApyFromGfi = (backersOnly || new BigNumber(0))
-        .multipliedBy(balanceInDollarsEarningBackersOnlyGfi)
-        .dividedBy(p.balanceInDollars)
-        .plus(
-          (seniorPoolMatching || new BigNumber(0))
-            .multipliedBy(balanceInDollarsEarningSeniorPoolMatchingGfi)
-            .dividedBy(p.balanceInDollars)
-        )
+      const estimatedApyFromGfi =
+        backersOnly || seniorPoolMatching
+          ? (backersOnly || new BigNumber(0))
+              .multipliedBy(balanceInDollarsEarningBackersOnlyGfi)
+              .dividedBy(p.balanceInDollars)
+              .plus(
+                (seniorPoolMatching || new BigNumber(0))
+                  .multipliedBy(balanceInDollarsEarningSeniorPoolMatchingGfi)
+                  .dividedBy(p.balanceInDollars)
+              )
+          : undefined
 
-      tranchedPoolsBalanceEarningGfi = p.balanceInDollars
+      tranchedPoolsBalanceEarningGfi = tranchedPoolsBalanceEarningGfi.plus(p.balanceInDollars)
       tranchedPoolsGfi.push({
         address: p.tranchedPool.address,
         balanceEarningGfi: p.balanceInDollars,
@@ -156,13 +159,20 @@ export default function PortfolioOverview({
   // first step, for the percentage of dollars that are earning GFI, out of the user's
   // total dollars supplied to tranched pools.
   const estimatedApyFromGfiForTranchedPoolsEarningGfi = tranchedPoolsBalanceEarningGfi.gt(0)
-    ? tranchedPoolsGfi.reduce<BigNumber>(
-        (acc, curr) =>
-          acc.plus(
+    ? tranchedPoolsGfi.reduce<BigNumber | undefined>((acc, curr) => {
+        if (curr.estimatedApyFromGfi) {
+          return (acc || new BigNumber(0)).plus(
             curr.estimatedApyFromGfi.multipliedBy(curr.balanceEarningGfi).dividedBy(tranchedPoolsBalanceEarningGfi)
-          ),
-        new BigNumber(0)
-      )
+          )
+        } else {
+          if (acc) {
+            throw new Error(
+              "Expected `estimatedApyFromGfi` to be undefined for all tranched pools, or defined for all tranched pools."
+            )
+          }
+          return undefined
+        }
+      }, undefined)
     : undefined
   const estimatedApyFromGfiTranchedPools = GFI.estimateApyFromGfi(
     tranchedPoolsBalanceEarningGfi,

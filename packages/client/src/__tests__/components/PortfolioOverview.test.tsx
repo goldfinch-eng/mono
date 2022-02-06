@@ -38,7 +38,7 @@ function renderPortfolioOverview(
   seniorPoolData: SeniorPoolData,
   capitalProvider: Loaded<CapitalProvider>,
   tranchedPoolBackers: Loaded<TranchedPoolBacker[]>,
-  tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi>,
+  tranchedPoolsEstimatedApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi>,
   currentBlock: BlockInfo
 ) {
   const store = {currentBlock}
@@ -49,7 +49,7 @@ function renderPortfolioOverview(
           seniorPoolData={seniorPoolData}
           capitalProvider={capitalProvider}
           tranchedPoolBackers={tranchedPoolBackers}
-          tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedBackersOnlyApyFromGfi}
+          tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedApyFromGfi}
         />
       </Router>
     </AppContext.Provider>
@@ -109,12 +109,12 @@ describe("Earn page portfolio overview", () => {
           expect(stakedSeniorPoolBalanceInDollars.toString(10)).toEqual("50022.830849")
           expect(totalSeniorPoolBalanceInDollars.toString(10)).toEqual("50072.853679849")
 
-          const estimatedPoolApy = new BigNumber("0.00483856000534281158")
-          const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
+          const estimatedSeniorPoolApy = new BigNumber("0.00483856000534281158")
+          const globalEstimatedSeniorPoolApyFromGfi = new BigNumber("0.47282410048716433449")
 
           const poolData = {
-            estimatedApy: estimatedPoolApy,
-            estimatedApyFromGfi: globalEstimatedApyFromGfi,
+            estimatedApy: estimatedSeniorPoolApy,
+            estimatedApyFromGfi: globalEstimatedSeniorPoolApyFromGfi,
           } as SeniorPoolData
 
           const singleTranchedPoolPrincipalAmountInDollars = new BigNumber(10000)
@@ -135,7 +135,7 @@ describe("Earn page portfolio overview", () => {
               estimatedLeverageRatio: new BigNumber(4),
             } as TranchedPool,
           }
-          const singleTranchedPoolEstimatedApyFromGfi = new BigNumber(1.25)
+          const singleTranchedPoolEstimatedBackersOnlyApyFromGfi = new BigNumber(1.25)
 
           const tranchedPool1Address = "0xasdf1"
           const tranchedPool2Address = "0xasdf2"
@@ -170,13 +170,19 @@ describe("Earn page portfolio overview", () => {
               } as unknown as TranchedPoolBacker,
             ],
           }
-          const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
+          const tranchedPoolsEstimatedApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
             loaded: true,
             value: {
               currentBlock,
               estimatedApyFromGfi: {
-                [tranchedPool1Address]: singleTranchedPoolEstimatedApyFromGfi,
-                [tranchedPool2Address]: singleTranchedPoolEstimatedApyFromGfi,
+                [tranchedPool1Address]: {
+                  backersOnly: singleTranchedPoolEstimatedBackersOnlyApyFromGfi,
+                  seniorPoolMatching: globalEstimatedSeniorPoolApyFromGfi,
+                },
+                [tranchedPool2Address]: {
+                  backersOnly: singleTranchedPoolEstimatedBackersOnlyApyFromGfi,
+                  seniorPoolMatching: globalEstimatedSeniorPoolApyFromGfi,
+                },
                 [tranchedPool3Address]: undefined,
               },
             },
@@ -186,7 +192,7 @@ describe("Earn page portfolio overview", () => {
             poolData,
             capitalProvider,
             poolBackers,
-            tranchedPoolsEstimatedBackersOnlyApyFromGfi,
+            tranchedPoolsEstimatedApyFromGfi,
             currentBlock
           )
 
@@ -195,14 +201,18 @@ describe("Earn page portfolio overview", () => {
 
           const totalBalance = totalSeniorPoolBalanceInDollars.plus(totalTranchedPoolsBalanceInDollars)
 
-          const expectedApyFromSupplying = estimatedPoolApy
+          const expectedApyFromSupplying = estimatedSeniorPoolApy
             .multipliedBy(totalSeniorPoolBalanceInDollars)
             .dividedBy(totalBalance)
             .plus(estimatedTranchedPoolsApy.multipliedBy(totalTranchedPoolsBalanceInDollars).dividedBy(totalBalance))
 
-          const expectedUserEstimatedApyFromGfiSeniorPool = globalEstimatedApyFromGfi
+          const expectedUserEstimatedApyFromGfiSeniorPool = globalEstimatedSeniorPoolApyFromGfi
             .multipliedBy(stakedSeniorPoolBalanceInDollars)
             .dividedBy(totalSeniorPoolBalanceInDollars)
+
+          const singleTranchedPoolEstimatedApyFromGfi = singleTranchedPoolEstimatedBackersOnlyApyFromGfi.plus(
+            globalEstimatedSeniorPoolApyFromGfi
+          )
           const expectedUserEstimatedApyFromGfiTranchedPools = singleTranchedPoolEstimatedApyFromGfi
             .multipliedBy(singleTranchedPoolPrincipalAmountInDollars.multipliedBy(2))
             .dividedBy(singleTranchedPoolBalanceInDollars.multipliedBy(3))
@@ -235,10 +245,10 @@ describe("Earn page portfolio overview", () => {
           expect(expectedTotalUnrealizedGains.dividedBy(totalBalance).toString(10)).toEqual("0.00080422462021604392")
           expect(screen.getByTestId("portfolio-total-balance-perc").textContent).toEqual("$64.43 (0.08%)")
 
-          expect(totalBalance.multipliedBy(expectedTotalApy).toString(10)).toEqual("51447.814807168699999377")
-          expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$51,447.81")
+          expect(totalBalance.multipliedBy(expectedTotalApy).toString(10)).toEqual("60904.29681691198668899463")
+          expect(screen.getByTestId("portfolio-est-growth").textContent).toEqual("$60,904.29")
 
-          expect(expectedDisplayTotalApy).toEqual("64.22%")
+          expect(expectedDisplayTotalApy).toEqual("76.02%")
           expect(screen.getByTestId("portfolio-est-growth-perc").textContent).toEqual(
             `${expectedDisplayTotalApy} APY (with GFI)`
           )
@@ -252,7 +262,7 @@ describe("Earn page portfolio overview", () => {
           expect(screen.getByText("Pools APY")).toBeInTheDocument()
           expect(expectedDisplayApyFromSupplying).toEqual("3.49%")
           expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayApyFromSupplying)
-          expect(expectedDisplayGfiApy).toEqual("60.73%")
+          expect(expectedDisplayGfiApy).toEqual("72.53%")
           expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
           expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
         })
@@ -308,12 +318,12 @@ describe("Earn page portfolio overview", () => {
                 } as TranchedPoolBacker,
               ],
             }
-            const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
+            const tranchedPoolsEstimatedApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
               loaded: true,
               value: {
                 currentBlock,
                 estimatedApyFromGfi: {
-                  [tranchedPoolAddress]: undefined,
+                  [tranchedPoolAddress]: {backersOnly: undefined, seniorPoolMatching: undefined},
                 },
               },
             }
@@ -322,7 +332,7 @@ describe("Earn page portfolio overview", () => {
               poolData,
               capitalProvider,
               poolBackers,
-              tranchedPoolsEstimatedBackersOnlyApyFromGfi,
+              tranchedPoolsEstimatedApyFromGfi,
               currentBlock
             )
 
@@ -409,12 +419,12 @@ describe("Earn page portfolio overview", () => {
           expect(stakedSeniorPoolBalanceInDollars.toString(10)).toEqual("50022.830849")
           expect(totalSeniorPoolBalanceInDollars.toString(10)).toEqual("50072.853679849")
 
-          const estimatedPoolApy = new BigNumber("0.00483856000534281158")
-          const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
+          const estimatedSeniorPoolApy = new BigNumber("0.00483856000534281158")
+          const globalEstimatedSeniorPoolApyFromGfi = new BigNumber("0.47282410048716433449")
 
           const poolData = {
-            estimatedApy: estimatedPoolApy,
-            estimatedApyFromGfi: globalEstimatedApyFromGfi,
+            estimatedApy: estimatedSeniorPoolApy,
+            estimatedApyFromGfi: globalEstimatedSeniorPoolApyFromGfi,
           } as SeniorPoolData
 
           const tranchedPoolAddress = "0xasdf"
@@ -434,12 +444,15 @@ describe("Earn page portfolio overview", () => {
               } as TranchedPoolBacker,
             ],
           }
-          const tranchedPoolsEstimatedBackersOnlyApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
+          const tranchedPoolsEstimatedApyFromGfi: Loaded<TranchedPoolsEstimatedApyFromGfi> = {
             loaded: true,
             value: {
               currentBlock,
               estimatedApyFromGfi: {
-                [tranchedPoolAddress]: new BigNumber(1.25),
+                [tranchedPoolAddress]: {
+                  backersOnly: new BigNumber(1.25),
+                  seniorPoolMatching: globalEstimatedSeniorPoolApyFromGfi,
+                },
               },
             },
           }
@@ -448,17 +461,17 @@ describe("Earn page portfolio overview", () => {
             poolData,
             capitalProvider,
             tranchedPoolBackers,
-            tranchedPoolsEstimatedBackersOnlyApyFromGfi,
+            tranchedPoolsEstimatedApyFromGfi,
             currentBlock
           )
 
-          const expectedUserEstimatedApyFromGfi = globalEstimatedApyFromGfi
+          const expectedUserEstimatedApyFromGfi = globalEstimatedSeniorPoolApyFromGfi
             .multipliedBy(stakedSeniorPoolBalanceInDollars)
             .dividedBy(totalSeniorPoolBalanceInDollars)
           const expectedApyFromGfi = expectedUserEstimatedApyFromGfi
-          const expectedTotalApy = estimatedPoolApy.plus(expectedApyFromGfi)
+          const expectedTotalApy = estimatedSeniorPoolApy.plus(expectedApyFromGfi)
 
-          const expectedDisplayPoolApy = toDisplayPercent(estimatedPoolApy)
+          const expectedDisplayPoolApy = toDisplayPercent(estimatedSeniorPoolApy)
           const expectedDisplayGfiApy = toDisplayPercent(expectedApyFromGfi)
           const expectedDisplayTotalApy = toDisplayPercent(expectedTotalApy)
 

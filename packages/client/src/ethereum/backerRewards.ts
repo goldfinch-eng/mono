@@ -393,11 +393,8 @@ export class BackerRewards {
     }
 
     const tranchedPoolAddresses = tranchedPools.map((tranchedPool) => tranchedPool.address)
-    const noEstimate = tranchedPools.map(() => ({
-      backersOnly: undefined,
-      seniorPoolMatching: undefined,
-    }))
-    const defaultEstimatedApyFromGfi = zipObject(tranchedPoolAddresses, noEstimate)
+    const notEarningGfi = tranchedPools.map(() => undefined)
+    const defaultEstimatedApyFromGfi = zipObject(tranchedPoolAddresses, notEarningGfi)
 
     const rewardableTranchedPools = this.filterRewardableTranchedPools(tranchedPools)
 

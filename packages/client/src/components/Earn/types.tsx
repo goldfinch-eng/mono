@@ -12,9 +12,11 @@ export type SeniorPoolStatus = {
 export type TranchedPoolsEstimatedApyFromGfi = {
   currentBlock: BlockInfo
   estimatedApyFromGfi: {
-    [tranchedPoolAddress: string]: {
-      backersOnly: BigNumber | undefined
-      seniorPoolMatching: BigNumber | undefined
-    }
+    [tranchedPoolAddress: string]:
+      | {
+          backersOnly: BigNumber | undefined
+          seniorPoolMatching: BigNumber | undefined
+        }
+      | undefined
   }
 }
