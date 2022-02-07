@@ -18,18 +18,19 @@
 .form-header {
   background-color: $blue-xlight;
   font-size: $sans-size-xs;
-  margin: -25px 0 25px -25px;
+  margin: -20px 0 25px -25px;
   padding: 15px 25px;
   position: relative;
   width: calc(100% + 50px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
   .cancel {
     cursor: pointer;
     font-size: $sans-size-xs;
     opacity: 0.6;
-    position: absolute;
-    right: 25px;
-    top: 15px;
+    min-width: 75px;
 
     .icon {
       display: inline-block;
@@ -46,7 +47,7 @@
 }
 
 .form-header-message {
-  padding-right: 80px;
+  padding-right: 20px;
 }
 
 .form-full h2 {
@@ -101,6 +102,12 @@
 
   &:hover {
     color: $purp;
+  }
+}
+
+@media only screen and (min-width: $screen-m) {
+  .form-header {
+    margin: -25px 0 25px -25px;
   }
 }
 

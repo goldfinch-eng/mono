@@ -10,7 +10,11 @@
 
   .table {
     td {
-      padding: 12px 0;
+      padding: 12px 2px;
+    }
+
+    th {
+      padding-right: 4px;
     }
 
     .transaction-link-label {

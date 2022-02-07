@@ -1,8 +1,6 @@
 @import "./utils.scss";
 
 .warning-banner {
-  width: calc(100% + 60px);
-  padding: 30px;
   display: flex;
   flex-direction: column;
   background-color: $yellow;
@@ -20,7 +18,7 @@
   @include space-y(1em);
 
   &.spaced {
-    margin-top: 104px;
+    margin-top: 85px;
     margin-bottom: -75px;
   }
 
@@ -28,8 +26,8 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    font-size: $sans-size-s;
-    @include space-x(24px);
+    font-size: $sans-size-xs;
+    @include space-x(1em);
 
     &.small {
       font-size: $sans-size-xs;
@@ -38,8 +36,8 @@
     .icon {
       margin-top: -3px;
       flex-shrink: 0;
-      height: 28px;
-      width: 28px;
+      height: 20px;
+      width: 20px;
     }
   }
 
@@ -52,12 +50,19 @@
   .warning-banner {
     flex-direction: row;
     font-size: $sans-size-m;
+    width: calc(100% + 60px);
     align-items: center;
     justify-content: space-between;
     @include space-x(30px);
     @include space-y(0em);
 
+    &.spaced {
+      margin-top: 104px;
+    }
+
     .message {
+      font-size: $sans-size-s;
+      @include space-x(24px);
       &.small {
         font-size: $sans-size-s;
       }
