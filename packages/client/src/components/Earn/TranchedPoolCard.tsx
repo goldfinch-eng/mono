@@ -1,17 +1,33 @@
 import BigNumber from "bignumber.js"
 import {useHistory} from "react-router-dom"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {PoolBacker} from "../../ethereum/tranchedPool"
+import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {displayDollars, displayPercent} from "../../utils"
 import Badge from "../badge"
 
-export default function TranchedPoolCard({poolBacker, disabled}: {poolBacker: PoolBacker; disabled: boolean}) {
+export default function TranchedPoolCard({
+  poolBacker,
+  poolEstimatedBackersOnlyApyFromGfi,
+  poolEstimatedSeniorPoolMatchingApyFromGfi,
+  disabled,
+}: {
+  poolBacker: TranchedPoolBacker
+  poolEstimatedBackersOnlyApyFromGfi: BigNumber | undefined
+  poolEstimatedSeniorPoolMatchingApyFromGfi: BigNumber | undefined
+  disabled: boolean
+}) {
   const history = useHistory()
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
 
-  const estimatedApy = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : new BigNumber(NaN)
+  const estimatedApyFromSupplying = leverageRatio ? tranchedPool.estimateJuniorAPY(leverageRatio) : undefined
+  const estimatedApy =
+    estimatedApyFromSupplying || poolEstimatedBackersOnlyApyFromGfi || poolEstimatedSeniorPoolMatchingApyFromGfi
+      ? (estimatedApyFromSupplying || new BigNumber(0))
+          .plus(poolEstimatedBackersOnlyApyFromGfi || new BigNumber(0))
+          .plus(poolEstimatedSeniorPoolMatchingApyFromGfi || new BigNumber(0))
+      : new BigNumber(NaN)
 
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""

@@ -19,7 +19,7 @@ import {setupPartiallyClaimedStakingReward} from "../__tests__/rewards/__utils__
 import {resetAirdropMocks} from "../__tests__/rewards/__utils__/mocks"
 import {
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -218,7 +218,7 @@ describe("deposit transactions", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }

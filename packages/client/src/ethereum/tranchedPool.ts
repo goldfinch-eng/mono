@@ -3,13 +3,9 @@ import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
+import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
-import web3 from "../web3"
-import {getCreditDeskReadOnly} from "./creditDesk"
-import {CreditLine} from "./creditLine"
-import {usdcFromAtomic} from "./erc20"
 import {
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
@@ -17,11 +13,17 @@ import {
   PAYMENT_APPLIED_EVENT,
   SHARE_PRICE_UPDATED_EVENT,
 } from "../types/events"
-import {fiduFromAtomic} from "./fidu"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
-import {isMainnetForking} from "./utils"
+import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
+import web3 from "../web3"
+import {getCreditDeskReadOnly} from "./creditDesk"
+import {CreditLine} from "./creditLine"
+import {usdcFromAtomic} from "./erc20"
+import {fiduFromAtomic} from "./fidu"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -131,6 +133,8 @@ class TranchedPool {
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
   totalDeposited!: BigNumber
+  totalDeployed!: BigNumber
+  fundableAt!: BigNumber
 
   isV1StyleDeal!: boolean
   isMigrated!: boolean
@@ -177,6 +181,18 @@ class TranchedPool {
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
 
     this.poolState = this.getPoolState(currentBlock)
+
+    const [totalDeployed, fundableAt] = await Promise.all(
+      this.isMultipleDrawdownsCompatible
+        ? [
+            this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number),
+            this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number),
+          ]
+        : ["0", "0"]
+    )
+
+    this.totalDeployed = new BigNumber(totalDeployed)
+    this.fundableAt = new BigNumber(fundableAt)
   }
 
   getPoolState(currentBlock: BlockInfo): PoolState {
@@ -198,6 +214,10 @@ class TranchedPool {
 
   get isRepaid(): boolean {
     return this.creditLine.balance.isZero() && this.seniorTranche.lockedUntil !== 0
+  }
+
+  get isMultipleDrawdownsCompatible(): boolean {
+    return this.creditLine.isMultipleDrawdownsCompatible
   }
 
   estimateJuniorAPY(leverageRatio: BigNumber): BigNumber {
@@ -356,6 +376,181 @@ class TranchedPool {
     return result
   }
 
+  async getOptimisticRepaymentSchedule(currentBlock: BlockInfo): Promise<ScheduledRepayment[]> {
+    // 1. How much interest do we expect to be repaid in the remaining term of the loan?
+    // The answer consists of two parts: (i) the expected interest on funds that have
+    // *already* been borrowed (i.e. the current balance of the pool); plus (ii) if the
+    // pool is currently open, interest on the additional funds that would be borrowed.
+    // How much additional funds will be borrowed? We can't know exactly; we'll optimistically
+    // assume the pool fills up to its max limit.
+    // TODO: In future, when we may have multiple pools open at the same time, we may want to
+    // revise this optimistic repayment schedule calculation so that we don't assume that
+    // *all* open pools will fill up. Such an assumption means that any open pool could significantly
+    // impact the estimated rewards of every other pool; but such estimates seem likely
+    // flawed, because in practice not every proposed pool is equally likely to fill up. One
+    // alternative way to do the calculation would be to assume the given pool for which we're
+    // estimating rewards will fill up, but NOT to make that assumption for all the other open pools.
+
+    // (i)
+    // Our approach to calculating this here follows `Accountant.calculateInterestAccruedOverPeriod()`.
+    let expectedRemainingInterestFromAlreadyBorrowed = new BigNumber(0)
+    let lastRepaymentTimeAlreadyBorrowed: BigNumber | undefined
+    let nextRepaymentTimeAlreadyBorrowed: BigNumber | undefined
+    if (this.creditLine.termEndTime.gt(0)) {
+      lastRepaymentTimeAlreadyBorrowed = this.creditLine.lastFullPaymentTime
+      nextRepaymentTimeAlreadyBorrowed = this.creditLine.nextDueTime
+
+      const lastAccrualTimestamp = new BigNumber(
+        await this.creditLine.creditLine.readOnly.methods.interestAccruedAsOf().call(undefined, currentBlock.number)
+      )
+      const interestAccruingSecondsRemaining = this.creditLine.termEndTime.minus(lastAccrualTimestamp)
+      const totalInterestPerYear = this.creditLine.balance
+        .multipliedBy(this.creditLine.interestApr)
+        .dividedBy(INTEREST_DECIMALS.toString())
+      const interestToBeAccruedSinceLastAccrual = totalInterestPerYear
+        .multipliedBy(interestAccruingSecondsRemaining)
+        .dividedBy(SECONDS_PER_YEAR)
+      expectedRemainingInterestFromAlreadyBorrowed = this.creditLine.interestOwed.plus(
+        interestToBeAccruedSinceLastAccrual
+      )
+    }
+
+    // (ii)
+    // NOTE: For simplicity, we don't worry here about, if we're in the possible window
+    // of time after the senior pool is locked but before the borrower has drawndown, trying
+    // to infer that the borrower *will* drawdown.
+    let expectedRemainingInterestFromToBeBorrowed = new BigNumber(0)
+    const secondsPerPaymentPeriod = this.creditLine.paymentPeriodInDays.multipliedBy(SECONDS_PER_DAY)
+    let lastRepaymentTimeToBeBorrowed: BigNumber | undefined
+    let nextRepaymentTimeToBeBorrowed: BigNumber | undefined
+    let finalRepaymentTime: BigNumber
+    if (this.poolState < PoolState.SeniorLocked) {
+      const optimisticAdditionalBalance = this.creditLine.maxLimit.minus(this.totalDeployed)
+
+      // When should we say that interest could start being earned on this additional balance?
+      // We can't be sure exactly, because there's currently no notion of a deadline for funding
+      // the pool, nor hard start time of the borrowing. So we'll make a reasonable supposition: one
+      // week after the later of the current time and the pool's `fundableAt` timestamp.
+      const _optimisticInterestAccrualStart = BigNumber.max(this.fundableAt, currentBlock.timestamp).plus(
+        SECONDS_PER_DAY * 7
+      )
+      let interestAccrualStart: BigNumber, interestAccrualEnd: BigNumber
+      if (this.creditLine.termEndTime.gt(0)) {
+        interestAccrualStart = BigNumber.min(_optimisticInterestAccrualStart, this.creditLine.termEndTime)
+        interestAccrualEnd = this.creditLine.termEndTime
+
+        if (interestAccrualStart.lt(this.creditLine.nextDueTime)) {
+          lastRepaymentTimeToBeBorrowed = interestAccrualStart
+          nextRepaymentTimeToBeBorrowed = this.creditLine.nextDueTime
+        } else {
+          lastRepaymentTimeToBeBorrowed = this.creditLine.nextDueTime
+          nextRepaymentTimeToBeBorrowed = BigNumber.min(
+            lastRepaymentTimeToBeBorrowed.plus(secondsPerPaymentPeriod),
+            interestAccrualEnd
+          )
+        }
+        finalRepaymentTime = interestAccrualEnd
+      } else {
+        interestAccrualStart = _optimisticInterestAccrualStart
+        interestAccrualEnd = interestAccrualStart.plus(this.creditLine.termInDays.multipliedBy(SECONDS_PER_DAY))
+
+        lastRepaymentTimeToBeBorrowed = interestAccrualStart
+        nextRepaymentTimeToBeBorrowed = interestAccrualStart.plus(secondsPerPaymentPeriod)
+        finalRepaymentTime = interestAccrualEnd
+      }
+
+      const interestAccruingSecondsRemaining = interestAccrualEnd.minus(interestAccrualStart)
+      const totalInterestPerYear = optimisticAdditionalBalance
+        .multipliedBy(this.creditLine.interestApr)
+        .dividedBy(INTEREST_DECIMALS.toString())
+      expectedRemainingInterestFromToBeBorrowed = totalInterestPerYear
+        .multipliedBy(interestAccruingSecondsRemaining)
+        .dividedBy(SECONDS_PER_YEAR)
+    } else {
+      finalRepaymentTime = this.creditLine.termEndTime
+    }
+
+    const expectedRemainingInterest = expectedRemainingInterestFromAlreadyBorrowed.plus(
+      expectedRemainingInterestFromToBeBorrowed
+    )
+
+    // 2. On what schedule do we expect the remaining repayments to occur?
+    // For (i) interest owed on the already-borrowed amount, we expect those payments to start at the
+    // credit line's `nextDueTime`, then one payment every `paymentPeriodInDays`, until the final payment
+    // at `termEndTime`. For (ii) interest on the to-be-borrowed amount, we expect those payments to
+    // start at the first next-due-time (aligned with (i)'s schedule) that occurs *after* the optimistic
+    // start of that borrowing, and then (again, aligned with (i)'s schedule), one payment every
+    // `paymentPeriodInDays`, until the final payment at `termEndTime`.
+    if (!(nextRepaymentTimeAlreadyBorrowed || nextRepaymentTimeToBeBorrowed)) {
+      throw new Error("Failed to identify next repayment time.")
+    }
+    const nextRepaymentTime = BigNumber.min(
+      nextRepaymentTimeAlreadyBorrowed || new BigNumber(Infinity),
+      nextRepaymentTimeToBeBorrowed || new BigNumber(Infinity)
+    )
+    const numRepaymentsRemaining = finalRepaymentTime
+      .minus(nextRepaymentTime)
+      .dividedBy(secondsPerPaymentPeriod)
+      .integerValue(
+        // Rounding up to the ceiling accounts for the payment due at `finalRepaymentTime`, in case it should
+        // occur less than `paymentPeriodInDays` after the previous payment's due time. This behavior accords
+        // with how `CreditLine.calculateNextDueTime()` always ensures that there can be no next-due-time
+        // after the term end time.
+        BigNumber.ROUND_CEIL
+      )
+      .plus(
+        // This accounts for the payment due at `nextRepaymentTime`.
+        new BigNumber(1)
+      )
+
+    const scheduledRepayments: ScheduledRepayment[] = []
+    let previousRepaymentTimeAlreadyBorrowed: BigNumber | undefined = lastRepaymentTimeAlreadyBorrowed
+    let previousRepaymentTimeToBeBorrowed: BigNumber | undefined = lastRepaymentTimeToBeBorrowed
+    let repaymentTime: BigNumber = nextRepaymentTime
+    let workingRemainingInterest = expectedRemainingInterest
+    for (let i = 0, ii = numRepaymentsRemaining.toNumber(); i < ii; i++) {
+      let expectedRepaymentAlreadyBorrowed = new BigNumber(0)
+      if (previousRepaymentTimeAlreadyBorrowed) {
+        assertNonNullable(lastRepaymentTimeAlreadyBorrowed)
+
+        expectedRepaymentAlreadyBorrowed = expectedRemainingInterestFromAlreadyBorrowed
+          .multipliedBy(repaymentTime.minus(previousRepaymentTimeAlreadyBorrowed))
+          .dividedBy(finalRepaymentTime.minus(lastRepaymentTimeAlreadyBorrowed))
+
+        previousRepaymentTimeAlreadyBorrowed = repaymentTime
+      }
+
+      let expectedRepaymentToBeBorrowed = new BigNumber(0)
+      if (previousRepaymentTimeToBeBorrowed) {
+        assertNonNullable(lastRepaymentTimeToBeBorrowed)
+
+        if (repaymentTime.gt(previousRepaymentTimeToBeBorrowed)) {
+          expectedRepaymentToBeBorrowed = expectedRemainingInterestFromToBeBorrowed
+            .multipliedBy(repaymentTime.minus(previousRepaymentTimeToBeBorrowed))
+            .dividedBy(finalRepaymentTime.minus(lastRepaymentTimeToBeBorrowed))
+        }
+
+        previousRepaymentTimeToBeBorrowed = repaymentTime
+      }
+
+      const expectedRepayment = expectedRepaymentAlreadyBorrowed.plus(expectedRepaymentToBeBorrowed)
+
+      scheduledRepayments.push({
+        timestamp: repaymentTime.toNumber(),
+        usdcAmount: expectedRepayment,
+      })
+
+      repaymentTime = BigNumber.min(repaymentTime.plus(secondsPerPaymentPeriod), finalRepaymentTime)
+      workingRemainingInterest = workingRemainingInterest.minus(expectedRepayment)
+    }
+
+    if (!workingRemainingInterest.abs().lt(new BigNumber(1).dividedBy(USDC_DECIMALS.toString()))) {
+      throw new Error("Failed to fully account for expected remaining interest.")
+    }
+
+    return scheduledRepayments
+  }
+
   get isFull(): boolean {
     return this.remainingCapacity().isZero()
   }
@@ -368,7 +563,7 @@ class TranchedPool {
   }
 }
 
-class PoolBacker {
+class TranchedPoolBacker {
   address: string
   tranchedPool: TranchedPool
   goldfinchProtocol: GoldfinchProtocol
@@ -378,8 +573,8 @@ class PoolBacker {
   interestRedeemed!: BigNumber
   principalRedeemable!: BigNumber
   interestRedeemable!: BigNumber
-  balance!: BigNumber
   principalAtRisk!: BigNumber
+  balance!: BigNumber
   balanceInDollars!: BigNumber
   availableToWithdraw!: BigNumber
   availableToWithdrawInDollars!: BigNumber
@@ -467,4 +662,4 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
   }
 }
 
-export {getMetadataStore, TranchedPool, PoolBacker, PoolState, TRANCHES}
+export {getMetadataStore, TranchedPool, TranchedPoolBacker, PoolState, TRANCHES}

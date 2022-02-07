@@ -5,7 +5,7 @@ import {useContext, useState} from "react"
 import {useParams} from "react-router-dom"
 import {AppContext} from "../../App"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
-import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {TranchedPoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
 import {decimalPlaces} from "../../ethereum/utils"
 import {useAsync} from "../../hooks/useAsync"
 import useERC20Permit from "../../hooks/useERC20Permit"
@@ -81,7 +81,7 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
 }
 
 interface TranchedPoolDepositFormProps {
-  backer: PoolBacker
+  backer: TranchedPoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
@@ -264,7 +264,7 @@ function splitWithdrawAmount(
 }
 
 interface TranchedPoolWithdrawFormProps {
-  backer: PoolBacker
+  backer: TranchedPoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
@@ -341,7 +341,7 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
   )
 }
 
-function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; backer?: PoolBacker}) {
+function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; backer?: TranchedPoolBacker}) {
   if (!tranchedPool || !backer) {
     return <></>
   }
@@ -400,7 +400,7 @@ function ActionsContainer({
 }: {
   tranchedPool: TranchedPool | undefined
   onComplete: () => Promise<any>
-  backer: PoolBacker | undefined
+  backer: TranchedPoolBacker | undefined
 }) {
   const {user} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")

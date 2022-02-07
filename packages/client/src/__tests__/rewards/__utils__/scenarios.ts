@@ -23,6 +23,7 @@ import {
   mockMerkleDirectDistributorContractCalls,
   setupMocksForMerkleDirectDistributorAirdrop,
   defaultStakingRewardsVestingLength,
+  mockGfiContractCalls,
   mockBackerMerkleDistributorContractCalls,
   mockBackerMerkleDirectDistributorContractCalls,
   MerkleDistributorConfigMock,
@@ -788,7 +789,9 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
 
 export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, currentBlock: BlockInfo) {
   const gfi = new GFI(goldfinchProtocol)
+  await mockGfiContractCalls(gfi)
   await gfi.initialize(currentBlock)
+
   const stakingRewards = new StakingRewards(goldfinchProtocol)
   await mockStakingRewardsContractCalls(stakingRewards)
   await stakingRewards.initialize(currentBlock)

@@ -1,11 +1,11 @@
 import {GFI} from "../ethereum/gfi"
-import {CapitalProvider, PoolData} from "../ethereum/pool"
+import {CapitalProvider, SeniorPoolData} from "../ethereum/pool"
 import {InfoIcon} from "../ui/icons"
 import {displayDollars, displayPercent} from "../utils"
 import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
-  poolData: PoolData | undefined
+  poolData: SeniorPoolData | undefined
   capitalProvider: CapitalProvider | undefined
 }
 
@@ -20,6 +20,9 @@ function DepositStatus(props: DepositStatusProps) {
     const globalEstimatedApyFromGfi = props.poolData.estimatedApyFromGfi
 
     const estimatedApyFromGfi = GFI.estimateApyFromGfi(
+      // NOTE: Because our frontend does not currently support staking with lockup, we do not
+      // worry here about adjusting for the portion of the user's balance that is not only earning
+      // GFI from staking, but is earning that GFI at a boosted rate due to having staked-with-lockup.
       props.capitalProvider.stakedSeniorPoolBalanceInDollars,
       portfolioBalance,
       globalEstimatedApyFromGfi
