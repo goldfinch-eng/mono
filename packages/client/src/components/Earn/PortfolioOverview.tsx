@@ -70,8 +70,13 @@ export default function PortfolioOverview({
         // corresponds to an open slice, the token's principal amount minus its redeemed amount -- but
         // not minus its redeemable amount, because we're assuming the user won't withdraw that withdrawable
         // amount, as that assumption corresponds to our assumption that the pool as a whole fills up.
-        // TODO[PR] We should explain in the docs that this `backersOnly` rate is a pool-wide average,
-        // and therefore the user won't earn this much if they haven't participated in all slices in the pool.
+        //
+        // TODO Because this `backersOnly` rate is a pool-wide average -- and therefore the user won't earn
+        // this exact amount if their dollars are not "average dollars" (which is sure to be the case if they haven't
+        // participated in all slices in the pool, and done so in the same proportion that each slice's
+        // principal represents as a share of the pool's total principal) -- we should explain in the docs this
+        // aspect of the imprecision of this estimate. Or else, we should refactor our approach not to
+        // use a pool-wide average, and instead calculate a separate backers-only rate *per slice*.
         balanceInDollarsEarningBackersOnlyGfi = _balanceInDollarsEarningGfi
       }
 
@@ -93,10 +98,13 @@ export default function PortfolioOverview({
         // the token's principal amount minus its redeemed amount, as we want to assume that the user won't
         // withdraw their redeemable (i.e. withdrawable) amount and instead will earn GFI rewards on that
         // amount.
-        // TODO[PR] We should explain in the docs that this `seniorPoolMatching` rate is a pool-wide average,
-        // and therefore the user won't earn this much if they haven't participated in all slices in the pool.
-        // And also explain that they don't start earning this rate until the principal is drawndown, and don't
-        // earn it after the term end time (i.e. even if the loan hasn't been repaid by that time).
+        //
+        // TODO Analogous comment here as in the `backersOnly` case, regarding explaining in the docs the
+        // imprecision of this estimate because `seniorPoolMatching` is a pool-wide average (i.e. and therefore
+        // the user won't earn this much if they haven't participated in all slices in the pool, and done so
+        // in the same proportion that each slice's principal represents as a share of the pool's total
+        // principal). Or else refactor our approach not to use a pool-wide average, and instead
+        // calculate a separate rate *per slice*.
         balanceInDollarsEarningSeniorPoolMatchingGfi = _balanceInDollarsEarningGfi
       }
 
@@ -133,12 +141,7 @@ export default function PortfolioOverview({
 
   const estimatedApyFromSupplying = totalBalance.gt(0)
     ? estimatedAnnualGrowthFromSupplying.dividedBy(totalBalance)
-    : // TODO[PR] I think we shouldn't show the "global" apy from supplying here.
-      // This was reported confusing in manual testing prior to the GFI launch. I also don't
-      // think it makes sense to feature the senior pool APY, when there may be backer pools
-      // with an APY superior to that. The senior pool APY and backer pool APYs can be seen
-      // below on their respective cards.
-      undefined
+    : undefined
 
   const seniorPoolBalanceEarningGfi = capitalProvider.value.stakedSeniorPoolBalanceInDollars
   const estimatedApyFromGfiSeniorPool = GFI.estimateApyFromGfi(
