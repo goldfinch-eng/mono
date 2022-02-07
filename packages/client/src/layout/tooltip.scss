@@ -36,3 +36,37 @@
     margin: 4px 0 11px 0;
   }
 }
+
+.tranched-pool-detail-tooltip {
+  @extend .annual-growth-tooltip;
+  min-width: 300px;
+
+  .tooltip-long-description {
+    max-width: 320px;
+    margin-bottom: 18px;
+  }
+
+  &.clickable {
+    pointer-events: all;
+    cursor: auto;
+  }
+
+  a {
+     color: inherit;
+    text-decoration: underline;
+  }
+
+  .tooltip-small-row {
+    font-size: 12px;
+    color: #897da3;
+    height: 14px;
+    margin: 0 0 14px 0;
+  }
+
+  .tooltip-footer {
+    max-width: 320px;
+    margin: 16px 0 11px 0;
+    color: #897da3;
+  }
+
+}
