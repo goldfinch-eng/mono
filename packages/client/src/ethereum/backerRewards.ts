@@ -36,9 +36,11 @@ export class BackerRewards {
   contract: Web3IO<BackerRewardsContract>
   address: string
   info: Loadable<BackerRewardsLoadedInfo>
+  // The block from which tranched pools created henceforth are able to earn GFI through
+  // the BackerRewards contract.
   startBlock: BlockInfo = {
-    number: 1, // TODO[PR]
-    timestamp: 1000, // TODO[PR]
+    number: 14142864,
+    timestamp: 1644021439,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
