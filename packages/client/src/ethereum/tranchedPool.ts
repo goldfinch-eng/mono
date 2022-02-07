@@ -211,6 +211,10 @@ class TranchedPool {
     return this.creditLine.balance.isZero() && this.seniorTranche.lockedUntil !== 0
   }
 
+  get isMultipleDrawdownsCompatible(): boolean {
+    return this.creditLine.isMultipleDrawdownsCompatible
+  }
+
   estimateJuniorAPY(leverageRatio: BigNumber): BigNumber {
     if (this.isV1StyleDeal) {
       return this.creditLine.interestAprDecimal

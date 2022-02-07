@@ -193,10 +193,14 @@ class CreditLine extends BaseCreditLine {
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
   }
 
+  get isMultipleDrawdownsCompatible(): boolean {
+    const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
+    return this.termStartTime.eq(0) || this.termStartTime.toNumber() >= V2_2_MIGRATION_TIME
+  }
+
   async _getMaxLimit(currentBlock: BlockInfo): Promise<BigNumber> {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
-    const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
-    if (this.termStartTime.gt(0) && this.termStartTime.toNumber() < V2_2_MIGRATION_TIME) {
+    if (!this.isMultipleDrawdownsCompatible) {
       return this.currentLimit
     } else {
       const maxLimit = await this.creditLine.readOnly.methods.maxLimit().call(undefined, currentBlock.number)

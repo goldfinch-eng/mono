@@ -56,10 +56,6 @@ async function parseTranchedPool(
   tranchedPool.creditLineAddress = pool.creditLine.id
   tranchedPool.creditLine = creditLine
   tranchedPool.metadata = await tranchedPool.loadPoolMetadata()
-  tranchedPool.juniorFeePercent = new BigNumber(pool.juniorFeePercent)
-  tranchedPool.reserveFeePercent = new BigNumber(pool.reserveFeePercent)
-  tranchedPool.estimatedLeverageRatio = new BigNumber(pool.estimatedLeverageRatio)
-  tranchedPool.estimatedSeniorPoolContribution = new BigNumber(pool.estimatedSeniorPoolContribution)
 
   // TODO This needs to be updated to support version of tranched pool with multiples slices
   const juniorTranche = pool.juniorTranches[0]
@@ -70,6 +66,16 @@ async function parseTranchedPool(
   tranchedPool.juniorTranche = trancheInfo(juniorTranche)
   tranchedPool.seniorTranche = trancheInfo(seniorTranche)
 
+  tranchedPool.totalDeposited = new BigNumber(pool.totalDeposited)
+  tranchedPool.juniorFeePercent = new BigNumber(pool.juniorFeePercent)
+  tranchedPool.reserveFeePercent = new BigNumber(pool.reserveFeePercent)
+  tranchedPool.estimatedSeniorPoolContribution = new BigNumber(pool.estimatedSeniorPoolContribution)
+  tranchedPool.estimatedLeverageRatio = new BigNumber(pool.estimatedLeverageRatio)
+
+  tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
+  tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
+  tranchedPool.isPaused = pool.isPaused
+
   // This code addresses the case when the user doesn't have a web3 provider
   // since we need the current block timestamp to define the pool status.
   const _currentBlock: BlockInfo = currentBlock || {
@@ -77,10 +83,19 @@ async function parseTranchedPool(
     timestamp: Math.floor(Date.now() / 1000),
   }
   tranchedPool.poolState = tranchedPool.getPoolState(_currentBlock)
-  tranchedPool.isPaused = pool.isPaused
-  tranchedPool.totalDeposited = new BigNumber(pool.totalDeposited)
-  tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
-  tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
+
+  // TODO Add these values to the subgraph, and then use them, and remove these web3 calls.
+  const [totalDeployed, fundableAt] = await Promise.all(
+    tranchedPool.isMultipleDrawdownsCompatible
+      ? [
+          tranchedPool.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock?.number || "latest"),
+          tranchedPool.contract.readOnly.methods.fundableAt().call(undefined, currentBlock?.number || "latest"),
+        ]
+      : ["0", "0"]
+  )
+  tranchedPool.totalDeployed = new BigNumber(totalDeployed)
+  tranchedPool.fundableAt = new BigNumber(fundableAt)
+
   return tranchedPool
 }
 
