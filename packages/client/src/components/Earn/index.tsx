@@ -88,12 +88,12 @@ export default function Earn() {
 
   useEffect(() => {
     if (backers.loaded && pool && gfi && backerRewards) {
-      refreshTranchedPoolsEstimatedBackersOnlyApyFromGfi(backers, pool, gfi, backerRewards)
+      refreshTranchedPoolsEstimatedApyFromGfi(backers, pool, gfi, backerRewards)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backers, pool, gfi, backerRewards])
 
-  async function refreshTranchedPoolsEstimatedBackersOnlyApyFromGfi(
+  async function refreshTranchedPoolsEstimatedApyFromGfi(
     backers: Loaded<TranchedPoolBacker[]>,
     pool: SeniorPoolLoaded,
     gfi: GFILoaded,
