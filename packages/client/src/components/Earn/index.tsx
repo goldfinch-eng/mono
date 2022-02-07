@@ -102,7 +102,10 @@ export default function Earn() {
     assertNonNullable(setLeafCurrentBlock)
     assertNonNullable(currentRoute)
 
-    if (gfi.info.value.currentBlock.number === backerRewards.info.value.currentBlock.number) {
+    if (
+      sameBlock(pool.info.value.currentBlock, gfi.info.value.currentBlock) &&
+      sameBlock(gfi.info.value.currentBlock, backerRewards.info.value.currentBlock)
+    ) {
       const estimatedApyFromGfi = await backerRewards.estimateApyFromGfiByTranchedPool(
         backers.value.map((backer) => backer.tranchedPool),
         pool,
