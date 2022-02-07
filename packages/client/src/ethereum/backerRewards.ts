@@ -347,8 +347,6 @@ export class BackerRewards {
     rewardable: TranchedPool[],
     gfi: GFILoaded
   ): Promise<{[tranchedPoolAddress: string]: BigNumber | undefined}> {
-    // NOTE: This calculation of total rewards is pool-wide; it is not done *specific to the user's
-    // particular pool tokens*. Therefore the
     const estimatedBackersOnlyRewards = await this.estimateBackersOnlyRewardsByTranchedPool(
       rewardable,
       gfi.info.value.supply,
