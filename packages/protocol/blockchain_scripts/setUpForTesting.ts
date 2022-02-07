@@ -137,7 +137,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
   const go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
-  const goldfinchConfig = await getDeployedAsEthersContract<GoldfinchConfig>(getOrNull, "GoldfinchConfig")
   const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
     at: await go.legacyGoList(),
   })
@@ -146,7 +145,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
 
-  await addUsersToGoList(config, legacyGoldfinchConfig, [underwriter])
+  await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
 
@@ -173,7 +172,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   })
   await writePoolMetadata({pool: empty, borrower: "Empty"})
 
-  await addUsersToGoList(config, legacyGoldfinchConfig, [borrower])
+  await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
   if (requestFromClient) {
     await createBorrowerContractAndPool({
@@ -431,13 +430,8 @@ function getLastEventArgs(result: ContractReceipt): Result {
   return lastEvent.args
 }
 
-async function addUsersToGoList(
-  goldfinchConfig: GoldfinchConfig,
-  legacyGoldfinchConfig: GoldfinchConfig,
-  users: string[]
-) {
-  logger("Adding", users, "to the go-list... on config with address", goldfinchConfig.address)
-  await (await goldfinchConfig.bulkAddToGoList(users)).wait()
+async function addUsersToGoList(legacyGoldfinchConfig: GoldfinchConfig, users: string[]) {
+  logger("Adding", users, "to the go-list... on config with address", legacyGoldfinchConfig.address)
   await (await legacyGoldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
