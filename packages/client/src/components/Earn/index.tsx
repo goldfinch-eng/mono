@@ -210,15 +210,9 @@ export default function Earn() {
                 key={`${p.tranchedPool.address}`}
                 poolBacker={p}
                 poolEstimatedBackersOnlyApyFromGfi={
-                  // TODO[PR] Should we use the user-balance-adjusted number here, or the "global" number?
-                  // Currently we're using the global number, but we use the user-balance-adjusted number in
-                  // the portfolio overview.
                   tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi?.[p.tranchedPool.address]?.backersOnly
                 }
                 poolEstimatedSeniorPoolMatchingApyFromGfi={
-                  // TODO[PR] Should we use the user-balance-adjusted number here, or the "global" number?
-                  // Currently we're using the global number, but we use the user-balance-adjusted number in
-                  // the portfolio overview.
                   tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi?.[p.tranchedPool.address]
                     ?.seniorPoolMatching
                 }

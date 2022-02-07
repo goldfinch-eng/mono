@@ -422,7 +422,6 @@ class TranchedPool {
       // We can't be sure exactly, because there's currently no notion of a deadline for funding
       // the pool, nor hard start time of the borrowing. So we'll make a reasonable supposition: one
       // week after the later of the current time and the pool's `fundableAt` timestamp.
-      // TODO[PR]: Confirm this behavior is desired.
       const _optimisticInterestAccrualStart = BigNumber.max(this.fundableAt, currentBlock.timestamp).plus(
         SECONDS_PER_DAY * 7
       )

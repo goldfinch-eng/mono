@@ -58,7 +58,7 @@ export class BackerRewards {
       this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
       // TEMP: Hard-code this value until the correct value has been set on the contract.
       // this.contract.readOnly.methods.maxInterestDollarsEligible().call(undefined, currentBlock.number),
-      new BigNumber(1e9).multipliedBy(new BigNumber(1e18)),
+      new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
       // TEMP: Hard-code this value until the correct value has been set on the contract.
       // this.contract.readOnly.methods.totalRewardPercentOfTotalGFI().call(undefined, currentBlock.number),
       new BigNumber(2).multipliedBy(new BigNumber(1e18)),
