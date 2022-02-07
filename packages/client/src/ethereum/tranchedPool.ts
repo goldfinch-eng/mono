@@ -182,12 +182,17 @@ class TranchedPool {
 
     this.poolState = this.getPoolState(currentBlock)
 
-    this.totalDeployed = new BigNumber(
-      await this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number)
+    const [totalDeployed, fundableAt] = await Promise.all(
+      this.isMultipleDrawdownsCompatible
+        ? [
+            this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number),
+            this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number),
+          ]
+        : ["0", "0"]
     )
-    this.fundableAt = new BigNumber(
-      await this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number)
-    )
+
+    this.totalDeployed = new BigNumber(totalDeployed)
+    this.fundableAt = new BigNumber(fundableAt)
   }
 
   getPoolState(currentBlock: BlockInfo): PoolState {
