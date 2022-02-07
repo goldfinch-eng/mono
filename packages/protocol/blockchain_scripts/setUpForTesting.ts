@@ -137,6 +137,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
   const go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
+  const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
+  await go.setLegacyGoList(goldfinchConfig.address)
   const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
     at: await go.legacyGoList(),
   })
