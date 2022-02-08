@@ -3,6 +3,7 @@ import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {isMainnetForking} from "./ethereum/utils"
+import {NetworkConfig} from "./types/network"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
 
@@ -183,4 +184,11 @@ export function shouldUseWeb3(): boolean {
     return true
   }
   return process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
+}
+
+export function isProductionAndPrivateNetwork(network: NetworkConfig | undefined) {
+  // Undetected networks are marked as private by the provider. On our config any private
+  // network is marked as localhost, check `mapNetworkToID`, this function is useful to
+  // check for scenarios when users are on undetected networks
+  return network && network.name === "localhost" && process.env.NODE_ENV === "production"
 }
