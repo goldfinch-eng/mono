@@ -37,11 +37,17 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
           <span className={`subheader ${disabledClass}`}>Automated diversified portfolio</span>
         </div>
       </div>
-      <div className="table-cell col22 numeric apy">
+      <div className="table-cell col32 numeric apy">
         <div className="usdc-apy">{displayPercent(props.estimatedApyFromSupplying)} USDC</div>
         <div className="gfi-apy">
           {displayPercent(props.estimatedApy)} with GFI
-          <span data-tip="" data-for="senior-pool-card-tooltip" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+          <span
+            data-tip=""
+            data-for="senior-pool-card-tooltip"
+            data-offset="{'top': 0, 'left': 0}"
+            data-place="bottom"
+            onClick={(e) => e.stopPropagation()}
+          >
             <InfoIcon />
           </span>
         </div>

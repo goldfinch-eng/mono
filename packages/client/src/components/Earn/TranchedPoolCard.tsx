@@ -5,6 +5,9 @@ import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent} from "../../utils"
 import Badge from "../badge"
+import {useMediaQuery} from "react-responsive"
+import {WIDTH_TYPES} from "../styleConstants"
+import TranchedPoolCardTooltipContent from "./TranchedPoolCardTooltipContent"
 
 export default function TranchedPoolCard({
   poolBacker,
@@ -18,6 +21,9 @@ export default function TranchedPoolCard({
   disabled: boolean
 }) {
   const history = useHistory()
+  const isMobile = useMediaQuery({
+    query: `(max-width: ${WIDTH_TYPES.screenM})`,
+  })
   const tranchedPool = poolBacker.tranchedPool
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   const limit = usdcFromAtomic(tranchedPool.creditLine.limit)
@@ -57,11 +63,17 @@ export default function TranchedPoolCard({
           <span className={`subheader ${disabledClass}`}>{tranchedPool.metadata?.category}</span>
         </div>
       </div>
-      <div className={`table-cell col22 numeric apy ${disabledClass}`}>
+      <div className={`table-cell col32 numeric apy ${disabledClass}`}>
         <div className="usdc-apy">{displayPercent(estimatedApyFromSupplying)} USDC</div>
         <div className="gfi-apy">
           {displayPercent(estimatedApy)} with GFI
-          <span data-tip="" data-for="" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+          <span
+            data-tip=""
+            data-for={`tranched-pool-card-tooltip-${tranchedPool.address}`}
+            data-offset={`{'top': 0, 'left': ${isMobile ? 150 : 0}}`}
+            data-place="bottom"
+            onClick={(e) => e.stopPropagation()}
+          >
             <InfoIcon />
           </span>
         </div>
@@ -71,6 +83,13 @@ export default function TranchedPoolCard({
         {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}
       </div>
       <div className="pool-capacity">{badge}</div>
+      <TranchedPoolCardTooltipContent
+        estimatedUSDCApy={estimatedApyFromSupplying}
+        estimatedBackersOnlyApy={poolEstimatedBackersOnlyApyFromGfi}
+        estimatedLpSeniorPoolMatchingApy={poolEstimatedSeniorPoolMatchingApyFromGfi}
+        estimatedApy={estimatedApy}
+        tranchedPoolAddress={tranchedPool.address}
+      />
     </div>
   )
 }

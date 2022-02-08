@@ -37,7 +37,7 @@
   }
 }
 
-.senior-pool-card-tooltip {
+.senior-pool-card-tooltip, .tranched-pool-card-tooltip {
   // Using !important here to override the default style of the tooltip
   background: $sand-light !important;
   box-shadow: 0px 0px 20px rgba(180, 173, 167, 0.5) !important;
@@ -48,9 +48,19 @@
   opacity: 1 !important;
   width: 360px;
 
+  &.clickable {
+    pointer-events: all;
+    cursor: auto;
+  }
+
   p {
     line-height: 19.2px;
     font-size: 15px;
+   }
+
+   a {
+     color: inherit;
+     text-decoration: underline;
    }
 
   .tooltip-description {
@@ -74,8 +84,11 @@
     background: $sand;
     margin: 4px 0 11px 0;
   }
+  .tooltip-footer {
+    margin: 16px 0 11px 0;
+    color: #897DA3;
+  }
 }
-
 .tranched-pool-detail-tooltip {
   @extend .annual-growth-tooltip;
   min-width: 300px;
