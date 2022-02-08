@@ -17,6 +17,7 @@ import "../protocol/core/BaseUpgradeablePausable.sol";
 
 import "../library/StakingRewardsVesting.sol";
 
+// solhint-disable-next-line max-states-count
 contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
@@ -692,6 +693,36 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
   function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+
+  /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
+  ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
+  /// @dev This will also checkpoint their rewards up to the current time.
+  function updatePositionEffectiveMultiplier(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {
+    require(ownerOf(tokenId) == msg.sender, "access denied");
+
+    StakedPosition storage position = positions[tokenId];
+
+    uint256 newEffectiveMultiplier = getEffectiveMultiplier(position.positionType);
+
+    // Prevent a user from accidentally lowering their effective multiplier
+    require(
+      newEffectiveMultiplier >= position.effectiveMultiplier,
+      "Cannot update position to a lower effective multiplier"
+    );
+
+    uint256 prevEffectiveAmount = positionToEffectiveAmount(position);
+    uint256 prevEffectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
+
+    position.effectiveMultiplier = newEffectiveMultiplier;
+
+    uint256 newEffectiveAmount = positionToEffectiveAmount(position);
+    uint256 newEffectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
+
+    totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(prevEffectiveLeveredAmount).add(
+      newEffectiveLeveredAmount
+    );
+    totalStakedSupply = totalStakedSupply.sub(prevEffectiveAmount).add(newEffectiveAmount);
+  }
 
   /// @notice Claim rewards for a given staked position
   /// @param tokenId A staking position token ID

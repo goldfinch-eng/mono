@@ -138,6 +138,7 @@
           "unstakeAndWithdrawMultiple": [],
           "unstakeAndWithdrawInFidu": [],
           "unstakeAndWithdrawMultipleInFidu": [],
+          "updatePositionEffectiveMultiplier": [],
           "getReward": [],
           "kick": [],
           "exit": [],
