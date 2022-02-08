@@ -44,7 +44,11 @@ const TranchedPoolApyTooltipContent = ({
       <div className="tooltip-divider"></div>
       <div className="tooltip-row">
         <p>Total Est. APY</p>
-        <span>{estimatedApy ? `~${displayPercent(estimatedApy)}` : displayPercent(estimatedApy)}</span>
+        <span>
+          {estimatedApy && (estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy)
+            ? `~${displayPercent(estimatedApy)}`
+            : displayPercent(estimatedApy)}
+        </span>
       </div>
       <div className="tooltip-footer">
         <p>
