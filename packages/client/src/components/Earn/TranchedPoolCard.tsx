@@ -107,7 +107,10 @@ export default function TranchedPoolCard({
         ]}
         total={{
           text: "Total Est. APY",
-          value: estimatedApy ? `~${displayPercent(estimatedApy)}` : displayPercent(estimatedApy),
+          value:
+            estimatedApy && (poolEstimatedBackersOnlyApyFromGfi || poolEstimatedSeniorPoolMatchingApyFromGfi)
+              ? `~${displayPercent(estimatedApy)}`
+              : displayPercent(estimatedApy),
         }}
         footer={
           <>

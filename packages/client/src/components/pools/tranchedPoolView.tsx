@@ -5,7 +5,10 @@ import {useContext, useEffect, useState} from "react"
 import {useParams} from "react-router-dom"
 import {AppContext} from "../../App"
 import {useEarn} from "../../contexts/EarnContext"
+import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
+import {GFILoaded} from "../../ethereum/gfi"
+import {SeniorPoolLoaded} from "../../ethereum/pool"
 import {PoolState, TokenInfo, TranchedPool, TranchedPoolBacker, TRANCHES} from "../../ethereum/tranchedPool"
 import {decimalPlaces} from "../../ethereum/utils"
 import {useAsync} from "../../hooks/useAsync"
@@ -17,7 +20,7 @@ import useSendFromUser from "../../hooks/useSendFromUser"
 import {useSession} from "../../hooks/useSignIn"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {DEPOSIT_MADE_EVENT} from "../../types/events"
-import {Loadable} from "../../types/loadable"
+import {Loadable, Loaded} from "../../types/loadable"
 import {SUPPLY_TX_TYPE, WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE} from "../../types/transactions"
 import {InfoIcon} from "../../ui/icons"
 import {
@@ -29,6 +32,7 @@ import {
   displayPercent,
   roundDownPenny,
   roundUpPenny,
+  sameBlock,
 } from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import CreditBarViz from "../creditBarViz"
@@ -446,7 +450,10 @@ function DepositStatus({
         ]}
         total={{
           text: "Total Est. APY",
-          value: estimatedApy ? `~${displayPercent(estimatedApy)}` : displayPercent(estimatedApy),
+          value:
+            estimatedApy && (estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy)
+              ? `~${displayPercent(estimatedApy)}`
+              : displayPercent(estimatedApy),
         }}
         footer={
           <>
@@ -902,8 +909,16 @@ function TranchedPoolView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backers, pool, gfi, backerRewards])
 
-  async function refreshTranchedPoolsEstimatedApyFromGfi(backers, pool, gfi, backerRewards) {
-    if (gfi.info.value.currentBlock.number === backerRewards.info.value.currentBlock.number) {
+  async function refreshTranchedPoolsEstimatedApyFromGfi(
+    backers: Loaded<TranchedPoolBacker[]>,
+    pool: SeniorPoolLoaded,
+    gfi: GFILoaded,
+    backerRewards: BackerRewardsLoaded
+  ) {
+    if (
+      sameBlock(pool.info.value.currentBlock, gfi.info.value.currentBlock) &&
+      sameBlock(gfi.info.value.currentBlock, backerRewards.info.value.currentBlock)
+    ) {
       const estimatedApyFromGfi = await backerRewards.estimateApyFromGfiByTranchedPool(
         backers.value.map((backer) => backer.tranchedPool),
         pool,
