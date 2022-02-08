@@ -46,6 +46,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 lockedUntil;
     // @notice Type of the staked position
     StakedPositionType positionType;
+    // @notice Multiplier applied to staked amount to denominate in `baseStakingToken().decimals()`
+    uint256 effectiveMultiplier;
     // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
     uint256 baseTokenExchangeRate;
   }
@@ -296,40 +298,23 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function positionToEffectiveLeveredAmount(StakedPosition storage position) internal view returns (uint256) {
-    uint256 effectiveAmountMultiplier = getEffectiveAmountMultiplier(position.positionType);
-    uint256 effectiveAmount = toEffectiveAmount(
-      position.amount,
-      position.baseTokenExchangeRate,
-      effectiveAmountMultiplier
-    );
-
+    uint256 effectiveAmount = positionToEffectiveAmount(position);
     return toLeveredAmount(effectiveAmount, position.leverageMultiplier);
   }
 
   function positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
-    uint256 effectiveAmountMultiplier = getEffectiveAmountMultiplier(position.positionType);
-    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, effectiveAmountMultiplier);
-  }
-
-  /// @notice The effective amount multiplier used to denominate a staked position type in `baseStakingToken()`.
-  ///   The multiplier is denominated in `MULTIPLIER_DECIMALS`
-  function getEffectiveAmountMultiplier(StakedPositionType positionType) internal view returns (uint256) {
-    if (effectiveMultipliers[positionType] > 0) {
-      return effectiveMultipliers[positionType];
-    }
-
-    return MULTIPLIER_DECIMALS; // 1x
+    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
   }
 
   function toEffectiveAmount(
     uint256 amount,
     uint256 baseTokenExchangeRate,
-    uint256 effectiveAmountMultiplier
+    uint256 effectiveMultiplier
   ) internal pure returns (uint256) {
     // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
     uint256 exchangeRate = baseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : baseTokenExchangeRate;
-    // Both the exchange rate and the effective amount multiplier is scaled by 1e18
-    return amount.mul(exchangeRate).mul(effectiveAmountMultiplier).div(MULTIPLIER_DECIMALS).div(MULTIPLIER_DECIMALS);
+    // Both the exchange rate and the effective multiplier are denominated in MULTIPLIER_DECIMALS
+    return amount.mul(exchangeRate).mul(effectiveMultiplier).div(MULTIPLIER_DECIMALS).div(MULTIPLIER_DECIMALS);
   }
 
   function toLeveredAmount(uint256 amount, uint256 leverageMultiplier) internal pure returns (uint256) {
@@ -472,6 +457,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return leverageMultiplier;
   }
 
+  /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
+  ///   The multiplier is represented in `MULTIPLIER_DECIMALS`
+  function getEffectiveMultiplier(StakedPositionType positionType) internal view returns (uint256) {
+    if (effectiveMultipliers[positionType] > 0) {
+      return effectiveMultipliers[positionType];
+    }
+
+    return MULTIPLIER_DECIMALS; // 1x
+  }
+
   /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
   ///   `baseStakingToken()` amount. The exchange rate is denominated in `MULTIPLIER_DECIMALS`.
   /// @param positionType Type of the staked postion
@@ -538,6 +533,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _updateReward(tokenId);
 
     uint256 baseTokenExchangeRate = getBaseTokenExchangeRate(positionType);
+    uint256 effectiveMultiplier = getEffectiveMultiplier(positionType);
 
     positions[tokenId] = StakedPosition({
       positionType: positionType,
@@ -551,6 +547,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         endTime: block.timestamp.add(vestingLength)
       }),
       baseTokenExchangeRate: baseTokenExchangeRate,
+      effectiveMultiplier: effectiveMultiplier,
       leverageMultiplier: leverageMultiplier,
       lockedUntil: lockedUntil
     });
@@ -673,11 +670,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     require(block.timestamp >= position.lockedUntil, "staked funds are locked");
 
-    uint256 effectiveAmount = toEffectiveAmount(
-      amount,
-      position.baseTokenExchangeRate,
-      getEffectiveAmountMultiplier(position.positionType)
-    );
+    uint256 effectiveAmount = positionToEffectiveAmount(position);
     // By this point, leverageMultiplier should always be 1x due to the reset logic in updateReward.
     // But we subtract leveredAmount from totalLeveragedStakedSupply anyway, since that is technically correct.
     uint256 effectiveLeveredAmount = toLeveredAmount(effectiveAmount, position.leverageMultiplier);
@@ -773,12 +766,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit LeverageMultiplierUpdated(msg.sender, lockupPeriod, leverageMultiplier);
   }
 
-  /// @notice Set the effective amount multiplier for a given staked position type. The effective amount multipler
+  /// @notice Set the effective multiplier for a given staked position type. The effective multipler
   ///  is used to denominate a staked position to `baseStakingToken()`. The multiplier is represented in
   ///  `MULTIPLIER_DECIMALS`
   /// @param multiplier the new multiplier, denominated in `MULTIPLIER_DECIMALS`
   /// @param positionType the type of the position
-  function setEffectiveAmountMultiplier(uint256 multiplier, StakedPositionType positionType) external onlyAdmin {
+  function setEffectiveMultiplier(uint256 multiplier, StakedPositionType positionType) external onlyAdmin {
     effectiveMultipliers[positionType] = multiplier;
     emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
   }
