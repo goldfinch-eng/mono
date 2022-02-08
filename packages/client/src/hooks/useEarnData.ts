@@ -62,7 +62,10 @@ export function useTranchedPoolSubgraphData(
     ) {
       const backers = await parseBackers(tranchedPools, goldfinchProtocol, currentBlock, userAddress)
       const activePoolBackers = backers.filter(
-        (p) => p.tranchedPool.creditLine.limit.gte(MIN_POOL_LIMIT) && p.tranchedPool.metadata
+        (p) =>
+          p.tranchedPool.metadata &&
+          p.tranchedPool.creditLine.limit &&
+          p.tranchedPool.creditLine.limit.gte(MIN_POOL_LIMIT)
       )
       setBackers({
         loaded: true,

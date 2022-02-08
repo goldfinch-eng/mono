@@ -1,6 +1,6 @@
 .pools-list.table-spaced {
   .table-header {
-    font-size: 16px; 
+    font-size: 16px;
   }
 
   .table-row.pool-skeleton {
@@ -26,6 +26,7 @@
   margin-bottom: 0px;
 
   .title {
+    color: $purp-dark;
     font-size: $sans-size-base;
     font-weight: 500;
   }
@@ -34,10 +35,6 @@
     font-size: $sans-size-xs;
     color: $purp;
     margin: 12px 0 36px;
-  }
-
-  .title {
-    color: $purp-dark;
   }
 
   .pool-info {

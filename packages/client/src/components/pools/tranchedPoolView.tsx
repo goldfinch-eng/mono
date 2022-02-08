@@ -51,8 +51,8 @@ function useRecentPoolTransactions({
   tranchedPool,
   currentBlock,
 }: {
-  tranchedPool?: TranchedPool
-  currentBlock?: BlockInfo
+  tranchedPool: TranchedPool | undefined
+  currentBlock: BlockInfo | undefined
 }): Record<string, any>[] {
   let recentTransactions = useAsync(
     () => tranchedPool && currentBlock && tranchedPool.recentTransactions(currentBlock),
@@ -64,7 +64,7 @@ function useRecentPoolTransactions({
   return []
 }
 
-function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   let uniqueSuppliers = 0
   const {goldfinchProtocol, currentBlock} = useContext(AppContext)
 
@@ -355,8 +355,8 @@ function DepositStatus({
   backer,
   tranchedPoolsEstimatedApyFromGfi,
 }: {
-  tranchedPool?: TranchedPool
-  backer?: TranchedPoolBacker
+  tranchedPool: TranchedPool | undefined
+  backer: TranchedPoolBacker | undefined
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
   const session = useSession()
@@ -366,9 +366,9 @@ function DepositStatus({
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   let estimatedUSDCApy = tranchedPool.estimateJuniorAPY(leverageRatio)
-  const apys = tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[tranchedPool.address]
-  const estimatedBackersOnlyApy = apys?.backersOnly
-  const estimatedLpSeniorPoolMatchingApy = apys?.seniorPoolMatching
+  const apysFromGfi = tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[tranchedPool.address]
+  const estimatedBackersOnlyApy = apysFromGfi?.backersOnly
+  const estimatedLpSeniorPoolMatchingApy = apysFromGfi?.seniorPoolMatching
 
   const estimatedApy =
     estimatedUSDCApy || estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy
@@ -377,8 +377,8 @@ function DepositStatus({
           .plus(estimatedLpSeniorPoolMatchingApy || new BigNumber(0))
       : undefined
 
-  const availableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(tranchedPool.totalDeployed)
-  let rightStatusItem
+  const backerAvailableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(backer.balanceInDollars)
+  let rightStatusItem: React.ReactNode
   if (tranchedPool.creditLine.balance.isZero()) {
     // Not yet drawdown
     rightStatusItem = (
@@ -386,11 +386,7 @@ function DepositStatus({
         <div className="label">Est. APY</div>
         <div className="value">{displayPercent(estimatedUSDCApy)} USDC</div>
         <div className="deposit-status-sub-item-flex">
-          <div className="sub-value">
-            {estimatedApy && !estimatedApy.isEqualTo(estimatedUSDCApy)
-              ? `${displayPercent(estimatedApy)} with GFI`
-              : displayPercent(estimatedApy)}
-          </div>
+          <div className="sub-value">{`${displayPercent(estimatedApy)} with GFI`}</div>
           <span data-tip="" data-for="apy-tooltip" data-offset="{'top': 0, 'left': 80}" data-place="bottom">
             <InfoIcon color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
           </span>
@@ -423,7 +419,8 @@ function DepositStatus({
         <div className="label">Your balance</div>
         <div className="value">{displayDollars(backer.balanceInDollars)}</div>
         <div className="sub-value">
-          {displayDollars(backer.availableToWithdrawInDollars)} ({displayPercent(availableToWithdrawPercent)})
+          {displayDollars(backer.availableToWithdrawInDollars)} ({displayPercent(backerAvailableToWithdrawPercent)})
+          available
         </div>
       </div>
       {rightStatusItem}
@@ -593,7 +590,7 @@ function ActionsContainer({
   }
 }
 
-function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function V1DealSupplyStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   if (!tranchedPool) {
     return <></>
   }
@@ -639,7 +636,7 @@ function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function SupplyStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
   const uniqueJuniorSuppliers = useUniqueJuniorSuppliers({tranchedPool})
 
@@ -698,7 +695,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const {user, currentBlock} = useContext(AppContext)
   const transactions = useRecentPoolTransactions({tranchedPool, currentBlock})
   const backer = useBacker({user, tranchedPool})
@@ -795,7 +792,7 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 interface OverviewProps {
-  tranchedPool?: TranchedPool
+  tranchedPool: TranchedPool | undefined
   handleDetails: () => void
 }
 
@@ -856,7 +853,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   )
 }
 
-const EstimatedLPGFILaunchBanner = () => {
+const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
   return (
     <div className="info-banner background-container">
       <div className="message extra-small">
@@ -994,7 +991,7 @@ function TranchedPoolView() {
           {showActionsContainer ? (
             <>
               <InvestorNotice />
-              {!isAtMaxCapacity && <EstimatedLPGFILaunchBanner />}
+              {!isAtMaxCapacity && <EstimatedSeniorPoolMatchingGFILaunchBanner />}
               <ActionsContainer
                 tranchedPool={tranchedPool}
                 backer={backer}

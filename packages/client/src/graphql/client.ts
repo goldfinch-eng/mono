@@ -1,5 +1,6 @@
 import {ApolloClient, InMemoryCache, NormalizedCacheObject} from "@apollo/client"
 import {NetworkConfig} from "../types/network"
+import {isProductionAndPrivateNetwork} from "../utils"
 
 const API_URLS = {
   mainnet: "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch",
@@ -10,9 +11,9 @@ const getApolloClient = (network: NetworkConfig | undefined): ApolloClient<Norma
   let networkName: string
   if (!network) {
     networkName = "mainnet"
-  } else if (network.name === "localhost" && process.env.NODE_ENV === "production") {
-    // Any private network is marked as localhost, check `mapNetworkToID`, for production we
-    // want default to mainnet
+  } else if (isProductionAndPrivateNetwork(network)) {
+    // Undetected networks are marked as private by the provider and any private network is marked as
+    // localhost, check `mapNetworkToID`, for production we want default to mainnet
     networkName = "mainnet"
   } else {
     networkName = network.name
