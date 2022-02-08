@@ -467,21 +467,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return leverageMultiplier;
   }
 
-  /// @notice Calculate the exchange rate (scaled by 1e18) that will be used to convert the original
-  ///   staked token amount to the `baseStakingToken()` amount
+  /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
+  ///   `baseStakingToken()` amount. The exchange rate is denominated in MULTIPLIER_DECIMALS (1e18).
   /// @param positionType Type of the staked postion
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view virtual returns (uint256) {
     if (positionType == StakedPositionType.CurveLP) {
-      // Scale the Curve LP token price by 1e18. Curve LP tokens should already be scaled by 1e18,
-      // but making it explicit here.
-      uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().getVirtualPrice().mul(MULTIPLIER_DECIMALS).div(
-        uint256(10)**config.getFiduUSDCCurveLP().decimals()
-      );
-      // Scale the FIDU token price by 1e18. The FIDU token should already be scaled by 1e18,
-      // but making it explicit here.
-      uint256 fiduPrice = config.getSeniorPool().sharePrice().mul(MULTIPLIER_DECIMALS).div(
-        uint256(10)**config.getFidu().decimals()
-      );
+      // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
+      uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().getVirtualPrice();
+      // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
+      uint256 fiduPrice = config.getSeniorPool().sharePrice();
       return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
     } else if (positionType == StakedPositionType.Fidu) {
       return MULTIPLIER_DECIMALS; // 1x
