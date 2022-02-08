@@ -6,7 +6,7 @@ import {useParams} from "react-router-dom"
 import {AppContext} from "../../App"
 import {useEarn} from "../../contexts/EarnContext"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
-import {TranchedPoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {PoolState, TokenInfo, TranchedPool, TranchedPoolBacker, TRANCHES} from "../../ethereum/tranchedPool"
 import {decimalPlaces} from "../../ethereum/utils"
 import {useAsync} from "../../hooks/useAsync"
 import useERC20Permit from "../../hooks/useERC20Permit"
@@ -30,7 +30,6 @@ import {
   roundDownPenny,
   roundUpPenny,
 } from "../../utils"
-import Banner from "../banner"
 import ConnectionNotice from "../connectionNotice"
 import CreditBarViz from "../creditBarViz"
 import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
@@ -369,10 +368,10 @@ function DepositStatus({
 
   const estimatedApy =
     estimatedUSDCApy || estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy
-      ? (estimatedBackersOnlyApy || new BigNumber(0))
+      ? (estimatedUSDCApy || new BigNumber(0))
+          .plus(estimatedBackersOnlyApy || new BigNumber(0))
           .plus(estimatedLpSeniorPoolMatchingApy || new BigNumber(0))
-          .plus(estimatedUSDCApy || new BigNumber(0))
-      : new BigNumber(NaN)
+      : undefined
 
   const availableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(tranchedPool.totalDeployed)
   let rightStatusItem
