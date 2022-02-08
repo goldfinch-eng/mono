@@ -43,7 +43,7 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
           {displayPercent(props.estimatedApy)} with GFI
           <span
             data-tip=""
-            data-for="senior-pool-card-tooltip"
+            data-for="apy-tooltip"
             data-offset="{'top': 0, 'left': 0}"
             data-place="bottom"
             onClick={(e) => e.stopPropagation()}

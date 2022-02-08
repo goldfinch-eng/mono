@@ -387,12 +387,7 @@ function DepositStatus({
               ? `${displayPercent(estimatedApy)} with GFI`
               : displayPercent(estimatedApy)}
           </div>
-          <span
-            data-tip=""
-            data-for="tranched-pool-apy-tooltip"
-            data-offset="{'top': 0, 'left': 80}"
-            data-place="bottom"
-          >
+          <span data-tip="" data-for="apy-tooltip" data-offset="{'top': 0, 'left': 80}" data-place="bottom">
             <InfoIcon color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
           </span>
         </div>
