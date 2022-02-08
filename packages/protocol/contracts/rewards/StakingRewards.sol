@@ -66,6 +66,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   event MinRateAtPercentUpdated(address indexed who, uint256 minRateAtPercent);
   event MaxRateAtPercentUpdated(address indexed who, uint256 maxRateAtPercent);
   event LeverageMultiplierUpdated(address indexed who, LockupPeriod lockupPeriod, uint256 leverageMultiplier);
+  event EffectiveMultiplierUpdated(address indexed who, StakedPositionType positionType, uint256 multiplier);
 
   /* ========== STATE VARIABLES ========== */
 
@@ -124,6 +125,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @dev NFT tokenId => staked position
   mapping(uint256 => StakedPosition) public positions;
+
+  /// @dev A mapping of staked position types to multipliers used to denominate positions
+  ///   in `baseStakingToken()`. Represented with `MULTIPLIER_DECIMALS`.
+  mapping(StakedPositionType => uint256) private effectiveMultipliers;
 
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) external initializer {
@@ -306,14 +311,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, effectiveAmountMultiplier);
   }
 
-  function getEffectiveAmountMultiplier(StakedPositionType positionType) internal pure returns (uint256) {
-    if (positionType == StakedPositionType.Fidu) {
-      return MULTIPLIER_DECIMALS; // 100%
-    } else if (positionType == StakedPositionType.CurveLP) {
-      return MULTIPLIER_DECIMALS; // 100%
-    } else {
-      revert("unsupported StakedPositionType");
+  /// @notice The effective amount multiplier used to denominate a staked position type in `baseStakingToken()`.
+  ///   The multiplier is denominated in `MULTIPLIER_DECIMALS`
+  function getEffectiveAmountMultiplier(StakedPositionType positionType) internal view returns (uint256) {
+    if (effectiveMultipliers[positionType] > 0) {
+      return effectiveMultipliers[positionType];
     }
+
+    return MULTIPLIER_DECIMALS; // 1x
   }
 
   function toEffectiveAmount(
@@ -468,7 +473,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
-  ///   `baseStakingToken()` amount. The exchange rate is denominated in MULTIPLIER_DECIMALS (1e18).
+  ///   `baseStakingToken()` amount. The exchange rate is denominated in `MULTIPLIER_DECIMALS`.
   /// @param positionType Type of the staked postion
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view virtual returns (uint256) {
     if (positionType == StakedPositionType.CurveLP) {
@@ -766,6 +771,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   {
     leverageMultipliers[lockupPeriod] = leverageMultiplier;
     emit LeverageMultiplierUpdated(msg.sender, lockupPeriod, leverageMultiplier);
+  }
+
+  /// @notice Set the effective amount multiplier for a given staked position type. The effective amount multipler
+  ///  is used to denominate a staked position to `baseStakingToken()`. The multiplier is represented in
+  ///  `MULTIPLIER_DECIMALS`
+  /// @param multiplier the new multiplier, denominated in `MULTIPLIER_DECIMALS`
+  /// @param positionType the type of the position
+  function setEffectiveAmountMultiplier(uint256 multiplier, StakedPositionType positionType) external onlyAdmin {
+    effectiveMultipliers[positionType] = multiplier;
+    emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
   }
 
   function setVestingSchedule(uint256 _vestingLength) public onlyAdmin updateReward(0) {
