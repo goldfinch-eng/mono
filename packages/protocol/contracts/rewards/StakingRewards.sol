@@ -802,7 +802,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///  `MULTIPLIER_DECIMALS`
   /// @param multiplier the new multiplier, denominated in `MULTIPLIER_DECIMALS`
   /// @param positionType the type of the position
-  function setEffectiveMultiplier(uint256 multiplier, StakedPositionType positionType) external onlyAdmin {
+  function setEffectiveMultiplier(uint256 multiplier, StakedPositionType positionType)
+    public
+    onlyAdmin
+    updateReward(0)
+  {
     effectiveMultipliers[positionType] = multiplier;
     emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
   }
