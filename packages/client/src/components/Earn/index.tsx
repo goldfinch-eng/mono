@@ -1,26 +1,26 @@
+import BigNumber from "bignumber.js"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../../App"
 import {useEarn} from "../../contexts/EarnContext"
+import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
-import {UserLoaded} from "../../ethereum/user"
-import {Loadable, Loaded} from "../../types/loadable"
-import {assertNonNullable, displayDollars, displayPercent, sameBlock} from "../../utils"
-import ConnectionNotice from "../connectionNotice"
-import {useCurrentRoute} from "../../hooks/useCurrentRoute"
-import {ONE_QUADRILLION_USDC} from "../../ethereum/utils"
-import PortfolioOverviewSkeleton from "./PortfolioOverviewSkeleton"
-import PoolList from "./PoolList"
-import SeniorPoolCardSkeleton from "./SeniorPoolCardSkeleton"
-import TranchedPoolCardSkeleton from "./TranchedPoolCardSkeleton"
-import SeniorPoolCard from "./SeniorPoolCard"
-import PortfolioOverview from "./PortfolioOverview"
-import TranchedPoolCard from "./TranchedPoolCard"
-import {TranchedPoolsEstimatedApyFromGfi} from "./types"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
-import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
-import BigNumber from "bignumber.js"
+import {UserLoaded} from "../../ethereum/user"
+import {ONE_QUADRILLION_USDC} from "../../ethereum/utils"
+import {useCurrentRoute} from "../../hooks/useCurrentRoute"
+import {Loadable, Loaded} from "../../types/loadable"
+import {assertNonNullable, displayDollars, sameBlock} from "../../utils"
+import ConnectionNotice from "../connectionNotice"
+import PoolList from "./PoolList"
+import PortfolioOverview from "./PortfolioOverview"
+import PortfolioOverviewSkeleton from "./PortfolioOverviewSkeleton"
+import SeniorPoolCard from "./SeniorPoolCard"
+import SeniorPoolCardSkeleton from "./SeniorPoolCardSkeleton"
+import TranchedPoolCard from "./TranchedPoolCard"
+import TranchedPoolCardSkeleton from "./TranchedPoolCardSkeleton"
+import {TranchedPoolsEstimatedApyFromGfi} from "./types"
 
 export default function Earn() {
   const {
@@ -88,12 +88,12 @@ export default function Earn() {
 
   useEffect(() => {
     if (backers.loaded && pool && gfi && backerRewards) {
-      refreshTranchedPoolsEstimatedBackersOnlyApyFromGfi(backers, pool, gfi, backerRewards)
+      refreshTranchedPoolsEstimatedApyFromGfi(backers, pool, gfi, backerRewards)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backers, pool, gfi, backerRewards])
 
-  async function refreshTranchedPoolsEstimatedBackersOnlyApyFromGfi(
+  async function refreshTranchedPoolsEstimatedApyFromGfi(
     backers: Loaded<TranchedPoolBacker[]>,
     pool: SeniorPoolLoaded,
     gfi: GFILoaded,
@@ -151,13 +151,6 @@ export default function Earn() {
     limitToDisplay = displayDollars(undefined)
   }
 
-  let seniorPoolDisplayApy: BigNumber | undefined
-  if (pool?.info.value.poolData.estimatedApyFromGfi && seniorPoolStatus?.value?.estimatedApy) {
-    seniorPoolDisplayApy = pool.info.value.poolData.estimatedApyFromGfi.plus(seniorPoolStatus.value.estimatedApy)
-  } else {
-    seniorPoolDisplayApy = seniorPoolStatus.value?.estimatedApy
-  }
-
   return (
     <div className="content-section">
       <div className="page-header">
@@ -179,12 +172,23 @@ export default function Earn() {
         />
       )}
       <div className="pools">
-        <PoolList title="Senior Pool">
+        <PoolList
+          title="Senior Pool"
+          subtitle="The simple, lower risk, lower return option. Capital is automatically diversified across Borrower pools, and protected by Backer capital."
+        >
           {seniorPoolStatus.loaded ? (
             <SeniorPoolCard
               balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
               userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
-              apy={displayPercent(seniorPoolDisplayApy)}
+              estimatedApyFromSupplying={seniorPoolStatus.value.estimatedApy}
+              estimatedApyFromGfi={pool?.info.value.poolData.estimatedApyFromGfi}
+              estimatedApy={
+                seniorPoolStatus.value.estimatedApy || pool?.info.value.poolData.estimatedApyFromGfi
+                  ? (seniorPoolStatus.value.estimatedApy || new BigNumber(0)).plus(
+                      pool?.info.value.poolData.estimatedApyFromGfi || new BigNumber(0)
+                    )
+                  : undefined
+              }
               limit={limitToDisplay}
               remainingCapacity={seniorPoolStatus.value.remainingCapacity}
               disabled={!loaded}
@@ -194,7 +198,10 @@ export default function Earn() {
             <SeniorPoolCardSkeleton />
           )}
         </PoolList>
-        <PoolList title="Borrower Pools">
+        <PoolList
+          title="Borrower Pools"
+          subtitle="The more active, higher risk, higher return option. Earn higher APYs by vetting borrowers and supplying first-loss capital directly to individual pools."
+        >
           {!poolsAddresses.loaded && !backers.loaded ? (
             <>
               <TranchedPoolCardSkeleton />
