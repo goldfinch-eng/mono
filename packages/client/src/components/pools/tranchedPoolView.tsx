@@ -377,8 +377,8 @@ function DepositStatus({
           .plus(estimatedLpSeniorPoolMatchingApy || new BigNumber(0))
       : undefined
 
-  const availableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(tranchedPool.totalDeployed)
-  let rightStatusItem
+  const backerAvailableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(backer.balanceInDollars)
+  let rightStatusItem: React.ReactNode
   if (tranchedPool.creditLine.balance.isZero()) {
     // Not yet drawdown
     rightStatusItem = (
@@ -424,7 +424,8 @@ function DepositStatus({
         <div className="label">Your balance</div>
         <div className="value">{displayDollars(backer.balanceInDollars)}</div>
         <div className="sub-value">
-          {displayDollars(backer.availableToWithdrawInDollars)} ({displayPercent(availableToWithdrawPercent)})
+          {displayDollars(backer.availableToWithdrawInDollars)} ({displayPercent(backerAvailableToWithdrawPercent)})
+          available
         </div>
       </div>
       {rightStatusItem}
