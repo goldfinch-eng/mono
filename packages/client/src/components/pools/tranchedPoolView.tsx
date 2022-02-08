@@ -812,7 +812,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   )
 }
 
-const EstimatedLPGFILaunchBanner = () => {
+const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
   return (
     <div className="info-banner background-container">
       <div className="message extra-small">
@@ -950,7 +950,7 @@ function TranchedPoolView() {
           {showActionsContainer ? (
             <>
               <InvestorNotice />
-              {!isAtMaxCapacity && <EstimatedLPGFILaunchBanner />}
+              {!isAtMaxCapacity && <EstimatedSeniorPoolMatchingGFILaunchBanner />}
               <ActionsContainer
                 tranchedPool={tranchedPool}
                 backer={backer}
