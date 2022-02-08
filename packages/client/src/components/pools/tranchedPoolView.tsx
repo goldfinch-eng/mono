@@ -51,8 +51,8 @@ function useRecentPoolTransactions({
   tranchedPool,
   currentBlock,
 }: {
-  tranchedPool?: TranchedPool
-  currentBlock?: BlockInfo
+  tranchedPool: TranchedPool | undefined
+  currentBlock: BlockInfo | undefined
 }): Record<string, any>[] {
   let recentTransactions = useAsync(
     () => tranchedPool && currentBlock && tranchedPool.recentTransactions(currentBlock),
@@ -64,7 +64,7 @@ function useRecentPoolTransactions({
   return []
 }
 
-function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   let uniqueSuppliers = 0
   const {goldfinchProtocol, currentBlock} = useContext(AppContext)
 
@@ -355,8 +355,8 @@ function DepositStatus({
   backer,
   tranchedPoolsEstimatedApyFromGfi,
 }: {
-  tranchedPool?: TranchedPool
-  backer?: TranchedPoolBacker
+  tranchedPool: TranchedPool | undefined
+  backer: TranchedPoolBacker | undefined
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
   const session = useSession()
@@ -552,7 +552,7 @@ function ActionsContainer({
   }
 }
 
-function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function V1DealSupplyStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   if (!tranchedPool) {
     return <></>
   }
@@ -598,7 +598,7 @@ function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function SupplyStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
   const uniqueJuniorSuppliers = useUniqueJuniorSuppliers({tranchedPool})
 
@@ -657,7 +657,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const {user, currentBlock} = useContext(AppContext)
   const transactions = useRecentPoolTransactions({tranchedPool, currentBlock})
   const backer = useBacker({user, tranchedPool})
@@ -754,7 +754,7 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 interface OverviewProps {
-  tranchedPool?: TranchedPool
+  tranchedPool: TranchedPool | undefined
   handleDetails: () => void
 }
 
