@@ -9,6 +9,7 @@ import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
+import {isAccredited} from "./isAccredited"
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
@@ -82,6 +83,31 @@ export async function handler(event: HandlerParams) {
   return await main({signer, auth: auth, network, uniqueIdentity})
 }
 
+async function getIDType({
+  address,
+  uniqueIdentity,
+  kycStatus,
+}: {
+  address: string
+  kycStatus: KYC
+  uniqueIdentity: UniqueIdentity
+}): Promise<ethers.BigNumber> {
+  let idVersion: ethers.BigNumber
+
+  if (kycStatus.countryCode === "US" && !isAccredited(address)) {
+    // US accredited
+    idVersion = await uniqueIdentity.ID_TYPE_1()
+  } else if (kycStatus.countryCode === "US" && !isAccredited(address)) {
+    // US non accredited
+    idVersion = await uniqueIdentity.ID_TYPE_2()
+  } else {
+    // non US
+    idVersion = await uniqueIdentity.ID_TYPE_0()
+  }
+
+  return idVersion
+}
+
 // Main function
 export async function main({
   auth,
@@ -99,7 +125,7 @@ export async function main({
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
 
-  let kycStatus
+  let kycStatus: KYC
   try {
     kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
   } catch (e) {
@@ -115,14 +141,11 @@ export async function main({
   const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = auth["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
-  let idVersion
-  if (kycStatus.countryCode === "US") {
-    // US non accredited
-    idVersion = await uniqueIdentity.ID_TYPE_2()
-  } else {
-    // non US
-    idVersion = await uniqueIdentity.ID_TYPE_0()
-  }
+  const idVersion = await getIDType({
+    address: userAddress,
+    uniqueIdentity,
+    kycStatus,
+  })
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   const encoded = pack(signTypes, signParams)

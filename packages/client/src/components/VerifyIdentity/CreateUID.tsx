@@ -5,7 +5,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../../App"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
-import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
+import DefaultGoldfinchClient, {KYC} from "../../hooks/useGoldfinchClient"
 import useSendFromUser from "../../hooks/useSendFromUser"
 import {AuthenticatedSession, Session, useSignIn} from "../../hooks/useSignIn"
 import {NetworkConfig} from "../../types/network"
@@ -70,7 +70,15 @@ async function fetchTrustedSignature({
   return asSignatureResponse(body)
 }
 
-export default function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
+export default function CreateUID({
+  disabled,
+  dispatch,
+  kyc,
+}: {
+  disabled: boolean
+  dispatch: React.Dispatch<Action>
+  kyc?: KYC
+}) {
   const formMethods = useForm()
   const {user, userWalletWeb3Status, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
     useContext(AppContext)
