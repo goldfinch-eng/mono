@@ -279,6 +279,12 @@ describe("StakingRewards", function () {
 
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset the effective multiplier for the CurveLP to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Reset the exchange rate to 1x
+      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     context("for a FIDU position", async () => {
@@ -398,6 +404,36 @@ describe("StakingRewards", function () {
         expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardEvent.args.reward)
       })
 
+      it("distributes rewards using the effective multiplier", async () => {
+        await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+        // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
+        const anotherUserToken = await stake({
+          amount: curveLPAmount.mul(new BN(2)),
+          from: anotherUser,
+        })
+        const startTime = await time.latest()
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        // investor owns 1/2 of the staked supply and therefore should receive 1/2
+        // of the disbursed rewards
+        await stakingRewards.getReward(tokenId, {from: investor})
+        let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+        // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+        // of the disbursed rewards
+        await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+        const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+        const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+        expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
+
       it("gives them rewards depending on how long they were staked", async () => {
         await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: anotherUser})
         const startTime = await time.latest()
@@ -446,7 +482,7 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2).mul(new BN(String(1e18))))
+        await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2).mul(MULTIPLIER_DECIMALS))
 
         // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({
