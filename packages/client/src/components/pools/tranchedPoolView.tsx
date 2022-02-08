@@ -386,11 +386,7 @@ function DepositStatus({
         <div className="label">Est. APY</div>
         <div className="value">{displayPercent(estimatedUSDCApy)} USDC</div>
         <div className="deposit-status-sub-item-flex">
-          <div className="sub-value">
-            {estimatedApy && !estimatedApy.isEqualTo(estimatedUSDCApy)
-              ? `${displayPercent(estimatedApy)} with GFI`
-              : displayPercent(estimatedApy)}
-          </div>
+          <div className="sub-value">{`${displayPercent(estimatedApy)} with GFI`}</div>
           <span
             data-tip=""
             data-for="tranched-pool-apy-tooltip"
