@@ -52,14 +52,14 @@
   }
 
   a {
-     color: inherit;
+    color: inherit;
     text-decoration: underline;
   }
 
   .tooltip-small-row {
     font-size: 12px;
-    color: #897da3;
     height: 14px;
+    color: #897da3;
     margin: 0 0 14px 0;
   }
 
@@ -67,6 +67,13 @@
     max-width: 320px;
     margin: 16px 0 11px 0;
     color: #897da3;
+    font-size: $sans-size-xs;
   }
 
+}
+
+.placeholder {
+  .tooltip-small-row {
+    color: #b4ada7;
+  }
 }

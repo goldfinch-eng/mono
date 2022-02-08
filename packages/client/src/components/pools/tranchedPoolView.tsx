@@ -30,11 +30,12 @@ import {
   roundDownPenny,
   roundUpPenny,
 } from "../../utils"
+import Banner from "../banner"
 import ConnectionNotice from "../connectionNotice"
 import CreditBarViz from "../creditBarViz"
 import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
 import EtherscanLink from "../etherscanLink"
-import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
+import {iconDownArrow, iconInfo, iconOutArrow, iconUpArrow} from "../icons"
 import InfoSection from "../infoSection"
 import InvestorNotice from "../investorNotice"
 import LoadingButton from "../loadingButton"
@@ -355,6 +356,7 @@ function DepositStatus({
   backer?: TranchedPoolBacker
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
+  const session = useSession()
   if (!tranchedPool || !backer || !tranchedPoolsEstimatedApyFromGfi.loaded) {
     return <></>
   }
@@ -382,7 +384,9 @@ function DepositStatus({
         <div className="value">{displayPercent(estimatedUSDCApy)} USDC</div>
         <div className="deposit-status-sub-item-flex">
           <div className="sub-value">
-            {estimatedApy ? `${displayPercent(estimatedApy)} with GFI` : displayPercent(estimatedApy)}
+            {estimatedApy && !estimatedApy.isEqualTo(estimatedUSDCApy)
+              ? `${displayPercent(estimatedApy)} with GFI`
+              : displayPercent(estimatedApy)}
           </div>
           <span
             data-tip=""
@@ -390,7 +394,7 @@ function DepositStatus({
             data-offset="{'top': 0, 'left': 80}"
             data-place="bottom"
           >
-            <InfoIcon color="#75c1eb" />
+            <InfoIcon color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
           </span>
         </div>
       </div>
@@ -808,6 +812,28 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   )
 }
 
+const EstimatedLPGFILaunchBanner = () => {
+  return (
+    <div className="info-banner background-container">
+      <div className="message extra-small">
+        {iconInfo}
+        <span>
+          <span className="bold">Note:</span> The APY shown includes estimated GFI rewards that match what LPs would get
+          for staking. This is not live yet, but it is has been voted on and is expected to launch in March. Upon
+          launch, this reward will be retroactive and ongoing.{" "}
+          <a
+            href="https://snapshot.org/#/goldfinch.eth/proposal/0x10a390307e3834af5153dc58af0e20cbb0e08d38543be884b622b55bfcd5818d"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Learn more in this proposal
+          </a>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 interface TranchedPoolViewURLParams {
   poolAddress: string
 }
@@ -916,6 +942,7 @@ function TranchedPoolView() {
           {showActionsContainer ? (
             <>
               <InvestorNotice />
+              {!isAtMaxCapacity && <EstimatedLPGFILaunchBanner />}
               <ActionsContainer
                 tranchedPool={tranchedPool}
                 backer={backer}
