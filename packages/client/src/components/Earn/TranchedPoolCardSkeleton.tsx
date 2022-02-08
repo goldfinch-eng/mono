@@ -9,7 +9,7 @@ export default function TranchedPoolCardSkeleton() {
           <span>Loading...</span>
         </div>
       </div>
-      <div className="disabled table-cell col22 numeric apy">
+      <div className="disabled table-cell col32 numeric apy">
         <div className="usdc-apy">--.--% USDC</div>
         <div className="gfi-apy">
           --.--% with GFI
