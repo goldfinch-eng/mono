@@ -17,6 +17,7 @@ import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-signer"
 import {FetchKYCFunction, KYC} from "@goldfinch-eng/autotasks/unique-identity-signer"
+import * as migrateV235 from "../../blockchain_scripts/migrations/v2.3.5/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -40,6 +41,7 @@ import {
   getOnlyLog,
   getFirstLog,
   toEthers,
+  $TSFixMe,
 } from "../testHelpers"
 import * as migrate231 from "../../blockchain_scripts/migrations/v2.3.1/migrate"
 import * as migrate233 from "../../blockchain_scripts/migrations/v2.3.3/migrate"
@@ -79,6 +81,7 @@ import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAc
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {Signer} from "ethers"
+import {BackerStakingRewardsClaimed} from "@goldfinch-eng/protocol/typechain/truffle/BackerRewards"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -90,8 +93,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
-  await migrate231.main()
-  await migrate233.main()
+  await migrateV235.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -204,7 +206,7 @@ describe("mainnet forking tests", async function () {
 
   // eslint-disable-next-line no-unused-vars
   let accounts, owner, bwr, person3, usdc, fidu, goldfinchConfig
-  let goldfinchFactory, busd, usdt, cUSDC
+  let goldfinchFactory: GoldfinchFactoryInstance, busd, usdt, cUSDC
   let reserveAddress,
     tranchedPool: TranchedPoolInstance,
     borrower,
@@ -232,7 +234,9 @@ describe("mainnet forking tests", async function () {
 
   async function createBorrowerContract() {
     const result = await goldfinchFactory.createBorrower(bwr)
-    const bwrConAddr = result.logs[result.logs.length - 1].args.borrower
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const bwrConAddr = result.logs[result.logs.length - 1].args.borrower as $TSFixMe
     const bwrCon = await Borrower.at(bwrConAddr)
     await erc20Approve(busd, bwrCon.address, MAX_UINT, [bwr])
     await erc20Approve(usdt, bwrCon.address, MAX_UINT, [bwr])
@@ -664,6 +668,90 @@ describe("mainnet forking tests", async function () {
         await expect(seniorPool.sweepToCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
         await expect(seniorPool.sweepFromCompound({from: bwr})).to.be.rejectedWith(/Must have admin role/)
       }).timeout(TEST_TIMEOUT)
+    })
+  })
+
+  describe.only("BackerRewards", () => {
+    describe("with a 100 million dollar pool", () => {
+      let tranchedPool: TranchedPoolInstance
+      let backerStakingTokenId: string
+      let stakingRewardsTokenId: string
+      const stakedAmount = usdcVal(100)
+      let bwrCon: BorrowerInstance
+      beforeEach(async () => {
+        bwrCon = await createBorrowerContract()
+        const result = await goldfinchFactory.createPool(
+          bwrCon.address,
+          "20",
+          "10000000000000",
+          "100000000000000000",
+          "30",
+          "1095",
+          "0",
+          "1095",
+          "0",
+          ["0"],
+          {from: await getProtocolOwner()}
+        )
+        const event = result.logs[result.logs.length - 1] as $TSFixMe
+        tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: event.args.pool})
+
+        await advanceTime({days: 1})
+        await ethers.provider.send("evm_mine", [])
+
+        await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
+        await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
+        const tx = await tranchedPool.deposit(TRANCHES.Junior, stakedAmount, {from: owner})
+        await bwrCon.lockJuniorCapital(tranchedPool.address, {from: bwr})
+
+        await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
+        await tranchedPool.deposit(TRANCHES.Senior, stakedAmount.mul(new BN("3")), {from: owner})
+        await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner)
+
+        await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [bwr, owner])
+        await erc20Approve(gfi, stakingRewards.address, MAX_UINT, [bwr, owner])
+        const stakingResult = await stakingRewards.depositAndStake(stakedAmount, {from: bwr})
+        const stakingLogs = decodeLogs<Staked>(stakingResult.receipt.rawLogs, stakingRewards, "Staked")
+        const stakedEvent = stakingLogs[0]
+        stakingRewardsTokenId = stakedEvent!.args.tokenId!.toString()
+
+        const logs = decodeLogs<DepositMade>(tx.receipt.rawLogs, tranchedPool, "DepositMade")
+        let depositMadeEvent = logs[0]
+        expect(depositMadeEvent).to.not.be.undefined
+        depositMadeEvent = asNonNullable(depositMadeEvent)
+        backerStakingTokenId = depositMadeEvent.args.tokenId.toString()
+      })
+
+      describe("after drawdown", () => {
+        beforeEach(async () => {
+          await bwrCon.drawdown(tranchedPool.address, usdcVal(400).toString(), bwr, {from: bwr})
+        })
+
+        it("if I deposit into the staking rewards contract, I should receive equal rewards", async () => {
+          const earnedStakingRewards = await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
+          const tx = await backerRewards.withdraw(backerStakingTokenId, {from: owner})
+          const logs = decodeLogs<BackerStakingRewardsClaimed>(
+            tx.receipt.rawLogs,
+            backerRewards,
+            "BackerStakingRewardsClaimed"
+          )
+          const backerStakingRewardsClaimedEvent = logs[0]
+          expect(backerStakingRewardsClaimedEvent?.args.amount).to.bignumber.eq(earnedStakingRewards)
+        })
+      })
+
+      describe("before drawdown", async () => {
+        it("when a user withdraws they should earn 0 rewards", async () => {
+          const tx = await backerRewards.withdraw(backerStakingTokenId, {from: owner})
+          const logs = decodeLogs<BackerStakingRewardsClaimed>(
+            tx.receipt.rawLogs,
+            backerRewards,
+            "BackerStakingRewardsClaimed"
+          )
+          const backerStakingRewardsClaimedEvent = logs[0]
+          expect(backerStakingRewardsClaimedEvent?.args.amount).to.bignumber.eq("0")
+        })
+      })
     })
   })
 

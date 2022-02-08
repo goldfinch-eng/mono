@@ -8,7 +8,6 @@ import "./IV2CreditLine.sol";
 abstract contract ITranchedPool {
   IV2CreditLine public creditLine;
   uint256 public createdAt;
-
   enum Tranches {
     Reserved,
     Senior,
@@ -58,8 +57,6 @@ abstract contract ITranchedPool {
     uint256[] calldata _allowedUIDTypes
   ) public virtual;
 
-  function poolSlices() public view virtual returns (PoolSlice[] memory);
-
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
 
   function pay(uint256 amount) external virtual;
@@ -106,4 +103,8 @@ abstract contract ITranchedPool {
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn);
 
   function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) external virtual;
+
+  function numSlices() virtual public view returns (uint256);
+
+  function getSlice(uint256 _index) external virtual returns (ITranchedPool.PoolSlice calldata);
 }
