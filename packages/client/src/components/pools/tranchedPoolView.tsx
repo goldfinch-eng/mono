@@ -366,9 +366,9 @@ function DepositStatus({
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   let estimatedUSDCApy = tranchedPool.estimateJuniorAPY(leverageRatio)
-  const apys = tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[tranchedPool.address]
-  const estimatedBackersOnlyApy = apys?.backersOnly
-  const estimatedLpSeniorPoolMatchingApy = apys?.seniorPoolMatching
+  const apysFromGfi = tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[tranchedPool.address]
+  const estimatedBackersOnlyApy = apysFromGfi?.backersOnly
+  const estimatedLpSeniorPoolMatchingApy = apysFromGfi?.seniorPoolMatching
 
   const estimatedApy =
     estimatedUSDCApy || estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy
