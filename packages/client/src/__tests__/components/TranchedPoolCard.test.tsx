@@ -115,21 +115,24 @@ describe("Tranched pool card", () => {
       renderTranchedPoolCard(false, new BigNumber(0), false, undefined, undefined)
 
       await waitFor(() => {
-        expect(screen.getByText("8.50%")).toBeInTheDocument()
+        expect(screen.getByText("8.50% USDC")).toBeInTheDocument()
+        expect(screen.getByText("8.50% with GFI")).toBeInTheDocument()
       })
     })
     it("shows the sum of base APY and the senior-pool-matching APY-from-GFI, if the backers-only APY-from-GFI is undefined", async () => {
       renderTranchedPoolCard(false, new BigNumber(0), false, undefined, new BigNumber(0.2))
 
       await waitFor(() => {
-        expect(screen.getByText("28.50%")).toBeInTheDocument()
+        expect(screen.getByText("8.50% USDC")).toBeInTheDocument()
+        expect(screen.getByText("28.50% with GFI")).toBeInTheDocument()
       })
     })
     it("shows the sum of base APY, the senior-pool-matching APY-from-GFI, and the backers-only APY-from-GFI, if the latter two are defined", async () => {
       renderTranchedPoolCard(true, new BigNumber(0), false, new BigNumber(0.9), new BigNumber(0.2))
 
       await waitFor(() => {
-        expect(screen.getByText("118.50%")).toBeInTheDocument()
+        expect(screen.getByText("8.50% USDC")).toBeInTheDocument()
+        expect(screen.getByText("118.50% with GFI")).toBeInTheDocument()
       })
     })
   })
