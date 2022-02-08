@@ -991,7 +991,9 @@ function TranchedPoolView() {
           {showActionsContainer ? (
             <>
               <InvestorNotice />
-              {!isAtMaxCapacity && <EstimatedSeniorPoolMatchingGFILaunchBanner />}
+              {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
+                <EstimatedSeniorPoolMatchingGFILaunchBanner />
+              ) : undefined}
               <ActionsContainer
                 tranchedPool={tranchedPool}
                 backer={backer}
