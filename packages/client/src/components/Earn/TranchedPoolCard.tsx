@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js"
 import {useHistory} from "react-router-dom"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
+import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent} from "../../utils"
 import Badge from "../badge"
 
@@ -56,11 +57,19 @@ export default function TranchedPoolCard({
           <span className={`subheader ${disabledClass}`}>{tranchedPool.metadata?.category}</span>
         </div>
       </div>
+      <div className={`table-cell col22 numeric apy ${disabledClass}`}>
+        <div className="usdc-apy">{displayPercent(estimatedApyFromSupplying)} USDC</div>
+        <div className="gfi-apy">
+          {displayPercent(estimatedApy)} with GFI
+          <span data-tip="" data-for="" data-offset="{'top': 0, 'left': 0}" data-place="bottom">
+            <InfoIcon />
+          </span>
+        </div>
+      </div>
+      <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
       <div className={`${balanceDisabledClass} ${disabledClass} table-cell col22 numeric balance`}>
         {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}
       </div>
-      <div className={`table-cell col22 numeric limit ${disabledClass}`}>{displayDollars(limit, 0)}</div>
-      <div className={`table-cell col16 numeric apy ${disabledClass}`}>{displayPercent(estimatedApy)}</div>
       <div className="pool-capacity">{badge}</div>
     </div>
   )

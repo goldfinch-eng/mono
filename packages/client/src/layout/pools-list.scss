@@ -1,6 +1,40 @@
+.pools-list.table-spaced {
+  .table-header {
+    font-size: 16px; 
+  }
+
+  .table-row.pool-skeleton {
+    font-size: $sans-size-s;
+
+    .gfi-apy {
+      font-size: $sans-size-xs;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+
+      svg {
+        margin-left: 4px;
+        height: 14px;
+      }
+    }
+  }
+}
+
 .pools-list {
   margin-top: 0px;
   margin-bottom: 0px;
+
+  .title {
+    font-size: $sans-size-base;
+    font-weight: 500;
+  }
+
+  .subtitle {
+    font-size: $sans-size-xs;
+    color: $purp;
+    margin: 12px 0 36px;
+  }
 
   .title {
     color: $purp-dark;
@@ -37,6 +71,43 @@
 
     .icon.disabled {
       opacity: 50%;
+    }
+
+    .name, .apy, .limit, .balance {
+      font-size: $sans-size-s;
+    }
+
+    .senior-pool-limit {
+      color: $sand-xdark;
+    }
+
+    .subheader {
+      font-size: $sans-size-xs;
+    }
+
+    .senior-pool-icon {
+      height: 40px;
+      background-color: #fff;
+      padding: 4px;
+      border-radius: 50%;
+    }
+
+    .gfi-apy {
+      font-size: $sans-size-xs;
+      color: $purp-light;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+
+      svg {
+        margin-left: 4px;
+        height: 14px;
+
+        path {
+          fill: $purp-light;
+        }
+      }
     }
   }
 
@@ -85,7 +156,7 @@
     }
   }
 
-  .table-spaced .table-cell.col16.apy {
+  .table-spaced .table-cell.col22.apy {
     white-space: nowrap;
   }
 }
