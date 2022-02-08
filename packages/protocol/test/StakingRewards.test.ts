@@ -2658,6 +2658,86 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("setEffectiveMultiplier", async () => {
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset effective multiplier to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+    })
+
+    it("sets multipliers", async () => {
+      expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.equal(bigVal(1))
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.equal(bigVal(2))
+    })
+
+    it("checkpoints rewards", async () => {
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("emits an event", async () => {
+      const multiplier = new BN(2).mul(MULTIPLIER_DECIMALS)
+      const tx = await stakingRewards.setEffectiveMultiplier(multiplier, StakedPositionType.CurveLP, {from: owner})
+      expectEvent(tx, "EffectiveMultiplierUpdated", {
+        who: owner,
+        positionType: StakedPositionType.CurveLP.toString(),
+        multiplier,
+      })
+    })
+
+    it("does not affect previously staked positions", async () => {
+      // anotherUser stakes the same number of FIDU tokens
+      const anotherUserToken = await stake({
+        amount: curveLPAmount,
+        from: anotherUser,
+      })
+      const startTime = await time.latest()
+
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+      const timeDiff = (await time.latest()).sub(startTime)
+
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      await advanceTime({seconds: yearInSeconds})
+
+      // investor owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(tokenId, {from: investor})
+      let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+      expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+      // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+      const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+      const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+      expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+      expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+    })
+
+    context("user is not admin", async () => {
+      it("reverts", async () => {
+        await expect(
+          stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP, {
+            from: anotherUser,
+          })
+        ).to.be.rejectedWith(/Must have admin role/)
+      })
+    })
+  })
+
   describe("updateGoldfinchConfig", async () => {
     let otherConfig: GoldfinchConfigInstance
 

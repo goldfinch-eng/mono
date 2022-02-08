@@ -460,7 +460,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
   ///   The multiplier is represented in `MULTIPLIER_DECIMALS`
-  function getEffectiveMultiplier(StakedPositionType positionType) internal view returns (uint256) {
+  function getEffectiveMultiplier(StakedPositionType positionType) public view returns (uint256) {
     if (effectiveMultipliers[positionType] > 0) {
       return effectiveMultipliers[positionType];
     }
