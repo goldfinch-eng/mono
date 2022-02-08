@@ -2,7 +2,14 @@ import "@testing-library/jest-dom"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CommunityRewards, CommunityRewardsLoaded} from "../../../ethereum/communityRewards"
 import {GFI, GFILoaded} from "../../../ethereum/gfi"
-import {User, UserCommunityRewards, UserMerkleDirectDistributor, UserMerkleDistributor} from "../../../ethereum/user"
+import {
+  User,
+  UserBackerMerkleDirectDistributor,
+  UserBackerMerkleDistributor,
+  UserCommunityRewards,
+  UserMerkleDirectDistributor,
+  UserMerkleDistributor,
+} from "../../../ethereum/user"
 import {SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "../../../ethereum/pool"
 import {network, recipient} from "./constants"
 import {assertWithLoadedInfo} from "../../../types/loadable"
@@ -16,6 +23,10 @@ import {
   mockMerkleDirectDistributorContractCalls,
   setupMocksForMerkleDirectDistributorAirdrop,
   defaultStakingRewardsVestingLength,
+  mockGfiContractCalls,
+  mockBackerMerkleDistributorContractCalls,
+  mockBackerMerkleDirectDistributorContractCalls,
+  MerkleDistributorConfigMock,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
@@ -26,6 +37,11 @@ import {BlockInfo} from "../../../utils"
 import {MerkleDistributor, MerkleDistributorLoaded} from "../../../ethereum/merkleDistributor"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../ethereum/merkleDirectDistributor"
 import {Web3IO} from "../../../types/web3"
+import {
+  BackerMerkleDirectDistributorLoaded,
+  BackerMerkleDirectDistributor,
+} from "../../../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded, BackerMerkleDistributor} from "../../../ethereum/backerMerkleDistributor"
 
 export async function prepareUserRelatedDeps(
   deps: {
@@ -35,7 +51,9 @@ export async function prepareUserRelatedDeps(
     gfi: GFILoaded
     communityRewards: CommunityRewardsLoaded
     merkleDistributor: MerkleDistributorLoaded
+    backerMerkleDistributor: BackerMerkleDistributorLoaded
     merkleDirectDistributor: MerkleDirectDistributorLoaded
+    backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded
   },
   rewardsMock: RewardsMockData
 ) {
@@ -48,7 +66,9 @@ export async function prepareUserRelatedDeps(
   )
   const userMerkleDistributor = new UserMerkleDistributor(recipient, deps.goldfinchProtocol)
   const userMerkleDirectDistributor = new UserMerkleDirectDistributor(recipient, deps.goldfinchProtocol)
+  const userBackerMerkleDirectDistributor = new UserBackerMerkleDirectDistributor(recipient, deps.goldfinchProtocol)
   const userCommunityRewards = new UserCommunityRewards(recipient, deps.goldfinchProtocol)
+  const userBackerMerkleDistributor = new UserBackerMerkleDistributor(recipient, deps.goldfinchProtocol)
   const mocks = await mockUserRelatedInitializationContractCalls(
     user,
     deps.stakingRewards,
@@ -56,6 +76,8 @@ export async function prepareUserRelatedDeps(
     deps.communityRewards,
     deps.merkleDistributor,
     deps.merkleDirectDistributor,
+    deps.backerMerkleDistributor,
+    deps.backerMerkleDirectDistributor,
     rewardsMock
   )
   await user.initialize(
@@ -75,17 +97,36 @@ export async function prepareUserRelatedDeps(
   await userMerkleDirectDistributor.initialize(deps.merkleDirectDistributor, rewardsMock.currentBlock)
   assertWithLoadedInfo(userMerkleDirectDistributor)
 
+  await userBackerMerkleDirectDistributor.initialize(deps.backerMerkleDirectDistributor, rewardsMock.currentBlock)
+  assertWithLoadedInfo(userBackerMerkleDirectDistributor)
+
+  await userBackerMerkleDistributor.initialize(
+    deps.backerMerkleDistributor,
+    deps.communityRewards,
+    rewardsMock.currentBlock
+  )
+  assertWithLoadedInfo(userBackerMerkleDistributor)
+
   await userCommunityRewards.initialize(
     deps.communityRewards,
     deps.merkleDistributor,
+    deps.backerMerkleDistributor,
     userMerkleDistributor,
+    userBackerMerkleDistributor,
     rewardsMock.currentBlock
   )
   assertWithLoadedInfo(userCommunityRewards)
 
   assertAllMocksAreCalled(mocks)
 
-  return {user, userMerkleDistributor, userMerkleDirectDistributor, userCommunityRewards}
+  return {
+    user,
+    userMerkleDistributor,
+    userMerkleDirectDistributor,
+    userBackerMerkleDistributor,
+    userBackerMerkleDirectDistributor,
+    userCommunityRewards,
+  }
 }
 
 export async function setupNewStakingReward(
@@ -138,6 +179,19 @@ export const merkleDistributorAirdropNoVesting: MerkleDistributorGrantInfo = {
   proof: ["0x00", "0x00", "0x00"],
 }
 
+export const backerMerkleDistributorAirdropNoVesting: MerkleDistributorGrantInfo = {
+  index: 0,
+  account: recipient,
+  reason: "backer",
+  grant: {
+    amount: "0x3635c9adc5dea00000",
+    vestingLength: "0x00",
+    cliffLength: "0x00",
+    vestingInterval: "0x01",
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
 export const merkleDistributorAirdropVesting: MerkleDistributorGrantInfo = {
   index: 0,
   account: recipient,
@@ -151,12 +205,58 @@ export const merkleDistributorAirdropVesting: MerkleDistributorGrantInfo = {
   proof: ["0x00", "0x00", "0x00"],
 }
 
+export const backerMerkleDistributorAirdropVesting: MerkleDistributorGrantInfo = {
+  index: 0,
+  account: recipient,
+  reason: "backer",
+  grant: {
+    amount: "0x3635c9adc5dea00000",
+    vestingLength: "0x1e13380",
+    cliffLength: "0x00",
+    vestingInterval: "0x01",
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
+export const partiallyClaimedBackerAirdrop: MerkleDistributorGrantInfo = {
+  index: 2,
+  account: recipient,
+  reason: "backer",
+  grant: {
+    amount: "0x3635c9adc5dea00000",
+    vestingLength: "0x01e13380",
+    cliffLength: "0x00",
+    vestingInterval: "0x01",
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
+export const partiallyClaimedAirdrop: MerkleDistributorGrantInfo = {
+  index: 2,
+  account: recipient,
+  reason: "goldfinch_investment",
+  grant: {
+    amount: "0x3635c9adc5dea00000",
+    vestingLength: "0x01e13380",
+    cliffLength: "0x00",
+    vestingInterval: "0x01",
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
+
 export async function setupClaimableCommunityReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  isBacker = false
 ) {
-  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
+  if (isBacker) {
+    setupMocksForMerkleDistributorAirdrop({
+      backerDistributor: {airdrop: backerMerkleDistributorAirdropNoVesting, isAccepted: true},
+    })
+  } else {
+    setupMocksForMerkleDistributorAirdrop({distributor: {airdrop: merkleDistributorAirdropNoVesting, isAccepted: true}})
+  }
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -165,6 +265,7 @@ export async function setupClaimableCommunityReward(
       currentBlock,
       community: {
         airdrop: merkleDistributorAirdropNoVesting,
+        isFromBacker: isBacker,
       },
     }
   )
@@ -175,9 +276,14 @@ export async function setupClaimableCommunityReward(
 export async function setupMerkleDistributorAirdropNoVesting(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  config: {
+    distributor: boolean
+    backerDistributor: boolean
+  }
 ) {
-  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, false)
+  const merkleConfig = getMerkleConfig(config)
+  setupMocksForMerkleDistributorAirdrop(merkleConfig)
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
     {goldfinchProtocol, seniorPool, ...baseDeps},
@@ -197,14 +303,39 @@ export async function setupMerkleDistributorAirdropNoVesting(
   return {...baseDeps, ...userRelatedDeps}
 }
 
+function getMerkleConfig(
+  config: {distributor: boolean; backerDistributor: boolean},
+  vesting = false
+): MerkleDistributorConfigMock {
+  let merkleConfig: MerkleDistributorConfigMock = {
+    distributor: undefined,
+    backerDistributor: undefined,
+  }
+  if (config.distributor) {
+    const airdrop = vesting ? merkleDistributorAirdropVesting : merkleDistributorAirdropNoVesting
+    merkleConfig["distributor"] = {airdrop, isAccepted: false}
+  }
+
+  if (config.backerDistributor) {
+    const airdrop = vesting ? backerMerkleDistributorAirdropVesting : backerMerkleDistributorAirdropNoVesting
+    merkleConfig["backerDistributor"] = {airdrop, isAccepted: false}
+  }
+  return merkleConfig
+}
+
 export async function setupMerkleDistributorAirdropVesting(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
   tokenLaunchTime: string,
   totalVestedAt: string,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  config: {
+    distributor: boolean
+    backerDistributor: boolean
+  }
 ) {
-  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropVesting, false)
+  const merkleConfig = getMerkleConfig(config, true)
+  setupMocksForMerkleDistributorAirdrop(merkleConfig)
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
     {goldfinchProtocol, seniorPool, ...baseDeps},
@@ -228,21 +359,39 @@ export async function setupMerkleDistributorAirdropVesting(
 export async function setupVestingCommunityReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  isBacker = false
 ) {
-  const airdrop: MerkleDistributorGrantInfo = {
-    index: 2,
-    account: recipient,
-    reason: "goldfinch_investment",
-    grant: {
-      amount: "0x3635c9adc5dea00000",
-      vestingLength: "0x1770",
-      cliffLength: "0x00",
-      vestingInterval: "0x012c",
-    },
-    proof: ["0x00", "0x00", "0x00"],
+  let airdrop: MerkleDistributorGrantInfo
+  if (isBacker) {
+    airdrop = {
+      index: 2,
+      account: recipient,
+      reason: "backer",
+      grant: {
+        amount: "0x3635c9adc5dea00000",
+        vestingLength: "0x1770",
+        cliffLength: "0x00",
+        vestingInterval: "0x012c",
+      },
+      proof: ["0x00", "0x00", "0x00"],
+    }
+    setupMocksForMerkleDistributorAirdrop({backerDistributor: {airdrop, isAccepted: true}})
+  } else {
+    airdrop = {
+      index: 2,
+      account: recipient,
+      reason: "goldfinch_investment",
+      grant: {
+        amount: "0x3635c9adc5dea00000",
+        vestingLength: "0x1770",
+        cliffLength: "0x00",
+        vestingInterval: "0x012c",
+      },
+      proof: ["0x00", "0x00", "0x00"],
+    }
+    setupMocksForMerkleDistributorAirdrop({distributor: {airdrop, isAccepted: true}})
   }
-  setupMocksForMerkleDistributorAirdrop(airdrop, true)
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -261,6 +410,7 @@ export async function setupVestingCommunityReward(
           "0",
         ],
         claimable: "0",
+        isFromBacker: isBacker,
       },
     }
   )
@@ -271,21 +421,17 @@ export async function setupPartiallyClaimedCommunityReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
   gfiBalance: string | undefined,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  isBacker = false
 ) {
-  const airdrop: MerkleDistributorGrantInfo = {
-    index: 2,
-    account: recipient,
-    reason: "goldfinch_investment",
-    grant: {
-      amount: "0x3635c9adc5dea00000",
-      vestingLength: "0x01e13380",
-      cliffLength: "0x00",
-      vestingInterval: "0x01",
-    },
-    proof: ["0x00", "0x00", "0x00"],
+  let airdrop: MerkleDistributorGrantInfo
+  if (isBacker) {
+    airdrop = {...partiallyClaimedBackerAirdrop}
+    setupMocksForMerkleDistributorAirdrop({backerDistributor: {airdrop, isAccepted: true}})
+  } else {
+    airdrop = {...partiallyClaimedAirdrop}
+    setupMocksForMerkleDistributorAirdrop({distributor: {airdrop, isAccepted: true}})
   }
-  setupMocksForMerkleDistributorAirdrop(airdrop, true)
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const tokenLaunchTime = String(currentBlock.timestamp - 518422)
@@ -306,6 +452,7 @@ export async function setupPartiallyClaimedCommunityReward(
           "0",
         ],
         claimable: "10958904109589041096",
+        isFromBacker: isBacker,
       },
       gfi: {gfiBalance},
     }
@@ -319,7 +466,7 @@ export async function setupCommunityRewardAndStakingReward(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
+  setupMocksForMerkleDistributorAirdrop({distributor: {airdrop: merkleDistributorAirdropNoVesting, isAccepted: true}})
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -349,13 +496,31 @@ const merkleDirectDistributorAirdrop: MerkleDirectDistributorGrantInfo = {
   },
   proof: ["0x00", "0x00", "0x00"],
 }
+const backerMerkleDirectDistributorAirdrop: MerkleDirectDistributorGrantInfo = {
+  index: 0,
+  account: recipient,
+  reason: "backer",
+  grant: {
+    amount: merkleDirectDistributorAirdropAmountHex,
+  },
+  proof: ["0x00", "0x00", "0x00"],
+}
 
 export async function setupDirectReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  isBacker = false
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
+  if (isBacker) {
+    setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+      backerDistributor: {airdrop: backerMerkleDirectDistributorAirdrop, isAccepted: true},
+    })
+  } else {
+    setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+      distributor: {airdrop: merkleDirectDistributorAirdrop, isAccepted: true},
+    })
+  }
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -375,7 +540,9 @@ export async function setupDirectRewardAndStakingReward(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+    distributor: {airdrop: merkleDirectDistributorAirdrop, isAccepted: true},
+  })
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -399,9 +566,11 @@ export async function setupCommunityRewardAndDirectRewardAndStakingReward(
   seniorPool: SeniorPoolLoaded,
   currentBlock: BlockInfo
 ) {
-  setupMocksForMerkleDistributorAirdrop(merkleDistributorAirdropNoVesting, true)
+  setupMocksForMerkleDistributorAirdrop({distributor: {airdrop: merkleDistributorAirdropNoVesting, isAccepted: true}})
 
-  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
+  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+    distributor: {airdrop: merkleDirectDistributorAirdrop, isAccepted: true},
+  })
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(
@@ -525,6 +694,8 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
     baseDeps.merkleDirectDistributor,
+    baseDeps.backerMerkleDistributor,
+    baseDeps.backerMerkleDirectDistributor,
     {
       currentBlock,
       staking: mockedStaking1,
@@ -537,6 +708,8 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
     baseDeps.merkleDirectDistributor,
+    baseDeps.backerMerkleDistributor,
+    baseDeps.backerMerkleDirectDistributor,
     {
       currentBlock,
       staking: mockedStaking2,
@@ -557,6 +730,8 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
 
   const userMerkleDistributor = new UserMerkleDistributor(recipient, goldfinchProtocol)
   const userMerkleDirectDistributor = new UserMerkleDirectDistributor(recipient, goldfinchProtocol)
+  const userBackerMerkleDirectDistributor = new UserBackerMerkleDirectDistributor(recipient, goldfinchProtocol)
+  const userBackerMerkleDistributor = new UserBackerMerkleDistributor(recipient, goldfinchProtocol)
   const userCommunityRewards = new UserCommunityRewards(recipient, goldfinchProtocol)
 
   await userMerkleDistributor.initialize(baseDeps.merkleDistributor, baseDeps.communityRewards, currentBlock)
@@ -565,10 +740,22 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
   await userMerkleDirectDistributor.initialize(baseDeps.merkleDirectDistributor, currentBlock)
   assertWithLoadedInfo(userMerkleDirectDistributor)
 
+  await userBackerMerkleDirectDistributor.initialize(baseDeps.backerMerkleDirectDistributor, currentBlock)
+  assertWithLoadedInfo(userBackerMerkleDirectDistributor)
+
+  await userBackerMerkleDistributor.initialize(
+    baseDeps.backerMerkleDistributor,
+    baseDeps.communityRewards,
+    currentBlock
+  )
+  assertWithLoadedInfo(userBackerMerkleDistributor)
+
   await userCommunityRewards.initialize(
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
+    baseDeps.backerMerkleDistributor,
     userMerkleDistributor,
+    userBackerMerkleDistributor,
     currentBlock
   )
   assertWithLoadedInfo(userCommunityRewards)
@@ -589,12 +776,22 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
   )
   assertAllMocksAreCalled(mocks2)
 
-  return {...baseDeps, user, userMerkleDistributor, userMerkleDirectDistributor, userCommunityRewards}
+  return {
+    ...baseDeps,
+    user,
+    userMerkleDistributor,
+    userMerkleDirectDistributor,
+    userCommunityRewards,
+    userBackerMerkleDistributor,
+    userBackerMerkleDirectDistributor,
+  }
 }
 
 export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, currentBlock: BlockInfo) {
   const gfi = new GFI(goldfinchProtocol)
+  await mockGfiContractCalls(gfi)
   await gfi.initialize(currentBlock)
+
   const stakingRewards = new StakingRewards(goldfinchProtocol)
   await mockStakingRewardsContractCalls(stakingRewards)
   await stakingRewards.initialize(currentBlock)
@@ -610,17 +807,29 @@ export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, curr
   await mockMerkleDirectDistributorContractCalls(merkleDirectDistributor)
   await merkleDirectDistributor.initialize(currentBlock)
 
+  const backerMerkleDirectDistributor = new BackerMerkleDirectDistributor(goldfinchProtocol)
+  await mockBackerMerkleDirectDistributorContractCalls(backerMerkleDirectDistributor)
+  await backerMerkleDirectDistributor.initialize(currentBlock)
+
+  const backerMerkleDistributor = new BackerMerkleDistributor(goldfinchProtocol)
+  await mockBackerMerkleDistributorContractCalls(backerMerkleDistributor)
+  await backerMerkleDistributor.initialize(currentBlock)
+
   assertWithLoadedInfo(gfi)
   assertWithLoadedInfo(stakingRewards)
   assertWithLoadedInfo(communityRewards)
   assertWithLoadedInfo(merkleDistributor)
+  assertWithLoadedInfo(backerMerkleDistributor)
   assertWithLoadedInfo(merkleDirectDistributor)
+  assertWithLoadedInfo(backerMerkleDirectDistributor)
 
   return {
     gfi,
     stakingRewards,
     communityRewards,
     merkleDistributor,
+    backerMerkleDistributor,
+    backerMerkleDirectDistributor,
     merkleDirectDistributor,
   }
 }
@@ -628,9 +837,18 @@ export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, curr
 export async function setupMerkleDirectDistributorAirdrop(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  isBacker = false
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, false)
+  if (isBacker) {
+    setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+      backerDistributor: {airdrop: backerMerkleDirectDistributorAirdrop, isAccepted: false},
+    })
+  } else {
+    setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+      distributor: {airdrop: merkleDirectDistributorAirdrop, isAccepted: false},
+    })
+  }
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps({goldfinchProtocol, seniorPool, ...baseDeps}, {currentBlock})
   return {...baseDeps, ...userRelatedDeps}
@@ -639,9 +857,18 @@ export async function setupMerkleDirectDistributorAirdrop(
 export async function setupAcceptedDirectReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  currentBlock: BlockInfo
+  currentBlock: BlockInfo,
+  isBacker = false
 ) {
-  setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, merkleDirectDistributorAirdrop, true)
+  if (isBacker) {
+    setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+      distributor: {airdrop: backerMerkleDirectDistributorAirdrop, isAccepted: true},
+    })
+  } else {
+    setupMocksForMerkleDirectDistributorAirdrop(goldfinchProtocol, {
+      distributor: {airdrop: merkleDirectDistributorAirdrop, isAccepted: true},
+    })
+  }
 
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
   const userRelatedDeps = await prepareUserRelatedDeps(

@@ -1,11 +1,15 @@
 import {BigNumber} from "bignumber.js"
 import compact from "lodash/compact"
 import moment from "moment"
-import {useContext, useState} from "react"
+import {useContext, useEffect, useState} from "react"
 import {useParams} from "react-router-dom"
 import {AppContext} from "../../App"
+import {useEarn} from "../../contexts/EarnContext"
+import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {usdcFromAtomic, usdcToAtomic} from "../../ethereum/erc20"
-import {PoolBacker, PoolState, TokenInfo, TranchedPool, TRANCHES} from "../../ethereum/tranchedPool"
+import {GFILoaded} from "../../ethereum/gfi"
+import {SeniorPoolLoaded} from "../../ethereum/pool"
+import {PoolState, TokenInfo, TranchedPool, TranchedPoolBacker, TRANCHES} from "../../ethereum/tranchedPool"
 import {decimalPlaces} from "../../ethereum/utils"
 import {useAsync} from "../../hooks/useAsync"
 import useERC20Permit from "../../hooks/useERC20Permit"
@@ -16,7 +20,9 @@ import useSendFromUser from "../../hooks/useSendFromUser"
 import {useSession} from "../../hooks/useSignIn"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {DEPOSIT_MADE_EVENT} from "../../types/events"
+import {Loadable, Loaded} from "../../types/loadable"
 import {SUPPLY_TX_TYPE, WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE} from "../../types/transactions"
+import {InfoIcon} from "../../ui/icons"
 import {
   assertError,
   assertNonNullable,
@@ -26,15 +32,18 @@ import {
   displayPercent,
   roundDownPenny,
   roundUpPenny,
+  sameBlock,
 } from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import CreditBarViz from "../creditBarViz"
+import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
 import EtherscanLink from "../etherscanLink"
-import {iconDownArrow, iconOutArrow, iconUpArrow} from "../icons"
+import {iconDownArrow, iconInfo, iconOutArrow, iconUpArrow} from "../icons"
 import InfoSection from "../infoSection"
 import InvestorNotice from "../investorNotice"
 import LoadingButton from "../loadingButton"
 import NdaPrompt from "../ndaPrompt"
+import TranchedPoolApyTooltipContent from "../TranchedPoolApyTooltipContent"
 import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
 
@@ -42,8 +51,8 @@ function useRecentPoolTransactions({
   tranchedPool,
   currentBlock,
 }: {
-  tranchedPool?: TranchedPool
-  currentBlock?: BlockInfo
+  tranchedPool: TranchedPool | undefined
+  currentBlock: BlockInfo | undefined
 }): Record<string, any>[] {
   let recentTransactions = useAsync(
     () => tranchedPool && currentBlock && tranchedPool.recentTransactions(currentBlock),
@@ -55,7 +64,7 @@ function useRecentPoolTransactions({
   return []
 }
 
-function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   let uniqueSuppliers = 0
   const {goldfinchProtocol, currentBlock} = useContext(AppContext)
 
@@ -81,7 +90,7 @@ function useUniqueJuniorSuppliers({tranchedPool}: {tranchedPool?: TranchedPool})
 }
 
 interface TranchedPoolDepositFormProps {
-  backer: PoolBacker
+  backer: TranchedPoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
@@ -264,7 +273,7 @@ function splitWithdrawAmount(
 }
 
 interface TranchedPoolWithdrawFormProps {
-  backer: PoolBacker
+  backer: TranchedPoolBacker
   tranchedPool: TranchedPool
   actionComplete: () => void
   closeForm: () => void
@@ -341,22 +350,52 @@ function TranchedPoolWithdrawForm({backer, tranchedPool, actionComplete, closeFo
   )
 }
 
-function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; backer?: PoolBacker}) {
-  if (!tranchedPool || !backer) {
+function DepositStatus({
+  tranchedPool,
+  backer,
+  tranchedPoolsEstimatedApyFromGfi,
+}: {
+  tranchedPool: TranchedPool | undefined
+  backer: TranchedPoolBacker | undefined
+  tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
+}) {
+  const session = useSession()
+  if (!tranchedPool || !backer || !tranchedPoolsEstimatedApyFromGfi.loaded) {
     return <></>
   }
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
+  let estimatedUSDCApy = tranchedPool.estimateJuniorAPY(leverageRatio)
+  const apysFromGfi = tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[tranchedPool.address]
+  const estimatedBackersOnlyApy = apysFromGfi?.backersOnly
+  const estimatedLpSeniorPoolMatchingApy = apysFromGfi?.seniorPoolMatching
 
-  let estimatedAPY = tranchedPool.estimateJuniorAPY(leverageRatio)
+  const estimatedApy =
+    estimatedUSDCApy || estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy
+      ? (estimatedUSDCApy || new BigNumber(0))
+          .plus(estimatedBackersOnlyApy || new BigNumber(0))
+          .plus(estimatedLpSeniorPoolMatchingApy || new BigNumber(0))
+      : undefined
 
-  let rightStatusItem
+  const backerAvailableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(backer.balanceInDollars)
+  let rightStatusItem: React.ReactNode
   if (tranchedPool.creditLine.balance.isZero()) {
     // Not yet drawdown
     rightStatusItem = (
       <div className="deposit-status-item">
         <div className="label">Est. APY</div>
-        <div className="value">{displayPercent(estimatedAPY)}</div>
+        <div className="value">{displayPercent(estimatedUSDCApy)} USDC</div>
+        <div className="deposit-status-sub-item-flex">
+          <div className="sub-value">{`${displayPercent(estimatedApy)} with GFI`}</div>
+          <span
+            data-tip=""
+            data-for="tranched-pool-apy-tooltip"
+            data-offset="{'top': 0, 'left': 80}"
+            data-place="bottom"
+          >
+            <InfoIcon color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
+          </span>
+        </div>
       </div>
     )
   } else {
@@ -364,15 +403,15 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
       <div className="deposit-status-item">
         <div className="label">Est. Monthly Interest</div>
         {backer.balance.isZero() ? (
-          <div className="value">{displayPercent(estimatedAPY)}</div>
+          <div className="value">{displayPercent(estimatedUSDCApy)}</div>
         ) : (
           <>
             <div className="value">
               {displayDollars(
-                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedAPY, backer.principalAtRisk))
+                usdcFromAtomic(tranchedPool.estimateMonthlyInterest(estimatedUSDCApy, backer.principalAtRisk))
               )}
             </div>
-            <div className="sub-value">{displayPercent(estimatedAPY)} APY</div>
+            <div className="sub-value">{displayPercent(estimatedUSDCApy)} APY</div>
           </>
         )}
       </div>
@@ -384,11 +423,18 @@ function DepositStatus({tranchedPool, backer}: {tranchedPool?: TranchedPool; bac
       <div className="deposit-status-item">
         <div className="label">Your balance</div>
         <div className="value">{displayDollars(backer.balanceInDollars)}</div>
-        {!backer.balance.isZero() && (
-          <div className="sub-value">{displayDollars(backer.availableToWithdrawInDollars)} available</div>
-        )}
+        <div className="sub-value">
+          {displayDollars(backer.availableToWithdrawInDollars)} ({displayPercent(backerAvailableToWithdrawPercent)})
+          available
+        </div>
       </div>
       {rightStatusItem}
+      <TranchedPoolApyTooltipContent
+        estimatedUSDCApy={estimatedUSDCApy}
+        estimatedBackersOnlyApy={estimatedBackersOnlyApy}
+        estimatedLpSeniorPoolMatchingApy={estimatedLpSeniorPoolMatchingApy}
+        estimatedApy={estimatedApy}
+      />
     </div>
   )
 }
@@ -397,10 +443,12 @@ function ActionsContainer({
   tranchedPool,
   onComplete,
   backer,
+  tranchedPoolsEstimatedApyFromGfi,
 }: {
   tranchedPool: TranchedPool | undefined
   onComplete: () => Promise<any>
-  backer: PoolBacker | undefined
+  backer: TranchedPoolBacker | undefined
+  tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
   const {user} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
@@ -475,7 +523,11 @@ function ActionsContainer({
   } else {
     return (
       <div className={`background-container ${placeholderClass}`}>
-        <DepositStatus backer={backer} tranchedPool={tranchedPool} />
+        <DepositStatus
+          backer={backer}
+          tranchedPool={tranchedPool}
+          tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedApyFromGfi}
+        />
         <div className="form-start">
           <button
             className={`button ${depositDisabled ? "disabled" : ""}`}
@@ -497,7 +549,7 @@ function ActionsContainer({
   }
 }
 
-function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function V1DealSupplyStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   if (!tranchedPool) {
     return <></>
   }
@@ -543,7 +595,7 @@ function V1DealSupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function SupplyStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const remainingJuniorCapacity = tranchedPool?.remainingJuniorCapacity()
   const uniqueJuniorSuppliers = useUniqueJuniorSuppliers({tranchedPool})
 
@@ -602,7 +654,7 @@ function SupplyStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
   )
 }
 
-function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
+function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const {user, currentBlock} = useContext(AppContext)
   const transactions = useRecentPoolTransactions({tranchedPool, currentBlock})
   const backer = useBacker({user, tranchedPool})
@@ -699,7 +751,7 @@ function CreditStatus({tranchedPool}: {tranchedPool?: TranchedPool}) {
 }
 
 interface OverviewProps {
-  tranchedPool?: TranchedPool
+  tranchedPool: TranchedPool | undefined
   handleDetails: () => void
 }
 
@@ -760,19 +812,83 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
   )
 }
 
+const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
+  return (
+    <div className="info-banner background-container">
+      <div className="message extra-small">
+        {iconInfo}
+        <span>
+          <span className="bold">Note:</span> The APY shown includes estimated GFI rewards that match what LPs would get
+          for staking. This is not live yet, but it is has been voted on and is expected to launch in March. Upon
+          launch, this reward will be retroactive and ongoing.{" "}
+          <a
+            href="https://snapshot.org/#/goldfinch.eth/proposal/0x10a390307e3834af5153dc58af0e20cbb0e08d38543be884b622b55bfcd5818d"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Learn more in this proposal
+          </a>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 interface TranchedPoolViewURLParams {
   poolAddress: string
 }
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, user, network, setSessionData, currentBlock} = useContext(AppContext)
+  const {goldfinchProtocol, backerRewards, pool, gfi, user, network, setSessionData, currentBlock} =
+    useContext(AppContext)
+  const {
+    earnStore: {backers},
+  } = useEarn()
   const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
   const [nda, refreshNDA] = useFetchNDA({user, tranchedPool})
   const hasSignedNDA = nda && nda?.status === "success"
+  const [tranchedPoolsEstimatedApyFromGfi, setTranchedPoolsEstimatedApyFromGfi] = useState<
+    Loadable<TranchedPoolsEstimatedApyFromGfi>
+  >({
+    loaded: false,
+    value: undefined,
+  })
+
+  useEffect(() => {
+    if (backers.loaded && pool && gfi && backerRewards) {
+      refreshTranchedPoolsEstimatedApyFromGfi(backers, pool, gfi, backerRewards)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backers, pool, gfi, backerRewards])
+
+  async function refreshTranchedPoolsEstimatedApyFromGfi(
+    backers: Loaded<TranchedPoolBacker[]>,
+    pool: SeniorPoolLoaded,
+    gfi: GFILoaded,
+    backerRewards: BackerRewardsLoaded
+  ) {
+    if (
+      sameBlock(pool.info.value.currentBlock, gfi.info.value.currentBlock) &&
+      sameBlock(gfi.info.value.currentBlock, backerRewards.info.value.currentBlock)
+    ) {
+      const estimatedApyFromGfi = await backerRewards.estimateApyFromGfiByTranchedPool(
+        backers.value.map((backer) => backer.tranchedPool),
+        pool,
+        gfi
+      )
+      setTranchedPoolsEstimatedApyFromGfi({
+        loaded: true,
+        value: {
+          currentBlock: gfi.info.value.currentBlock,
+          estimatedApyFromGfi,
+        },
+      })
+    }
+  }
 
   function openDetailsUrl() {
     window.open(tranchedPool?.metadata?.detailsUrl, "_blank")
@@ -834,10 +950,14 @@ function TranchedPoolView() {
           {showActionsContainer ? (
             <>
               <InvestorNotice />
+              {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
+                <EstimatedSeniorPoolMatchingGFILaunchBanner />
+              ) : undefined}
               <ActionsContainer
                 tranchedPool={tranchedPool}
                 backer={backer}
                 onComplete={async () => refreshTranchedPool()}
+                tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedApyFromGfi}
               />
             </>
           ) : undefined}

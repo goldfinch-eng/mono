@@ -12,7 +12,7 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -41,7 +41,7 @@ web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderDepositStatus(
-  poolData: Partial<PoolData>,
+  poolData: Partial<SeniorPoolData>,
   capitalProvider: Loaded<CapitalProvider> | undefined,
   currentBlock: BlockInfo
 ) {
@@ -50,7 +50,7 @@ function renderDepositStatus(
     <AppContext.Provider value={store}>
       <Router>
         <DepositStatus
-          poolData={poolData as PoolData}
+          poolData={poolData as SeniorPoolData}
           capitalProvider={capitalProvider ? capitalProvider.value : undefined}
         />
       </Router>
@@ -59,16 +59,11 @@ function renderDepositStatus(
 }
 
 describe("Senior pool page deposit status", () => {
-  let sandbox = sinon.createSandbox()
   let seniorPool: SeniorPoolLoaded
   let goldfinchProtocol = new GoldfinchProtocol(network)
   let gfi: GFILoaded, stakingRewards: StakingRewardsLoaded, user: UserLoaded, capitalProvider: Loaded<CapitalProvider>
 
   const currentBlock = defaultCurrentBlock
-
-  afterEach(() => {
-    sandbox.restore()
-  })
 
   beforeEach(async () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
@@ -84,7 +79,7 @@ describe("Senior pool page deposit status", () => {
         currentBlock,
         poolData: {
           estimatedApy: new BigNumber("0.00483856000534281158"),
-        } as PoolData,
+        } as SeniorPoolData,
         isPaused: false,
       },
     }
@@ -152,7 +147,7 @@ describe("Senior pool page deposit status", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
@@ -206,7 +201,7 @@ describe("Senior pool page deposit status", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }
@@ -263,7 +258,7 @@ describe("Senior pool page deposit status", () => {
     const estimatedPoolApy = new BigNumber("0.00483856000534281158")
     const globalEstimatedApyFromGfi = new BigNumber("0.47282410048716433449")
 
-    const poolData: Pick<PoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
+    const poolData: Pick<SeniorPoolData, "estimatedApy" | "estimatedApyFromGfi"> = {
       estimatedApy: estimatedPoolApy,
       estimatedApyFromGfi: globalEstimatedApyFromGfi,
     }

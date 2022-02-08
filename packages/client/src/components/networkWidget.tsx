@@ -32,7 +32,14 @@ import {
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
 } from "../types/transactions"
-import {ArrayItemType, BlockInfo, croppedAddress, displayDollars, displayNumber} from "../utils"
+import {
+  ArrayItemType,
+  BlockInfo,
+  croppedAddress,
+  displayDollars,
+  displayNumber,
+  isProductionAndPrivateNetwork,
+} from "../utils"
 import web3 from "../web3"
 import {iconCheck, iconOutArrow} from "./icons"
 import NetworkErrors from "./networkErrors"
@@ -236,10 +243,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
       </div>
     )
   } else if (
-    userWalletWeb3Status?.type === "has_web3" &&
-    props.network &&
-    props.network.name &&
-    !props.network.supported
+    (userWalletWeb3Status?.type === "has_web3" && props.network && props.network.name && !props.network.supported) ||
+    isProductionAndPrivateNetwork(props.network)
   ) {
     return (
       <div ref={node} className="network-widget">

@@ -23,7 +23,8 @@ const CONFIRMATION_THRESHOLD = 6
 const ETHDecimals = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = 60 * 60 * 24
-const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365
+const DAYS_PER_YEAR = 365
+const SECONDS_PER_YEAR = SECONDS_PER_DAY * DAYS_PER_YEAR
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 const ONE_QUADRILLION_USDC = "1000000000000000000000"
 const MAINNET = "mainnet"
@@ -132,12 +133,59 @@ async function getMerkleDistributorInfo(networkId: string): Promise<MerkleDistri
     })
 }
 
+async function getBackerMerkleDistributorInfo(networkId: string): Promise<MerkleDistributorInfo | undefined> {
+  let fileNameSuffix = ""
+  if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
+    fileNameSuffix = ".dev"
+  }
+
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
 async function getMerkleDirectDistributorInfo(networkId: string): Promise<MerkleDirectDistributorInfo | undefined> {
   const fileNameSuffix =
     process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking() ? ".dev" : ""
 
   return import(
     `@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
+  )
+    .then((result: unknown): MerkleDirectDistributorInfo => {
+      const plain = _.toPlainObject(result)
+      if (isMerkleDirectDistributorInfo(plain)) {
+        return plain
+      } else {
+        throw new Error("Merkle direct distributor info failed type guard.")
+      }
+    })
+    .catch((err: unknown): undefined => {
+      console.error(err)
+      return
+    })
+}
+
+async function getBackerMerkleDirectDistributorInfo(
+  networkId: string
+): Promise<MerkleDirectDistributorInfo | undefined> {
+  let fileNameSuffix = ""
+  if (process.env.NODE_ENV === "development" && networkId === LOCAL && !isMainnetForking()) {
+    fileNameSuffix = ".dev"
+  }
+  return import(
+    `@goldfinch-eng/protocol/blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo${fileNameSuffix}.json`
   )
     .then((result: unknown): MerkleDirectDistributorInfo => {
       const plain = _.toPlainObject(result)
@@ -271,7 +319,9 @@ const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 export {
   getDeployments,
   getMerkleDistributorInfo,
+  getBackerMerkleDistributorInfo,
   getMerkleDirectDistributorInfo,
+  getBackerMerkleDirectDistributorInfo,
   mapNetworkToID,
   transformedConfig,
   fetchDataFromAttributes,
@@ -286,6 +336,7 @@ export {
   USDC_DECIMALS,
   INTEREST_DECIMALS,
   SECONDS_PER_DAY,
+  DAYS_PER_YEAR,
   SECONDS_PER_YEAR,
   CONFIRMATION_THRESHOLD,
   SUPPORTED_NETWORKS,

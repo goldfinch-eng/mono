@@ -30,6 +30,22 @@
     }
   }
 
+  .deposit-status-sub-item-flex {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+
+    svg {
+      padding-top: 2px;
+      margin-left: 7px;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.5;
+      }
+    }
+  }
+
   ~ .deposit-status-item {
     margin-top: 36px;
   }
