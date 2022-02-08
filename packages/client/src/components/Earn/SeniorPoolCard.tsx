@@ -3,8 +3,8 @@ import BigNumber from "bignumber.js"
 import Badge from "../badge"
 import logoPurp from "../../images/logomark-purp.svg"
 import {InfoIcon} from "../../ui/icons"
-import SeniorPoolCardTooltipContent from "./SeniorPoolCardTooltipContent"
 import {displayPercent} from "../../utils"
+import EarnTooltipContent from "./EarnTooltipContent"
 
 type SeniorPoolCardProps = {
   balance: string
@@ -61,10 +61,22 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
           <Badge text="Open" variant="blue" fixedWidth />
         )}
       </div>
-      <SeniorPoolCardTooltipContent
-        estimatedApyFromGfi={props.estimatedApyFromGfi}
-        estimatedApyFromSupplying={props.estimatedApyFromSupplying}
-        estimatedApy={props.estimatedApy}
+      <EarnTooltipContent
+        longDescription="Includes the Senior pool yield from allocating to borrower pools, plus GFI distributions."
+        rows={[
+          {
+            text: "Senior Pool APY",
+            value: displayPercent(props.estimatedApyFromSupplying),
+          },
+          {
+            text: "GFI Distribution APY",
+            value: displayPercent(props.estimatedApyFromGfi),
+          },
+        ]}
+        total={{
+          text: "Total Est. APY",
+          value: displayPercent(props.estimatedApy),
+        }}
       />
     </div>
   )
