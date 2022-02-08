@@ -621,6 +621,7 @@ export async function setupPartiallyClaimedStakingReward(
           "0",
           StakedPositionType.Fidu.toString(),
           "1000000000000000000",
+          "1000000000000000000",
         ],
       },
       gfi: {gfiBalance},
@@ -664,6 +665,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     lockedUntil,
     StakedPositionType.Fidu.toString(),
     "1000000000000000000",
+    "1000000000000000000",
   ]
   const mockedStaking1: NonNullable<RewardsMockData["staking"]> = {
     earnedSinceLastCheckpoint: "129600000000000000000",
@@ -686,6 +688,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     leverageMultiplier,
     lockedUntil,
     StakedPositionType.Fidu.toString(),
+    "1000000000000000000",
     "1000000000000000000",
   ]
   const mockedStaking2 = {

@@ -94,6 +94,7 @@ export interface RewardsMockData {
       3: string
       4: string
       5: string
+      6: string
     }
     stakingRewardsBalance?: number
     stakingRewardsTokenId?: string
@@ -250,6 +251,7 @@ export async function mockUserRelatedInitializationContractCalls(
       "1000000000000000000",
       "0",
       StakedPositionType.Fidu.toString(),
+      "1000000000000000000",
       "1000000000000000000",
     ]
     if (rewardsMock.currentBlock.timestamp < parseInt(positionsRes[1][4], 10)) {

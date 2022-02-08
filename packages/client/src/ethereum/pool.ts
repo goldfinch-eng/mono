@@ -822,6 +822,7 @@ export type StoredPosition = {
   leverageMultiplier: BigNumber
   lockedUntil: number
   positionType: StakedPositionType
+  effectiveMultiplier: BigNumber
   baseTokenExchangeRate: BigNumber
 }
 
