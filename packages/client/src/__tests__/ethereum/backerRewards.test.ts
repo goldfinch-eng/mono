@@ -1144,6 +1144,10 @@ describe("BackerRewards", () => {
           })
         })
       })
+
+      describe("and all of those pools filled up and were drawndown", () => {
+        // TODO
+      })
     })
   })
 })
