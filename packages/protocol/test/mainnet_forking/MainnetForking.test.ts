@@ -671,7 +671,7 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe.only("BackerRewards", () => {
+  describe("BackerRewards", () => {
     describe("with a 100 million dollar pool", () => {
       let tranchedPool: TranchedPoolInstance
       let backerStakingTokenId: string
@@ -750,7 +750,7 @@ describe("mainnet forking tests", async function () {
               backerRewards,
               "BackerStakingRewardsClaimed"
             )
-            let backerStakingRewardsClaimedEvent = logs[0]
+            const backerStakingRewardsClaimedEvent = logs[0]
             const firstBackerStakingRewardsEarned = new BN(backerStakingRewardsClaimedEvent!.args.amount)
             expect(firstBackerStakingRewardsEarned).to.bignumber.closeTo(earnedStakingRewards, "10000000000000")
 
