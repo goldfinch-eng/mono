@@ -29,59 +29,115 @@ web3.userWallet.setProvider((global.window as any).ethereum)
 
 describe("BackerRewards", () => {
   describe("estimateApyFromGfiByTranchedPool", () => {
+    const estimatedApyFromGfiSeniorPool = new BigNumber(0.37)
+    const gfiPrice = new BigNumber(4.06).multipliedBy(GFI_DECIMALS)
+    const gfiSupply = new BigNumber(114_285_714).multipliedBy(GFI_DECIMALS)
+
+    const goldfinchProtocol = new GoldfinchProtocol(network)
+    let seniorPool: SeniorPoolLoaded
+    let gfi: GFILoaded
+    let backerRewards: BackerRewardsLoaded
+
+    const tranchedPoolAddress = "0x0000000000000000000000000000000000000099"
+    let tranchedPool: TranchedPool
+
+    let callBackerRewardsPoolsMock: () => void
+
+    const currentBlock = defaultCurrentBlock
+
+    beforeEach(resetMocks)
+    beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
+    beforeEach(async () => {
+      jest.spyOn(utils, "getDeployments").mockImplementation(() => {
+        return getDeployments()
+      })
+
+      await goldfinchProtocol.initialize()
+
+      const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
+      _seniorPoolLoaded.info = {
+        loaded: true,
+        value: {
+          currentBlock,
+          poolData: {
+            estimatedApyFromGfi: estimatedApyFromGfiSeniorPool,
+          } as SeniorPoolData,
+          isPaused: false,
+        },
+      }
+      assertWithLoadedInfo(_seniorPoolLoaded)
+      seniorPool = _seniorPoolLoaded
+
+      const _gfiLoaded = new GFI(goldfinchProtocol)
+      _gfiLoaded.info = {
+        loaded: true,
+        value: {
+          currentBlock,
+          price: gfiPrice,
+          supply: gfiSupply,
+        },
+      }
+      assertWithLoadedInfo(_gfiLoaded)
+      gfi = _gfiLoaded
+
+      tranchedPool = new TranchedPool(tranchedPoolAddress, goldfinchProtocol)
+
+      tranchedPool.creditLine = new CreditLine("0x0000000000000000000000000000000000000098", goldfinchProtocol)
+      tranchedPool.creditLine.isLate = false
+      tranchedPool.creditLine.termEndTime = new BigNumber(0)
+      tranchedPool.creditLine.termStartTime = new BigNumber(0)
+      tranchedPool.creditLine.maxLimit = new BigNumber(1e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
+      tranchedPool.creditLine.termInDays = new BigNumber(3 * 365)
+      tranchedPool.creditLine.paymentPeriodInDays = new BigNumber(30)
+      tranchedPool.creditLine.interestApr = new BigNumber(0.1).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
+
+      tranchedPool.poolState = PoolState.Open
+      tranchedPool.totalDeployed = new BigNumber(0)
+      const juniorPrincipalDeposited = new BigNumber(0)
+      tranchedPool.juniorTranche = {
+        principalDeposited: juniorPrincipalDeposited,
+      } as TrancheInfo
+      const seniorPrincipalDeposited = new BigNumber(0)
+      tranchedPool.seniorTranche = {
+        principalDeposited: seniorPrincipalDeposited,
+      } as TrancheInfo
+      tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
+      tranchedPool.fundableAt = new BigNumber(currentBlock.timestamp)
+      tranchedPool.estimatedLeverageRatio = new BigNumber(3)
+
+      const _backerRewardsLoaded = new BackerRewards(goldfinchProtocol)
+      _backerRewardsLoaded.info = {
+        loaded: true,
+        value: {
+          currentBlock,
+          maxInterestDollarsEligible: new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
+          totalRewardPercentOfTotalGFI: new BigNumber(2).multipliedBy(new BigNumber(1e18)),
+          isPaused: false,
+        },
+      }
+      assertWithLoadedInfo(_backerRewardsLoaded)
+      backerRewards = _backerRewardsLoaded
+
+      callBackerRewardsPoolsMock = mock({
+        blockchain,
+        call: {
+          to: backerRewards.address,
+          api: await getBackerRewardsAbi(),
+          method: "pools",
+          params: [tranchedPoolAddress],
+          return: "0",
+        },
+      })
+    })
+
     describe("if only one tranched pool is eligible for backer rewards", () => {
       describe("and that pool is open for the first time", () => {
-        const estimatedApyFromGfiSeniorPool = new BigNumber(0.37)
-        const gfiPrice = new BigNumber(4.06).multipliedBy(GFI_DECIMALS)
-        const gfiSupply = new BigNumber(114_285_714).multipliedBy(GFI_DECIMALS)
-
-        const goldfinchProtocol = new GoldfinchProtocol(network)
-        let seniorPool: SeniorPoolLoaded
-        let gfi: GFILoaded
-        let backerRewards: BackerRewardsLoaded
-
         const tranchedPoolAddress = "0x0000000000000000000000000000000000000099"
         let tranchedPool: TranchedPool
 
         let callBackerRewardsPoolsMock: () => void
 
-        const currentBlock = defaultCurrentBlock
-
-        beforeEach(resetMocks)
-        beforeEach(() => mock({blockchain, accounts: {return: [recipient]}}))
         beforeEach(async () => {
-          jest.spyOn(utils, "getDeployments").mockImplementation(() => {
-            return getDeployments()
-          })
-
-          await goldfinchProtocol.initialize()
-
-          const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
-          _seniorPoolLoaded.info = {
-            loaded: true,
-            value: {
-              currentBlock,
-              poolData: {
-                estimatedApyFromGfi: estimatedApyFromGfiSeniorPool,
-              } as SeniorPoolData,
-              isPaused: false,
-            },
-          }
-          assertWithLoadedInfo(_seniorPoolLoaded)
-          seniorPool = _seniorPoolLoaded
-
-          const _gfiLoaded = new GFI(goldfinchProtocol)
-          _gfiLoaded.info = {
-            loaded: true,
-            value: {
-              currentBlock,
-              price: gfiPrice,
-              supply: gfiSupply,
-            },
-          }
-          assertWithLoadedInfo(_gfiLoaded)
-          gfi = _gfiLoaded
-
           tranchedPool = new TranchedPool(tranchedPoolAddress, goldfinchProtocol)
 
           tranchedPool.creditLine = new CreditLine("0x0000000000000000000000000000000000000098", goldfinchProtocol)
@@ -106,19 +162,6 @@ describe("BackerRewards", () => {
           tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
           tranchedPool.fundableAt = new BigNumber(currentBlock.timestamp)
           tranchedPool.estimatedLeverageRatio = new BigNumber(3)
-
-          const _backerRewardsLoaded = new BackerRewards(goldfinchProtocol)
-          _backerRewardsLoaded.info = {
-            loaded: true,
-            value: {
-              currentBlock,
-              maxInterestDollarsEligible: new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
-              totalRewardPercentOfTotalGFI: new BigNumber(2).multipliedBy(new BigNumber(1e18)),
-              isPaused: false,
-            },
-          }
-          assertWithLoadedInfo(_backerRewardsLoaded)
-          backerRewards = _backerRewardsLoaded
 
           callBackerRewardsPoolsMock = mock({
             blockchain,
