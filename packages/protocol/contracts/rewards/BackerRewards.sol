@@ -47,10 +47,10 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // and so no rewards should be accrued
     uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
     // staking rewards parameters per slice of a tranched pool
-    StakingRewardsSlicesInfo[] slicesInfo;
+    StakingRewardsSliceInfo[] slicesInfo;
   }
 
-  struct StakingRewardsSlicesInfo {
+  struct StakingRewardsSliceInfo {
     // the share price when the pool draws down
     uint256 fiduSharePriceAtDrawdown;
     // the amount of principal intially draw down. Used to scale the rewards accumulator based
@@ -200,7 +200,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       console.log("onTranchedPoolDrawdown::creating new slice");
       // initialize new slice params
       poolStakingRewards[pool].slicesInfo.push(
-        StakingRewardsSlicesInfo({
+        StakingRewardsSliceInfo({
           initialPrincipalDrawdown: juniorTranche.principalDeposited,
           fiduSharePriceAtDrawdown: seniorPool.sharePrice(),
           principalDeployedAtLastCheckpoint: juniorTranche.principalDeposited,
@@ -313,7 +313,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     }
 
     uint256 sliceIndex = (tokenInfo.tranche - 1) / 2;
-    StakingRewardsSlicesInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
+    StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
 
     uint256 lastAcc = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
     uint256 tokenAccAtLastWithdraw = tokenStakingRewards[tokenId].stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0
@@ -376,7 +376,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // iterate through all of the slices and checkpoint
     for (uint256 i = 0; i < poolInfo.slicesInfo.length; i++) {
-      StakingRewardsSlicesInfo storage rewardsInfo = poolInfo.slicesInfo[i];
+      StakingRewardsSliceInfo storage rewardsInfo = poolInfo.slicesInfo[i];
       uint256 juniorTrancheSliceId = (i * 2) + 2;
       ITranchedPool.TrancheInfo memory tranche = pool.getTranche(juniorTrancheSliceId);
 
