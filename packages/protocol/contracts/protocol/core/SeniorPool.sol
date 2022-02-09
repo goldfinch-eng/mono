@@ -23,7 +23,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
 
-  bytes32 public constant TRANSPORTER_ROLE = keccak256("TRANSPORTER_ROLE");
+  bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
   uint256 public compoundBalance;
   mapping(ITranchedPool => uint256) public writedowns;
@@ -361,7 +361,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // Send to reserves
     uint256 reserveAmount = 0;
-    if (!isTransporter()) {
+    if (!isZapper()) {
       reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
       userAmount = usdcAmount.sub(reserveAmount);
       sendToReserve(reserveAmount, msg.sender);
@@ -479,11 +479,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(success, "Failed to approve USDC");
   }
 
-  function isTransporter() public view returns (bool) {
-    return hasRole(TRANSPORTER_ROLE, _msgSender());
+  function isZapper() public view returns (bool) {
+    return hasRole(ZAPPER_ROLE, _msgSender());
   }
 
-  function initTransporterRole() external onlyAdmin {
-    _setRoleAdmin(TRANSPORTER_ROLE, OWNER_ROLE);
+  function initZapperRole() external onlyAdmin {
+    _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
   }
 }

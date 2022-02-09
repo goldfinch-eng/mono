@@ -64,7 +64,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
-  bytes32 public constant TRANSPORTER_ROLE = keccak256("TRANSPORTER_ROLE");
+  bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
   GoldfinchConfig public config;
 
@@ -142,8 +142,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     leverageMultipliers[LockupPeriod.TwentyFourMonths] = MULTIPLIER_DECIMALS; // 1x
   }
 
-  function initTransporterRole() external onlyAdmin {
-    _setRoleAdmin(TRANSPORTER_ROLE, OWNER_ROLE);
+  function initZapperRole() external onlyAdmin {
+    _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
   }
 
   /* ========== VIEWS ========== */
@@ -571,7 +571,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
-    require(ownerOf(tokenId) == msg.sender || isTransporter(), "access denied");
+    require(ownerOf(tokenId) == msg.sender || isZapper(), "access denied");
     require(amount > 0, "Cannot unstake 0");
 
     StakedPosition storage position = positions[tokenId];
@@ -588,7 +588,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     position.amount = prevAmount.sub(amount);
 
     // Slash unvested rewards
-    if (!isTransporter()) {
+    if (!isZapper()) {
       uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
       position.rewards.slash(slashingPercentage);
     }
@@ -721,8 +721,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _;
   }
 
-  function isTransporter() public view returns (bool) {
-    return hasRole(TRANSPORTER_ROLE, _msgSender());
+  function isZapper() public view returns (bool) {
+    return hasRole(ZAPPER_ROLE, _msgSender());
   }
 
   /* ========== EVENTS ========== */

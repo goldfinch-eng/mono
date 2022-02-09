@@ -10,7 +10,7 @@ import {
   SeniorPoolInstance,
   StakingRewardsInstance,
   TranchedPoolInstance,
-  TransporterInstance,
+  ZapperInstance,
 } from "../typechain/truffle"
 import {
   bigVal,
@@ -33,13 +33,13 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const investor = asNonNullable(_investor)
   const borrower = asNonNullable(_borrower)
 
-  const {goldfinchConfig, goldfinchFactory, seniorPool, gfi, stakingRewards, fidu, usdc, transporter, ...others} =
+  const {goldfinchConfig, goldfinchFactory, seniorPool, gfi, stakingRewards, fidu, usdc, zapper, ...others} =
     await deployBaseFixture()
 
-  await stakingRewards.initTransporterRole()
-  await seniorPool.initTransporterRole()
-  await stakingRewards.grantRole(await stakingRewards.TRANSPORTER_ROLE(), transporter.address)
-  await seniorPool.grantRole(await seniorPool.TRANSPORTER_ROLE(), transporter.address)
+  await stakingRewards.initZapperRole()
+  await seniorPool.initZapperRole()
+  await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), zapper.address)
+  await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), zapper.address)
 
   await goldfinchConfig.bulkAddToGoList([owner, investor, borrower])
   await erc20Approve(usdc, investor, usdcVal(10000), [owner])
@@ -83,7 +83,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
     borrower,
     investor,
     fiduAmount,
-    transporter,
+    zapper,
     goldfinchConfig,
     seniorPool,
     stakingRewards,
@@ -91,8 +91,8 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   }
 })
 
-describe("Transporter", async () => {
-  let transporter: TransporterInstance
+describe("Zapper", async () => {
+  let zapper: ZapperInstance
   let goldfinchConfig: GoldfinchConfigInstance
   let seniorPool: SeniorPoolInstance
   let stakingRewards: StakingRewardsInstance
@@ -116,7 +116,7 @@ describe("Transporter", async () => {
       goldfinchConfig,
       tranchedPool,
       seniorPool,
-      transporter,
+      zapper,
       stakingRewards,
       fidu,
     } = await testSetup())
@@ -133,7 +133,7 @@ describe("Transporter", async () => {
       const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
       const usdcToTransport = usdcEquivalent.div(new BN(2))
 
-      await transporter.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, 1, usdcToTransport, {
+      await zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, 1, usdcToTransport, {
         from: investor,
       })
 

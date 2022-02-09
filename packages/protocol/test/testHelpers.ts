@@ -41,7 +41,7 @@ import {
   TestUniqueIdentityInstance,
   MerkleDirectDistributorInstance,
   BackerRewardsInstance,
-  TransporterInstance,
+  ZapperInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -277,7 +277,7 @@ async function deployAllContracts(
   merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
-  transporter: TransporterInstance
+  zapper: ZapperInstance
 }> {
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
@@ -359,7 +359,7 @@ async function deployAllContracts(
   )
   const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
 
-  const transporter = await getTruffleContract<TransporterInstance>("Transporter")
+  const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 
   return {
     pool,
@@ -383,7 +383,7 @@ async function deployAllContracts(
     uniqueIdentity,
     go,
     backerRewards,
-    transporter,
+    zapper,
   }
 }
 

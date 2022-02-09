@@ -15,9 +15,9 @@ import "./Accountant.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 
-/// @title Transporter
+/// @title Zapper
 /// @notice Moves capital from the SeniorPool to TranchedPools without taking fees
-contract Transporter is BaseUpgradeablePausable {
+contract Zapper is BaseUpgradeablePausable {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;

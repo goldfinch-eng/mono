@@ -26,7 +26,7 @@ import {deployCreditDesk} from "./baseDeploy/deployCreditDesk"
 import {deployConfig} from "./baseDeploy/deployConfig"
 import {deployGo} from "./baseDeploy/deployGo"
 import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
-import {deployTransporter} from "./baseDeploy/deployTransporter"
+import {deployZapper} from "./baseDeploy/deployZapper"
 
 const logger: Logger = console.log
 
@@ -95,7 +95,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
   await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
 
-  await deployTransporter(deployer, {config, deployEffects})
+  await deployZapper(deployer, {config, deployEffects})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
