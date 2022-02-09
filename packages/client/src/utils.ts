@@ -87,7 +87,7 @@ export function displayPercent(val: BigNumber | undefined, decimals = 2, display
   return `${valDisplay}%`
 }
 
-export function displayAbbreviated(val: BigNumber | undefined | string, decimals = 2) {
+export function displayAbbreviated(val: BigNumber | undefined | string | number, decimals = 2) {
   if (val === undefined) return "--.--"
 
   let valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
@@ -97,7 +97,7 @@ export function displayAbbreviated(val: BigNumber | undefined | string, decimals
     return `${displayDollars(valFloat / 1000000, decimals)}M`
   } else if (valFloat >= 1000) {
     return `${displayDollars(valFloat / 1000, decimals)}k`
-  } else return displayNumber(val, decimals)
+  } else return displayDollars(val, decimals)
 }
 
 export function roundUpPenny(val) {
