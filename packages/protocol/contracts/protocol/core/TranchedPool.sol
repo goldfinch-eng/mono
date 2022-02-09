@@ -276,8 +276,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
     address borrower = creditLine.borrower();
     IBackerRewards backerRewards = IBackerRewards(config.backerRewardsAddress());
-    // TODO: need to onl pass in the junior delta
-    backerRewards.onTranchedPoolDrawdown();
+    backerRewards.onTranchedPoolDrawdown(poolSlices.length - 1);
     safeERC20TransferFrom(config.getUSDC(), address(this), borrower, amount);
     emit DrawdownMade(borrower, amount);
     emit SharePriceUpdated(
@@ -472,19 +471,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return creditLine.setMaxLimit(newAmount);
   }
 
-  // TODO: this puts the contract over the size limit
-  //        I think that there's a way to make this part of the interface
-  //        without adding this additional function, but im not sure
-  function getSlice(uint256 slice) external override returns (PoolSlice memory) {
-    return poolSlices[slice];
-  }
-
   function getTranche(uint256 tranche) public view override returns (TrancheInfo memory) {
     return getTrancheInfo(tranche);
-  }
-
-  function numSlices() public override view returns (uint256) {
-    return poolSlices.length;
   }
 
   /**
