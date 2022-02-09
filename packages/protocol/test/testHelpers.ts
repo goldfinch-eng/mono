@@ -15,7 +15,9 @@ import {
   getContract,
   TRUFFLE_CONTRACT_PROVIDER,
   OWNER_ROLE,
+  getTruffleContract,
 } from "../blockchain_scripts/deployHelpers"
+
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
   CreditDeskInstance,
@@ -39,6 +41,7 @@ import {
   TestUniqueIdentityInstance,
   MerkleDirectDistributorInstance,
   BackerRewardsInstance,
+  TransporterInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -99,10 +102,13 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
     deployment = await deployments.get(contractName)
   }
   assertNonNullable(deployment)
-  return getTruffleContract<T>(contractName, deployment.address)
+  return getTruffleContractAtAddress<T>(contractName, deployment.address)
 }
 
-async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
+async function getTruffleContractAtAddress<T extends Truffle.ContractInstance>(
+  name: string,
+  address: string
+): Promise<T> {
   return (await artifacts.require(name).at(address)) as T
 }
 
@@ -271,6 +277,7 @@ async function deployAllContracts(
   merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
+  transporter: TransporterInstance
 }> {
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
@@ -352,6 +359,8 @@ async function deployAllContracts(
   )
   const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
 
+  const transporter = await getTruffleContract<TransporterInstance>("Transporter")
+
   return {
     pool,
     seniorPool,
@@ -374,6 +383,7 @@ async function deployAllContracts(
     uniqueIdentity,
     go,
     backerRewards,
+    transporter,
   }
 }
 
@@ -484,8 +494,8 @@ const createPoolWithCreditLine = async ({
   )
 
   const event = result.logs[result.logs.length - 1] as $TSFixMe
-  const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
-  const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
+  const pool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)
+  const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
 
   await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner])
 
@@ -494,7 +504,7 @@ const createPoolWithCreditLine = async ({
     await erc20Approve(usdc, pool.address, usdcVal(100000), [thisBorrower])
   }
 
-  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", pool.address)
+  const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TestTranchedPool", pool.address)
   return {tranchedPool, creditLine}
 }
 
@@ -587,7 +597,7 @@ export {
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,
-  getTruffleContract,
+  getTruffleContractAtAddress,
   fiduToUSDC,
   usdcToFidu,
   expectAction,

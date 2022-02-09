@@ -64,6 +64,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
+  bytes32 public constant TRANSPORTER_ROLE = keccak256("TRANSPORTER_ROLE");
+
   GoldfinchConfig public config;
 
   /// @notice The block timestamp when rewards were last checkpointed
@@ -138,6 +140,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     leverageMultipliers[LockupPeriod.SixMonths] = MULTIPLIER_DECIMALS; // 1x
     leverageMultipliers[LockupPeriod.TwelveMonths] = MULTIPLIER_DECIMALS; // 1x
     leverageMultipliers[LockupPeriod.TwentyFourMonths] = MULTIPLIER_DECIMALS; // 1x
+  }
+
+  function initTransporterRole() external onlyAdmin {
+    _setRoleAdmin(TRANSPORTER_ROLE, OWNER_ROLE);
   }
 
   /* ========== VIEWS ========== */
@@ -565,7 +571,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
-    require(ownerOf(tokenId) == msg.sender, "access denied");
+    require(ownerOf(tokenId) == msg.sender || isTransporter(), "access denied");
     require(amount > 0, "Cannot unstake 0");
 
     StakedPosition storage position = positions[tokenId];
@@ -582,8 +588,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     position.amount = prevAmount.sub(amount);
 
     // Slash unvested rewards
-    uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
-    position.rewards.slash(slashingPercentage);
+    if (!isTransporter()) {
+      uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
+      position.rewards.slash(slashingPercentage);
+    }
 
     emit Unstaked(msg.sender, tokenId, amount);
   }
@@ -711,6 +719,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   modifier onlyAdmin() {
     require(isAdmin(), "Must have admin role to perform this action");
     _;
+  }
+
+  function isTransporter() public view returns (bool) {
+    return hasRole(TRANSPORTER_ROLE, _msgSender());
   }
 
   /* ========== EVENTS ========== */

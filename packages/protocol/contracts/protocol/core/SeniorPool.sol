@@ -23,6 +23,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
 
+  bytes32 public constant TRANSPORTER_ROLE = keccak256("TRANSPORTER_ROLE");
+
   uint256 public compoundBalance;
   mapping(ITranchedPool => uint256) public writedowns;
 
@@ -357,17 +359,23 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Ensure the address has enough value in the pool
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
-    uint256 reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
-    userAmount = usdcAmount.sub(reserveAmount);
+    // Send to reserves
+    uint256 reserveAmount = 0;
+    if (!isTransporter()) {
+      reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
+      userAmount = usdcAmount.sub(reserveAmount);
+      sendToReserve(reserveAmount, msg.sender);
+    }
 
-    emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
-    // Send the amounts
+    // Send to user
     bool success = doUSDCTransfer(address(this), msg.sender, userAmount);
     require(success, "Failed to transfer for withdraw");
-    sendToReserve(reserveAmount, msg.sender);
 
     // Burn the shares
     fidu.burnFrom(msg.sender, withdrawShares);
+
+    emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
+
     return userAmount;
   }
 
@@ -469,5 +477,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     IERC20withDec usdc = config.getUSDC();
     bool success = usdc.approve(address(pool), allowance);
     require(success, "Failed to approve USDC");
+  }
+
+  function isTransporter() public view returns (bool) {
+    return hasRole(TRANSPORTER_ROLE, _msgSender());
+  }
+
+  function initTransporterRole() external onlyAdmin {
+    _setRoleAdmin(TRANSPORTER_ROLE, OWNER_ROLE);
   }
 }

@@ -1,4 +1,3 @@
-/* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
 import {
