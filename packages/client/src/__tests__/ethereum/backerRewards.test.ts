@@ -8,6 +8,7 @@ import {
   blockchain,
   defaultCurrentBlock,
   getBackerRewardsAbi,
+  getCreditLineAbi,
   getDeployments,
   network,
   recipient,
@@ -37,11 +38,6 @@ describe("BackerRewards", () => {
     let seniorPool: SeniorPoolLoaded
     let gfi: GFILoaded
     let backerRewards: BackerRewardsLoaded
-
-    const tranchedPoolAddress = "0x0000000000000000000000000000000000000099"
-    let tranchedPool: TranchedPool
-
-    let callBackerRewardsPoolsMock: () => void
 
     const currentBlock = defaultCurrentBlock
 
@@ -80,32 +76,8 @@ describe("BackerRewards", () => {
       assertWithLoadedInfo(_gfiLoaded)
       gfi = _gfiLoaded
 
-      tranchedPool = new TranchedPool(tranchedPoolAddress, goldfinchProtocol)
-
-      tranchedPool.creditLine = new CreditLine("0x0000000000000000000000000000000000000098", goldfinchProtocol)
-      tranchedPool.creditLine.isLate = false
-      tranchedPool.creditLine.termEndTime = new BigNumber(0)
-      tranchedPool.creditLine.termStartTime = new BigNumber(0)
-      tranchedPool.creditLine.maxLimit = new BigNumber(1e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
-      tranchedPool.creditLine.termInDays = new BigNumber(3 * 365)
-      tranchedPool.creditLine.paymentPeriodInDays = new BigNumber(30)
-      tranchedPool.creditLine.interestApr = new BigNumber(0.1).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
-
-      tranchedPool.poolState = PoolState.Open
-      tranchedPool.totalDeployed = new BigNumber(0)
-      const juniorPrincipalDeposited = new BigNumber(0)
-      tranchedPool.juniorTranche = {
-        principalDeposited: juniorPrincipalDeposited,
-      } as TrancheInfo
-      const seniorPrincipalDeposited = new BigNumber(0)
-      tranchedPool.seniorTranche = {
-        principalDeposited: seniorPrincipalDeposited,
-      } as TrancheInfo
-      tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
-      tranchedPool.fundableAt = new BigNumber(currentBlock.timestamp)
-      tranchedPool.estimatedLeverageRatio = new BigNumber(3)
-
       const _backerRewardsLoaded = new BackerRewards(goldfinchProtocol)
+      _backerRewardsLoaded.startBlock = currentBlock
       _backerRewardsLoaded.info = {
         loaded: true,
         value: {
@@ -117,38 +89,192 @@ describe("BackerRewards", () => {
       }
       assertWithLoadedInfo(_backerRewardsLoaded)
       backerRewards = _backerRewardsLoaded
-
-      callBackerRewardsPoolsMock = mock({
-        blockchain,
-        call: {
-          to: backerRewards.address,
-          api: await getBackerRewardsAbi(),
-          method: "pools",
-          params: [tranchedPoolAddress],
-          return: "0",
-        },
-      })
     })
 
     describe("if only one tranched pool is eligible for backer rewards", () => {
+      const openTranchedPoolExpectedRepaymentSchedule = [
+        {
+          timestamp: 1643980291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1646572291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1649164291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1651756291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1654348291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1656940291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1659532291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1662124291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1664716291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1667308291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1669900291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1672492291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1675084291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1677676291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1680268291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1682860291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1685452291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1688044291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1690636291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1693228291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1695820291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1698412291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1701004291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1703596291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1706188291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1708780291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1711372291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1713964291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1716556291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1719148291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1721740291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1724332291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1726924291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1729516291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1732108291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1734700291,
+          usdcAmount: "82191780821.91780821917808219178",
+        },
+        {
+          timestamp: 1735996291,
+          usdcAmount: "41095890410.95890410958904109589",
+        },
+      ]
+      const tranchedPoolExpectedEstimatedRewards = "395897326454569024246362"
+      const tranchedPoolExpectedBackersOnlyApy = "0.21431241938740669846"
+      const tranchedPoolExpectedSeniorPoolMatchingApy = "0.37"
+
+      const tranchedPoolAddress = "0x0000000000000000000000000000000000000099"
+      let tranchedPool: TranchedPool
+
+      const tranchedPoolMaxLimit = new BigNumber(1e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
+      const tranchedPoolTermInDays = new BigNumber(365 * 3)
+
+      const creditLineAddress = "0x0000000000000000000000000000000000000098"
+
+      let callBackerRewardsPoolsMock: () => void
+      let callCreditLineMock: () => void
+
+      beforeEach(async () => {
+        tranchedPool = new TranchedPool(tranchedPoolAddress, goldfinchProtocol)
+
+        tranchedPool.creditLine = new CreditLine(creditLineAddress, goldfinchProtocol)
+        tranchedPool.creditLine.isLate = false
+        tranchedPool.creditLine.termEndTime = new BigNumber(0)
+        tranchedPool.creditLine.termStartTime = new BigNumber(0)
+        tranchedPool.creditLine.maxLimit = tranchedPoolMaxLimit
+        tranchedPool.creditLine.termInDays = tranchedPoolTermInDays
+        tranchedPool.creditLine.paymentPeriodInDays = new BigNumber(30)
+        tranchedPool.creditLine.interestApr = new BigNumber(0.1).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
+
+        tranchedPool.fundableAt = new BigNumber(currentBlock.timestamp)
+        tranchedPool.estimatedLeverageRatio = new BigNumber(3)
+      })
+
       describe("and that pool is open for the first time", () => {
-        const tranchedPoolAddress = "0x0000000000000000000000000000000000000099"
-        let tranchedPool: TranchedPool
-
-        let callBackerRewardsPoolsMock: () => void
-
         beforeEach(async () => {
-          tranchedPool = new TranchedPool(tranchedPoolAddress, goldfinchProtocol)
-
-          tranchedPool.creditLine = new CreditLine("0x0000000000000000000000000000000000000098", goldfinchProtocol)
-          tranchedPool.creditLine.isLate = false
-          tranchedPool.creditLine.termEndTime = new BigNumber(0)
-          tranchedPool.creditLine.termStartTime = new BigNumber(0)
-          tranchedPool.creditLine.maxLimit = new BigNumber(1e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
-          tranchedPool.creditLine.termInDays = new BigNumber(3 * 365)
-          tranchedPool.creditLine.paymentPeriodInDays = new BigNumber(30)
-          tranchedPool.creditLine.interestApr = new BigNumber(0.1).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
-
           tranchedPool.poolState = PoolState.Open
           tranchedPool.totalDeployed = new BigNumber(0)
           const juniorPrincipalDeposited = new BigNumber(0)
@@ -160,8 +286,6 @@ describe("BackerRewards", () => {
             principalDeposited: seniorPrincipalDeposited,
           } as TrancheInfo
           tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
-          tranchedPool.fundableAt = new BigNumber(currentBlock.timestamp)
-          tranchedPool.estimatedLeverageRatio = new BigNumber(3)
 
           callBackerRewardsPoolsMock = mock({
             blockchain,
@@ -189,163 +313,16 @@ describe("BackerRewards", () => {
               timestamp: scheduled.timestamp,
               usdcAmount: scheduled.usdcAmount.toString(),
             }))
-          ).toEqual([
-            {
-              timestamp: 1643980291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1646572291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1649164291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1651756291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1654348291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1656940291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1659532291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1662124291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1664716291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1667308291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1669900291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1672492291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1675084291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1677676291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1680268291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1682860291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1685452291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1688044291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1690636291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1693228291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1695820291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1698412291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1701004291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1703596291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1706188291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1708780291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1711372291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1713964291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1716556291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1719148291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1721740291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1724332291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1726924291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1729516291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1732108291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1734700291,
-              usdcAmount: "82191780821.91780821917808219178",
-            },
-            {
-              timestamp: 1735996291,
-              usdcAmount: "41095890410.95890410958904109589",
-            },
-          ])
+          ).toEqual(openTranchedPoolExpectedRepaymentSchedule)
 
           const estimatedRewards = await backerRewards._estimateRewardsFromScheduledRepayments(
             tranchedPools,
             gfi.info.value.supply,
             currentBlock
           )
-          expect(estimatedRewards[tranchedPool.address]?.value.toString(10)).toEqual("395897326454569024246362")
+          expect(estimatedRewards[tranchedPool.address]?.value.toString(10)).toEqual(
+            tranchedPoolExpectedEstimatedRewards
+          )
 
           const result = await backerRewards.estimateApyFromGfiByTranchedPool(tranchedPools, seniorPool, gfi)
           expect(Object.keys(result)).toEqual([tranchedPoolAddress])
@@ -353,10 +330,103 @@ describe("BackerRewards", () => {
           expect(tranchedPoolResult).toBeTruthy()
           assertNonNullable(tranchedPoolResult)
           expect(Object.keys(tranchedPoolResult)).toEqual(["backersOnly", "seniorPoolMatching"])
-          expect(tranchedPoolResult.backersOnly?.toString()).toEqual("0.21431241938740669846")
-          expect(tranchedPoolResult.seniorPoolMatching?.toString()).toEqual("0.37")
+          expect(tranchedPoolResult.backersOnly?.toString()).toEqual(tranchedPoolExpectedBackersOnlyApy)
+          expect(tranchedPoolResult.seniorPoolMatching?.toString()).toEqual(tranchedPoolExpectedSeniorPoolMatchingApy)
 
           assertAllMocksAreCalled({callBackerRewardsPoolsMock})
+        })
+      })
+
+      describe("and that pool filled up and was drawndown", () => {
+        beforeEach(async () => {
+          const drawdownTime = new BigNumber(currentBlock.timestamp)
+
+          tranchedPool.creditLine.termStartTime = drawdownTime
+          tranchedPool.creditLine.termEndTime = drawdownTime.plus(
+            tranchedPool.creditLine.termInDays.multipliedBy(utils.SECONDS_PER_DAY)
+          )
+          tranchedPool.creditLine.lastFullPaymentTime = drawdownTime
+          tranchedPool.creditLine.nextDueTime = drawdownTime.plus(
+            tranchedPool.creditLine.paymentPeriodInDays.multipliedBy(utils.SECONDS_PER_DAY)
+          )
+          tranchedPool.creditLine.balance = tranchedPoolMaxLimit
+          tranchedPool.creditLine.interestOwed = new BigNumber(0)
+
+          tranchedPool.poolState = PoolState.SeniorLocked
+          tranchedPool.totalDeployed = tranchedPoolMaxLimit
+          const juniorPrincipalDeposited = tranchedPoolMaxLimit.dividedBy(tranchedPool.estimatedLeverageRatio.plus(1))
+          tranchedPool.juniorTranche = {
+            principalDeposited: juniorPrincipalDeposited,
+          } as TrancheInfo
+          const seniorPrincipalDeposited = tranchedPoolMaxLimit
+            .multipliedBy(tranchedPool.estimatedLeverageRatio)
+            .dividedBy(tranchedPool.estimatedLeverageRatio.plus(1))
+          tranchedPool.seniorTranche = {
+            principalDeposited: seniorPrincipalDeposited,
+          } as TrancheInfo
+          tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
+
+          callBackerRewardsPoolsMock = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "pools",
+              params: [tranchedPoolAddress],
+              return: "0",
+            },
+          })
+
+          callCreditLineMock = mock({
+            blockchain,
+            call: {
+              to: tranchedPool.creditLine.address,
+              api: await getCreditLineAbi(),
+              method: "interestAccruedAsOf",
+              params: [],
+              return: drawdownTime.toString(10),
+            },
+          })
+        })
+
+        it("should return the correct backers-only and senior-pool-matching APY-from-GFI values", async () => {
+          const tranchedPools = [tranchedPool]
+
+          const tranchedPoolScheduledRepayments = await tranchedPool.getOptimisticRepaymentSchedule(currentBlock)
+          expect(
+            tranchedPoolScheduledRepayments.map((scheduled) => ({
+              timestamp: scheduled.timestamp,
+              usdcAmount: scheduled.usdcAmount.toString(),
+            }))
+          ).toEqual(
+            openTranchedPoolExpectedRepaymentSchedule.map((repayment) => ({
+              // Here we shift-forward the repayment schedule timestamps expected for the case where the pool is
+              // open (i.e. where the borrowing is assumed to start one week from the `currentBlock` time). The
+              // pool isn't open; we expect the borrowing to start at the `currentBlock` time.
+              timestamp: repayment.timestamp - 7 * utils.SECONDS_PER_DAY,
+              usdcAmount: repayment.usdcAmount,
+            }))
+          )
+
+          const estimatedRewards = await backerRewards._estimateRewardsFromScheduledRepayments(
+            tranchedPools,
+            gfi.info.value.supply,
+            currentBlock
+          )
+          expect(estimatedRewards[tranchedPool.address]?.value.toString(10)).toEqual(
+            tranchedPoolExpectedEstimatedRewards
+          )
+
+          const result = await backerRewards.estimateApyFromGfiByTranchedPool(tranchedPools, seniorPool, gfi)
+          expect(Object.keys(result)).toEqual([tranchedPoolAddress])
+          const tranchedPoolResult = result[tranchedPoolAddress]
+          expect(tranchedPoolResult).toBeTruthy()
+          assertNonNullable(tranchedPoolResult)
+          expect(Object.keys(tranchedPoolResult)).toEqual(["backersOnly", "seniorPoolMatching"])
+          expect(tranchedPoolResult.backersOnly?.toString()).toEqual(tranchedPoolExpectedBackersOnlyApy)
+          expect(tranchedPoolResult.seniorPoolMatching?.toString()).toEqual(tranchedPoolExpectedSeniorPoolMatchingApy)
+
+          assertAllMocksAreCalled({callBackerRewardsPoolsMock, callCreditLineMock})
         })
       })
     })

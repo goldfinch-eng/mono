@@ -79,7 +79,7 @@ export class BackerRewards {
     return tranchedPools.filter((tranchedPool: TranchedPool): boolean => {
       const eligible =
         tranchedPool.creditLine.termStartTime.isZero() ||
-        tranchedPool.creditLine.termStartTime.toNumber() > this.startBlock.timestamp
+        tranchedPool.creditLine.termStartTime.toNumber() >= this.startBlock.timestamp
       // If a borrower is late on their payment, the rewards earned by their backers are not claimable. And
       // we don't know whether those rewards will ever become claimable again (because we don't know whether the
       // borrower will become current again). So the UX we must serve is not to represent the tranched pool
