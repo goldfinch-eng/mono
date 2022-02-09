@@ -28,6 +28,7 @@ import {
   assertNonNullable,
   BlockInfo,
   croppedAddress,
+  displayAbbreviated,
   displayDollars,
   displayPercent,
   roundDownPenny,
@@ -747,8 +748,8 @@ function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) 
         <tr key={tx.txHash}>
           <td>{tx.name}</td>
           <td>{moment.unix(tx.timestamp).format("MMM D")}</td>
-          <td className="numeric">{displayDollars(usdcFromAtomic(amount))}</td>
-          <td className="numeric">{displayDollars(usdcFromAtomic(yourPortion))}</td>
+          <td className="numeric">{displayAbbreviated(usdcFromAtomic(amount))}</td>
+          <td className="numeric">{displayAbbreviated(usdcFromAtomic(yourPortion))}</td>
           <td className="transaction-link">
             <a
               className="inline-button"
