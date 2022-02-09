@@ -26,6 +26,7 @@ import {
   fiduTolerance,
   tolerance,
   decodeLogs,
+  decodeAndGetFirstLog,
 } from "./testHelpers"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
@@ -37,6 +38,13 @@ import {
   deployUninitializedTranchedPoolFixture,
   deployTranchedPoolWithGoldfinchFactoryFixture,
 } from "./util/fixtures"
+import {
+  DepositMade,
+  InvestmentMadeInSenior,
+  ReserveFundsCollected,
+  WithdrawalMade,
+} from "../typechain/truffle/SeniorPool"
+import {TestSeniorPoolInstance} from "../typechain/truffle"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const TEST_TIMEOUT = 30_000
@@ -77,7 +85,7 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
 describe("SeniorPool", () => {
   let accounts, owner, person2, person3, reserve, borrower
 
-  let seniorPool, seniorPoolFixedStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
+  let seniorPool: TestSeniorPoolInstance, seniorPoolFixedStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
 
   const interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -105,14 +113,21 @@ describe("SeniorPool", () => {
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {seniorPool, seniorPoolFixedStrategy, usdc, fidu, goldfinchFactory, goldfinchConfig, poolTokens} =
-      await deployBaseFixture()
+    const {
+      seniorPool: _seniorPool,
+      seniorPoolFixedStrategy,
+      usdc,
+      fidu,
+      goldfinchFactory,
+      goldfinchConfig,
+      poolTokens,
+    } = await deployBaseFixture()
     // A bit of setup for our test users
-    await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [person2])
+    await erc20Approve(usdc, _seniorPool.address, usdcVal(100000), [person2])
     await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
     await goldfinchConfig.setTreasuryReserve(reserve)
 
-    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, seniorPool.address])
+    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, _seniorPool.address])
     ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
       borrower,
       usdcAddress: usdc.address,
@@ -125,7 +140,16 @@ describe("SeniorPool", () => {
       id: "TranchedPool",
     }))
 
-    return {usdc, seniorPool, seniorPoolFixedStrategy, tranchedPool, creditLine, fidu, goldfinchConfig, poolTokens}
+    return {
+      usdc,
+      seniorPool: _seniorPool as TestSeniorPoolInstance,
+      seniorPoolFixedStrategy,
+      tranchedPool,
+      creditLine,
+      fidu,
+      goldfinchConfig,
+      poolTokens,
+    }
   })
 
   beforeEach(async () => {
@@ -283,7 +307,7 @@ describe("SeniorPool", () => {
 
       it("emits an event with the correct data", async () => {
         const result = await makeDeposit()
-        const event = result.logs[0]
+        const event = decodeAndGetFirstLog<DepositMade>(result.receipt.rawLogs, seniorPool, "DepositMade")
 
         expect(event.event).to.equal("DepositMade")
         expect(event.args.capitalProvider).to.equal(capitalProvider)
@@ -324,7 +348,7 @@ describe("SeniorPool", () => {
 
       // Sanity check that deposit is correct
       await expectAction(() =>
-        seniorPool.depositWithPermit(value, deadline, v, r, s, {
+        (seniorPool as any).depositWithPermit(value, deadline, v, r, s, {
           from: capitalProviderAddress,
         })
       ).toChange([
@@ -375,7 +399,7 @@ describe("SeniorPool", () => {
     it("emits an event with the correct data", async () => {
       await makeDeposit()
       const result = await makeWithdraw()
-      const event = result.logs[0]
+      const event = decodeAndGetFirstLog<WithdrawalMade>(result.receipt.rawLogs, seniorPool, "WithdrawalMade")
       const reserveAmount = withdrawAmount.div(new BN(200))
 
       expect(event.event).to.equal("WithdrawalMade")
@@ -387,7 +411,11 @@ describe("SeniorPool", () => {
     it("should emit an event that the reserve received funds", async () => {
       await makeDeposit()
       const result = await makeWithdraw()
-      const event = result.logs[1]
+      const event = decodeAndGetFirstLog<ReserveFundsCollected>(
+        result.receipt.rawLogs,
+        seniorPool,
+        "ReserveFundsCollected"
+      )
 
       expect(event.event).to.equal("ReserveFundsCollected")
       expect(event.args.user).to.equal(capitalProvider)
@@ -629,7 +657,11 @@ describe("SeniorPool", () => {
         const investmentAmount = await seniorPoolFixedStrategy.invest(seniorPool.address, tranchedPool.address)
 
         const receipt = await seniorPool.invest(tranchedPool.address)
-        const event = receipt.logs[0]
+        const event = decodeAndGetFirstLog<InvestmentMadeInSenior>(
+          receipt.receipt.rawLogs,
+          seniorPool,
+          "InvestmentMadeInSenior"
+        )
 
         expect(event.event).to.equal("InvestmentMadeInSenior")
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)

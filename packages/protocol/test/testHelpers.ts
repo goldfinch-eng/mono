@@ -233,6 +233,7 @@ function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): Decoded
   assertNonNullable(firstLog)
   return firstLog
 }
+
 function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
   expect(logs.length).to.equal(1)
   return getFirstLog(logs)
