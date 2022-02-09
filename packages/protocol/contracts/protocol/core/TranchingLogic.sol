@@ -3,7 +3,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "hardhat/console.sol";
 import "../../interfaces/IV2CreditLine.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IPoolTokens.sol";
@@ -63,14 +62,9 @@ library TranchingLogic {
     ITranchedPool.TrancheInfo memory tranche,
     uint256 amount,
     ITranchedPool.PoolSlice memory slice
-  ) public view returns (uint256) {
+  ) public pure returns (uint256) {
     uint256 sharePrice = usdcToSharePrice(amount, tranche.principalDeposited);
-    uint256 scaled = scaleByPercentOwnership(tranche, sharePrice, slice);
-    if (tranche.id == 2) {
-      console.log("calculateExpectedSharePrice::sharePrice", sharePrice);
-      console.log("calculateExpectedSharePrice::scaled", scaled);
-    }
-    return scaled;
+    return scaleByPercentOwnership(tranche, sharePrice, slice);
   }
 
   function scaleForSlice(
