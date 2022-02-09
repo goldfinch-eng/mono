@@ -94,7 +94,7 @@ async function getIDType({
 }): Promise<ethers.BigNumber> {
   let idVersion: ethers.BigNumber
 
-  if (kycStatus.countryCode === "US" && !isAccredited(address)) {
+  if (kycStatus.countryCode === "US" && isAccredited(address)) {
     // US accredited
     idVersion = await uniqueIdentity.ID_TYPE_1()
   } else if (kycStatus.countryCode === "US" && !isAccredited(address)) {
