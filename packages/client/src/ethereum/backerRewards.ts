@@ -103,7 +103,29 @@ export class BackerRewards {
         }))
       )
     }, [])
-    const sorted = concatenated.sort((a, b) => a.value.timestamp - b.value.timestamp)
+    const sorted = concatenated.sort((a, b) => {
+      // Primarily sort in chronological order.
+      const primary = a.value.timestamp - b.value.timestamp
+      if (primary) {
+        return primary
+      }
+
+      // Secondarily sort in ascending order of the credit line's expected annual interest (assuming the borrower
+      // borrowed the max limit) -- the rationale for this would be that all other things equal, a smaller interest
+      // payment is more likely to be repaid before a larger interest payment. This way of breaking of ties of the primary
+      // sorting is necessary if two pools are simultaneously open for the first time (i.e. and therefore we have
+      // supposed the same optimistic start time to their loan term).
+      const aSecondary = a.tranchedPool.creditLine.maxLimit.multipliedBy(a.tranchedPool.creditLine.interestApr)
+      const bSecondary = b.tranchedPool.creditLine.maxLimit.multipliedBy(b.tranchedPool.creditLine.interestApr)
+      const secondary = aSecondary.gt(bSecondary) ? 1 : aSecondary.lt(bSecondary) ? -1 : 0
+      if (secondary) {
+        return secondary
+      }
+
+      // Tertiarily sort by tranched pool address, for the sake of deterministic ordering.
+      const tertiary = a.tranchedPool.address.localeCompare(b.tranchedPool.address)
+      return tertiary
+    })
     return sorted
   }
 
