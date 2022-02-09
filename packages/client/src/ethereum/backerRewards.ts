@@ -110,14 +110,25 @@ export class BackerRewards {
         return primary
       }
 
-      // Secondarily sort in ascending order of the credit line's expected annual interest (assuming the borrower
-      // borrowed the max limit) -- the rationale for this would be that all other things equal, a smaller interest
-      // payment is more likely to be repaid before a larger interest payment. This way of breaking of ties of the primary
-      // sorting is necessary if two pools are simultaneously open for the first time (i.e. and therefore we have
-      // supposed the same optimistic start time to their loan term).
-      const aSecondary = a.tranchedPool.creditLine.maxLimit.multipliedBy(a.tranchedPool.creditLine.interestApr)
-      const bSecondary = b.tranchedPool.creditLine.maxLimit.multipliedBy(b.tranchedPool.creditLine.interestApr)
-      const secondary = aSecondary.gt(bSecondary) ? 1 : aSecondary.lt(bSecondary) ? -1 : 0
+      // Secondarily sort in chronological order of the tranched pool's launch time. We need some way of breaking
+      // ties in the primary sorting, in case two pools are simultaneously open for the first time (i.e. and
+      // therefore we have supposed the same optimistic start time to their loan term). Of course, this way of
+      // breaking ties will not necessarily correspond to the order in which the pools actually end up borrowing,
+      // but it is a reasonable approach consistent with the impartiality of our assumption, in calculating the expected
+      // repayment schedule of an open pool, that an open pool fills up. If we want to do better than this, I think
+      // we need to calculate a range: assuming all open pools have the same payment frequency, the max rewards for
+      // a given open pool would come from the scenario where that pool borrows before all other open pools, and the
+      // min rewards would come from the scenario where every other open pool ends up borrowing before this pool.
+      const aSecondary = a.tranchedPool.metadata?.launchTime
+      const bSecondary = b.tranchedPool.metadata?.launchTime
+      const secondary =
+        aSecondary && bSecondary
+          ? aSecondary - bSecondary
+          : aSecondary && !bSecondary
+          ? -1
+          : !aSecondary && bSecondary
+          ? 1
+          : 0
       if (secondary) {
         return secondary
       }
