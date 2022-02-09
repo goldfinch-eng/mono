@@ -676,7 +676,8 @@ describe("mainnet forking tests", async function () {
       let tranchedPool: TranchedPoolInstance
       let backerStakingTokenId: string
       let stakingRewardsTokenId: string
-      const stakedAmount = usdcVal(100)
+      let seniorPoolTokenId: string
+      const stakedAmount = usdcVal(2_500)
       let bwrCon: BorrowerInstance
       beforeEach(async () => {
         bwrCon = await createBorrowerContract()
@@ -696,21 +697,25 @@ describe("mainnet forking tests", async function () {
         const event = result.logs[result.logs.length - 1] as $TSFixMe
         tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: event.args.pool})
 
-        await advanceTime({days: 1})
-        await ethers.provider.send("evm_mine", [])
-
         await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
         await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
         const tx = await tranchedPool.deposit(TRANCHES.Junior, stakedAmount, {from: owner})
         await bwrCon.lockJuniorCapital(tranchedPool.address, {from: bwr})
 
         await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
-        await tranchedPool.deposit(TRANCHES.Senior, stakedAmount.mul(new BN("3")), {from: owner})
+        const seniorDepositResult = await seniorPool.invest(tranchedPool.address)
+        const seniorDepositLogs = decodeLogs<DepositMade>(
+          seniorDepositResult.receipt.rawLogs,
+          tranchedPool,
+          "DepositMade"
+        )
+        const seniorDepositMadeEvent = seniorDepositLogs[0]
+        seniorPoolTokenId = seniorDepositMadeEvent!.args.tokenId.toString()
         await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner)
 
         await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [bwr, owner])
         await erc20Approve(gfi, stakingRewards.address, MAX_UINT, [bwr, owner])
-        const stakingResult = await stakingRewards.depositAndStake(stakedAmount, {from: bwr})
+        const stakingResult = await stakingRewards.depositAndStake(stakedAmount, {from: owner})
         const stakingLogs = decodeLogs<Staked>(stakingResult.receipt.rawLogs, stakingRewards, "Staked")
         const stakedEvent = stakingLogs[0]
         stakingRewardsTokenId = stakedEvent!.args.tokenId!.toString()
@@ -724,19 +729,49 @@ describe("mainnet forking tests", async function () {
 
       describe("after drawdown", () => {
         beforeEach(async () => {
-          await bwrCon.drawdown(tranchedPool.address, usdcVal(400).toString(), bwr, {from: bwr})
+          await bwrCon.drawdown(tranchedPool.address, usdcVal(10_000).toString(), bwr, {from: bwr})
         })
 
-        it("if I deposit into the staking rewards contract, I should receive equal rewards", async () => {
-          const earnedStakingRewards = await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
-          const tx = await backerRewards.withdraw(backerStakingTokenId, {from: owner})
-          const logs = decodeLogs<BackerStakingRewardsClaimed>(
-            tx.receipt.rawLogs,
-            backerRewards,
-            "BackerStakingRewardsClaimed"
-          )
-          const backerStakingRewardsClaimedEvent = logs[0]
-          expect(backerStakingRewardsClaimedEvent?.args.amount).to.bignumber.eq(earnedStakingRewards)
+        describe("after a payment", () => {
+          beforeEach(async () => {
+            await advanceTime({days: 30})
+            await ethers.provider.send("evm_mine", [])
+
+            // we need to unstake to explicitly trigger and update
+            await stakingRewards.depositAndStake(usdcVal(1), {from: owner})
+            await bwrCon.pay(tranchedPool.address, usdcVal(1_000), {from: bwr})
+          })
+
+          it("if I deposit into the staking rewards contract, I should receive equal rewards", async () => {
+            let earnedStakingRewards = await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
+            let tx = await backerRewards.withdraw(backerStakingTokenId, {from: owner})
+            let logs = decodeLogs<BackerStakingRewardsClaimed>(
+              tx.receipt.rawLogs,
+              backerRewards,
+              "BackerStakingRewardsClaimed"
+            )
+            let backerStakingRewardsClaimedEvent = logs[0]
+            const firstBackerStakingRewardsEarned = new BN(backerStakingRewardsClaimedEvent!.args.amount)
+            expect(firstBackerStakingRewardsEarned).to.bignumber.closeTo(earnedStakingRewards, "10000000000000")
+
+            await advanceTime({days: 30})
+            await ethers.provider.send("evm_mine", [])
+
+            // we need to unstake to explicitly trigger and update
+            await stakingRewards.depositAndStake(usdcVal(1), {from: owner})
+            await bwrCon.pay(tranchedPool.address, usdcVal(1_000), {from: bwr})
+            earnedStakingRewards = await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
+            tx = await backerRewards.withdraw(backerStakingTokenId, {from: owner})
+            logs = decodeLogs<BackerStakingRewardsClaimed>(
+              tx.receipt.rawLogs,
+              backerRewards,
+              "BackerStakingRewardsClaimed"
+            )
+            const secondBackerStakingRewardsClaimedEvent = logs[0]
+            expect(
+              firstBackerStakingRewardsEarned.add(new BN(secondBackerStakingRewardsClaimedEvent!.args.amount))
+            ).to.bignumber.closeTo(earnedStakingRewards, "10000000000000")
+          })
         })
       })
 

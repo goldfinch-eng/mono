@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@uniswap/lib/contracts/libraries/Babylonian.sol";
 
-import "hardhat/console.sol";
 import "../library/SafeERC20Transfer.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../rewards/StakingRewards.sol";
@@ -172,7 +171,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   function onTranchedPoolDrawdown() external override {
-    console.log("in tranched pool callback");
     ITranchedPool pool = ITranchedPool(_msgSender());
     require(config.getPoolTokens().validPool(address(pool)), "Invalid pool!");
 
@@ -184,7 +182,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool.PoolSlice memory slice = pool.getSlice(sliceIndex);
     bool isFirstDrawdownOfFirstSlice = sliceIndex == 0;
     if (isFirstDrawdownOfFirstSlice) {
-      console.log("is first drawdown of first slice");
       poolStakingRewards[address(pool)]
         .accumulatedRewardsPerTokenAtLastCheckpoint
         = stakingRewards.accumulatedRewardsPerToken();
@@ -204,9 +201,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
         .slicesInfo
         .push(
           StakingRewardsSlicesInfo({
-            initialPrincipalDrawdown: slice.principalDeployed, 
+            initialPrincipalDrawdown: slice.juniorTranche.principalDeposited, 
             fiduSharePriceAtDrawdown: seniorPool.sharePrice(),
-            principalDeployedAtLastCheckpoint: slice.principalDeployed,
+            principalDeployedAtLastCheckpoint: slice.juniorTranche.principalDeposited,
             accumulatedRewardsPerTokenAtDrawdown: stakingRewards.accumulatedRewardsPerToken(),
             scaledAccumulatedRewardsPerTokenAtLastCheckpoint: stakingRewards.accumulatedRewardsPerToken()
           })
@@ -221,9 +218,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     StakingRewardsInfo storage poolInfo = poolStakingRewards[address(pool)];
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-    uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
-      poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
-    );
+    uint256 rewardsAccumulatedSinceLastCheckpoint
+      = newStakingRewardsAccumulator
+        .sub(poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint);
 
     // iterate through all of the slices and checkpoint
     for (uint256 i = 0; i < poolInfo.slicesInfo.length; i++) {
@@ -231,7 +228,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       ITranchedPool.PoolSlice memory slice = pool.getSlice(i);
       // TODO: probably need to subtract out senior tranche amount
       uint256 principalDeployed = slice.juniorTranche.principalDeposited;
-      console.log("principalDeployed = ", principalDeployed);
       
       // the percentage we need to scale the rewards accumualated by
       uint256 deployedScalingFactor
@@ -241,8 +237,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
               .div(rewardsInfo.principalDeployedAtLastCheckpoint)
           );
           // convert from USDC units to Fidu units
-
-      console.log("deployedScalingFactor = ", deployedScalingFactor);
 
       uint256 scaledRewardsForPeriod
         = rewardsAccumulatedSinceLastCheckpoint
@@ -322,7 +316,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     uint256 claimableBackerRewards = poolTokenClaimableRewards(tokenId);
     uint256 claimableStakingRewards = _getStakingRewardsForToken(tokenId);
-    console.log("claimable stakingRewards", claimableStakingRewards);
     uint256 totalClaimableRewards = claimableBackerRewards.add(claimableStakingRewards);
     uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
 
@@ -371,7 +364,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 rewardsPerTokenSinceLastWithdraw
       = lastAcc
         .sub(tokenAccAtLastWithdraw);
-    console.log("rewardsPerTokenSinceLastWithdraw = ", rewardsPerTokenSinceLastWithdraw);
 
     uint256 userPrincipalDeposited
       = tokenInfo
@@ -384,13 +376,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       = usdcToAtomic(userPrincipalDeposited)
         .mul(mantissa())
         .div(fiduSharePrice);
-    console.log("principalAsfidu = ", principalAsFidu);
 
     uint256 rewardsAccrued
       = principalAsFidu
         .mul(rewardsPerTokenSinceLastWithdraw)
         .div(mantissa());
-    console.log("rewardsAccrued = ", rewardsAccrued);
 
     return rewardsAccrued;
   }
