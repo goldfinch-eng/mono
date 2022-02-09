@@ -2279,6 +2279,136 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("updatePositionEffectiveMultiplier", async () => {
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset effective multiplier to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+    })
+
+    it("checkpoints rewards before updating the position's multiplier", async () => {
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      // The effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("updates the position's multiplier", async () => {
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      // The effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      let position = await stakingRewards.positions(tokenId)
+      expect(position[5]).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      position = await stakingRewards.positions(tokenId)
+      expect(position[5]).to.bignumber.equal(new BN(2).mul(MULTIPLIER_DECIMALS))
+    })
+
+    it("recalculates the total staked supply", async () => {
+      // Another user stakes
+      await stake({
+        amount: curveLPAmount,
+        from: anotherUser,
+      })
+
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      // The effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      let totalStakedSupply = await stakingRewards.totalStakedSupply()
+      expect(totalStakedSupply).to.bignumber.equal(curveLPAmount.mul(new BN(2)))
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      totalStakedSupply = await stakingRewards.totalStakedSupply()
+      expect(totalStakedSupply).to.bignumber.equal(curveLPAmount.mul(new BN(3)))
+    })
+
+    it("distributes rewards based on new multiplier", async () => {
+      // Threshold of 5 seconds of rewards to account for slight block.timestamp increases
+      const threshold = new BN(5).mul(maxRate)
+
+      // anotherUser stakes the same number of FIDU tokens
+      const anotherUserToken = await stake({
+        amount: curveLPAmount,
+        from: anotherUser,
+      })
+      const startAt = await time.latest()
+
+      // investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+      const investorStakedAt = await time.latest()
+      const timeDiff = investorStakedAt.sub(startAt)
+
+      // the effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      await advanceTime({seconds: halfYearInSeconds})
+
+      // investor owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(tokenId, {from: investor})
+      let expectedRewards = maxRate.mul(halfYearInSeconds).div(new BN(2))
+      let gfiInvestorBalance = await gfi.balanceOf(investor)
+      expect(gfiInvestorBalance).to.bignumber.closeTo(expectedRewards, threshold)
+
+      // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+      const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+      expectedRewards = expectedRewards.add(rewardsWhenOnlyAnotherUserWasStaked)
+      let gfiAnotherUser = await gfi.balanceOf(anotherUser)
+      expect(gfiAnotherUser).to.bignumber.closeTo(expectedRewards, threshold)
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      await advanceTime({seconds: halfYearInSeconds})
+
+      // investor owns 2/3 of the staked supply and therefore should receive 2/3
+      // of the disbursed rewards from the second half of the year
+      await stakingRewards.getReward(tokenId, {from: investor})
+      const prevGfiInvestorBalance = gfiInvestorBalance
+      gfiInvestorBalance = await gfi.balanceOf(investor)
+      expectedRewards = maxRate.mul(halfYearInSeconds).mul(new BN(2)).div(new BN(3))
+      expect(gfiInvestorBalance.sub(prevGfiInvestorBalance)).to.bignumber.closeTo(expectedRewards, threshold)
+
+      // anotherUser owns 1/3 of the staked supply and therefore should receive 1/3
+      // of the disbursed rewards from the second half of the year
+      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+      const prevGfiAnotherUserBalance = gfiAnotherUser
+      gfiAnotherUser = await gfi.balanceOf(anotherUser)
+      expectedRewards = maxRate.mul(halfYearInSeconds).div(new BN(3))
+      expect(gfiAnotherUser.sub(prevGfiAnotherUserBalance)).to.bignumber.closeTo(expectedRewards, threshold)
+    })
+  })
+
   describe("market-based rewards", async () => {
     let totalRewards: BN
     const maxRate = bigVal(10)
