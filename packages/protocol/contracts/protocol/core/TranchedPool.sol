@@ -475,6 +475,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return getTrancheInfo(tranche);
   }
 
+  function numSlices() public view returns (uint256) {
+    return poolSlices.length;
+  }
+
   /**
    * @notice Converts USDC amounts to share price
    * @param amount The USDC amount to convert
