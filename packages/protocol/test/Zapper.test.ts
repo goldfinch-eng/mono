@@ -1,7 +1,7 @@
 import BN from "bn.js"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
-import {FIDU_DECIMALS, interestAprAsBN} from "../blockchain_scripts/deployHelpers"
+import {FIDU_DECIMALS, interestAprAsBN, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {
   ERC20Instance,
   FiduInstance,
@@ -33,13 +33,15 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const investor = asNonNullable(_investor)
   const borrower = asNonNullable(_borrower)
 
-  const {goldfinchConfig, goldfinchFactory, seniorPool, gfi, stakingRewards, fidu, usdc, zapper, ...others} =
+  const {goldfinchConfig, go, goldfinchFactory, seniorPool, gfi, stakingRewards, fidu, usdc, zapper, ...others} =
     await deployBaseFixture()
 
   await stakingRewards.initZapperRole()
   await seniorPool.initZapperRole()
+  await go.initZapperRole()
   await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), zapper.address)
   await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), zapper.address)
+  await go.grantRole(await go.ZAPPER_ROLE(), zapper.address)
 
   await goldfinchConfig.bulkAddToGoList([owner, investor, borrower])
   await erc20Approve(usdc, investor, usdcVal(10000), [owner])
@@ -122,7 +124,7 @@ describe("Zapper", async () => {
     } = await testSetup())
   })
 
-  describe.only("moveStakeToTranchedPool", async () => {
+  describe("moveStakeToTranchedPool", async () => {
     it("works", async () => {
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
 
@@ -133,11 +135,11 @@ describe("Zapper", async () => {
       const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
       const usdcToTransport = usdcEquivalent.div(new BN(2))
 
-      await zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, 1, usdcToTransport, {
+      await zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToTransport, {
         from: investor,
       })
 
-      expect(poolTokens.balanceOf(investor)).to.bignumber.eq(new BN(1))
+      expect(await poolTokens.balanceOf(investor)).to.bignumber.eq(new BN(1))
     })
   })
 })

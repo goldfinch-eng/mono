@@ -11,6 +11,8 @@ import "../../interfaces/IGo.sol";
 import "../../interfaces/IUniqueIdentity0612.sol";
 
 contract Go is IGo, BaseUpgradeablePausable {
+  bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
+
   address public override uniqueIdentity;
 
   using SafeMath for uint256;
@@ -104,6 +106,11 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goOnlyIdTypes(address account, uint256[] memory onlyIdTypes) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
+
+    if (hasRole(ZAPPER_ROLE, account)) {
+      return true;
+    }
+
     GoldfinchConfig goListSource = _getLegacyGoList();
     for (uint256 i = 0; i < onlyIdTypes.length; ++i) {
       if (onlyIdTypes[i] == ID_TYPE_0 && goListSource.goList(account)) {
@@ -124,7 +131,9 @@ contract Go is IGo, BaseUpgradeablePausable {
    */
   function goSeniorPool(address account) public view override returns (bool) {
     require(account != address(0), "Zero address is not go-listed");
-    if (account == config.stakingRewardsAddress() || _getLegacyGoList().goList(account)) {
+    if (
+      account == config.stakingRewardsAddress() || hasRole(ZAPPER_ROLE, account) || _getLegacyGoList().goList(account)
+    ) {
       return true;
     }
     uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
@@ -139,5 +148,9 @@ contract Go is IGo, BaseUpgradeablePausable {
 
   function _getLegacyGoList() internal view returns (GoldfinchConfig) {
     return address(legacyGoList) == address(0) ? config : legacyGoList;
+  }
+
+  function initZapperRole() external onlyAdmin {
+    _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
   }
 }

@@ -186,6 +186,9 @@
           "migrateAccountingVariables":  [],
           "closeCreditLine": []
         },
+        "**/Zapper.sol:*": {
+          "moveStakeToTranchedPool":  []
+        },
         "**/contracts/test/**": {
           "*.*": []
         }

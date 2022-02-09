@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 
 import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/IPoolTokens.sol";
@@ -47,6 +48,7 @@ contract Zapper is BaseUpgradeablePausable {
     uint256 withdrawnAmount = seniorPool.withdraw(usdcAmount);
     require(withdrawnAmount == usdcAmount, "Withdrawn amount != requested amount");
 
+    SafeERC20.safeApprove(config.getUSDC(), address(tranchedPool), usdcAmount);
     uint256 poolTokenId = tranchedPool.deposit(tranche, usdcAmount);
     IERC721(config.poolTokensAddress()).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }

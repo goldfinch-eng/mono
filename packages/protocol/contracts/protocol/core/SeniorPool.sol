@@ -360,10 +360,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
 
     // Send to reserves
+    userAmount = usdcAmount;
     uint256 reserveAmount = 0;
+
     if (!isZapper()) {
       reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
-      userAmount = usdcAmount.sub(reserveAmount);
+      userAmount = userAmount.sub(reserveAmount);
       sendToReserve(reserveAmount, msg.sender);
     }
 
