@@ -43,9 +43,9 @@ import InfoSection from "../infoSection"
 import InvestorNotice from "../investorNotice"
 import LoadingButton from "../loadingButton"
 import NdaPrompt from "../ndaPrompt"
-import TranchedPoolApyTooltipContent from "../TranchedPoolApyTooltipContent"
 import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
+import EarnTooltipContent from "../Earn/EarnTooltipContent"
 
 function useRecentPoolTransactions({
   tranchedPool,
@@ -387,12 +387,7 @@ function DepositStatus({
         <div className="value">{displayPercent(estimatedUSDCApy)} USDC</div>
         <div className="deposit-status-sub-item-flex">
           <div className="sub-value">{`${displayPercent(estimatedApy)} with GFI`}</div>
-          <span
-            data-tip=""
-            data-for="tranched-pool-apy-tooltip"
-            data-offset="{'top': 0, 'left': 80}"
-            data-place="bottom"
-          >
+          <span data-tip="" data-for="apy-tooltip" data-offset="{'top': 0, 'left': 80}" data-place="bottom">
             <InfoIcon color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
           </span>
         </div>
@@ -429,11 +424,57 @@ function DepositStatus({
         </div>
       </div>
       {rightStatusItem}
-      <TranchedPoolApyTooltipContent
-        estimatedUSDCApy={estimatedUSDCApy}
-        estimatedBackersOnlyApy={estimatedBackersOnlyApy}
-        estimatedLpSeniorPoolMatchingApy={estimatedLpSeniorPoolMatchingApy}
-        estimatedApy={estimatedApy}
+      <EarnTooltipContent
+        longDescription="Includes the base USDC interest yield plus GFI from both liquidity mining and staking."
+        rows={[
+          {
+            text: "Base interest USDC APY",
+            value: displayPercent(estimatedUSDCApy),
+          },
+          {
+            text: "Backer liquidity mining GFI APY*",
+            value: estimatedBackersOnlyApy
+              ? `~${displayPercent(estimatedBackersOnlyApy)}`
+              : displayPercent(estimatedBackersOnlyApy),
+          },
+          {
+            text: "LP rewards match GFI APY*",
+            subtext: "(expected to launch in March)",
+            value: estimatedLpSeniorPoolMatchingApy
+              ? `~${displayPercent(estimatedLpSeniorPoolMatchingApy)}`
+              : displayPercent(estimatedLpSeniorPoolMatchingApy),
+          },
+        ]}
+        total={{
+          text: "Total Est. APY",
+          value:
+            estimatedApy && (estimatedBackersOnlyApy || estimatedLpSeniorPoolMatchingApy)
+              ? `~${displayPercent(estimatedApy)}`
+              : displayPercent(estimatedApy),
+        }}
+        footer={
+          <>
+            <p>
+              *Learn more in the proposals for{" "}
+              <a
+                href="https://snapshot.org/#/goldfinch.eth/proposal/0xb716c18c38eb1828044aca84a1466ac08221a37a96ce73b04e9caa847e13e0da"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Backer liquidity mining
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://snapshot.org/#/goldfinch.eth/proposal/0x10a390307e3834af5153dc58af0e20cbb0e08d38543be884b622b55bfcd5818d"
+                target="_blank"
+                rel="noreferrer"
+              >
+                staking distributions
+              </a>
+              .
+            </p>
+          </>
+        }
       />
     </div>
   )
