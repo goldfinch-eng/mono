@@ -1,14 +1,21 @@
-import { Address, BigInt } from '@graphprotocol/graph-ts'
-import { TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, PoolBacker, TranchedPoolDeposit } from "../../generated/schema"
-import { DepositMade } from "../../generated/templates/TranchedPool/TranchedPool"
-import { SeniorPool as SeniorPoolContract } from '../../generated/templates/GoldfinchFactory/SeniorPool'
-import { TranchedPool as TranchedPoolContract } from '../../generated/templates/GoldfinchFactory/TranchedPool'
-import { GoldfinchConfig as GoldfinchConfigContract } from '../../generated/templates/GoldfinchFactory/GoldfinchConfig'
-import { GOLDFINCH_CONFIG_ADDRESS, ReserveDenominatorConfigIndex, SENIOR_POOL_ADDRESS } from '../constants'
-import { getOrInitUser } from './user'
-import { getOrInitCreditLine, initOrUpdateCreditLine } from './credit_line'
-import { getOrInitPoolBacker } from './pool_backer'
-import { getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets } from './helpers'
+import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {
+  TranchedPool,
+  JuniorTrancheInfo,
+  SeniorTrancheInfo,
+  PoolBacker,
+  TranchedPoolDeposit,
+  TranchedPoolBorrowerTransaction,
+} from "../../generated/schema"
+import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
+import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
+import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
+import {GOLDFINCH_CONFIG_ADDRESS, ReserveDenominatorConfigIndex, SENIOR_POOL_ADDRESS} from "../constants"
+import {getOrInitUser} from "./user"
+import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
+import {getOrInitPoolBacker} from "./pool_backer"
+import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets} from "./helpers"
 
 export function updatePoolCreditLine(address: Address): void {
   const contract = TranchedPoolContract.bind(address)
@@ -75,7 +82,7 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
     if (!seniorTranche) {
       seniorTranche = new SeniorTrancheInfo(seniorId)
     }
-    seniorTranche.trancheId =  BigInt.fromI32(counter)
+    seniorTranche.trancheId = BigInt.fromI32(counter)
     seniorTranche.lockedUntil = seniorTrancheInfo.lockedUntil
     seniorTranche.tranchedPool = address.toHexString()
     seniorTranche.principalDeposited = seniorTrancheInfo.principalDeposited
@@ -93,7 +100,7 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
     if (!juniorTranche) {
       juniorTranche = new JuniorTrancheInfo(juniorId)
     }
-    juniorTranche.trancheId =  BigInt.fromI32(counter)
+    juniorTranche.trancheId = BigInt.fromI32(counter)
     juniorTranche.lockedUntil = juniorTrancheInfo.lockedUntil
     juniorTranche.tranchedPool = address.toHexString()
     juniorTranche.principalSharePrice = juniorTrancheInfo.principalSharePrice
@@ -106,7 +113,9 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
   }
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
-  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(configContract.getNumber(BigInt.fromI32(ReserveDenominatorConfigIndex)))
+  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
+    configContract.getNumber(BigInt.fromI32(ReserveDenominatorConfigIndex))
+  )
   tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
   tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches)
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
@@ -123,4 +132,28 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
 
   tranchedPool.save()
   return tranchedPool
+}
+
+export function handleDrawdownMade(event: DrawdownMade): void {
+  const borrowerTransaction = new TranchedPoolBorrowerTransaction(event.transaction.hash.toHexString())
+  const tranchedPool = getOrInitTranchedPool(event.address)
+  borrowerTransaction.tranchedPool = tranchedPool.id
+  borrowerTransaction.amount = event.params.amount
+  borrowerTransaction.timestamp = event.block.timestamp
+  borrowerTransaction.blockNumber = event.block.number
+  borrowerTransaction.type = "DRAWDOWN_MADE"
+  borrowerTransaction.save()
+}
+
+export function handlePaymentApplied(event: PaymentApplied): void {
+  const borrowerTransaction = new TranchedPoolBorrowerTransaction(event.transaction.hash.toHexString())
+  const tranchedPool = getOrInitTranchedPool(event.address)
+  borrowerTransaction.tranchedPool = tranchedPool.id
+  const interestAmount = event.params.interestAmount
+  const totalPrincipalAmount = event.params.principalAmount.plus(event.params.remainingAmount)
+  borrowerTransaction.amount = interestAmount.plus(totalPrincipalAmount)
+  borrowerTransaction.timestamp = event.block.timestamp
+  borrowerTransaction.blockNumber = event.block.number
+  borrowerTransaction.type = "PAYMENT_APPLIED"
+  borrowerTransaction.save()
 }

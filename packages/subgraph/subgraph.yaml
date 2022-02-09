@@ -130,7 +130,6 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/pool_tokens_proxy.ts
 
-
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -244,6 +243,7 @@ templates:
         - User
         - TranchedPool
         - TranchedPoolToken
+        - TranchedPoolBorrowerTransaction
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json

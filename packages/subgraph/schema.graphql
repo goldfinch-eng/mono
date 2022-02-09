@@ -4,7 +4,6 @@ Notes
 - We are using reverse lookups to create virtual fields:
   https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
 """
-
 type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
@@ -22,12 +21,11 @@ type SeniorPoolStatus @entity {
   totalPoolAssets: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
-  cumulativeDrawdowns: BigInt!      # TODO requries tranched pool data
-  estimatedTotalInterest: BigInt!   # TODO requries tranched pool data
-  estimatedApy: BigInt!             # TODO requires estimatedTotalInterest
-  defaultRate: BigInt!              # TODO requires cumulativeDrawdowns
-
-  remainingCapacity: BigInt         # TODO requires goldfinchConfig.totalFundsLimit
+  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
+  estimatedTotalInterest: BigInt! # TODO requries tranched pool data
+  estimatedApy: BigInt! # TODO requires estimatedTotalInterest
+  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
+  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
 
 type CapitalProviderStatus @entity {
@@ -38,9 +36,9 @@ type CapitalProviderStatus @entity {
   allowance: BigInt!
   weightedAverageSharePrice: BigDecimal
   unrealizedGains: BigDecimal
-  unrealizedGainsPercentage: BigDecimal   # TODO conversion issues
-  availableToWithdrawInDollars: BigInt    # TODO
-  unrealizedGainsInDollars: BigInt        # TODO
+  unrealizedGainsPercentage: BigDecimal # TODO conversion issues
+  availableToWithdrawInDollars: BigInt # TODO
+  unrealizedGainsInDollars: BigInt # TODO
 }
 
 type SeniorPoolDeposit @entity {
@@ -147,6 +145,20 @@ type CreditLine @entity {
   name: String
 }
 
+enum TranchedPoolBorrowerTransactionType {
+  DRAWDOWN_MADE
+  PAYMENT_APPLIED
+}
+
+type TranchedPoolBorrowerTransaction @entity {
+  id: ID! # Set to transaction hash
+  type: TranchedPoolBorrowerTransactionType!
+  tranchedPool: TranchedPool!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigInt!
@@ -165,6 +177,7 @@ type TranchedPool @entity {
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
 }
 
 type TranchedPoolToken @entity {
