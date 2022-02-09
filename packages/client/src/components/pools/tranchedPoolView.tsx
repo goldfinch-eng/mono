@@ -47,6 +47,8 @@ import NdaPrompt from "../ndaPrompt"
 import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
 import EarnTooltipContent from "../Earn/EarnTooltipContent"
+import {WIDTH_TYPES} from "../styleConstants"
+import {useMediaQuery} from "react-responsive"
 
 function useRecentPoolTransactions({
   tranchedPool,
@@ -700,6 +702,7 @@ function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) 
   const {user, currentBlock} = useContext(AppContext)
   const transactions = useRecentPoolTransactions({tranchedPool, currentBlock})
   const backer = useBacker({user, tranchedPool})
+  const isMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenM})`})
 
   // Don't show the credit status component until the pool has a drawdown
   if (!backer || !tranchedPool || (transactions.length === 0 && !tranchedPool.isMigrated)) {
@@ -748,8 +751,12 @@ function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) 
         <tr key={tx.txHash}>
           <td>{tx.name}</td>
           <td>{moment.unix(tx.timestamp).format("MMM D")}</td>
-          <td className="numeric">{displayAbbreviated(usdcFromAtomic(amount))}</td>
-          <td className="numeric">{displayAbbreviated(usdcFromAtomic(yourPortion))}</td>
+          <td className="numeric">
+            {isMobile ? displayAbbreviated(usdcFromAtomic(amount)) : displayDollars(usdcFromAtomic(amount))}
+          </td>
+          <td className="numeric">
+            {isMobile ? displayAbbreviated(usdcFromAtomic(yourPortion)) : displayDollars(usdcFromAtomic(yourPortion))}
+          </td>
           <td className="transaction-link">
             <a
               className="inline-button"
