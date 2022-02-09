@@ -360,5 +360,720 @@ describe("BackerRewards", () => {
         })
       })
     })
+
+    describe("if three tranched pools are eligible for backer rewards", () => {
+      describe("and all of those pools are open for the first time", () => {
+        const tranchedPool1Address = "0x0000000000000000000000000000000000000099"
+        let tranchedPool1: TranchedPool
+
+        const tranchedPool2Address = "0x0000000000000000000000000000000000000097"
+        let tranchedPool2: TranchedPool
+
+        const tranchedPool3Address = "0x0000000000000000000000000000000000000095"
+        let tranchedPool3: TranchedPool
+
+        let callBackerRewardsPoolsMock1: () => void
+        let callBackerRewardsPoolsMock2: () => void
+        let callBackerRewardsPoolsMock3: () => void
+
+        beforeEach(async () => {
+          tranchedPool1 = new TranchedPool(tranchedPool1Address, goldfinchProtocol)
+
+          tranchedPool1.creditLine = new CreditLine("0x0000000000000000000000000000000000000098", goldfinchProtocol)
+          tranchedPool1.creditLine.isLate = false
+          tranchedPool1.creditLine.termEndTime = new BigNumber(0)
+          tranchedPool1.creditLine.termStartTime = new BigNumber(0)
+          tranchedPool1.creditLine.maxLimit = new BigNumber(1e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
+          tranchedPool1.creditLine.termInDays = new BigNumber(3 * 365)
+          tranchedPool1.creditLine.paymentPeriodInDays = new BigNumber(30)
+          tranchedPool1.creditLine.interestApr = new BigNumber(0.1).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
+
+          tranchedPool1.poolState = PoolState.Open
+          tranchedPool1.totalDeployed = new BigNumber(0)
+          const juniorPrincipalDeposited1 = new BigNumber(0)
+          tranchedPool1.juniorTranche = {
+            principalDeposited: juniorPrincipalDeposited1,
+          } as TrancheInfo
+          const seniorPrincipalDeposited1 = new BigNumber(0)
+          tranchedPool1.seniorTranche = {
+            principalDeposited: seniorPrincipalDeposited1,
+          } as TrancheInfo
+          tranchedPool1.totalDeposited = juniorPrincipalDeposited1.plus(seniorPrincipalDeposited1)
+          tranchedPool1.fundableAt = new BigNumber(currentBlock.timestamp)
+          tranchedPool1.estimatedLeverageRatio = new BigNumber(3)
+          tranchedPool1.metadata = {
+            name: "Almavest Basket #6",
+            category: "asdf",
+            icon: "foo.png",
+            description: "asdf",
+            launchTime: currentBlock.timestamp,
+          }
+
+          callBackerRewardsPoolsMock1 = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "pools",
+              params: [tranchedPool1Address],
+              return: "0",
+            },
+          })
+
+          tranchedPool2 = new TranchedPool(tranchedPool2Address, goldfinchProtocol)
+
+          tranchedPool2.creditLine = new CreditLine("0x0000000000000000000000000000000000000096", goldfinchProtocol)
+          tranchedPool2.creditLine.isLate = false
+          tranchedPool2.creditLine.termEndTime = new BigNumber(0)
+          tranchedPool2.creditLine.termStartTime = new BigNumber(0)
+          tranchedPool2.creditLine.maxLimit = new BigNumber(2e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
+          tranchedPool2.creditLine.termInDays = new BigNumber(4 * 365)
+          tranchedPool2.creditLine.paymentPeriodInDays = new BigNumber(30)
+          tranchedPool2.creditLine.interestApr = new BigNumber(0.11).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
+
+          tranchedPool2.poolState = PoolState.Open
+          tranchedPool2.totalDeployed = new BigNumber(0)
+          const juniorPrincipalDeposited2 = new BigNumber(0)
+          tranchedPool2.juniorTranche = {
+            principalDeposited: juniorPrincipalDeposited2,
+          } as TrancheInfo
+          const seniorPrincipalDeposited2 = new BigNumber(0)
+          tranchedPool2.seniorTranche = {
+            principalDeposited: seniorPrincipalDeposited2,
+          } as TrancheInfo
+          tranchedPool2.totalDeposited = juniorPrincipalDeposited2.plus(seniorPrincipalDeposited2)
+          tranchedPool2.fundableAt = new BigNumber(currentBlock.timestamp)
+          tranchedPool2.estimatedLeverageRatio = new BigNumber(3)
+          tranchedPool2.metadata = {
+            name: "Stratos #1",
+            category: "asdf",
+            icon: "foo.png",
+            description: "asdf",
+            launchTime: currentBlock.timestamp + 1,
+          }
+
+          callBackerRewardsPoolsMock2 = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "pools",
+              params: [tranchedPool2Address],
+              return: "0",
+            },
+          })
+
+          tranchedPool3 = new TranchedPool(tranchedPool3Address, goldfinchProtocol)
+
+          tranchedPool3.creditLine = new CreditLine("0x0000000000000000000000000000000000000094", goldfinchProtocol)
+          tranchedPool3.creditLine.isLate = false
+          tranchedPool3.creditLine.termEndTime = new BigNumber(0)
+          tranchedPool3.creditLine.termStartTime = new BigNumber(0)
+          tranchedPool3.creditLine.maxLimit = new BigNumber(2e7).multipliedBy(utils.USDC_DECIMALS.toString(10))
+          tranchedPool3.creditLine.termInDays = new BigNumber(3 * 365)
+          tranchedPool3.creditLine.paymentPeriodInDays = new BigNumber(30)
+          tranchedPool3.creditLine.interestApr = new BigNumber(0.1).multipliedBy(utils.INTEREST_DECIMALS.toString(10))
+
+          tranchedPool3.poolState = PoolState.Open
+          tranchedPool3.totalDeployed = new BigNumber(0)
+          const juniorPrincipalDeposited3 = new BigNumber(0)
+          tranchedPool3.juniorTranche = {
+            principalDeposited: juniorPrincipalDeposited3,
+          } as TrancheInfo
+          const seniorPrincipalDeposited3 = new BigNumber(0)
+          tranchedPool3.seniorTranche = {
+            principalDeposited: seniorPrincipalDeposited3,
+          } as TrancheInfo
+          tranchedPool3.totalDeposited = juniorPrincipalDeposited3.plus(seniorPrincipalDeposited3)
+          tranchedPool3.fundableAt = new BigNumber(currentBlock.timestamp)
+          tranchedPool3.estimatedLeverageRatio = new BigNumber(3)
+          tranchedPool3.metadata = {
+            name: "Cauris #2",
+            category: "asdf",
+            icon: "foo.png",
+            description: "asdf",
+            launchTime: currentBlock.timestamp + 2,
+          }
+
+          callBackerRewardsPoolsMock3 = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "pools",
+              params: [tranchedPool3Address],
+              return: "0",
+            },
+          })
+        })
+
+        it("should return the correct backers-only and senior-pool-matching APY-from-GFI values", async () => {
+          // NOTE: The purpose of this test is specifically to establish that the frontend calculates estimated
+          // APY-from-GFI correctly for Alma pool #6, Stratos pool #1, and Cauris pool #2, which are the first three
+          // tranched pools eligible for rewards via the BackerRewards contract. The expected values can be
+          // understood using this spreadsheet: https://docs.google.com/spreadsheets/d/1SkPDqmMXywdOjiclHHtVd-GlNUl_rvRYv8zIqdNcxak/edit#gid=0
+
+          const tranchedPools = [tranchedPool1, tranchedPool2, tranchedPool3]
+
+          const tranchedPool1ScheduledRepayments = await tranchedPool1.getOptimisticRepaymentSchedule(currentBlock)
+          expect(
+            tranchedPool1ScheduledRepayments.map((scheduled) => ({
+              timestamp: scheduled.timestamp,
+              usdcAmount: scheduled.usdcAmount.toString(),
+            }))
+          ).toEqual([
+            {
+              timestamp: 1643980291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1646572291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1649164291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1651756291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1654348291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1656940291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1659532291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1662124291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1664716291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1667308291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1669900291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1672492291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1675084291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1677676291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1680268291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1682860291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1685452291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1688044291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1690636291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1693228291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1695820291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1698412291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1701004291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1703596291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1706188291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1708780291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1711372291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1713964291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1716556291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1719148291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1721740291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1724332291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1726924291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1729516291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1732108291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1734700291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+            {
+              timestamp: 1735996291,
+              usdcAmount: "41095890410.95890410958904109589",
+            },
+          ])
+
+          const tranchedPool2ScheduledRepayments = await tranchedPool2.getOptimisticRepaymentSchedule(currentBlock)
+          expect(
+            tranchedPool2ScheduledRepayments.map((scheduled) => ({
+              timestamp: scheduled.timestamp,
+              usdcAmount: scheduled.usdcAmount.toString(),
+            }))
+          ).toEqual([
+            {
+              timestamp: 1643980291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1646572291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1649164291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1651756291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1654348291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1656940291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1659532291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1662124291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1664716291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1667308291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1669900291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1672492291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1675084291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1677676291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1680268291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1682860291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1685452291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1688044291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1690636291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1693228291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1695820291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1698412291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1701004291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1703596291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1706188291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1708780291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1711372291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1713964291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1716556291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1719148291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1721740291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1724332291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1726924291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1729516291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1732108291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1734700291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1737292291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1739884291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1742476291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1745068291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1747660291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1750252291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1752844291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1755436291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1758028291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1760620291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1763212291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1765804291,
+              usdcAmount: "180821917808.21917808219178082192",
+            },
+            {
+              timestamp: 1767532291,
+              usdcAmount: "120547945205.47945205479452054795",
+            },
+          ])
+
+          const tranchedPool3ScheduledRepayments = await tranchedPool3.getOptimisticRepaymentSchedule(currentBlock)
+          expect(
+            tranchedPool3ScheduledRepayments.map((scheduled) => ({
+              timestamp: scheduled.timestamp,
+              usdcAmount: scheduled.usdcAmount.toString(),
+            }))
+          ).toEqual([
+            {
+              timestamp: 1643980291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1646572291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1649164291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1651756291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1654348291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1656940291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1659532291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1662124291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1664716291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1667308291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1669900291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1672492291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1675084291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1677676291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1680268291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1682860291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1685452291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1688044291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1690636291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1693228291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1695820291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1698412291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1701004291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1703596291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1706188291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1708780291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1711372291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1713964291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1716556291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1719148291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1721740291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1724332291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1726924291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1729516291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1732108291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1734700291,
+              usdcAmount: "164383561643.83561643835616438356",
+            },
+            {
+              timestamp: 1735996291,
+              usdcAmount: "82191780821.91780821917808219178",
+            },
+          ])
+
+          const estimatedRewards = await backerRewards._estimateRewardsFromScheduledRepayments(
+            tranchedPools,
+            gfi.info.value.supply,
+            currentBlock
+          )
+          expect(estimatedRewards[tranchedPool1.address]?.value.toString(10)).toEqual("215470472976237987641286")
+          expect(estimatedRewards[tranchedPool2.address]?.value.toString(10)).toEqual("434013349470995195038500")
+          expect(estimatedRewards[tranchedPool3.address]?.value.toString(10)).toEqual("314860088729510347636920")
+
+          const result = await backerRewards.estimateApyFromGfiByTranchedPool(tranchedPools, seniorPool, gfi)
+          expect(Object.keys(result)).toEqual([tranchedPool1Address, tranchedPool2Address, tranchedPool3Address])
+
+          const tranchedPool1Result = result[tranchedPool1Address]
+          expect(tranchedPool1Result).toBeTruthy()
+          assertNonNullable(tranchedPool1Result)
+          expect(Object.keys(tranchedPool1Result)).toEqual(["backersOnly", "seniorPoolMatching"])
+          expect(tranchedPool1Result.backersOnly?.toString()).toEqual("0.11664134937113683064")
+          expect(tranchedPool1Result.seniorPoolMatching?.toString()).toEqual("0.37")
+
+          const tranchedPool2Result = result[tranchedPool2Address]
+          expect(tranchedPool2Result).toBeTruthy()
+          assertNonNullable(tranchedPool2Result)
+          expect(Object.keys(tranchedPool2Result)).toEqual(["backersOnly", "seniorPoolMatching"])
+          expect(tranchedPool2Result.backersOnly?.toString()).toEqual("0.08810470994261202459")
+          expect(tranchedPool2Result.seniorPoolMatching?.toString()).toEqual("0.37")
+
+          const tranchedPool3Result = result[tranchedPool3Address]
+          expect(tranchedPool3Result).toBeTruthy()
+          assertNonNullable(tranchedPool3Result)
+          expect(Object.keys(tranchedPool3Result)).toEqual(["backersOnly", "seniorPoolMatching"])
+          expect(tranchedPool3Result.backersOnly?.toString()).toEqual("0.08522213068278746743")
+          expect(tranchedPool3Result.seniorPoolMatching?.toString()).toEqual("0.37")
+
+          assertAllMocksAreCalled({
+            callBackerRewardsPoolsMock1,
+            callBackerRewardsPoolsMock2,
+            callBackerRewardsPoolsMock3,
+          })
+        })
+      })
+    })
   })
 })
