@@ -42,7 +42,7 @@ import {
   UserMerkleDistributor,
   UserMerkleDistributorLoaded,
 } from "./ethereum/user"
-import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
+import {LOCAL, MAINNET, mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import Rewards from "./pages/rewards"
@@ -273,6 +273,11 @@ function App() {
   const backerMerkleDistributor = consistent?.[5]
   const backerMerkleDirectDistributor = consistent?.[6]
   const backerRewards = consistent?.[7]
+  console.log(goldfinchProtocol)
+  console.log(stakingRewards)
+  console.log(gfi)
+  console.log(currentBlock)
+  console.log(user)
 
   // To ensure `gfi`, `stakingRewards`, `communityRewards`, `merkleDistributor`,
   // `merkleDirectDistributor`, `backerMerkleDistributor`, `backerMerkleDirectDistributor`

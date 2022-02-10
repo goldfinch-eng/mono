@@ -43,7 +43,7 @@ function genUserWalletWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
 }
 
 async function getUserWalletWeb3Status(): Promise<UserWalletWeb3Status> {
-  if (!window.ethereum) {
+  if (!window.ethereum && !web3) {
     return {type: "no_web3", networkName: undefined, address: undefined}
   }
   let networkName: string
@@ -111,6 +111,22 @@ function genWeb3(): Web3IO<Web3> {
       return {readOnly: sharedWeb3, userWallet: sharedWeb3}
     }
   } else {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("REACT_APP_INFURA_HTTP", process.env.REACT_APP_INFURA_HTTP)
+      console.log("REACT_APP_INFURA_PROJECT_ID", process.env.REACT_APP_INFURA_PROJECT_ID)
+      const networkName = "mainnet"
+      const provider =
+        process.env.REACT_APP_INFURA_HTTP === "yes"
+          ? // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
+            new HttpProvider(`https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`)
+          : // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
+            new WebsocketProvider(`wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`)
+      const sharedWeb3 = new Web3(provider)
+      return {
+        readOnly: sharedWeb3,
+        userWallet: sharedWeb3,
+      }
+    }
     // For local network testing.
     const sharedWeb3 = new Web3("http://127.0.0.1:8545")
     return {readOnly: sharedWeb3, userWallet: sharedWeb3}
