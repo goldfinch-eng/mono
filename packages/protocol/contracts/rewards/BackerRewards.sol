@@ -188,7 +188,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     }
 
     bool isNewSlice = poolStakingRewards[pool].slicesInfo.length == 0 ||
-      poolStakingRewards[pool].slicesInfo.length >= sliceIndex;
+      poolStakingRewards[pool].slicesInfo.length < sliceIndex;
 
     if (isNewSlice) {
       // initialize new slice params
@@ -511,7 +511,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   function _juniorTrancheIdToSliceIndex(uint256 trancheId) internal pure returns (uint256) {
-    return trancheId.mul(2).add(2);
+    return trancheId.sub(1).div(2);
   }
 
   function updateGoldfinchConfig() external onlyAdmin {
