@@ -83,7 +83,6 @@ import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {Signer} from "ethers"
 import {BackerStakingRewardsClaimed} from "@goldfinch-eng/protocol/typechain/truffle/BackerRewards"
-import {PaymentApplied} from "@goldfinch-eng/protocol/typechain/truffle/CreditDesk"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
