@@ -111,9 +111,7 @@ function genWeb3(): Web3IO<Web3> {
       return {readOnly: sharedWeb3, userWallet: sharedWeb3}
     }
   } else {
-    if (process.env.NODE_ENV !== "production") {
-      console.log("REACT_APP_INFURA_HTTP", process.env.REACT_APP_INFURA_HTTP)
-      console.log("REACT_APP_INFURA_PROJECT_ID", process.env.REACT_APP_INFURA_PROJECT_ID)
+    if (process.env.NODE_ENV === "production") {
       const networkName = "mainnet"
       const provider =
         process.env.REACT_APP_INFURA_HTTP === "yes"
