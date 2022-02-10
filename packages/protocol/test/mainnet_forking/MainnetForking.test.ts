@@ -11,7 +11,6 @@ import {
   getTruffleContract,
   OWNER_ROLE,
   SIGNER_ROLE,
-  GFI_DECIMALS,
 } from "../../blockchain_scripts/deployHelpers"
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
@@ -798,7 +797,7 @@ describe("mainnet forking tests", async function () {
         backerStakingTokenId
       )
       expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
-    })
+    }).timeout(TEST_TIMEOUT)
 
     it("behaves correctly, 1 slice, two partial drawdowns", async () => {
       // person we dont care about but is participating in the pool to make sure
@@ -893,7 +892,7 @@ describe("mainnet forking tests", async function () {
         backerStakingTokenId
       )
       expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
-    })
+    }).timeout(TEST_TIMEOUT)
 
     // TODO: test that participant in nth slice gets accurate rewards
     // TOOD: test that participant in nth slice gets correct rewards while other participants withdraw
