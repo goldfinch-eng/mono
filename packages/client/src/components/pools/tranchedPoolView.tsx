@@ -361,13 +361,13 @@ function DepositStatus({
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
   const session = useSession()
-  if (!tranchedPool) {
+  if (!tranchedPool || !tranchedPoolsEstimatedApyFromGfi.loaded) {
     return <></>
   }
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   let estimatedUSDCApy = tranchedPool.estimateJuniorAPY(leverageRatio)
-  const apysFromGfi = tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address]
+  const apysFromGfi = tranchedPoolsEstimatedApyFromGfi.value.estimatedApyFromGfi[tranchedPool.address]
   const estimatedBackersOnlyApy = apysFromGfi?.backersOnly
   const estimatedLpSeniorPoolMatchingApy = apysFromGfi?.seniorPoolMatching
 

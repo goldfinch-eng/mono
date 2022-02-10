@@ -421,10 +421,12 @@ export class BackerRewards {
     seniorPool: SeniorPoolLoaded,
     gfi: GFILoaded
   ): Promise<{
-    [tranchedPoolAddress: string]: {
-      backersOnly: BigNumber | undefined
-      seniorPoolMatching: BigNumber | undefined
-    }
+    [tranchedPoolAddress: string]:
+      | {
+          backersOnly: BigNumber | undefined
+          seniorPoolMatching: BigNumber | undefined
+        }
+      | undefined
   }> {
     if (!sameBlock(seniorPool.info.value.currentBlock, this.info.value?.currentBlock)) {
       throw new Error("Senior pool `currentBlock` is not consistent with BackerRewards' current block.")
@@ -444,9 +446,17 @@ export class BackerRewards {
       this.estimateSeniorPoolMatchingApyFromGfi(rewardableTranchedPools, seniorPool),
     ])
 
-    return mapValues(defaultEstimatedApyFromGfi, (_, tranchedPoolAddress) => ({
-      backersOnly: estimatedBackersOnlyApyFromGfi[tranchedPoolAddress],
-      seniorPoolMatching: estimatedSeniorPoolMatchingApyFromGfi[tranchedPoolAddress],
-    }))
+    const rewardableEstimatedApyFromGfi = zipObject(
+      rewardableTranchedPools.map((rewardable) => rewardable.address),
+      rewardableTranchedPools.map((rewardable) => ({
+        backersOnly: estimatedBackersOnlyApyFromGfi[rewardable.address],
+        seniorPoolMatching: estimatedSeniorPoolMatchingApyFromGfi[rewardable.address],
+      }))
+    )
+
+    return {
+      ...defaultEstimatedApyFromGfi,
+      ...rewardableEstimatedApyFromGfi,
+    }
   }
 }
