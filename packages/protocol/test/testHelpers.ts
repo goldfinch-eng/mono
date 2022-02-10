@@ -563,6 +563,10 @@ export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<strin
   }))
   expectRoles(expectations)
 }
+export function dbg<T>(x: T): T {
+  console.trace(String(x))
+  return x
+}
 
 export {
   hardhat,

@@ -801,11 +801,6 @@ describe("mainnet forking tests", async function () {
         expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
       })
 
-      function dbg<T>(x: T): T {
-        console.trace(String(x))
-        return x
-      }
-
       it("behaves correctly, 1 slice, two partial drawdowns", async () => {
         // person we dont care about but is participating in the pool to make sure
         // that other people are receieving staking rewards
@@ -875,10 +870,11 @@ describe("mainnet forking tests", async function () {
         await forceStakingRewardsCheckpoint()
         const backerStakingRewardsEarnedAfterFinalRepayment =
           await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId)
-        const x = dbg(await stakingRewards.earnedSinceLastCheckpoint(secondStakingTokenId))
-        const stakingRewardsEarnedAfterFinalRepayment = dbg(
-          await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
+        const x = await stakingRewards.earnedSinceLastCheckpoint(secondStakingTokenId)
+        const stakingRewardsEarnedAfterFinalRepayment = await stakingRewards.earnedSinceLastCheckpoint(
+          stakingRewardsTokenId
         )
+
         // NOTE: we need to capture the stakingrewards amount at the final day of the repayment
         //        and then compare that its within a tolerance. This is asserting that
         //        the fall of logic that we're implementing is _close_ to the value
