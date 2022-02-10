@@ -1,5 +1,5 @@
-import * as accreditedlist from "./accredited.json"
+import accreditedList from "./accredited.json"
 
 export function isAccredited(address: string): boolean {
-  return accreditedlist.includes(address)
+  return accreditedList.includes(address)
 }

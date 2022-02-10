@@ -12,6 +12,7 @@ import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
+import {isAccredited} from "@goldfinch-eng/autotasks/unique-identity-signer/isAccredited"
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
   return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
@@ -77,6 +78,9 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   function chooseEntity(chosenType) {
     setEntityType(chosenType)
   }
+  if (user) {
+    console.log(user.address, isAccredited(user.address))
+  }
 
   function renderForm() {
     if (user && user.info.value.goListed) {
@@ -103,7 +107,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           onEvent={() => fetchKYCStatus(session)}
         />
       )
-    } else if (entityType === "entity") {
+    } else if (entityType === "entity" && user && !isAccredited(user.address)) {
       return <EntityForm onClose={() => setEntityType("")} />
     } else if (isEligible(kyc, user)) {
       return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
