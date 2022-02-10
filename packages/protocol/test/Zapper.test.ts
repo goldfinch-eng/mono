@@ -3,29 +3,36 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
 import {FIDU_DECIMALS, interestAprAsBN, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {
-  ERC20Instance,
   FiduInstance,
   GoldfinchConfigInstance,
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
+  TestUniqueIdentityInstance,
   TranchedPoolInstance,
   ZapperInstance,
 } from "../typechain/truffle"
 import {
+  advanceTime,
   bigVal,
   createPoolWithCreditLine,
+  decodeAndGetFirstLog,
   decodeLogs,
   erc20Approve,
   erc20Transfer,
   fiduToUSDC,
+  getCurrentTimestamp,
   getFirstLog,
+  SECONDS_PER_DAY,
+  SECONDS_PER_YEAR,
   usdcVal,
 } from "./testHelpers"
-import {deployBaseFixture} from "./util/fixtures"
+import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
 import {DepositMade} from "../typechain/truffle/SeniorPool"
+import {DepositMade as TranchedPoolDepositMade} from "../typechain/truffle/TranchedPool"
 import {Staked} from "../typechain/truffle/StakingRewards"
-const {ethers, deployments} = hre
+import {mint as mintUID} from "./uniqueIdentityHelpers"
+const {deployments} = hre
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _investor, _borrower] = await web3.eth.getAccounts()
@@ -36,6 +43,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const {goldfinchConfig, go, goldfinchFactory, seniorPool, gfi, stakingRewards, fidu, usdc, zapper, ...others} =
     await deployBaseFixture()
 
+  // Set up contracts
   await stakingRewards.initZapperRole()
   await seniorPool.initZapperRole()
   await go.initZapperRole()
@@ -43,23 +51,39 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), zapper.address)
   await go.grantRole(await go.ZAPPER_ROLE(), zapper.address)
 
+  // Set up test user balances
   await goldfinchConfig.bulkAddToGoList([owner, investor, borrower])
   await erc20Approve(usdc, investor, usdcVal(10000), [owner])
   await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
 
+  // Deposit from owner
+  await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+  await seniorPool.deposit(usdcVal(1000), {from: owner})
+
+  // Deposit from investor
   await erc20Approve(usdc, seniorPool.address, usdcVal(5000), [investor])
   const receipt = await seniorPool.deposit(usdcVal(5000), {from: investor})
   const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
   const fiduAmount = new BN(depositEvent.args.shares)
 
+  // Set up StakingRewards
   const targetCapacity = bigVal(1000)
   const maxRate = bigVal(1000)
-  const minRate = bigVal(100)
+  const minRate = bigVal(1000)
   const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
   const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
 
-  await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
+  const totalRewards = maxRate.mul(SECONDS_PER_YEAR)
+  const totalSupply = await gfi.totalSupply()
+  await gfi.setCap(totalSupply.add(new BN(totalRewards)))
+  await gfi.mint(owner, totalRewards)
+  await gfi.approve(stakingRewards.address, totalRewards)
+  await stakingRewards.loadRewards(totalRewards)
 
+  await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
+  await stakingRewards.setVestingSchedule(SECONDS_PER_YEAR)
+
+  // Set up a TranchedPool
   const limit = usdcVal(1_000_000)
   const interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -100,8 +124,8 @@ describe("Zapper", async () => {
   let stakingRewards: StakingRewardsInstance
   let tranchedPool: TranchedPoolInstance
   let fidu: FiduInstance
-  let usdc: ERC20Instance
   let poolTokens: PoolTokensInstance
+  let uid: TestUniqueIdentityInstance
 
   let owner: string
   let investor: string
@@ -121,6 +145,7 @@ describe("Zapper", async () => {
       zapper,
       stakingRewards,
       fidu,
+      uniqueIdentity: uid,
     } = await testSetup())
   })
 
@@ -128,18 +153,155 @@ describe("Zapper", async () => {
     it("works", async () => {
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
 
+      const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+      const usdcToZap = usdcEquivalent.div(new BN(2))
+      const usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
+
       const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
       const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
         .tokenId
 
-      const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
-      const usdcToTransport = usdcEquivalent.div(new BN(2))
+      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
 
-      await zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToTransport, {
-        from: investor,
+      await stakingRewards.kick(stakedTokenId)
+      const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
+      const seniorPoolBalanceBefore = await seniorPool.assets()
+
+      const result = await zapper.moveStakeToTranchedPool(
+        stakedTokenId,
+        tranchedPool.address,
+        TRANCHES.Junior,
+        usdcToZap,
+        {
+          from: investor,
+        }
+      )
+
+      const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
+      const seniorPoolBalanceAfter = await seniorPool.assets()
+
+      const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
+        result.receipt.rawLogs,
+        tranchedPool,
+        "DepositMade"
+      )
+      const poolTokenId = depositEvent.args.tokenId
+      const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
+
+      // it maintains investor as owner of staked position
+      expect(await stakingRewards.ownerOf(stakedTokenId)).to.eq(investor)
+
+      // it unstakes usdcToZap from StakingRewards
+      expect(stakedPositionBefore.amount.sub(stakedPositionAfter.amount)).to.bignumber.eq(usdcToZapInFidu)
+
+      // it withdraws usdcToZap from SeniorPool
+      expect(seniorPoolBalanceBefore.sub(seniorPoolBalanceAfter)).to.bignumber.eq(usdcToZap)
+
+      // it does not slash unvested rewards
+      expect(stakedPositionBefore.rewards.totalUnvested).to.bignumber.closeTo(
+        stakedPositionAfter.rewards.totalUnvested,
+        new BN(String(1e18))
+      )
+
+      // it deposits usdcToZap into the TranchedPool on behalf of the user
+      expect(await poolTokens.ownerOf(poolTokenId)).to.eq(investor)
+      expect(tokenInfo.principalAmount).to.bignumber.eq(usdcToZap)
+    })
+
+    describe("pool is invalid", async () => {
+      it("reverts", async () => {
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+        const usdcToZap = usdcEquivalent.div(new BN(2))
+
+        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
+          .tokenId
+
+        // Wasn't created through our factory
+        const {tranchedPool: fakePool} = await deployUninitializedTranchedPoolFixture()
+        await fakePool.initialize(
+          goldfinchConfig.address,
+          investor,
+          new BN(20),
+          usdcVal(1000),
+          new BN(15000),
+          new BN(30),
+          new BN(360),
+          new BN(350),
+          new BN(180),
+          new BN(0),
+          []
+        )
+
+        await expect(
+          zapper.moveStakeToTranchedPool(stakedTokenId, fakePool.address, TRANCHES.Junior, usdcToZap, {
+            from: investor,
+          })
+        ).to.be.rejectedWith(/Invalid pool/)
       })
+    })
 
-      expect(await poolTokens.balanceOf(investor)).to.bignumber.eq(new BN(1))
+    describe("investor does not own position token", async () => {
+      it("reverts", async () => {
+        // Stake from owner account
+        const fiduAmount = bigVal(100)
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: owner})
+
+        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+        const usdcToZap = usdcEquivalent.div(new BN(2))
+
+        const receipt = await stakingRewards.stake(fiduAmount, {from: owner})
+        const ownerStakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+          .args.tokenId
+
+        // Attempt to zap owner staked position as investor
+        await expect(
+          zapper.moveStakeToTranchedPool(ownerStakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+            from: investor,
+          })
+        ).to.be.rejectedWith(/Not token owner/)
+      })
+    })
+
+    describe("investor does not have required UID for tranched pool", async () => {
+      it("reverts", async () => {
+        // Mint UID with type 1
+        await goldfinchConfig.removeFromGoList(investor)
+        await uid.setSupportedUIDTypes([1, 2, 3], [true, true, true])
+        const uidTokenType = new BN(1)
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mintUID(hre, uid, uidTokenType, expiresAt, new BN(0), owner, undefined, investor)
+
+        // Require UID with type 2
+        await tranchedPool.setAllowedUIDTypes([2], {from: owner})
+
+        // Stake as investor
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+        const usdcToZap = usdcEquivalent.div(new BN(2))
+
+        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
+          .tokenId
+
+        // Attempt to zap with UID with wrong type
+        await expect(
+          zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+            from: investor,
+          })
+        ).to.be.rejectedWith(/Address not go-listed/)
+
+        // Sanity check that it works with the correct UID type
+        await tranchedPool.setAllowedUIDTypes([1], {from: owner})
+        await expect(
+          zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+            from: investor,
+          })
+        ).to.be.fulfilled
+      })
     })
   })
 })
