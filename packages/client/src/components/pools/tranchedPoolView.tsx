@@ -46,6 +46,7 @@ import NdaPrompt from "../ndaPrompt"
 import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
 import EarnTooltipContent from "../Earn/EarnTooltipContent"
+import Banner from "../banner"
 
 function useRecentPoolTransactions({
   tranchedPool,
@@ -855,7 +856,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
 
 const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
   return (
-    <div className="info-banner background-container">
+    <Banner>
       <div className="message extra-small">
         {iconInfo}
         <span>
@@ -871,7 +872,7 @@ const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
           </a>
         </span>
       </div>
-    </div>
+    </Banner>
   )
 }
 

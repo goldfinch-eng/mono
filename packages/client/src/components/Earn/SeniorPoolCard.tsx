@@ -1,7 +1,7 @@
 import {useHistory} from "react-router-dom"
 import BigNumber from "bignumber.js"
 import Badge from "../badge"
-import logoPurp from "../../images/logomark-purp.svg"
+import logo from "../../images/logomark-spaced.svg"
 import {InfoIcon} from "../../ui/icons"
 import {displayPercent} from "../../utils"
 import EarnTooltipContent from "./EarnTooltipContent"
@@ -30,7 +30,7 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
     >
       <div className="table-cell col40 pool-info">
         <div>
-          <img className={`senior-pool-icon icon ${disabledClass}`} src={logoPurp} alt="Senior Pool icon" />
+          <img className={`senior-pool-icon icon ${disabledClass}`} src={logo} alt="Senior Pool icon" />
         </div>
         <div>
           <span className="name">Goldfinch Senior Pool</span>
