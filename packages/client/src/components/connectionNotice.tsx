@@ -49,7 +49,9 @@ interface ConnectionNoticeStrategy {
 export const strategies: ConnectionNoticeStrategy[] = [
   {
     devName: "install_metamask",
-    match: ({userWalletWeb3Status}) => userWalletWeb3Status?.type === "no_web3",
+    match: ({userWalletWeb3Status}) =>
+      userWalletWeb3Status?.type === "no_web3" ||
+      (!window.hasOwnProperty("ethereum") && userWalletWeb3Status?.type === "has_web3"),
     render: (_props) => (
       <TextBanner>
         In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}

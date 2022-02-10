@@ -234,7 +234,10 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (userWalletWeb3Status?.type === "no_web3") {
+  } else if (
+    userWalletWeb3Status?.type === "no_web3" ||
+    (!window.hasOwnProperty("ethereum") && userWalletWeb3Status?.type === "has_web3")
+  ) {
     return (
       <div ref={node} className="network-widget">
         <a href="https://metamask.io" className="network-widget-button bold">
