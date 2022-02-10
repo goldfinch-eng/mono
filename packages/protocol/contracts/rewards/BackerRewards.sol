@@ -274,11 +274,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // distribution of backer rewards
     tokens[tokenId].rewardsClaimed = poolTokenRewardsClaimed.add(claimableBackerRewards);
 
-    bool areCurrentlyBeyondLoanTerm = tranchedPool.creditLine().termEndTime() > block.timestamp;
-    if (areCurrentlyBeyondLoanTerm) {
-      // TODO: pro-rate rewards here
-    }
-
     if (claimableStakingRewards != 0) {
       _checkpointTokenStakingRewards(tokenId);
     }
@@ -304,13 +299,15 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       return 0;
     }
 
-    StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[poolTokenInfo.tranche.sub(1).div(2)];
+    StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[
+      _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche)
+    ];
     StakingRewardsTokenInfo storage tokenInfo = tokenStakingRewards[tokenId];
 
     uint256 sliceAccAtLastCheckpoint = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
 
-    bool isFirstWithdraw = tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0;
-    uint256 tokenAccAtLastWithdraw = isFirstWithdraw
+    bool hasNotWithdrawn = tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0;
+    uint256 tokenAccAtLastWithdraw = hasNotWithdrawn
       ? sliceInfo.accumulatedRewardsPerTokenAtDrawdown
       : tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw;
 
@@ -361,6 +358,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
+    // TODO: if we're past the term end date of the loan, we need to pro-rate
+    //        the rewards
+    if (block.timestamp > pool.creditLine().termEndTime()) {
+      // TODO: impl me
+    }
+
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
