@@ -79,7 +79,7 @@ export class BackerRewards {
     return tranchedPools.filter((tranchedPool: TranchedPool): boolean => {
       const eligible =
         tranchedPool.creditLine.termStartTime.isZero() ||
-        tranchedPool.creditLine.termStartTime.toNumber() > this.startBlock.timestamp
+        tranchedPool.creditLine.termStartTime.toNumber() >= this.startBlock.timestamp
       // If a borrower is late on their payment, the rewards earned by their backers are not claimable. And
       // we don't know whether those rewards will ever become claimable again (because we don't know whether the
       // borrower will become current again). So the UX we must serve is not to represent the tranched pool
@@ -103,7 +103,40 @@ export class BackerRewards {
         }))
       )
     }, [])
-    const sorted = concatenated.sort((a, b) => a.value.timestamp - b.value.timestamp)
+    const sorted = concatenated.sort((a, b) => {
+      // Primarily sort in chronological order.
+      const primary = a.value.timestamp - b.value.timestamp
+      if (primary) {
+        return primary
+      }
+
+      // Secondarily sort in chronological order of the tranched pool's launch time. We need some way of breaking
+      // ties in the primary sorting, in case two pools are simultaneously open for the first time (i.e. and
+      // therefore we have supposed the same optimistic start time to their loan term). Of course, this way of
+      // breaking ties will not necessarily correspond to the order in which the pools actually end up borrowing,
+      // but it is a reasonable approach consistent with the impartiality of our assumption, in calculating the expected
+      // repayment schedule of an open pool, that an open pool fills up. If we want to do better than this, I think
+      // we need to calculate a range: assuming all open pools have the same payment frequency, the max rewards for
+      // a given open pool would come from the scenario where that pool borrows before all other open pools, and the
+      // min rewards would come from the scenario where every other open pool ends up borrowing before this pool.
+      const aSecondary = a.tranchedPool.metadata?.launchTime
+      const bSecondary = b.tranchedPool.metadata?.launchTime
+      const secondary =
+        aSecondary && bSecondary
+          ? aSecondary - bSecondary
+          : aSecondary && !bSecondary
+          ? -1
+          : !aSecondary && bSecondary
+          ? 1
+          : 0
+      if (secondary) {
+        return secondary
+      }
+
+      // Tertiarily sort by tranched pool address, for the sake of deterministic ordering.
+      const tertiary = a.tranchedPool.address.localeCompare(b.tranchedPool.address)
+      return tertiary
+    })
     return sorted
   }
 
