@@ -13,6 +13,7 @@ const {ethers, deployments} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
 import {
   DepositedAndStaked,
+  DepositedToCurveAndStaked,
   RewardPaid,
   Staked,
   Unstaked,
@@ -834,6 +835,76 @@ describe("StakingRewards", function () {
             s as any,
             {from: investor}
           )
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("depositToCurveAndStake", async () => {
+    const usdcAmount = usdcVal(1000)
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+    })
+
+    it("deposits into Curve and stakes resulting tokens", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const fiduBalanceBefore = await fidu.balanceOf(investor)
+      const usdcBalanceBefore = await usdc.balanceOf(investor)
+
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+      await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurveAndStake(fiduAmount, usdcAmount, {from: investor})
+      const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedToCurveAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
+      )
+
+      const amount = await fiduUSDCCurveLP.calcTokenAmount([fiduAmount, usdcAmount], true)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
+      const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
+      expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
+
+      // Verify deposit worked
+      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(amount)
+
+      // Verify that allowance was correctly used
+      expect(await fidu.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await stakingRewards.pause()
+        await expect(
+          stakingRewards.depositToCurveAndStake(fiduAmount, usdcAmount, {from: investor})
         ).to.be.rejectedWith(/paused/)
       })
     })
