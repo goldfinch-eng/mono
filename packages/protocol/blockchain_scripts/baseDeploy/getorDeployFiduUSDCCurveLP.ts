@@ -30,7 +30,7 @@ export async function getOrDeployFiduUSDCCurveLP(deployer: ContractDeployer, con
     assertIsString(gf_deployer)
     const fakeFiduUSDCCurveLPAddress = await deployer.deploy("TestFiduUSDCCurveLP", {
       from: gf_deployer,
-      args: [initialAmount, decimalPlaces],
+      args: [initialAmount, decimalPlaces, config.address],
     })
     fiduUSDCCurveLPAddress = fakeFiduUSDCCurveLPAddress.address
     await (
