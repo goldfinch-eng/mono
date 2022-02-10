@@ -52,9 +52,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   struct StakingRewardsSliceInfo {
     // the share price when the pool draws down
     uint256 fiduSharePriceAtDrawdown;
-    // the amount of principal intially draw down. Used to scale the rewards accumulator based
-    // on the amount of principal that is outstanding
-    uint256 initialPrincipalDrawdown;
+    // the amount of principal intially deposited. Used to scale the rewards
+    // accumulator based on the amount of principal that is outstanding
+    uint256 initialPrincipalDeposited;
     // we use this to scale the rewards accumulator by taking
     // dividing it by the total amount of principal that was drawndown
     // to get a scaling factor. We then multiply that be the amount
@@ -191,12 +191,18 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       poolStakingRewards[pool].slicesInfo.length < sliceIndex;
 
     if (isNewSlice) {
+      uint256 juniorPrincipalDrawndown = juniorTranche.principalDeposited.sub(
+        atomicToUSDC(
+          juniorTranche.principalSharePrice.mul(usdcToAtomic(juniorTranche.principalDeposited)).div(mantissa())
+        )
+      );
+
       // initialize new slice params
       poolStakingRewards[pool].slicesInfo.push(
         StakingRewardsSliceInfo({
-          initialPrincipalDrawdown: juniorTranche.principalDeposited,
+          initialPrincipalDeposited: juniorTranche.principalDeposited,
           fiduSharePriceAtDrawdown: seniorPool.sharePrice(),
-          principalDeployedAtLastCheckpoint: juniorTranche.principalDeposited,
+          principalDeployedAtLastCheckpoint: juniorPrincipalDrawndown,
           accumulatedRewardsPerTokenAtDrawdown: stakingRewards.accumulatedRewardsPerToken(),
           scaledAccumulatedRewardsPerTokenAtLastCheckpoint: stakingRewards.accumulatedRewardsPerToken()
         })
@@ -379,9 +385,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
       // the percentage we need to scale the rewards accumualated by
       uint256 deployedScalingFactor = usdcToAtomic(
-        sliceInfo.principalDeployedAtLastCheckpoint.mul(usdcMantissa()).div(sliceInfo.initialPrincipalDrawdown)
+        sliceInfo.principalDeployedAtLastCheckpoint.mul(usdcMantissa()).div(sliceInfo.initialPrincipalDeposited)
       );
-      // convert from USDC units to Fidu units
 
       uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint.mul(deployedScalingFactor).div(mantissa());
 
