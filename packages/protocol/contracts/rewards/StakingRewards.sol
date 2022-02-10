@@ -420,6 +420,37 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     depositAndStake(usdcAmount);
   }
 
+  /// @notice Deposit to FIDU and USDC into the Curve LP, and stake your Curve LP tokens in the same transaction.
+  /// @param fiduAmount The amount of FIDU to deposit
+  /// @param usdcAmount The amount of USDC to deposit
+  function depositToCurveAndStake(uint256 fiduAmount, uint256 usdcAmount)
+    public
+    nonReentrant
+    whenNotPaused
+    updateReward(0)
+  {
+    IERC20withDec usdc = config.getUSDC();
+    IERC20withDec fidu = config.getFidu();
+    ICurveLP curveLP = config.getFiduUSDCCurveLP();
+
+    // Transfer FIDU and USDC from user to StakingRewards
+    fidu.safeTransferFrom(msg.sender, address(this), fiduAmount);
+    usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+
+    // Allow the Curve LP contract to spend this contract's FIDU and USDC
+    fidu.safeIncreaseAllowance(address(curveLP), fiduAmount);
+    usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
+
+    // Calculate the expected number of Curve LP tokens to receive
+    uint256 expectedAmount = curveLP.calcTokenAmount([fiduAmount, usdcAmount], true);
+
+    // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
+    uint256 curveLPTokens = curveLP.addLiquidity([fiduAmount, usdcAmount], expectedAmount, address(this));
+
+    // Stake the Curve LP tokens on behalf of the user
+    _stakeWithLockup(address(this), msg.sender, curveLPTokens, StakedPositionType.CurveLP, 0, MULTIPLIER_DECIMALS);
+  }
+
   /// @notice Deposit to the `SeniorPool` and stake your shares with a lock-up in the same transaction.
   /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
   ///   will be staked.
