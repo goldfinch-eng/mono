@@ -12,6 +12,7 @@ export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 import {isAccredited} from "./isAccredited"
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
+const US_COUNTRY_CODE = "US"
 
 export interface KYC {
   status: "unknown" | "approved" | "failed"
@@ -94,10 +95,10 @@ async function getIDType({
 }): Promise<ethers.BigNumber> {
   let idVersion: ethers.BigNumber
 
-  if (kycStatus.countryCode === "US" && isAccredited(address)) {
+  if (kycStatus.countryCode === US_COUNTRY_CODE && isAccredited(address)) {
     // US accredited
     idVersion = await uniqueIdentity.ID_TYPE_1()
-  } else if (kycStatus.countryCode === "US" && !isAccredited(address)) {
+  } else if (kycStatus.countryCode === US_COUNTRY_CODE && !isAccredited(address)) {
     // US non accredited
     idVersion = await uniqueIdentity.ID_TYPE_2()
   } else {
