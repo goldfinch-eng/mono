@@ -2,9 +2,9 @@
   "0x00c27fc71b159a346e179b4a1608a0865e8a7470": {
     "name": "Stratos Financing Pool #1",
     "category": "Global multi-sector loans",
-    "description": "",
-    "icon": "%PUBLIC_URL%/icons/stratos.png",
-    "agreement": ""
+    "description": "Stratos empowers founders to achieve their vision through rigorous engagement, strategic guidance, and capital. Stratos has the expertise and a five year track record of advising and financing technology and technology enabled businesses. Stratos’ Founding Partner, Rennick Palley, is a Founding Member of the Goldfinch team so we are in a unique position to work with Goldfinch and capitalize on the unique capabilities this new technology platform has to offer. In his position as a Founding Member of the Goldfinch team, Rennick has helped design the Goldfinch protocol and guide Goldfinch’s lending strategy since the company began operations.",
+    "icon": "%PUBLIC_URL%/icons/stratos.jpeg",
+    "agreement": "https://docsend.com/view/s/fntuciz53snd43ki"
   },
   "0x418749e294cabce5a714efccc22a8aade6f9db57": {
     "name": "Almavest Basket #6",
