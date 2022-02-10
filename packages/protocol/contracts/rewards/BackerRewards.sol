@@ -54,7 +54,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 fiduSharePriceAtDrawdown;
     // the amount of principal intially deposited. Used to scale the rewards
     // accumulator based on the amount of principal that is outstanding
-    uint256 initialPrincipalDeposited;
+    uint256 initialPrincipalDeposited; // NOTE: storing this is redundant, as its stored on the tranche
     // we use this to scale the rewards accumulator by taking
     // dividing it by the total amount of principal that was drawndown
     // to get a scaling factor. We then multiply that be the amount
@@ -379,6 +379,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[i];
       ITranchedPool.TrancheInfo memory tranche = pool.getTranche(_sliceIndexToJuniorTrancheId(i));
 
+      // P_i
       uint256 newPrincipalDeployed = tranche.principalDeposited.sub(
         atomicToUSDC(tranche.principalSharePrice.mul(usdcToAtomic(tranche.principalDeposited)).div(mantissa()))
       );
