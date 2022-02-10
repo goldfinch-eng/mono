@@ -448,7 +448,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 curveLPTokens = curveLP.addLiquidity([fiduAmount, usdcAmount], expectedAmount, address(this));
 
     // Stake the Curve LP tokens on behalf of the user
-    _stakeWithLockup(address(this), msg.sender, curveLPTokens, StakedPositionType.CurveLP, 0, MULTIPLIER_DECIMALS);
+    uint256 tokenId = _stakeWithLockup(
+      address(this),
+      msg.sender,
+      curveLPTokens,
+      StakedPositionType.CurveLP,
+      0,
+      MULTIPLIER_DECIMALS
+    );
+
+    emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens, 0, MULTIPLIER_DECIMALS);
   }
 
   /// @notice Deposit to the `SeniorPool` and stake your shares with a lock-up in the same transaction.
@@ -920,6 +929,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   event DepositedAndStaked(
     address indexed user,
     uint256 depositedAmount,
+    uint256 indexed tokenId,
+    uint256 amount,
+    uint256 lockedUntil,
+    uint256 multiplier
+  );
+  event DepositedToCurveAndStaked(
+    address indexed user,
+    uint256 fiduAmount,
+    uint256 usdcAmount,
     uint256 indexed tokenId,
     uint256 amount,
     uint256 lockedUntil,
