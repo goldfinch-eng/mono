@@ -48,11 +48,15 @@ if (require.main === module) {
       "-i, --input <path>",
       "input JSON file location containing an array of template JsonAccountedGrant objects"
     )
+    .requiredOption(
+      "-o, --output <path>",
+      "output JSON file location containing an array of JsonAccountedGrant objects"
+    )
 
   program.parse(process.argv)
 
   const options = program.opts()
   const json = JSON.parse(fs.readFileSync(options.input, {encoding: "utf8"}))
 
-  console.log(JSON.stringify(generateGrantsFromTemplate(json), null, 2))
+  fs.writeFileSync(options.output, JSON.stringify(generateGrantsFromTemplate(json), null, 2), {encoding: "utf8"})
 }
