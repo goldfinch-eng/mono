@@ -91,6 +91,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   uint256 public totalInterestReceived; // counter of total interest repayments, times 1e6
   uint256 public totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply, times 1e18
 
+  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
+
   mapping(uint256 => BackerRewardsTokenInfo) public tokens; // poolTokenId -> BackerRewardsTokenInfo
 
   mapping(address => BackerRewardsInfo) public pools; // pool.address -> BackerRewardsInfo
@@ -221,7 +223,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
-    // Note: If a TranchedPool is oversubscribed, reward allocation's scale down proportionately.
+    if (_isSeniorTrancheToken(tokenInfo)) {
+      return 0;
+    }
+
+    // Note: If a TranchedPool is oversubscribed, reward allocations scale down proportionately.
 
     uint256 diffOfAccRewardsPerPrincipalDollar = pools[tokenInfo.pool].accRewardsPerPrincipalDollar.sub(
       tokens[tokenId].accRewardsPerPrincipalDollarAtMint
@@ -271,6 +277,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool tranchedPool = ITranchedPool(poolAddr);
     require(!tranchedPool.creditLine().isLate(), "Pool is late on payments");
 
+    require(!_isSeniorTrancheToken(tokenInfo), "Ineligible senior tranche token");
+
     uint256 claimableBackerRewards = poolTokenClaimableRewards(tokenId);
     uint256 claimableStakingRewards = stakingRewardsEarnedSinceLastCheckpoint(tokenId);
     uint256 totalClaimableRewards = claimableBackerRewards.add(claimableStakingRewards);
@@ -297,6 +305,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function stakingRewardsEarnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(tokenId);
+
+    if (_isSeniorTrancheToken(poolTokenInfo)) {
+      return 0;
+    }
+
     ITranchedPool pool = ITranchedPool(poolTokenInfo.pool);
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
 
@@ -413,6 +426,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function _checkpointTokenStakingRewards(uint256 tokenId) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    require(!_isSeniorTrancheToken(tokenInfo), "Ineligible senior tranche token");
+
     uint256 sliceIndex = (tokenInfo.tranche - 1) / 2;
     uint256 newStakingRewardsAccRewardsPerTokenAtLastWithdraw = poolStakingRewards[ITranchedPool(tokenInfo.pool)]
       .slicesInfo[sliceIndex]
@@ -502,6 +517,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     );
 
     return newGrossRewards;
+  }
+
+  /**
+   * @return Whether the provided `tokenInfo` is a token corresponding to a senior tranche.
+   */
+  function _isSeniorTrancheToken(IPoolTokens.TokenInfo memory tokenInfo) internal pure returns (bool) {
+    return tokenInfo.tranche.mod(NUM_TRANCHES_PER_SLICE) == 1;
   }
 
   function mantissa() internal pure returns (uint256) {
