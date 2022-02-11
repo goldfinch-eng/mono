@@ -109,7 +109,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function performUpgrade() external onlyAdmin {
     // initialize the value of the existing pool tokens to use the current fidu share price
     // and the current `StakingRewards.accumulatedRewardsPerToken`.
-    // TODO:
   }
 
   /**
@@ -209,6 +208,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       );
     }
 
+    // TODO(PR): we should only need to checkpoint the slice that is currently being
+    //           drawdown
     _checkpointPoolStakingRewards(pool);
   }
 
@@ -305,7 +306,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       return 0;
     }
 
-    // TODO: add a bounds a check
+    // TODO(PR): add a bounds a check
     StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[
       _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche)
     ];
@@ -369,10 +370,10 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
-    // TODO: if we're past the term end date of the loan, we need to pro-rate
+    // TODO(PR): if we're past the term end date of the loan, we need to pro-rate
     //        the rewards
     if (block.timestamp > pool.creditLine().termEndTime()) {
-      // TODO: impl me
+      // TODO(PR): impl me
     }
 
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
@@ -382,11 +383,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // iterate through all of the slices and checkpoint
     for (uint256 i = 0; i < poolInfo.slicesInfo.length; i++) {
       StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[i];
-      ITranchedPool.TrancheInfo memory tranche = pool.getTranche(_sliceIndexToJuniorTrancheId(i));
+      ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(i));
 
       // P_i
-      uint256 newPrincipalDeployed = tranche.principalDeposited.sub(
-        atomicToUSDC(tranche.principalSharePrice.mul(usdcToAtomic(tranche.principalDeposited)).div(mantissa()))
+      uint256 newPrincipalDeployed = juniorTranche.principalDeposited.sub(
+        atomicToUSDC(
+          juniorTranche.principalSharePrice.mul(usdcToAtomic(juniorTranche.principalDeposited)).div(mantissa())
+        )
       );
 
       // the percentage we need to scale the rewards accumualated by
@@ -413,7 +416,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function _checkpointTokenStakingRewards(uint256 tokenId) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
-    uint256 sliceIndex = (tokenInfo.tranche - 1) / 2;
+    uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
     uint256 newStakingRewardsAccRewardsPerTokenAtLastWithdraw = poolStakingRewards[ITranchedPool(tokenInfo.pool)]
       .slicesInfo[sliceIndex]
       .scaledAccumulatedRewardsPerTokenAtLastCheckpoint;

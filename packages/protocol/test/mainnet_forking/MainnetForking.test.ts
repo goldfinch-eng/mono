@@ -42,8 +42,6 @@ import {
   getOnlyLog,
   getFirstLog,
   toEthers,
-  $TSFixMe,
-  dbg,
   mineInSameBlock,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -90,6 +88,7 @@ import {
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {ContractReceipt, Signer} from "ethers"
 import BigNumber from "bignumber.js"
+import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -240,9 +239,8 @@ describe("mainnet forking tests", async function () {
 
   async function createBorrowerContract() {
     const result = await goldfinchFactory.createBorrower(bwr)
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const bwrConAddr = result.logs[result.logs.length - 1].args.borrower as $TSFixMe
+    assertNonNullable(result.logs)
+    const bwrConAddr = (result.logs[result.logs.length - 1] as unknown as BorrowerCreated).args.borrower
     const bwrCon = await Borrower.at(bwrConAddr)
     await erc20Approve(busd, bwrCon.address, MAX_UINT, [bwr])
     await erc20Approve(usdt, bwrCon.address, MAX_UINT, [bwr])
@@ -678,7 +676,7 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("BackerRewards", () => {
-    const tolerance = "10000000000000" // TODO: get this much lower, need to do txs in same block
+    const tolerance = "10000000000000" // TODO(PR): get this much lower, need to do txs in same block
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
     let tranchedPool: TranchedPool
@@ -708,7 +706,9 @@ describe("mainnet forking tests", async function () {
       )
       const ownerSigner = asNonNullable(await getSignerForAddress(owner))
       const borrowerSigner = asNonNullable(await getSignerForAddress(bwr))
-      const event = result.logs[result.logs.length - 1] as $TSFixMe
+      assertNonNullable(result.logs)
+      const event = result.logs[result.logs.length - 1] as unknown as PoolCreated
+
       bwrCon = await (
         await getEthersContract<EthersBorrower>("Borrower", {at: tempBwrCon.address})
       ).connect(borrowerSigner)
@@ -826,9 +826,11 @@ describe("mainnet forking tests", async function () {
       // You should have accrued no rewards during that time
       await advanceTime({days: "365"})
       await forceStakingRewardsCheckpoint()
+      const stakingRewardsEarnedMuchLater = await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
       const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
         backerStakingTokenId
       )
+      expect(stakingRewardsEarnedMuchLater).to.bignumber.gt(new BN("0"))
       expect(String(backerStakingRewardsEarnedMuchLater)).to.bignumber.eq(
         String(backerStakingRewardsEarnedAfterFinalRepayment)
       )
@@ -930,7 +932,6 @@ describe("mainnet forking tests", async function () {
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
       await advanceTime({days: paymentPeriodInDays.toFixed()})
-      await ethers.provider.send("evm_mine", [])
       await tranchedPool.assess()
       const principalOwed = await creditLine.principalOwed()
       const interestOwed = await creditLine.interestOwed()
@@ -977,8 +978,8 @@ describe("mainnet forking tests", async function () {
       // )
     }).timeout(TEST_TIMEOUT)
 
-    // TODO: test that participant in nth slice gets accurate rewards
-    // TOOD: test that participant in nth slice gets correct rewards while other participants withdraw
+    // TODO(PR): test that participant in nth slice gets accurate rewards
+    // TOOD(PR): test that participant in nth slice gets correct rewards while other participants withdraw
 
     describe("before drawdown", async () => {
       it("when a user withdraws they should earn 0 rewards", async () => {
