@@ -40,7 +40,7 @@ contract TestFiduUSDCCurveLP is ERC20("LP FIDU-USDC Curve", "FIDUUSDCCURVE"), ER
     address receiver
   ) external returns (uint256) {
     // Transfer FIDU and USDC from caller to this contract
-    getFidu().transferFrom(msg.sender, address(this), amounts[1]);
+    getFidu().transferFrom(msg.sender, address(this), amounts[0]);
     getUSDC().transferFrom(msg.sender, address(this), amounts[1]);
 
     uint256 amount = this.calcTokenAmount(amounts, true);
