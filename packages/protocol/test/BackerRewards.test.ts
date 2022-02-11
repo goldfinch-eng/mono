@@ -696,6 +696,78 @@ describe("BackerRewards", function () {
         expect(beforeTotalInterestReceived).to.bignumber.equal(afterTotalInterestReceived)
       })
     })
+
+    describe("perverse scenario regarding total junior deposits", () => {
+      const previousInterestReceived = 0
+      const totalGFISupply = 100_000_000
+      const maxInterestDollarsEligible = 100_000
+      const totalRewards = 3_000_000
+
+      let tranchedPool: TranchedPoolInstance
+
+      beforeEach(async () => {
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+        const created = await createPoolWithCreditLine({
+          people: {owner, borrower},
+          goldfinchFactory,
+          juniorFeePercent: new BN(20),
+          limit: usdcVal(100_000),
+          interestApr: interestAprAsBN("100.00"),
+          paymentPeriodInDays: new BN(30),
+          termInDays: new BN(365),
+          lateFeeApr: new BN(0),
+          usdc,
+        })
+        tranchedPool = created.tranchedPool
+      })
+
+      context("total junior deposits are greater than or equal to 1", () => {
+        it("should allocate some rewards", async () => {
+          const juniorTranchePrincipal = usdcVal(1)
+
+          const response = await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await tranchedPool.lockPool({from: borrower})
+          await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = juniorTranchePrincipal
+          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+          await tranchedPool.pay(payAmount, {from: borrower})
+
+          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(poolTokenClaimableRewards.gt(new BN(0))).to.be.true
+        })
+      })
+
+      context("total junior deposits are less than 1", () => {
+        it("should allocate no rewards", async () => {
+          const juniorTranchePrincipal = usdcVal(1).div(new BN(2))
+
+          const response = await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await tranchedPool.lockPool({from: borrower})
+          await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = juniorTranchePrincipal
+          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+          await tranchedPool.pay(payAmount, {from: borrower})
+
+          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(poolTokenClaimableRewards).to.bignumber.equal(new BN(0))
+        })
+      })
+    })
   })
 
   describe("poolTokenClaimableRewards()", () => {
