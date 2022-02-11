@@ -134,7 +134,7 @@
           "depositAndStakeWithLockup": [],
           "depositWithPermitAndStakeWithLockup": [],
           "depositToCurveAndStake": [],
-          "depositToCurveWithPermitAndStake": [],
+          "depositToCurveAndStakeFrom": [],
           "unstake": [],
           "unstakeAndWithdraw": [],
           "unstakeAndWithdrawMultiple": [],
@@ -193,7 +193,9 @@
         "**/Zapper.sol:*": {
           "zapStakeToTranchedPool":  [],
           "claimZap":  [],
-          "unzap":  []
+          "unzap":  [],
+          "moveStakeToTranchedPool":  [],
+          "moveStakeToCurve": []
         },
         "**/contracts/test/**": {
           "*.*": []

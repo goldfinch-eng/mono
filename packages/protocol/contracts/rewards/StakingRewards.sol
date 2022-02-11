@@ -420,26 +420,35 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     depositAndStake(usdcAmount);
   }
 
+  function depositToCurveAndStake(uint256 fiduAmount, uint256 usdcAmount) public {
+    depositToCurveAndStakeFrom(msg.sender, msg.sender, fiduAmount, usdcAmount);
+  }
+
   /// @notice Deposit to FIDU and USDC into the Curve LP, and stake your Curve LP tokens in the same transaction.
   /// @param fiduAmount The amount of FIDU to deposit
   /// @param usdcAmount The amount of USDC to deposit
-  function depositToCurveAndStake(uint256 fiduAmount, uint256 usdcAmount)
-    public
-    nonReentrant
-    whenNotPaused
-    updateReward(0)
-  {
+  function depositToCurveAndStakeFrom(
+    address staker,
+    address nftRecipient,
+    uint256 fiduAmount,
+    uint256 usdcAmount
+  ) public nonReentrant whenNotPaused updateReward(0) {
+    require(fiduAmount > 0 || usdcAmount > 0, "Cannot stake 0");
+
     IERC20withDec usdc = config.getUSDC();
     IERC20withDec fidu = config.getFidu();
     ICurveLP curveLP = config.getFiduUSDCCurveLP();
 
-    // Transfer FIDU and USDC from user to StakingRewards
-    fidu.safeTransferFrom(msg.sender, address(this), fiduAmount);
-    usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
-
-    // Allow the Curve LP contract to spend this contract's FIDU and USDC
-    fidu.safeIncreaseAllowance(address(curveLP), fiduAmount);
-    usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
+    // Transfer FIDU and USDC from staker to StakingRewards, and allow the Curve LP contract to spend
+    // this contract's FIDU and USDC
+    if (fiduAmount > 0) {
+      fidu.safeTransferFrom(staker, address(this), fiduAmount);
+      fidu.safeIncreaseAllowance(address(curveLP), fiduAmount);
+    }
+    if (usdcAmount > 0) {
+      usdc.safeTransferFrom(staker, address(this), usdcAmount);
+      usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
+    }
 
     // Calculate the expected number of Curve LP tokens to receive
     uint256 expectedAmount = curveLP.calcTokenAmount([fiduAmount, usdcAmount], true);
@@ -450,7 +459,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // Stake the Curve LP tokens on behalf of the user
     uint256 tokenId = _stakeWithLockup(
       address(this),
-      msg.sender,
+      nftRecipient,
       curveLPTokens,
       StakedPositionType.CurveLP,
       0,

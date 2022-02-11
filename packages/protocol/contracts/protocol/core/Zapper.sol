@@ -101,6 +101,19 @@ contract Zapper is BaseUpgradeablePausable {
     stakingRewards.addToStake(zap.stakingPositionId, fiduAmount);
   }
 
+  function moveStakeToCurve(uint256 tokenId) public whenNotPaused nonReentrant {
+    IStakingRewards stakingRewards = config.getStakingRewards();
+    require(stakingRewards.ownerOf(tokenId) == msg.sender, "Not token owner");
+
+    uint256 stakedBalance = stakingRewards.stakedBalanceOf(tokenId);
+
+    stakingRewards.unstake(tokenId, stakedBalance);
+
+    SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), stakedBalance);
+
+    stakingRewards.depositToCurveAndStakeFrom(address(this), msg.sender, stakedBalance, 0);
+  }
+
   function hasAllowedUID(ITranchedPool pool) internal view returns (bool) {
     return IRequiresUID(address(pool)).hasAllowedUID(msg.sender);
   }
