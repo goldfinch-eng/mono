@@ -34,6 +34,13 @@ import {DepositMade as TranchedPoolDepositMade} from "../typechain/truffle/Tranc
 import {Staked} from "../typechain/truffle/StakingRewards"
 import {mint as mintUID} from "./uniqueIdentityHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+
+// Typechain doesn't generate types for solidity enums, so redefining here
+enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
+
 const {deployments} = hre
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -164,7 +171,7 @@ describe("Zapper", async () => {
       const usdcToZap = usdcEquivalent.div(new BN(2))
       const usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
 
-      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
       const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
         .tokenId
 
@@ -225,7 +232,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
@@ -262,7 +269,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: owner})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: owner})
         const ownerStakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
           .args.tokenId
 
@@ -293,7 +300,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
