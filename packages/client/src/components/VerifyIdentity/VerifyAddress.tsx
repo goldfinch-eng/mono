@@ -78,9 +78,6 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   function chooseEntity(chosenType) {
     setEntityType(chosenType)
   }
-  if (user) {
-    console.log(user.address, isAccredited(user.address))
-  }
 
   function renderForm() {
     if (user && user.info.value.goListed) {
@@ -107,7 +104,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           onEvent={() => fetchKYCStatus(session)}
         />
       )
-    } else if (entityType === "entity" && user && !isAccredited(user.address)) {
+    } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
     } else if (isEligible(kyc, user)) {
       return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
