@@ -117,7 +117,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   }
 })
 
-describe("Zapper", async () => {
+describe.only("Zapper", async () => {
   let zapper: ZapperInstance
   let goldfinchConfig: GoldfinchConfigInstance
   let seniorPool: SeniorPoolInstance
@@ -149,7 +149,7 @@ describe("Zapper", async () => {
     } = await testSetup())
   })
 
-  describe("moveStakeToTranchedPool", async () => {
+  describe("zapStakeToTranchedPool", async () => {
     it("works", async () => {
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
 
@@ -167,7 +167,7 @@ describe("Zapper", async () => {
       const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
       const seniorPoolBalanceBefore = await seniorPool.assets()
 
-      const result = await zapper.moveStakeToTranchedPool(
+      const result = await zapper.zapStakeToTranchedPool(
         stakedTokenId,
         tranchedPool.address,
         TRANCHES.Junior,
@@ -203,9 +203,12 @@ describe("Zapper", async () => {
         new BN(String(1e18))
       )
 
-      // it deposits usdcToZap into the TranchedPool on behalf of the user
-      expect(await poolTokens.ownerOf(poolTokenId)).to.eq(investor)
+      // it deposits usdcToZap into the TranchedPool and holds the PoolToken on behalf of the user
       expect(tokenInfo.principalAmount).to.bignumber.eq(usdcToZap)
+      expect(await poolTokens.ownerOf(poolTokenId)).to.eq(zapper.address)
+      const zap = (await zapper.zaps(poolTokenId)) as any
+      expect(zap.owner).to.eq(investor)
+      expect(zap.stakingPositionId).to.bignumber.eq(stakedTokenId)
     })
 
     describe("pool is invalid", async () => {
@@ -236,7 +239,7 @@ describe("Zapper", async () => {
         )
 
         await expect(
-          zapper.moveStakeToTranchedPool(stakedTokenId, fakePool.address, TRANCHES.Junior, usdcToZap, {
+          zapper.zapStakeToTranchedPool(stakedTokenId, fakePool.address, TRANCHES.Junior, usdcToZap, {
             from: investor,
           })
         ).to.be.rejectedWith(/Invalid pool/)
@@ -258,7 +261,7 @@ describe("Zapper", async () => {
 
         // Attempt to zap owner staked position as investor
         await expect(
-          zapper.moveStakeToTranchedPool(ownerStakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+          zapper.zapStakeToTranchedPool(ownerStakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
             from: investor,
           })
         ).to.be.rejectedWith(/Not token owner/)
@@ -289,7 +292,7 @@ describe("Zapper", async () => {
 
         // Attempt to zap with UID with wrong type
         await expect(
-          zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+          zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
             from: investor,
           })
         ).to.be.rejectedWith(/Address not go-listed/)
@@ -297,11 +300,39 @@ describe("Zapper", async () => {
         // Sanity check that it works with the correct UID type
         await tranchedPool.setAllowedUIDTypes([1], {from: owner})
         await expect(
-          zapper.moveStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+          zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
             from: investor,
           })
         ).to.be.fulfilled
       })
+    })
+  })
+
+  describe("claimZap", async () => {
+    describe("TranchedPool is past lock period", async () => {
+      it("allows claiming the underlying PoolToken", async () => {})
+    })
+
+    describe("TranchedPool is not past lock period", async () => {
+      it("reverts", async () => {})
+    })
+
+    describe("sender does not own zap", async () => {
+      it("reverts", async () => {})
+    })
+  })
+
+  describe("unzap", async () => {
+    describe("Tranche has never been locked", async () => {
+      it("unwinds position back to StakingRewards", async () => {})
+    })
+
+    describe("Tranche has been locked", async () => {
+      it("reverts", async () => {})
+    })
+
+    describe("sender does not own zap", async () => {
+      it("reverts", async () => {})
     })
   })
 })

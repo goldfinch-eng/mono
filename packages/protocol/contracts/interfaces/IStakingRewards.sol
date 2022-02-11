@@ -7,4 +7,6 @@ interface IStakingRewards {
   function ownerOf(uint256 tokenId) external view returns (address);
 
   function unstake(uint256 tokenId, uint256 amount) external;
+
+  function addToStake(uint256 tokenId, uint256 amount) external;
 }

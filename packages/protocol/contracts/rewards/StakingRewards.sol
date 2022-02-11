@@ -626,6 +626,19 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     getReward(tokenId);
   }
 
+  function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
+    require(isZapper() && ownerOf(tokenId) == msg.sender, "access denied");
+
+    StakedPosition storage position = positions[tokenId];
+    position.amount = position.amount.add(amount);
+
+    uint256 leveredAmount = toLeveredAmount(amount, position.leverageMultiplier);
+    totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(leveredAmount);
+    totalStakedSupply = totalStakedSupply.add(amount);
+
+    stakingToken().safeTransferFrom(msg.sender, address(this), amount);
+  }
+
   /* ========== RESTRICTED FUNCTIONS ========== */
 
   /// @notice Transfer rewards from msg.sender, to be used for reward distribution
