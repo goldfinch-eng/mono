@@ -564,24 +564,32 @@ export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<strin
   expectRoles(expectations)
 }
 
-export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 1000000): Promise<ContractReceipt[]> {
-  // disable automine so that the transactions all enter the mempool
-  await ethers.provider.send("evm_setAutomine", [false])
+export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 2_000): Promise<ContractReceipt[]> {
+  try {
+    // disable automine so that the transactions all enter the mempool
+    await ethers.provider.send("evm_setAutomine", [false])
 
-  const receipts: ContractTransaction[] = []
-  for (const tx of txs) {
-    const signer = await ethers.getSigner(tx.from as string)
+    const handle = setTimeout(() => {
+      throw new Error(`Failed to mine transactions under ${timeout} ms. Is your tx using too much gas for one block?`)
+    }, timeout)
 
-    const receipt = await signer.sendTransaction(tx)
-    receipts.push(receipt)
+    const receipts: ContractTransaction[] = []
+    for (const tx of txs) {
+      const signer = await ethers.getSigner(tx.from as string)
+
+      const receipt = await signer.sendTransaction(tx)
+      receipts.push(receipt)
+    }
+
+    const values = await Promise.all([ethers.provider.send("evm_mine", []), ...receipts.map((tx) => tx.wait())])
+    clearTimeout(handle)
+
+    return values.slice(1)
+  } finally {
+    // We need to make sure we re-enable auto mining on any failure otherwise
+    // every test will start failing because no transactions are being mined
+    await ethers.provider.send("evm_setAutomine", [true])
   }
-
-  const values = await Promise.all([
-    ethers.provider.send("evm_mine", []),
-    ethers.provider.send("evm_setAutomine", [true]),
-    ...receipts.map((tx) => tx.wait()),
-  ])
-  return values.slice(2)
 }
 
 export function dbg<T>(x: T): T {
