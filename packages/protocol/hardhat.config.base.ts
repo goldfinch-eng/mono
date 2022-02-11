@@ -28,6 +28,11 @@ export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
+      mining: {
+        mempool: {
+          order: "fifo",
+        },
+      },
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},

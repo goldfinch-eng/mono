@@ -305,6 +305,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       return 0;
     }
 
+    // TODO: add a bounds a check
     StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[
       _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche)
     ];
@@ -313,6 +314,10 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 sliceAccAtLastCheckpoint = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
 
     bool hasNotWithdrawn = tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0;
+    // if (hasNotWithdrawn && sliceInfo.accumulatedRewardsPerTokenAtDrawdown == 0) {
+    //   return 0;
+    // }
+
     uint256 tokenAccAtLastWithdraw = hasNotWithdrawn
       ? sliceInfo.accumulatedRewardsPerTokenAtDrawdown
       : tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw;
