@@ -199,14 +199,19 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool pool = ITranchedPool(_poolAddress);
     BackerRewardsInfo storage _poolInfo = pools[_poolAddress];
 
-    uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
-    if (totalJuniorDeposits == 0) {
+    uint256 totalJuniorDepositsAtomic = usdcToAtomic(pool.totalJuniorDeposits());
+    // If total junior deposits are 0, or less than 1, allocate no rewards. The latter condition
+    // is necessary to prevent a perverse, "infinite mint" scenario in which we'd allocate
+    // an even greater amount of rewards than `newGrossRewards`, due to dividing by less than 1.
+    // This scenario and its mitigation are analogous to that of
+    // `StakingRewards.additionalRewardsPerTokenSinceLastUpdate()`.
+    if (totalJuniorDepositsAtomic < mantissa()) {
       return;
     }
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(
-      newGrossRewards.mul(mantissa()).div(usdcToAtomic(totalJuniorDeposits))
+      newGrossRewards.mul(mantissa()).div(totalJuniorDepositsAtomic)
     );
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
