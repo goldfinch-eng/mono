@@ -552,6 +552,8 @@ describe("Zapper", async () => {
     })
 
     it("creates a new staked position without slashing unvested rewards", async () => {
+      const fiduToMigrate = fiduAmount.div(new BN(2))
+
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
 
       let receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
@@ -564,20 +566,20 @@ describe("Zapper", async () => {
       const stakedPositionBefore = (await stakingRewards.positions(originalTokenId)) as any
       const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
 
-      receipt = await zapper.moveStakeToCurve(originalTokenId, {from: investor})
+      receipt = await zapper.moveStakeToCurve(originalTokenId, fiduToMigrate, {from: investor})
 
       const stakedPositionAfter = (await stakingRewards.positions(originalTokenId)) as any
       const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
 
-      const curveLPAmount = await fiduUSDCCurveLP.calcTokenAmount([fiduAmount, new BN(0)], true)
+      const curveLPAmount = await fiduUSDCCurveLP.calcTokenAmount([fiduToMigrate, new BN(0)], true)
 
       const newTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
       // it maintains investor as owner of staked position
       expect(await stakingRewards.ownerOf(originalTokenId)).to.eq(investor)
 
-      // it unstakes all FIDU from StakingRewards
-      expect(stakedPositionAfter.amount).to.bignumber.eq(new BN(0))
+      // it unstakes FIDU from StakingRewards
+      expect(stakedPositionAfter.amount).to.bignumber.eq(fiduAmount.sub(fiduToMigrate))
 
       // it does not slash unvested rewards
       expect(stakedPositionBefore.rewards.totalUnvested).to.bignumber.closeTo(
@@ -586,11 +588,10 @@ describe("Zapper", async () => {
       )
 
       // it updates the total staked supply
-      expect(totalStakedSupplyAfter).to.bignumber.eq(totalStakedSupplyBefore.mul(new BN(2)))
+      expect(totalStakedSupplyAfter).to.bignumber.eq(totalStakedSupplyBefore.mul(new BN(3).div(new BN(2))))
 
       // it deposits all FIDU into Curve on behalf of the user
       expect(await stakingRewards.ownerOf(newTokenId)).to.eq(investor)
-
       expect(await stakingRewards.stakedBalanceOf(newTokenId)).to.bignumber.eq(curveLPAmount)
     })
 
@@ -605,7 +606,7 @@ describe("Zapper", async () => {
           .args.tokenId
 
         // Attempt to zap owner staked position as investor
-        await expect(zapper.moveStakeToCurve(ownerStakedTokenId, {from: investor})).to.be.rejectedWith(
+        await expect(zapper.moveStakeToCurve(ownerStakedTokenId, fiduAmount, {from: investor})).to.be.rejectedWith(
           /Not token owner/
         )
       })
