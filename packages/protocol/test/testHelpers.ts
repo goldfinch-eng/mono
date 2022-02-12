@@ -51,7 +51,7 @@ const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
-import {BaseContract, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
+import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
@@ -564,32 +564,37 @@ export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<strin
   expectRoles(expectations)
 }
 
-export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 2_000): Promise<ContractReceipt[]> {
-  try {
-    // disable automine so that the transactions all enter the mempool
-    await ethers.provider.send("evm_setAutomine", [false])
+export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_000): Promise<ContractReceipt[]> {
+  const error = new Error(
+    `Failed to mine transactions under ${timeout} ms. Is your tx using too much gas for one block?`
+  )
+  // disable automine so that the transactions all enter the mempool
+  await ethers.provider.send("evm_setAutomine", [false])
 
-    const handle = setTimeout(() => {
-      throw new Error(`Failed to mine transactions under ${timeout} ms. Is your tx using too much gas for one block?`)
-    }, timeout)
+  const handle = setTimeout(() => {
+    ethers.provider.send("evm_setAutomine", [true]).then(() => {
+      throw error
+    })
+  }, timeout)
 
-    const receipts: ContractTransaction[] = []
-    for (const tx of txs) {
-      const signer = await ethers.getSigner(tx.from as string)
+  const receipts: ContractTransaction[] = []
+  for (let tx of txs) {
+    const signer = await ethers.getSigner(tx.from as string)
 
-      const receipt = await signer.sendTransaction(tx)
-      receipts.push(receipt)
+    tx = {
+      ...tx,
+      gasLimit: BigNumber.from("2000000"),
     }
 
-    const values = await Promise.all([ethers.provider.send("evm_mine", []), ...receipts.map((tx) => tx.wait())])
-    clearTimeout(handle)
-
-    return values.slice(1)
-  } finally {
-    // We need to make sure we re-enable auto mining on any failure otherwise
-    // every test will start failing because no transactions are being mined
-    await ethers.provider.send("evm_setAutomine", [true])
+    const receipt = await signer.sendTransaction(tx)
+    receipts.push(receipt)
   }
+
+  const values = await Promise.all([ethers.provider.send("evm_mine", []), ...receipts.map((tx) => tx.wait())])
+  clearTimeout(handle)
+
+  await ethers.provider.send("evm_setAutomine", [true])
+  return values.slice(1)
 }
 
 export function dbg<T>(x: T): T {

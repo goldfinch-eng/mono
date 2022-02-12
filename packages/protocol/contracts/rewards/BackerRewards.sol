@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@uniswap/lib/contracts/libraries/Babylonian.sol";
@@ -52,15 +53,19 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   struct StakingRewardsSliceInfo {
     // the share price when the pool draws down
     uint256 fiduSharePriceAtDrawdown;
+
     // the amount of principal intially deposited. Used to scale the rewards
     // accumulator based on the amount of principal that is outstanding
     uint256 initialPrincipalDeposited; // NOTE: storing this is redundant, as its stored on the tranche
+
     // we use this to scale the rewards accumulator by taking
     // dividing it by the total amount of principal that was drawndown
     // to get a scaling factor. We then multiply that be the amount
     uint256 principalDeployedAtLastCheckpoint;
+
     // We need to save this so that tokens can have a starting accumulator
     uint256 accumulatedRewardsPerTokenAtDrawdown;
+
     // we accumulate this value based with a principal scaling factor
     // ```
     // scaledStakingRewardsAccRewardsPerToken =
@@ -69,6 +74,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     //   (principalAtStakeAtLastPayback * totalPrincipalDrawnDown)
     // ```
     uint256 scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
+
   }
 
   struct BackerRewardsTokenInfo {
@@ -176,6 +182,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     require(config.getPoolTokens().validPool(address(pool)), "Invalid pool!");
 
     StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+    stakingRewards.updateRewards();
     ISeniorPool seniorPool = ISeniorPool(config.seniorPoolAddress());
 
     // On the first drawdown in the lifetime of the pool, we need to initialize
@@ -208,8 +215,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       );
     }
 
-    // TODO(PR): we should only need to checkpoint the slice that is currently being
-    //           drawdown
+    // TODO(PR): we should only need to checkpoint the slice that is currently
+    // being drawdown
     _checkpointPoolStakingRewards(pool);
   }
 
@@ -301,9 +308,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool pool = ITranchedPool(poolTokenInfo.pool);
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
 
-    bool poolHasntDrawndown = poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint == 0;
-    if (poolHasntDrawndown) {
-      return 0;
+    {
+      bool poolHasntDrawndown = poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint == 0;
+      if (poolHasntDrawndown) {
+        return 0;
+      }
     }
 
     // TODO(PR): add a bounds a check
@@ -323,11 +332,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       ? sliceInfo.accumulatedRewardsPerTokenAtDrawdown
       : tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw;
 
-    uint256 rewardsPerTokenSinceLastWithdraw = sliceAccAtLastCheckpoint.sub(tokenAccAtLastWithdraw);
+    uint256 rewardsPerTokenSinceLastWithdraw
+      = sliceAccAtLastCheckpoint
+        .sub(tokenAccAtLastWithdraw);
 
-    uint256 principalAsFidu = usdcToAtomic(poolTokenInfo.principalAmount).mul(mantissa()).div(
-      sliceInfo.fiduSharePriceAtDrawdown
-    );
+    uint256 principalAsFidu
+      = usdcToAtomic(poolTokenInfo.principalAmount)
+        .mul(mantissa())
+        .div(sliceInfo.fiduSharePriceAtDrawdown);
 
     return principalAsFidu.mul(rewardsPerTokenSinceLastWithdraw).div(mantissa());
   }
@@ -359,6 +371,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
 
+    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+    stakingRewards.updateRewards();
     _checkpointPoolStakingRewards(pool);
   }
 
@@ -374,6 +388,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     //        the rewards
     if (block.timestamp > pool.creditLine().termEndTime()) {
       // TODO(PR): impl me
+      // 1 - min(1, timeOverLoan / fallOffPeriod) = decayFactor
+      // scaledAcc += rewardsAccSinceLastCheckPoint * decayFactor
+      // timeOverLoan >= fallOffPeriod -> decay = 0 -> rewards = 0
     }
 
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
@@ -394,10 +411,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
       // the percentage we need to scale the rewards accumualated by
       uint256 deployedScalingFactor = usdcToAtomic(
-        sliceInfo.principalDeployedAtLastCheckpoint.mul(usdcMantissa()).div(sliceInfo.initialPrincipalDeposited)
+        sliceInfo.principalDeployedAtLastCheckpoint
+          .mul(usdcMantissa())
+          .div(sliceInfo.initialPrincipalDeposited)
       );
 
-      uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint.mul(deployedScalingFactor).div(mantissa());
+      uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
+        .mul(deployedScalingFactor)
+        .div(mantissa());
 
       sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
         .scaledAccumulatedRewardsPerTokenAtLastCheckpoint

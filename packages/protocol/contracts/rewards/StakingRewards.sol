@@ -299,6 +299,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /* ========== MUTATIVE FUNCTIONS ========== */
 
+  function updateRewards() external nonReentrant whenNotPaused {
+    _updateReward(0);
+  }
+
   /// @notice Stake `stakingToken()` to earn rewards. When you call this function, you'll receive an
   ///   an NFT representing your staked position. You can present your NFT to `getReward` or `unstake`
   ///   to claim rewards or unstake your tokens respectively. Rewards vest over a schedule.
