@@ -51,6 +51,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // to zero. A zero value indicates that no payment has come back from the tranched pool,
     // and so no rewards should be accrued
     uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
+
+    uint256 lastRepaymentTime;    
+
     // staking rewards parameters per slice of a tranched pool
     StakingRewardsSliceInfo[] slicesInfo;
   }
@@ -392,6 +395,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       _checkpointSliceStakingRewards(pool, sliceIndex, true);
     }
 
+    poolInfo.lastRepaymentTime = block.timestamp;
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newStakingRewardsAccumulator;
   }
 
@@ -405,9 +409,19 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
 
-    if (block.timestamp > pool.creditLine().termEndTime()) {
-      // TODO(PR): impl me
+    // TODO(PR): better name for this
+    uint256 decayScalingFactor = uint256(10) ** uint256(18);
+    bool shouldProRate = block.timestamp > pool.creditLine().termEndTime();
+    if (shouldProRate){
+      console.log("GOTTA PRO RATE");
+      uint256 termEndTime = pool.creditLine().termEndTime();
+      uint256 lastRepaymentTime = poolInfo.lastRepaymentTime;
+      uint256 timeSinceLastRepayment = block.timestamp.sub(lastRepaymentTime);
+      uint256 timeRemainingInTermAtLastRepayment = termEndTime.sub(lastRepaymentTime);
+
+      decayScalingFactor = timeRemainingInTermAtLastRepayment.mul(mantissa()).mul(mantissa()).div(timeSinceLastRepayment.mul(mantissa()));
     }
+    console.log(decayScalingFactor);
 
     uint256 newPrincipalDeployed = juniorTranche.principalDeposited.sub(
       atomicToUSDC(
@@ -424,6 +438,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
       .mul(deployedScalingFactor)
+      .div(mantissa()) // TODO(PR): can make this more efficient
+      .mul(decayScalingFactor)
       .div(mantissa());
 
     sliceInfo.unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
