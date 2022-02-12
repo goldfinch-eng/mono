@@ -40,6 +40,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 accRewardsPerPrincipalDollar; // accumulator gfi per interest dollar
   }
 
+  struct BackerRewardsTokenInfo {
+    uint256 rewardsClaimed; // gfi claimed
+    uint256 accRewardsPerPrincipalDollarAtMint; // Pool's accRewardsPerPrincipalDollar at PoolToken mint()
+  }
+
   struct StakingRewardsInfo {
     // the value of the `accumulatedRewardsPerToken` on the StakingRewards contract
     // the last time the associated tranched pool made a payment. This value is initialized
@@ -53,10 +58,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   struct StakingRewardsSliceInfo {
     // the share price when the pool draws down
     uint256 fiduSharePriceAtDrawdown;
-
-    // the amount of principal intially deposited. Used to scale the rewards
-    // accumulator based on the amount of principal that is outstanding
-    uint256 initialPrincipalDeposited; // NOTE: storing this is redundant, as its stored on the tranche
 
     // we use this to scale the rewards accumulator by taking
     // dividing it by the total amount of principal that was drawndown
@@ -75,12 +76,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // ```
     uint256 scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
 
+    // TODO(pr): description about why this is unrealized
     uint256 unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint;
-  }
-
-  struct BackerRewardsTokenInfo {
-    uint256 rewardsClaimed; // gfi claimed
-    uint256 accRewardsPerPrincipalDollarAtMint; // Pool's accRewardsPerPrincipalDollar at PoolToken mint()
   }
 
   struct StakingRewardsTokenInfo {
@@ -113,10 +110,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     config = _config;
   }
 
-  function performUpgrade() external onlyAdmin {
-    // initialize the value of the existing pool tokens to use the current fidu share price
-    // and the current `StakingRewards.accumulatedRewardsPerToken`.
-  }
+  // TODO(pr): create admin function to intialize pools
 
   /**
    * @notice Calculates the accRewardsPerPrincipalDollar for a given pool,
@@ -207,7 +201,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       // initialize new slice params
       poolStakingRewards[pool].slicesInfo.push(
         StakingRewardsSliceInfo({
-          initialPrincipalDeposited: juniorTranche.principalDeposited,
           fiduSharePriceAtDrawdown: seniorPool.sharePrice(),
           principalDeployedAtLastCheckpoint: juniorPrincipalDrawndown,
           accumulatedRewardsPerTokenAtDrawdown: stakingRewards.accumulatedRewardsPerToken(),
@@ -321,15 +314,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ];
     StakingRewardsTokenInfo storage tokenInfo = tokenStakingRewards[tokenId];
 
-    uint256 sliceAccAtLastCheckpoint = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint == 0 
+    bool sliceHasNotReceivedAPayment = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint == 0;
+    uint256 sliceAccAtLastCheckpoint = sliceHasNotReceivedAPayment
       ? poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
       : sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
 
     bool hasNotWithdrawn = tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0;
-    // if (hasNotWithdrawn || sliceInfo.accumulatedRewardsPerTokenAtDrawdown == 0) {
-    //   return 0;
-    // }
-
     uint256 tokenAccAtLastWithdraw = hasNotWithdrawn
       ? sliceInfo.accumulatedRewardsPerTokenAtDrawdown
       : tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw;
@@ -429,7 +419,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 deployedScalingFactor = usdcToAtomic(
       sliceInfo.principalDeployedAtLastCheckpoint
         .mul(usdcMantissa())
-        .div(sliceInfo.initialPrincipalDeposited)
+        .div(juniorTranche.principalDeposited)
     );
 
     uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
