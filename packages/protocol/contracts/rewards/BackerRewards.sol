@@ -373,9 +373,16 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
 
-    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
-    stakingRewards.updateRewards();
-    _checkpointPoolStakingRewards(pool);
+    // TODO(PR): clarify that only accruing rewards on full repayments is the desired behavior
+    //            if we dont do this, a borrower could repay 1 atom and accrue rewards for all backers
+    bool wasFullRepayment = pool.creditLine().lastFullPaymentTime() < pool.creditLine().nextDueTime()
+      || pool.creditLine().nextDueTime() == 0 && pool.creditLine().balance() == 0;
+    if (wasFullRepayment) {
+      StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+      stakingRewards.updateRewards();
+      _checkpointPoolStakingRewards(pool);
+
+    }
   }
 
   /**
