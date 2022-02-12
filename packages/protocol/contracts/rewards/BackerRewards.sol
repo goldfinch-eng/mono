@@ -75,6 +75,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // ```
     uint256 scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
 
+    uint256 unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint;
   }
 
   struct BackerRewardsTokenInfo {
@@ -210,11 +211,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
           fiduSharePriceAtDrawdown: seniorPool.sharePrice(),
           principalDeployedAtLastCheckpoint: juniorPrincipalDrawndown,
           accumulatedRewardsPerTokenAtDrawdown: stakingRewards.accumulatedRewardsPerToken(),
-          scaledAccumulatedRewardsPerTokenAtLastCheckpoint: stakingRewards.accumulatedRewardsPerToken()
+          scaledAccumulatedRewardsPerTokenAtLastCheckpoint: 0,
+          unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint: stakingRewards.accumulatedRewardsPerToken()
         })
       );
     } else {
-      _checkpointSliceStakingRewards(pool, sliceIndex);
+      _checkpointSliceStakingRewards(pool, sliceIndex, false);
     }
   }
 
@@ -319,10 +321,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ];
     StakingRewardsTokenInfo storage tokenInfo = tokenStakingRewards[tokenId];
 
-    uint256 sliceAccAtLastCheckpoint = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
+    uint256 sliceAccAtLastCheckpoint = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint == 0 
+      ? poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
+      : sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
 
     bool hasNotWithdrawn = tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0;
-    // if (hasNotWithdrawn && sliceInfo.accumulatedRewardsPerTokenAtDrawdown == 0) {
+    // if (hasNotWithdrawn || sliceInfo.accumulatedRewardsPerTokenAtDrawdown == 0) {
     //   return 0;
     // }
 
@@ -387,13 +391,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // iterate through all of the slices and checkpoint
     for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
-      _checkpointSliceStakingRewards(pool, sliceIndex);
+      // NOTE: this is unclear why we publish here
+      _checkpointSliceStakingRewards(pool, sliceIndex, true);
     }
 
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newStakingRewardsAccumulator;
   }
 
-  function _checkpointSliceStakingRewards(ITranchedPool pool, uint256 sliceIndex) internal {
+  function _checkpointSliceStakingRewards(ITranchedPool pool, uint256 sliceIndex, bool publish) internal {
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
     StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(sliceIndex));
@@ -424,9 +429,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       .mul(deployedScalingFactor)
       .div(mantissa());
 
-    sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
-      .scaledAccumulatedRewardsPerTokenAtLastCheckpoint
+    sliceInfo.unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
+      .unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint
       .add(scaledRewardsForPeriod);
+
+    if (publish) {
+      sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint
+        = sliceInfo.unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint;
+    }
 
     sliceInfo.principalDeployedAtLastCheckpoint = newPrincipalDeployed;
   }

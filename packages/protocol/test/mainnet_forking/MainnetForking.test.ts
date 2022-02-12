@@ -844,6 +844,21 @@ describe("mainnet forking tests", async function () {
 
       const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
+      let backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
+        undefined,
+        backerStakingTokenId,
+        {blockTag: initialStakeTx!.blockNumber}
+      )
+
+      let stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
+        undefined,
+        stakingRewardsTokenId,
+        {blockTag: initialStakeTx!.blockNumber}
+      )
+
+      expect(String(backerStakingRewardsEarned)).to.bignumber.eq("0")
+      expect(String(stakingRewardsEarned)).to.bignumber.eq("0")
+
       // Run through the first half of payments normally
       for (let i = 0; i < numberOfPaymentIntervals / 2; i++) {
         await advanceTime({days: paymentPeriodInDays.toFixed()})
@@ -852,12 +867,12 @@ describe("mainnet forking tests", async function () {
         // we need to checkpoint so that when the pool pays back the accumulator is up to date
         const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
 
-        const stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
+        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
           undefined,
           stakingRewardsTokenId,
           {blockTag: payTx.blockNumber}
         )
-        const backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
+        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
           undefined,
           backerStakingTokenId,
           {blockTag: payTx.blockNumber}
@@ -876,6 +891,12 @@ describe("mainnet forking tests", async function () {
       ])
 
       const secondStakingTokenId = getStakingRewardTokenFromTransactionReceipt(secondStakeTx as ContractReceipt)
+      const backerStakingRewardsEarnedAfterSecondDrawdown = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(undefined, backerStakingTokenId, {
+          blockTag: secondStakeTx!.blockNumber,
+        })
+
+      // check that the backer doesnt earned rewards on a drawdown
+      expect(String(backerStakingRewardsEarnedAfterSecondDrawdown)).to.bignumber.eq(String(backerStakingRewardsEarned))
 
       // second half of the payments
       for (let i = numberOfPaymentIntervals / 2; i < numberOfPaymentIntervals; i++) {
@@ -885,12 +906,12 @@ describe("mainnet forking tests", async function () {
         // we need to checkpoint so that when the pool pays back the accumulator is up to date
         const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
 
-        const stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
+        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
           undefined,
           stakingRewardsTokenId,
           {blockTag: payTx.blockNumber}
         )
-        const backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
+        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
           undefined,
           backerStakingTokenId,
           {blockTag: payTx.blockNumber}
@@ -954,6 +975,7 @@ describe("mainnet forking tests", async function () {
 
     // TODO(PR): test that participant in nth slice gets accurate rewards
     // TOOD(PR): test that participant in nth slice gets correct rewards while other participants withdraw
+    // TODO(PR): test that drawing down does not accrue rewards for a token
 
     describe("before drawdown", async () => {
       it("when a user withdraws they should earn 0 rewards", async () => {
