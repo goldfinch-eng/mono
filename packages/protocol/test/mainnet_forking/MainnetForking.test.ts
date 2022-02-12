@@ -829,7 +829,7 @@ describe("mainnet forking tests", async function () {
       )
     }).timeout(TEST_TIMEOUT)
 
-    it.only("behaves correctly, 1 slice, two partial drawdowns", async () => {
+    it("behaves correctly, 1 slice, two partial drawdowns", async () => {
       // person we dont care about but is participating in the pool to make sure
       // that other people are receieving staking rewards
       const firstStakedAmount = trackedStakedAmount.div(new BN("2"))

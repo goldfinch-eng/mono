@@ -213,11 +213,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
           scaledAccumulatedRewardsPerTokenAtLastCheckpoint: stakingRewards.accumulatedRewardsPerToken()
         })
       );
+    } else {
+      _checkpointSliceStakingRewards(pool, sliceIndex);
     }
-
-    // TODO(PR): we should only need to checkpoint the slice that is currently
-    // being drawdown
-    _checkpointPoolStakingRewards(pool);
   }
 
   /**
@@ -386,48 +384,51 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
     // TODO(PR): if we're past the term end date of the loan, we need to pro-rate
     //        the rewards
-    if (block.timestamp > pool.creditLine().termEndTime()) {
-      // TODO(PR): impl me
-      // 1 - min(1, timeOverLoan / fallOffPeriod) = decayFactor
-      // scaledAcc += rewardsAccSinceLastCheckPoint * decayFactor
-      // timeOverLoan >= fallOffPeriod -> decay = 0 -> rewards = 0
+
+    // iterate through all of the slices and checkpoint
+    for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
+      _checkpointSliceStakingRewards(pool, sliceIndex);
     }
 
+    poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newStakingRewardsAccumulator;
+  }
+
+  function _checkpointSliceStakingRewards(ITranchedPool pool, uint256 sliceIndex) internal {
+    StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
+    StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(sliceIndex));
+    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+    uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
 
-    // iterate through all of the slices and checkpoint
-    for (uint256 i = 0; i < poolInfo.slicesInfo.length; i++) {
-      StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[i];
-      ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(i));
-
-      // P_i
-      uint256 newPrincipalDeployed = juniorTranche.principalDeposited.sub(
-        atomicToUSDC(
-          juniorTranche.principalSharePrice.mul(usdcToAtomic(juniorTranche.principalDeposited)).div(mantissa())
-        )
-      );
-
-      // the percentage we need to scale the rewards accumualated by
-      uint256 deployedScalingFactor = usdcToAtomic(
-        sliceInfo.principalDeployedAtLastCheckpoint
-          .mul(usdcMantissa())
-          .div(sliceInfo.initialPrincipalDeposited)
-      );
-
-      uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
-        .mul(deployedScalingFactor)
-        .div(mantissa());
-
-      sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
-        .scaledAccumulatedRewardsPerTokenAtLastCheckpoint
-        .add(scaledRewardsForPeriod);
-
-      sliceInfo.principalDeployedAtLastCheckpoint = newPrincipalDeployed;
+    if (block.timestamp > pool.creditLine().termEndTime()) {
+      // TODO(PR): impl me
     }
 
-    poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newStakingRewardsAccumulator;
+    uint256 newPrincipalDeployed = juniorTranche.principalDeposited.sub(
+      atomicToUSDC(
+        juniorTranche.principalSharePrice.mul(usdcToAtomic(juniorTranche.principalDeposited)).div(mantissa())
+      )
+    );
+
+    // the percentage we need to scale the rewards accumualated by
+    uint256 deployedScalingFactor = usdcToAtomic(
+      sliceInfo.principalDeployedAtLastCheckpoint
+        .mul(usdcMantissa())
+        .div(sliceInfo.initialPrincipalDeposited)
+    );
+
+    uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
+      .mul(deployedScalingFactor)
+      .div(mantissa());
+
+    sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
+      .scaledAccumulatedRewardsPerTokenAtLastCheckpoint
+      .add(scaledRewardsForPeriod);
+
+    sliceInfo.principalDeployedAtLastCheckpoint = newPrincipalDeployed;
   }
 
   /**
