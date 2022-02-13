@@ -677,9 +677,9 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe.only("BackerRewards", () => {
+  describe("BackerRewards", () => {
     const highTolerance = "10000000000000000" // 1e16
-    const tolerance = "10000000000" // 1e10 // TODO(PR): get this much lower, need to do txs in same block
+    const microTolerance = "100000" // 1e5
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
     let tranchedPool: TranchedPool
@@ -771,19 +771,19 @@ describe("mainnet forking tests", async function () {
         await tranchedPool.assess()
         const interestOwed = await creditLine.interestOwed()
 
-        const tx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
+        const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
         const stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-          blockTag: tx.blockNumber,
+          blockTag: payTx.blockNumber,
         })
         const backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
           backerStakingTokenId,
-          {blockTag: tx.blockNumber}
+          {blockTag: payTx.blockNumber}
         )
 
         expect(backerStakingRewardsEarned.toString()).to.bignumber.eq(stakingRewardsEarned.toString())
       }
 
-      await advanceTime({days: await (await creditLine.termEndTime()).toString()})
+      await advanceTime({toSecond: (await creditLine.termEndTime()).toString()})
       await mineBlock()
       const blockNum = await ethers.provider.getBlockNumber()
       const stakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
@@ -793,7 +793,7 @@ describe("mainnet forking tests", async function () {
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
-      await advanceTime({days: "365"})
+      await advanceTime({days: "30"})
       await tranchedPool.assess()
       const principalOwed = await creditLine.principalOwed()
       const interestOwed = await creditLine.interestOwed()
@@ -817,7 +817,7 @@ describe("mainnet forking tests", async function () {
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
-      await advanceTime({days: "365"})
+      await advanceTime({days: "30"})
       const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
         backerStakingTokenId
       )
@@ -846,10 +846,9 @@ describe("mainnet forking tests", async function () {
         {blockTag: initialStakeTx!.blockNumber}
       )
 
-      let stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(
-        stakingRewardsTokenId,
-        {blockTag: initialStakeTx!.blockNumber}
-      )
+      let stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
+        blockTag: initialStakeTx!.blockNumber,
+      })
 
       expect(String(backerStakingRewardsEarned)).to.bignumber.eq("0")
       expect(String(stakingRewardsEarned)).to.bignumber.eq("0")
@@ -869,9 +868,8 @@ describe("mainnet forking tests", async function () {
           backerStakingTokenId,
           {blockTag: payTx.blockNumber}
         )
-        expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(String(stakingRewardsEarned), "10000")
+        expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(String(stakingRewardsEarned), microTolerance)
       }
-
 
       // we need to stake the equivalent amount drawndown
       const secondStakedAmount = firstStakedAmount.div(new BN("2")) // 1 / 4
@@ -886,7 +884,8 @@ describe("mainnet forking tests", async function () {
       ])
 
       const secondStakingTokenId = getStakingRewardTokenFromTransactionReceipt(secondStakeTx as ContractReceipt)
-      const backerStakingRewardsEarnedAfterSecondDrawdown = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
+      const backerStakingRewardsEarnedAfterSecondDrawdown =
+        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
           blockTag: secondStakeTx!.blockNumber,
         })
 
@@ -914,7 +913,7 @@ describe("mainnet forking tests", async function () {
 
         expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(
           String(stakingRewardsEarned.add(secondStakingRewardsEarned)),
-          tolerance
+          microTolerance
         )
       }
 

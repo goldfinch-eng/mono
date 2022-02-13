@@ -43,7 +43,7 @@ export async function main() {
       await gfi.populateTransaction.approve(owner, gfiToLoadIntoBackerRewards.toString()),
       await gfi.populateTransaction.transferFrom(owner, backerRewards.address, gfiToLoadIntoBackerRewards.toString()),
       await backerRewards.populateTransaction.setTotalRewards(gfiToLoadIntoBackerRewards.toString()),
-      await backerRewards.populateTransaction.setMaxInterestDollarsEligible(bigVal(1_000_000_000).toString()),
+      await backerRewards.populateTransaction.setMaxInterestDollarsEligible(bigVal(100_000_000).toString()),
     ],
   })
 
