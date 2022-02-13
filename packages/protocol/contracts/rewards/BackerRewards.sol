@@ -2,7 +2,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@uniswap/lib/contracts/libraries/Babylonian.sol";
@@ -371,10 +370,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     bool wasFullRepayment = pool.creditLine().lastFullPaymentTime() < pool.creditLine().nextDueTime()
       || pool.creditLine().nextDueTime() == 0 && pool.creditLine().balance() == 0;
     if (wasFullRepayment) {
-      StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
-      stakingRewards.updateRewards();
       _checkpointPoolStakingRewards(pool);
-
     }
   }
 
@@ -384,10 +380,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function _checkpointPoolStakingRewards(ITranchedPool pool) internal {
     StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+    stakingRewards.updateRewards();
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
-    // TODO(PR): if we're past the term end date of the loan, we need to pro-rate
-    //        the rewards
 
     // iterate through all of the slices and checkpoint
     for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
@@ -404,24 +399,27 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
     ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(sliceIndex));
     StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+    stakingRewards.updateRewards();
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
 
+
     // TODO(PR): better name for this
     uint256 decayScalingFactor = uint256(10) ** uint256(18);
     bool shouldProRate = block.timestamp > pool.creditLine().termEndTime();
     if (shouldProRate){
-      console.log("GOTTA PRO RATE");
       uint256 termEndTime = pool.creditLine().termEndTime();
       uint256 lastRepaymentTime = poolInfo.lastRepaymentTime;
       uint256 timeSinceLastRepayment = block.timestamp.sub(lastRepaymentTime);
       uint256 timeRemainingInTermAtLastRepayment = termEndTime.sub(lastRepaymentTime);
 
-      decayScalingFactor = timeRemainingInTermAtLastRepayment.mul(mantissa()).mul(mantissa()).div(timeSinceLastRepayment.mul(mantissa()));
+      decayScalingFactor = timeRemainingInTermAtLastRepayment
+        .mul(mantissa())
+        .mul(mantissa())
+        .div(timeSinceLastRepayment.mul(mantissa()));
     }
-    console.log(decayScalingFactor);
 
     uint256 newPrincipalDeployed = juniorTranche.principalDeposited.sub(
       atomicToUSDC(
@@ -438,7 +436,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
       .mul(deployedScalingFactor)
-      .div(mantissa()) // TODO(PR): can make this more efficient
+      .div(mantissa());
+
+    uint256 scaledRewardsAfterDecay = scaledRewardsForPeriod
       .mul(decayScalingFactor)
       .div(mantissa());
 

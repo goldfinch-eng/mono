@@ -44,6 +44,7 @@ import {
   toEthers,
   mineInSameBlock,
   dbg,
+  mineBlock,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
@@ -677,7 +678,8 @@ describe("mainnet forking tests", async function () {
   })
 
   describe.only("BackerRewards", () => {
-    const tolerance = "10000000000000" // TODO(PR): get this much lower, need to do txs in same block
+    const highTolerance = "10000000000000000" // 1e16
+    const tolerance = "10000000000" // 1e10 // TODO(PR): get this much lower, need to do txs in same block
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
     let tranchedPool: TranchedPool
@@ -770,13 +772,10 @@ describe("mainnet forking tests", async function () {
         const interestOwed = await creditLine.interestOwed()
 
         const tx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
-        const stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-          undefined,
-          stakingRewardsTokenId,
-          {blockTag: tx.blockNumber}
-        )
-        const backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
-          undefined,
+        const stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
+          blockTag: tx.blockNumber,
+        })
+        const backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
           backerStakingTokenId,
           {blockTag: tx.blockNumber}
         )
@@ -784,46 +783,44 @@ describe("mainnet forking tests", async function () {
         expect(backerStakingRewardsEarned.toString()).to.bignumber.eq(stakingRewardsEarned.toString())
       }
 
+      await advanceTime({days: await (await creditLine.termEndTime()).toString()})
+      await mineBlock()
+      const blockNum = await ethers.provider.getBlockNumber()
+      const stakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
+        blockTag: blockNum,
+      })
+
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
-      await advanceTime({days: paymentPeriodInDays.toFixed()})
+      await advanceTime({days: "365"})
       await tranchedPool.assess()
       const principalOwed = await creditLine.principalOwed()
       const interestOwed = await creditLine.interestOwed()
       expect(String(principalOwed)).to.bignumber.eq(limit)
-      const tx = await (await bwrCon.pay(tranchedPool.address, principalOwed.add(interestOwed).toString())).wait()
+      const paymentTx = await (
+        await bwrCon.pay(tranchedPool.address, principalOwed.add(interestOwed).toString())
+      ).wait()
       const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
       const interestOwedAfterFinalRepayment = await creditLine.interestOwed()
       expect(String(principalOwedAfterFinalRepayment)).to.bignumber.eq("0")
       expect(String(interestOwedAfterFinalRepayment)).to.bignumber.eq("0")
 
       const backerStakingRewardsEarnedAfterFinalRepayment =
-        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(undefined, backerStakingTokenId, {
-          blockTag: tx.blockNumber,
+        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
+          blockTag: paymentTx.blockNumber,
         })
-      const stakingRewardsEarnedAfterFinalRepayment = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-        undefined,
-        stakingRewardsTokenId,
-        {blockTag: tx.blockNumber}
-      )
-      // NOTE: we need to capture the stakingrewards amount at the final day of the repayment
-      //        and then compare that its within a tolerance. This is asserting that
-      //        the fall of logic that we're implementing is _close_ to the value
-      //        that should have been given out
-      expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.eq(
-        String(stakingRewardsEarnedAfterFinalRepayment)
+      expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.closeTo(
+        String(stakingRewardsAtTermEnd),
+        highTolerance
       )
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
       await advanceTime({days: "365"})
-      await stakingRewards.updateRewards()
-      const stakingRewardsEarnedMuchLater = await stakingRewards.earnedSinceLastCheckpoint(stakingRewardsTokenId)
       const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
         backerStakingTokenId
       )
-      expect(stakingRewardsEarnedMuchLater).to.bignumber.gt(new BN("0"))
       expect(String(backerStakingRewardsEarnedMuchLater)).to.bignumber.eq(
         String(backerStakingRewardsEarnedAfterFinalRepayment)
       )
@@ -844,14 +841,12 @@ describe("mainnet forking tests", async function () {
 
       const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
-      let backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
-        undefined,
+      let backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
         backerStakingTokenId,
         {blockTag: initialStakeTx!.blockNumber}
       )
 
-      let stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-        undefined,
+      let stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(
         stakingRewardsTokenId,
         {blockTag: initialStakeTx!.blockNumber}
       )
@@ -867,31 +862,31 @@ describe("mainnet forking tests", async function () {
         // we need to checkpoint so that when the pool pays back the accumulator is up to date
         const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
 
-        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-          undefined,
-          stakingRewardsTokenId,
-          {blockTag: payTx.blockNumber}
-        )
-        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
-          undefined,
+        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
+          blockTag: payTx.blockNumber,
+        })
+        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
           backerStakingTokenId,
           {blockTag: payTx.blockNumber}
         )
         expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(String(stakingRewardsEarned), "10000")
       }
 
+
       // we need to stake the equivalent amount drawndown
       const secondStakedAmount = firstStakedAmount.div(new BN("2")) // 1 / 4
       const secondUntrackedStakedAmount = firstUntrackedStakedAmount.div(new BN("2")) // 1 / 4
       const secondDrawdownAmount = limit.div(new BN("4"))
+      // FIXME(PR): for some reason staking rewards aren't being accured during this period
+      //              need to step through the code to figure it out.
       const [, secondStakeTx] = await mineInSameBlock([
-        await bwrCon.populateTransaction.drawdown(tranchedPool.address, secondDrawdownAmount.toString(), bwr),
-        await stakingRewardsEthers.populateTransaction.depositAndStake(secondStakedAmount.toString()),
         await stakingRewardsEthers.populateTransaction.depositAndStake(secondUntrackedStakedAmount.toString()),
+        await stakingRewardsEthers.populateTransaction.depositAndStake(secondStakedAmount.toString()),
+        await bwrCon.populateTransaction.drawdown(tranchedPool.address, secondDrawdownAmount.toString(), bwr),
       ])
 
       const secondStakingTokenId = getStakingRewardTokenFromTransactionReceipt(secondStakeTx as ContractReceipt)
-      const backerStakingRewardsEarnedAfterSecondDrawdown = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(undefined, backerStakingTokenId, {
+      const backerStakingRewardsEarnedAfterSecondDrawdown = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
           blockTag: secondStakeTx!.blockNumber,
         })
 
@@ -906,27 +901,33 @@ describe("mainnet forking tests", async function () {
         // we need to checkpoint so that when the pool pays back the accumulator is up to date
         const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
 
-        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-          undefined,
-          stakingRewardsTokenId,
-          {blockTag: payTx.blockNumber}
-        )
-        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(
-          undefined,
+        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
+          blockTag: payTx.blockNumber,
+        })
+        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
           backerStakingTokenId,
           {blockTag: payTx.blockNumber}
         )
-        const secondStakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-          undefined,
-          secondStakingTokenId,
-          {blockTag: payTx.blockNumber}
-        )
+        const secondStakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(secondStakingTokenId, {
+          blockTag: payTx.blockNumber,
+        })
 
         expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(
           String(stakingRewardsEarned.add(secondStakingRewardsEarned)),
           tolerance
         )
       }
+
+      await advanceTime({toSecond: (await creditLine.termEndTime()).toString()})
+      await mineBlock()
+      const blockNum = await ethers.provider.getBlockNumber()
+      const stakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
+        blockTag: blockNum,
+      })
+      const seocondStakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(
+        secondStakingTokenId,
+        {blockTag: blockNum}
+      )
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
@@ -936,18 +937,8 @@ describe("mainnet forking tests", async function () {
       const principalOwed = await creditLine.principalOwed()
       const interestOwed = await creditLine.interestOwed()
       const tx = await (await bwrCon.pay(tranchedPool.address, interestOwed.add(principalOwed).toString())).wait()
-      const stakingRewardsEarnedAfterFinalRepayment = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-        undefined,
-        stakingRewardsTokenId,
-        {blockTag: tx.blockNumber}
-      )
-      const secondStakingRewardsEarnedAfterFinalRepayment = await stakingRewardsEthers.earnedSinceLastCheckpoint.call(
-        undefined,
-        secondStakingTokenId,
-        {blockTag: tx.blockNumber}
-      )
       const backerStakingRewardsEarnedAfterFinalRepayment =
-        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint.call(undefined, backerStakingTokenId, {
+        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
           blockTag: tx.blockNumber,
         })
 
@@ -956,21 +947,19 @@ describe("mainnet forking tests", async function () {
       //        the fall of logic that we're implementing is _close_ to the value
       //        that should have been given out
       expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.closeTo(
-        String(stakingRewardsEarnedAfterFinalRepayment.add(secondStakingRewardsEarnedAfterFinalRepayment)),
-        tolerance
+        String(stakingRewardsAtTermEnd.add(seocondStakingRewardsAtTermEnd)),
+        highTolerance
       )
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
-      // await advanceTime({days: "365"})
-      // await ethers.provider.send("evm_mine", [])
-      // await forceStakingRewardsCheckpoint()
-      // const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
-      //   backerStakingTokenId
-      // )
-      // expect(String(backerStakingRewardsEarnedMuchLater)).to.bignumber.eq(
-      //   String(backerStakingRewardsEarnedAfterFinalRepayment)
-      // )
+      await advanceTime({days: "365"})
+      const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
+        backerStakingTokenId
+      )
+      expect(String(backerStakingRewardsEarnedMuchLater)).to.bignumber.eq(
+        String(backerStakingRewardsEarnedAfterFinalRepayment)
+      )
     }).timeout(TEST_TIMEOUT)
 
     // TODO(PR): test that participant in nth slice gets accurate rewards
