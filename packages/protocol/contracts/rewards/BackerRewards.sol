@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@uniswap/lib/contracts/libraries/Babylonian.sol";
@@ -188,7 +189,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     }
 
     bool isNewSlice = poolStakingRewards[pool].slicesInfo.length == 0 ||
-      poolStakingRewards[pool].slicesInfo.length < sliceIndex;
+      poolStakingRewards[pool].slicesInfo.length < sliceIndex.add(1);
 
     if (isNewSlice) {
       uint256 juniorPrincipalDrawndown = juniorTranche.principalDeposited.sub(
