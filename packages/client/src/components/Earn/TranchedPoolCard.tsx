@@ -1,5 +1,7 @@
 import BigNumber from "bignumber.js"
 import {useHistory} from "react-router-dom"
+import {useContext} from "react"
+import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {InfoIcon} from "../../ui/icons"
@@ -20,6 +22,7 @@ export default function TranchedPoolCard({
   poolEstimatedSeniorPoolMatchingApyFromGfi: BigNumber | undefined
   disabled: boolean
 }) {
+  const {currentBlock} = useContext(AppContext)
   const history = useHistory()
   const isMobile = useMediaQuery({
     query: `(max-width: ${WIDTH_TYPES.screenM})`,
@@ -36,6 +39,10 @@ export default function TranchedPoolCard({
           .plus(poolEstimatedSeniorPoolMatchingApyFromGfi || new BigNumber(0))
       : new BigNumber(NaN)
 
+  const currentTimestamp = currentBlock?.timestamp
+  const isCurrentTimeBeforePoolFundableAt =
+    currentTimestamp && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
+
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
   const getBadge = () => {
@@ -45,6 +52,8 @@ export default function TranchedPoolCard({
       return <Badge text="Repaid" variant="green" fixedWidth={false} />
     } else if (tranchedPool.isFull) {
       return <Badge text="Full" variant="gray" fixedWidth={true} />
+    } else if (tranchedPool.creditLine.termEndTime.isZero() && isCurrentTimeBeforePoolFundableAt) {
+      return <Badge text="Coming Soon" variant="yellow" fixedWidth={false} />
     } else {
       return <Badge text="Open" variant="blue" fixedWidth={true} />
     }
