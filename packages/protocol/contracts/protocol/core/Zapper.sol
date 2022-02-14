@@ -73,7 +73,7 @@ contract Zapper is BaseUpgradeablePausable {
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(poolTokenId);
     ITranchedPool.TrancheInfo memory trancheInfo = ITranchedPool(tokenInfo.pool).getTranche(tokenInfo.tranche);
 
-    require(block.timestamp > trancheInfo.lockedUntil, "Zap locked");
+    require(trancheInfo.lockedUntil != 0 && block.timestamp > trancheInfo.lockedUntil, "Zap locked");
 
     IERC721(poolTokens).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }
@@ -95,6 +95,7 @@ contract Zapper is BaseUpgradeablePausable {
     require(principalWithdrawn > 0, "Invalid state");
 
     ISeniorPool seniorPool = config.getSeniorPool();
+    SafeERC20.safeApprove(config.getUSDC(), address(seniorPool), principalWithdrawn);
     uint256 fiduAmount = seniorPool.deposit(principalWithdrawn);
 
     IStakingRewards stakingRewards = config.getStakingRewards();

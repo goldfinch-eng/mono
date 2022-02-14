@@ -3,6 +3,7 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import hre from "hardhat"
 import {FIDU_DECIMALS, interestAprAsBN, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {
+  ERC20Instance,
   FiduInstance,
   GoldfinchConfigInstance,
   PoolTokensInstance,
@@ -32,6 +33,7 @@ import {DepositMade} from "../typechain/truffle/SeniorPool"
 import {DepositMade as TranchedPoolDepositMade} from "../typechain/truffle/TranchedPool"
 import {Staked} from "../typechain/truffle/StakingRewards"
 import {mint as mintUID} from "./uniqueIdentityHelpers"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 const {deployments} = hre
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -105,6 +107,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   return {
     ...others,
     fidu,
+    usdc,
     owner,
     borrower,
     investor,
@@ -117,18 +120,20 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   }
 })
 
-describe.only("Zapper", async () => {
+describe("Zapper", async () => {
   let zapper: ZapperInstance
   let goldfinchConfig: GoldfinchConfigInstance
   let seniorPool: SeniorPoolInstance
   let stakingRewards: StakingRewardsInstance
   let tranchedPool: TranchedPoolInstance
   let fidu: FiduInstance
+  let usdc: ERC20Instance
   let poolTokens: PoolTokensInstance
   let uid: TestUniqueIdentityInstance
 
   let owner: string
   let investor: string
+  let borrower: string
 
   let fiduAmount: BN
 
@@ -137,6 +142,7 @@ describe.only("Zapper", async () => {
     ;({
       owner,
       investor,
+      borrower,
       fiduAmount,
       poolTokens,
       goldfinchConfig,
@@ -145,6 +151,7 @@ describe.only("Zapper", async () => {
       zapper,
       stakingRewards,
       fidu,
+      usdc,
       uniqueIdentity: uid,
     } = await testSetup())
   })
@@ -309,30 +316,148 @@ describe.only("Zapper", async () => {
   })
 
   describe("claimZap", async () => {
+    let usdcEquivalent: BN
+    let usdcToZap: BN
+    let stakedTokenId: BN
+    let poolTokenId: BN
+
+    beforeEach(async () => {
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+      usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+      usdcToZap = usdcEquivalent.div(new BN(2))
+
+      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
+
+      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
+
+      await stakingRewards.kick(stakedTokenId)
+
+      const result = await zapper.zapStakeToTranchedPool(
+        stakedTokenId,
+        tranchedPool.address,
+        TRANCHES.Junior,
+        usdcToZap,
+        {
+          from: investor,
+        }
+      )
+
+      const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
+        result.receipt.rawLogs,
+        tranchedPool,
+        "DepositMade"
+      )
+      poolTokenId = depositEvent.args.tokenId
+    })
+
     describe("TranchedPool is past lock period", async () => {
-      it("allows claiming the underlying PoolToken", async () => {})
+      it("allows claiming the underlying PoolToken", async () => {
+        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
+        await tranchedPool.lockJuniorCapital()
+        await tranchedPool.drawdown(usdcToZap, {from: borrower})
+        await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
+
+        await zapper.claimZap(poolTokenId, {from: investor})
+        expect(await poolTokens.ownerOf(poolTokenId)).to.eq(investor)
+      })
     })
 
     describe("TranchedPool is not past lock period", async () => {
-      it("reverts", async () => {})
+      it("reverts", async () => {
+        await expect(zapper.claimZap(poolTokenId, {from: investor})).to.be.rejectedWith(/Zap locked/)
+
+        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
+        await tranchedPool.lockJuniorCapital()
+        await tranchedPool.drawdown(usdcToZap, {from: borrower})
+        await advanceTime({seconds: drawdownTimePeriod.div(new BN(2))})
+
+        await expect(zapper.claimZap(poolTokenId, {from: investor})).to.be.rejectedWith(/Zap locked/)
+      })
     })
 
     describe("sender does not own zap", async () => {
-      it("reverts", async () => {})
+      it("reverts", async () => {
+        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
+        await tranchedPool.lockJuniorCapital()
+        await tranchedPool.drawdown(usdcToZap, {from: borrower})
+        await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
+
+        // Claim as `borrower` instead of `investor`
+        await expect(zapper.claimZap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
+      })
     })
   })
 
   describe("unzap", async () => {
+    let usdcEquivalent: BN
+    let usdcToZap: BN
+    let usdcToZapInFidu: BN
+    let stakedTokenId: BN
+    let poolTokenId: BN
+
+    beforeEach(async () => {
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+      usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+      usdcToZap = usdcEquivalent.div(new BN(2))
+      usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
+
+      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
+
+      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
+
+      await stakingRewards.kick(stakedTokenId)
+
+      const result = await zapper.zapStakeToTranchedPool(
+        stakedTokenId,
+        tranchedPool.address,
+        TRANCHES.Junior,
+        usdcToZap,
+        {
+          from: investor,
+        }
+      )
+
+      const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
+        result.receipt.rawLogs,
+        tranchedPool,
+        "DepositMade"
+      )
+      poolTokenId = depositEvent.args.tokenId
+    })
+
     describe("Tranche has never been locked", async () => {
-      it("unwinds position back to StakingRewards", async () => {})
+      it("unwinds position back to StakingRewards", async () => {
+        const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
+        const tranchedPoolBalanceBefore = await usdc.balanceOf(tranchedPool.address)
+        await zapper.unzap(poolTokenId, {from: investor})
+        const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
+        const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
+        const tranchedPoolBalanceAfter = await usdc.balanceOf(tranchedPool.address)
+
+        // Capital has been withdrawn from TranchedPool
+        expect(tokenInfo.principalRedeemed).to.bignumber.eq(usdcToZap)
+        expect(tokenInfo.principalAmount).to.bignumber.eq(tokenInfo.principalRedeemed)
+        expect(tranchedPoolBalanceBefore.sub(tranchedPoolBalanceAfter)).to.bignumber.eq(usdcToZap)
+
+        // Capital has been added back to existing staked position
+        expect(stakedPositionAfter.amount.sub(stakedPositionBefore.amount)).to.bignumber.eq(usdcToZapInFidu)
+
+        // Total staked supply includes capital at correct multiplier
+
+        // Vesting schedule has not changed
+      })
     })
 
-    describe("Tranche has been locked", async () => {
-      it("reverts", async () => {})
-    })
+    // describe("Tranche has been locked", async () => {
+    //   it("reverts", async () => {})
+    // })
 
-    describe("sender does not own zap", async () => {
-      it("reverts", async () => {})
-    })
+    // describe("sender does not own zap", async () => {
+    //   it("reverts", async () => {})
+    // })
   })
 })

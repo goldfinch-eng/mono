@@ -627,7 +627,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
-    require(isZapper() && ownerOf(tokenId) == msg.sender, "access denied");
+    require(isZapper(), "access denied");
 
     StakedPosition storage position = positions[tokenId];
     position.amount = position.amount.add(amount);
