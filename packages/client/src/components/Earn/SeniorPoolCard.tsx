@@ -1,10 +1,12 @@
 import {useHistory} from "react-router-dom"
 import BigNumber from "bignumber.js"
 import Badge from "../badge"
-import logoPurp from "../../images/logomark-purp.svg"
+import logo from "../../images/logomark-spaced.svg"
 import {InfoIcon} from "../../ui/icons"
 import {displayPercent} from "../../utils"
 import EarnTooltipContent from "./EarnTooltipContent"
+import {useMediaQuery} from "react-responsive"
+import {WIDTH_TYPES} from "../styleConstants"
 
 type SeniorPoolCardProps = {
   balance: string
@@ -22,6 +24,12 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
   const disabledClass = props.disabled ? "disabled" : ""
   const userBalanceDisabledClass = props.userBalanceDisabled ? "disabled" : ""
   const history = useHistory()
+
+  // At this point, the APY overlaps on the pool info
+  const isMinWidthScreenXl = useMediaQuery({
+    query: `(min-width: ${WIDTH_TYPES.screenXl})`,
+  })
+
   return (
     <div
       key="senior-pool"
@@ -30,11 +38,11 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
     >
       <div className="table-cell col40 pool-info">
         <div>
-          <img className={`senior-pool-icon icon ${disabledClass}`} src={logoPurp} alt="Senior Pool icon" />
+          <img className={`senior-pool-icon icon ${disabledClass}`} src={logo} alt="Senior Pool icon" />
         </div>
         <div>
           <span className="name">Goldfinch Senior Pool</span>
-          <span className={`subheader ${disabledClass}`}>Automated diversified portfolio</span>
+          {isMinWidthScreenXl && <span className={`subheader ${disabledClass}`}>Automated diversified portfolio</span>}
         </div>
       </div>
       <div className="table-cell col32 numeric apy">
