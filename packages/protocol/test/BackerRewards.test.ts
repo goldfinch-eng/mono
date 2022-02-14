@@ -3,7 +3,7 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import BN from "bn.js"
 import hre from "hardhat"
-import {FIDU_DECIMALS, interestAprAsBN, OWNER_ROLE, TRANCHES} from "../blockchain_scripts/deployHelpers"
+import {interestAprAsBN, OWNER_ROLE, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {
   ERC20Instance,
   GFIInstance,
@@ -26,9 +26,7 @@ import {
   expect,
   fiduToUSDC,
   getFirstLog,
-  SECONDS_PER_YEAR,
   usdcVal,
-  USDC_DECIMALS,
   ZERO_ADDRESS,
 } from "./testHelpers"
 import {deployBaseFixture} from "./util/fixtures"
