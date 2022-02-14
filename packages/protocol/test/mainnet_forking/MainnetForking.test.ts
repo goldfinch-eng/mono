@@ -750,6 +750,26 @@ describe("mainnet forking tests", async function () {
       return parsedEvent.args.tokenId
     }
 
+    it("backers only earn rewards for full payments", async () => {
+      await bwrCon.drawdown(tranchedPool.address, String(limit), bwr)
+      await advanceTime({days: (await creditLine.paymentPeriodInDays()).toString()})
+      const partialPaybackTx = await bwrCon.pay(tranchedPool.address, "1")
+      let backerRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
+        backerStakingTokenId,
+        {
+          blockTag: partialPaybackTx.blockNumber,
+        }
+      )
+      expect(String(backerRewardsEarned)).to.bignumber.eq("0")
+
+      const interestOwed = await creditLine.interestOwed()
+      const fullPaybackTx = await bwrCon.pay(tranchedPool.address, interestOwed)
+      backerRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
+        blockTag: fullPaybackTx.blockNumber,
+      })
+      expect(String(backerRewardsEarned)).to.not.bignumber.eq("0")
+    })
+
     it("behaves correctly, 1 slice, full drawdown", async () => {
       // person we dont care about but is participating in the pool to make sure
       // that other people are receieving staking rewards
@@ -964,6 +984,8 @@ describe("mainnet forking tests", async function () {
     // TODO(PR): test that participant in nth slice gets accurate rewards
     // TOOD(PR): test that participant in nth slice gets correct rewards while other participants withdraw
     // TODO(PR): test that drawing down does not accrue rewards for a token
+    // TODO(PR): test that an old tranched pool still accrues staking rewards
+    // TODO(PR): test that calling assess multiple times doesnt accrue rewards
 
     describe("before drawdown", async () => {
       it("when a user withdraws they should earn 0 rewards", async () => {

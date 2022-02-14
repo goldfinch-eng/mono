@@ -46,13 +46,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   struct StakingRewardsInfo {
-    // the value of the `accumulatedRewardsPerToken` on the StakingRewards contract
-    // the last time the associated tranched pool made a payment. This value is initialized
-    // to zero. A zero value indicates that no payment has come back from the tranched pool,
-    // and so no rewards should be accrued
     uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
     // TODO(PR): this should be last checkpoint time.
-    uint256 lastRepaymentTime;
+    uint256 lastUpdatetime;
     // staking rewards parameters per slice of a tranched pool
     StakingRewardsSliceInfo[] slicesInfo;
   }
@@ -73,19 +69,20 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     //   (stakingRewardsAcc - stakingRewardsAccRewardsPerTokenAtLastPayback)
     //   (principalAtStakeAtLastPayback * totalPrincipalDrawnDown)
     // ```
-    uint256 scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
-    // TODO(pr): description about why this is unrealized
-    uint256 unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint;
+    uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
+    // TODO(PR): add docstring
+    uint256 unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint;
   }
 
   struct StakingRewardsTokenInfo {
+    // TODO(PR): validate this docstring
     // the value of the `accumulatedRewardsPerToken` on the StakingRewards
     // contract since the last time a pool token holder has withdrawn rewards.
     // This value is initialized to the value of
     // `StakingRewards.accumulatedRewardsPerToken` at the time of mint and is
     // updated to the new value of `StakingRewards.accumulatedRewardsPerToken`
     // on every subsequent withdrawal of rewards
-    uint256 stakingRewardsAccRewardsPerTokenAtLastWithdraw;
+    uint256 accumulatedRewardsPerTokenAtLastWithdraw;
   }
 
   uint256 public totalRewards; // total amount of GFI rewards available, times 1e18
@@ -120,6 +117,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     if (_interestPaymentAmount > 0) {
       _allocateRewards(_interestPaymentAmount);
     }
+
+    _allocateStakingRewards();
   }
 
   /**
@@ -170,48 +169,41 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     tokens[tokenId].accRewardsPerPrincipalDollarAtMint = pools[tokenInfo.pool].accRewardsPerPrincipalDollar;
   }
 
-  function onTranchedPoolDrawdown(uint256 sliceIndex) external override {
+  function onTranchedPoolDrawdown(uint256 sliceIndex) external override onlyPool {
     ITranchedPool pool = ITranchedPool(_msgSender());
-    require(config.getPoolTokens().validPool(address(pool)), "Invalid pool!");
-
-    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
-    stakingRewards.updateRewards();
-    ISeniorPool seniorPool = ISeniorPool(config.seniorPoolAddress());
+    StakingRewards stakingRewards = _checkpointAndGetStakingRewards();
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
-    uint256 newAcc = stakingRewards.accumulatedRewardsPerToken();
+    ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
+    uint256 newRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
 
     // On the first drawdown in the lifetime of the pool, we need to initialize
     // the pool local accumulator
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(sliceIndex));
-    bool isFirstDrawdownOfFirstSlice = poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint == 0;
-    if (isFirstDrawdownOfFirstSlice) {
-      poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newAcc;
+    bool poolRewardsHaventBeenInitialized = !_poolRewardsHaveBeenInitialized(pool);
+    if (poolRewardsHaventBeenInitialized) {
+      poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newRewardsAccumulator;
     }
 
-    bool isNewSlice = poolStakingRewards[pool].slicesInfo.length == 0 ||
-      poolStakingRewards[pool].slicesInfo.length < sliceIndex.add(1);
-
+    bool isNewSlice = !_sliceRewardsHaveBeenInitialized(pool, sliceIndex);
     if (isNewSlice) {
-      uint256 juniorPrincipalDrawndown = juniorTranche.principalDeposited.sub(
-        atomicToUSDC(
-          juniorTranche.principalSharePrice.mul(usdcToAtomic(juniorTranche.principalDeposited)).div(mantissa())
-        )
-      );
+      // TODO(PR): this calc should be moved to tranching logic
+      uint256 juniorPrincipalDrawndown = _getPrincipalDeployedForTranche(juniorTranche);
+      ISeniorPool seniorPool = ISeniorPool(config.seniorPoolAddress());
 
       // initialize new slice params
       poolStakingRewards[pool].slicesInfo.push(
         StakingRewardsSliceInfo({
           fiduSharePriceAtDrawdown: seniorPool.sharePrice(),
           principalDeployedAtLastCheckpoint: juniorPrincipalDrawndown,
-          accumulatedRewardsPerTokenAtDrawdown: stakingRewards.accumulatedRewardsPerToken(),
-          scaledAccumulatedRewardsPerTokenAtLastCheckpoint: 0,
-          unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint: stakingRewards.accumulatedRewardsPerToken()
+          accumulatedRewardsPerTokenAtDrawdown: newRewardsAccumulator,
+          accumulatedRewardsPerTokenAtLastCheckpoint: newRewardsAccumulator,
+          unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint: newRewardsAccumulator
         })
       );
     } else {
       _checkpointSliceStakingRewards(pool, sliceIndex, false);
-      poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newAcc;
     }
+
+    poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newRewardsAccumulator;
   }
 
   /**
@@ -297,40 +289,22 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    * @return amount of rewards earned since the last token checkpoint.
    */
   function stakingRewardsEarnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
-    IPoolTokens poolTokens = config.getPoolTokens();
-    IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(tokenId);
+    IPoolTokens.TokenInfo memory poolTokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(poolTokenInfo.pool);
-    StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
+    uint256 sliceIndex = _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche);
 
-    {
-      bool poolHasntDrawndown = poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint == 0;
-      if (poolHasntDrawndown) {
-        return 0;
-      }
+    if (!_poolRewardsHaveBeenInitialized(pool) || !_sliceRewardsHaveBeenInitialized(pool, sliceIndex)) {
+      return 0;
     }
 
-    // TODO(PR): add a bounds a check
-    StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[
-      _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche)
-    ];
-    StakingRewardsTokenInfo storage tokenInfo = tokenStakingRewards[tokenId];
+    StakingRewardsInfo memory poolInfo = poolStakingRewards[pool];
+    StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
+    StakingRewardsTokenInfo memory tokenInfo = tokenStakingRewards[tokenId];
 
-    bool sliceHasNotReceivedAPayment = sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint == 0;
-    uint256 sliceAccAtLastCheckpoint = sliceHasNotReceivedAPayment
-      ? poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
-      : sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
-
-    bool hasNotWithdrawn = tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw == 0;
-    uint256 tokenAccAtLastWithdraw = hasNotWithdrawn
-      ? sliceInfo.accumulatedRewardsPerTokenAtDrawdown
-      : tokenInfo.stakingRewardsAccRewardsPerTokenAtLastWithdraw;
-
+    uint256 sliceAccAtLastCheckpoint = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
+    uint256 tokenAccAtLastWithdraw = _getTokenAccumulatorAtLastCheckpoint(tokenInfo, sliceInfo);
     uint256 rewardsPerTokenSinceLastWithdraw = sliceAccAtLastCheckpoint.sub(tokenAccAtLastWithdraw);
-
-    uint256 principalAsFidu = usdcToAtomic(poolTokenInfo.principalAmount).mul(mantissa()).div(
-      sliceInfo.fiduSharePriceAtDrawdown
-    );
-
+    uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
     return principalAsFidu.mul(rewardsPerTokenSinceLastWithdraw).div(mantissa());
   }
 
@@ -360,13 +334,21 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     );
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
+  }
+
+  function _allocateStakingRewards() internal {
+    ITranchedPool pool = ITranchedPool(_msgSender());
 
     // TODO(PR): clarify that only accruing rewards on full repayments is the desired behavior
     //            if we dont do this, a borrower could repay 1 atom and accrue rewards for all backers
-    bool wasFullRepayment = pool.creditLine().lastFullPaymentTime() < pool.creditLine().nextDueTime() ||
-      (pool.creditLine().nextDueTime() == 0 && pool.creditLine().balance() == 0);
+    IV2CreditLine cl = pool.creditLine();
+    // TODO(PR): validate this logic
+    bool wasFullRepayment = cl.lastFullPaymentTime() <= block.timestamp &&
+      cl.principalOwed() == 0 &&
+      cl.interestOwed() == 0;
+
     if (wasFullRepayment) {
-      _checkpointPoolStakingRewards(pool);
+      _checkpointPoolStakingRewards(pool, true);
     }
   }
 
@@ -374,22 +356,29 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    * @notice Checkpoints staking reward accounting for a given pool.
    * @param pool pool to checkpoint
    */
-  function _checkpointPoolStakingRewards(ITranchedPool pool) internal {
-    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
-    stakingRewards.updateRewards();
+  function _checkpointPoolStakingRewards(ITranchedPool pool, bool publish) internal {
+    StakingRewards stakingRewards = _checkpointAndGetStakingRewards();
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
 
     // iterate through all of the slices and checkpoint
     for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
       // NOTE: this is unclear why we publish here
-      _checkpointSliceStakingRewards(pool, sliceIndex, true);
+      _checkpointSliceStakingRewards(pool, sliceIndex, publish);
     }
 
-    poolInfo.lastRepaymentTime = block.timestamp;
+    poolInfo.lastUpdatetime = block.timestamp;
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newStakingRewardsAccumulator;
   }
 
+  /**
+   * @notice checkpoint the staking rewards accounting for a single tranched pool slice
+   * @param pool pool that the slice belinds to
+   * @param sliceIndex index of slice to checkpoint rewards accounting for
+   * @param publish if true, the updated rewards values will be immediately available for
+   *                 backers to withdraw. otherwise, the accounting will be updated but backers
+   *                 will not be able to withdraw
+   */
   function _checkpointSliceStakingRewards(
     ITranchedPool pool,
     uint256 sliceIndex,
@@ -397,9 +386,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   ) internal {
     StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
     StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(_sliceIndexToJuniorTrancheId(sliceIndex));
-    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
-    stakingRewards.updateRewards();
+    StakingRewards stakingRewards = _checkpointAndGetStakingRewards();
+    ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
@@ -410,20 +398,17 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     bool shouldProRate = block.timestamp > pool.creditLine().termEndTime();
     if (shouldProRate) {
       uint256 termEndTime = pool.creditLine().termEndTime();
-      uint256 lastRepaymentTime = poolInfo.lastRepaymentTime;
-      uint256 timeSinceLastRepayment = block.timestamp.sub(lastRepaymentTime);
-      uint256 timeRemainingInTermAtLastRepayment = termEndTime.sub(lastRepaymentTime);
+      uint256 lastUpdatetime = poolInfo.lastUpdatetime;
+      uint256 timeSinceLastRepayment = block.timestamp.sub(lastUpdatetime);
+      uint256 timeRemainingInTermAtLastRepayment = termEndTime.sub(lastUpdatetime);
 
+      // TODO(PR): simplify this math
       decayScalingFactor = timeRemainingInTermAtLastRepayment.mul(mantissa()).mul(mantissa()).div(
         timeSinceLastRepayment.mul(mantissa())
       );
     }
 
-    uint256 newPrincipalDeployed = juniorTranche.principalDeposited.sub(
-      atomicToUSDC(
-        juniorTranche.principalSharePrice.mul(usdcToAtomic(juniorTranche.principalDeposited)).div(mantissa())
-      )
-    );
+    uint256 newPrincipalDeployed = _getPrincipalDeployedForTranche(juniorTranche);
 
     // the percentage we need to scale the rewards accumualated by
     uint256 deployedScalingFactor = usdcToAtomic(
@@ -436,13 +421,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       .mul(decayScalingFactor)
       .div(mantissa());
 
-    sliceInfo.unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
-      .unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint
+    sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
+      .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint
       .add(scaledRewardsForPeriod);
 
     if (publish) {
-      sliceInfo.scaledAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
-        .unrealizedScaledAccumulatedRewardsPerTokenAtLastCheckpoint;
+      sliceInfo.accumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
+        .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint;
     }
 
     sliceInfo.principalDeployedAtLastCheckpoint = newPrincipalDeployed;
@@ -455,13 +440,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function _checkpointTokenStakingRewards(uint256 tokenId) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    ITranchedPool pool = ITranchedPool(tokenInfo.pool);
+    StakingRewardsInfo memory poolInfo = poolStakingRewards[pool];
     uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
-    uint256 newStakingRewardsAccRewardsPerTokenAtLastWithdraw = poolStakingRewards[ITranchedPool(tokenInfo.pool)]
-      .slicesInfo[sliceIndex]
-      .scaledAccumulatedRewardsPerTokenAtLastCheckpoint;
+    StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
 
-    tokenStakingRewards[tokenId]
-      .stakingRewardsAccRewardsPerTokenAtLastWithdraw = newStakingRewardsAccRewardsPerTokenAtLastWithdraw;
+    uint256 newaccumulatedRewardsPerTokenAtLastWithdraw = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
+
+    tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw = newaccumulatedRewardsPerTokenAtLastWithdraw;
   }
 
   /**
@@ -562,12 +548,71 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return amount.div(mantissa().div(usdcMantissa()));
   }
 
+  function _fiduToUsdc(uint256 amount, uint256 sharePrice) internal pure returns (uint256) {
+    return usdcToAtomic(amount).mul(mantissa()).div(sharePrice);
+  }
+
   function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint256) {
     return index.add(1).mul(2);
   }
 
   function _juniorTrancheIdToSliceIndex(uint256 trancheId) internal pure returns (uint256) {
     return trancheId.sub(1).div(2);
+  }
+
+  function _checkpointAndGetStakingRewards() internal returns (StakingRewards) {
+    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+    if (stakingRewards.lastUpdateTime() != block.timestamp) {
+      stakingRewards.updateRewards();
+    }
+    return stakingRewards;
+  }
+
+  function _poolRewardsHaveBeenInitialized(ITranchedPool pool) internal view returns (bool) {
+    return poolStakingRewards[pool].accumulatedRewardsPerTokenAtLastCheckpoint != 0;
+  }
+
+  function _sliceRewardsHaveBeenInitialized(ITranchedPool pool, uint256 sliceIndex) internal view returns (bool) {
+    return poolStakingRewards[pool].slicesInfo.length > sliceIndex;
+  }
+
+  function _getSliceAccumulatorAtLastCheckpoint(
+    StakingRewardsSliceInfo memory sliceInfo,
+    StakingRewardsInfo memory poolInfo
+  ) internal pure returns (uint256) {
+    bool sliceHasNotReceivedAPayment = sliceInfo.accumulatedRewardsPerTokenAtLastCheckpoint == 0;
+    return
+      sliceHasNotReceivedAPayment
+        ? poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
+        : sliceInfo.accumulatedRewardsPerTokenAtLastCheckpoint;
+  }
+
+  function _getTokenAccumulatorAtLastCheckpoint(
+    StakingRewardsTokenInfo memory tokenInfo,
+    StakingRewardsSliceInfo memory sliceInfo
+  ) internal pure returns (uint256) {
+    bool hasNotWithdrawn = tokenInfo.accumulatedRewardsPerTokenAtLastWithdraw == 0;
+    return
+      hasNotWithdrawn
+        ? sliceInfo.accumulatedRewardsPerTokenAtDrawdown
+        : tokenInfo.accumulatedRewardsPerTokenAtLastWithdraw;
+  }
+
+  function _getJuniorTrancheForTranchedPoolSlice(ITranchedPool pool, uint256 sliceIndex)
+    internal
+    view
+    returns (ITranchedPool.TrancheInfo memory)
+  {
+    uint256 trancheId = _sliceIndexToJuniorTrancheId(sliceIndex);
+    return pool.getTranche(trancheId);
+  }
+
+  function _getPrincipalDeployedForTranche(ITranchedPool.TrancheInfo memory tranche) internal pure returns (uint256) {
+    // TODO(PR): this should live in tranching logic
+    return
+      tranche.principalDeposited.sub(
+        atomicToUSDC(tranche.principalSharePrice.mul(usdcToAtomic(tranche.principalDeposited)).div(mantissa()))
+      );
   }
 
   function updateGoldfinchConfig() external onlyAdmin {
