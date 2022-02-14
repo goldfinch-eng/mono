@@ -652,7 +652,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /// @notice Returns true if a given pool's staking rewards parameters have been initialized
-  /// @param poolInfo
   function _poolStakingRewardsInfoHaveBeenInitialized(StakingRewardsPoolInfo calldata poolInfo)
     internal
     pure

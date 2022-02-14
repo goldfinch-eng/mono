@@ -564,37 +564,63 @@ export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<strin
   expectRoles(expectations)
 }
 
+/**
+ * Mine multiple transactions in the same block, returning the receipts
+ *
+ * NOTE (READ!!!): if your transactions are timing out, and you're passing many
+ *                  the reason is that most likely there isn't enough block space
+ *                  given the transactions you're trying to mine. In the current
+ *                  state of the code this will happen if there are more than 15
+ *                  because we hardcode the gas limit.
+ *
+ * @param txs populated transactions to mine
+ * @param timeout time(ms) to wait before throwing an error
+ * @returns transactions receipts
+ */
 export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_000): Promise<ContractReceipt[]> {
+  const numberOfTransactionsThatCanFitWithHardcodedGasLimit = 15
+  if (txs.length > numberOfTransactionsThatCanFitWithHardcodedGasLimit) {
+    throw new Error(
+      `too many transcations! limit = ${numberOfTransactionsThatCanFitWithHardcodedGasLimit}, found = ${txs.length}`
+    )
+  }
+
+  let handle
+
   const error = new Error(
     `Failed to mine transactions under ${timeout} ms. Is your tx using too much gas for one block?`
   )
-  // disable automine so that the transactions all enter the mempool
-  await ethers.provider.send("evm_setAutomine", [false])
+  const rejectAfterTimeout = new Promise((_resolve, reject) => {
+    handle = setTimeout(() => reject(error), timeout)
+  })
 
-  const handle = setTimeout(() => {
-    ethers.provider.send("evm_setAutomine", [true]).then(() => {
-      throw error
-    })
-  }, timeout)
+  try {
+    // disable automine so that the transactions all enter the mempool
+    await ethers.provider.send("evm_setAutomine", [false])
+    const receipts: ContractTransaction[] = []
+    for (let tx of txs) {
+      const signer = await ethers.getSigner(tx.from as string)
 
-  const receipts: ContractTransaction[] = []
-  for (let tx of txs) {
-    const signer = await ethers.getSigner(tx.from as string)
+      // Ethers gas estimation is horrible, and calling ethers.provider.estimateGas is
+      // _insanely_ slow. So instead we're giving each transaction a very comfortable gas
+      // limit
+      tx = {
+        ...tx,
+        gasLimit: BigNumber.from("2000000"),
+      }
 
-    tx = {
-      ...tx,
-      gasLimit: BigNumber.from("2000000"),
+      const receipt = await signer.sendTransaction(tx)
+      receipts.push(receipt)
     }
-
-    const receipt = await signer.sendTransaction(tx)
-    receipts.push(receipt)
+    await ethers.provider.send("evm_mine", [])
+    const values = await Promise.all([rejectAfterTimeout, ...receipts.map((tx) => tx.wait())])
+    clearTimeout(handle)
+    return values.slice(1) as ContractReceipt[]
+  } finally {
+    // we need to make sure we turn auto mining back on in case of a failure
+    // otherwise it'll make every transaction globally timeout
+    await ethers.provider.send("evm_setAutomine", [true])
   }
-
-  const values = await Promise.all([ethers.provider.send("evm_mine", []), ...receipts.map((tx) => tx.wait())])
-  clearTimeout(handle)
-
-  await ethers.provider.send("evm_setAutomine", [true])
-  return values.slice(1)
 }
 
 export function dbg<T>(x: T): T {
