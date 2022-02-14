@@ -17,6 +17,11 @@
   @include space-x(0em);
   @include space-y(1em);
 
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
   &.spaced {
     margin-top: 85px;
     margin-bottom: -75px;

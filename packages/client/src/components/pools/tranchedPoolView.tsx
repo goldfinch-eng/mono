@@ -49,6 +49,7 @@ import TransactionInput from "../transactionInput"
 import EarnTooltipContent from "../Earn/EarnTooltipContent"
 import {WIDTH_TYPES} from "../styleConstants"
 import {useMediaQuery} from "react-responsive"
+import Banner from "../banner"
 
 function useRecentPoolTransactions({
   tranchedPool,
@@ -363,7 +364,7 @@ function DepositStatus({
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
   const session = useSession()
-  if (!tranchedPool || !backer || !tranchedPoolsEstimatedApyFromGfi.loaded) {
+  if (!tranchedPool || !tranchedPoolsEstimatedApyFromGfi.loaded) {
     return <></>
   }
 
@@ -380,9 +381,9 @@ function DepositStatus({
           .plus(estimatedLpSeniorPoolMatchingApy || new BigNumber(0))
       : undefined
 
-  const backerAvailableToWithdrawPercent = backer.availableToWithdrawInDollars.dividedBy(backer.balanceInDollars)
+  const backerAvailableToWithdrawPercent = backer?.availableToWithdrawInDollars.dividedBy(backer.balanceInDollars)
   let rightStatusItem: React.ReactNode
-  if (tranchedPool.creditLine.balance.isZero()) {
+  if (!backer || tranchedPool.creditLine.balance.isZero()) {
     // Not yet drawdown
     rightStatusItem = (
       <div className="deposit-status-item">
@@ -420,9 +421,9 @@ function DepositStatus({
     <div className="deposit-status background-container-inner">
       <div className="deposit-status-item">
         <div className="label">Your balance</div>
-        <div className="value">{displayDollars(backer.balanceInDollars)}</div>
+        <div className="value">{displayDollars(backer?.balanceInDollars)}</div>
         <div className="sub-value">
-          {displayDollars(backer.availableToWithdrawInDollars)} ({displayPercent(backerAvailableToWithdrawPercent)})
+          {displayDollars(backer?.availableToWithdrawInDollars)} ({displayPercent(backerAvailableToWithdrawPercent)})
           available
         </div>
       </div>
@@ -865,7 +866,7 @@ function Overview({tranchedPool, handleDetails}: OverviewProps) {
 
 const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
   return (
-    <div className="info-banner background-container">
+    <Banner>
       <div className="message extra-small">
         {iconInfo}
         <span>
@@ -881,7 +882,7 @@ const EstimatedSeniorPoolMatchingGFILaunchBanner = () => {
           </a>
         </span>
       </div>
-    </div>
+    </Banner>
   )
 }
 
@@ -989,31 +990,21 @@ function TranchedPoolView() {
     <></>
   )
 
-  const showActionsContainer = !isAtMaxCapacity || !backer?.balanceInDollars.isZero()
-
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
-      {user && (
-        <>
-          {maxCapacityNotice}
-          {showActionsContainer ? (
-            <>
-              <InvestorNotice />
-              {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
-                <EstimatedSeniorPoolMatchingGFILaunchBanner />
-              ) : undefined}
-              <ActionsContainer
-                tranchedPool={tranchedPool}
-                backer={backer}
-                onComplete={async () => refreshTranchedPool()}
-                tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedApyFromGfi}
-              />
-            </>
-          ) : undefined}
-        </>
-      )}
+      {maxCapacityNotice}
+      <InvestorNotice />
+      {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
+        <EstimatedSeniorPoolMatchingGFILaunchBanner />
+      ) : undefined}
+      <ActionsContainer
+        tranchedPool={tranchedPool}
+        backer={backer}
+        onComplete={async () => refreshTranchedPool()}
+        tranchedPoolsEstimatedApyFromGfi={tranchedPoolsEstimatedApyFromGfi}
+      />
       <CreditStatus tranchedPool={tranchedPool} />
       {tranchedPool?.isV1StyleDeal ? (
         <V1DealSupplyStatus tranchedPool={tranchedPool} />

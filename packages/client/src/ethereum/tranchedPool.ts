@@ -84,6 +84,7 @@ export interface TranchedPoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
+  launchTime?: number
 }
 
 enum PoolState {
