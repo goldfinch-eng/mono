@@ -87,17 +87,34 @@ export function displayPercent(val: BigNumber | undefined, decimals = 2, display
   return `${valDisplay}%`
 }
 
-export function displayAbbreviated(val: BigNumber | undefined | string | number, decimals = 2) {
-  if (val === undefined) return "--.--"
+export function displayDollarsTruncated(val: BigNumber | undefined | string | number, displayZero = true) {
+  let truncatedNumber
+  let symbol = ""
+  let decimals = 0
+
+  const NUMBER_SYMBOLS = {
+    B: 1000000000,
+    M: 1000000,
+    k: 1000,
+    "": 1,
+  }
 
   let valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
 
-  if (valFloat === 0) return "$0"
-  else if (valFloat >= 1000000) {
-    return `${displayDollars(valFloat / 1000000, decimals)}M`
-  } else if (valFloat >= 1000) {
-    return `${displayDollars(valFloat / 1000, decimals)}k`
-  } else return displayDollars(val, decimals)
+  if (valFloat === 0) return displayDollars(0, 0, displayZero)
+
+  for (let key of Object.keys(NUMBER_SYMBOLS)) {
+    if (Math.abs(valFloat) >= NUMBER_SYMBOLS[key]) {
+      truncatedNumber = valFloat / NUMBER_SYMBOLS[key]
+      symbol = key
+      break
+    }
+  }
+
+  // if not an integer, set to show 2 decimal places
+  if (truncatedNumber % 1 !== 0) decimals = 2
+
+  return `${displayDollars(truncatedNumber, decimals, displayZero)}${symbol}`
 }
 
 export function roundUpPenny(val) {

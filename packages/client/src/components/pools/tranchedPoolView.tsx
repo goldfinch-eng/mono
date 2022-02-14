@@ -28,7 +28,7 @@ import {
   assertNonNullable,
   BlockInfo,
   croppedAddress,
-  displayAbbreviated,
+  displayDollarsTruncated,
   displayDollars,
   displayPercent,
   roundDownPenny,
@@ -752,10 +752,12 @@ function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) 
           <td>{tx.name}</td>
           <td>{moment.unix(tx.timestamp).format("MMM D")}</td>
           <td className="numeric">
-            {isMobile ? displayAbbreviated(usdcFromAtomic(amount)) : displayDollars(usdcFromAtomic(amount))}
+            {isMobile ? displayDollarsTruncated(usdcFromAtomic(amount)) : displayDollars(usdcFromAtomic(amount))}
           </td>
           <td className="numeric">
-            {isMobile ? displayAbbreviated(usdcFromAtomic(yourPortion)) : displayDollars(usdcFromAtomic(yourPortion))}
+            {isMobile
+              ? displayDollarsTruncated(usdcFromAtomic(yourPortion), true)
+              : displayDollars(usdcFromAtomic(yourPortion))}
           </td>
           <td className="transaction-link">
             <a
