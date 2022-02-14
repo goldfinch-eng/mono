@@ -51,7 +51,7 @@ const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
-import {BaseContract, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
+import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
@@ -564,24 +564,37 @@ export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<strin
   expectRoles(expectations)
 }
 
-export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 1000000): Promise<ContractReceipt[]> {
+export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_000): Promise<ContractReceipt[]> {
+  const error = new Error(
+    `Failed to mine transactions under ${timeout} ms. Is your tx using too much gas for one block?`
+  )
   // disable automine so that the transactions all enter the mempool
   await ethers.provider.send("evm_setAutomine", [false])
 
+  const handle = setTimeout(() => {
+    ethers.provider.send("evm_setAutomine", [true]).then(() => {
+      throw error
+    })
+  }, timeout)
+
   const receipts: ContractTransaction[] = []
-  for (const tx of txs) {
+  for (let tx of txs) {
     const signer = await ethers.getSigner(tx.from as string)
+
+    tx = {
+      ...tx,
+      gasLimit: BigNumber.from("2000000"),
+    }
 
     const receipt = await signer.sendTransaction(tx)
     receipts.push(receipt)
   }
 
-  const values = await Promise.all([
-    ethers.provider.send("evm_mine", []),
-    ethers.provider.send("evm_setAutomine", [true]),
-    ...receipts.map((tx) => tx.wait()),
-  ])
-  return values.slice(2)
+  const values = await Promise.all([ethers.provider.send("evm_mine", []), ...receipts.map((tx) => tx.wait())])
+  clearTimeout(handle)
+
+  await ethers.provider.send("evm_setAutomine", [true])
+  return values.slice(1)
 }
 
 export function dbg<T>(x: T): T {
