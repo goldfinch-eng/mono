@@ -4,9 +4,9 @@ import {render, screen, fireEvent} from "@testing-library/react"
 import NetworkWidget from "../../components/networkWidget"
 import {UserLoaded} from "../../ethereum/user"
 
-function renderNetworkWidget(sessionData, address) {
+function renderNetworkWidget(sessionData, address, userWalletWeb3Status) {
   let store = {
-    userWalletWeb3Status: {
+    userWalletWeb3Status: userWalletWeb3Status ?? {
       type: "connected",
       networkName: "localhost",
       address,
@@ -45,16 +45,49 @@ function renderNetworkWidget(sessionData, address) {
 }
 
 describe("network widget sign in", () => {
+  it("shows metamask btn and I don't have a wallet btn", async () => {
+    renderNetworkWidget(undefined, undefined, {
+      type: "no_web3",
+      networkName: undefined,
+      address: undefined,
+    })
+    expect(screen.getByText("MetaMask")).toBeInTheDocument()
+    expect(screen.getByText("I don't have a wallet")).toBeInTheDocument()
+  })
+
+  it("shows modal with: you don’t have Metamask installed", async () => {
+    renderNetworkWidget(undefined, undefined, {
+      type: "no_web3",
+      networkName: "localhost",
+      address: undefined,
+    })
+    fireEvent.click(screen.getByText("Connect Wallet"))
+    fireEvent.click(screen.getByText("MetaMask"))
+    expect(screen.getByText("Looks like you don’t have Metamask installed.", {exact: false})).toBeInTheDocument()
+    expect(screen.getByText("Install MetaMask")).toBeInTheDocument()
+    expect(screen.getByText("Back to wallets")).toBeInTheDocument()
+  })
+
   it("shows modal with terms of service", async () => {
+    renderNetworkWidget(undefined, undefined, {
+      type: "has_web3",
+      networkName: "localhost",
+      address: undefined,
+    })
+    fireEvent.click(screen.getByText("Connect Wallet"))
+    expect(screen.getByText("Terms of Service")).toBeInTheDocument()
+    expect(screen.getByText("MetaMask")).toBeInTheDocument()
+  })
+
+  it("shows modal with connect btn", async () => {
     ;(global.window as any).ethereum = jest.fn()
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget(undefined, "0x000")
+    renderNetworkWidget(undefined, "0x000", undefined)
 
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'HTMLElement | undefined' is not ... Remove this comment to see the full error message
-    fireEvent.click(screen.getAllByText("Connect Metamask")[0])
-    expect(screen.getByText("Terms of Service")).toBeInTheDocument()
+    fireEvent.click(screen.getByText("Connect Wallet"))
+    expect(screen.getByText("Connect")).toBeInTheDocument()
   })
 
   it("shows connect with metamask if session data is invalid", async () => {
@@ -62,8 +95,8 @@ describe("network widget sign in", () => {
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget(undefined, "0x000")
-    expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
+    renderNetworkWidget(undefined, "0x000", undefined)
+    expect(screen.getByText("Connect Wallet")).toBeInTheDocument()
   })
 
   it("shows signed in with correct session data", async () => {
@@ -74,7 +107,8 @@ describe("network widget sign in", () => {
 
     renderNetworkWidget(
       {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
-      "0x000"
+      "0x000",
+      undefined
     )
     expect(screen.getByText("USDC balance")).toBeInTheDocument()
   })
@@ -87,9 +121,10 @@ describe("network widget sign in", () => {
 
     renderNetworkWidget(
       {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
-      ""
+      "",
+      undefined
     )
-    expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
+    expect(screen.getAllByText("Connect Wallet")[0]).toBeInTheDocument()
   })
 
   it("shows connect with metamask with missing signature", async () => {
@@ -97,7 +132,41 @@ describe("network widget sign in", () => {
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
-    renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519}, "0x000")
-    expect(screen.getAllByText("Connect Metamask")[0]).toBeInTheDocument()
+    renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519}, "0x000", undefined)
+    expect(screen.getAllByText("Connect Wallet")[0]).toBeInTheDocument()
+  })
+
+  it("shows I don't have a wallet button when user is not connected", async () => {
+    renderNetworkWidget(undefined, undefined, {
+      type: "has_web3",
+      networkName: "localhost",
+      address: undefined,
+    })
+    expect(screen.getByText("I don't have a wallet")).toBeInTheDocument()
+  })
+
+  it("shows Install MetaMask suggestion when user is not connected", async () => {
+    renderNetworkWidget(undefined, undefined, {
+      type: "has_web3",
+      networkName: "localhost",
+      address: undefined,
+    })
+    fireEvent.click(screen.getByText("I don't have a wallet"))
+    expect(screen.getByText("Install MetaMask")).toBeInTheDocument()
+    expect(screen.getByText("Back to wallets")).toBeInTheDocument()
+  })
+
+  it("shows Add GFI token to wallet when user is connected", async () => {
+    ;(global.window as any).ethereum = jest.fn()
+    ;(global.window as any).ethereum.request = () => {
+      return Promise.resolve()
+    }
+
+    renderNetworkWidget(
+      {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
+      "0x000",
+      undefined
+    )
+    expect(screen.getByText("Add GFI token to wallet")).toBeInTheDocument()
   })
 })
