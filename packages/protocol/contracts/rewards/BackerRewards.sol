@@ -99,14 +99,24 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 accumulatedRewardsPerTokenAtLastWithdraw;
   }
 
-  uint256 public totalRewards; // total amount of GFI rewards available, times 1e18
-  uint256 public maxInterestDollarsEligible; // interest $ eligible for gfi rewards, times 1e18
-  uint256 public totalInterestReceived; // counter of total interest repayments, times 1e6
-  uint256 public totalRewardPercentOfTotalGFI; // totalRewards/totalGFISupply, times 1e18
+  /// @notice total amount of GFI rewards available, times 1e18
+  uint256 public totalRewards;
 
-  mapping(uint256 => BackerRewardsTokenInfo) public tokens; // poolTokenId -> BackerRewardsTokenInfo
+  /// @notice interest $ eligible for gfi rewards, times 1e18
 
-  mapping(address => BackerRewardsInfo) public pools; // pool.address -> BackerRewardsInfo
+  uint256 public maxInterestDollarsEligible;
+
+  /// @notice counter of total interest repayments, times 1e6
+  uint256 public totalInterestReceived;
+
+  /// @notice totalRewards/totalGFISupply, times 1e18
+  uint256 public totalRewardPercentOfTotalGFI;
+
+  /// @notice poolTokenId -> BackerRewardsTokenInfo
+  mapping(uint256 => BackerRewardsTokenInfo) public tokens;
+
+  /// @notice pool.address -> BackerRewardsInfo
+  mapping(address => BackerRewardsInfo) public pools;
 
   /// @notice Staking rewards info for each pool
   mapping(ITranchedPool => StakingRewardsPoolInfo) public poolStakingRewards; // pool.address -> StakingRewardsPoolInfo
@@ -133,7 +143,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
     // NOTE(PR): making this overwrite behavior to make it so that we have
     //           an escape hatch in case the incorrect value is set for some reason
-    bool sliceHasAlreadyBeenInitialized = poolInfo.slicesInfo.length == 0;
+    bool sliceHasAlreadyBeenInitialized = poolInfo.slicesInfo.length != 0;
 
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = rewardsAccumulatorAtDrawdown;
     StakingRewardsSliceInfo memory sliceInfo = _initializeStakingRewardsSliceInfo(
@@ -154,7 +164,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    *          when a interest payment is received by the protocol
    * @param _interestPaymentAmount The amount of total dollars the interest payment, expects 10^6 value
    */
-  function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool {
+  function allocateRewards(uint256 _interestPaymentAmount) external override onlyPool nonReentrant {
     // note: do not use a require statment because that will TranchedPool kill execution
     if (_interestPaymentAmount > 0) {
       _allocateRewards(_interestPaymentAmount);
@@ -211,6 +221,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     tokens[tokenId].accRewardsPerPrincipalDollarAtMint = pools[tokenInfo.pool].accRewardsPerPrincipalDollar;
   }
 
+  /// @notice callback for TranchedPools when they drawdown
+  /// @dev initializes rewards info for the calling TranchedPool
   function onTranchedPoolDrawdown(uint256 sliceIndex) external override onlyPool nonReentrant {
     ITranchedPool pool = ITranchedPool(_msgSender());
     IStakingRewards stakingRewards = _getUpdatedStakingRewards();
@@ -295,7 +307,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    * @notice PoolToken request to withdraw all allocated rewards
    * @param tokenId Pool token id
    */
-  function withdraw(uint256 tokenId) public nonReentrant {
+  function withdraw(uint256 tokenId) public whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
@@ -489,9 +501,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
     StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
 
-    uint256 newaccumulatedRewardsPerTokenAtLastWithdraw = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
+    uint256 newAccumulatedRewardsPerTokenAtLastWithdraw = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
 
-    tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw = newaccumulatedRewardsPerTokenAtLastWithdraw;
+    tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw = newAccumulatedRewardsPerTokenAtLastWithdraw;
   }
 
   /**
@@ -588,15 +600,21 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return amount.mul(_gfiMantissa()).div(_usdcMantissa());
   }
 
+  /// @notice Returns the amount of gfi with usdc base
   function _atomicToUsdc(uint256 amount) internal pure returns (uint256) {
     return amount.div(_gfiMantissa().div(_usdcMantissa()));
   }
 
+  /// @notice Returns the equivalent amount of USDC given an amount of fidu and a share price
+  /// @param amount amount of FIDU
+  /// @param sharePrice share price of FIDU
+  /// @return equivalent amount of USDC
   function _fiduToUsdc(uint256 amount, uint256 sharePrice) internal pure returns (uint256) {
     return _usdcToAtomic(amount).mul(_gfiMantissa()).div(sharePrice);
   }
 
   /// @notice Returns the junior tranche id for the given slice index
+  /// @param index slice index
   /// @return junior tranche id of given slice index
   function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint256) {
     /// TODO(PR): this should move to tranching logic
@@ -604,6 +622,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /// @notice Returns the slice index for the given junior tranche id
+  /// @param trancheId tranche id
   /// @return slice index that the given tranche id belongs to
   function _juniorTrancheIdToSliceIndex(uint256 trancheId) internal pure returns (uint256) {
     /// TODO(PR): this should move to tranching logic
@@ -626,12 +645,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return stakingRewards;
   }
 
-  /// @notice Returns true if a TranchedPool's rewards paramters have been initialized, otherwise false
+  /// @notice Returns true if a TranchedPool's rewards parameters have been initialized, otherwise false
+  /// @param pool pool to check rewards info
   function _poolRewardsHaveBeenInitialized(ITranchedPool pool) internal view returns (bool) {
     return poolStakingRewards[pool].accumulatedRewardsPerTokenAtLastCheckpoint != 0;
   }
 
   /// @notice Returns true if a given pool's staking rewards parameters have been initialized
+  /// @param poolInfo
   function _poolStakingRewardsInfoHaveBeenInitialized(StakingRewardsPoolInfo calldata poolInfo)
     internal
     pure
@@ -686,6 +707,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /// @notice Return the amount of principal currently deployed in a given slice
+  /// @param tranche tranche to get principal outstanding of
   function _getPrincipalDeployedForTranche(ITranchedPool.TrancheInfo memory tranche) internal pure returns (uint256) {
     // TODO(PR): this should live in tranching logic
     return

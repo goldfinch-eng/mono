@@ -155,8 +155,9 @@
         "**/BackerRewards.sol:BackerRewards": {
           "allocateRewards": ["onlyPool"],
           "setPoolTokenAccRewardsPerPrincipalDollarAtMint": [],
-          "onTranchedPoolDrawdown": ["onlyPool"],
-          "withdraw": [],
+          "onTranchedPoolDrawdown": ["onlyPool", "nonReentrant"],
+          "forceIntializeStakingRewardsPoolInfo": ["onlyAdmin"],
+          "withdraw": ["nonReentrant"],
           "withdrawMultiple": []
         },
         "**/MerkleDirectDistributor.sol:MerkleDirectDistributor": {
