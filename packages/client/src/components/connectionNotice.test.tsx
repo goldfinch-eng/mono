@@ -44,6 +44,9 @@ const scenarios: Scenario[] = [
   {
     devName: "install_metamask",
     setUpMatch: ({store}) => {
+      ;(global.window as any).resq = {
+        ethereum: jest.fn().mockImplementation(() => undefined),
+      }
       store.userWalletWeb3Status = noWeb3
     },
     setUpFallthrough: ({store}) => {
@@ -196,6 +199,9 @@ describe("ConnectionNotice", () => {
   let wrapper: React.FunctionComponent
 
   beforeEach(async () => {
+    ;(global.window as any).ethereum = {
+      ethereum: jest.fn().mockImplementation(() => {}),
+    }
     let network = {name: "mainnet", supported: true}
     let goldfinchProtocol = new GoldfinchProtocol(network)
     await goldfinchProtocol.initialize()
