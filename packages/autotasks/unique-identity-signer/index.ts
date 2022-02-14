@@ -84,7 +84,7 @@ export async function handler(event: HandlerParams) {
   return await main({signer, auth: auth, network, uniqueIdentity})
 }
 
-async function getIDType({
+export async function getIDType({
   address,
   uniqueIdentity,
   kycStatus,
@@ -147,8 +147,10 @@ export async function main({
     uniqueIdentity,
     kycStatus,
   })
+  console.log("idVersion", idVersion.toString())
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
+  console.log({signParams})
   const encoded = pack(signTypes, signParams)
   const hashed = keccak256(encoded)
   const signature = await signer.signMessage(ethers.utils.arrayify(hashed))

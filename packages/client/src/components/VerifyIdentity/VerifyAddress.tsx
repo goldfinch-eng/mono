@@ -12,7 +12,6 @@ import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
-import {isAccredited} from "@goldfinch-eng/autotasks/unique-identity-signer/isAccredited"
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
   return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)

@@ -17,6 +17,8 @@ import LoadingButton from "../loadingButton"
 import {Action, END, US_COUNTRY_CODE} from "./constants"
 import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
+import {isAccredited} from "@goldfinch-eng/autotasks/unique-identity-signer/isAccredited"
+import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
@@ -119,8 +121,12 @@ export default function CreateUID({
       let version: string = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
       try {
         const response = await client.fetchKYCStatus(userAddress)
-        if (response.ok && response.json.countryCode === US_COUNTRY_CODE) {
-          version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+        if (response.ok) {
+          getIDType({
+            address: userAddress,
+            uniqueIdentity,
+            kycStatus: response.json,
+          })
         }
       } catch (err: unknown) {
         setErrored(true)
