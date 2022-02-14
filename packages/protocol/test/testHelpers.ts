@@ -613,9 +613,9 @@ export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_0
       receipts.push(receipt)
     }
     await ethers.provider.send("evm_mine", [])
-    const values = await Promise.all([rejectAfterTimeout, ...receipts.map((tx) => tx.wait())])
+    const values = await Promise.race([Promise.all(receipts.map((tx) => tx.wait())), rejectAfterTimeout])
     clearTimeout(handle)
-    return values.slice(1) as ContractReceipt[]
+    return values as ContractReceipt[]
   } finally {
     // we need to make sure we turn auto mining back on in case of a failure
     // otherwise it'll make every transaction globally timeout
