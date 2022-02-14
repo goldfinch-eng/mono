@@ -9,9 +9,9 @@ import "@uniswap/lib/contracts/libraries/Babylonian.sol";
 
 import "../library/SafeERC20Transfer.sol";
 import "../protocol/core/ConfigHelper.sol";
-import "../rewards/StakingRewards.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../interfaces/IPoolTokens.sol";
+import "../interfaces/IStakingRewards.sol";
 import "../interfaces/ITranchedPool.sol";
 import "../interfaces/IBackerRewards.sol";
 import "../interfaces/ISeniorPool.sol";
@@ -45,7 +45,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 accRewardsPerPrincipalDollarAtMint; // Pool's accRewardsPerPrincipalDollar at PoolToken mint()
   }
 
-  struct StakingRewardsInfo {
+  struct StakingRewardsPoolInfo {
     // TODO(PR): docstring
     uint256 accumulatedRewardsPerTokenAtLastCheckpoint;
     // TODO(PR): docstring
@@ -56,6 +56,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   struct StakingRewardsSliceInfo {
     // the share price when the pool draws down
+
     uint256 fiduSharePriceAtDrawdown;
     // we use this to scale the rewards accumulator by taking
     // dividing it by the total amount of principal that was drawndown
@@ -95,7 +96,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   mapping(address => BackerRewardsInfo) public pools; // pool.address -> BackerRewardsInfo
 
-  mapping(ITranchedPool => StakingRewardsInfo) public poolStakingRewards; // pool.address -> StakingRewardsInfo
+  mapping(ITranchedPool => StakingRewardsPoolInfo) public poolStakingRewards; // pool.address -> StakingRewardsPoolInfo
 
   mapping(uint256 => StakingRewardsTokenInfo) public tokenStakingRewards;
 
@@ -172,8 +173,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   function onTranchedPoolDrawdown(uint256 sliceIndex) external override onlyPool {
     ITranchedPool pool = ITranchedPool(_msgSender());
-    StakingRewards stakingRewards = _checkpointAndGetStakingRewards();
-    StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
+    IStakingRewards stakingRewards = _checkpointAndGetStakingRewards();
+    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
     ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
     uint256 newRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
 
@@ -297,7 +298,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       return 0;
     }
 
-    StakingRewardsInfo memory poolInfo = poolStakingRewards[pool];
+    StakingRewardsPoolInfo memory poolInfo = poolStakingRewards[pool];
     StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
     StakingRewardsTokenInfo memory tokenInfo = tokenStakingRewards[tokenId];
 
@@ -342,7 +343,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // TODO(PR): clarify that only accruing rewards on full repayments is the desired behavior
     //            if we dont do this, a borrower could repay 1 atom and accrue rewards for all backers
     IV2CreditLine cl = pool.creditLine();
-    // TODO(PR): validate this logic
     bool wasFullRepayment = cl.lastFullPaymentTime() <= block.timestamp &&
       cl.principalOwed() == 0 &&
       cl.interestOwed() == 0;
@@ -357,9 +357,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    * @param pool pool to checkpoint
    */
   function _checkpointPoolStakingRewards(ITranchedPool pool, bool publish) internal {
-    StakingRewards stakingRewards = _checkpointAndGetStakingRewards();
+    IStakingRewards stakingRewards = _checkpointAndGetStakingRewards();
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-    StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
+    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
 
     // iterate through all of the slices and checkpoint
     for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
@@ -384,9 +384,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 sliceIndex,
     bool publish
   ) internal {
-    StakingRewardsInfo storage poolInfo = poolStakingRewards[pool];
+    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
     StakingRewardsSliceInfo storage sliceInfo = poolInfo.slicesInfo[sliceIndex];
-    StakingRewards stakingRewards = _checkpointAndGetStakingRewards();
+    IStakingRewards stakingRewards = _checkpointAndGetStakingRewards();
     ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
@@ -441,7 +441,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
-    StakingRewardsInfo memory poolInfo = poolStakingRewards[pool];
+    StakingRewardsPoolInfo memory poolInfo = poolStakingRewards[pool];
     uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
     StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
 
@@ -560,8 +560,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return trancheId.sub(1).div(2);
   }
 
-  function _checkpointAndGetStakingRewards() internal returns (StakingRewards) {
-    StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
+  function _checkpointAndGetStakingRewards() internal returns (IStakingRewards) {
+    IStakingRewards stakingRewards = IStakingRewards(config.stakingRewardsAddress());
     if (stakingRewards.lastUpdateTime() != block.timestamp) {
       // NOTE(PR): in another version of this, I created an explicit
       // "updateRewards" function for staking rewards that is functionally
@@ -583,7 +583,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   function _getSliceAccumulatorAtLastCheckpoint(
     StakingRewardsSliceInfo memory sliceInfo,
-    StakingRewardsInfo memory poolInfo
+    StakingRewardsPoolInfo memory poolInfo
   ) internal pure returns (uint256) {
     bool sliceHasNotReceivedAPayment = sliceInfo.accumulatedRewardsPerTokenAtLastCheckpoint == 0;
     return
