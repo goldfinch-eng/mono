@@ -1,4 +1,12 @@
 {
+  "0xd09a57127bc40d680be7cb061c2a6629fe71abef": {
+    "name": "Cauris Fintech Pool #2",
+    "category": "Global multi-sector loans",
+    "description": "Cauris is a mission driven company that applies advanced technology to solve financial issues while providing high risk adjusted returns to its investors.\n\nWe aim to give 100 million more people access to capital. We believe that access to credit is key to empowering individuals and enabling economic growth.\n\nAt Cauris, we believe that fintech is the fastest way to efficiently connect millions to financial services, and that DeFi provides a unique opportunity to democratize and lower the cost of financing.\n\nDriven by this mission, we are finding the best-in class fintechs operating in international markets which are providing working capital and access to financing to consumers and SMEs.\n\nWe use a combination of strong underwriting, legal protections and advanced analytics to secure our debt investments in those fintechs.",
+    "icon": "%PUBLIC_URL%/icons/cauris.png",
+    "agreement": "<TODO>",
+    "launchTime": 1645027200
+  },
   "0x00c27fc71b159a346e179b4a1608a0865e8a7470": {
     "name": "Fintech yield pool via Stratos",
     "category": "Global multi-sector loans",
