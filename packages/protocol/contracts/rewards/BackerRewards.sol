@@ -295,7 +295,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    * @notice PoolToken request to withdraw all allocated rewards
    * @param tokenId Pool token id
    */
-  function withdraw(uint256 tokenId) public {
+  function withdraw(uint256 tokenId) public nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
