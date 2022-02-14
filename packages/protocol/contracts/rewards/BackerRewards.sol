@@ -129,7 +129,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
     totalRewards = _totalRewards;
     uint256 totalGFISupply = config.getGFI().totalSupply();
-    totalRewardPercentOfTotalGFI = _totalRewards.mul(mantissa()).div(totalGFISupply).mul(100);
+    totalRewardPercentOfTotalGFI = _totalRewards.mul(_gfiMantissa()).div(totalGFISupply).mul(100);
     emit BackerRewardsSetTotalRewards(_msgSender(), _totalRewards, totalRewardPercentOfTotalGFI);
   }
 
@@ -220,7 +220,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 diffOfAccRewardsPerPrincipalDollar = pools[tokenInfo.pool].accRewardsPerPrincipalDollar.sub(
       tokens[tokenId].accRewardsPerPrincipalDollarAtMint
     );
-    uint256 rewardsClaimed = tokens[tokenId].rewardsClaimed.mul(mantissa());
+    uint256 rewardsClaimed = tokens[tokenId].rewardsClaimed.mul(_gfiMantissa());
 
     /*
       equation for token claimable rewards:
@@ -230,8 +230,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     */
 
     return
-      usdcToAtomic(tokenInfo.principalAmount).mul(diffOfAccRewardsPerPrincipalDollar).sub(rewardsClaimed).div(
-        mantissa()
+      _usdcToAtomic(tokenInfo.principalAmount).mul(diffOfAccRewardsPerPrincipalDollar).sub(rewardsClaimed).div(
+        _gfiMantissa()
       );
   }
 
@@ -305,13 +305,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 tokenAccumulator = _getTokenAccumulatorAtLastCheckpoint(tokenInfo, sliceInfo);
     uint256 rewardsPerFidu = sliceAccumulator.sub(tokenAccumulator);
     uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
-    return principalAsFidu.mul(rewardsPerFidu).div(mantissa());
+    return principalAsFidu.mul(rewardsPerFidu).div(_gfiMantissa());
   }
 
   /* Internal functions  */
   function _allocateRewards(uint256 _interestPaymentAmount) internal {
     uint256 _totalInterestReceived = totalInterestReceived;
-    if (usdcToAtomic(_totalInterestReceived) >= maxInterestDollarsEligible) {
+    if (_usdcToAtomic(_totalInterestReceived) >= maxInterestDollarsEligible) {
       return;
     }
 
@@ -330,7 +330,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(
-      newGrossRewards.mul(mantissa()).div(usdcToAtomic(totalJuniorDeposits))
+      newGrossRewards.mul(_gfiMantissa()).div(_usdcToAtomic(totalJuniorDeposits))
     );
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
@@ -403,23 +403,23 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       uint256 timeRemainingInTermAtLastRepayment = termEndTime.sub(lastUpdatetime);
 
       // TODO(PR): simplify this math
-      decayScalingFactor = timeRemainingInTermAtLastRepayment.mul(mantissa()).mul(mantissa()).div(
-        timeSinceLastRepayment.mul(mantissa())
+      decayScalingFactor = timeRemainingInTermAtLastRepayment.mul(_gfiMantissa()).mul(_gfiMantissa()).div(
+        timeSinceLastRepayment.mul(_gfiMantissa())
       );
     }
 
     uint256 newPrincipalDeployed = _getPrincipalDeployedForTranche(juniorTranche);
 
     // the percentage we need to scale the rewards accumualated by
-    uint256 deployedScalingFactor = usdcToAtomic(
-      sliceInfo.principalDeployedAtLastCheckpoint.mul(usdcMantissa()).div(juniorTranche.principalDeposited)
+    uint256 deployedScalingFactor = _usdcToAtomic(
+      sliceInfo.principalDeployedAtLastCheckpoint.mul(_usdcMantissa()).div(juniorTranche.principalDeposited)
     );
 
     uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint
       .mul(deployedScalingFactor)
-      .div(mantissa())
+      .div(_gfiMantissa())
       .mul(decayScalingFactor)
-      .div(mantissa());
+      .div(_gfiMantissa());
 
     sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
       .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint
@@ -462,15 +462,15 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 totalGFISupply = config.getGFI().totalSupply();
 
     // incoming interest payment, times * 1e18 divided by 1e6
-    uint256 interestPaymentAmount = usdcToAtomic(_interestPaymentAmount);
+    uint256 interestPaymentAmount = _usdcToAtomic(_interestPaymentAmount);
 
     // all-time interest payments prior to the incoming amount, times 1e18
-    uint256 _previousTotalInterestReceived = usdcToAtomic(totalInterestReceived);
+    uint256 _previousTotalInterestReceived = _usdcToAtomic(totalInterestReceived);
     uint256 sqrtOrigTotalInterest = Babylonian.sqrt(_previousTotalInterestReceived);
 
     // sum of new interest payment + previous total interest payments, times 1e18
-    uint256 newTotalInterest = usdcToAtomic(
-      atomicToUSDC(_previousTotalInterestReceived).add(atomicToUSDC(interestPaymentAmount))
+    uint256 newTotalInterest = _usdcToAtomic(
+      _atomicToUsdc(_previousTotalInterestReceived).add(_atomicToUsdc(interestPaymentAmount))
     );
 
     // interest payment passed the maxInterestDollarsEligible cap, should only partially be rewarded
@@ -513,17 +513,17 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       .div(sqrtMaxInterestDollarsEligible)
       .div(100)
       .mul(totalGFISupply)
-      .div(mantissa());
+      .div(_gfiMantissa());
 
     // Extra safety check to make sure the logic is capped at a ceiling of potential rewards
     // Calculating the gfi/$ for first dollar of interest to the protocol, and multiplying by new interest amount
     uint256 absoluteMaxGfiCheckPerDollar = Babylonian
-      .sqrt((uint256)(1).mul(mantissa()))
+      .sqrt((uint256)(1).mul(_gfiMantissa()))
       .mul(totalRewardPercentOfTotalGFI)
       .div(sqrtMaxInterestDollarsEligible)
       .div(100)
       .mul(totalGFISupply)
-      .div(mantissa());
+      .div(_gfiMantissa());
     require(
       newGrossRewards < absoluteMaxGfiCheckPerDollar.mul(newTotalInterest),
       "newGrossRewards cannot be greater then the max gfi per dollar"
@@ -532,24 +532,24 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return newGrossRewards;
   }
 
-  function mantissa() internal pure returns (uint256) {
+  function _gfiMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(18);
   }
 
-  function usdcMantissa() internal pure returns (uint256) {
+  function _usdcMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(6);
   }
 
-  function usdcToAtomic(uint256 amount) internal pure returns (uint256) {
-    return amount.mul(mantissa()).div(usdcMantissa());
+  function _usdcToAtomic(uint256 amount) internal pure returns (uint256) {
+    return amount.mul(_gfiMantissa()).div(_usdcMantissa());
   }
 
-  function atomicToUSDC(uint256 amount) internal pure returns (uint256) {
-    return amount.div(mantissa().div(usdcMantissa()));
+  function _atomicToUsdc(uint256 amount) internal pure returns (uint256) {
+    return amount.div(_gfiMantissa().div(_usdcMantissa()));
   }
 
   function _fiduToUsdc(uint256 amount, uint256 sharePrice) internal pure returns (uint256) {
-    return usdcToAtomic(amount).mul(mantissa()).div(sharePrice);
+    return _usdcToAtomic(amount).mul(_gfiMantissa()).div(sharePrice);
   }
 
   function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint256) {
@@ -616,7 +616,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // TODO(PR): this should live in tranching logic
     return
       tranche.principalDeposited.sub(
-        atomicToUSDC(tranche.principalSharePrice.mul(usdcToAtomic(tranche.principalDeposited)).div(mantissa()))
+        _atomicToUsdc(tranche.principalSharePrice.mul(_usdcToAtomic(tranche.principalDeposited)).div(_gfiMantissa()))
       );
   }
 
