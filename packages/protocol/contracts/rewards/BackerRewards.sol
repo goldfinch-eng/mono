@@ -563,7 +563,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function _checkpointAndGetStakingRewards() internal returns (StakingRewards) {
     StakingRewards stakingRewards = StakingRewards(config.stakingRewardsAddress());
     if (stakingRewards.lastUpdateTime() != block.timestamp) {
-      stakingRewards.updateRewards();
+      // NOTE(PR): in another version of this, I created an explicit
+      // "updateRewards" function for staking rewards that is functionally
+      // identical to this function. However I removed it because I didn't
+      // beleive the the cost of deploying staking rewards again was worth it.
+      // Calling this function triggers an update on StakingRewards
+      stakingRewards.kick(0);
     }
     return stakingRewards;
   }
