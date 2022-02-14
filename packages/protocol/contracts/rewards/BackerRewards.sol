@@ -51,7 +51,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // @notice last time the rewards info was updated
     //
     // we need this in order to know how much to pro rate rewards after the term is over.
-    uint256 lastUpdatetime;
+    uint256 lastUpdateTime;
     // @notice staking rewards parameters for each slice of the tranched pool
     StakingRewardsSliceInfo[] slicesInfo;
   }
@@ -422,7 +422,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       _checkpointSliceStakingRewards(pool, sliceIndex, publish);
     }
 
-    poolInfo.lastUpdatetime = block.timestamp;
+    poolInfo.lastUpdateTime = block.timestamp;
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newStakingRewardsAccumulator;
   }
 
@@ -444,9 +444,22 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     IStakingRewards stakingRewards = _getUpdatedStakingRewards();
     ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
-    uint256 rewardsAccumulatedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
+    uint256 rewardsAccruedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
+
+    // We pro rate rewards if we're beyond the term date by approximating
+    // taking the current reward rate and multiplying it by the time
+    // that we left in the term divided by the time since we last updated
+    bool shouldProRate = block.timestamp > pool.creditLine().termEndTime();
+    if (shouldProRate) {
+      rewardsAccruedSinceLastCheckpoint = _calculateProRatedRewardsForPeriod(
+        rewardsAccruedSinceLastCheckpoint,
+        poolInfo.lastUpdateTime,
+        block.timestamp,
+        pool.creditLine().termEndTime()
+      );
+    }
 
     uint256 newPrincipalDeployed = _getPrincipalDeployedForTranche(juniorTranche);
 
@@ -455,28 +468,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       sliceInfo.principalDeployedAtLastCheckpoint.mul(_usdcMantissa()).div(juniorTranche.principalDeposited)
     );
 
-    uint256 scaledRewardsForPeriod = rewardsAccumulatedSinceLastCheckpoint.mul(deployedScalingFactor).div(
-      _gfiMantissa()
-    );
-
-    // We pro rate rewards if we're beyond the term date by approximating
-    // taking the current reward rate and multiplying it by the time
-    // that we left in the term divided by the time since we last updated
-    bool shouldProRate = block.timestamp > pool.creditLine().termEndTime();
-    if (shouldProRate) {
-      uint256 termEndTime = pool.creditLine().termEndTime();
-      uint256 lastUpdatetime = poolInfo.lastUpdatetime;
-      uint256 timeSinceLastRepayment = block.timestamp.sub(lastUpdatetime);
-      uint256 timeRemainingInTermAtLastRepayment = termEndTime.sub(lastUpdatetime);
-
-      // TODO(PR): simplify this math(?)
-      // percentage (base 1e18) to decrease pro-rate rewards based on the
-      uint256 decayScalingFactor = timeRemainingInTermAtLastRepayment.mul(_gfiMantissa()).mul(_gfiMantissa()).div(
-        timeSinceLastRepayment.mul(_gfiMantissa())
-      );
-
-      scaledRewardsForPeriod = scaledRewardsForPeriod.mul(decayScalingFactor).div(_gfiMantissa());
-    }
+    uint256 scaledRewardsForPeriod = rewardsAccruedSinceLastCheckpoint.mul(deployedScalingFactor).div(_gfiMantissa());
 
     sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
       .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint
@@ -729,6 +721,21 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
         accumulatedRewardsPerTokenAtLastCheckpoint: rewardsAccumulatorAtDrawdown,
         unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint: rewardsAccumulatorAtDrawdown
       });
+  }
+
+  function _calculateProRatedRewardsForPeriod(
+    uint256 rewardsAccruedSinceLastCheckpoint,
+    uint256 lastUpdatedTime,
+    uint256 currentTime,
+    uint256 endTime
+  ) internal view returns (uint256) {
+    uint256 slopeNumerator = rewardsAccruedSinceLastCheckpoint.mul(_gfiMantissa());
+    uint256 slopeDivisor = currentTime.sub(lastUpdatedTime);
+
+    uint256 slope = slopeNumerator.div(slopeDivisor);
+    uint256 span = endTime.sub(lastUpdatedTime);
+    uint256 rewards = slope.mul(span).div(_gfiMantissa());
+    return rewards;
   }
 
   function updateGoldfinchConfig() external onlyAdmin {

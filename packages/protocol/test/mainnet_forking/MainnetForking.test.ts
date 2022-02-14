@@ -678,7 +678,6 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("BackerRewards", () => {
-    const highTolerance = "10000000000000000" // 1e16
     const microTolerance = "100000" // 1e5
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
@@ -774,18 +773,14 @@ describe("mainnet forking tests", async function () {
       // person we dont care about but is participating in the pool to make sure
       // that other people are receieving staking rewards
 
-      const [, tx0] = await mineInSameBlock([
+      const [, stakingTx] = await mineInSameBlock([
         await stakingRewardsEthers.populateTransaction.depositAndStake(untrackedStakedAmount.toString()),
         await stakingRewardsEthers.populateTransaction.depositAndStake(trackedStakedAmount.toString()),
         await bwrCon.populateTransaction.drawdown(tranchedPool.address, limit.toString(), bwr),
       ])
-      const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(tx0 as ContractReceipt)
+      const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
       const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
-      // run through each payment interval and assert that the stakingRewards earned
-      // and the backer staking rewards are _pretty much_ equal. Right now theres some drift (1e-5) because
-      // the transactions not getting mined in the same block. To get full accuracy we need to figure out
-      // how to mine all of the transactions in the same block.
       for (let i = 0; i < numberOfPaymentIntervals; i++) {
         await advanceTime({days: paymentPeriodInDays.toFixed()})
         await tranchedPool.assess()
@@ -830,10 +825,7 @@ describe("mainnet forking tests", async function () {
         await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
           blockTag: paymentTx.blockNumber,
         })
-      expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.closeTo(
-        String(stakingRewardsAtTermEnd),
-        highTolerance
-      )
+      expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.eq(String(stakingRewardsAtTermEnd))
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
@@ -895,8 +887,6 @@ describe("mainnet forking tests", async function () {
       const secondStakedAmount = firstStakedAmount.div(new BN("2")) // 1 / 4
       const secondUntrackedStakedAmount = firstUntrackedStakedAmount.div(new BN("2")) // 1 / 4
       const secondDrawdownAmount = limit.div(new BN("4"))
-      // FIXME(PR): for some reason staking rewards aren't being accured during this period
-      //              need to step through the code to figure it out.
       const [, secondStakeTx] = await mineInSameBlock([
         await stakingRewardsEthers.populateTransaction.depositAndStake(secondUntrackedStakedAmount.toString()),
         await stakingRewardsEthers.populateTransaction.depositAndStake(secondStakedAmount.toString()),
@@ -967,7 +957,7 @@ describe("mainnet forking tests", async function () {
       //        that should have been given out
       expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.closeTo(
         String(stakingRewardsAtTermEnd.add(seocondStakingRewardsAtTermEnd)),
-        highTolerance
+        microTolerance
       )
 
       // Even long after the final repayment where there was no outstanding principal
