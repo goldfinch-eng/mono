@@ -99,6 +99,8 @@ export function displayDollarsTruncated(val: BigNumber | undefined | string | nu
     "": 1,
   }
 
+  if (val === undefined) return "$--.--"
+
   let valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
 
   if (valFloat === 0) return displayDollars(0, 0, displayZero)
