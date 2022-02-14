@@ -42,19 +42,6 @@ const hasWeb3: UserWalletWeb3Status = {
 
 const scenarios: Scenario[] = [
   {
-    devName: "install_metamask",
-    setUpMatch: ({store}) => {
-      ;(global.window as any).resq = {
-        ethereum: jest.fn().mockImplementation(() => undefined),
-      }
-      store.userWalletWeb3Status = noWeb3
-    },
-    setUpFallthrough: ({store}) => {
-      store.userWalletWeb3Status = hasWeb3
-    },
-    expectedText: /you'll first need to download and install the Metamask plug-in/,
-  },
-  {
     devName: "wrong_network",
     setUpMatch: ({store}) => {
       store.network = {
@@ -199,9 +186,6 @@ describe("ConnectionNotice", () => {
   let wrapper: React.FunctionComponent
 
   beforeEach(async () => {
-    ;(global.window as any).ethereum = {
-      ethereum: jest.fn().mockImplementation(() => {}),
-    }
     let network = {name: "mainnet", supported: true}
     let goldfinchProtocol = new GoldfinchProtocol(network)
     await goldfinchProtocol.initialize()
