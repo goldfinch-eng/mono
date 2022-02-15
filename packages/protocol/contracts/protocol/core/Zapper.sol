@@ -16,8 +16,6 @@ import "./Accountant.sol";
 import "./BaseUpgradeablePausable.sol";
 import "./ConfigHelper.sol";
 
-// TODO: pausability, non-reentrancy
-
 /// @title Zapper
 /// @notice Moves capital from the SeniorPool to TranchedPools without taking fees
 contract Zapper is BaseUpgradeablePausable {
@@ -64,7 +62,7 @@ contract Zapper is BaseUpgradeablePausable {
     zaps[poolTokenId] = Zap(msg.sender, tokenId);
   }
 
-  function claimZap(uint256 poolTokenId) public {
+  function claimZap(uint256 poolTokenId) public whenNotPaused nonReentrant {
     Zap storage zap = zaps[poolTokenId];
 
     require(zap.owner == msg.sender, "Not zap owner");
@@ -78,7 +76,7 @@ contract Zapper is BaseUpgradeablePausable {
     IERC721(poolTokens).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }
 
-  function unzap(uint256 poolTokenId) public {
+  function unzap(uint256 poolTokenId) public whenNotPaused nonReentrant {
     Zap storage zap = zaps[poolTokenId];
 
     require(zap.owner == msg.sender, "Not zap owner");

@@ -313,6 +313,27 @@ describe("Zapper", async () => {
         ).to.be.fulfilled
       })
     })
+
+    describe("paused", async () => {
+      it("reverts", async () => {
+        await zapper.pause({from: owner})
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+        const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
+        const usdcToZap = usdcEquivalent.div(new BN(2))
+
+        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
+          .tokenId
+
+        await expect(
+          zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
+            from: investor,
+          })
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
   })
 
   describe("claimZap", async () => {
@@ -386,6 +407,14 @@ describe("Zapper", async () => {
 
         // Claim as `borrower` instead of `investor`
         await expect(zapper.claimZap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
+      })
+    })
+
+    describe("paused", async () => {
+      it("reverts", async () => {
+        await zapper.pause({from: owner})
+
+        await expect(zapper.claimZap(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })
@@ -480,6 +509,14 @@ describe("Zapper", async () => {
       it("reverts", async () => {
         // Attempt to unzap from `borrower` instead of `investor`
         await expect(zapper.unzap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
+      })
+    })
+
+    describe("paused", async () => {
+      it("reverts", async () => {
+        await zapper.pause({from: owner})
+
+        await expect(zapper.unzap(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })
