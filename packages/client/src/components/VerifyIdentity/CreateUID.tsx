@@ -3,6 +3,7 @@ import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/
 import {useContext, useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
+import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {AppContext, SetSessionFn} from "../../App"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
@@ -17,7 +18,6 @@ import LoadingButton from "../loadingButton"
 import {Action, END, ID_TYPE_0} from "./constants"
 import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
-import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
