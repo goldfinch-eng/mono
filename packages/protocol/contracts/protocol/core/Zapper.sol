@@ -101,7 +101,7 @@ contract Zapper is BaseUpgradeablePausable {
     stakingRewards.addToStake(zap.stakingPositionId, fiduAmount);
   }
 
-  function moveStakeToCurve(uint256 tokenId, uint256 fiduAmount) public whenNotPaused nonReentrant {
+  function zapStakeToCurve(uint256 tokenId, uint256 fiduAmount) public whenNotPaused nonReentrant {
     IStakingRewards stakingRewards = config.getStakingRewards();
     require(stakingRewards.ownerOf(tokenId) == msg.sender, "Not token owner");
 

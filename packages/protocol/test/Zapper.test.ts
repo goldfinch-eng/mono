@@ -545,7 +545,7 @@ describe("Zapper", async () => {
     })
   })
 
-  describe("moveStakeToCurve", async () => {
+  describe("zapStakeToCurve", async () => {
     beforeEach(async function () {
       await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
       await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
@@ -566,7 +566,7 @@ describe("Zapper", async () => {
       const stakedPositionBefore = (await stakingRewards.positions(originalTokenId)) as any
       const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
 
-      receipt = await zapper.moveStakeToCurve(originalTokenId, fiduToMigrate, {from: investor})
+      receipt = await zapper.zapStakeToCurve(originalTokenId, fiduToMigrate, {from: investor})
 
       const stakedPositionAfter = (await stakingRewards.positions(originalTokenId)) as any
       const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
@@ -606,7 +606,7 @@ describe("Zapper", async () => {
           .args.tokenId
 
         // Attempt to zap owner staked position as investor
-        await expect(zapper.moveStakeToCurve(ownerStakedTokenId, fiduAmount, {from: investor})).to.be.rejectedWith(
+        await expect(zapper.zapStakeToCurve(ownerStakedTokenId, fiduAmount, {from: investor})).to.be.rejectedWith(
           /Not token owner/
         )
       })
@@ -622,7 +622,7 @@ describe("Zapper", async () => {
 
         const tokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
-        await expect(zapper.moveStakeToCurve(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/paused/)
+        await expect(zapper.zapStakeToCurve(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })
