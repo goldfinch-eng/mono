@@ -49,7 +49,7 @@ import Rewards from "./pages/rewards"
 import {defaultTheme} from "./styles/theme"
 import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
-import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock} from "./utils"
+import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
 import web3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
 import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
@@ -376,6 +376,9 @@ function App() {
     const supported = SUPPORTED_NETWORKS[networkId] || false
     const networkConfig: NetworkConfig = {name, supported}
     setNetwork(networkConfig)
+
+    switchNetworkIfRequired(networkConfig)
+
     if (networkConfig.supported) {
       const currentBlock = getBlockInfo(await getCurrentBlock())
 
