@@ -30,8 +30,7 @@
     "ethers": "^5.4.6",
     "hardhat": "^2.6.3",
     "hardhat-deploy": "^0.9.1",
-    "lodash": "^4.17.21",
-    "sinon": "^13.0.1"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -59,6 +58,7 @@
     "lint-staged": "^11.1.2",
     "prettier": "^2.3.2",
     "rollup": "^2.56.3",
+    "sinon": "^13.0.1",
     "ts-node": "^10.2.1",
     "tsconfig-paths": "^3.11.0",
     "typescript": "^4.4.2"
