@@ -62,6 +62,9 @@ export function ActionsContainer({
     currentTimestamp && tranchedPool && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
 
   if (tranchedPool && tranchedPool.creditLine.termEndTime.isZero() && isCurrentTimeBeforePoolFundableAt) {
+    depositAction = (e) => {
+      setAction("")
+    }
     depositDisabled = true
   }
 
