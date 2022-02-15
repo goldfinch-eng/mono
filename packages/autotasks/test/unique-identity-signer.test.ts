@@ -37,6 +37,7 @@ describe("unique-identity-signer", () => {
   let signer: Signer
   let network: ethers.providers.Network
   let fetchKYCFunction: FetchKYCFunction
+  const sandbox = sinon.createSandbox()
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const {protocol_owner} = await getNamedAccounts()
@@ -58,6 +59,10 @@ describe("unique-identity-signer", () => {
 
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: owner})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: owner})
+  })
+
+  afterEach(() => {
+    sandbox.restore()
   })
 
   describe("main", () => {
@@ -209,7 +214,7 @@ describe("unique-identity-signer", () => {
             const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
             const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
             // stub as accredited investor
-            sinon.stub(utils, "getIDType").returns(usAccreditedIdType.toNumber())
+            sandbox.stub(utils, "getIDType").returns(usAccreditedIdType.toNumber())
             const auth = {
               "x-goldfinch-address": anotherUser,
               "x-goldfinch-signature": "test_signature",
