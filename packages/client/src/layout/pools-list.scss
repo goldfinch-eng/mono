@@ -1,6 +1,8 @@
 .pools-list.table-spaced {
   .table-header {
     font-size: 16px;
+    display: flex;
+    justify-content: space-between;
   }
 
   .table-row.pool-skeleton {
@@ -138,13 +140,15 @@
   }
 }
 
+.table-spaced.pools-list {
+  .balance,
+  .limit {
+    display: none;
+  }
+}
+
 @media only screen and (max-width: 480px), only screen and (min-width: $screen-m) and (max-width: 750px) {
   .table-spaced.pools-list {
-    .balance,
-    .limit {
-      display: none;
-    }
-
     .table-cell:first-child {
       width: 65%;
     }
@@ -155,6 +159,16 @@
 
   .table-spaced .table-cell.col22.apy {
     white-space: nowrap;
+  }
+}
+
+
+@media only screen and (min-width: 850px) {
+  .table-spaced.pools-list {
+    .balance,
+    .limit {
+      display: block;
+    }
   }
 }
 
