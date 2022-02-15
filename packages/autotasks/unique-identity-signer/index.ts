@@ -120,7 +120,7 @@ export async function main({
     address: userAddress,
     kycStatus,
   })
-  console.log("idVersion", idVersion.toString())
+
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   console.log({signParams})

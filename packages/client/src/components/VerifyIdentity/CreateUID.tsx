@@ -122,7 +122,6 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
         setErrored(true)
         console.error(err)
       }
-      console.log({version})
 
       await sendFromUser(
         uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
