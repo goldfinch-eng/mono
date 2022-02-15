@@ -70,8 +70,8 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
 
   // Set up StakingRewards
   const targetCapacity = bigVal(1000)
-  const maxRate = bigVal(1000)
-  const minRate = bigVal(1000)
+  const maxRate = bigVal(1)
+  const minRate = bigVal(1)
   const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
   const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
 
@@ -207,7 +207,7 @@ describe("Zapper", async () => {
       // it does not slash unvested rewards
       expect(stakedPositionBefore.rewards.totalUnvested).to.bignumber.closeTo(
         stakedPositionAfter.rewards.totalUnvested,
-        new BN(String(1e18))
+        bigVal(1)
       )
 
       // it deposits usdcToZap into the TranchedPool and holds the PoolToken on behalf of the user
@@ -433,10 +433,12 @@ describe("Zapper", async () => {
       it("unwinds position back to StakingRewards", async () => {
         const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
         const tranchedPoolBalanceBefore = await usdc.balanceOf(tranchedPool.address)
+        const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
         await zapper.unzap(poolTokenId, {from: investor})
         const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
         const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
         const tranchedPoolBalanceAfter = await usdc.balanceOf(tranchedPool.address)
+        const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
 
         // Capital has been withdrawn from TranchedPool
         expect(tokenInfo.principalRedeemed).to.bignumber.eq(usdcToZap)
@@ -444,20 +446,41 @@ describe("Zapper", async () => {
         expect(tranchedPoolBalanceBefore.sub(tranchedPoolBalanceAfter)).to.bignumber.eq(usdcToZap)
 
         // Capital has been added back to existing staked position
+        expect(totalStakedSupplyAfter.sub(totalStakedSupplyBefore)).to.bignumber.eq(usdcToZapInFidu)
         expect(stakedPositionAfter.amount.sub(stakedPositionBefore.amount)).to.bignumber.eq(usdcToZapInFidu)
 
-        // Total staked supply includes capital at correct multiplier
-
         // Vesting schedule has not changed
+        expect(stakedPositionAfter.rewards.startTime).to.bignumber.eq(stakedPositionBefore.rewards.startTime)
+        expect(stakedPositionAfter.rewards.endTime).to.bignumber.eq(stakedPositionBefore.rewards.endTime)
+        expect(stakedPositionAfter.rewards.totalUnvested).to.bignumber.closeTo(
+          stakedPositionBefore.rewards.totalUnvested,
+          bigVal(1)
+        )
+        expect(stakedPositionAfter.rewards.totalVested).to.bignumber.closeTo(
+          stakedPositionBefore.rewards.totalVested,
+          bigVal(2)
+        )
       })
     })
 
-    // describe("Tranche has been locked", async () => {
-    //   it("reverts", async () => {})
-    // })
+    describe("Tranche has been locked", async () => {
+      it("reverts", async () => {
+        const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
+        await tranchedPool.lockJuniorCapital()
 
-    // describe("sender does not own zap", async () => {
-    //   it("reverts", async () => {})
-    // })
+        await expect(zapper.unzap(poolTokenId, {from: investor})).to.be.rejectedWith(/Tranche locked/)
+        await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
+
+        // Cannot be unzapped even when capital is withdrawable (can use claimZap in that case)
+        await expect(zapper.unzap(poolTokenId, {from: investor})).to.be.rejectedWith(/Tranche locked/)
+      })
+    })
+
+    describe("sender does not own zap", async () => {
+      it("reverts", async () => {
+        // Attempt to unzap from `borrower` instead of `investor`
+        await expect(zapper.unzap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
+      })
+    })
   })
 })
