@@ -492,7 +492,7 @@ function ActionsContainer({
   backer: TranchedPoolBacker | undefined
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
-  const {user} = useContext(AppContext)
+  const {user, currentBlock} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
   const session = useSession()
 
@@ -511,6 +511,10 @@ function ActionsContainer({
     placeholderClass = "placeholder"
   }
 
+  const currentTimestamp = currentBlock?.timestamp
+  const isCurrentTimeBeforePoolFundableAt =
+    currentTimestamp && tranchedPool && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
+
   let depositAction
   let depositDisabled = true
   if (
@@ -520,7 +524,9 @@ function ActionsContainer({
     tranchedPool?.poolState === PoolState.Open &&
     !tranchedPool.isFull &&
     !tranchedPool.metadata?.disabled &&
-    user?.info.value.goListed
+    user?.info.value.goListed &&
+    !tranchedPool.creditLine.termEndTime.isZero() &&
+    !isCurrentTimeBeforePoolFundableAt
   ) {
     depositAction = (e) => {
       setAction("deposit")
