@@ -14,19 +14,17 @@ import LoadingButton from "../loadingButton"
 import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
 
-interface TranchedPoolDepositFormProps {
-  backer: TranchedPoolBacker
-  tranchedPool: TranchedPool
-  actionComplete: () => void
-  closeForm: () => void
-}
-
 export function TranchedPoolDepositForm({
   backer,
   tranchedPool,
   actionComplete,
   closeForm,
-}: TranchedPoolDepositFormProps) {
+}: {
+  backer: TranchedPoolBacker
+  tranchedPool: TranchedPool
+  actionComplete: () => void
+  closeForm: () => void
+}) {
   const {user, goldfinchConfig, usdc, network, networkMonitor, setSessionData} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()

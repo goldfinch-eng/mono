@@ -11,19 +11,17 @@ import TransactionForm from "../transactionForm"
 import TransactionInput from "../transactionInput"
 import {splitWithdrawAmount} from "./splitWithdrawAmount"
 
-interface TranchedPoolWithdrawFormProps {
-  backer: TranchedPoolBacker
-  tranchedPool: TranchedPool
-  actionComplete: () => void
-  closeForm: () => void
-}
-
 export function TranchedPoolWithdrawForm({
   backer,
   tranchedPool,
   actionComplete,
   closeForm,
-}: TranchedPoolWithdrawFormProps) {
+}: {
+  backer: TranchedPoolBacker
+  tranchedPool: TranchedPool
+  actionComplete: () => void
+  closeForm: () => void
+}) {
   const {goldfinchConfig} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
 

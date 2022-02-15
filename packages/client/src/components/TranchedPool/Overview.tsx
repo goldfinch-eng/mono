@@ -9,12 +9,13 @@ import EtherscanLink from "../etherscanLink"
 import {iconOutArrow} from "../icons"
 import InfoSection from "../infoSection"
 
-interface OverviewProps {
+export function Overview({
+  tranchedPool,
+  handleDetails,
+}: {
   tranchedPool: TranchedPool | undefined
   handleDetails: () => void
-}
-
-export function Overview({tranchedPool, handleDetails}: OverviewProps) {
+}) {
   const {user} = useContext(AppContext)
   const session = useSession()
 
