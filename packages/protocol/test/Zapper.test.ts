@@ -347,7 +347,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
@@ -372,7 +372,7 @@ describe("Zapper", async () => {
       usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
       usdcToZap = usdcEquivalent.div(new BN(2))
 
-      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
       stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
       await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
@@ -457,7 +457,7 @@ describe("Zapper", async () => {
       usdcToZap = usdcEquivalent.div(new BN(2))
       usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
 
-      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
       stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
       await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})

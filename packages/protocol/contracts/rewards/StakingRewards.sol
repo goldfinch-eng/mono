@@ -807,7 +807,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(leveredAmount);
     totalStakedSupply = totalStakedSupply.add(amount);
 
-    stakingToken().safeTransferFrom(msg.sender, address(this), amount);
+    stakingToken(position.positionType).safeTransferFrom(msg.sender, address(this), amount);
   }
 
   /* ========== RESTRICTED FUNCTIONS ========== */
