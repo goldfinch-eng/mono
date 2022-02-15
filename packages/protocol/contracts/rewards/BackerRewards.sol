@@ -69,7 +69,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // acctually accrue rewards during between the last checkpoint and
     // and subsequent updates
     uint256 principalDeployedAtLastCheckpoint;
-    // @notice the value of StakingRewards.accumulatedRewards() at time of drawdown
+    // @notice the value of StakingRewards.accumulatedRewardsPerToken() at time of drawdown
     //
     // we need to keep track of this to use this as a base value to accumulate rewards
     // for tokens. If the token has never claimed staking rewards, we use this value
@@ -235,6 +235,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     bool poolRewardsHaventBeenInitialized = !_poolRewardsHaveBeenInitialized(pool);
     if (poolRewardsHaventBeenInitialized) {
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newRewardsAccumulator;
+      poolInfo.lastUpdateTime = block.timestamp;
     }
 
     bool isNewSlice = !_sliceRewardsHaveBeenInitialized(pool, sliceIndex);
@@ -254,11 +255,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     } else {
       // otherwise, its nth drawdown of the slice
       // we need to checkpoint the values here to account for the amount of principal
-      // that was at staking between the last checkpoint and now, but we don't publish
+      // that was at risk between the last checkpoint and now, but we don't publish
       // because backer's shouldn't be able to claim rewards for a drawdown.
       _checkpointSliceStakingRewards(pool, sliceIndex, false);
     }
 
+    poolInfo.lastUpdateTime = block.timestamp;
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newRewardsAccumulator;
   }
 
@@ -335,8 +337,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     }
 
     safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
-    emit BackerRewardsClaimed(_msgSender(), tokenId, claimableBackerRewards);
-    emit BackerStakingRewardsClaimed(_msgSender(), tokenId, claimableStakingRewards);
+    emit BackerRewardsClaimed(_msgSender(), tokenId, claimableBackerRewards, claimableStakingRewards);
   }
 
   /**
@@ -361,7 +362,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 tokenAccumulator = _getTokenAccumulatorAtLastCheckpoint(tokenInfo, sliceInfo);
     uint256 rewardsPerFidu = sliceAccumulator.sub(tokenAccumulator);
     uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
-    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(_gfiMantissa());
+    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(_fiduMantissa());
     return rewards;
   }
 
@@ -411,6 +412,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /**
    * @notice Checkpoints staking reward accounting for a given pool.
    * @param pool pool to checkpoint
+   * @param publish if true, the updated rewards values will be immediately available for
+   *                 backers to withdraw. otherwise, the accounting will be updated but backers
+   *                 will not be able to withdraw
    */
   function _checkpointPoolStakingRewards(ITranchedPool pool, bool publish) internal {
     IStakingRewards stakingRewards = _getUpdatedStakingRewards();
@@ -428,7 +432,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   /**
    * @notice checkpoint the staking rewards accounting for a single tranched pool slice
-   * @param pool pool that the slice belinds to
+   * @param pool pool that the slice belongs to
    * @param sliceIndex index of slice to checkpoint rewards accounting for
    * @param publish if true, the updated rewards values will be immediately available for
    *                 backers to withdraw. otherwise, the accounting will be updated but backers
@@ -468,7 +472,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       sliceInfo.principalDeployedAtLastCheckpoint.mul(_usdcMantissa()).div(juniorTranche.principalDeposited)
     );
 
-    uint256 scaledRewardsForPeriod = rewardsAccruedSinceLastCheckpoint.mul(deployedScalingFactor).div(_gfiMantissa());
+    uint256 scaledRewardsForPeriod = rewardsAccruedSinceLastCheckpoint.mul(deployedScalingFactor).div(_fiduMantissa());
 
     sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
       .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint
@@ -584,15 +588,20 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return uint256(10)**uint256(18);
   }
 
+  function _fiduMantissa() internal pure returns (uint256) {
+    return uint256(10)**uint256(18);
+  }
+
   function _usdcMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(6);
   }
 
+  /// @notice Returns an amount with the base of usdc (1e6) as an 1e18 number
   function _usdcToAtomic(uint256 amount) internal pure returns (uint256) {
     return amount.mul(_gfiMantissa()).div(_usdcMantissa());
   }
 
-  /// @notice Returns the amount of gfi with usdc base
+  /// @notice Returns an amount with the base 1e18 as a usdc amount (1e6)
   function _atomicToUsdc(uint256 amount) internal pure returns (uint256) {
     return amount.div(_gfiMantissa().div(_usdcMantissa()));
   }
@@ -602,7 +611,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @param sharePrice share price of FIDU
   /// @return equivalent amount of USDC
   function _fiduToUsdc(uint256 amount, uint256 sharePrice) internal pure returns (uint256) {
-    return _usdcToAtomic(amount).mul(_gfiMantissa()).div(sharePrice);
+    return _usdcToAtomic(amount).mul(_fiduMantissa()).div(sharePrice);
   }
 
   /// @notice Returns the junior tranche id for the given slice index
@@ -622,7 +631,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /// @notice get the StakingRewards contract after checkpoint the rewards values
-  /// @dev calling this function multiple times will not trigger multiple updates
   /// @return StakingRewards with updated rewards values
   function _getUpdatedStakingRewards() internal returns (IStakingRewards) {
     IStakingRewards stakingRewards = IStakingRewards(config.stakingRewardsAddress());
@@ -703,7 +711,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // TODO(PR): this should live in tranching logic
     return
       tranche.principalDeposited.sub(
-        _atomicToUsdc(tranche.principalSharePrice.mul(_usdcToAtomic(tranche.principalDeposited)).div(_gfiMantissa()))
+        _atomicToUsdc(tranche.principalSharePrice.mul(_usdcToAtomic(tranche.principalDeposited)).div(_fiduMantissa()))
       );
   }
 
@@ -728,13 +736,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 lastUpdatedTime,
     uint256 currentTime,
     uint256 endTime
-  ) internal view returns (uint256) {
-    uint256 slopeNumerator = rewardsAccruedSinceLastCheckpoint.mul(_gfiMantissa());
+  ) internal pure returns (uint256) {
+    uint256 slopeNumerator = rewardsAccruedSinceLastCheckpoint.mul(_fiduMantissa());
     uint256 slopeDivisor = currentTime.sub(lastUpdatedTime);
 
     uint256 slope = slopeNumerator.div(slopeDivisor);
     uint256 span = endTime.sub(lastUpdatedTime);
-    uint256 rewards = slope.mul(span).div(_gfiMantissa());
+    uint256 rewards = slope.mul(span).div(_fiduMantissa());
     return rewards;
   }
 
@@ -752,7 +760,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   /* ======== EVENTS ======== */
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
-  event BackerRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
+  event BackerRewardsClaimed(
+    address indexed owner,
+    uint256 indexed tokenId,
+    uint256 amountOfTranchedPoolRewards,
+    uint256 amountOfSeniorPoolRewards
+  );
   event BackerStakingRewardsClaimed(address indexed owner, uint256 indexed tokenId, uint256 amount);
   event BackerRewardsSetTotalRewards(address indexed owner, uint256 totalRewards, uint256 totalRewardPercentOfTotalGFI);
   event BackerRewardsSetTotalInterestReceived(address indexed owner, uint256 totalInterestReceived);
