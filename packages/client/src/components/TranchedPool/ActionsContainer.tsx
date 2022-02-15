@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js"
 import {useContext, useState} from "react"
 import {AppContext} from "../../App"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "../../ethereum/tranchedPool"
@@ -20,7 +21,7 @@ export function ActionsContainer({
   backer: TranchedPoolBacker | undefined
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
-  const {user} = useContext(AppContext)
+  const {user, currentBlock} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
   const session = useSession()
 
@@ -54,6 +55,14 @@ export function ActionsContainer({
       setAction("deposit")
     }
     depositDisabled = false
+  }
+
+  const currentTimestamp = currentBlock?.timestamp
+  const isCurrentTimeBeforePoolFundableAt =
+    currentTimestamp && tranchedPool && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
+
+  if (tranchedPool && tranchedPool.creditLine.termEndTime.isZero() && isCurrentTimeBeforePoolFundableAt) {
+    depositDisabled = true
   }
 
   let withdrawAction
