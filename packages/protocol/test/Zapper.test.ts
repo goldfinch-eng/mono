@@ -611,5 +611,19 @@ describe("Zapper", async () => {
         )
       })
     })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await zapper.pause({from: owner})
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
+
+        const tokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
+
+        await expect(zapper.moveStakeToCurve(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/paused/)
+      })
+    })
   })
 })
