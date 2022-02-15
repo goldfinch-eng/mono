@@ -8,11 +8,10 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {isAccredited} from "./isAccredited"
+import {getIDType} from "./utils"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
-const US_COUNTRY_CODE = "US"
 
 export interface KYC {
   status: "unknown" | "approved" | "failed"
@@ -84,31 +83,6 @@ export async function handler(event: HandlerParams) {
   return await main({signer, auth: auth, network, uniqueIdentity})
 }
 
-export async function getIDType({
-  address,
-  uniqueIdentity,
-  kycStatus,
-}: {
-  address: string
-  kycStatus: KYC
-  uniqueIdentity: UniqueIdentity
-}): Promise<ethers.BigNumber> {
-  let idVersion: ethers.BigNumber
-
-  if (kycStatus.countryCode === US_COUNTRY_CODE && isAccredited(address)) {
-    // US accredited
-    idVersion = await uniqueIdentity.ID_TYPE_1()
-  } else if (kycStatus.countryCode === US_COUNTRY_CODE && !isAccredited(address)) {
-    // US non accredited
-    idVersion = await uniqueIdentity.ID_TYPE_2()
-  } else {
-    // non US
-    idVersion = await uniqueIdentity.ID_TYPE_0()
-  }
-
-  return idVersion
-}
-
 // Main function
 export async function main({
   auth,
@@ -142,9 +116,8 @@ export async function main({
   const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
   const userAddress = auth["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
-  const idVersion = await getIDType({
+  const idVersion = getIDType({
     address: userAddress,
-    uniqueIdentity,
     kycStatus,
   })
   console.log("idVersion", idVersion.toString())

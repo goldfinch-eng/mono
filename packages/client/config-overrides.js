@@ -61,7 +61,7 @@ const allowOutsideImports = () => (config) => {
     path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkle/merkleDistributor/types.ts"),
     path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types.ts"),
     path.resolve(__dirname, "../../packages/utils/src/type.ts"),
-    path.resolve(__dirname, "../../packages/autotasks/unique-identity-signer/isAccredited.ts"),
+    path.resolve(__dirname, "../../packages/autotasks/unique-identity-signer/utils.ts"),
   ]
   const paths = jsonPaths.concat(tsPaths)
 

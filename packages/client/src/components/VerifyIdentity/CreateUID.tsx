@@ -5,7 +5,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../../App"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
-import DefaultGoldfinchClient, {KYC} from "../../hooks/useGoldfinchClient"
+import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import useSendFromUser from "../../hooks/useSendFromUser"
 import {AuthenticatedSession, Session, useSignIn} from "../../hooks/useSignIn"
 import {NetworkConfig} from "../../types/network"
@@ -14,11 +14,10 @@ import {UserWalletWeb3Status} from "../../types/web3"
 import {assertNonNullable} from "../../utils"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
-import {Action, END, US_COUNTRY_CODE} from "./constants"
+import {Action, END, ID_TYPE_0} from "./constants"
 import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
-import {isAccredited} from "@goldfinch-eng/autotasks/unique-identity-signer/isAccredited"
-import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer"
+import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
@@ -72,15 +71,7 @@ async function fetchTrustedSignature({
   return asSignatureResponse(body)
 }
 
-export default function CreateUID({
-  disabled,
-  dispatch,
-  kyc,
-}: {
-  disabled: boolean
-  dispatch: React.Dispatch<Action>
-  kyc?: KYC
-}) {
+export default function CreateUID({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const formMethods = useForm()
   const {user, userWalletWeb3Status, network, setSessionData, goldfinchProtocol, currentBlock, refreshCurrentBlock} =
     useContext(AppContext)
@@ -118,13 +109,12 @@ export default function CreateUID({
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      let version: string = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+      let version = ID_TYPE_0
       try {
         const response = await client.fetchKYCStatus(userAddress)
         if (response.ok) {
-          getIDType({
+          version = getIDType({
             address: userAddress,
-            uniqueIdentity,
             kycStatus: response.json,
           })
         }
@@ -132,6 +122,7 @@ export default function CreateUID({
         setErrored(true)
         console.error(err)
       }
+      console.log({version})
 
       await sendFromUser(
         uniqueIdentity.userWallet.methods.mint(version, trustedSignature.expiresAt, trustedSignature.signature),
