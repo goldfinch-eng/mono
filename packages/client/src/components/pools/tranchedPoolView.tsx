@@ -524,14 +524,16 @@ function ActionsContainer({
     tranchedPool?.poolState === PoolState.Open &&
     !tranchedPool.isFull &&
     !tranchedPool.metadata?.disabled &&
-    user?.info.value.goListed &&
-    !tranchedPool.creditLine.termEndTime.isZero() &&
-    !isCurrentTimeBeforePoolFundableAt
+    user?.info.value.goListed
   ) {
     depositAction = (e) => {
       setAction("deposit")
     }
     depositDisabled = false
+  }
+
+  if (tranchedPool && tranchedPool.creditLine.termEndTime.isZero() && isCurrentTimeBeforePoolFundableAt) {
+    depositDisabled = true
   }
 
   let withdrawAction
