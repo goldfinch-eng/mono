@@ -486,7 +486,7 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
-  function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
+  function unstake(uint256 tokenId, uint256 amount) public override nonReentrant whenNotPaused updateReward(tokenId) {
     _unstake(tokenId, amount);
     stakingToken().safeTransfer(msg.sender, amount);
   }
@@ -627,7 +627,13 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
     getReward(tokenId);
   }
 
-  function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
+  function addToStake(uint256 tokenId, uint256 amount)
+    external
+    override
+    nonReentrant
+    whenNotPaused
+    updateReward(tokenId)
+  {
     require(isZapper(), "access denied");
 
     StakedPosition storage position = positions[tokenId];
