@@ -21,7 +21,7 @@ import useNonNullContext from "./useNonNullContext"
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
 
-function sortPoolBackers(poolBackers: TranchedPoolBacker[], currentBlock: BlockInfo | undefined): TranchedPoolBacker[] {
+function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[] {
   return poolBackers.sort((a, b) =>
     // Primary sort: by pool status
     a.tranchedPool.poolState === PoolState.Open && b.tranchedPool.poolState === PoolState.Open
