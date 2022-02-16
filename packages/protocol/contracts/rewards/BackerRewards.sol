@@ -103,7 +103,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   uint256 public totalRewards;
 
   /// @notice interest $ eligible for gfi rewards, times 1e18
-
   uint256 public maxInterestDollarsEligible;
 
   /// @notice counter of total interest repayments, times 1e6
@@ -732,6 +731,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       });
   }
 
+  /// @notice Returns the amount of rewards accrued from `lastUpdatedTime` to `endTime`
+  ///           We assume the reward rate was linear during this time
+  /// @param rewardsAccruedSinceLastCheckpoint rewards accumulated between `lastUpdatedTime` and `currentTime`
+  /// @param lastUpdatedTime the last timestamp the rewards accumulator was updated
+  /// @param currentTime the current timestamp
+  /// @param endTime the end time of the period that is elligible to accrue rewards
+  /// @return approximate rewards accrued from `lastUpdateTime` to `endTime`
   function _calculateProRatedRewardsForPeriod(
     uint256 rewardsAccruedSinceLastCheckpoint,
     uint256 lastUpdatedTime,
