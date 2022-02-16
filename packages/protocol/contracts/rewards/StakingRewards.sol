@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import "../external/ERC721PresetMinterPauserAutoId.sol";
 import "../interfaces/IERC20withDec.sol";
 import "../interfaces/ISeniorPool.sol";
+import "../interfaces/IStakingRewards.sol";
 import "../protocol/core/GoldfinchConfig.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
@@ -82,10 +83,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   GoldfinchConfig public config;
 
   /// @notice The block timestamp when rewards were last checkpointed
-  uint256 public lastUpdateTime;
+  uint256 public override lastUpdateTime;
 
   /// @notice Accumulated rewards per token at the last checkpoint
-  uint256 public accumulatedRewardsPerToken;
+  uint256 public override accumulatedRewardsPerToken;
 
   /// @notice Total rewards available for disbursement at the last checkpoint, denominated in `rewardsToken()`
   uint256 public rewardsAvailable;
@@ -624,7 +625,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
-  function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
+  function unstake(uint256 tokenId, uint256 amount) public override nonReentrant whenNotPaused updateReward(tokenId) {
     StakedPositionType positionType = positions[tokenId].positionType;
     _unstake(tokenId, amount);
     stakingToken(positionType).safeTransfer(msg.sender, amount);
@@ -741,7 +742,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   multipler will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
-  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+  function kick(uint256 tokenId) public override nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
@@ -797,7 +798,13 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     getReward(tokenId);
   }
 
-  function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
+  function addToStake(uint256 tokenId, uint256 amount)
+    external
+    override
+    nonReentrant
+    whenNotPaused
+    updateReward(tokenId)
+  {
     require(isZapper(), "access denied");
 
     StakedPosition storage position = positions[tokenId];

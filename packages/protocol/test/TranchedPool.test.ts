@@ -2439,4 +2439,20 @@ describe("TranchedPool", () => {
       })
     })
   })
+
+  describe("hasAllowedUID", async () => {
+    it("returns true if `sender` has UID type", async () => {
+      const allowedUIDType = 1
+      await goldfinchConfig.bulkRemoveFromGoList([owner])
+      await tranchedPool.setAllowedUIDTypes([allowedUIDType], {from: borrower})
+
+      expect(await tranchedPool.hasAllowedUID(owner)).to.eq(false)
+
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await uniqueIdentity.setSupportedUIDTypes([1], [true])
+      await mint(hre, uniqueIdentity, new BN(allowedUIDType), expiresAt, new BN(0), owner, undefined, owner)
+
+      expect(await tranchedPool.hasAllowedUID(owner)).to.eq(true)
+    })
+  })
 })

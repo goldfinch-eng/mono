@@ -9,7 +9,7 @@ export default function SeniorPoolCardSkeleton() {
           <span>Loading...</span>
         </div>
       </div>
-      <div className="table-cell col22 numeric apy disabled">
+      <div className="table-cell col32 numeric apy disabled">
         <div className="usdc-apy">--.--% USDC</div>
         <div className="gfi-apy">
           --.--% with GFI

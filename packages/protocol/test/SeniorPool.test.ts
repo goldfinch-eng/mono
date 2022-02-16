@@ -442,6 +442,20 @@ describe("SeniorPool", () => {
       expect(delta).bignumber.equal(expectedFee)
     })
 
+    context("address has ZAPPER_ROLE", async () => {
+      it("should not take protocol fees", async () => {
+        await seniorPool.initZapperRole()
+        await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2)
+
+        await makeDeposit(person2)
+        const reserveBalanceBefore = await getBalance(reserve, usdc)
+        await makeWithdraw(person2)
+        const reserveBalanceAfter = await getBalance(reserve, usdc)
+        const delta = reserveBalanceAfter.sub(reserveBalanceBefore)
+        expect(delta).bignumber.equal(new BN(0))
+      })
+    })
+
     it("reduces your shares of fidu", async () => {
       await makeDeposit()
       const balanceBefore = await getBalance(person2, fidu)
@@ -1047,6 +1061,22 @@ describe("SeniorPool", () => {
       const writedownAmount = await seniorPool.calculateWritedown(tokenId)
 
       expect(writedownAmount).to.bignumber.closeTo(expectedWritedown, tolerance)
+    })
+  })
+
+  context("initZapperRole", async () => {
+    it("is only callable by admin", async () => {
+      await expect(seniorPool.initZapperRole({from: person2})).to.be.rejectedWith(/Must have admin role/)
+      await expect(seniorPool.initZapperRole({from: owner})).to.be.fulfilled
+    })
+
+    it("initializes ZAPPER_ROLE", async () => {
+      await expect(seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2, {from: owner})).to.be.rejectedWith(
+        /sender must be an admin to grant/
+      )
+      await seniorPool.initZapperRole({from: owner})
+      // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
+      await expect(seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2, {from: owner})).to.be.fulfilled
     })
   })
 })

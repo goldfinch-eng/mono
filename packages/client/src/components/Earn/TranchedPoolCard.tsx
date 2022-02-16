@@ -1,5 +1,7 @@
 import BigNumber from "bignumber.js"
 import {useHistory} from "react-router-dom"
+import {useContext} from "react"
+import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {InfoIcon} from "../../ui/icons"
@@ -7,7 +9,7 @@ import {displayDollars, displayPercent} from "../../utils"
 import Badge from "../badge"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../styleConstants"
-import TranchedPoolCardTooltipContent from "./TranchedPoolCardTooltipContent"
+import EarnTooltipContent from "./EarnTooltipContent"
 
 export default function TranchedPoolCard({
   poolBacker,
@@ -20,6 +22,7 @@ export default function TranchedPoolCard({
   poolEstimatedSeniorPoolMatchingApyFromGfi: BigNumber | undefined
   disabled: boolean
 }) {
+  const {currentBlock} = useContext(AppContext)
   const history = useHistory()
   const isMobile = useMediaQuery({
     query: `(max-width: ${WIDTH_TYPES.screenM})`,
@@ -36,6 +39,10 @@ export default function TranchedPoolCard({
           .plus(poolEstimatedSeniorPoolMatchingApyFromGfi || new BigNumber(0))
       : new BigNumber(NaN)
 
+  const currentTimestamp = currentBlock?.timestamp
+  const isCurrentTimeBeforePoolFundableAt =
+    currentTimestamp && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
+
   const disabledClass = disabled ? "disabled" : ""
   const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
   const getBadge = () => {
@@ -45,6 +52,8 @@ export default function TranchedPoolCard({
       return <Badge text="Repaid" variant="green" fixedWidth={false} />
     } else if (tranchedPool.isFull) {
       return <Badge text="Full" variant="gray" fixedWidth={true} />
+    } else if (tranchedPool.creditLine.termEndTime.isZero() && isCurrentTimeBeforePoolFundableAt) {
+      return <Badge text="Coming Soon" variant="yellow" fixedWidth={false} />
     } else {
       return <Badge text="Open" variant="blue" fixedWidth={true} />
     }
@@ -69,7 +78,7 @@ export default function TranchedPoolCard({
           {displayPercent(estimatedApy)} with GFI
           <span
             data-tip=""
-            data-for={`tranched-pool-card-tooltip-${tranchedPool.address}`}
+            data-for={`apy-tooltip-${tranchedPool.address}`}
             data-offset={`{'top': 0, 'left': ${isMobile ? 150 : 0}}`}
             data-place="bottom"
             onClick={(e) => e.stopPropagation()}
@@ -83,12 +92,58 @@ export default function TranchedPoolCard({
         {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}
       </div>
       <div className="pool-capacity">{badge}</div>
-      <TranchedPoolCardTooltipContent
-        estimatedUSDCApy={estimatedApyFromSupplying}
-        estimatedBackersOnlyApy={poolEstimatedBackersOnlyApyFromGfi}
-        estimatedLpSeniorPoolMatchingApy={poolEstimatedSeniorPoolMatchingApyFromGfi}
-        estimatedApy={estimatedApy}
-        tranchedPoolAddress={tranchedPool.address}
+      <EarnTooltipContent
+        id={`apy-tooltip-${tranchedPool.address}`}
+        longDescription="Includes the base USDC interest yield plus GFI from both liquidity mining and staking."
+        rows={[
+          {
+            text: "Base interest USDC APY",
+            value: displayPercent(estimatedApyFromSupplying),
+          },
+          {
+            text: "Backer liquidity mining GFI APY*",
+            value: poolEstimatedBackersOnlyApyFromGfi
+              ? `~${displayPercent(poolEstimatedBackersOnlyApyFromGfi)}`
+              : displayPercent(poolEstimatedBackersOnlyApyFromGfi),
+          },
+          {
+            text: "LP rewards match GFI APY*",
+            subtext: "(expected to launch in March)",
+            value: poolEstimatedSeniorPoolMatchingApyFromGfi
+              ? `~${displayPercent(poolEstimatedSeniorPoolMatchingApyFromGfi)}`
+              : displayPercent(poolEstimatedSeniorPoolMatchingApyFromGfi),
+          },
+        ]}
+        total={{
+          text: "Total Est. APY",
+          value:
+            estimatedApy && (poolEstimatedBackersOnlyApyFromGfi || poolEstimatedSeniorPoolMatchingApyFromGfi)
+              ? `~${displayPercent(estimatedApy)}`
+              : displayPercent(estimatedApy),
+        }}
+        footer={
+          <>
+            <p>
+              *Learn more in the proposals for{" "}
+              <a
+                href="https://snapshot.org/#/goldfinch.eth/proposal/0xb716c18c38eb1828044aca84a1466ac08221a37a96ce73b04e9caa847e13e0da"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Backer liquidity mining
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://snapshot.org/#/goldfinch.eth/proposal/0x10a390307e3834af5153dc58af0e20cbb0e08d38543be884b622b55bfcd5818d"
+                target="_blank"
+                rel="noreferrer"
+              >
+                staking distributions
+              </a>
+              .
+            </p>
+          </>
+        }
       />
     </div>
   )

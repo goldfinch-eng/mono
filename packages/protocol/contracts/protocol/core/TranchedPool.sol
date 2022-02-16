@@ -276,6 +276,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     totalDeployed = totalDeployed.add(amount);
 
     address borrower = creditLine.borrower();
+    IBackerRewards backerRewards = IBackerRewards(config.backerRewardsAddress());
+    uint256 sliceIndex = poolSlices.length.sub(1);
+    backerRewards.onTranchedPoolDrawdown(sliceIndex);
     safeERC20TransferFrom(config.getUSDC(), address(this), borrower, amount);
     emit DrawdownMade(borrower, amount);
     emit SharePriceUpdated(
@@ -628,19 +631,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _initializeNextSlice(uint256 newFundableAt) internal {
-    uint256 numSlices = poolSlices.length;
-    require(numSlices < 5, "Cannot exceed 5 slices");
+    uint256 _numSlices = poolSlices.length;
+    require(_numSlices < 5, "Cannot exceed 5 slices");
     poolSlices.push(
       PoolSlice({
         seniorTranche: TrancheInfo({
-          id: numSlices.mul(NUM_TRANCHES_PER_SLICE).add(1),
+          id: _numSlices.mul(NUM_TRANCHES_PER_SLICE).add(1),
           principalSharePrice: usdcToSharePrice(1, 1),
           interestSharePrice: 0,
           principalDeposited: 0,
           lockedUntil: 0
         }),
         juniorTranche: TrancheInfo({
-          id: numSlices.mul(NUM_TRANCHES_PER_SLICE).add(2),
+          id: _numSlices.mul(NUM_TRANCHES_PER_SLICE).add(2),
           principalSharePrice: usdcToSharePrice(1, 1),
           interestSharePrice: 0,
           principalDeposited: 0,
