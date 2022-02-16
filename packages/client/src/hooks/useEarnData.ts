@@ -7,7 +7,7 @@ import {SeniorPoolStatus} from "../components/Earn/types"
 import {usdcToAtomic} from "../ethereum/erc20"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {CapitalProvider} from "../ethereum/pool"
-import {TranchedPool, TranchedPoolBacker} from "../ethereum/tranchedPool"
+import {PoolState, TranchedPool, TranchedPoolBacker} from "../ethereum/tranchedPool"
 import {RINKEBY} from "../ethereum/utils"
 import {parseBackers} from "../graphql/parsers"
 import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
@@ -21,15 +21,16 @@ import useNonNullContext from "./useNonNullContext"
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
 
-function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[] {
-  return poolBackers.sort(
-    (a, b) =>
-      // Primary sort: ascending by tranched pool status (Open -> JuniorLocked -> ...)
-      a.tranchedPool.poolState - b.tranchedPool.poolState ||
-      // Secondary sort: descending by user's balance
-      b.balanceInDollars.comparedTo(a.balanceInDollars) ||
-      // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
-      a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
+function sortPoolBackers(poolBackers: TranchedPoolBacker[], currentBlock: BlockInfo | undefined): TranchedPoolBacker[] {
+  return poolBackers.sort((a, b) =>
+    // Primary sort: by pool status
+    a.tranchedPool.poolState === PoolState.Open && b.tranchedPool.poolState === PoolState.Open
+      ? (b.tranchedPool.metadata?.launchTime || 0) - (a.tranchedPool.metadata?.launchTime || 0)
+      : a.tranchedPool.poolState - b.tranchedPool.poolState ||
+        // Secondary sort: descending by user's balance
+        b.balanceInDollars.comparedTo(a.balanceInDollars) ||
+        // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
+        a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
   )
 }
 
