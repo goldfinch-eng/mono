@@ -446,6 +446,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     IStakingRewards stakingRewards = _getUpdatedStakingRewards();
     ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
+
+    // If for any reason the new accumulator is less than our last one, abort for safety.
+    if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      return;
+    }
     uint256 rewardsAccruedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
