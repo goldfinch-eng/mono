@@ -103,7 +103,7 @@ contract Zapper is BaseUpgradeablePausable {
 
   function zapStakeToCurve(uint256 tokenId, uint256 fiduAmount) public whenNotPaused nonReentrant {
     IStakingRewards stakingRewards = config.getStakingRewards();
-    require(stakingRewards.ownerOf(tokenId) == msg.sender, "Not token owner");
+    require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
 
     uint256 stakedBalance = stakingRewards.stakedBalanceOf(tokenId);
     require(fiduAmount <= stakedBalance, "cannot unstake more than staked balance");
