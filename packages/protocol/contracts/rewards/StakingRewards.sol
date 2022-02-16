@@ -721,7 +721,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     require(block.timestamp >= position.lockedUntil, "staked funds are locked");
 
-    uint256 effectiveAmount = positionToEffectiveAmount(position);
+    uint256 effectiveAmount = toEffectiveAmount(amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
     // By this point, leverageMultiplier should always be 1x due to the reset logic in updateReward.
     // But we subtract leveredAmount from totalLeveragedStakedSupply anyway, since that is technically correct.
     uint256 effectiveLeveredAmount = toLeveredAmount(effectiveAmount, position.leverageMultiplier);
