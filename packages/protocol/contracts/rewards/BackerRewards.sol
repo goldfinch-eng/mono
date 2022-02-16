@@ -624,7 +624,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @param trancheId tranche id
   /// @return slice index that the given tranche id belongs to
   function _juniorTrancheIdToSliceIndex(uint256 trancheId) internal pure returns (uint256) {
-    require(trancheId >= 0, "tranche ids must be > 0");
     return trancheId.sub(1).div(2);
   }
 
