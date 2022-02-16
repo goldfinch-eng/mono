@@ -25,7 +25,7 @@ function sortPoolBackers(poolBackers: TranchedPoolBacker[], currentBlock: BlockI
   return poolBackers.sort((a, b) =>
     // Primary sort: by pool status
     a.tranchedPool.poolState === PoolState.Open && b.tranchedPool.poolState === PoolState.Open
-      ? (b.tranchedPool.metadata?.launchTime || 0) - (a.tranchedPool.metadata?.launchTime || 0)
+      ? b.tranchedPool.fundableAt.toNumber() - a.tranchedPool.fundableAt.toNumber()
       : a.tranchedPool.poolState - b.tranchedPool.poolState ||
         // Secondary sort: descending by user's balance
         b.balanceInDollars.comparedTo(a.balanceInDollars) ||
