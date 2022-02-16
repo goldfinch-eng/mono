@@ -47,7 +47,7 @@ contract Zapper is BaseUpgradeablePausable {
     ISeniorPool seniorPool = config.getSeniorPool();
 
     require(validPool(tranchedPool), "Invalid pool");
-    require(stakingRewards.ownerOf(tokenId) == msg.sender, "Not token owner");
+    require(IERC721(stakingRewards).ownerOf(tokenId) == msg.sender, "Not token owner");
     require(hasAllowedUID(tranchedPool), "Address not go-listed");
 
     uint256 shares = seniorPool.getNumShares(usdcAmount);
