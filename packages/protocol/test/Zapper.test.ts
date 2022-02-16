@@ -237,7 +237,7 @@ describe("Zapper", async () => {
       // it deposits usdcToZap into the TranchedPool and holds the PoolToken on behalf of the user
       expect(tokenInfo.principalAmount).to.bignumber.eq(usdcToZap)
       expect(await poolTokens.ownerOf(poolTokenId)).to.eq(zapper.address)
-      const zap = (await zapper.zaps(poolTokenId)) as any
+      const zap = (await zapper.tranchedPoolZaps(poolTokenId)) as any
       expect(zap.owner).to.eq(investor)
       expect(zap.stakingPositionId).to.bignumber.eq(stakedTokenId)
     })
@@ -360,7 +360,7 @@ describe("Zapper", async () => {
     })
   })
 
-  describe("claimZap", async () => {
+  describe("claimTranchedPoolZap", async () => {
     let usdcEquivalent: BN
     let usdcToZap: BN
     let stakedTokenId: BN
@@ -404,21 +404,21 @@ describe("Zapper", async () => {
         await tranchedPool.drawdown(usdcToZap, {from: borrower})
         await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
 
-        await zapper.claimZap(poolTokenId, {from: investor})
+        await zapper.claimTranchedPoolZap(poolTokenId, {from: investor})
         expect(await poolTokens.ownerOf(poolTokenId)).to.eq(investor)
       })
     })
 
     describe("TranchedPool is not past lock period", async () => {
       it("reverts", async () => {
-        await expect(zapper.claimZap(poolTokenId, {from: investor})).to.be.rejectedWith(/Zap locked/)
+        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: investor})).to.be.rejectedWith(/Zap locked/)
 
         const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
         await tranchedPool.lockJuniorCapital()
         await tranchedPool.drawdown(usdcToZap, {from: borrower})
         await advanceTime({seconds: drawdownTimePeriod.div(new BN(2))})
 
-        await expect(zapper.claimZap(poolTokenId, {from: investor})).to.be.rejectedWith(/Zap locked/)
+        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: investor})).to.be.rejectedWith(/Zap locked/)
       })
     })
 
@@ -430,7 +430,7 @@ describe("Zapper", async () => {
         await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
 
         // Claim as `borrower` instead of `investor`
-        await expect(zapper.claimZap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
+        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
       })
     })
 
@@ -438,12 +438,12 @@ describe("Zapper", async () => {
       it("reverts", async () => {
         await zapper.pause({from: owner})
 
-        await expect(zapper.claimZap(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
+        await expect(zapper.claimTranchedPoolZap(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })
 
-  describe("unzap", async () => {
+  describe("unzapToStakingRewards", async () => {
     let usdcEquivalent: BN
     let usdcToZap: BN
     let usdcToZapInFidu: BN
@@ -487,7 +487,7 @@ describe("Zapper", async () => {
         const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
         const tranchedPoolBalanceBefore = await usdc.balanceOf(tranchedPool.address)
         const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
-        await zapper.unzap(poolTokenId, {from: investor})
+        await zapper.unzapToStakingRewards(poolTokenId, {from: investor})
         const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
         const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
         const tranchedPoolBalanceAfter = await usdc.balanceOf(tranchedPool.address)
@@ -521,18 +521,18 @@ describe("Zapper", async () => {
         const drawdownTimePeriod = await goldfinchConfig.getNumber(CONFIG_KEYS.DrawdownPeriodInSeconds)
         await tranchedPool.lockJuniorCapital()
 
-        await expect(zapper.unzap(poolTokenId, {from: investor})).to.be.rejectedWith(/Tranche locked/)
+        await expect(zapper.unzapToStakingRewards(poolTokenId, {from: investor})).to.be.rejectedWith(/Tranche locked/)
         await advanceTime({seconds: drawdownTimePeriod.add(new BN(1))})
 
-        // Cannot be unzapped even when capital is withdrawable (can use claimZap in that case)
-        await expect(zapper.unzap(poolTokenId, {from: investor})).to.be.rejectedWith(/Tranche locked/)
+        // Cannot be unzapped even when capital is withdrawable (can use claimTranchedPoolZap in that case)
+        await expect(zapper.unzapToStakingRewards(poolTokenId, {from: investor})).to.be.rejectedWith(/Tranche locked/)
       })
     })
 
     describe("sender does not own zap", async () => {
       it("reverts", async () => {
         // Attempt to unzap from `borrower` instead of `investor`
-        await expect(zapper.unzap(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
+        await expect(zapper.unzapToStakingRewards(poolTokenId, {from: borrower})).to.be.rejectedWith(/Not zap owner/)
       })
     })
 
@@ -540,7 +540,7 @@ describe("Zapper", async () => {
       it("reverts", async () => {
         await zapper.pause({from: owner})
 
-        await expect(zapper.unzap(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
+        await expect(zapper.unzapToStakingRewards(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })
