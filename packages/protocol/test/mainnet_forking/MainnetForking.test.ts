@@ -927,6 +927,8 @@ describe("mainnet forking tests", async function () {
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
         backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, payTx.blockNumber)
+        // NOTE: there's currently a bug in the tranched pool share price calculation
+        //        thats causing imprecision here
         expect(backerStakingRewardsEarned).to.bignumber.closeTo(stakingRewardsEarned, microTolerance)
       }
 
@@ -1005,10 +1007,6 @@ describe("mainnet forking tests", async function () {
       const backerStakingRewardsEarnedMuchLater = await getBackerRewardsForToken(backerStakingTokenId)
       expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
     }).timeout(TEST_TIMEOUT)
-
-    // TODO(PR): test that participant in nth slice gets accurate rewards
-    // TOOD(PR): test that participant in nth slice gets correct rewards while other participants withdraw
-    // TODO(PR): test that drawing down does not accrue rewards for a token
 
     describe("before drawdown", async () => {
       it("when a user withdraws they should earn 0 rewards", async () => {
