@@ -15,7 +15,7 @@ const AnnualGrowthTooltipContent = ({
   estimatedApyFromGfi,
   estimatedApy,
 }: AnnualGrowthTooltipContentProps) => (
-  <Tooltip id="annual-growth-tooltip" className="annual-growth-tooltip">
+  <Tooltip id="annual-growth-tooltip" className="tooltip-container">
     <div>
       <p className="tooltip-description">
         {supplyingCombined

@@ -276,6 +276,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     totalDeployed = totalDeployed.add(amount);
 
     address borrower = creditLine.borrower();
+    IBackerRewards backerRewards = IBackerRewards(config.backerRewardsAddress());
+    uint256 sliceIndex = poolSlices.length.sub(1);
+    backerRewards.onTranchedPoolDrawdown(sliceIndex);
     safeERC20TransferFrom(config.getUSDC(), address(this), borrower, amount);
     emit DrawdownMade(borrower, amount);
     emit SharePriceUpdated(

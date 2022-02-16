@@ -11,13 +11,14 @@ import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
 import "../external/ERC721PresetMinterPauserAutoId.sol";
 import "../interfaces/IERC20withDec.sol";
 import "../interfaces/ISeniorPool.sol";
+import "../interfaces/IStakingRewards.sol";
 import "../protocol/core/GoldfinchConfig.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
 
 import "../library/StakingRewardsVesting.sol";
 
-contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
+contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using ConfigHelper for GoldfinchConfig;
@@ -69,10 +70,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   GoldfinchConfig public config;
 
   /// @notice The block timestamp when rewards were last checkpointed
-  uint256 public lastUpdateTime;
+  uint256 public override lastUpdateTime;
 
   /// @notice Accumulated rewards per token at the last checkpoint
-  uint256 public accumulatedRewardsPerToken;
+  uint256 public override accumulatedRewardsPerToken;
 
   /// @notice Total rewards available for disbursement at the last checkpoint, denominated in `rewardsToken()`
   uint256 public rewardsAvailable;
@@ -600,7 +601,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   multipler will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
-  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+  function kick(uint256 tokenId) public override nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Claim rewards for a given staked position
   /// @param tokenId A staking position token ID

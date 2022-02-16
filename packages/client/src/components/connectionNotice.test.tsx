@@ -42,16 +42,6 @@ const hasWeb3: UserWalletWeb3Status = {
 
 const scenarios: Scenario[] = [
   {
-    devName: "install_metamask",
-    setUpMatch: ({store}) => {
-      store.userWalletWeb3Status = noWeb3
-    },
-    setUpFallthrough: ({store}) => {
-      store.userWalletWeb3Status = hasWeb3
-    },
-    expectedText: /you'll first need to download and install the Metamask plug-in/,
-  },
-  {
     devName: "wrong_network",
     setUpMatch: ({store}) => {
       store.network = {
