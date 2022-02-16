@@ -118,6 +118,10 @@ contract Zapper is BaseUpgradeablePausable {
     stakingRewards.addToStake(zap.stakingPositionId, fiduAmount);
   }
 
+  /// @notice Zap staked FIDU into staked Curve LP tokens without losing unvested rewards
+  ///  or paying a withdrawal fee.
+  /// @param tokenId A staking position token ID
+  /// @param fiduAmount The amount in FIDU from the staked position to zap
   function zapStakeToCurve(uint256 tokenId, uint256 fiduAmount) public whenNotPaused nonReentrant {
     IStakingRewards stakingRewards = config.getStakingRewards();
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
