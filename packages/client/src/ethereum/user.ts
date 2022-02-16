@@ -280,6 +280,9 @@ class UserStakingRewards {
     1: [string, string, string, string, string, string]
     2: string
     3: string
+    4: string
+    5: string
+    6: string
   }): StoredPosition {
     return {
       amount: new BigNumber(tuple[0]),
@@ -293,6 +296,9 @@ class UserStakingRewards {
       },
       leverageMultiplier: new BigNumber(tuple[2]),
       lockedUntil: parseInt(tuple[3], 10),
+      positionType: parseInt(tuple[4]),
+      effectiveMultiplier: new BigNumber(tuple[5]),
+      baseTokenExchangeRate: new BigNumber(tuple[6]),
     }
   }
 }

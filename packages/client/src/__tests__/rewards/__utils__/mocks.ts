@@ -17,6 +17,7 @@ import {GFI, GFI_DECIMALS} from "../../../ethereum/gfi"
 import {
   mockGetWeightedAverageSharePrice,
   SeniorPoolLoaded,
+  StakedPositionType,
   StakingRewards,
   StakingRewardsLoaded,
 } from "../../../ethereum/pool"
@@ -91,6 +92,9 @@ export interface RewardsMockData {
       1: [string, string, string, string, string, string]
       2: string
       3: string
+      4: string
+      5: string
+      6: string
     }
     stakingRewardsBalance?: number
     stakingRewardsTokenId?: string
@@ -246,6 +250,9 @@ export async function mockUserRelatedInitializationContractCalls(
       ["0", "0", "0", "0", defaultStakingRewardsStartTime, defaultStakingRewardsEndTime],
       "1000000000000000000",
       "0",
+      StakedPositionType.Fidu.toString(),
+      "1000000000000000000",
+      "1000000000000000000",
     ]
     if (rewardsMock.currentBlock.timestamp < parseInt(positionsRes[1][4], 10)) {
       throw new ImproperlyConfiguredMockError("Expected current timestamp not to be less than position start time.")

@@ -133,11 +133,14 @@
           "depositWithPermitAndStake": [],
           "depositAndStakeWithLockup": [],
           "depositWithPermitAndStakeWithLockup": [],
+          "depositToCurveAndStake": [],
+          "depositToCurveAndStakeFrom": [],
           "unstake": [],
           "unstakeAndWithdraw": [],
           "unstakeAndWithdrawMultiple": [],
           "unstakeAndWithdrawInFidu": [],
           "unstakeAndWithdrawMultipleInFidu": [],
+          "updatePositionEffectiveMultiplier": [],
           "getReward": [],
           "kick": [],
           "exit": [],
@@ -192,7 +195,8 @@
         "**/Zapper.sol:*": {
           "zapStakeToTranchedPool":  [],
           "claimTranchedPoolZap":  [],
-          "unzapToStakingRewards":  []
+          "unzapToStakingRewards":  [],
+          "zapStakeToCurve": []
         },
         "**/contracts/test/**": {
           "*.*": []

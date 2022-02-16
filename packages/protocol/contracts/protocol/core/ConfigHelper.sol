@@ -16,6 +16,7 @@ import "../../interfaces/IBackerRewards.sol";
 import "../../interfaces/IGoldfinchFactory.sol";
 import "../../interfaces/IGo.sol";
 import "../../interfaces/IStakingRewards.sol";
+import "../../interfaces/ICurveLP.sol";
 
 /**
  * @title ConfigHelper
@@ -47,6 +48,10 @@ library ConfigHelper {
 
   function getFidu(GoldfinchConfig config) internal view returns (IFidu) {
     return IFidu(fiduAddress(config));
+  }
+
+  function getFiduUSDCCurveLP(GoldfinchConfig config) internal view returns (ICurveLP) {
+    return ICurveLP(fiduUSDCCurveLPAddress(config));
   }
 
   function getCUSDCContract(GoldfinchConfig config) internal view returns (ICUSDCContract) {
@@ -127,6 +132,10 @@ library ConfigHelper {
 
   function fiduAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.Fidu));
+  }
+
+  function fiduUSDCCurveLPAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.FiduUSDCCurveLP));
   }
 
   function cusdcContractAddress(GoldfinchConfig config) internal view returns (address) {

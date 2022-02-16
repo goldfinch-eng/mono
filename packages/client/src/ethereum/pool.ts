@@ -821,6 +821,15 @@ export type StoredPosition = {
   rewards: StakingRewardsVesting
   leverageMultiplier: BigNumber
   lockedUntil: number
+  positionType: StakedPositionType
+  effectiveMultiplier: BigNumber
+  baseTokenExchangeRate: BigNumber
+}
+
+// Typechain doesn't generate types for solidity enums, so redefining here
+export enum StakedPositionType {
+  Fidu,
+  CurveLP,
 }
 
 type PositionOptimisticIncrement = {

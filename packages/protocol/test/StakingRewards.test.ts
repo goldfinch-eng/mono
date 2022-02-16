@@ -6,12 +6,14 @@ import {
   GFIInstance,
   GoldfinchConfigInstance,
   SeniorPoolInstance,
-  StakingRewardsInstance,
+  TestStakingRewardsInstance,
+  TestFiduUSDCCurveLPInstance,
 } from "../typechain/truffle"
 const {ethers, deployments} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
 import {
   DepositedAndStaked,
+  DepositedToCurveAndStaked,
   RewardPaid,
   Staked,
   Unstaked,
@@ -48,6 +50,11 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
+enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
+
 async function quoteFiduToUSDC({
   fiduAmount,
   seniorPool,
@@ -74,11 +81,14 @@ describe("StakingRewards", function () {
     usdc: ERC20Instance,
     seniorPool: SeniorPoolInstance,
     fidu: FiduInstance,
-    stakingRewards: StakingRewardsInstance,
+    fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance,
+    stakingRewards: TestStakingRewardsInstance,
     goldfinchConfig: GoldfinchConfigInstance
 
   let fiduAmount: BN
   let anotherUserFiduAmount: BN
+
+  let curveLPAmount: BN
 
   let targetCapacity: BN
   let maxRate: BN
@@ -95,13 +105,27 @@ describe("StakingRewards", function () {
     [LockupPeriod.TwentyFourMonths]: yearInSeconds.mul(new BN(2)),
   }
 
-  async function stake({from, amount}: {from: string; amount: BN | string}): Promise<BN> {
+  async function stake({
+    from,
+    amount,
+    positionType = StakedPositionType.Fidu,
+  }: {
+    from: string
+    amount: BN | string
+    positionType?: StakedPositionType
+  }): Promise<BN> {
     await fidu.approve(stakingRewards.address, amount, {from})
-    const receipt = await stakingRewards.stake(amount, {from})
+    await fiduUSDCCurveLP.approve(stakingRewards.address, amount, {from})
+
+    const receipt = await stakingRewards.stake(amount, positionType, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
     // Verify Staked event has correct fields
+    expect(stakedEvent.args.positionType).to.bignumber.equal(new BN(positionType))
     expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+    expect(stakedEvent.args.baseTokenExchangeRate).to.bignumber.equal(
+      await stakingRewards.getBaseTokenExchangeRate(positionType)
+    )
     expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
     expect(stakedEvent.args.multiplier).to.bignumber.equal(new BN(String(1e18)))
     expect(stakedEvent.args.user).to.equal(from)
@@ -112,14 +136,16 @@ describe("StakingRewards", function () {
   async function stakeWithLockup({
     from,
     amount,
+    positionType = StakedPositionType.Fidu,
     lockupPeriod = LockupPeriod.SixMonths,
   }: {
     from: string
     amount: BN | string
+    positionType?: StakedPositionType
     lockupPeriod?: LockupPeriod
   }): Promise<BN> {
     await fidu.approve(stakingRewards.address, amount, {from})
-    const receipt = await stakingRewards.stakeWithLockup(amount, lockupPeriod, {from})
+    const receipt = await stakingRewards.stakeWithLockup(amount, positionType, lockupPeriod, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
     const now = await time.latest()
@@ -127,7 +153,11 @@ describe("StakingRewards", function () {
     const expectedLockedUntil = now.add(duration)
 
     // Verify Staked event has correct fields
+    expect(stakedEvent.args.positionType).to.bignumber.equal(new BN(positionType))
     expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+    expect(stakedEvent.args.baseTokenExchangeRate).to.bignumber.equal(
+      await stakingRewards.getBaseTokenExchangeRate(positionType)
+    )
     expect(stakedEvent.args.lockedUntil).to.bignumber.equal(expectedLockedUntil)
     expect(stakedEvent.args.multiplier).to.bignumber.equal(await stakingRewards.getLeverageMultiplier(lockupPeriod))
     expect(stakedEvent.args.user).to.equal(from)
@@ -148,13 +178,20 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, ...others} = await deployBaseFixture()
+    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, fiduUSDCCurveLP, ...others} =
+      await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
 
     await erc20Approve(usdc, anotherUser, usdcVal(50000), [owner])
     await erc20Transfer(usdc, [anotherUser], usdcVal(50000), owner)
+
+    await erc20Approve(fiduUSDCCurveLP, investor, bigVal(100), [owner])
+    await erc20Transfer(fiduUSDCCurveLP, [investor], bigVal(100), owner)
+
+    await erc20Approve(fiduUSDCCurveLP, anotherUser, bigVal(100), [owner])
+    await erc20Transfer(fiduUSDCCurveLP, [anotherUser], bigVal(100), owner)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(50000), [anotherUser])
     let receipt = await seniorPool.deposit(usdcVal(50000), {from: anotherUser})
@@ -165,6 +202,7 @@ describe("StakingRewards", function () {
     receipt = await seniorPool.deposit(usdcVal(5000), {from: investor})
     depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
     const fiduAmount = new BN(depositEvent.args.shares)
+    const curveLPAmount = bigVal(100)
 
     const targetCapacity = bigVal(1000)
     const maxRate = bigVal(1000)
@@ -184,6 +222,7 @@ describe("StakingRewards", function () {
       stakingRewards,
       fidu,
       usdc,
+      fiduUSDCCurveLP,
       targetCapacity,
       maxRate,
       minRate,
@@ -191,6 +230,7 @@ describe("StakingRewards", function () {
       minRateAtPercent,
       fiduAmount,
       anotherUserFiduAmount,
+      curveLPAmount,
       ...others,
     }
   })
@@ -206,6 +246,7 @@ describe("StakingRewards", function () {
       stakingRewards,
       fidu,
       usdc,
+      fiduUSDCCurveLP,
       targetCapacity,
       maxRate,
       minRate,
@@ -214,6 +255,7 @@ describe("StakingRewards", function () {
       fiduAmount,
       anotherUserFiduAmount,
       goldfinchConfig,
+      curveLPAmount,
     } = await testSetup())
   })
 
@@ -238,84 +280,237 @@ describe("StakingRewards", function () {
 
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset the effective multiplier for the CurveLP to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Reset the exchange rate to 1x
+      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
-    it("stakes and mints a position token", async () => {
-      // Have anotherUser stake
-      await stake({amount: anotherUserFiduAmount, from: anotherUser})
+    context("for a FIDU position", async () => {
+      it("stakes and mints a position token", async () => {
+        // Have anotherUser stake
+        await stake({amount: anotherUserFiduAmount, from: anotherUser})
 
-      await advanceTime({seconds: 100})
+        await advanceTime({seconds: 100})
 
-      const fiduBalanceBefore = await fidu.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
 
-      const tokenId = await stake({amount: fiduAmount, from: investor})
+        const tokenId = await stake({amount: fiduAmount, from: investor})
 
-      // Verify fidu was staked
-      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
-      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(fiduAmount)
-      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+        // Verify fidu was staked
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+        expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(fiduAmount)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
 
-      // Claim rewards
-      await advanceTime({seconds: 100})
+        // Claim rewards
+        await advanceTime({seconds: 100})
 
-      const receipt = await stakingRewards.getReward(tokenId, {from: investor})
-      const rewardEvent = getFirstLog<RewardPaid>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "RewardPaid"))
-      const gfiBalance = await gfi.balanceOf(investor)
-      expect(gfiBalance).to.bignumber.gt(new BN("0"))
-      expect(gfiBalance).to.bignumber.equal(rewardEvent.args.reward)
+        const receipt = await stakingRewards.getReward(tokenId, {from: investor})
+        const rewardEvent = getFirstLog<RewardPaid>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "RewardPaid"))
+        const gfiBalance = await gfi.balanceOf(investor)
+        expect(gfiBalance).to.bignumber.gt(new BN("0"))
+        expect(gfiBalance).to.bignumber.equal(rewardEvent.args.reward)
 
-      // Unstake fidu
-      await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
-      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
+        // Unstake fidu
+        await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
 
-      // Since we withdrew, rewards should remain unchanged when attempting to claim again
-      await advanceTime({seconds: 100})
+        // Since we withdrew, rewards should remain unchanged when attempting to claim again
+        await advanceTime({seconds: 100})
 
-      expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardEvent.args.reward)
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardEvent.args.reward)
+      })
+
+      it("gives them rewards depending on how long they were staked", async () => {
+        await stake({amount: fiduAmount, from: anotherUser})
+        const startTime = await time.latest()
+
+        await advanceTime({seconds: 1000})
+
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        await stakingRewards.getReward(tokenId, {from: investor})
+
+        // Rewards only lasted for 1 year, but investor entered after 1000 seconds.
+        // Therefore they should get half the rewards for (1 year - 1000 seconds)
+        const expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+      })
+
+      it("splits rewards amongst stakers proportional to their stakes", async () => {
+        // anotherUser stakes 4x more than investor
+        const anotherUserToken = await stake({amount: fiduAmount.mul(new BN(4)), from: anotherUser})
+        const startTime = await time.latest()
+
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        // investor owns 1/5 of the staked supply and therefore should receive 1/5
+        // of the disbursed rewards
+        await stakingRewards.getReward(tokenId, {from: investor})
+        let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(5))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+        // anotherUser owns 4/5 of the staked supply and therefore should receive 4/5
+        // of the disbursed rewards
+        await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+        const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+        const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).mul(new BN(4)).div(new BN(5))
+        expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+        expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
     })
 
-    it("gives them rewards depending on how long they were staked", async () => {
-      await stake({amount: fiduAmount, from: anotherUser})
-      const startTime = await time.latest()
+    context("for a Curve LP position", async () => {
+      it("stakes and mints a position token", async () => {
+        // Have anotherUser stake
+        await stake({amount: anotherUserFiduAmount, from: anotherUser})
 
-      await advanceTime({seconds: 1000})
+        await advanceTime({seconds: 100})
 
-      const tokenId = await stake({amount: fiduAmount, from: investor})
-      const timeDiff = (await time.latest()).sub(startTime)
+        const fiduUSDCCurveLPBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
 
-      await advanceTime({seconds: yearInSeconds})
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
 
-      await stakingRewards.getReward(tokenId, {from: investor})
+        // Verify FIDU-USDC Curve LP Token was staked
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+        expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(curveLPAmount)
+        expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(
+          fiduUSDCCurveLPBalanceBefore.sub(curveLPAmount)
+        )
 
-      // Rewards only lasted for 1 year, but investor entered after 1000 seconds.
-      // Therefore they should get half the rewards for (1 year - 1000 seconds)
-      const expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
-      expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
-    })
+        // Claim rewards
+        await advanceTime({seconds: 100})
 
-    it("splits rewards amongst stakers proportional to their stakes", async () => {
-      // anotherUser stakes 4x more than investor
-      const anotherUserToken = await stake({amount: fiduAmount.mul(new BN(4)), from: anotherUser})
-      const startTime = await time.latest()
+        const receipt = await stakingRewards.getReward(tokenId, {from: investor})
+        const rewardEvent = getFirstLog<RewardPaid>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "RewardPaid"))
+        const gfiBalance = await gfi.balanceOf(investor)
+        expect(gfiBalance).to.bignumber.gt(new BN("0"))
+        expect(gfiBalance).to.bignumber.equal(rewardEvent.args.reward)
 
-      const tokenId = await stake({amount: fiduAmount, from: investor})
-      const timeDiff = (await time.latest()).sub(startTime)
+        // Unstake FIDU-USDC Curve LP Token
+        await stakingRewards.unstake(tokenId, curveLPAmount, {from: investor})
+        expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(curveLPAmount)
 
-      await advanceTime({seconds: yearInSeconds})
+        // Since we withdrew, rewards should remain unchanged when attempting to claim again
+        await advanceTime({seconds: 100})
 
-      // investor owns 1/5 of the staked supply and therefore should receive 1/5
-      // of the disbursed rewards
-      await stakingRewards.getReward(tokenId, {from: investor})
-      let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(5))
-      expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardEvent.args.reward)
+      })
 
-      // anotherUser owns 4/5 of the staked supply and therefore should receive 4/5
-      // of the disbursed rewards
-      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
-      const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
-      const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).mul(new BN(4)).div(new BN(5))
-      expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
-      expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      it("distributes rewards using the effective multiplier", async () => {
+        await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+        // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
+        const anotherUserToken = await stake({
+          amount: curveLPAmount.mul(new BN(2)),
+          from: anotherUser,
+        })
+        const startTime = await time.latest()
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        // investor owns 1/2 of the staked supply and therefore should receive 1/2
+        // of the disbursed rewards
+        await stakingRewards.getReward(tokenId, {from: investor})
+        let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+        // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+        // of the disbursed rewards
+        await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+        const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+        const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+        expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
+
+      it("gives them rewards depending on how long they were staked", async () => {
+        await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: anotherUser})
+        const startTime = await time.latest()
+
+        await advanceTime({seconds: 1000})
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        await stakingRewards.getReward(tokenId, {from: investor})
+
+        // Rewards only lasted for 1 year, but investor entered after 1000 seconds.
+        // Therefore they should get half the rewards for (1 year - 1000 seconds)
+        const expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+      })
+
+      it("splits rewards amongst stakers proportional to their stakes", async () => {
+        // anotherUser stakes 4x more than investor
+        const anotherUserToken = await stake({
+          amount: curveLPAmount.mul(new BN(4)),
+          from: anotherUser,
+        })
+        const startTime = await time.latest()
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        // investor owns 1/5 of the staked supply and therefore should receive 1/5
+        // of the disbursed rewards
+        await stakingRewards.getReward(tokenId, {from: investor})
+        let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(5))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+        // anotherUser owns 4/5 of the staked supply and therefore should receive 4/5
+        // of the disbursed rewards
+        await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+        const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+        const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).mul(new BN(4)).div(new BN(5))
+        expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+        expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
+
+      it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
+        await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2).mul(MULTIPLIER_DECIMALS))
+
+        // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
+        const anotherUserToken = await stake({
+          amount: curveLPAmount.mul(new BN(2)),
+          from: anotherUser,
+        })
+        const startTime = await time.latest()
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+        const timeDiff = (await time.latest()).sub(startTime)
+
+        await advanceTime({seconds: yearInSeconds})
+
+        // investor owns 1/2 of the staked supply and therefore should receive 1/2
+        // of the disbursed rewards
+        await stakingRewards.getReward(tokenId, {from: investor})
+        let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+        // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+        // of the disbursed rewards
+        await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+        const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+        const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+        expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+        expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
     })
 
     context("paused", async () => {
@@ -640,6 +835,159 @@ describe("StakingRewards", function () {
             s as any,
             {from: investor}
           )
+        ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("depositToCurveAndStake", async () => {
+    const fiduAmount = bigVal(500)
+    const usdcAmount = usdcVal(1000)
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+    })
+
+    it("deposits a FIDU-only position into Curve and stakes resulting tokens", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurveAndStake(fiduAmount, new BN(0), {from: investor})
+      const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedToCurveAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
+      )
+
+      const amount = await fiduUSDCCurveLP.calcTokenAmount([fiduAmount, new BN(0)], true)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
+      const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
+      expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(new BN(0))
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
+
+      // Verify deposit worked
+      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(amount)
+
+      // Verify that allowance was correctly used
+      expect(await fidu.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+    })
+
+    it("deposits a USDC-only position into Curve and stakes resulting tokens", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const usdcBalanceBefore = await usdc.balanceOf(investor)
+
+      await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurveAndStake(new BN(0), usdcAmount, {from: investor})
+      const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedToCurveAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
+      )
+
+      const amount = await fiduUSDCCurveLP.calcTokenAmount([new BN(0), usdcAmount], true)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
+      const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(new BN(0))
+      expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
+
+      // Verify deposit worked
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(amount)
+
+      // Verify that allowance was correctly used
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+    })
+
+    it("deposits both FIDU and USDC into Curve and stakes resulting tokens", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const fiduBalanceBefore = await fidu.balanceOf(investor)
+      const usdcBalanceBefore = await usdc.balanceOf(investor)
+
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+      await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurveAndStake(fiduAmount, usdcAmount, {from: investor})
+      const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+      const depositedAndStakedEvent = getFirstLog<DepositedToCurveAndStaked>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
+      )
+
+      const amount = await fiduUSDCCurveLP.calcTokenAmount([fiduAmount, usdcAmount], true)
+
+      // Verify events
+      expect(stakedEvent.args.user).to.equal(investor)
+      const tokenId = stakedEvent.args.tokenId
+      expect(stakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
+      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
+      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
+      expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
+      expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
+      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
+      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
+
+      // Verify deposit worked
+      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore.add(amount))
+
+      // Verify shares were staked
+      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(amount)
+
+      // Verify that allowance was correctly used
+      expect(await fidu.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await stakingRewards.pause()
+        await expect(
+          stakingRewards.depositToCurveAndStake(fiduAmount, usdcAmount, {from: investor})
         ).to.be.rejectedWith(/paused/)
       })
     })
@@ -2210,6 +2558,136 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("updatePositionEffectiveMultiplier", async () => {
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset effective multiplier to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+    })
+
+    it("checkpoints rewards before updating the position's multiplier", async () => {
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      // The effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("updates the position's multiplier", async () => {
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      // The effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      let position = await stakingRewards.positions(tokenId)
+      expect(position[5]).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      position = await stakingRewards.positions(tokenId)
+      expect(position[5]).to.bignumber.equal(new BN(2).mul(MULTIPLIER_DECIMALS))
+    })
+
+    it("recalculates the total staked supply", async () => {
+      // Another user stakes
+      await stake({
+        amount: curveLPAmount,
+        from: anotherUser,
+      })
+
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      // The effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      let totalStakedSupply = await stakingRewards.totalStakedSupply()
+      expect(totalStakedSupply).to.bignumber.equal(curveLPAmount.mul(new BN(2)))
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      totalStakedSupply = await stakingRewards.totalStakedSupply()
+      expect(totalStakedSupply).to.bignumber.equal(curveLPAmount.mul(new BN(3)))
+    })
+
+    it("distributes rewards based on new multiplier", async () => {
+      // Threshold of 5 seconds of rewards to account for slight block.timestamp increases
+      const threshold = new BN(5).mul(maxRate)
+
+      // anotherUser stakes the same number of FIDU tokens
+      const anotherUserToken = await stake({
+        amount: curveLPAmount,
+        from: anotherUser,
+      })
+      const startAt = await time.latest()
+
+      // investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+      const investorStakedAt = await time.latest()
+      const timeDiff = investorStakedAt.sub(startAt)
+
+      // the effective multiplier is updated
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      await advanceTime({seconds: halfYearInSeconds})
+
+      // investor owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(tokenId, {from: investor})
+      let expectedRewards = maxRate.mul(halfYearInSeconds).div(new BN(2))
+      let gfiInvestorBalance = await gfi.balanceOf(investor)
+      expect(gfiInvestorBalance).to.bignumber.closeTo(expectedRewards, threshold)
+
+      // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+      const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+      expectedRewards = expectedRewards.add(rewardsWhenOnlyAnotherUserWasStaked)
+      let gfiAnotherUser = await gfi.balanceOf(anotherUser)
+      expect(gfiAnotherUser).to.bignumber.closeTo(expectedRewards, threshold)
+
+      // Trigger updating the position's effective multiplier
+      await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+      await advanceTime({seconds: halfYearInSeconds})
+
+      // investor owns 2/3 of the staked supply and therefore should receive 2/3
+      // of the disbursed rewards from the second half of the year
+      await stakingRewards.getReward(tokenId, {from: investor})
+      const prevGfiInvestorBalance = gfiInvestorBalance
+      gfiInvestorBalance = await gfi.balanceOf(investor)
+      expectedRewards = maxRate.mul(halfYearInSeconds).mul(new BN(2)).div(new BN(3))
+      expect(gfiInvestorBalance.sub(prevGfiInvestorBalance)).to.bignumber.closeTo(expectedRewards, threshold)
+
+      // anotherUser owns 1/3 of the staked supply and therefore should receive 1/3
+      // of the disbursed rewards from the second half of the year
+      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+      const prevGfiAnotherUserBalance = gfiAnotherUser
+      gfiAnotherUser = await gfi.balanceOf(anotherUser)
+      expectedRewards = maxRate.mul(halfYearInSeconds).div(new BN(3))
+      expect(gfiAnotherUser.sub(prevGfiAnotherUserBalance)).to.bignumber.closeTo(expectedRewards, threshold)
+    })
+  })
+
   describe("market-based rewards", async () => {
     let totalRewards: BN
     const maxRate = bigVal(10)
@@ -2585,6 +3063,86 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(
           /Must have admin role/
         )
+      })
+    })
+  })
+
+  describe("setEffectiveMultiplier", async () => {
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset effective multiplier to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+    })
+
+    it("sets multipliers", async () => {
+      expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.equal(bigVal(1))
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.equal(bigVal(2))
+    })
+
+    it("checkpoints rewards", async () => {
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("emits an event", async () => {
+      const multiplier = new BN(2).mul(MULTIPLIER_DECIMALS)
+      const tx = await stakingRewards.setEffectiveMultiplier(multiplier, StakedPositionType.CurveLP, {from: owner})
+      expectEvent(tx, "EffectiveMultiplierUpdated", {
+        who: owner,
+        positionType: StakedPositionType.CurveLP.toString(),
+        multiplier,
+      })
+    })
+
+    it("does not affect previously staked positions", async () => {
+      // anotherUser stakes the same number of FIDU tokens
+      const anotherUserToken = await stake({
+        amount: curveLPAmount,
+        from: anotherUser,
+      })
+      const startTime = await time.latest()
+
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+      const timeDiff = (await time.latest()).sub(startTime)
+
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      await advanceTime({seconds: yearInSeconds})
+
+      // investor owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(tokenId, {from: investor})
+      let expectedRewards = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+      expect(await gfi.balanceOf(investor)).to.bignumber.equal(expectedRewards)
+
+      // anotherUser owns 1/2 of the staked supply and therefore should receive 1/2
+      // of the disbursed rewards
+      await stakingRewards.getReward(anotherUserToken, {from: anotherUser})
+      const rewardsWhenOnlyAnotherUserWasStaked = maxRate.mul(timeDiff)
+      const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
+      expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
+      expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+    })
+
+    context("user is not admin", async () => {
+      it("reverts", async () => {
+        await expect(
+          stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP, {
+            from: anotherUser,
+          })
+        ).to.be.rejectedWith(/Must have admin role/)
       })
     })
   })

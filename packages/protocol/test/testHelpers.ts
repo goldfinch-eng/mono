@@ -34,7 +34,6 @@ import {
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
   GFIInstance,
-  StakingRewardsInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
   GoInstance,
@@ -42,6 +41,8 @@ import {
   MerkleDirectDistributorInstance,
   BackerRewardsInstance,
   ZapperInstance,
+  TestFiduUSDCCurveLPInstance,
+  TestStakingRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -264,6 +265,7 @@ async function deployAllContracts(
   usdc: ERC20Instance
   creditDesk: CreditDeskInstance
   fidu: FiduInstance
+  fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
   goldfinchFactory: GoldfinchFactoryInstance
   forwarder: TestForwarderInstance | null
@@ -271,7 +273,7 @@ async function deployAllContracts(
   tranchedPool: TranchedPoolInstance
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
-  stakingRewards: StakingRewardsInstance
+  stakingRewards: TestStakingRewardsInstance
   backerRewards: TestBackerRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
@@ -294,6 +296,10 @@ async function deployAllContracts(
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
+  const fiduUSDCCurveLP = await getDeployedAsTruffleContract<TestFiduUSDCCurveLPInstance>(
+    deployments,
+    "FiduUSDCCurveLP"
+  )
   const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
@@ -310,7 +316,7 @@ async function deployAllContracts(
     "TransferRestrictedVault"
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
-  const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
@@ -370,6 +376,7 @@ async function deployAllContracts(
     usdc,
     creditDesk,
     fidu,
+    fiduUSDCCurveLP,
     goldfinchConfig,
     goldfinchFactory,
     forwarder,

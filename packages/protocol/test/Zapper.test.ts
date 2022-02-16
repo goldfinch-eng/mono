@@ -8,7 +8,8 @@ import {
   GoldfinchConfigInstance,
   PoolTokensInstance,
   SeniorPoolInstance,
-  StakingRewardsInstance,
+  TestFiduUSDCCurveLPInstance,
+  TestStakingRewardsInstance,
   TestUniqueIdentityInstance,
   TranchedPoolInstance,
   ZapperInstance,
@@ -31,10 +32,19 @@ import {
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
 import {DepositMade} from "../typechain/truffle/SeniorPool"
 import {DepositMade as TranchedPoolDepositMade} from "../typechain/truffle/TranchedPool"
-import {Staked} from "../typechain/truffle/StakingRewards"
+import {DepositedToCurveAndStaked, Staked} from "../typechain/truffle/StakingRewards"
 import {mint as mintUID} from "./uniqueIdentityHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+
+// Typechain doesn't generate types for solidity enums, so redefining here
+enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
+
 const {deployments} = hre
+
+const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _investor, _borrower] = await web3.eth.getAccounts()
@@ -42,8 +52,19 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const investor = asNonNullable(_investor)
   const borrower = asNonNullable(_borrower)
 
-  const {goldfinchConfig, go, goldfinchFactory, seniorPool, gfi, stakingRewards, fidu, usdc, zapper, ...others} =
-    await deployBaseFixture()
+  const {
+    goldfinchConfig,
+    go,
+    goldfinchFactory,
+    seniorPool,
+    gfi,
+    stakingRewards,
+    fidu,
+    fiduUSDCCurveLP,
+    usdc,
+    zapper,
+    ...others
+  } = await deployBaseFixture()
 
   // Set up contracts
   await stakingRewards.initZapperRole()
@@ -117,6 +138,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
     seniorPool,
     stakingRewards,
     tranchedPool,
+    fiduUSDCCurveLP,
   }
 })
 
@@ -124,10 +146,11 @@ describe("Zapper", async () => {
   let zapper: ZapperInstance
   let goldfinchConfig: GoldfinchConfigInstance
   let seniorPool: SeniorPoolInstance
-  let stakingRewards: StakingRewardsInstance
+  let stakingRewards: TestStakingRewardsInstance
   let tranchedPool: TranchedPoolInstance
   let fidu: FiduInstance
   let usdc: ERC20Instance
+  let fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   let poolTokens: PoolTokensInstance
   let uid: TestUniqueIdentityInstance
 
@@ -152,6 +175,7 @@ describe("Zapper", async () => {
       stakingRewards,
       fidu,
       usdc,
+      fiduUSDCCurveLP,
       uniqueIdentity: uid,
     } = await testSetup())
   })
@@ -164,7 +188,7 @@ describe("Zapper", async () => {
       const usdcToZap = usdcEquivalent.div(new BN(2))
       const usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
 
-      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
       const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
         .tokenId
 
@@ -225,7 +249,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
@@ -262,7 +286,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: owner})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: owner})
         const ownerStakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
           .args.tokenId
 
@@ -293,7 +317,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
@@ -323,7 +347,7 @@ describe("Zapper", async () => {
         const usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         const usdcToZap = usdcEquivalent.div(new BN(2))
 
-        const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
@@ -348,7 +372,7 @@ describe("Zapper", async () => {
       usdcEquivalent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
       usdcToZap = usdcEquivalent.div(new BN(2))
 
-      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
       stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
       await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
@@ -433,7 +457,7 @@ describe("Zapper", async () => {
       usdcToZap = usdcEquivalent.div(new BN(2))
       usdcToZapInFidu = await seniorPool.getNumShares(usdcToZap)
 
-      const receipt = await stakingRewards.stake(fiduAmount, {from: investor})
+      const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
       stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
       await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
@@ -517,6 +541,88 @@ describe("Zapper", async () => {
         await zapper.pause({from: owner})
 
         await expect(zapper.unzapToStakingRewards(poolTokenId, {from: investor})).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("zapStakeToCurve", async () => {
+    beforeEach(async function () {
+      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+    })
+
+    it("creates a new staked position without slashing unvested rewards", async () => {
+      const fiduToMigrate = fiduAmount.div(new BN(2))
+
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+      let receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
+      const originalTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
+        .tokenId
+
+      await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
+      await stakingRewards.kick(originalTokenId)
+
+      const stakedPositionBefore = (await stakingRewards.positions(originalTokenId)) as any
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+
+      receipt = await zapper.zapStakeToCurve(originalTokenId, fiduToMigrate, {from: investor})
+
+      const stakedPositionAfter = (await stakingRewards.positions(originalTokenId)) as any
+      const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
+
+      const curveLPAmount = await fiduUSDCCurveLP.calcTokenAmount([fiduToMigrate, new BN(0)], true)
+
+      const newTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
+
+      // it maintains investor as owner of staked position
+      expect(await stakingRewards.ownerOf(originalTokenId)).to.eq(investor)
+
+      // it unstakes FIDU from StakingRewards
+      expect(stakedPositionAfter.amount).to.bignumber.eq(fiduAmount.sub(fiduToMigrate))
+
+      // it does not slash unvested rewards
+      expect(stakedPositionBefore.rewards.totalUnvested).to.bignumber.closeTo(
+        stakedPositionAfter.rewards.totalUnvested,
+        MULTIPLIER_DECIMALS
+      )
+
+      // it updates the total staked supply
+      expect(totalStakedSupplyAfter).to.bignumber.eq(totalStakedSupplyBefore.mul(new BN(3)).div(new BN(2)))
+
+      // it deposits all FIDU into Curve on behalf of the user
+      expect(await stakingRewards.ownerOf(newTokenId)).to.eq(investor)
+      expect(await stakingRewards.stakedBalanceOf(newTokenId)).to.bignumber.eq(curveLPAmount)
+    })
+
+    context("investor does not own position token", async () => {
+      it("reverts", async () => {
+        // Stake from owner account
+        const fiduAmount = bigVal(100)
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: owner})
+
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: owner})
+        const ownerStakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+          .args.tokenId
+
+        // Attempt to zap owner staked position as investor
+        await expect(zapper.zapStakeToCurve(ownerStakedTokenId, fiduAmount, {from: investor})).to.be.rejectedWith(
+          /Not token owner/
+        )
+      })
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await zapper.pause({from: owner})
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+        const receipt = await stakingRewards.stake(fiduAmount, StakedPositionType.Fidu, {from: investor})
+
+        const tokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
+
+        await expect(zapper.zapStakeToCurve(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
   })

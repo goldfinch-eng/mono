@@ -7,6 +7,15 @@ interface IStakingRewards {
 
   function addToStake(uint256 tokenId, uint256 amount) external;
 
+  function stakedBalanceOf(uint256 tokenId) external view returns (uint256);
+
+  function depositToCurveAndStakeFrom(
+    address staker,
+    address nftRecipient,
+    uint256 fiduAmount,
+    uint256 usdcAmount
+  ) external;
+
   function kick(uint256 tokenId) external;
 
   function accumulatedRewardsPerToken() external view returns (uint256);
