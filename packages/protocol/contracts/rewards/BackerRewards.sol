@@ -507,6 +507,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     uint256 newAccumulatedRewardsPerTokenAtLastWithdraw = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
 
+    // If for any reason the new accumulator is less than our last one, abort for safety.
+    if (
+      newAccumulatedRewardsPerTokenAtLastWithdraw <
+      tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw
+    ) {
+      return;
+    }
+
     tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw = newAccumulatedRewardsPerTokenAtLastWithdraw;
   }
 
