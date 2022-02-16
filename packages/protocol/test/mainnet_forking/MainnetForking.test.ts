@@ -43,14 +43,15 @@ import {
   getFirstLog,
   toEthers,
   mineInSameBlock,
-  dbg,
   mineBlock,
+  mochaEach,
 } from "../testHelpers"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
   BackerRewardsInstance,
   BorrowerInstance,
   CommunityRewardsInstance,
+  CreditLineInstance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
   GFIInstance,
@@ -59,6 +60,7 @@ import {
   GoldfinchFactoryInstance,
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
+  PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
   TranchedPoolInstance,
@@ -82,8 +84,9 @@ import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAc
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {
   BackerRewards,
-  Borrower as EthersBorrower,
+  Borrower as BorrowerEthers,
   CreditLine,
+  SeniorPool,
   StakingRewards,
   TranchedPool,
   UniqueIdentity,
@@ -157,6 +160,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   const stakingRewards: StakingRewardsInstance = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
 
+  const poolTokens: PoolTokensInstance = await getTruffleContract<PoolTokensInstance>("PoolTokens")
+
   // GFI is deployed by the temp multisig
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
 
@@ -181,6 +186,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   return {
+    poolTokens,
     seniorPool,
     seniorPoolStrategy,
     usdc,
@@ -230,7 +236,8 @@ describe("mainnet forking tests", async function () {
     uniqueIdentity: UniqueIdentityInstance,
     ethersUniqueIdentity: UniqueIdentity,
     signer: Signer,
-    network
+    network,
+    poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
@@ -282,6 +289,7 @@ describe("mainnet forking tests", async function () {
       signer,
       network,
       ethersUniqueIdentity,
+      poolTokens,
     } = await setupTest())
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
@@ -681,20 +689,18 @@ describe("mainnet forking tests", async function () {
     const microTolerance = "100000" // 1e5
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
-    let tranchedPool: TranchedPool
+    let tranchedPoolWithBorrowerConnected: TranchedPool
     let tranchedPoolWithOwnerConnected: TranchedPool
     let backerStakingTokenId: string
     let creditLine: CreditLine
-    let bwrCon: EthersBorrower
     const paymentPeriodInDays = new BigNumber("30")
     const termInDays = new BigNumber("365")
     const trackedStakedAmount = usdcVal(2500)
     const untrackedStakedAmount = usdcVal(1000)
     const limit = trackedStakedAmount.add(untrackedStakedAmount).mul(new BN("4"))
-    beforeEach(async () => {
-      const tempBwrCon = await createBorrowerContract()
+    const setup = deployments.createFixture(async () => {
       const result = await goldfinchFactory.createPool(
-        tempBwrCon.address,
+        bwr,
         "20",
         limit.toString(),
         "100000000000000000",
@@ -711,36 +717,81 @@ describe("mainnet forking tests", async function () {
       assertNonNullable(result.logs)
       const event = result.logs[result.logs.length - 1] as unknown as PoolCreated
 
-      bwrCon = await (
-        await getEthersContract<EthersBorrower>("Borrower", {at: tempBwrCon.address})
-      ).connect(borrowerSigner)
-      stakingRewardsEthers = await (
+      const stakingRewardsEthers = await (
         await getEthersContract<StakingRewards>("StakingRewards", {at: stakingRewards.address})
       ).connect(ownerSigner)
-      backerRewardsEthers = await (
+      const backerRewardsEthers = await (
         await getEthersContract<BackerRewards>("BackerRewards", {at: backerRewards.address})
       ).connect(ownerSigner)
-      tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: event.args.pool})
-      creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
+      const tranchedPoolWithBorrowerConnected = await (
+        await getEthersContract<TranchedPool>("TranchedPool", {at: event.args.pool})
+      ).connect(borrowerSigner)
+      const creditLine = await getEthersContract<CreditLine>("CreditLine", {
+        at: await tranchedPoolWithBorrowerConnected.creditLine(),
+      })
 
-      tranchedPoolWithOwnerConnected = await tranchedPool.connect(ownerSigner)
+      const tranchedPoolWithOwnerConnected = await tranchedPoolWithBorrowerConnected.connect(ownerSigner)
 
-      await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
-      await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
+      await erc20Approve(usdc, tranchedPoolWithBorrowerConnected.address, MAX_UINT, [bwr, owner])
       // two token holders
       await (await tranchedPoolWithOwnerConnected.deposit(TRANCHES.Junior, String(untrackedStakedAmount))).wait()
-      const tx = await (
+      const depositTx = await (
         await tranchedPoolWithOwnerConnected.deposit(TRANCHES.Junior, String(trackedStakedAmount))
       ).wait()
-      await bwrCon.lockJuniorCapital(tranchedPool.address)
-      await seniorPool.invest(tranchedPool.address, {from: owner})
+      await (await tranchedPoolWithBorrowerConnected.lockJuniorCapital()).wait()
+      await seniorPool.invest(tranchedPoolWithBorrowerConnected.address, {from: owner})
 
       await erc20Approve(usdc, stakingRewardsEthers.address, MAX_UINT, [bwr, owner])
       await erc20Approve(gfi, stakingRewardsEthers.address, MAX_UINT, [bwr, owner])
 
-      const events = await tranchedPool.queryFilter(tranchedPool.filters.DepositMade(), tx.blockHash)
-      backerStakingTokenId = asNonNullable(events[0]).args.tokenId.toString()
+      const topic = tranchedPoolWithBorrowerConnected.interface.getEventTopic("DepositMade")
+      const rawEvent = depositTx.logs.find((x) => x.topics.indexOf(topic) >= 0)
+      const parsedEvent = tranchedPoolWithBorrowerConnected.interface.parseLog(asNonNullable(rawEvent))
+      const backerStakingTokenId = parsedEvent.args.tokenId
+
+      return {
+        backerStakingTokenId,
+        tranchedPoolWithOwnerConnected,
+        tranchedPoolWithBorrowerConnected,
+        backerRewardsEthers,
+        stakingRewardsEthers,
+        creditLine,
+      }
     })
+
+    beforeEach(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-extra-semi
+      ;({
+        backerStakingTokenId,
+        tranchedPoolWithOwnerConnected,
+        tranchedPoolWithBorrowerConnected,
+        backerRewardsEthers,
+        stakingRewardsEthers,
+        creditLine,
+      } = await setup())
+    })
+
+    async function getStakingRewardsForToken(tokenId: string, blockNum?: number): Promise<BN> {
+      const amount = await stakingRewardsEthers.earnedSinceLastCheckpoint(tokenId, {
+        blockTag: blockNum,
+      })
+
+      return new BN(amount.toString())
+    }
+
+    async function getBackerRewardsForToken(tokenId: string, blockNum?: number): Promise<BN> {
+      const amount = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(tokenId, {
+        blockTag: blockNum,
+      })
+
+      return new BN(amount.toString())
+    }
+
+    async function expectRewardsAreEqualForTokens(stakingTokenId: string, backerTokenId: string, blockNum?: number) {
+      const stakingRewards = await getStakingRewardsForToken(stakingTokenId, blockNum)
+      const backerStakingRewardsEarned = await getBackerRewardsForToken(backerTokenId, blockNum)
+      expect(stakingRewards).to.bignumber.eq(backerStakingRewardsEarned)
+    }
 
     function getStakingRewardTokenFromTransactionReceipt(tx: ContractReceipt): string {
       const topic = stakingRewardsEthers.interface.getEventTopic("Staked")
@@ -749,93 +800,100 @@ describe("mainnet forking tests", async function () {
       return parsedEvent.args.tokenId
     }
 
+    function getWithdrawnStakingAmountFromTransactionReceipt(tx: ContractReceipt) {
+      const topic = backerRewardsEthers.interface.getEventTopic("BackerRewardsClaimed")
+      const rawEvent = tx.logs.find((x) => x.topics.indexOf(topic) >= 0)
+      const parsedEvent = backerRewardsEthers.interface.parseLog(asNonNullable(rawEvent))
+      return parsedEvent.args.amountOfSeniorPoolRewards
+    }
+
+    async function payOffTranchedPoolInterest(tranchedPool: TranchedPool): Promise<ContractReceipt> {
+      await (await tranchedPool.assess()).wait()
+      const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
+      const interestOwed = await creditLine.interestOwed()
+      return (await tranchedPool.pay(interestOwed.toString())).wait()
+    }
+
+    async function fullyRepayTranchedPool(tranchedPool: TranchedPool): Promise<ContractReceipt> {
+      await (await tranchedPool.assess()).wait()
+      const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
+      const principalOwed = await creditLine.principalOwed()
+      const interestOwed = await creditLine.interestOwed()
+      const paymentTx = await (await tranchedPool.pay(principalOwed.add(interestOwed).toString())).wait()
+      const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
+      const interestOwedAfterFinalRepayment = await creditLine.interestOwed()
+      expect(String(principalOwedAfterFinalRepayment)).to.bignumber.eq("0")
+      expect(String(interestOwedAfterFinalRepayment)).to.bignumber.eq("0")
+      return paymentTx
+    }
+
     it("backers only earn rewards for full payments", async () => {
-      await bwrCon.drawdown(tranchedPool.address, String(limit), bwr)
+      await (await tranchedPoolWithBorrowerConnected.drawdown(String(limit))).wait()
       await advanceTime({days: (await creditLine.paymentPeriodInDays()).toString()})
-      const partialPaybackTx = await bwrCon.pay(tranchedPool.address, "1")
-      let backerRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
-        backerStakingTokenId,
-        {
-          blockTag: partialPaybackTx.blockNumber,
-        }
-      )
-      expect(String(backerRewardsEarned)).to.bignumber.eq("0")
+      const partialPaybackTx = await (await tranchedPoolWithBorrowerConnected.pay("1")).wait()
+      let backerRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, partialPaybackTx.blockNumber)
+      expect(backerRewardsEarned).to.bignumber.eq("0")
 
       const interestOwed = await creditLine.interestOwed()
-      const fullPaybackTx = await bwrCon.pay(tranchedPool.address, interestOwed)
-      backerRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
-        blockTag: fullPaybackTx.blockNumber,
-      })
-      expect(String(backerRewardsEarned)).to.not.bignumber.eq("0")
+      const fullPaybackTx = await (await tranchedPoolWithBorrowerConnected.pay(interestOwed)).wait()
+      backerRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, fullPaybackTx.blockNumber)
+      expect(backerRewardsEarned).to.not.bignumber.eq("0")
     })
 
     it("behaves correctly, 1 slice, full drawdown", async () => {
-      // person we dont care about but is participating in the pool to make sure
-      // that other people are receieving staking rewards
-
-      const [, stakingTx] = await mineInSameBlock([
-        await stakingRewardsEthers.populateTransaction.depositAndStake(untrackedStakedAmount.toString()),
-        await stakingRewardsEthers.populateTransaction.depositAndStake(trackedStakedAmount.toString()),
-        await bwrCon.populateTransaction.drawdown(tranchedPool.address, limit.toString(), bwr),
-      ])
+      const [, stakingTx] = await mineInSameBlock(
+        [
+          // were staking another person here to make sure that each person receieves their proportional rewards,
+          // and not that someone is receiving 100% of the rewards
+          await stakingRewardsEthers.populateTransaction.depositAndStake(untrackedStakedAmount.toString()),
+          await stakingRewardsEthers.populateTransaction.depositAndStake(trackedStakedAmount.toString()),
+          await tranchedPoolWithBorrowerConnected.populateTransaction.drawdown(limit.toString()),
+        ],
+        this.timeout()
+      )
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(stakingTx as ContractReceipt)
       const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
       for (let i = 0; i < numberOfPaymentIntervals; i++) {
         await advanceTime({days: paymentPeriodInDays.toFixed()})
-        await tranchedPool.assess()
-        const interestOwed = await creditLine.interestOwed()
-
-        const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
-        const stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-          blockTag: payTx.blockNumber,
-        })
-        const backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
-          backerStakingTokenId,
-          {blockTag: payTx.blockNumber}
-        )
-
-        expect(backerStakingRewardsEarned.toString()).to.bignumber.eq(stakingRewardsEarned.toString())
+        const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
+        await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
+        await expectRewardsAreEqualForTokens(stakingRewardsTokenId, backerStakingTokenId, payTx.blockNumber)
       }
 
-      await advanceTime({toSecond: (await creditLine.termEndTime()).toString()})
+      const termEndTime = await creditLine.termEndTime()
+      await advanceTime({toSecond: termEndTime.toString()})
       await mineBlock()
-      const blockNum = await ethers.provider.getBlockNumber()
-      const stakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-        blockTag: blockNum,
-      })
+      const blockNumAtTermEnd = await ethers.provider.getBlockNumber()
+      const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId, blockNumAtTermEnd)
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
-      await advanceTime({days: "30"})
-      await tranchedPool.assess()
-      const principalOwed = await creditLine.principalOwed()
-      const interestOwed = await creditLine.interestOwed()
-      expect(String(principalOwed)).to.bignumber.eq(limit)
-      const paymentTx = await (
-        await bwrCon.pay(tranchedPool.address, principalOwed.add(interestOwed).toString())
-      ).wait()
-      const principalOwedAfterFinalRepayment = await creditLine.principalOwed()
-      const interestOwedAfterFinalRepayment = await creditLine.interestOwed()
-      expect(String(principalOwedAfterFinalRepayment)).to.bignumber.eq("0")
-      expect(String(interestOwedAfterFinalRepayment)).to.bignumber.eq("0")
+      const thirtyDaysAfterTermEndTime = termEndTime.add("2592000") // 30 days in seconds
+      await advanceTime({toSecond: thirtyDaysAfterTermEndTime.toString()})
+      const paymentTx = await fullyRepayTranchedPool(tranchedPoolWithBorrowerConnected)
 
-      const backerStakingRewardsEarnedAfterFinalRepayment =
-        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
-          blockTag: paymentTx.blockNumber,
-        })
-      expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.eq(String(stakingRewardsAtTermEnd))
+      const backerStakingRewardsEarnedAfterFinalRepayment = await getBackerRewardsForToken(
+        backerStakingTokenId,
+        paymentTx.blockNumber
+      )
+      expect(backerStakingRewardsEarnedAfterFinalRepayment).to.bignumber.eq(stakingRewardsAtTermEnd)
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
-      await advanceTime({days: "30"})
-      const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
-        backerStakingTokenId
+      await advanceTime({days: "365"})
+      await mineBlock()
+      const muchLaterBlockNumber = await ethers.provider.getBlockNumber()
+      const backerStakingRewardsEarnedMuchLater = await getBackerRewardsForToken(
+        backerStakingTokenId,
+        muchLaterBlockNumber
       )
-      expect(String(backerStakingRewardsEarnedMuchLater)).to.bignumber.eq(
-        String(backerStakingRewardsEarnedAfterFinalRepayment)
-      )
+      expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
+
+      const withdrawTx = await (await backerRewardsEthers.withdraw(backerStakingTokenId)).wait()
+      const amountOfStakingRewardsWithdrawn = getWithdrawnStakingAmountFromTransactionReceipt(withdrawTx)
+      expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(String(amountOfStakingRewardsWithdrawn))
     }).timeout(TEST_TIMEOUT)
 
     it("behaves correctly, 1 slice, two partial drawdowns", async () => {
@@ -844,138 +902,111 @@ describe("mainnet forking tests", async function () {
       const firstStakedAmount = trackedStakedAmount.div(new BN("2"))
       const firstUntrackedStakedAmount = untrackedStakedAmount.div(new BN("2"))
       const firstDrawdownAmount = limit.div(new BN("2"))
-      const [, initialStakeTx] = await mineInSameBlock([
-        await stakingRewardsEthers.populateTransaction.depositAndStake(String(firstUntrackedStakedAmount)),
-        await stakingRewardsEthers.populateTransaction.depositAndStake(String(firstStakedAmount)),
-        await bwrCon.populateTransaction.drawdown(tranchedPool.address, String(firstDrawdownAmount), bwr),
-      ])
+      const [, initialStakeTx] = await mineInSameBlock(
+        [
+          await stakingRewardsEthers.populateTransaction.depositAndStake(String(firstUntrackedStakedAmount)),
+          await stakingRewardsEthers.populateTransaction.depositAndStake(String(firstStakedAmount)),
+          await tranchedPoolWithBorrowerConnected.populateTransaction.drawdown(String(firstDrawdownAmount)),
+        ],
+        this.timeout()
+      )
+      expect(String(firstDrawdownAmount)).to.bignumber.lt(new BN(await (await creditLine.limit()).toString()))
       const stakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(initialStakeTx as ContractReceipt)
 
       const numberOfPaymentIntervals = termInDays.dividedBy(paymentPeriodInDays).integerValue().toNumber()
 
-      let backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
-        backerStakingTokenId,
-        {blockTag: initialStakeTx!.blockNumber}
-      )
+      let backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, initialStakeTx?.blockNumber)
+      let stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, initialStakeTx?.blockNumber)
 
-      let stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-        blockTag: initialStakeTx!.blockNumber,
-      })
-
-      expect(String(backerStakingRewardsEarned)).to.bignumber.eq("0")
-      expect(String(stakingRewardsEarned)).to.bignumber.eq("0")
+      expect(backerStakingRewardsEarned).to.bignumber.eq("0")
+      expect(stakingRewardsEarned).to.bignumber.eq("0")
 
       // Run through the first half of payments normally
       for (let i = 0; i < numberOfPaymentIntervals / 2; i++) {
         await advanceTime({days: paymentPeriodInDays.toFixed()})
-        await tranchedPool.assess()
-        const interestOwed = await creditLine.interestOwed()
-        // we need to checkpoint so that when the pool pays back the accumulator is up to date
-        const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
-
-        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-          blockTag: payTx.blockNumber,
-        })
-        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
-          backerStakingTokenId,
-          {blockTag: payTx.blockNumber}
-        )
-        expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(String(stakingRewardsEarned), microTolerance)
+        const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
+        stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
+        backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, payTx.blockNumber)
+        // NOTE: there's currently a bug in the tranched pool share price calculation
+        //        thats causing imprecision here
+        expect(backerStakingRewardsEarned).to.bignumber.closeTo(stakingRewardsEarned, microTolerance)
       }
 
       // we need to stake the equivalent amount drawndown
       const secondStakedAmount = firstStakedAmount.div(new BN("2")) // 1 / 4
-      const secondUntrackedStakedAmount = firstUntrackedStakedAmount.div(new BN("2")) // 1 / 4
-      const secondDrawdownAmount = limit.div(new BN("4"))
-      const [, secondStakeTx] = await mineInSameBlock([
-        await stakingRewardsEthers.populateTransaction.depositAndStake(secondUntrackedStakedAmount.toString()),
-        await stakingRewardsEthers.populateTransaction.depositAndStake(secondStakedAmount.toString()),
-        await bwrCon.populateTransaction.drawdown(tranchedPool.address, secondDrawdownAmount.toString(), bwr),
-      ])
+      const secondUntrackedStakedAmount = firstUntrackedStakedAmount.div(new BN("2")) // (1 / 2) / 2 = 1/4
+      const secondDrawdownAmount = limit.div(new BN("4")) // 1 / 4
+      expect(secondDrawdownAmount.add(firstDrawdownAmount)).to.bignumber.lt(
+        new BN((await creditLine.limit()).toString())
+      )
+      const [, secondStakeTx] = await mineInSameBlock(
+        [
+          await stakingRewardsEthers.populateTransaction.depositAndStake(secondUntrackedStakedAmount.toString()),
+          await stakingRewardsEthers.populateTransaction.depositAndStake(secondStakedAmount.toString()),
+          await tranchedPoolWithBorrowerConnected.populateTransaction.drawdown(secondDrawdownAmount.toString()),
+        ],
+        this.timeout()
+      )
 
       const secondStakingTokenId = getStakingRewardTokenFromTransactionReceipt(secondStakeTx as ContractReceipt)
-      const backerStakingRewardsEarnedAfterSecondDrawdown =
-        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
-          blockTag: secondStakeTx!.blockNumber,
-        })
+      const backerStakingRewardsEarnedAfterSecondDrawdown = await getBackerRewardsForToken(
+        backerStakingTokenId,
+        secondStakeTx?.blockNumber
+      )
 
       // check that the backer doesnt earned rewards on a drawdown
-      expect(String(backerStakingRewardsEarnedAfterSecondDrawdown)).to.bignumber.eq(String(backerStakingRewardsEarned))
+      expect(backerStakingRewardsEarnedAfterSecondDrawdown).to.bignumber.eq(backerStakingRewardsEarned)
 
       // second half of the payments
       for (let i = numberOfPaymentIntervals / 2; i < numberOfPaymentIntervals; i++) {
         await advanceTime({days: paymentPeriodInDays.toFixed()})
-        await tranchedPool.assess()
-        const interestOwed = await creditLine.interestOwed()
-        // we need to checkpoint so that when the pool pays back the accumulator is up to date
-        const payTx = await (await bwrCon.pay(tranchedPool.address, interestOwed.toString())).wait()
+        const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
+        // withdraw to make sure that the backer originally backer wont have less rewards
+        // when their unutilized capital is removed from the pool
+        await (await tranchedPoolWithOwnerConnected.withdrawMax(backerStakingTokenId)).wait()
+        stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
+        const secondStakingRewardsEarned = await getStakingRewardsForToken(secondStakingTokenId, payTx.blockNumber)
+        backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, payTx.blockNumber)
 
-        stakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-          blockTag: payTx.blockNumber,
-        })
-        backerStakingRewardsEarned = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(
-          backerStakingTokenId,
-          {blockTag: payTx.blockNumber}
-        )
-        const secondStakingRewardsEarned = await stakingRewardsEthers.earnedSinceLastCheckpoint(secondStakingTokenId, {
-          blockTag: payTx.blockNumber,
-        })
-
-        expect(String(backerStakingRewardsEarned)).to.bignumber.closeTo(
-          String(stakingRewardsEarned.add(secondStakingRewardsEarned)),
+        expect(backerStakingRewardsEarned).to.bignumber.closeTo(
+          stakingRewardsEarned.add(secondStakingRewardsEarned),
           microTolerance
         )
       }
 
-      await advanceTime({toSecond: (await creditLine.termEndTime()).toString()})
+      const termEndTime = await creditLine.termEndTime()
+      await advanceTime({toSecond: termEndTime.toString()})
       await mineBlock()
-      const blockNum = await ethers.provider.getBlockNumber()
-      const stakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(stakingRewardsTokenId, {
-        blockTag: blockNum,
-      })
-      const seocondStakingRewardsAtTermEnd = await stakingRewardsEthers.earnedSinceLastCheckpoint(
-        secondStakingTokenId,
-        {blockTag: blockNum}
-      )
+      const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId)
+      const seocondStakingRewardsAtTermEnd = await getStakingRewardsForToken(secondStakingTokenId)
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
       // the backer rewards should be less
-      await advanceTime({days: paymentPeriodInDays.toFixed()})
-      await tranchedPool.assess()
-      const principalOwed = await creditLine.principalOwed()
-      const interestOwed = await creditLine.interestOwed()
-      const tx = await (await bwrCon.pay(tranchedPool.address, interestOwed.add(principalOwed).toString())).wait()
-      const backerStakingRewardsEarnedAfterFinalRepayment =
-        await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(backerStakingTokenId, {
-          blockTag: tx.blockNumber,
-        })
+      const thirtyDaysAfterTermEnd = termEndTime.add("2592000") // < 30 days in seconds
+      await advanceTime({toSecond: thirtyDaysAfterTermEnd.toString()})
+      const payTx = await fullyRepayTranchedPool(tranchedPoolWithBorrowerConnected)
+      const backerStakingRewardsEarnedAfterFinalRepayment = await getBackerRewardsForToken(
+        backerStakingTokenId,
+        payTx.blockNumber
+      )
 
       // NOTE: we need to capture the stakingrewards amount at the final day of the repayment
       //        and then compare that its within a tolerance. This is asserting that
-      //        the fall of logic that we're implementing is _close_ to the value
+      //        the pro rating logic that we're implementing is _close_ to the value
       //        that should have been given out
-      expect(String(backerStakingRewardsEarnedAfterFinalRepayment)).to.bignumber.closeTo(
-        String(stakingRewardsAtTermEnd.add(seocondStakingRewardsAtTermEnd)),
+      expect(backerStakingRewardsEarnedAfterFinalRepayment).to.bignumber.closeTo(
+        stakingRewardsAtTermEnd.add(seocondStakingRewardsAtTermEnd),
         microTolerance
       )
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
       await advanceTime({days: "365"})
-      const backerStakingRewardsEarnedMuchLater = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
-        backerStakingTokenId
-      )
-      expect(String(backerStakingRewardsEarnedMuchLater)).to.bignumber.eq(
-        String(backerStakingRewardsEarnedAfterFinalRepayment)
-      )
+      await mineBlock()
+      const backerStakingRewardsEarnedMuchLater = await getBackerRewardsForToken(backerStakingTokenId)
+      expect(backerStakingRewardsEarnedMuchLater).to.bignumber.eq(backerStakingRewardsEarnedAfterFinalRepayment)
     }).timeout(TEST_TIMEOUT)
-
-    // TODO(PR): test that participant in nth slice gets accurate rewards
-    // TOOD(PR): test that participant in nth slice gets correct rewards while other participants withdraw
-    // TODO(PR): test that drawing down does not accrue rewards for a token
-    // TODO(PR): test that an old tranched pool still accrues staking rewards
-    // TODO(PR): test that calling assess multiple times doesnt accrue rewards
 
     describe("before drawdown", async () => {
       it("when a user withdraws they should earn 0 rewards", async () => {
@@ -983,6 +1014,148 @@ describe("mainnet forking tests", async function () {
           backerStakingTokenId
         )
         expect(backerStakingRewardsEarned).to.bignumber.eq("0")
+        const withdrawTx = await (await backerRewardsEthers.withdraw(backerStakingTokenId)).wait()
+        const rewardsWithdrawn = getWithdrawnStakingAmountFromTransactionReceipt(withdrawTx)
+        expect(String(rewardsWithdrawn)).to.bignumber.eq("0")
+      })
+    })
+
+    describe("forceIntializeStakingRewardsPoolInfo", () => {
+      const stratosPoolAddress = "0x00c27fc71b159a346e179b4a1608a0865e8a7470"
+      const stratosPoolBackerTokenId = "570"
+      const almavest6PoolAddress = "0x418749e294cabce5a714efccc22a8aade6f9db57"
+      const almavest6BackerTokenId = "565"
+      const testCases = [
+        [stratosPoolAddress, stratosPoolBackerTokenId],
+        [almavest6PoolAddress, almavest6BackerTokenId],
+      ]
+      let seniorPoolEthers: SeniorPool
+
+      beforeEach(async () => {
+        seniorPoolEthers = await getEthersContract<SeniorPool>("SeniorPool", {at: seniorPool.address})
+      })
+
+      mochaEach(testCases).it("works correctly on %s", async (address, tokenId) => {
+        const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {
+          at: address,
+        })
+        const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {
+          at: await pool.creditLine(),
+        })
+        const borrower = await getTruffleContract<BorrowerInstance>("Borrower", {
+          at: await creditLine.borrower(),
+        })
+        const borrowerEoa = await borrower.getRoleMember(OWNER_ROLE, 0)
+        const borrowerEoaSigner = await ethers.getSigner(borrowerEoa)
+        const borrowerEthers = (
+          await getEthersContract<BorrowerEthers>("Borrower", {
+            at: borrower.address,
+          })
+        ).connect(borrowerEoaSigner)
+        await impersonateAccount(hre, borrowerEoa)
+
+        await erc20Approve(usdc, borrower.address, MAX_UINT, [borrowerEoa])
+        await erc20Approve(usdc, pool.address, MAX_UINT, [borrowerEoa])
+
+        const backerDepositAmount = (await poolTokens.getTokenInfo(tokenId)).principalAmount
+
+        const limit = await creditLine.maxLimit()
+        const juniorTrancheLimit = limit.div(new BN("4")) // junior tranches are 25%
+        const currentAmount = await usdc.balanceOf(pool.address)
+        const remaining = juniorTrancheLimit.sub(currentAmount)
+
+        // A generous contribution from circle
+        const circleEoa = "0x55fe002aeff02f77364de339a1292923a15844b8"
+        await legacyGoldfinchConfig.addToGoList(circleEoa, {from: await getProtocolOwner()})
+        await impersonateAccount(hre, circleEoa)
+        await erc20Approve(usdc, pool.address, MAX_UINT, [circleEoa])
+        await pool.deposit(TRANCHES.Junior, remaining, {from: circleEoa})
+        await impersonateAccount(hre, borrowerEoa)
+        await borrower.lockJuniorCapital(pool.address, {from: borrowerEoa})
+        await seniorPool.invest(pool.address)
+
+        const backerRewardsBeforeDrawdownAndInitialization = await getBackerRewardsForToken(tokenId)
+        expect(backerRewardsBeforeDrawdownAndInitialization).to.bignumber.eq("0")
+
+        const amountToDrawdown = limit
+        await erc20Approve(usdc, stakingRewards.address, backerDepositAmount, [circleEoa])
+        // const stakeTx = await (await stakingRewardsEthers.depositAndStake(backerDepositAmount.toString())).wait()
+        const juniorPortion = await pool.totalJuniorDeposits()
+        const [stakeTx] = await mineInSameBlock(
+          [
+            // create an equivalent staking rewards position so we can verify that the staking rewards are being accumulated
+            // correctly
+            await stakingRewardsEthers
+              .connect(await ethers.getSigner(circleEoa))
+              .populateTransaction.depositAndStake(backerDepositAmount.toString()),
+            await borrowerEthers.populateTransaction.drawdown(pool.address, amountToDrawdown.toString(), borrowerEoa, {
+              from: borrowerEoa,
+            }),
+          ],
+          this.timeout()
+        )
+        const drawdownBlockNumber = stakeTx?.blockNumber
+        const stakingTokenId = getStakingRewardTokenFromTransactionReceipt(stakeTx as ContractReceipt)
+        const backerRewardsAfterDrawdownBeforeInitialization = await getBackerRewardsForToken(tokenId)
+        expect(backerRewardsAfterDrawdownBeforeInitialization).to.bignumber.eq("0")
+
+        await advanceTime({days: "30"})
+        await pool.assess()
+
+        const backerRewardsAfter30DaysBeforeInitialization = await getBackerRewardsForToken(tokenId)
+        expect(backerRewardsAfter30DaysBeforeInitialization).to.bignumber.eq("0")
+
+        const interestOwed = await creditLine.interestOwed()
+        await borrower.pay(pool.address, interestOwed, {from: borrowerEoa})
+        const backerRewardsAfter30DaysAndPaymentBeforeInitialization = await getBackerRewardsForToken(tokenId)
+        expect(backerRewardsAfter30DaysAndPaymentBeforeInitialization).to.bignumber.eq("0")
+
+        const stakingRewardsAccumulatorAtDrawdown = await stakingRewardsEthers.accumulatedRewardsPerToken({
+          blockTag: drawdownBlockNumber,
+        })
+        const juniorPrincipalDeployedAtDrawdown = juniorPortion
+        const sharePriceAtDrawdown = await seniorPoolEthers.sharePrice({blockTag: drawdownBlockNumber})
+
+        await backerRewards.forceIntializeStakingRewardsPoolInfo(
+          pool.address,
+          sharePriceAtDrawdown.toString(),
+          juniorPrincipalDeployedAtDrawdown,
+          stakingRewardsAccumulatorAtDrawdown.toString()
+        )
+
+        await advanceTime({days: 30})
+        await pool.assess()
+        const secondInterestPayment = await creditLine.interestOwed()
+        const secondPaymentTx = await borrower.pay(pool.address, secondInterestPayment, {from: borrowerEoa})
+
+        const stakingRewardsAfterPaymentAfterInitialization = await getStakingRewardsForToken(
+          stakingTokenId,
+          secondPaymentTx.receipt.blockNumber
+        )
+        const backerRewardsAfterPaymentAfterInitialization = await getBackerRewardsForToken(
+          tokenId,
+          secondPaymentTx.receipt.blockNumber
+        )
+        expect(backerRewardsAfterPaymentAfterInitialization).to.bignumber.gt(new BN(0))
+        expect(stakingRewardsAfterPaymentAfterInitialization).to.bignumber.gt(new BN(0))
+        expect(stakingRewardsAfterPaymentAfterInitialization).to.bignumber.eq(
+          backerRewardsAfterPaymentAfterInitialization
+        )
+      })
+    })
+
+    describe("after drawdown but before the first payment", () => {
+      beforeEach(async () => {
+        const limit = await creditLine.maxLimit()
+        tranchedPoolWithBorrowerConnected.drawdown(limit.toString())
+      })
+
+      it("backers should earned 0 rewards", async () => {
+        const backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId)
+        expect(backerStakingRewardsEarned).to.bignumber.eq("0")
+        const withdrawTx = await (await backerRewardsEthers.withdraw(backerStakingTokenId)).wait()
+        const rewardsWithdrawn = getWithdrawnStakingAmountFromTransactionReceipt(withdrawTx)
+        expect(String(rewardsWithdrawn)).to.bignumber.eq("0")
       })
     })
   })

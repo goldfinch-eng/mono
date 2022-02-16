@@ -30,14 +30,14 @@ export async function main() {
     contracts: ["BackerRewards"],
   })
 
-  // 2. Change implementations
+  // 3. Change implementations
   deployEffects.add(
     await changeImplementations({
       contracts: upgradedContracts,
     })
   )
 
-  // 3. Load backer rewards
+  // 4. Load backer rewards
   deployEffects.add({
     deferred: [
       await gfi.populateTransaction.approve(owner, gfiToLoadIntoBackerRewards.toString()),
