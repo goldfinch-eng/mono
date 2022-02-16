@@ -7,6 +7,7 @@ import {Logger} from "../types"
 import {fixProvider, getProtocolOwner, isTestEnv} from "./"
 import {assertIsString, isPlainObject} from "../../../utils"
 import {openzeppelin_saveDeploymentManifest} from "./openzeppelin-upgrade-validation"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 
 export class ContractDeployer {
   public readonly logger: Logger
@@ -27,18 +28,20 @@ export class ContractDeployer {
   }
 
   async deploy<T extends BaseContract | Contract = Contract>(contractName: string, options: DeployOptions): Promise<T> {
+    options = await this.withDefaults(options)
+
     const proxyPreviouslyExists = await this.hre.deployments.getOrNull(`${contractName}`)
-    if (isPlainObject(options) && isPlainObject(options?.proxy) && !options?.proxy?.owner) {
-      const protocol_owner = await getProtocolOwner()
-      options = {
-        ...options,
-        proxy: {
-          ...options.proxy,
-          owner: protocol_owner,
-        },
-      }
+    const deployResult = await this.deployHandlingUnknownSigner(contractName, options)
+
+    // if a new proxy deployment, generate the manifest for hardhat-upgrades
+    if (isPlainObject(options) && isPlainObject(options?.proxy) && !proxyPreviouslyExists && !isTestEnv()) {
+      await this.writeDeploymentManifest(contractName)
     }
 
+    return (await ethers.getContractAt(deployResult.abi, deployResult.address)) as T
+  }
+
+  private async deployHandlingUnknownSigner(contractName: string, options: DeployOptions): Promise<DeployResult> {
     let result: DeployResult
     const unsignedTx = await this.hre.deployments.catchUnknownSigner(
       async () => {
@@ -63,23 +66,66 @@ export class ContractDeployer {
       )
     }
 
-    // if a new proxy deployment, generate the manifest for hardhat-upgrades
-    if (isPlainObject(options) && isPlainObject(options?.proxy) && !proxyPreviouslyExists && !isTestEnv()) {
-      const {network} = this.hre
-      const proxyContractDeployment = await this.hre.deployments.get(`${contractName}`)
-      const implContractDeployment = await this.hre.deployments.get(`${contractName}_Implementation`)
-      try {
-        await openzeppelin_saveDeploymentManifest(
-          fixProvider(network.provider),
-          proxyContractDeployment,
-          implContractDeployment
-        )
-      } catch (e) {
-        this.logger(`Error saving manifest for ${contract}: ${e}`)
+    return result
+  }
+
+  private async writeDeploymentManifest(contractName: string) {
+    const {network} = this.hre
+    const proxyContractDeployment = await this.hre.deployments.get(`${contractName}`)
+    const implContractDeployment = await this.hre.deployments.get(`${contractName}_Implementation`)
+    try {
+      await openzeppelin_saveDeploymentManifest(
+        fixProvider(network.provider),
+        proxyContractDeployment,
+        implContractDeployment
+      )
+    } catch (e) {
+      this.logger(`Error saving manifest for ${contract}: ${e}`)
+    }
+  }
+
+  private async withDefaults(options: DeployOptions): Promise<DeployOptions> {
+    options = await this.withProxyDefaults(options)
+    options = await this.withFeeDataDefaults(options)
+    return options
+  }
+
+  private async withProxyDefaults(options: DeployOptions): Promise<DeployOptions> {
+    if (isPlainObject(options) && isPlainObject(options?.proxy) && !options?.proxy?.owner) {
+      const protocol_owner = await getProtocolOwner()
+      options = {
+        ...options,
+        proxy: {
+          ...options.proxy,
+          owner: protocol_owner,
+        },
       }
     }
 
-    return (await ethers.getContractAt(result.abi, result.address)) as T
+    return options
+  }
+
+  private async withFeeDataDefaults(options: DeployOptions): Promise<DeployOptions> {
+    const newOptions = {...options}
+
+    // If gasPrice is specified, then the intent was to run a pre-EIP-1559 tx
+    if (!options.gasPrice) {
+      const feeData = await ethers.provider.getFeeData()
+      if (!feeData.maxPriorityFeePerGas) {
+        console.warn("maxPriorityFeePerGas from ethers was undefined. Defaulting to 1 gwei...")
+        feeData.maxPriorityFeePerGas = ethers.utils.parseUnits("1", "gwei")
+      }
+      assertNonNullable(feeData.maxFeePerGas, "Error fetching fee data (maxFeePerGas)")
+      assertNonNullable(feeData.maxPriorityFeePerGas, "Error fetching fee data (maxPriorityFeePerGas)")
+      if (!newOptions.maxFeePerGas) {
+        newOptions.maxFeePerGas = feeData.maxFeePerGas
+      }
+      if (!newOptions.maxPriorityFeePerGas) {
+        newOptions.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
+      }
+    }
+
+    return newOptions
   }
 
   async deployLibrary(libraryName: string, options: DeployOptions): Promise<DeployResult> {

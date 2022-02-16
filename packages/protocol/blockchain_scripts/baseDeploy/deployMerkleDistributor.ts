@@ -1,17 +1,10 @@
 import fs from "fs"
 import {toEthers} from "@goldfinch-eng/protocol/test/testHelpers"
-import {CommunityRewards, MerkleDistributor} from "@goldfinch-eng/protocol/typechain/ethers"
+import {CommunityRewards} from "@goldfinch-eng/protocol/typechain/ethers"
 import {CommunityRewardsInstance, MerkleDistributorInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {Deployed} from "../baseDeploy"
-import {
-  ContractDeployer,
-  DISTRIBUTOR_ROLE,
-  getContract,
-  getProtocolOwner,
-  getTruffleContract,
-  TRUFFLE_CONTRACT_PROVIDER,
-} from "../deployHelpers"
+import {ContractDeployer, DISTRIBUTOR_ROLE, getProtocolOwner, getTruffleContract} from "../deployHelpers"
 import {isMerkleDistributorInfo} from "../merkle/merkleDistributor/types"
 import {DeployEffects} from "../migrations/deployEffects"
 
@@ -57,14 +50,14 @@ export async function deployMerkleDistributor(
     communityRewards,
     deployEffects,
     merkleDistributorInfoPath = process.env.MERKLE_DISTRIBUTOR_INFO_PATH,
+    contractName = "MerkleDistributor",
   }: {
     communityRewards: Deployed<CommunityRewardsInstance>
     deployEffects: DeployEffects
     merkleDistributorInfoPath?: string
+    contractName?: string
   }
 ): Promise<Deployed<MerkleDistributorInstance> | undefined> {
-  const contractName = "MerkleDistributor"
-
   const merkleRoot = await getMerkleDistributorRoot(merkleDistributorInfoPath)
   if (!merkleRoot) {
     logger(`Merkle root is undefined. Skipping deploy of ${contractName}`)

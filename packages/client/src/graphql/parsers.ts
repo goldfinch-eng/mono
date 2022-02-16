@@ -10,7 +10,7 @@ import {
   getTranchedPoolsData_tranchedPools_seniorTranches as SeniorTrancheGQL,
 } from "./types"
 import {BlockInfo, roundDownPenny} from "../utils"
-import {PoolBacker, TokenInfo, TranchedPool, TrancheInfo} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker, TokenInfo, TranchedPool, TrancheInfo} from "../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {CreditLine} from "../ethereum/creditLine"
 import {usdcFromAtomic} from "../ethereum/erc20"
@@ -56,10 +56,6 @@ async function parseTranchedPool(
   tranchedPool.creditLineAddress = pool.creditLine.id
   tranchedPool.creditLine = creditLine
   tranchedPool.metadata = await tranchedPool.loadPoolMetadata()
-  tranchedPool.juniorFeePercent = new BigNumber(pool.juniorFeePercent)
-  tranchedPool.reserveFeePercent = new BigNumber(pool.reserveFeePercent)
-  tranchedPool.estimatedLeverageRatio = new BigNumber(pool.estimatedLeverageRatio)
-  tranchedPool.estimatedSeniorPoolContribution = new BigNumber(pool.estimatedSeniorPoolContribution)
 
   // TODO This needs to be updated to support version of tranched pool with multiples slices
   const juniorTranche = pool.juniorTranches[0]
@@ -70,6 +66,16 @@ async function parseTranchedPool(
   tranchedPool.juniorTranche = trancheInfo(juniorTranche)
   tranchedPool.seniorTranche = trancheInfo(seniorTranche)
 
+  tranchedPool.totalDeposited = new BigNumber(pool.totalDeposited)
+  tranchedPool.juniorFeePercent = new BigNumber(pool.juniorFeePercent)
+  tranchedPool.reserveFeePercent = new BigNumber(pool.reserveFeePercent)
+  tranchedPool.estimatedSeniorPoolContribution = new BigNumber(pool.estimatedSeniorPoolContribution)
+  tranchedPool.estimatedLeverageRatio = new BigNumber(pool.estimatedLeverageRatio)
+
+  tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
+  tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
+  tranchedPool.isPaused = pool.isPaused
+
   // This code addresses the case when the user doesn't have a web3 provider
   // since we need the current block timestamp to define the pool status.
   const _currentBlock: BlockInfo = currentBlock || {
@@ -77,10 +83,19 @@ async function parseTranchedPool(
     timestamp: Math.floor(Date.now() / 1000),
   }
   tranchedPool.poolState = tranchedPool.getPoolState(_currentBlock)
-  tranchedPool.isPaused = pool.isPaused
-  tranchedPool.totalDeposited = new BigNumber(pool.totalDeposited)
-  tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
-  tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
+
+  // TODO Add these values to the subgraph, and then use them, and remove these web3 calls.
+  const [totalDeployed, fundableAt] = await Promise.all(
+    tranchedPool.isMultipleDrawdownsCompatible
+      ? [
+          tranchedPool.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock?.number || "latest"),
+          tranchedPool.contract.readOnly.methods.fundableAt().call(undefined, currentBlock?.number || "latest"),
+        ]
+      : ["0", "0"]
+  )
+  tranchedPool.totalDeployed = new BigNumber(totalDeployed)
+  tranchedPool.fundableAt = new BigNumber(fundableAt)
+
   return tranchedPool
 }
 
@@ -130,7 +145,7 @@ export async function parseBackers(
   goldfinchProtocol?: GoldfinchProtocol,
   currentBlock?: BlockInfo,
   userAddress?: string
-): Promise<PoolBacker[]> {
+): Promise<TranchedPoolBacker[]> {
   const _goldfinchProtocol = await defaultGoldfinchProtocol(goldfinchProtocol)
 
   return Promise.all(
@@ -139,7 +154,7 @@ export async function parseBackers(
 
       if (userAddress) {
         const backerData = tranchedPoolData.backers?.find((b) => b.user.id.toLowerCase() === userAddress.toLowerCase())
-        const backer = new PoolBacker(userAddress, tranchedPool, _goldfinchProtocol)
+        const backer = new TranchedPoolBacker(userAddress, tranchedPool, _goldfinchProtocol)
         backer.principalAmount = new BigNumber(backerData?.principalAmount || 0)
         backer.principalRedeemed = new BigNumber(backerData?.principalRedeemed || 0)
         backer.interestRedeemed = new BigNumber(backerData?.interestRedeemed || 0)
@@ -156,7 +171,7 @@ export async function parseBackers(
       } else {
         // HACK: In the absence of a user address, use the tranched pool's address, so that we can still
         // instantiate `PoolBacker` and show the list of pools.
-        const backer = new PoolBacker(tranchedPool.address, tranchedPool, _goldfinchProtocol)
+        const backer = new TranchedPoolBacker(tranchedPool.address, tranchedPool, _goldfinchProtocol)
         backer.principalAmount = new BigNumber("")
         backer.principalRedeemed = new BigNumber("")
         backer.interestRedeemed = new BigNumber("")

@@ -1,17 +1,15 @@
+import {PlainObject} from "@goldfinch-eng/utils/src/type"
 import Notify, {API as NotifyAPI} from "bnc-notify"
 import _ from "lodash"
 import moment from "moment"
 import Web3 from "web3"
-import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
-import {AbstractProvider} from "web3-core"
-import {assertNonNullable, BlockInfo} from "../utils"
+import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "../types/transactions"
-import {PlainObject} from "@goldfinch-eng/utils/src/type"
+import {assertErrorLike, BlockInfo, ErrorLike, isCodedErrorLike} from "../utils"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
-const MURMURATION_CHAIN_ID = 31337
 
 type SetCurrentTxs = (fn: (currentTx: CurrentTx<TxType>[]) => CurrentTx<TxType>[]) => void
 type SetCurrentErrors = (fn: (currentErrors: any[]) => any[]) => void
@@ -42,12 +40,6 @@ class NetworkMonitor {
     this.blockHeaderSubscription.on("data", (blockHeader) => {
       this.newBlockHeaderReceived(blockHeader)
     })
-
-    if (process.env.REACT_APP_MURMURATION === "yes" && this.networkId !== MURMURATION_CHAIN_ID) {
-      const currentProvider: AbstractProvider = this.userWalletWeb3.currentProvider as AbstractProvider
-      assertNonNullable(currentProvider.request)
-      await currentProvider.request({method: "wallet_switchEthereumChain", params: [{chainId: "0x7A69"}]})
-    }
   }
 
   get isLocalNetwork() {
@@ -106,11 +98,12 @@ class NetworkMonitor {
         blockNumber: transaction.blockNumber,
       })
     })
-    emitter.on("txFailed", (error: any) => {
-      if (error.code === -32603) {
-        error.message = "Something went wrong with your transaction."
+    emitter.on("txFailed", (err: unknown) => {
+      assertErrorLike(err)
+      if (isCodedErrorLike(err) && err.code === -32603) {
+        err.message = "Something went wrong with your transaction."
       }
-      this.markTXErrored(txData, error)
+      this.markTXErrored(txData, err)
     })
     return txData
   }
@@ -166,7 +159,7 @@ class NetworkMonitor {
     this.updateTX(tx, {status: "successful"})
   }
 
-  markTXErrored<T extends TxType>(failedTX: PendingCurrentTx<T>, error: Error) {
+  markTXErrored<T extends TxType>(failedTX: PendingCurrentTx<T>, err: ErrorLike) {
     this.setCurrentTxs((currentTxs) => {
       const matches = _.remove(currentTxs, {id: failedTX.id}) as PendingCurrentTx<T>[]
       const match = matches && matches[0]
@@ -175,7 +168,7 @@ class NetworkMonitor {
         tx = {
           ...match,
           status: "error",
-          errorMessage: error.message,
+          errorMessage: err.message,
         }
       } else {
         throw new Error("Failed to identify pending transaction to mark as failed.")
@@ -185,7 +178,7 @@ class NetworkMonitor {
       return newTxs
     })
     this.setCurrentErrors((currentErrors) => {
-      return _.concat(currentErrors, {id: failedTX.id, message: error.message})
+      return _.concat(currentErrors, {id: failedTX.id, message: err.message})
     })
   }
 

@@ -11,7 +11,7 @@ import {
 } from "../ethereum/erc20"
 import {fiduFromAtomic} from "../ethereum/fidu"
 import {gfiFromAtomic, gfiInDollars, gfiToDollarsAtomic} from "../ethereum/gfi"
-import {CapitalProvider, PoolData, StakingRewardsPosition} from "../ethereum/pool"
+import {CapitalProvider, SeniorPoolData, StakingRewardsPosition} from "../ethereum/pool"
 import useDebounce from "../hooks/useDebounce"
 import useNonNullContext from "../hooks/useNonNullContext"
 import useSendFromUser from "../hooks/useSendFromUser"
@@ -57,7 +57,7 @@ type WithdrawalInfo =
     }
 
 interface WithdrawalFormProps {
-  poolData: PoolData
+  poolData: SeniorPoolData
   capitalProvider: CapitalProvider
   actionComplete: () => void
   closeForm: () => void

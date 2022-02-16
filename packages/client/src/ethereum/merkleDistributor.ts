@@ -10,7 +10,7 @@ import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 
-type MerkleDistributorLoadedInfo = {
+export type MerkleDistributorLoadedInfo = {
   currentBlock: BlockInfo
 }
 
@@ -89,6 +89,8 @@ export class MerkleDistributor {
         return "as a Goldfinch advisor"
       case "contributor":
         return "as a Goldfinch contributor"
+      case "backer":
+        return "as a Backer"
       default:
         assertUnreachable(reason)
     }

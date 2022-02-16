@@ -105,7 +105,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   uint256 public totalRewards;
 
   /// @notice interest $ eligible for gfi rewards, times 1e18
-
   uint256 public maxInterestDollarsEligible;
 
   /// @notice counter of total interest repayments, times 1e6
@@ -392,14 +391,19 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool pool = ITranchedPool(_poolAddress);
     BackerRewardsInfo storage _poolInfo = pools[_poolAddress];
 
-    uint256 totalJuniorDeposits = pool.totalJuniorDeposits();
-    if (totalJuniorDeposits == 0) {
+    uint256 totalJuniorDepositsAtomic = _usdcToAtomic(pool.totalJuniorDeposits());
+    // If total junior deposits are 0, or less than 1, allocate no rewards. The latter condition
+    // is necessary to prevent a perverse, "infinite mint" scenario in which we'd allocate
+    // an even greater amount of rewards than `newGrossRewards`, due to dividing by less than 1.
+    // This scenario and its mitigation are analogous to that of
+    // `StakingRewards.additionalRewardsPerTokenSinceLastUpdate()`.
+    if (totalJuniorDepositsAtomic < _gfiMantissa()) {
       return;
     }
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(
-      newGrossRewards.mul(_gfiMantissa()).div(_usdcToAtomic(totalJuniorDeposits))
+      newGrossRewards.mul(_gfiMantissa()).div(totalJuniorDepositsAtomic)
     );
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
@@ -433,6 +437,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
 
+    // If for any reason the new accumulator is less than our last one, abort for safety.
+    if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      return;
+    }
+
     // iterate through all of the slices and checkpoint
     for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
       _checkpointSliceStakingRewards(pool, sliceIndex, publish);
@@ -459,6 +468,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     IStakingRewards stakingRewards = _getUpdatedStakingRewards();
     ITranchedPool.TrancheInfo memory juniorTranche = _getJuniorTrancheForTranchedPoolSlice(pool, sliceIndex);
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
+
+    // If for any reason the new accumulator is less than our last one, abort for safety.
+    if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      return;
+    }
     uint256 rewardsAccruedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
       poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint
     );
@@ -511,6 +525,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
 
     uint256 newAccumulatedRewardsPerTokenAtLastWithdraw = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
+
+    // If for any reason the new accumulator is less than our last one, abort for safety.
+    if (
+      newAccumulatedRewardsPerTokenAtLastWithdraw <
+      tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw
+    ) {
+      return;
+    }
 
     tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw = newAccumulatedRewardsPerTokenAtLastWithdraw;
   }
@@ -753,6 +775,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       });
   }
 
+  /// @notice Returns the amount of rewards accrued from `lastUpdatedTime` to `endTime`
+  ///           We assume the reward rate was linear during this time
+  /// @param rewardsAccruedSinceLastCheckpoint rewards accumulated between `lastUpdatedTime` and `currentTime`
+  /// @param lastUpdatedTime the last timestamp the rewards accumulator was updated
+  /// @param currentTime the current timestamp
+  /// @param endTime the end time of the period that is elligible to accrue rewards
+  /// @return approximate rewards accrued from `lastUpdateTime` to `endTime`
   function _calculateProRatedRewardsForPeriod(
     uint256 rewardsAccruedSinceLastCheckpoint,
     uint256 lastUpdatedTime,
