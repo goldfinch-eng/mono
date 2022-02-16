@@ -99,6 +99,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 accumulatedRewardsPerTokenAtLastWithdraw;
   }
 
+  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
+
   /// @notice total amount of GFI rewards available, times 1e18
   uint256 public totalRewards;
 
@@ -271,7 +273,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
 
-    // Note: If a TranchedPool is oversubscribed, reward allocation's scale down proportionately.
+    if (_isSeniorTrancheToken(tokenInfo)) {
+      return 0;
+    }
+
+    // Note: If a TranchedPool is oversubscribed, reward allocations scale down proportionately.
 
     uint256 diffOfAccRewardsPerPrincipalDollar = pools[tokenInfo.pool].accRewardsPerPrincipalDollar.sub(
       tokens[tokenId].accRewardsPerPrincipalDollarAtMint
@@ -321,6 +327,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool tranchedPool = ITranchedPool(poolAddr);
     require(!tranchedPool.creditLine().isLate(), "Pool is late on payments");
 
+    require(!_isSeniorTrancheToken(tokenInfo), "Ineligible senior tranche token");
+
     uint256 claimableBackerRewards = poolTokenClaimableRewards(tokenId);
     uint256 claimableStakingRewards = stakingRewardsEarnedSinceLastCheckpoint(tokenId);
     uint256 totalClaimableRewards = claimableBackerRewards.add(claimableStakingRewards);
@@ -345,6 +353,10 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function stakingRewardsEarnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
     IPoolTokens.TokenInfo memory poolTokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
+    if (_isSeniorTrancheToken(poolTokenInfo)) {
+      return 0;
+    }
+
     ITranchedPool pool = ITranchedPool(poolTokenInfo.pool);
     uint256 sliceIndex = _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche);
 
@@ -505,6 +517,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function _checkpointTokenStakingRewards(uint256 tokenId) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    require(!_isSeniorTrancheToken(tokenInfo), "Ineligible senior tranche token");
+
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
     StakingRewardsPoolInfo memory poolInfo = poolStakingRewards[pool];
     uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
@@ -603,6 +617,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     );
 
     return newGrossRewards;
+  }
+
+  /**
+   * @return Whether the provided `tokenInfo` is a token corresponding to a senior tranche.
+   */
+  function _isSeniorTrancheToken(IPoolTokens.TokenInfo memory tokenInfo) internal pure returns (bool) {
+    return tokenInfo.tranche.mod(NUM_TRANCHES_PER_SLICE) == 1;
   }
 
   function _gfiMantissa() internal pure returns (uint256) {
