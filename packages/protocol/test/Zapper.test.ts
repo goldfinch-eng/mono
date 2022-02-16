@@ -588,7 +588,7 @@ describe("Zapper", async () => {
       )
 
       // it updates the total staked supply
-      expect(totalStakedSupplyAfter).to.bignumber.eq(totalStakedSupplyBefore.mul(new BN(3).div(new BN(2))))
+      expect(totalStakedSupplyAfter).to.bignumber.eq(totalStakedSupplyBefore.mul(new BN(3)).div(new BN(2)))
 
       // it deposits all FIDU into Curve on behalf of the user
       expect(await stakingRewards.ownerOf(newTokenId)).to.eq(investor)
