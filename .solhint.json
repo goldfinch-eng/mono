@@ -141,7 +141,8 @@
           "getReward": [],
           "kick": [],
           "exit": [],
-          "exitAndWithdraw": []
+          "exitAndWithdraw": [],
+          "addToStake": []
         },
         "**/CommunityRewards.sol:CommunityRewards": {
           "grant": ["nonReentrant", "whenNotPaused", "onlyDistributor"],
@@ -187,6 +188,11 @@
           "applyByAmount": [],
           "migrateAccountingVariables":  [],
           "closeCreditLine": []
+        },
+        "**/Zapper.sol:*": {
+          "zapStakeToTranchedPool":  [],
+          "claimTranchedPoolZap":  [],
+          "unzapToStakingRewards":  []
         },
         "**/contracts/test/**": {
           "*.*": []

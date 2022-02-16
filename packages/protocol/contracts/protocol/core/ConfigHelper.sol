@@ -15,6 +15,7 @@ import "../../interfaces/IPoolTokens.sol";
 import "../../interfaces/IBackerRewards.sol";
 import "../../interfaces/IGoldfinchFactory.sol";
 import "../../interfaces/IGo.sol";
+import "../../interfaces/IStakingRewards.sol";
 
 /**
  * @title ConfigHelper
@@ -70,6 +71,10 @@ library ConfigHelper {
 
   function getGo(GoldfinchConfig config) internal view returns (IGo) {
     return IGo(goAddress(config));
+  }
+
+  function getStakingRewards(GoldfinchConfig config) internal view returns (IStakingRewards) {
+    return IStakingRewards(stakingRewardsAddress(config));
   }
 
   function oneInchAddress(GoldfinchConfig config) internal view returns (address) {

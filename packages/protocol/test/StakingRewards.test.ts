@@ -1,4 +1,3 @@
-/* global web3 */
 import BN from "bn.js"
 import hre from "hardhat"
 import {
@@ -782,6 +781,131 @@ describe("StakingRewards", function () {
         const tokenId = await stake({amount: bigVal(100), from: investor})
         await stakingRewards.pause()
         await expect(stakingRewards.unstake(tokenId, bigVal(100), {from: investor})).to.be.rejectedWith(/paused/)
+      })
+    })
+
+    context("sender has ZAPPER_ROLE", async () => {
+      beforeEach(async () => {
+        await stakingRewards.initZapperRole()
+        await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), owner)
+      })
+
+      it("can unstake on behalf of any user", async () => {
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        // Owner has ZAPPER_ROLE
+        await expectAction(() => stakingRewards.unstake(tokenId, fiduAmount, {from: owner})).toChange([
+          [() => fidu.balanceOf(owner), {by: fiduAmount}],
+          [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
+        ])
+      })
+
+      it("can unstake without slashing unvested grant", async () => {
+        // Enable vesting
+        await stakingRewards.setVestingSchedule(yearInSeconds)
+
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: yearInSeconds.div(new BN(2))})
+
+        stakingRewards.unstake(tokenId, fiduAmount, {from: owner})
+
+        await advanceTime({seconds: yearInSeconds.div(new BN(2))})
+
+        // All rewards in first half, including unvested, should be claimable by the
+        // end of the vesting schedule, since no slashing has occurred
+        const grantedRewardsInFirstHalf = rewardRate.mul(halfYearInSeconds).div(new BN(2))
+        await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
+          [() => gfi.balanceOf(investor), {byCloseTo: grantedRewardsInFirstHalf}],
+        ])
+      })
+    })
+  })
+
+  describe("addToStake", async () => {
+    let rewardRate: BN
+    let totalRewards: BN
+
+    beforeEach(async () => {
+      await stakingRewards.initZapperRole()
+      await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), owner)
+
+      rewardRate = bigVal(1000)
+
+      // Fix the reward rate
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      // Mint rewards for a full year
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+    })
+
+    it("can only be called by zapper", async () => {
+      await expect(stakingRewards.addToStake(1, bigVal(100), {from: anotherUser})).to.be.rejectedWith(/access denied/)
+    })
+
+    it("adds to stake without affecting vesting schedule", async () => {
+      const tokenId = await stake({amount: fiduAmount.div(new BN(2)), from: investor})
+
+      await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+      const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+      const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+      const ownerFiduAmount = depositEvent.args.shares
+
+      await erc20Approve(fidu, stakingRewards.address, ownerFiduAmount, [owner])
+      await expectAction(() => stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})).toChange([
+        // It adds to the tokenId's position
+        [async () => ((await stakingRewards.positions(tokenId)) as any).amount, {by: ownerFiduAmount}],
+        // It increases totalStakedSupply
+        [() => stakingRewards.totalStakedSupply(), {by: ownerFiduAmount}],
+      ])
+
+      // It checkpoints rewards
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("uses the position's leverage multiplier", async () => {
+      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
+
+      await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+      const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+      const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+      const ownerFiduAmount = depositEvent.args.shares
+
+      await stake({amount: fiduAmount, from: anotherUser})
+      const tokenId = await stakeWithLockup({
+        amount: new BN(fiduAmount).sub(new BN(ownerFiduAmount)),
+        lockupPeriod: LockupPeriod.TwelveMonths,
+        from: investor,
+      })
+
+      await erc20Approve(fidu, stakingRewards.address, ownerFiduAmount, [owner])
+      await stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})
+
+      await advanceTime({seconds: halfYearInSeconds})
+      await ethers.provider.send("evm_mine", [])
+
+      // Threshold of 2 second of rewards to account for slight delay between original stake and addToStake
+      const threshold = new BN(2).mul(rewardRate)
+
+      const expected = rewardRate.mul(halfYearInSeconds).mul(new BN(2)).div(new BN(3))
+      expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.closeTo(expected, threshold)
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        const tokenId = await stake({amount: bigVal(100), from: investor})
+        await stakingRewards.pause()
+        await expect(stakingRewards.addToStake(tokenId, bigVal(100), {from: owner})).to.be.rejectedWith(/paused/)
       })
     })
   })
@@ -2488,6 +2612,23 @@ describe("StakingRewards", function () {
           configAddress: otherConfig.address,
         })
       })
+    })
+  })
+
+  context("initZapperRole", async () => {
+    it("is only callable by admin", async () => {
+      await expect(stakingRewards.initZapperRole({from: anotherUser})).to.be.rejectedWith(/Must have admin role/)
+      await expect(stakingRewards.initZapperRole({from: owner})).to.be.fulfilled
+    })
+
+    it("initializes ZAPPER_ROLE", async () => {
+      await expect(
+        stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})
+      ).to.be.rejectedWith(/sender must be an admin to grant/)
+      await stakingRewards.initZapperRole({from: owner})
+      // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
+      await expect(stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be
+        .fulfilled
     })
   })
 })

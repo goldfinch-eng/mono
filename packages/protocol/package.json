@@ -56,14 +56,8 @@
     "generate-merkle-root:client-test": "MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-merkle-grants:client-test && MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-backer-merkle-grants:client-test && npm run _generate-merkle-info:client-test && npm run _generate-backer-merkle-info:client-test"
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": [
-      "prettier --write",
-      "eslint --resolve-plugins-relative-to=. --fix"
-    ],
-    "*.sol": [
-      "prettier --write",
-      "solhint --fix"
-    ]
+    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"],
+    "*.sol": ["prettier --write", "solhint --fix"]
   },
   "repository": {
     "type": "git",

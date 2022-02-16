@@ -65,6 +65,8 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
 
+  bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
+
   GoldfinchConfig public config;
 
   /// @notice The block timestamp when rewards were last checkpointed
@@ -139,6 +141,10 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
     leverageMultipliers[LockupPeriod.SixMonths] = MULTIPLIER_DECIMALS; // 1x
     leverageMultipliers[LockupPeriod.TwelveMonths] = MULTIPLIER_DECIMALS; // 1x
     leverageMultipliers[LockupPeriod.TwentyFourMonths] = MULTIPLIER_DECIMALS; // 1x
+  }
+
+  function initZapperRole() external onlyAdmin {
+    _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
   }
 
   /* ========== VIEWS ========== */
@@ -480,7 +486,7 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
-  function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
+  function unstake(uint256 tokenId, uint256 amount) public override nonReentrant whenNotPaused updateReward(tokenId) {
     _unstake(tokenId, amount);
     stakingToken().safeTransfer(msg.sender, amount);
   }
@@ -566,7 +572,7 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
   }
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
-    require(ownerOf(tokenId) == msg.sender, "access denied");
+    require(ownerOf(tokenId) == msg.sender || isZapper(), "access denied");
     require(amount > 0, "Cannot unstake 0");
 
     StakedPosition storage position = positions[tokenId];
@@ -583,8 +589,10 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
     position.amount = prevAmount.sub(amount);
 
     // Slash unvested rewards
-    uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
-    position.rewards.slash(slashingPercentage);
+    if (!isZapper()) {
+      uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
+      position.rewards.slash(slashingPercentage);
+    }
 
     emit Unstaked(msg.sender, tokenId, amount);
   }
@@ -617,6 +625,25 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
   function exitAndWithdraw(uint256 tokenId) external {
     unstakeAndWithdrawInFidu(tokenId, positions[tokenId].amount);
     getReward(tokenId);
+  }
+
+  function addToStake(uint256 tokenId, uint256 amount)
+    external
+    override
+    nonReentrant
+    whenNotPaused
+    updateReward(tokenId)
+  {
+    require(isZapper(), "access denied");
+
+    StakedPosition storage position = positions[tokenId];
+    position.amount = position.amount.add(amount);
+
+    uint256 leveredAmount = toLeveredAmount(amount, position.leverageMultiplier);
+    totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(leveredAmount);
+    totalStakedSupply = totalStakedSupply.add(amount);
+
+    stakingToken().safeTransferFrom(msg.sender, address(this), amount);
   }
 
   /* ========== RESTRICTED FUNCTIONS ========== */
@@ -712,6 +739,10 @@ contract StakingRewards is IStakingRewards, ERC721PresetMinterPauserAutoIdUpgrad
   modifier onlyAdmin() {
     require(isAdmin(), "Must have admin role to perform this action");
     _;
+  }
+
+  function isZapper() public view returns (bool) {
+    return hasRole(ZAPPER_ROLE, _msgSender());
   }
 
   /* ========== EVENTS ========== */
