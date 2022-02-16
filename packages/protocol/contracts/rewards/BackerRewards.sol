@@ -420,6 +420,11 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 newStakingRewardsAccumulator = stakingRewards.accumulatedRewardsPerToken();
     StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
 
+    // If for any reason the new accumulator is less than our last one, abort for safety.
+    if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      return;
+    }
+
     // iterate through all of the slices and checkpoint
     for (uint256 sliceIndex = 0; sliceIndex < poolInfo.slicesInfo.length; sliceIndex++) {
       _checkpointSliceStakingRewards(pool, sliceIndex, publish);
