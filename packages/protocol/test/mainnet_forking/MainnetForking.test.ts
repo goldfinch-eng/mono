@@ -866,6 +866,7 @@ describe("mainnet forking tests", async function () {
       await mineBlock()
       const blockNumAtTermEnd = await ethers.provider.getBlockNumber()
       const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId, blockNumAtTermEnd)
+      expect(stakingRewardsAtTermEnd).to.bignumber.eq("204719988714582627353")
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
@@ -978,7 +979,9 @@ describe("mainnet forking tests", async function () {
       await advanceTime({toSecond: termEndTime.toString()})
       await mineBlock()
       const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId)
-      const seocondStakingRewardsAtTermEnd = await getStakingRewardsForToken(secondStakingTokenId)
+      const secondStakingRewardsAtTermEnd = await getStakingRewardsForToken(secondStakingTokenId)
+      expect(stakingRewardsAtTermEnd).to.bignumber.eq("102362806340720831518")
+      expect(secondStakingRewardsAtTermEnd).to.bignumber.eq("25941012414031627309")
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
@@ -996,7 +999,7 @@ describe("mainnet forking tests", async function () {
       //        the pro rating logic that we're implementing is _close_ to the value
       //        that should have been given out
       expect(backerStakingRewardsEarnedAfterFinalRepayment).to.bignumber.closeTo(
-        stakingRewardsAtTermEnd.add(seocondStakingRewardsAtTermEnd),
+        stakingRewardsAtTermEnd.add(secondStakingRewardsAtTermEnd),
         microTolerance
       )
 
