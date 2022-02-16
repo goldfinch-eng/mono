@@ -48,16 +48,6 @@ interface ConnectionNoticeStrategy {
 
 export const strategies: ConnectionNoticeStrategy[] = [
   {
-    devName: "install_metamask",
-    match: ({userWalletWeb3Status}) => userWalletWeb3Status?.type === "no_web3",
-    render: (_props) => (
-      <TextBanner>
-        In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}
-        <a href="https://metamask.io/">metamask.io</a>.
-      </TextBanner>
-    ),
-  },
-  {
     devName: "wrong_network",
     match: ({network}) => !!network && !network.supported,
     render: (_props) => (
