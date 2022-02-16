@@ -191,8 +191,8 @@
         },
         "**/Zapper.sol:*": {
           "zapStakeToTranchedPool":  [],
-          "claimZap":  [],
-          "unzap":  []
+          "claimTranchedPoolZap":  [],
+          "unzapToStakingRewards":  []
         },
         "**/contracts/test/**": {
           "*.*": []

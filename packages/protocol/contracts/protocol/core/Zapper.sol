@@ -29,7 +29,7 @@ contract Zapper is BaseUpgradeablePausable {
   }
 
   /// @dev PoolToken.id => Zap
-  mapping(uint256 => Zap) public zaps;
+  mapping(uint256 => Zap) public tranchedPoolZaps;
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
@@ -37,6 +37,14 @@ contract Zapper is BaseUpgradeablePausable {
     config = _config;
   }
 
+  /// @notice Zap staked FIDU into the junior tranche of a TranchedPool without losing
+  ///   unvested rewards or paying a withdrawal fee
+  /// @dev The minted pool token is held by this contract until either `claimZap` or
+  ///   `unzap` is called
+  /// @param tokenId A staking position token ID
+  /// @param tranchedPool A TranchedPool in which to deposit
+  /// @param tranche The tranche ID of tranchedPool in which to deposit
+  /// @param usdcAmount The amount in USDC to zap from StakingRewards into the TranchedPool
   function zapStakeToTranchedPool(
     uint256 tokenId,
     ITranchedPool tranchedPool,
@@ -59,11 +67,15 @@ contract Zapper is BaseUpgradeablePausable {
     SafeERC20.safeApprove(config.getUSDC(), address(tranchedPool), usdcAmount);
     uint256 poolTokenId = tranchedPool.deposit(tranche, usdcAmount);
 
-    zaps[poolTokenId] = Zap(msg.sender, tokenId);
+    tranchedPoolZaps[poolTokenId] = Zap(msg.sender, tokenId);
   }
 
-  function claimZap(uint256 poolTokenId) public whenNotPaused nonReentrant {
-    Zap storage zap = zaps[poolTokenId];
+  /// @notice Claim the underlying PoolToken for a zap initiated with `zapStakeToTranchePool`.
+  ///  The pool token will be transferred to msg.sender if msg.sender initiated the zap and
+  ///  we are past the tranche's lockedUntil time.
+  /// @param poolTokenId The underyling PoolToken id created in a previously initiated zap
+  function claimTranchedPoolZap(uint256 poolTokenId) public whenNotPaused nonReentrant {
+    Zap storage zap = tranchedPoolZaps[poolTokenId];
 
     require(zap.owner == msg.sender, "Not zap owner");
 
@@ -76,8 +88,13 @@ contract Zapper is BaseUpgradeablePausable {
     IERC721(poolTokens).safeTransferFrom(address(this), msg.sender, poolTokenId);
   }
 
-  function unzap(uint256 poolTokenId) public whenNotPaused nonReentrant {
-    Zap storage zap = zaps[poolTokenId];
+  /// @notice Unwind a zap initiated with `zapStakeToTranchePool`.
+  ///  The funds will be withdrawn from the TranchedPool and added back to the original
+  ///  staked position in StakingRewards. This method can only be called when the PoolToken's
+  ///  tranche has never been locked.
+  /// @param poolTokenId The underyling PoolToken id created in a previously initiated zap
+  function unzapToStakingRewards(uint256 poolTokenId) public whenNotPaused nonReentrant {
+    Zap storage zap = tranchedPoolZaps[poolTokenId];
 
     require(zap.owner == msg.sender, "Not zap owner");
 
