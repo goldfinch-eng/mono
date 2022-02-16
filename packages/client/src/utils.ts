@@ -89,7 +89,7 @@ export function displayPercent(val: BigNumber | undefined, decimals = 2, display
 }
 
 export function displayDollarsTruncated(val: BigNumber | undefined | string | number, displayZero = true) {
-  let truncatedNumber
+  let truncatedNumber = 0
   let symbol = ""
   let decimals = 0
 
