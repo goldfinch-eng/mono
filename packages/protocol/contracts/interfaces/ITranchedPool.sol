@@ -8,7 +8,6 @@ import "./IV2CreditLine.sol";
 abstract contract ITranchedPool {
   IV2CreditLine public creditLine;
   uint256 public createdAt;
-
   enum Tranches {
     Reserved,
     Senior,

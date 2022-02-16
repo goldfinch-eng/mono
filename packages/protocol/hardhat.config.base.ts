@@ -28,13 +28,18 @@ export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
+      mining: {
+        mempool: {
+          order: "fifo",
+        },
+      },
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 14181228, // (Feb-10-2022 11:17:26 PM +UTC)
+            blockNumber: 14213803, // Feb-15-2022 11:49:41 PM +UTC
           }
         : undefined,
     },
