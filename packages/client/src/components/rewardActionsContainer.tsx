@@ -33,6 +33,8 @@ import {getIsRefreshing} from "./refreshIndicator"
 import {WIDTH_TYPES} from "./styleConstants"
 import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
+import {BackerMerkleDirectDistributorLoaded} from "../ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "../ethereum/backerMerkleDistributor"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
@@ -125,10 +127,10 @@ interface OpenDetailsProps {
 
 function OpenDetails(props: OpenDetailsProps) {
   if (props.open) {
-    return <button className="expand close">{iconCarrotUp}</button>
+    return <button className="open-details close">{iconCarrotUp}</button>
   }
 
-  return <button className="expand">{iconCarrotDown}</button>
+  return <button className="open-details">{iconCarrotDown}</button>
 }
 
 type BaseItemDetails = {
@@ -528,7 +530,7 @@ function getStakingOrCommunityRewardsDetails(
       claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
       currentEarnRate: undefined,
       vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: item.acceptEvent.transactionHash,
+      etherscanAddress: item.acceptanceContext?.event.transactionHash,
     }
   }
 }
@@ -542,8 +544,8 @@ type RewardActionsContainerProps = {
   disabled: boolean
   user: UserLoaded
   gfi: GFILoaded
-  merkleDistributor: MerkleDistributorLoaded
-  merkleDirectDistributor: MerkleDirectDistributorLoaded
+  merkleDistributor: MerkleDistributorLoaded | BackerMerkleDistributorLoaded
+  merkleDirectDistributor: MerkleDirectDistributorLoaded | BackerMerkleDirectDistributorLoaded
   stakingRewards: StakingRewardsLoaded
   communityRewards: CommunityRewardsLoaded
 } & (

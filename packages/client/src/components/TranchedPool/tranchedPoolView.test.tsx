@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js"
 import {AppContext} from "../../App"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {usdcToAtomic} from "../../ethereum/erc20"
-import {TranchedPoolDepositForm} from "./tranchedPoolView"
+import {TranchedPoolDepositForm} from "./TranchedPoolDepositForm"
 
 function renderDepositForm(backerLimit, transactionLimit, userBalance, remainingCapacity) {
   let store = {

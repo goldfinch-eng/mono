@@ -13,6 +13,7 @@ import EarnActionsContainer from "../earnActionsContainer"
 import InvestorNotice from "../investorNotice"
 import SeniorPoolStatus from "../seniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
+import {Overview} from "./Overview"
 
 function SeniorPoolView(): JSX.Element {
   const {
@@ -113,6 +114,7 @@ function SeniorPoolView(): JSX.Element {
         actionComplete={actionComplete}
       />
       <SeniorPoolStatus pool={pool} />
+      <Overview pool={pool} />
     </div>
   )
 }

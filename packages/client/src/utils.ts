@@ -1,7 +1,10 @@
+import {AbstractProvider} from "web3-core"
+import {isPlainObject, isStringOrUndefined} from "@goldfinch-eng/utils"
 import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {isMainnetForking} from "./ethereum/utils"
+import {ChainInfoToAdd, isMainnetForking, SupportedChainId} from "./ethereum/utils"
+import {NetworkConfig} from "./types/network"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
 
@@ -101,9 +104,35 @@ export function assertNumber(val: unknown): asserts val is number {
   }
 }
 
+export function isError(val: unknown): val is Error {
+  return val instanceof Error
+}
+
 export function assertError(val: unknown): asserts val is Error {
-  if (!(val instanceof Error)) {
+  if (!isError(val)) {
     throw new AssertionError(`Value ${val} is not an instance of Error.`)
+  }
+}
+
+export type CodedErrorLike = {
+  code: number
+  message: string
+  stack?: string
+}
+
+export function isCodedErrorLike(val: unknown): val is CodedErrorLike {
+  return isPlainObject(val) && isNumber(val.code) && isString(val.message) && isStringOrUndefined(val.stack)
+}
+
+export type ErrorLike = Error | CodedErrorLike
+
+export function isErrorLike(val: unknown): val is ErrorLike {
+  return isError(val) || isCodedErrorLike(val)
+}
+
+export function assertErrorLike(val: unknown): asserts val is ErrorLike {
+  if (!isErrorLike(val)) {
+    throw new AssertionError(`Value ${val} is not error-like.`)
   }
 }
 
@@ -138,6 +167,10 @@ export function getBlockInfo(block: AsyncReturnType<typeof getCurrentBlock>): Bl
   }
 }
 
+export function sameBlock(blockA: BlockInfo | undefined, blockB: BlockInfo | undefined): boolean {
+  return !!blockA && !!blockB && blockA.number === blockB.number
+}
+
 export type WithCurrentBlock<T> = T & {currentBlock: BlockInfo}
 
 export type ArrayItemType<T> = T extends Array<infer U> ? U : never
@@ -152,4 +185,76 @@ export function shouldUseWeb3(): boolean {
     return true
   }
   return process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
+}
+
+export function isProductionAndPrivateNetwork(network: NetworkConfig | undefined) {
+  // Undetected networks are marked as private by the provider. On our config any private
+  // network is marked as localhost, check `mapNetworkToID`, this function is useful to
+  // check for scenarios when users are on undetected networks
+  return network && network.name === "localhost" && process.env.NODE_ENV === "production"
+}
+
+export async function switchToNetwork(
+  currentProvider: AbstractProvider,
+  chainId: SupportedChainId
+): Promise<null | void> {
+  assertNonNullable(currentProvider.request)
+  const chainIdHex = `0x${chainId.toString(16)}`
+
+  try {
+    await currentProvider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{chainId: chainIdHex}],
+    })
+  } catch (err: unknown) {
+    // This error code indicates the chain has not yet been added to Metamask.
+    // In that case, prompt the user to add a new chain.
+    // https://docs.metamask.io/guide/rpc-api.html#usage-with-wallet-switchethereumchain
+    if (isCodedErrorLike(err) && err.code === 4902) {
+      const info = ChainInfoToAdd[chainId]
+      if (!info) {
+        return
+      }
+
+      await currentProvider.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: chainIdHex,
+            chainName: info.label,
+            rpcUrls: [info.rpcUrl],
+          },
+        ],
+      })
+
+      // metamask (only known implementer) automatically switches after a network is added
+      // the second call is done here because that behavior is not a part of the spec and cannot be relied upon in the future
+      // metamask's behavior when switching to the current network is just to return null (a no-op)
+      try {
+        await currentProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{chainId: chainIdHex}],
+        })
+      } catch (error) {
+        console.log("Added network but could not switch chains", error)
+      }
+    }
+  }
+}
+
+export async function switchNetworkIfRequired(networkConfig: NetworkConfig): Promise<void> {
+  const currentNetwork: SupportedChainId = SupportedChainId[networkConfig.name]
+  let idealNetworkId: SupportedChainId = SupportedChainId.MAINNET
+
+  if (isProductionAndPrivateNetwork(networkConfig)) {
+    idealNetworkId = SupportedChainId.MAINNET
+  } else if (process.env.NODE_ENV === "production") {
+    idealNetworkId = !networkConfig.supported ? SupportedChainId.MAINNET : currentNetwork
+  } else if (process.env.REACT_APP_MURMURATION === "yes" || process.env.NODE_ENV === "development") {
+    idealNetworkId = SupportedChainId.LOCAL
+  }
+
+  if (idealNetworkId && currentNetwork !== idealNetworkId) {
+    await switchToNetwork(web3.userWallet.currentProvider as AbstractProvider, idealNetworkId)
+  }
 }

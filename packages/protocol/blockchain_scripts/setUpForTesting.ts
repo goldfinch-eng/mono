@@ -14,6 +14,7 @@ import {
   assertIsChainId,
   ContractDeployer,
   FIDU_DECIMALS,
+  getEthersContract,
   getProtocolOwner,
   getUSDCAddress,
   interestAprAsBN,
@@ -30,10 +31,12 @@ import {
 import {Logger} from "../blockchain_scripts/types"
 import {advanceTime, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 import {
+  BackerRewards,
   Borrower,
   CommunityRewards,
   CreditLine,
   GFI,
+  Go,
   GoldfinchConfig,
   GoldfinchFactory,
   MerkleDirectDistributor,
@@ -43,9 +46,8 @@ import {
   TranchedPool,
   UniqueIdentity,
 } from "../typechain/ethers"
-
-import {impersonateAccount} from "./helpers/impersonateAccount"
 import {fundWithWhales} from "./helpers/fundWithWhales"
+import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 
 dotenv.config({path: findEnvLocal()})
@@ -134,12 +136,21 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+  let go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
+  const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
+  if (!isMainnetForking()) {
+    go = go.connect(protocolOwnerSigner)
+    await go.setLegacyGoList(goldfinchConfig.address)
+  }
+  const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
+    at: await go.legacyGoList(),
+  })
 
   config = config.connect(protocolOwnerSigner)
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
 
-  await addUsersToGoList(config, [underwriter])
+  await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
 
@@ -166,7 +177,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   })
   await writePoolMetadata({pool: empty, borrower: "Empty"})
 
-  await addUsersToGoList(config, [borrower])
+  await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
   if (requestFromClient) {
     await createBorrowerContractAndPool({
@@ -234,42 +245,65 @@ async function setUpRewards(
     getOrNull,
     "MerkleDirectDistributor"
   )
-  const rewardsAmount = amount.div(new BN(3))
+  const backerMerkleDirectDistributor = await getDeployedAsEthersContractOrNull<MerkleDirectDistributor>(
+    getOrNull,
+    "BackerMerkleDirectDistributor"
+  )
+  const backerRewards = await getDeployedAsEthersContract<BackerRewards>(getOrNull, "BackerRewards")
+  const rewardsAmount = amount.div(new BN(5))
 
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
-  await gfi.mint(protocolOwner, amount.toString(10))
-  await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
-  await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
 
-  await communityRewards.loadRewards(rewardsAmount.toString(10))
+  if (!isMainnetForking()) {
+    await gfi.mint(protocolOwner, amount.toString(10))
+    await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
+    await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
 
-  await stakingRewards.loadRewards(rewardsAmount.toString(10))
-  await stakingRewards.setRewardsParameters(
-    toAtomic(new BN(1000), FIDU_DECIMALS),
-    new BigNumber("10000000000")
-      .multipliedBy(
-        // This is just an arbitrary number meant to be in the same ballpark as how many FIDU the test user might
-        // stake, so that given a GFI price around $1, the APY from GFI can work out to a reasonable-looking
-        // double-digit percent.
-        new BigNumber(75000)
-      )
-      .toString(10),
-    new BigNumber("20000000000").multipliedBy(new BigNumber(75000)).toString(10),
-    toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
-    toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
-  )
+    await communityRewards.loadRewards(rewardsAmount.toString(10))
 
-  // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
-  // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
-  const signer = ethers.provider.getSigner(protocolOwner)
-  const usdcAmount = String(usdcVal(50000))
-  await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
-  await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+    await stakingRewards.loadRewards(rewardsAmount.toString(10))
+    await stakingRewards.setRewardsParameters(
+      toAtomic(new BN(1000), FIDU_DECIMALS),
+      new BigNumber("10000000000")
+        .multipliedBy(
+          // This is just an arbitrary number meant to be in the same ballpark as how many FIDU the test user might
+          // stake, so that given a GFI price around $1, the APY from GFI can work out to a reasonable-looking
+          // double-digit percent.
+          new BigNumber(75000)
+        )
+        .toString(10),
+      new BigNumber("20000000000").multipliedBy(new BigNumber(75000)).toString(10),
+      toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
+      toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
+    )
 
-  // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
-  if (merkleDirectDistributor) {
-    await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+    // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
+    // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
+    const signer = ethers.provider.getSigner(protocolOwner)
+    const usdcAmount = String(usdcVal(50000))
+    await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
+    await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+
+    // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
+    if (merkleDirectDistributor) {
+      await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+    }
+
+    // If the BackerMerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
+    if (backerMerkleDirectDistributor) {
+      await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+    }
   }
+
+  // Configure BackerRewards
+  const backerRewardsPercentOfTotalGfi = 2
+  const backerRewardsGfiAmount = amount.mul(new BN(backerRewardsPercentOfTotalGfi)).div(new BN(100))
+  await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
+  await backerRewards.setMaxInterestDollarsEligible(
+    new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10),
+    {from: protocolOwner}
+  )
+  await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
 }
 
 export async function getERC20s({hre, chainId}) {
@@ -424,9 +458,9 @@ function getLastEventArgs(result: ContractReceipt): Result {
   return lastEvent.args
 }
 
-async function addUsersToGoList(goldfinchConfig: GoldfinchConfig, users: string[]) {
-  logger("Adding", users, "to the go-list... on config with address", goldfinchConfig.address)
-  await (await goldfinchConfig.bulkAddToGoList(users)).wait()
+async function addUsersToGoList(legacyGoldfinchConfig: GoldfinchConfig, users: string[]) {
+  logger("Adding", users, "to the go-list... on config with address", legacyGoldfinchConfig.address)
+  await (await legacyGoldfinchConfig.bulkAddToGoList(users)).wait()
 }
 
 export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logger}: {logger: typeof console.log}) {

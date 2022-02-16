@@ -129,6 +129,7 @@ class CreditLine extends BaseCreditLine {
   termInDays!: BigNumber
   nextDueTime!: BigNumber
   interestOwed!: BigNumber
+  termStartTime!: BigNumber
   termEndTime!: BigNumber
   lastFullPaymentTime!: BigNumber
   dueDate!: string
@@ -175,6 +176,9 @@ class CreditLine extends BaseCreditLine {
     const interestOwed = this._calculateInterestOwed()
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
+    this.termStartTime = this.termEndTime.gt(0)
+      ? this.termEndTime.minus(this.termInDays.multipliedBy(SECONDS_PER_DAY))
+      : new BigNumber(0)
     this.termEndDate = moment.unix(this.termEndTime.toNumber()).format("MMM D, YYYY")
     this.maxLimit = await this._getMaxLimit(currentBlock)
     this.collectedPaymentBalance = new BigNumber(
@@ -189,11 +193,14 @@ class CreditLine extends BaseCreditLine {
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
   }
 
+  get isMultipleDrawdownsCompatible(): boolean {
+    const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
+    return this.termStartTime.eq(0) || this.termStartTime.toNumber() >= V2_2_MIGRATION_TIME
+  }
+
   async _getMaxLimit(currentBlock: BlockInfo): Promise<BigNumber> {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
-    const V2_2_MIGRATION_DATE = "2022-01-04"
-    const creditLineStart = moment(this.termEndDate, "MMM D, YYYY").subtract(this.termInDays.toNumber(), "days")
-    if (creditLineStart.isBefore(moment(V2_2_MIGRATION_DATE))) {
+    if (!this.isMultipleDrawdownsCompatible) {
       return this.currentLimit
     } else {
       const maxLimit = await this.creditLine.readOnly.methods.maxLimit().call(undefined, currentBlock.number)

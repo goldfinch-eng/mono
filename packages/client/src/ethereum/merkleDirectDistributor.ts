@@ -9,7 +9,7 @@ import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDistributor} from "./merkleDistributor"
 
-type MerkleDirectDistributorLoadedInfo = {
+export type MerkleDirectDistributorLoadedInfo = {
   currentBlock: BlockInfo
 }
 
