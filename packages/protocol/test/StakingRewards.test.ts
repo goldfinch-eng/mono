@@ -126,40 +126,6 @@ describe("StakingRewards", function () {
     expect(stakedEvent.args.baseTokenExchangeRate).to.bignumber.equal(
       await stakingRewards.getBaseTokenExchangeRate(positionType)
     )
-    expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
-    expect(stakedEvent.args.multiplier).to.bignumber.equal(new BN(String(1e18)))
-    expect(stakedEvent.args.user).to.equal(from)
-
-    return stakedEvent.args.tokenId
-  }
-
-  async function stakeWithLockup({
-    from,
-    amount,
-    positionType = StakedPositionType.Fidu,
-    lockupPeriod = LockupPeriod.SixMonths,
-  }: {
-    from: string
-    amount: BN | string
-    positionType?: StakedPositionType
-    lockupPeriod?: LockupPeriod
-  }): Promise<BN> {
-    await fidu.approve(stakingRewards.address, amount, {from})
-    const receipt = await stakingRewards.stakeWithLockup(amount, positionType, lockupPeriod, {from})
-    const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
-
-    const now = await time.latest()
-    const duration = lockupPeriodToDuration[lockupPeriod]
-    const expectedLockedUntil = now.add(duration)
-
-    // Verify Staked event has correct fields
-    expect(stakedEvent.args.positionType).to.bignumber.equal(new BN(positionType))
-    expect(stakedEvent.args.amount).to.bignumber.equal(amount)
-    expect(stakedEvent.args.baseTokenExchangeRate).to.bignumber.equal(
-      await stakingRewards.getBaseTokenExchangeRate(positionType)
-    )
-    expect(stakedEvent.args.lockedUntil).to.bignumber.equal(expectedLockedUntil)
-    expect(stakedEvent.args.multiplier).to.bignumber.equal(await stakingRewards.getLeverageMultiplier(lockupPeriod))
     expect(stakedEvent.args.user).to.equal(from)
 
     return stakedEvent.args.tokenId
@@ -257,14 +223,6 @@ describe("StakingRewards", function () {
       goldfinchConfig,
       curveLPAmount,
     } = await testSetup())
-  })
-
-  it("defaults the staking multipliers to be 1x", async () => {
-    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.eq(MULTIPLIER_DECIMALS)
-    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwelveMonths)).to.bignumber.eq(MULTIPLIER_DECIMALS)
-    expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwentyFourMonths)).to.bignumber.eq(
-      MULTIPLIER_DECIMALS
-    )
   })
 
   describe("stake", () => {
@@ -539,15 +497,11 @@ describe("StakingRewards", function () {
       expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
       expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
 
       expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -604,15 +558,11 @@ describe("StakingRewards", function () {
       expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
       expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
 
       expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -658,188 +608,6 @@ describe("StakingRewards", function () {
     })
   })
 
-  describe("depositAndStakeWithLockup", async () => {
-    beforeEach(async () => {
-      await stakingRewards.setLeverageMultiplier(
-        LockupPeriod.SixMonths,
-        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
-      )
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
-    })
-
-    it("deposits into senior pool and stakes resulting shares with lockup", async () => {
-      const amount = usdcVal(1000)
-      const balanceBefore = await usdc.balanceOf(investor)
-      const seniorPoolAssetsBefore = await seniorPool.assets()
-
-      await usdc.approve(stakingRewards.address, amount, {from: investor})
-      const receipt = await stakingRewards.depositAndStakeWithLockup(amount, LockupPeriod.SixMonths, {from: investor})
-      const currentTimestamp = await getCurrentTimestamp()
-      const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
-      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
-        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
-      )
-      const expectedSharePrice = new BN(1).mul(decimals)
-
-      // Verify events
-      expect(stakedEvent.args.user).to.equal(investor)
-      const tokenId = stakedEvent.args.tokenId
-      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(currentTimestamp.add(new BN((60 * 60 * 24 * 365) / 2)))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(15)).div(new BN(10)))
-
-      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
-      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
-      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
-      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
-
-      // Verify deposit worked
-      expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
-      expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolAssetsBefore.add(amount))
-
-      // Verify shares were staked
-      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
-      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(bigVal(1000))
-
-      // Verify that allowance was correctly used
-      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
-
-      // Verify that shares are locked up
-      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.rejectedWith(/locked/)
-      advanceTime({seconds: halfYearInSeconds})
-      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.fulfilled
-    })
-
-    context("paused", async () => {
-      it("reverts", async () => {
-        await stakingRewards.pause()
-        await expect(
-          stakingRewards.depositAndStakeWithLockup(usdcVal(1000), LockupPeriod.SixMonths, {from: investor})
-        ).to.be.rejectedWith(/paused/)
-      })
-    })
-  })
-
-  describe("depositWithPermitAndStakeWithLockup", async () => {
-    beforeEach(async () => {
-      await stakingRewards.setLeverageMultiplier(
-        LockupPeriod.SixMonths,
-        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
-      )
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
-    })
-
-    it("deposits into senior pool and stakes resulting shares with lockup", async () => {
-      const nonce = await (usdc as any).nonces(investor)
-      const deadline = MAX_UINT
-      const amount = usdcVal(1000)
-
-      // Create signature for permit
-      const digest = await getApprovalDigest({
-        token: usdc,
-        owner: investor,
-        spender: stakingRewards.address,
-        value: amount,
-        nonce,
-        deadline,
-      })
-      const wallet = await getWallet(investor)
-      assertNonNullable(wallet)
-      const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
-
-      const balanceBefore = await usdc.balanceOf(investor)
-      const seniorPoolAssetsBefore = await seniorPool.assets()
-
-      await usdc.approve(stakingRewards.address, amount, {from: investor})
-      const receipt = await stakingRewards.depositWithPermitAndStakeWithLockup(
-        amount,
-        LockupPeriod.SixMonths,
-        deadline,
-        v,
-        r as any,
-        s as any,
-        {from: investor}
-      )
-      const currentTimestamp = await getCurrentTimestamp()
-      const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
-      const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
-        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
-      )
-      const expectedSharePrice = new BN(1).mul(decimals)
-
-      // Verify events
-      expect(stakedEvent.args.user).to.equal(investor)
-      const tokenId = stakedEvent.args.tokenId
-      expect(stakedEvent.args.amount).to.bignumber.equal(usdcToFidu(amount).mul(decimals).div(expectedSharePrice))
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(currentTimestamp.add(new BN((60 * 60 * 24 * 365) / 2)))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(15)).div(new BN(10)))
-
-      expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
-      expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
-      expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
-      expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
-
-      // Verify deposit worked
-      expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
-      expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolAssetsBefore.add(amount))
-
-      // Verify shares were staked
-      expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
-      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(bigVal(1000))
-
-      // Verify that allowance was correctly used
-      expect(await usdc.allowance(stakingRewards.address, seniorPool.address)).to.bignumber.equal(new BN(0))
-
-      // Verify that permit allowance was correctly used
-      expect(await usdc.allowance(investor, stakingRewards.address)).to.bignumber.equal(new BN(0))
-
-      // Verify that shares are locked up
-      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.rejectedWith(/locked/)
-      advanceTime({seconds: halfYearInSeconds})
-      await expect(stakingRewards.unstake(tokenId, bigVal(1000), {from: investor})).to.be.fulfilled
-    })
-
-    context("paused", async () => {
-      it("reverts", async () => {
-        const nonce = await (usdc as any).nonces(investor)
-        const deadline = MAX_UINT
-        const amount = usdcVal(1000)
-
-        // Create signature for permit
-        const digest = await getApprovalDigest({
-          token: usdc,
-          owner: investor,
-          spender: stakingRewards.address,
-          value: amount,
-          nonce,
-          deadline,
-        })
-        const wallet = await getWallet(investor)
-        assertNonNullable(wallet)
-        const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
-
-        await stakingRewards.pause()
-        await expect(
-          stakingRewards.depositWithPermitAndStakeWithLockup(
-            amount,
-            LockupPeriod.SixMonths,
-            deadline,
-            v,
-            r as any,
-            s as any,
-            {from: investor}
-          )
-        ).to.be.rejectedWith(/paused/)
-      })
-    })
-  })
-
   describe("depositToCurveAndStake", async () => {
     const fiduAmount = bigVal(500)
     const usdcAmount = usdcVal(1000)
@@ -874,16 +642,12 @@ describe("StakingRewards", function () {
       expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
       expect(stakedEvent.args.amount).to.bignumber.equal(amount)
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
 
       expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
       expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(new BN(0))
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
@@ -915,16 +679,12 @@ describe("StakingRewards", function () {
       expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
       expect(stakedEvent.args.amount).to.bignumber.equal(amount)
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
 
       expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(new BN(0))
       expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
@@ -958,16 +718,12 @@ describe("StakingRewards", function () {
       expect(stakedEvent.args.user).to.equal(investor)
       const tokenId = stakedEvent.args.tokenId
       expect(stakedEvent.args.amount).to.bignumber.equal(amount)
-      expect(stakedEvent.args.lockedUntil).to.bignumber.equal(new BN(0))
-      expect(stakedEvent.args.multiplier).to.bignumber.equal(MULTIPLIER_DECIMALS)
 
       expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
       expect(depositedAndStakedEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
-      expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-      expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
       // Verify deposit worked
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
@@ -1065,18 +821,6 @@ describe("StakingRewards", function () {
       expect(unstakedEvent.args.amount).to.bignumber.equal(fiduAmount)
     })
 
-    context("position is locked-up", async () => {
-      it("reverts", async () => {
-        const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
-
-        await advanceTime({seconds: 10000})
-
-        await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(
-          /staked funds are locked/
-        )
-      })
-    })
-
     context("position is vesting", async () => {
       beforeEach(async function () {
         // Enable vesting
@@ -1114,7 +858,7 @@ describe("StakingRewards", function () {
 
     context("user does not own position token", async () => {
       it("reverts", async () => {
-        const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+        const tokenId = await stake({amount: fiduAmount, from: investor})
 
         await advanceTime({seconds: 10000})
 
@@ -1221,34 +965,6 @@ describe("StakingRewards", function () {
       expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
-    it("uses the position's leverage multiplier", async () => {
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
-
-      await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
-      const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
-      const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
-      const ownerFiduAmount = depositEvent.args.shares
-
-      await stake({amount: fiduAmount, from: anotherUser})
-      const tokenId = await stakeWithLockup({
-        amount: new BN(fiduAmount).sub(new BN(ownerFiduAmount)),
-        lockupPeriod: LockupPeriod.TwelveMonths,
-        from: investor,
-      })
-
-      await erc20Approve(fidu, stakingRewards.address, ownerFiduAmount, [owner])
-      await stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})
-
-      await advanceTime({seconds: halfYearInSeconds})
-      await ethers.provider.send("evm_mine", [])
-
-      // Threshold of 2 second of rewards to account for slight delay between original stake and addToStake
-      const threshold = new BN(2).mul(rewardRate)
-
-      const expected = rewardRate.mul(halfYearInSeconds).mul(new BN(2)).div(new BN(3))
-      expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.closeTo(expected, threshold)
-    })
-
     context("paused", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: bigVal(100), from: investor})
@@ -1329,7 +1045,7 @@ describe("StakingRewards", function () {
 
     context("user does not own position token", async () => {
       it("reverts", async () => {
-        const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+        const tokenId = await stake({amount: fiduAmount, from: investor})
 
         await advanceTime({seconds: 10000})
 
@@ -1422,7 +1138,7 @@ describe("StakingRewards", function () {
 
     context("user does not own position token", async () => {
       it("reverts", async () => {
-        const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+        const tokenId = await stake({amount: fiduAmount, from: investor})
 
         await advanceTime({seconds: 10000})
 
@@ -1795,7 +1511,7 @@ describe("StakingRewards", function () {
   describe("totalStakedSupply", async () => {
     it("returns the total unleveraged staked supply", async () => {
       await stake({amount: fiduAmount, from: anotherUser})
-      await stakeWithLockup({amount: fiduAmount, from: investor})
+      await stake({amount: fiduAmount, from: investor})
 
       expect(await stakingRewards.totalStakedSupply()).to.bignumber.eq(fiduAmount.mul(new BN(2)))
     })
@@ -1969,42 +1685,6 @@ describe("StakingRewards", function () {
 
       // It should return 0, since the last checkpoint occcured in the current block
       expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.equal(new BN(0))
-    })
-
-    context("boosting", async () => {
-      beforeEach(async () => {
-        await stakingRewards.setLeverageMultiplier(
-          LockupPeriod.SixMonths,
-          new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
-        )
-        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
-        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
-      })
-
-      it("accounts for boosting", async () => {
-        await stake({amount: fiduAmount, from: anotherUser})
-        const tokenId = await stakeWithLockup({
-          amount: fiduAmount,
-          lockupPeriod: LockupPeriod.TwelveMonths,
-          from: investor,
-        })
-
-        await advanceTime({seconds: halfYearInSeconds})
-        await ethers.provider.send("evm_mine", [])
-
-        // Threshold of 2 second of rewards to account for slight delay between anotherUser
-        // and investor staking
-        const threshold = new BN(2).mul(rewardRate)
-
-        const expected = rewardRate.mul(halfYearInSeconds).mul(new BN(2)).div(new BN(3))
-        expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.closeTo(expected, threshold)
-
-        await advanceTime({seconds: halfYearInSeconds})
-        await stakingRewards.getReward(tokenId, {from: investor})
-
-        // It should return 0, since the last checkpoint occcured in the current block
-        expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.equal(new BN(0))
-      })
     })
   })
 
@@ -2218,7 +1898,7 @@ describe("StakingRewards", function () {
 
     context("user does not own position token", async () => {
       it("reverts", async () => {
-        const tokenId = await stakeWithLockup({amount: fiduAmount, from: investor})
+        const tokenId = await stake({amount: fiduAmount, from: investor})
 
         await advanceTime({seconds: 10000})
 
@@ -2257,304 +1937,6 @@ describe("StakingRewards", function () {
       await stakingRewards.getReward(tokenId, {from: investor})
       gfiBalance = await gfi.balanceOf(investor)
       expect(gfiBalance).to.bignumber.equal("100000")
-    })
-  })
-
-  describe("boosting", async () => {
-    let totalRewards: BN
-    const rewardRate = new BN(String(1e18))
-
-    beforeEach(async function () {
-      // Fix the reward rate to make testing easier
-      await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        rewardRate,
-        rewardRate,
-        minRateAtPercent,
-        maxRateAtPercent
-      )
-
-      totalRewards = rewardRate.mul(yearInSeconds.mul(new BN(3)))
-      await mintRewards(totalRewards)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
-
-      await stakingRewards.setLeverageMultiplier(
-        LockupPeriod.SixMonths,
-        new BN(15).mul(MULTIPLIER_DECIMALS).div(new BN(10))
-      )
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, new BN(2).mul(MULTIPLIER_DECIMALS))
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.TwentyFourMonths, new BN(3).mul(MULTIPLIER_DECIMALS))
-    })
-
-    describe("stakeWithLockup", async () => {
-      it("boosts rewards", async () => {
-        await stake({amount: fiduAmount.mul(new BN(2)), from: anotherUser})
-
-        await advanceTime({seconds: 100})
-
-        const tokenId = await stakeWithLockup({
-          amount: fiduAmount,
-          lockupPeriod: LockupPeriod.TwelveMonths,
-          from: investor,
-        })
-
-        await advanceTime({seconds: yearInSeconds})
-
-        // Even though investor deposited half the tokens as anotherUser, they get a 2x
-        // multiplier from lock-up, making their effective balance equal to anotherUser.
-        // Therefore, they should get half of the total rewards for the 1 year duration
-        // that they are in the pool
-        await stakingRewards.getReward(tokenId, {from: investor})
-        const gfiBalance = await gfi.balanceOf(investor)
-
-        const expectedRewards = rewardRate.mul(yearInSeconds).div(new BN(2))
-        expect(gfiBalance).to.bignumber.equal(expectedRewards)
-      })
-
-      it("uses leverage multipliers", async () => {
-        await stakingRewards.setLeverageMultiplier(LockupPeriod.TwelveMonths, bigVal(4)) // 4x leverage
-
-        await stake({amount: fiduAmount.mul(new BN(2)), from: anotherUser})
-
-        await advanceTime({seconds: 100})
-
-        const tokenId = await stakeWithLockup({
-          amount: fiduAmount,
-          lockupPeriod: LockupPeriod.TwelveMonths,
-          from: investor,
-        })
-
-        await advanceTime({seconds: yearInSeconds})
-
-        // Even though investor deposited half the tokens as anotherUser, they get a 4x
-        // multiplier from lock-up, making their effective balance 2x anotherUser's.
-        // Therefore, they should get 2/3 of the total rewards for the 1 year duration
-        // that they are in the pool
-        await stakingRewards.getReward(tokenId, {from: investor})
-        const gfiBalance = await gfi.balanceOf(investor)
-
-        const expectedRewards = rewardRate.mul(yearInSeconds).mul(new BN(2)).div(new BN(3))
-        expect(gfiBalance).to.bignumber.equal(expectedRewards)
-      })
-
-      context("6 month lock-up", async () => {
-        it("locks withdraws for 6 months", async () => {
-          await stake({amount: fiduAmount, from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: fiduAmount,
-            lockupPeriod: LockupPeriod.SixMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: halfYearInSeconds.div(new BN(2))})
-
-          await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/locked/)
-
-          await advanceTime({seconds: halfYearInSeconds.div(new BN(2))})
-
-          await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.not.be.rejected
-        })
-
-        it("boosts with 1.5x multiplier", async () => {
-          await stake({amount: fiduAmount, from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: fiduAmount,
-            lockupPeriod: LockupPeriod.SixMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: yearInSeconds})
-
-          // 1.5x multiplier for 1/2 the pool = 1.5/2.5 = 3/5 effective ownership
-          await stakingRewards.getReward(tokenId, {from: investor})
-          const gfiBalance = await gfi.balanceOf(investor)
-
-          const expectedRewards = rewardRate.mul(yearInSeconds).mul(new BN(3)).div(new BN(5))
-          expect(gfiBalance).to.bignumber.equal(expectedRewards)
-        })
-      })
-
-      context("12 month lock-up", async () => {
-        it("locks withdraws for 12 months", async () => {
-          await stake({amount: fiduAmount, from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: fiduAmount,
-            lockupPeriod: LockupPeriod.TwelveMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: halfYearInSeconds})
-
-          await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/locked/)
-
-          await advanceTime({seconds: halfYearInSeconds})
-
-          await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.not.be.rejected
-        })
-
-        it("boosts with 2x multiplier", async () => {
-          await stake({amount: fiduAmount, from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: fiduAmount,
-            lockupPeriod: LockupPeriod.TwelveMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: yearInSeconds})
-
-          // 2x multiplier for 1/2 the pool = 2/3 effective ownership
-          await stakingRewards.getReward(tokenId, {from: investor})
-          const gfiBalance = await gfi.balanceOf(investor)
-
-          const expectedRewards = rewardRate.mul(yearInSeconds).mul(new BN(2)).div(new BN(3))
-          expect(gfiBalance).to.bignumber.equal(expectedRewards)
-        })
-      })
-
-      context("24 month lock-up", async () => {
-        it("locks withdraws for 24 months", async () => {
-          await stake({amount: fiduAmount, from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: fiduAmount,
-            lockupPeriod: LockupPeriod.TwentyFourMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: yearInSeconds})
-
-          await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.be.rejectedWith(/locked/)
-
-          await advanceTime({seconds: yearInSeconds})
-
-          await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: investor})).to.not.be.rejected
-        })
-
-        it("boosts with 3x multiplier", async () => {
-          await stake({amount: fiduAmount, from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: fiduAmount,
-            lockupPeriod: LockupPeriod.TwentyFourMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: yearInSeconds})
-
-          // 3x multiplier for 1/2 the pool = 3/4 effective ownership
-          await stakingRewards.getReward(tokenId, {from: investor})
-          const gfiBalance = await gfi.balanceOf(investor)
-
-          const expectedRewards = rewardRate.mul(yearInSeconds).mul(new BN(3)).div(new BN(4))
-          expect(gfiBalance).to.bignumber.equal(expectedRewards)
-        })
-
-        context("paused", async () => {
-          it("reverts", async () => {
-            await stakingRewards.pause()
-
-            await expect(
-              stakeWithLockup({
-                amount: fiduAmount,
-                lockupPeriod: LockupPeriod.TwentyFourMonths,
-                from: investor,
-              })
-            ).to.be.rejectedWith(/paused/)
-          })
-        })
-      })
-    })
-
-    describe("kick", async () => {
-      context("user is past their lock-up period", async () => {
-        it("resets the user's reward multiplier", async () => {
-          await stake({amount: bigVal(3000), from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: bigVal(1000),
-            lockupPeriod: LockupPeriod.TwelveMonths,
-            from: investor,
-          })
-
-          await advanceTime({seconds: yearInSeconds})
-
-          await stakingRewards.kick(tokenId)
-
-          await advanceTime({seconds: yearInSeconds})
-
-          // Investor staked 1/4 the total tokens and got 2x multiplier (effectively 2/5 of total tokens) for
-          // half the period until they were kicked.
-          // Therefore, they should get:
-          //     (2/5 * 1/2) + (1/4 * 1/2)  =
-          //     2/10 + 1/8 =
-          //     8/40 + 5/40 =
-          //     13/40
-          // of the total rewards over one year
-          await stakingRewards.getReward(tokenId, {from: investor})
-          const gfiBalance = await gfi.balanceOf(investor)
-          const expectedRewards = rewardRate.mul(yearInSeconds.mul(new BN(2)))
-          expect(gfiBalance).to.bignumber.equal(expectedRewards.mul(new BN(13)).div(new BN(40)))
-        })
-      })
-
-      context("user is not past their lock-up period", async () => {
-        it("does nothing", async () => {
-          await stake({amount: bigVal(3000), from: anotherUser})
-
-          const tokenId = await stakeWithLockup({
-            amount: bigVal(1000),
-            lockupPeriod: LockupPeriod.TwelveMonths,
-            from: investor,
-          })
-
-          // This should do nothing
-          await advanceTime({seconds: 1})
-          await stakingRewards.kick(tokenId)
-
-          await advanceTime({seconds: halfYearInSeconds})
-
-          // Threshold of 5 seconds of rewards to account for slight block.timestamp increase when kicking
-          const threshold = new BN(5).mul(rewardRate)
-
-          // investor should still account for 2/5 of the rewards due to boosting (kick did nothing)
-          await stakingRewards.getReward(tokenId, {from: investor})
-          const gfiBalance = await gfi.balanceOf(investor)
-          const expectedRewards = rewardRate.mul(halfYearInSeconds)
-          expect(gfiBalance).to.bignumber.closeTo(expectedRewards.mul(new BN(2)).div(new BN(5)), threshold)
-        })
-      })
-
-      context("paused", async () => {
-        it("reverts", async () => {
-          const tokenId = await stakeWithLockup({
-            amount: bigVal(1000),
-            lockupPeriod: LockupPeriod.TwelveMonths,
-            from: investor,
-          })
-          await stakingRewards.pause()
-          await expect(stakingRewards.kick(tokenId)).to.be.rejectedWith(/paused/)
-        })
-      })
-    })
-
-    describe("getLeverageMultiplier", async () => {
-      it("returns the leverage multiplier for a given lockup period", async () => {
-        expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.equal(
-          new BN(String(15e17))
-        )
-        expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwelveMonths)).to.bignumber.equal(
-          new BN(String(2e18))
-        )
-        expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.TwentyFourMonths)).to.bignumber.equal(
-          new BN(String(3e18))
-        )
-      })
     })
   })
 
@@ -2992,40 +2374,6 @@ describe("StakingRewards", function () {
           stakingRewards.setRewardsParameters(newTargetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Must have admin role/)
-      })
-    })
-  })
-
-  describe("setLeverageMultiplier", async () => {
-    it("sets the leverage multiplier for a given lockup period", async () => {
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, bigVal(10))
-      expect(await stakingRewards.getLeverageMultiplier(LockupPeriod.SixMonths)).to.bignumber.equal(bigVal(10))
-    })
-
-    it("emits an event", async () => {
-      const newLockupPeriod = LockupPeriod.SixMonths
-      const newLeverageMultiplier = bigVal(10)
-      const tx = await stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, newLeverageMultiplier)
-
-      expectEvent(tx, "LeverageMultiplierUpdated", {
-        who: owner,
-        lockupPeriod: new BN(newLockupPeriod),
-        leverageMultiplier: newLeverageMultiplier,
-      })
-    })
-
-    it("checkpoints rewards", async () => {
-      await stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, bigVal(10))
-
-      const t = await time.latest()
-      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
-    })
-
-    context("user is not admin", async () => {
-      it("reverts", async () => {
-        await expect(
-          stakingRewards.setLeverageMultiplier(LockupPeriod.SixMonths, bigVal(10), {from: anotherUser})
         ).to.be.rejectedWith(/Must have admin role/)
       })
     })

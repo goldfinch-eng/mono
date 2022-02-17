@@ -69,7 +69,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   event MaxRateUpdated(address indexed who, uint256 maxRate);
   event MinRateAtPercentUpdated(address indexed who, uint256 minRateAtPercent);
   event MaxRateAtPercentUpdated(address indexed who, uint256 maxRateAtPercent);
-  event LeverageMultiplierUpdated(address indexed who, LockupPeriod lockupPeriod, uint256 leverageMultiplier);
   event EffectiveMultiplierUpdated(address indexed who, StakedPositionType positionType, uint256 multiplier);
 
   /* ========== STATE VARIABLES ========== */
@@ -115,16 +114,13 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice The duration in seconds over which rewards vest
   uint256 public vestingLength;
 
-  /// @dev Supply of staked tokens, excluding leverage due to lock-up boosting, denominated in
-  ///   `stakingToken().decimals()`
+  /// @dev Supply of staked tokens, denominated in `stakingToken().decimals()`
   uint256 public totalStakedSupply;
 
-  /// @dev Supply of staked tokens, including leverage due to lock-up boosting, denominated in
-  ///   `stakingToken().decimals()`
+  /// @dev UNUSED (definition kept for storage slot)
   uint256 private totalLeveragedStakedSupply;
 
-  /// @dev A mapping from lockup periods to leverage multipliers used to boost rewards.
-  ///   See `stakeWithLockup`.
+  /// @dev UNUSED (definition kept for storage slot)
   mapping(LockupPeriod => uint256) private leverageMultipliers;
 
   /// @dev NFT tokenId => staked position
@@ -153,11 +149,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     config = _config;
 
     vestingLength = 365 days;
-
-    // Set defaults for leverage multipliers (no boosting)
-    leverageMultipliers[LockupPeriod.SixMonths] = MULTIPLIER_DECIMALS; // 1x
-    leverageMultipliers[LockupPeriod.TwelveMonths] = MULTIPLIER_DECIMALS; // 1x
-    leverageMultipliers[LockupPeriod.TwentyFourMonths] = MULTIPLIER_DECIMALS; // 1x
   }
 
   function initZapperRole() external onlyAdmin {
@@ -202,17 +193,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
     require(time >= lastUpdateTime, "Invalid end time for range");
 
-    if (totalLeveragedStakedSupply == 0) {
+    if (totalStakedSupply == 0) {
       return 0;
     }
     uint256 rewardsSinceLastUpdate = Math.min(time.sub(lastUpdateTime).mul(rewardRate()), rewardsAvailable);
-    uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingTokenMantissa()).div(
-      totalLeveragedStakedSupply
-    );
-    // Prevent perverse, infinite-mint scenario where totalLeveragedStakedSupply is a fraction of a token.
+    uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingTokenMantissa()).div(totalStakedSupply);
+    // Prevent perverse, infinite-mint scenario where totalStakedSupply is a fraction of a token.
     // Since it's used as the denominator, this could make additionalRewardPerToken larger than the total number
     // of tokens that should have been disbursed in the elapsed time. The attacker would need to find
-    // a way to reduce totalLeveragedStakedSupply while maintaining a staked position of >= 1.
+    // a way to reduce totalStakedSupply while maintaining a staked position of >= 1.
     // See: https://twitter.com/Mudit__Gupta/status/1409463917290557440
     if (additionalRewardsPerToken > rewardsSinceLastUpdate) {
       return 0;
@@ -233,9 +222,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function earnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
-    uint256 effectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
+    uint256 effectiveAmount = positionToEffectiveAmount(position);
     return
-      effectiveLeveredAmount.mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId])).div(
+      effectiveAmount.mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId])).div(
         stakingTokenMantissa()
       );
   }
@@ -299,11 +288,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return maxRate.sub(maxRate.sub(minRate).mul(x.sub(intervalStart)).div(intervalEnd.sub(intervalStart)));
   }
 
-  function positionToEffectiveLeveredAmount(StakedPosition storage position) internal view returns (uint256) {
-    uint256 effectiveAmount = positionToEffectiveAmount(position);
-    return toLeveredAmount(effectiveAmount, position.leverageMultiplier);
-  }
-
   function positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
     return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
   }
@@ -317,10 +301,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 exchangeRate = baseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : baseTokenExchangeRate;
     // Both the exchange rate and the effective multiplier are denominated in MULTIPLIER_DECIMALS
     return amount.mul(exchangeRate).mul(effectiveMultiplier).div(MULTIPLIER_DECIMALS).div(MULTIPLIER_DECIMALS);
-  }
-
-  function toLeveredAmount(uint256 amount, uint256 leverageMultiplier) internal pure returns (uint256) {
-    return amount.mul(leverageMultiplier).div(MULTIPLIER_DECIMALS);
   }
 
   function stakingTokenMantissa() internal view returns (uint256) {
@@ -344,8 +324,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function positionCurrentEarnRate(uint256 tokenId) external view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
-    uint256 effectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
-    return currentEarnRatePerToken().mul(effectiveLeveredAmount).div(stakingTokenMantissa());
+    uint256 effectiveAmount = positionToEffectiveAmount(position);
+    return currentEarnRatePerToken().mul(effectiveAmount).div(stakingTokenMantissa());
   }
 
   /* ========== MUTATIVE FUNCTIONS ========== */
@@ -357,31 +337,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param amount The amount of `stakingToken()` to stake
   /// @param positionType The type of the staked position
   function stake(uint256 amount, StakedPositionType positionType) external nonReentrant whenNotPaused updateReward(0) {
-    _stakeWithLockup(msg.sender, msg.sender, amount, positionType, 0, MULTIPLIER_DECIMALS);
-  }
-
-  /// @notice Stake `stakingToken()` and lock your position for a period of time to boost your rewards.
-  ///   When you call this function, you'll receive an an NFT representing your staked position.
-  ///   You can present your NFT to `getReward` or `unstake` to claim rewards or unstake your tokens
-  ///   respectively. Rewards vest over a schedule.
-  ///
-  ///   A locked position's rewards are boosted using a multiplier on the staked balance. For example,
-  ///   if I lock 100 tokens for a 2x multiplier, my rewards will be calculated as if I staked 200 tokens.
-  ///   This mechanism is similar to curve.fi's CRV-boosting vote-locking. Locked positions cannot be
-  ///   unstaked until after the position's lockedUntil timestamp.
-  /// @dev This function checkpoints rewards.
-  /// @param amount The amount of `stakingToken()` to stake
-  /// @param positionType The type of the staked position
-  /// @param lockupPeriod The period over which to lock staked tokens
-  function stakeWithLockup(
-    uint256 amount,
-    StakedPositionType positionType,
-    LockupPeriod lockupPeriod
-  ) external nonReentrant whenNotPaused updateReward(0) {
-    uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
-    uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
-    uint256 lockedUntil = block.timestamp.add(lockDuration);
-    _stakeWithLockup(msg.sender, msg.sender, amount, positionType, lockedUntil, leverageMultiplier);
+    _stake(msg.sender, msg.sender, amount, positionType);
   }
 
   /// @notice Deposit to SeniorPool and stake your shares in the same transaction.
@@ -389,9 +345,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   will be staked.
   function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
     uint256 fiduAmount = depositToSeniorPool(usdcAmount);
-    uint256 lockedUntil = 0;
-    uint256 tokenId = _stakeFiduWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
-    emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount, lockedUntil, MULTIPLIER_DECIMALS);
+    uint256 tokenId = _stakeFidu(address(this), msg.sender, fiduAmount);
+    emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount);
   }
 
   function depositToSeniorPool(uint256 usdcAmount) internal returns (uint256 fiduAmount) {
@@ -458,54 +413,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 curveLPTokens = curveLP.addLiquidity([fiduAmount, usdcAmount], expectedAmount, address(this));
 
     // Stake the Curve LP tokens on behalf of the user
-    uint256 tokenId = _stakeWithLockup(
-      address(this),
-      nftRecipient,
-      curveLPTokens,
-      StakedPositionType.CurveLP,
-      0,
-      MULTIPLIER_DECIMALS
-    );
+    uint256 tokenId = _stake(address(this), nftRecipient, curveLPTokens, StakedPositionType.CurveLP);
 
-    emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens, 0, MULTIPLIER_DECIMALS);
-  }
-
-  /// @notice Deposit to the `SeniorPool` and stake your shares with a lock-up in the same transaction.
-  /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
-  ///   will be staked.
-  /// @param lockupPeriod The period over which to lock staked tokens
-  function depositAndStakeWithLockup(uint256 usdcAmount, LockupPeriod lockupPeriod)
-    public
-    nonReentrant
-    whenNotPaused
-    updateReward(0)
-  {
-    uint256 fiduAmount = depositToSeniorPool(usdcAmount);
-    uint256 lockDuration = lockupPeriodToDuration(lockupPeriod);
-    uint256 leverageMultiplier = getLeverageMultiplier(lockupPeriod);
-    uint256 lockedUntil = block.timestamp.add(lockDuration);
-    uint256 tokenId = _stakeFiduWithLockup(address(this), msg.sender, fiduAmount, lockedUntil, leverageMultiplier);
-    emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount, lockedUntil, leverageMultiplier);
-  }
-
-  function lockupPeriodToDuration(LockupPeriod lockupPeriod) internal pure returns (uint256 lockDuration) {
-    if (lockupPeriod == LockupPeriod.SixMonths) {
-      return 365 days / 2;
-    } else if (lockupPeriod == LockupPeriod.TwelveMonths) {
-      return 365 days;
-    } else if (lockupPeriod == LockupPeriod.TwentyFourMonths) {
-      return 365 days * 2;
-    } else {
-      revert("unsupported LockupPeriod");
-    }
-  }
-
-  /// @notice Get the leverage multiplier used to boost rewards for a given lockup period.
-  ///   See `stakeWithLockup`. The leverage multiplier is denominated in `MULTIPLIER_DECIMALS`.
-  function getLeverageMultiplier(LockupPeriod lockupPeriod) public view returns (uint256) {
-    uint256 leverageMultiplier = leverageMultipliers[lockupPeriod];
-    require(leverageMultiplier > 0, "unsupported LockupPeriod");
-    return leverageMultiplier;
+    emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens);
   }
 
   /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
@@ -535,42 +445,19 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     }
   }
 
-  /// @notice Identical to `depositAndStakeWithLockup`, except it allows for a signature to be passed that permits
-  ///   this contract to move funds on behalf of the user.
-  /// @param usdcAmount The amount of USDC to deposit
-  /// @param lockupPeriod The period over which to lock staked tokens
-  /// @param v secp256k1 signature component
-  /// @param r secp256k1 signature component
-  /// @param s secp256k1 signature component
-  function depositWithPermitAndStakeWithLockup(
-    uint256 usdcAmount,
-    LockupPeriod lockupPeriod,
-    uint256 deadline,
-    uint8 v,
-    bytes32 r,
-    bytes32 s
-  ) public {
-    IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), usdcAmount, deadline, v, r, s);
-    depositAndStakeWithLockup(usdcAmount, lockupPeriod);
-  }
-
-  function _stakeFiduWithLockup(
+  function _stakeFidu(
     address staker,
     address nftRecipient,
-    uint256 amount,
-    uint256 lockedUntil,
-    uint256 leverageMultiplier
+    uint256 amount
   ) internal returns (uint256 tokenId) {
-    return _stakeWithLockup(staker, nftRecipient, amount, StakedPositionType.Fidu, lockedUntil, leverageMultiplier);
+    return _stake(staker, nftRecipient, amount, StakedPositionType.Fidu);
   }
 
-  function _stakeWithLockup(
+  function _stake(
     address staker,
     address nftRecipient,
     uint256 amount,
-    StakedPositionType positionType,
-    uint256 lockedUntil,
-    uint256 leverageMultiplier
+    StakedPositionType positionType
   ) internal returns (uint256 tokenId) {
     require(amount > 0, "Cannot stake 0");
 
@@ -599,14 +486,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       }),
       baseTokenExchangeRate: baseTokenExchangeRate,
       effectiveMultiplier: effectiveMultiplier,
-      leverageMultiplier: leverageMultiplier,
-      lockedUntil: lockedUntil
+      leverageMultiplier: 0,
+      lockedUntil: 0
     });
     _mint(nftRecipient, tokenId);
 
     uint256 effectiveAmount = positionToEffectiveAmount(positions[tokenId]);
-    uint256 effectiveLeveredAmount = positionToEffectiveLeveredAmount(positions[tokenId]);
-    totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(effectiveLeveredAmount);
     totalStakedSupply = totalStakedSupply.add(effectiveAmount);
 
     // Staker is address(this) when using depositAndStake or other convenience functions
@@ -614,7 +499,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       stakingToken(positionType).safeTransferFrom(staker, address(this), amount);
     }
 
-    emit Staked(nftRecipient, tokenId, amount, positionType, baseTokenExchangeRate, lockedUntil, leverageMultiplier);
+    emit Staked(nftRecipient, tokenId, amount, positionType, baseTokenExchangeRate);
 
     return tokenId;
   }
@@ -722,10 +607,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     require(block.timestamp >= position.lockedUntil, "staked funds are locked");
 
     uint256 effectiveAmount = toEffectiveAmount(amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
-    // By this point, leverageMultiplier should always be 1x due to the reset logic in updateReward.
-    // But we subtract leveredAmount from totalLeveragedStakedSupply anyway, since that is technically correct.
-    uint256 effectiveLeveredAmount = toLeveredAmount(effectiveAmount, position.leverageMultiplier);
-    totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(effectiveLeveredAmount);
     totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
     position.amount = prevAmount.sub(amount);
 
@@ -761,16 +642,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     );
 
     uint256 prevEffectiveAmount = positionToEffectiveAmount(position);
-    uint256 prevEffectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
 
     position.effectiveMultiplier = newEffectiveMultiplier;
 
     uint256 newEffectiveAmount = positionToEffectiveAmount(position);
-    uint256 newEffectiveLeveredAmount = positionToEffectiveLeveredAmount(position);
 
-    totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(prevEffectiveLeveredAmount).add(
-      newEffectiveLeveredAmount
-    );
     totalStakedSupply = totalStakedSupply.sub(prevEffectiveAmount).add(newEffectiveAmount);
   }
 
@@ -804,8 +680,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     StakedPosition storage position = positions[tokenId];
     position.amount = position.amount.add(amount);
 
-    uint256 leveredAmount = toLeveredAmount(amount, position.leverageMultiplier);
-    totalLeveragedStakedSupply = totalLeveragedStakedSupply.add(leveredAmount);
     totalStakedSupply = totalStakedSupply.add(amount);
 
     stakingToken(position.positionType).safeTransferFrom(msg.sender, address(this), amount);
@@ -836,15 +710,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     maxRateAtPercent = _maxRateAtPercent;
 
     emit RewardsParametersUpdated(msg.sender, targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent);
-  }
-
-  function setLeverageMultiplier(LockupPeriod lockupPeriod, uint256 leverageMultiplier)
-    public
-    onlyAdmin
-    updateReward(0)
-  {
-    leverageMultipliers[lockupPeriod] = leverageMultiplier;
-    emit LeverageMultiplierUpdated(msg.sender, lockupPeriod, leverageMultiplier);
   }
 
   /// @notice Set the effective multiplier for a given staked position type. The effective multipler
@@ -882,7 +747,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 prevAccumulatedRewardsPerToken = accumulatedRewardsPerToken;
 
     accumulatedRewardsPerToken = rewardPerToken();
-    uint256 rewardsJustDistributed = totalLeveragedStakedSupply
+    uint256 rewardsJustDistributed = totalStakedSupply
       .mul(accumulatedRewardsPerToken.sub(prevAccumulatedRewardsPerToken))
       .div(stakingTokenMantissa());
     rewardsAvailable = rewardsAvailable.sub(rewardsJustDistributed);
@@ -897,17 +762,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       rewards.checkpoint();
 
       positionToAccumulatedRewardsPerToken[tokenId] = accumulatedRewardsPerToken;
-
-      // If position is unlocked, reset its leverageMultiplier back to 1x
-      uint256 lockedUntil = position.lockedUntil;
-      uint256 leverageMultiplier = position.leverageMultiplier;
-      uint256 effectiveAmount = positionToEffectiveAmount(position);
-      if (lockedUntil > 0 && block.timestamp >= lockedUntil && leverageMultiplier > MULTIPLIER_DECIMALS) {
-        uint256 prevLeveredAmount = toLeveredAmount(effectiveAmount, leverageMultiplier);
-        uint256 newLeveredAmount = toLeveredAmount(effectiveAmount, MULTIPLIER_DECIMALS);
-        position.leverageMultiplier = MULTIPLIER_DECIMALS;
-        totalLeveragedStakedSupply = totalLeveragedStakedSupply.sub(prevLeveredAmount).add(newLeveredAmount);
-      }
     }
   }
 
@@ -932,26 +786,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 indexed tokenId,
     uint256 amount,
     StakedPositionType positionType,
-    uint256 baseTokenExchangeRate,
-    uint256 lockedUntil,
-    uint256 multiplier
+    uint256 baseTokenExchangeRate
   );
-  event DepositedAndStaked(
-    address indexed user,
-    uint256 depositedAmount,
-    uint256 indexed tokenId,
-    uint256 amount,
-    uint256 lockedUntil,
-    uint256 multiplier
-  );
+  event DepositedAndStaked(address indexed user, uint256 depositedAmount, uint256 indexed tokenId, uint256 amount);
   event DepositedToCurveAndStaked(
     address indexed user,
     uint256 fiduAmount,
     uint256 usdcAmount,
     uint256 indexed tokenId,
-    uint256 amount,
-    uint256 lockedUntil,
-    uint256 multiplier
+    uint256 amount
   );
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
   event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);

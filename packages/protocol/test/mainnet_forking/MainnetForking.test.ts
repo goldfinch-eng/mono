@@ -19,6 +19,7 @@ import {time} from "@openzeppelin/test-helpers"
 import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-signer"
 import {FetchKYCFunction, KYC} from "@goldfinch-eng/autotasks/unique-identity-signer"
 import * as migrate235 from "../../blockchain_scripts/migrations/v2.3.5/migrate"
+import * as migrate236 from "../../blockchain_scripts/migrations/v2.3.6/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -67,7 +68,6 @@ import {
   UniqueIdentityInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
-import {Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
 import {assertCommunityRewardsVestingRewards} from "../communityRewardsHelpers"
 import {TOKEN_LAUNCH_TIME_IN_SECONDS} from "@goldfinch-eng/protocol/blockchain_scripts/baseDeploy"
@@ -79,7 +79,7 @@ import {
   VESTING_MERKLE_INFO_PATH,
 } from "../../blockchain_scripts/airdrop/community/calculation"
 import {MerkleDirectDistributorInfo} from "../../blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {DepositedAndStaked, RewardPaid} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
+import {DepositedAndStaked, RewardPaid, Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {
@@ -106,6 +106,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
   await migrate235.main()
+  await migrate236.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -1259,24 +1260,6 @@ describe("mainnet forking tests", async function () {
           await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
         })
       })
-
-      describe("when I deposit and stake with lockup, and then exit", async () => {
-        it("it works", async () => {
-          const tx = await expect(
-            stakingRewards.depositAndStakeWithLockup(usdcVal(10_000), new BN(0), {from: goListedUser})
-          ).to.be.fulfilled
-          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
-          const stakedEvent = asNonNullable(logs[0])
-          const tokenId = stakedEvent?.args.tokenId
-          await advanceTime({days: 30})
-          // before lockup expires
-          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.rejectedWith(
-            /staked funds are locked/i
-          )
-          await advanceTime({days: 6 * 31})
-          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
-        })
-      })
     })
 
     describe("as a go listed borrower", async () => {
@@ -1599,7 +1582,7 @@ describe("mainnet forking tests", async function () {
     })
 
     describe("StakingRewards", () => {
-      it("deposits and stakings into senior pool, and can withdraw", async () => {
+      it("deposits and stakes into senior pool, and can withdraw", async () => {
         const yearInSeconds = new BN(365 * 24 * 60 * 60)
         const halfYearInSeconds = yearInSeconds.div(new BN(2))
         const amount = usdcVal(1000)
@@ -1607,6 +1590,7 @@ describe("mainnet forking tests", async function () {
         await usdc.approve(stakingRewards.address, amount, {from: owner})
 
         const receipt = await stakingRewards.depositAndStake(amount, {from: owner})
+
         const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
@@ -1616,8 +1600,6 @@ describe("mainnet forking tests", async function () {
         expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
         expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
         expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-        expect(depositedAndStakedEvent.args.lockedUntil).to.bignumber.equal(stakedEvent.args.lockedUntil)
-        expect(depositedAndStakedEvent.args.multiplier).to.bignumber.equal(stakedEvent.args.multiplier)
 
         // advance time to end of grant
         await advanceTime({seconds: halfYearInSeconds})
