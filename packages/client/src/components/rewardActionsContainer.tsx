@@ -312,7 +312,6 @@ function RewardsListItem(props: RewardsListItemProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   const disabledText = props.status === RewardStatus.Acceptable
-  const valueDisabledClass = disabledText ? "disabled-text" : ""
 
   const actionButtonComponent = <ActionButton {...getActionButtonProps(props)} />
 
@@ -334,13 +333,13 @@ function RewardsListItem(props: RewardsListItemProps) {
               <div className="item-details">
                 <div className="detail-container">
                   <span className="detail-label">Locked GFI</span>
-                  <div className={`${valueDisabledClass}`} data-testid="detail-unvested">
+                  <div className={`${unvestedGFIZeroDisabled}`} data-testid="detail-unvested">
                     {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
                   </div>
                 </div>
                 <div className="detail-container">
                   <span className="detail-label">Claimable GFI</span>
-                  <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
+                  <div className={`${claimableGFIZeroDisabled}`} data-testid="detail-claimable">
                     {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
                   </div>
                 </div>
@@ -358,16 +357,10 @@ function RewardsListItem(props: RewardsListItemProps) {
                 {props.title}
                 <div className="subtitle">{props.subtitle}</div>
               </div>
-              <div
-                className={`table-cell col20 numeric ${valueDisabledClass} ${unvestedGFIZeroDisabled}`}
-                data-testid="detail-unvested"
-              >
+              <div className={`table-cell col20 numeric ${unvestedGFIZeroDisabled}`} data-testid="detail-unvested">
                 {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
               </div>
-              <div
-                className={`table-cell col20 numeric ${valueDisabledClass} ${claimableGFIZeroDisabled}`}
-                data-testid="detail-claimable"
-              >
+              <div className={`table-cell col20 numeric ${claimableGFIZeroDisabled}`} data-testid="detail-claimable">
                 {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
               </div>
               {actionButtonComponent}

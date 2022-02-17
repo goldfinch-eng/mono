@@ -88,6 +88,45 @@ export function displayPercent(val: BigNumber | undefined, decimals = 2, display
   return `${valDisplay}%`
 }
 
+export function displayDollarsTruncated(val: BigNumber | undefined | string | number, displayZero = true) {
+  let valFloat: number
+  let truncatedNumber = 0
+  let symbol = ""
+  let decimals = 0
+
+  const NUMBER_SYMBOLS = {
+    B: 1000000000,
+    M: 1000000,
+    k: 1000,
+    "": 1,
+  }
+
+  if (val === undefined) return "$--.--"
+
+  if (BigNumber.isBigNumber(val)) {
+    valFloat = parseFloat(val.toString(10))
+  } else if (isNumber(val)) {
+    valFloat = val
+  } else {
+    valFloat = parseFloat(val)
+  }
+
+  if (valFloat === 0) return displayDollars(0, 0, displayZero)
+
+  for (let key of Object.keys(NUMBER_SYMBOLS)) {
+    if (Math.abs(valFloat) >= NUMBER_SYMBOLS[key]) {
+      truncatedNumber = valFloat / NUMBER_SYMBOLS[key]
+      symbol = key
+      break
+    }
+  }
+
+  // if not an integer, set to show 2 decimal places
+  if (truncatedNumber % 1 !== 0) decimals = 2
+
+  return `${displayDollars(truncatedNumber, decimals, displayZero)}${symbol}`
+}
+
 export function roundUpPenny(val) {
   return Math.ceil(val * 100) / 100
 }
