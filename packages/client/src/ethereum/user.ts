@@ -66,6 +66,7 @@ import {
 import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
+import {BackerRewardsLoaded} from "./backerRewards"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
@@ -75,6 +76,7 @@ import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
+import {TranchedPoolBacker} from "./tranchedPool"
 import {
   getBackerMerkleDirectDistributorInfo,
   getBackerMerkleDistributorInfo,
@@ -1562,3 +1564,114 @@ async function getAndTransformMerkleDirectDistributorEvents(
       })
     )
 }
+
+type BackerRewardsPoolTokenPosition = {
+  tokenId: string
+  claimable: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+  unvested: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+}
+
+type BackerRewardsPosition = {
+  backer: TranchedPoolBacker
+  tokenPositions: BackerRewardsPoolTokenPosition[]
+}
+
+type UserBackerRewardsLoadedInfo = {
+  currentBlock: BlockInfo
+  positions: BackerRewardsPosition[]
+  claimable: BigNumber
+  unvested: BigNumber
+}
+
+class UserBackerRewards {
+  info: Loadable<UserBackerRewardsLoadedInfo>
+
+  constructor() {
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(
+    backerRewards: BackerRewardsLoaded,
+    rewardableTranchedPoolBackers: TranchedPoolBacker[],
+    currentBlock: BlockInfo
+  ): Promise<void> {
+    const positions = await Promise.all(
+      rewardableTranchedPoolBackers.map(
+        async (backer): Promise<BackerRewardsPosition> => ({
+          backer,
+          tokenPositions: await Promise.all(
+            backer.tokenInfos.map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
+              const tokenId = tokenInfo.id
+              const [backersOnly, seniorPoolMatching] = await Promise.all([
+                backerRewards.contract.readOnly.methods
+                  .poolTokenClaimableRewards(tokenId)
+                  .call(undefined, currentBlock.number),
+                backerRewards.contract.readOnly.methods
+                  .stakingRewardsEarnedSinceLastCheckpoint(tokenId)
+                  .call(undefined, currentBlock.number),
+              ])
+              return {
+                tokenId,
+                claimable: {
+                  backersOnly: new BigNumber(backersOnly),
+                  seniorPoolMatching: new BigNumber(seniorPoolMatching),
+                },
+                unvested: {
+                  backersOnly: new BigNumber(0),
+                  seniorPoolMatching: new BigNumber(0),
+                },
+              }
+            })
+          ),
+        })
+      )
+    )
+
+    const claimable = UserBackerRewards.calculateClaimableRewards(positions)
+    const unvested = UserBackerRewards.calculateUnvestedRewards(positions)
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        positions,
+        claimable,
+        unvested,
+      },
+    }
+  }
+
+  static calculateClaimableRewards(positions: BackerRewardsPosition[]): BigNumber {
+    return defaultSum(
+      positions.map((position) =>
+        defaultSum(
+          position.tokenPositions.map((tokenPosition) =>
+            tokenPosition.claimable.backersOnly.plus(tokenPosition.claimable.seniorPoolMatching)
+          )
+        )
+      )
+    )
+  }
+  static calculateUnvestedRewards(positions: BackerRewardsPosition[]): BigNumber {
+    return defaultSum(
+      positions.map((position) =>
+        defaultSum(
+          position.tokenPositions.map((tokenPosition) =>
+            tokenPosition.unvested.backersOnly.plus(tokenPosition.unvested.seniorPoolMatching)
+          )
+        )
+      )
+    )
+  }
+}
+
+export type UserBackerRewardsLoaded = WithLoadedInfo<UserBackerRewards, UserBackerRewardsLoadedInfo>
