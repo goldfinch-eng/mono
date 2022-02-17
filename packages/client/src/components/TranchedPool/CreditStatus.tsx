@@ -55,7 +55,7 @@ export function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undef
     transactionRows = transactions.map((tx) => {
       let yourPortion: BigNumber, amount: string
       if (tx.event === PAYMENT_APPLIED_EVENT) {
-        amount = tx.amount.display
+        amount = tx.amount.atomic.toString(10)
         const interestPortion = tranchedPool.sharePriceToUSDC(tx.juniorInterestDelta, backer.principalAmount)
         const principalPortion = tranchedPool.sharePriceToUSDC(tx.juniorPrincipalDelta, backer.principalAmount)
         yourPortion = interestPortion.plus(principalPortion)

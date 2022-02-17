@@ -1,3 +1,4 @@
+import BN from "bn.js"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
@@ -710,6 +711,8 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
   }
 }
 
+const ONE_CENT_USDC = USDC_DECIMALS.div(new BN(100)).toString(10)
+
 export const tranchedPoolEventParserConfig: EventParserConfig<TranchedPoolEventType> = {
   parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
     switch (eventData.event) {
@@ -723,7 +726,13 @@ export const tranchedPoolEventParserConfig: EventParserConfig<TranchedPoolEventT
           new BigNumber(eventData.returnValues.remainingAmount)
         )
         if (interestAmount.gt(0) && totalPrincipalAmount.gt(0)) {
-          return INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME
+          // We observed lots of payments being almost entirely interest, but having a principal amount of less
+          // than $0.01. For UX purposes, we'll describe such payments as interest-only payments.
+          if (interestAmount.gt(totalPrincipalAmount) && totalPrincipalAmount.lt(ONE_CENT_USDC)) {
+            return INTEREST_PAYMENT_TX_NAME
+          } else {
+            return INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME
+          }
         } else if (interestAmount.gt(0)) {
           return INTEREST_PAYMENT_TX_NAME
         } else if (totalPrincipalAmount.gt(0)) {
