@@ -12,6 +12,8 @@ import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
+import {isAccredited} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import USAccreditedForm from "./USAccreditedForm"
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
   return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
@@ -103,6 +105,19 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           onEvent={() => fetchKYCStatus(session)}
         />
       )
+    } else if (entityType === "us-accredited" && user && isAccredited(user?.address)) {
+      return (
+        <USForm
+          kycStatus={kyc?.status}
+          entityType={entityType}
+          onClose={() => setEntityType("")}
+          network={network?.name}
+          address={user?.address}
+          onEvent={() => fetchKYCStatus(session)}
+        />
+      )
+    } else if (entityType === "us-accredited" && user && isAccredited(user?.address)) {
+      return <USAccreditedForm onClose={() => setEntityType("")} />
     } else if (entityType === "entity") {
       return <EntityForm onClose={() => setEntityType("")} />
     } else if (isEligible(kyc, user)) {
@@ -127,6 +142,9 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
             </button>
             <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
               U.S. Individual
+            </button>
+            <button className={"button"} onClick={() => chooseEntity("us-accredited")}>
+              U.S. Accredited Individual
             </button>
             <button className={"button"} onClick={() => chooseEntity("entity")}>
               Entity
