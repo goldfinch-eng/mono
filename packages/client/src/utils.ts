@@ -89,6 +89,7 @@ export function displayPercent(val: BigNumber | undefined, decimals = 2, display
 }
 
 export function displayDollarsTruncated(val: BigNumber | undefined | string | number, displayZero = true) {
+  let valFloat: number
   let truncatedNumber = 0
   let symbol = ""
   let decimals = 0
@@ -102,7 +103,13 @@ export function displayDollarsTruncated(val: BigNumber | undefined | string | nu
 
   if (val === undefined) return "$--.--"
 
-  let valFloat = BigNumber.isBigNumber(val) ? parseFloat(val.toString(10)) : isNumber(val) ? val : parseFloat(val)
+  if (BigNumber.isBigNumber(val)) {
+    valFloat = parseFloat(val.toString(10))
+  } else if (isNumber(val)) {
+    valFloat = val
+  } else {
+    valFloat = parseFloat(val)
+  }
 
   if (valFloat === 0) return displayDollars(0, 0, displayZero)
 
