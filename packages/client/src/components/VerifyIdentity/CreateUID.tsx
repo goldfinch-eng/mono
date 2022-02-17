@@ -3,6 +3,7 @@ import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/
 import {useContext, useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
+import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {AppContext, SetSessionFn} from "../../App"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
@@ -14,7 +15,7 @@ import {UserWalletWeb3Status} from "../../types/web3"
 import {assertNonNullable} from "../../utils"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
-import {Action, END, US_COUNTRY_CODE} from "./constants"
+import {Action, END, ID_TYPE_0} from "./constants"
 import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
 
@@ -108,11 +109,14 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      let version: string = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+      let version = ID_TYPE_0
       try {
         const response = await client.fetchKYCStatus(userAddress)
-        if (response.ok && response.json.countryCode === US_COUNTRY_CODE) {
-          version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+        if (response.ok) {
+          version = getIDType({
+            address: userAddress,
+            kycStatus: response.json,
+          })
         }
       } catch (err: unknown) {
         setErrored(true)

@@ -6,7 +6,7 @@ import {useSignIn} from "../../hooks/useSignIn"
 import {assertNonNullable} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import LoadingButton from "../loadingButton"
-import {Action, CREATE_UID, END, SIGN_IN, START, Step, VERIFY_ADDRESS} from "./constants"
+import {Action, CREATE_UID, END, SIGN_IN, START, State, VERIFY_ADDRESS} from "./constants"
 import CreateUID from "./CreateUID"
 import VerifyAddress from "./VerifyAddress"
 
@@ -24,11 +24,11 @@ function SignInForm({action, disabled}) {
   )
 }
 
-const initialState: {step: Step} = {
+const initialState: State = {
   step: START,
 }
 
-const reducer = (state: typeof initialState, action: Action): typeof initialState => {
+const reducer = (state: State, action: Action): State => {
   if (action.type === SIGN_IN) {
     return {
       ...state,
@@ -43,6 +43,7 @@ const reducer = (state: typeof initialState, action: Action): typeof initialStat
     return {
       ...state,
       step: CREATE_UID,
+      kyc: action.kyc,
     }
   } else if (action.type === END) {
     return {
