@@ -101,13 +101,26 @@ function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
 
 function genWeb3(): Web3IO<Web3> {
   if (window.ethereum) {
-    if (isMetaMaskInpageProvider(window.ethereum)) {
-      return {readOnly: genReadOnlyWeb3(window.ethereum), userWallet: genUserWalletWeb3(window.ethereum)}
+    let _provider: ProviderType = window.ethereum
+    if (window.ethereum.overrideIsMetaMask) {
+      // Multiple wallet extensions fight to inject the provider on window.ethereum, for the specific
+      // case of Coinbase wallet (CW) it hijacks `window.ethereum` and adds `overrideIsMetaMask: true`
+      // The following code makes metamask the default connection choice, if the user doesn't have metamask
+      // and is using another wallet we'll still try to use it as the provider
+      const metamaskDefaultProvider = window.ethereum.providers.find((provider) => provider.isMetaMask)
+      if (metamaskDefaultProvider) {
+        _provider = metamaskDefaultProvider
+        window.ethereum.setSelectedProvider(metamaskDefaultProvider)
+      }
+    }
+
+    if (isMetaMaskInpageProvider(_provider)) {
+      return {readOnly: genReadOnlyWeb3(_provider), userWallet: genUserWalletWeb3(_provider)}
     } else {
       // This isn't an error per se; some other wallet / browser extension besides Metamask could
       // define `window.ethereum`. We'll try to use it as the provider.
-      console.log(`\`window.ethereum\` failed type-guard for MetaMaskInpageProvider: ${window.ethereum}`)
-      const sharedWeb3 = new Web3(window.ethereum as ProviderType)
+      console.log(`\`window.ethereum\` failed type-guard for MetaMaskInpageProvider: ${_provider}`)
+      const sharedWeb3 = new Web3(_provider as ProviderType)
       return {readOnly: sharedWeb3, userWallet: sharedWeb3}
     }
   } else {

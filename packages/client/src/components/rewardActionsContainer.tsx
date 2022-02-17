@@ -25,7 +25,7 @@ import {
 import {MerkleDirectDistributorGrant} from "../types/merkleDirectDistributor"
 import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
 import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
-import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "../utils"
+import {assertNonNullable, displayDollars, displayNumber, displayPercent, getInjectedProvider} from "../utils"
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
@@ -570,7 +570,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
 
   async function requestUserAddGfiTokenToWallet(previousGfiBalance: BigNumber): Promise<void> {
     if (previousGfiBalance.eq(0)) {
-      return (window as any).ethereum
+      return getInjectedProvider()
         .request({
           method: "wallet_watchAsset",
           params: {

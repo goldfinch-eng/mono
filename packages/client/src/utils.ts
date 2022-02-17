@@ -226,6 +226,21 @@ export function shouldUseWeb3(): boolean {
   return process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
 }
 
+export function getInjectedProvider(): any {
+  if ((window as any).ethereum.overrideIsMetaMask) {
+    const _provider = (window as any).ethereum.providers.find(
+      (p) => p.hasOwnProperty("isMetaMask") && (p as {isMetaMask: boolean}).isMetaMask
+    )
+    if (_provider) {
+      // When the user has multiple extensions installed on the browser, calling `window.ethereum.request`
+      // results in pop-ups from all wallets at the same time. To support the default connection with metamask
+      // one needs to select the metamask provider and call it to establish a connection
+      return _provider
+    }
+  }
+  return (window as any).ethereum
+}
+
 export function isProductionAndPrivateNetwork(network: NetworkConfig | undefined) {
   // Undetected networks are marked as private by the provider. On our config any private
   // network is marked as localhost, check `mapNetworkToID`, this function is useful to

@@ -39,6 +39,7 @@ import {
   displayDollars,
   displayNumber,
   isProductionAndPrivateNetwork,
+  getInjectedProvider,
 } from "../utils"
 import web3 from "../web3"
 import {iconCheck, iconOutArrow, iconSolidError, iconSolidCheck} from "./icons"
@@ -95,25 +96,33 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }
 
   async function requestUserAddGfiTokenToWallet(address: string): Promise<void> {
-    return (window as any).ethereum
-      .request({
-        method: "wallet_watchAsset",
-        params: {
-          type: "ERC20",
-          options: {
-            address: address,
-            symbol: "GFI",
-            decimals: 18,
-            image: GFI_TOKEN_IMAGE_URL,
+    // Adding the injected provider for consistency to avoid conflicts in case the user
+    // has multiple wallets installed even though wallet_watchAsset appears not to be
+    // triggered by other injected providers (eg: coinbase wallet)
+    const injectedProvider = getInjectedProvider()
+    if (injectedProvider) {
+      return injectedProvider
+        .request({
+          method: "wallet_watchAsset",
+          params: {
+            type: "ERC20",
+            options: {
+              address: address,
+              symbol: "GFI",
+              decimals: 18,
+              image: GFI_TOKEN_IMAGE_URL,
+            },
           },
-        },
-      })
-      .then((success: boolean) => {
-        if (!success) {
-          throw new Error("Failed to add GFI token to wallet.")
-        }
-      })
-      .catch(console.error)
+        })
+        .then((success: boolean) => {
+          if (!success) {
+            throw new Error("Failed to add GFI token to wallet.")
+          }
+        })
+        .catch(console.error)
+    } else {
+      console.error("Failed to get injected provider")
+    }
   }
 
   async function handleAddGFIToWallet() {
@@ -123,15 +132,18 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }
 
   async function enableMetamask(): Promise<void> {
-    return (window as any).ethereum
-      .request({method: "eth_requestAccounts"})
-      .then(() => {
-        props.connectionComplete()
-        handleSignIn()
-      })
-      .catch((error) => {
-        console.error("Error connecting to metamask", error)
-      })
+    const injectedProvider = getInjectedProvider()
+    if (injectedProvider) {
+      return injectedProvider
+        .request({method: "eth_requestAccounts"})
+        .then(() => {
+          props.connectionComplete()
+          handleSignIn()
+        })
+        .catch((error) => {
+          console.error("Error connecting to metamask", error)
+        })
+    }
   }
 
   function toggleOpenWidget() {
