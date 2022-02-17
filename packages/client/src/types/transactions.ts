@@ -1,7 +1,7 @@
-import {isNumber, isPlainObject, isString} from "@goldfinch-eng/utils/src/type"
+import {isPlainObject, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import {ERC20} from "../ethereum/erc20"
-import {isKnownEventName, KnownEventName} from "./events"
+import {KnownEventData, KnownEventName} from "./events"
 
 export const USDC_APPROVAL_TX_TYPE = "USDC Approval"
 export const FIDU_APPROVAL_TX_TYPE = "FIDU Approval"
@@ -96,7 +96,9 @@ export type CurrentTxDataByType = {
 export const INTEREST_COLLECTED_TX_NAME = "Interest Collected"
 export const PRINCIPAL_COLLECTED_TX_NAME = "Principal Collected"
 export const RESERVE_FUNDS_COLLECTED_TX_NAME = "Reserve Funds Collected"
+export const PRINCIPAL_PAYMENT_TX_NAME = "Principal Payment"
 export const INTEREST_PAYMENT_TX_NAME = "Interest Payment"
+export const INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME = "Interest and Principal Payment"
 export const DRAWDOWN_TX_NAME = "Drawdown"
 export const UNSTAKE_TX_NAME = "Unstake"
 
@@ -110,6 +112,8 @@ export type TxName =
   | typeof PRINCIPAL_COLLECTED_TX_NAME
   | typeof RESERVE_FUNDS_COLLECTED_TX_NAME
   | typeof INTEREST_PAYMENT_TX_NAME
+  | typeof PRINCIPAL_PAYMENT_TX_NAME
+  | typeof INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME
   | typeof DRAWDOWN_TX_NAME
   | typeof UNSTAKE_TX_NAME
 export function isTxName(val: unknown): val is TxName {
@@ -119,6 +123,8 @@ export function isTxName(val: unknown): val is TxName {
     val === PRINCIPAL_COLLECTED_TX_NAME ||
     val === RESERVE_FUNDS_COLLECTED_TX_NAME ||
     val === INTEREST_PAYMENT_TX_NAME ||
+    val === PRINCIPAL_PAYMENT_TX_NAME ||
+    val === INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME ||
     val === DRAWDOWN_TX_NAME ||
     val === UNSTAKE_TX_NAME
   )
@@ -155,20 +161,7 @@ export type HistoricalTx<T extends KnownEventName> = {
   status: "successful"
   eventId: string
   erc20: unknown
-}
-export function isHistoricalTx(obj: unknown): obj is HistoricalTx<KnownEventName> {
-  return (
-    isPlainObject(obj) &&
-    isKnownEventName(obj.type) &&
-    isTxName(obj.name) &&
-    isRichAmount(obj.amount) &&
-    isString(obj.id) &&
-    isNumber(obj.blockNumber) &&
-    isNumber(obj.transactionIndex) &&
-    obj.status === "successful" &&
-    isString(obj.eventId) &&
-    "erc20" in obj
-  )
+  eventData: KnownEventData<T>
 }
 
 type BaseCurrentTx<T extends TxType> = {

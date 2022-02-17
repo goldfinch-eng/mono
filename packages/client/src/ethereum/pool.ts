@@ -594,16 +594,14 @@ async function getRepaymentEvents(
     currentBlock.number
   )
   const oldEvents = await goldfinchProtocol.queryEvents("Pool", REPAYMENT_EVENT_TYPES, undefined, currentBlock.number)
-  const [eventTxs, oldEventTxs] = await Promise.all([
-    mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
-      parseName: parseRepaymentEventName,
-      parseAmount: parsePoolRepaymentEventAmount,
-    }),
-    mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
-      parseName: parseRepaymentEventName,
-      parseAmount: parseOldPoolRepaymentEventAmount,
-    }),
-  ])
+  const eventTxs = mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
+    parseName: parseRepaymentEventName,
+    parseAmount: parsePoolRepaymentEventAmount,
+  })
+  const oldEventTxs = mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
+    parseName: parseRepaymentEventName,
+    parseAmount: parseOldPoolRepaymentEventAmount,
+  })
   const combined = _.map(_.groupBy(eventTxs.concat(oldEventTxs), "id"), (val): CombinedRepaymentTx | null => {
     const interestPayment = _.find(val, (event) => event.type === "InterestCollected")
     const principalPayment = _.find(val, (event) => event.type === "PrincipalCollected")

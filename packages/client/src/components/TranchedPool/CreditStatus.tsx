@@ -10,6 +10,9 @@ import {iconOutArrow} from "../icons"
 import InfoSection from "../infoSection"
 import {WIDTH_TYPES} from "../styleConstants"
 import {useRecentPoolTransactions} from "./hooks/useRecentPoolTransactions"
+import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import BigNumber from "bignumber.js"
+import {DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT} from "../../types/events"
 
 export function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undefined}) {
   const {user, currentBlock} = useContext(AppContext)
@@ -50,15 +53,17 @@ export function CreditStatus({tranchedPool}: {tranchedPool: TranchedPool | undef
     )
   } else {
     transactionRows = transactions.map((tx) => {
-      let yourPortion, amount
-      if (tx.event === "PaymentApplied") {
-        amount = tx.amount
+      let yourPortion: BigNumber, amount: string
+      if (tx.event === PAYMENT_APPLIED_EVENT) {
+        amount = tx.amount.display
         const interestPortion = tranchedPool.sharePriceToUSDC(tx.juniorInterestDelta, backer.principalAmount)
         const principalPortion = tranchedPool.sharePriceToUSDC(tx.juniorPrincipalDelta, backer.principalAmount)
         yourPortion = interestPortion.plus(principalPortion)
-      } else if (tx.event === "DrawdownMade") {
-        amount = tx.amount.multipliedBy(-1)
+      } else if (tx.event === DRAWDOWN_MADE_EVENT) {
+        amount = tx.amount.atomic.multipliedBy(-1).toString(10)
         yourPortion = tranchedPool.sharePriceToUSDC(tx.juniorPrincipalDelta, backer.principalAmount)
+      } else {
+        assertUnreachable(tx)
       }
       return (
         <tr key={tx.txHash}>

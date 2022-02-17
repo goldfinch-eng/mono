@@ -1086,7 +1086,7 @@ export class User {
       getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
         return {
           poolEvents,
-          poolTxs: await mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
+          poolTxs: mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<PoolEventType>) => {
               switch (eventData.event) {
                 case DEPOSIT_MADE_EVENT:
@@ -1127,7 +1127,7 @@ export class User {
         currentBlock
       ),
 
-      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
+      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then((overlappingStakingRewardsEvents) => {
         const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
         const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
           (
@@ -1140,7 +1140,7 @@ export class User {
             currentBlock: overlappingStakingRewardsEvents.currentBlock,
             value: stakedEvents,
           },
-          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+          stakingRewardsTxs: mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
               switch (eventData.event) {
                 case STAKED_EVENT:
@@ -1260,7 +1260,7 @@ async function getAndTransformUSDCEvents(
     .compact()
     .map((e) => _.set(e, "erc20", usdc))
     .value()
-  return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
+  return mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
         case APPROVAL_EVENT:
@@ -1290,7 +1290,7 @@ async function getAndTransformFIDUEvents(
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
   const approvalEvents = await goldfinchProtocol.queryEvents("Fidu", APPROVAL_EVENT_TYPES, {owner}, currentBlock.number)
-  return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
+  return mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
         case APPROVAL_EVENT:
@@ -1339,7 +1339,7 @@ async function getAndTransformCreditDeskEvents(
     })
   )
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
-  return await mapEventsToTx<CreditDeskEventType>(creditDeskEvents, CREDIT_DESK_EVENT_TYPES, {
+  return mapEventsToTx<CreditDeskEventType>(creditDeskEvents, CREDIT_DESK_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<CreditDeskEventType>) => {
       switch (eventData.event) {
         case PAYMENT_COLLECTED_EVENT:
