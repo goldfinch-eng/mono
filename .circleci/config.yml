@@ -43,11 +43,13 @@ jobs:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
             - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-
       - create_concatenated_sol_file:
           filename: combined-contracts.txt
       - restore_cache:
           keys:
             - contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
+            - contracts-build-cache-
       - run:
           name: Update Ubuntu
           command: |
@@ -92,11 +94,13 @@ jobs:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
             - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-
       - create_concatenated_sol_file:
           filename: combined-contracts.txt
       - restore_cache:
           keys:
             - contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
+            - contracts-build-cache-
       - run:
           name: Test
           command: |
@@ -117,11 +121,13 @@ jobs:
           # https://circleci.com/docs/2.0/configuration-reference/?section=reference#save_cache
           keys:
             - deps-{{ .Branch }}-{{ checksum "package-lock.json" }}-{{ checksum "combined-package-lock.txt" }}
+            - deps-
       - create_concatenated_sol_file:
           filename: combined-contracts.txt
       - restore_cache:
           keys:
             - contracts-build-cache-{{ .Branch }}-{{ checksum "combined-contracts.txt" }}
+            - contracts-build-cache-
       - run:
           name: Test
           command: |
