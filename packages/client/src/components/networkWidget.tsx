@@ -83,7 +83,10 @@ function NetworkWidget(props: NetworkWidgetProps) {
   }
 
   async function handleEnable(): Promise<void> {
-    if (userWalletWeb3Status?.type === "no_web3") {
+    if (
+      userWalletWeb3Status?.type === "no_web3" ||
+      (!window.hasOwnProperty("ethereum") && userWalletWeb3Status?.type === "has_web3")
+    ) {
       return setNoWeb3Widget(true)
     }
     setIsEnablePending(true)
