@@ -3,13 +3,17 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph codegen && graph build",
+    "test": "graph test",
     "deploy": "graph build && graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
     "deploy-local": "graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5002 goldfinch-subgraph --version-label v0.0.1"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "0.22.3",
-    "@graphprotocol/graph-ts": "^0.22.1"
+    "@graphprotocol/graph-cli": "^0.25.1",
+    "@graphprotocol/graph-ts": "^0.24.1"
+  },
+  "devDependencies": {
+    "matchstick-as": "^0.2.2"
   }
 }
