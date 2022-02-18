@@ -17,6 +17,7 @@ import {StakingRewardsLoaded, StakingRewardsPosition} from "../../ethereum/pool"
 import {
   UserBackerMerkleDirectDistributorLoaded,
   UserBackerMerkleDistributorLoaded,
+  UserBackerRewardsLoaded,
   UserCommunityRewardsLoaded,
   UserLoaded,
   UserMerkleDirectDistributorLoaded,
@@ -178,6 +179,7 @@ function Rewards() {
     userCommunityRewards: _userCommunityRewards,
     userBackerMerkleDirectDistributor: _userBackerMerkleDirectDistributor,
     userBackerMerkleDistributor: _userBackerMerkleDistributor,
+    userBackerRewards: _userBackerRewards,
     currentBlock,
   } = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
@@ -195,7 +197,8 @@ function Rewards() {
     UserMerkleDirectDistributorLoaded,
     UserCommunityRewardsLoaded,
     UserBackerMerkleDirectDistributorLoaded,
-    UserBackerMerkleDistributorLoaded
+    UserBackerMerkleDistributorLoaded,
+    UserBackerRewardsLoaded
   >(
     {setAsLeaf: true},
     currentBlock,
@@ -211,7 +214,8 @@ function Rewards() {
     _userMerkleDirectDistributor,
     _userCommunityRewards,
     _userBackerMerkleDirectDistributor,
-    _userBackerMerkleDistributor
+    _userBackerMerkleDistributor,
+    _userBackerRewards
   )
 
   const disabled = session.status !== "authenticated"
@@ -237,6 +241,7 @@ function Rewards() {
       userCommunityRewards,
       userBackerMerkleDirectDistributor,
       userBackerMerkleDistributor,
+      userBackerRewards,
     ] = consistent
 
     loaded = true
@@ -251,7 +256,8 @@ function Rewards() {
       !userBackerMerkleDistributor.info.value.airdrops.notAccepted.length &&
       !userBackerMerkleDirectDistributor.info.value.airdrops.notAccepted.length &&
       !userBackerMerkleDirectDistributor.info.value.airdrops.accepted.length &&
-      !userStakingRewards.info.value.positions.length
+      !userStakingRewards.info.value.positions.length &&
+      !userBackerRewards.info.value.positions.length
 
     gfiBalance = user.info.value.gfiBalance
     claimable = userStakingRewards.info.value.claimable

@@ -34,6 +34,7 @@ import {
   UserBackerMerkleDirectDistributorLoaded,
   UserBackerMerkleDistributor,
   UserBackerMerkleDistributorLoaded,
+  UserBackerRewardsLoaded,
   UserCommunityRewards,
   UserCommunityRewardsLoaded,
   UserLoaded,
@@ -159,6 +160,7 @@ export interface GlobalState {
   userBackerMerkleDirectDistributor?: UserBackerMerkleDirectDistributorLoaded
   userBackerMerkleDistributor?: UserBackerMerkleDistributorLoaded
   backerRewards?: BackerRewardsLoaded
+  userBackerRewards?: UserBackerRewardsLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: Web3IO<CreditDesk>
   user?: UserLoaded
@@ -206,6 +208,7 @@ function App() {
   const [userBackerMerkleDirectDistributor, setUserBackerMerkleDirectDistributor] =
     useState<UserBackerMerkleDirectDistributorLoaded>()
   const [userCommunityRewards, setUserCommunityRewards] = useState<UserCommunityRewardsLoaded>()
+  const [userBackerRewards, setUserBackerRewards] = useState<UserBackerRewardsLoaded>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<UserLoaded>()
@@ -521,6 +524,8 @@ function App() {
     assertNonNullable(communityRewards)
     assertNonNullable(merkleDistributor)
     assertNonNullable(merkleDirectDistributor)
+    assertNonNullable(backerMerkleDistributor)
+    assertNonNullable(backerMerkleDirectDistributor)
 
     const address = overrideAddress || userAddress
     const user = await getUserData(
@@ -534,6 +539,8 @@ function App() {
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
+      backerMerkleDistributor,
+      backerMerkleDirectDistributor,
       currentBlock
     )
     Sentry.setUser({
@@ -609,6 +616,7 @@ function App() {
     userCommunityRewards,
     userBackerMerkleDirectDistributor,
     userBackerMerkleDistributor,
+    userBackerRewards,
     usdc,
     goldfinchConfig,
     network,
