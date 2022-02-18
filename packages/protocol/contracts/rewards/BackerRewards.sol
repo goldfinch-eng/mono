@@ -141,8 +141,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 principalDeployedAtDrawdown,
     uint256 rewardsAccumulatorAtDrawdown
   ) external onlyAdmin {
-    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
+    require(config.getPoolTokens().validPool(pool), "Invalid pool!");
     require(poolInfo.slicesInfo.length <= 1, "trying to overwrite multi slice rewards info!");
+    require(fiduSharePriceAtDrawdown != 0, "Invalid: 0");
+    require(principalDeployedAtDrawdown != 0, "Invalid: 0");
+    require(rewardsAccumulatorAtDrawdown != 0, "Invalid: 0");
+
+    StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
+
     // NOTE: making this overwrite behavior to make it so that we have
     //           an escape hatch in case the incorrect value is set for some reason
     bool firstSliceHasAlreadyBeenInitialized = poolInfo.slicesInfo.length != 0;
@@ -295,6 +301,39 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       _usdcToAtomic(tokenInfo.principalAmount).mul(diffOfAccRewardsPerPrincipalDollar).sub(rewardsClaimed).div(
         _gfiMantissa()
       );
+  }
+
+  /**
+   * @notice Calculates the amount of staking rewards already claimed for a PoolToken.
+   * This function is intended for public consumption and not as an input to the mutative
+   * calculations in this contract.
+   * @param tokenId Pool token id
+   * @return The amount of GFI claimed
+   */
+  function stakingRewardsClaimed(uint256 tokenId) public view returns (uint256) {
+    IPoolTokens poolTokens = config.getPoolTokens();
+    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+
+    if (_isSeniorTrancheToken(tokenInfo)) {
+      return 0;
+    }
+
+    uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
+
+    if (!_poolRewardsHaveBeenInitialized(pool) || !_sliceRewardsHaveBeenInitialized(pool, sliceIndex)) {
+      return 0;
+    }
+
+    StakingRewardsPoolInfo memory poolInfo = poolStakingRewards[pool];
+    StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
+    StakingRewardsTokenInfo memory tokenInfo = tokenStakingRewards[tokenId];
+
+    uint256 sliceAccumulator = sliceInfo.accumulatedRewardsPerTokenAtDrawdown;
+    uint256 tokenAccumulator = _getTokenAccumulatorAtLastWithdraw(tokenInfo, sliceInfo);
+    uint256 rewardsPerFidu = tokenAccumulator.sub(sliceAccumulator);
+    uint256 principalAsFidu = _fiduToUsdc(tokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
+    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(_fiduMantissa());
+    return rewards;
   }
 
   /**
