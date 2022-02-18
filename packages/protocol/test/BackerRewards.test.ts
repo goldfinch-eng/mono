@@ -1721,7 +1721,7 @@ describe("BackerRewards", function () {
     })
   })
 
-  describe("stakingRewardsEarnedSinceLastCheckpoint", () => {
+  describe("stakingRewardsEarnedSinceLastWithdraw", () => {
     const maxInterestDollarsEligible = 1_000_000_000
     const totalGFISupply = 100_000_000
     const totalBackerRewards = totalGFISupply / 2
@@ -1798,7 +1798,7 @@ describe("BackerRewards", function () {
         await advanceTime({toSecond: await creditLine.termEndTime()})
         await tranchedPool.pay(payAmount, {from: borrower})
 
-        const juniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(juniorTokenId)
+        const juniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(juniorTokenId)
         expect(juniorStakingRewardsEarned).to.bignumber.equal(
           juniorPrincipal
             .mul(FIDU_DECIMALS)
@@ -1807,7 +1807,7 @@ describe("BackerRewards", function () {
             .mul(currentEarnRate.mul(SECONDS_PER_YEAR))
         )
 
-        const seniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(seniorTokenId)
+        const seniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(seniorTokenId)
         expect(seniorStakingRewardsEarned).to.bignumber.equal(new BN(0))
       })
     })

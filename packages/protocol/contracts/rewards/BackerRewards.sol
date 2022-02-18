@@ -330,7 +330,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     require(!_isSeniorTrancheToken(tokenInfo), "Ineligible senior tranche token");
 
     uint256 claimableBackerRewards = poolTokenClaimableRewards(tokenId);
-    uint256 claimableStakingRewards = stakingRewardsEarnedSinceLastCheckpoint(tokenId);
+    uint256 claimableStakingRewards = stakingRewardsEarnedSinceLastWithdraw(tokenId);
     uint256 totalClaimableRewards = claimableBackerRewards.add(claimableStakingRewards);
     uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
 
@@ -347,11 +347,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /**
-   * @notice Returns staking rewards earned by a given token from its last checkpoint
+   * @notice Returns the amount of staking rewards earned by a given token since the last
+   * time its staking rewards were withdrawn.
    * @param tokenId token id to get rewards
-   * @return amount of rewards earned since the last token checkpoint.
+   * @return amount of rewards
    */
-  function stakingRewardsEarnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
+  function stakingRewardsEarnedSinceLastWithdraw(uint256 tokenId) public view returns (uint256) {
     IPoolTokens.TokenInfo memory poolTokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     if (_isSeniorTrancheToken(poolTokenInfo)) {
       return 0;
