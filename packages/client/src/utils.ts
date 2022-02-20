@@ -7,6 +7,19 @@ import {ChainInfoToAdd, isMainnetForking, SupportedChainId} from "./ethereum/uti
 import {NetworkConfig} from "./types/network"
 import {AsyncReturnType} from "./types/util"
 import web3 from "./web3"
+import {UserLoaded} from "./ethereum/user"
+
+export function eligibleForSeniorPool(user: UserLoaded | undefined): boolean {
+  const goListed =
+    user?.info.value.goListed ||
+    user?.info.value.hasNonUSUID ||
+    user?.info.value.hasUSAccreditedUID ||
+    user?.info.value.hasUSEntityUID ||
+    user?.info.value.hasNonUSEntityUID ||
+    user?.info.value.hasUSNonAccreditedUID
+
+  return !!goListed
+}
 
 export function croppedAddress(address) {
   if (!address) {

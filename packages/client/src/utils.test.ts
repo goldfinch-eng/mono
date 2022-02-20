@@ -1,5 +1,5 @@
-import {eligibleForSeniorPool} from "./useKYC"
-import {UserLoaded} from "../ethereum/user"
+import {eligibleForSeniorPool} from "./utils"
+import {UserLoaded} from "./ethereum/user"
 
 describe("eligibleForSeniorPool", () => {
   describe("goListed", () => {

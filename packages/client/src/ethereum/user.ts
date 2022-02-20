@@ -921,6 +921,8 @@ export type UserLoadedInfo = {
   hasUID: boolean
   hasNonUSUID: boolean
   hasUSAccreditedUID: boolean
+  hasUSEntityUID: boolean
+  hasNonUSEntityUID: boolean
   hasUSNonAccreditedUID: boolean
   gfiBalance: BigNumber
   usdcIsUnlocked: {
@@ -1021,13 +1023,16 @@ export class User {
     )
     pastTxs = await populateDates(pastTxs)
 
-    const golistStatus = await this._fetchGolistStatus(this.address, currentBlock)
-    const goListed = golistStatus.golisted
-    const legacyGolisted = golistStatus.legacyGolisted
-    const hasUID = golistStatus.hasUID
-    const hasNonUSUID = golistStatus.hasNonUSUID
-    const hasUSAccreditedUID = golistStatus.hasUSAccreditedUID
-    const hasUSNonAccreditedUID = golistStatus.hasUSNonAccreditedUID
+    const {
+      golisted: goListed,
+      legacyGolisted,
+      hasUID,
+      hasNonUSUID,
+      hasUSAccreditedUID,
+      hasUSEntityUID,
+      hasNonUSEntityUID,
+      hasUSNonAccreditedUID,
+    } = await this._fetchGolistStatus(this.address, currentBlock)
 
     const gfiBalance = new BigNumber(
       await gfi.contract.readOnly.methods.balanceOf(this.address).call(undefined, currentBlock.number)
@@ -1053,6 +1058,8 @@ export class User {
         hasNonUSUID,
         hasUSAccreditedUID,
         hasUSNonAccreditedUID,
+        hasUSEntityUID,
+        hasNonUSEntityUID,
         gfiBalance,
         usdcIsUnlocked: {
           earn: {
@@ -1212,17 +1219,30 @@ export class User {
 
     // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-    const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
-    const ID_TYPE_1 = await uniqueIdentity.readOnly.methods.ID_TYPE_1().call()
-    const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+    const NON_US_INDIVIDUAL_ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+    const US_ACCREDITED_INDIVIDUAL_ID_TYPE_1 = await uniqueIdentity.readOnly.methods.ID_TYPE_1().call()
+    const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+    const US_ENTITY_ID_TYPE_3 = await uniqueIdentity.readOnly.methods.ID_TYPE_3().call()
+    const NON_US_ENTITY_ID_TYPE_4 = await uniqueIdentity.readOnly.methods.ID_TYPE_4().call()
     const balances = await uniqueIdentity.readOnly.methods
-      .balanceOfBatch([address, address, address], [ID_TYPE_0, ID_TYPE_1, ID_TYPE_2])
+      .balanceOfBatch(
+        [address, address, address, address, address],
+        [
+          NON_US_INDIVIDUAL_ID_TYPE_0,
+          US_ACCREDITED_INDIVIDUAL_ID_TYPE_1,
+          US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2,
+          US_ENTITY_ID_TYPE_3,
+          NON_US_ENTITY_ID_TYPE_4,
+        ]
+      )
       .call(undefined, currentBlock.number)
 
     const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
     const hasNonUSUID = !new BigNumber(String(balances[0])).isZero()
     const hasUSAccreditedUID = !new BigNumber(String(balances[1])).isZero()
     const hasUSNonAccreditedUID = !new BigNumber(String(balances[2])).isZero()
+    const hasUSEntityUID = !new BigNumber(String(balances[3])).isZero()
+    const hasNonUSEntityUID = !new BigNumber(String(balances[4])).isZero()
 
     return {
       legacyGolisted,
@@ -1231,6 +1251,8 @@ export class User {
       hasNonUSUID,
       hasUSAccreditedUID,
       hasUSNonAccreditedUID,
+      hasUSEntityUID,
+      hasNonUSEntityUID,
     }
   }
 

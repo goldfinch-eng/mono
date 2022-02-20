@@ -15,7 +15,7 @@ import {UserWalletWeb3Status} from "../../types/web3"
 import {assertNonNullable} from "../../utils"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
-import {Action, END, ID_TYPE_0} from "./constants"
+import {Action, END} from "./constants"
 import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
 
@@ -109,9 +109,10 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      let version = ID_TYPE_0
+      let version
       try {
         const response = await client.fetchKYCStatus(userAddress)
+        // TODO right here
         if (response.ok) {
           version = getIDType({
             address: userAddress,
@@ -192,8 +193,8 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
                 community privileges.
                 <br />
                 <br />
-                Note: U.S. individuals are only eligible to participate in Goldfinch governance-related activities. They
-                may not participate in the senior pool and borrower pools.
+                TODO TODO Note: U.S. individuals are only eligible to participate in Goldfinch governance-related
+                activities. They may not participate in the senior pool and borrower pools.
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />

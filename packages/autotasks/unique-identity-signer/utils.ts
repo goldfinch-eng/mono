@@ -1,27 +1,47 @@
 import {KYC} from "."
-import accreditedList from "./accredited.json"
+import USAccreditedIndividualsList from "./USAccreditedIndividuals.json"
+import USAccreditedEntitiesList from "./USAccreditedEntities.json"
+import NonUSEntitiesList from "./NonUSEntities.json"
 
 const US_COUNTRY_CODE = "US"
-const ID_TYPE_0 = 0 // non-US
-const ID_TYPE_1 = 1 // US accredited
-const ID_TYPE_2 = 2 // US non accredited
+export const NON_US_INDIVIDUAL_ID_TYPE_0 = 0 // non-US individual
+export const US_ACCREDITED_INDIVIDUAL_ID_TYPE_1 = 1 // US accredited individual
+export const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = 2 // US non accredited individual
+export const US_ENTITY_ID_TYPE_3 = 3 // US entity
+export const NON_US_ENTITY_ID_TYPE_4 = 4 // non-US entity
 
-export function isAccredited(address: string): boolean {
-  return accreditedList.includes(address)
+export function isUSAccreditedIndividual(address: string): boolean {
+  return USAccreditedIndividualsList.includes(address)
 }
 
-export function getIDType({address, kycStatus}: {address: string; kycStatus: KYC}): number {
+export function isUSAccreditedEntity(address: string): boolean {
+  return USAccreditedEntitiesList.includes(address)
+}
+
+export function IsNonUSEntity(address: string): boolean {
+  return NonUSEntitiesList.includes(address)
+}
+
+export function getIDType({address, kycStatus}: {address: string; kycStatus?: KYC}): number {
   let idVersion: number
 
-  if (kycStatus.countryCode === US_COUNTRY_CODE && isAccredited(address)) {
-    // US accredited
-    idVersion = ID_TYPE_1
-  } else if (kycStatus.countryCode === US_COUNTRY_CODE && !isAccredited(address)) {
-    // US non accredited
-    idVersion = ID_TYPE_2
+  if (isUSAccreditedEntity(address)) {
+    // US accredited entity
+    idVersion = US_ENTITY_ID_TYPE_3
+  } else if (IsNonUSEntity(address)) {
+    // non US entity
+    idVersion = NON_US_ENTITY_ID_TYPE_4
+  } else if (kycStatus?.countryCode !== US_COUNTRY_CODE) {
+    // non US individual
+    idVersion = NON_US_INDIVIDUAL_ID_TYPE_0
+  } else if (kycStatus?.countryCode === US_COUNTRY_CODE && isUSAccreditedIndividual(address)) {
+    // US accredited individual
+    idVersion = US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
+  } else if (kycStatus?.countryCode === US_COUNTRY_CODE && !isUSAccreditedIndividual(address)) {
+    // US non accredited individual
+    idVersion = US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
   } else {
-    // non US
-    idVersion = ID_TYPE_0
+    throw new Error("Cannot find expected UniqueIdentity idVersion")
   }
 
   return idVersion

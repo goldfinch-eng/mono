@@ -125,11 +125,17 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
             <button className={"button"} onClick={() => chooseEntity("non-US")}>
               Non-U.S. Individual
             </button>
+            <button className={"button"} onClick={() => chooseEntity("non-US")}>
+              Non-U.S. Entity
+            </button>
             <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
-              U.S. Individual
+              Non-Accredited U.S. Individual
+            </button>
+            <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
+              Accredited U.S. Individual
             </button>
             <button className={"button"} onClick={() => chooseEntity("entity")}>
-              Entity
+              U.S. Entity
             </button>
           </div>
         </VerifyCard>

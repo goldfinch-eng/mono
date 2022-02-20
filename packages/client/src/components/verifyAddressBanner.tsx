@@ -13,7 +13,7 @@ export default function VerifyAddressBanner() {
   }
 
   let qualifyText =
-    "This offering is only available to non-U.S. persons. To participate, you must first verify your address."
+    "TODO This offering is only available to non-U.S. persons. To participate, you must first verify your address."
 
   return (
     <FormProvider {...formMethods}>
