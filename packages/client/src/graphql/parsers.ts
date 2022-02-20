@@ -71,6 +71,13 @@ async function parseTranchedPool(
   tranchedPool.reserveFeePercent = new BigNumber(pool.reserveFeePercent)
   tranchedPool.estimatedSeniorPoolContribution = new BigNumber(pool.estimatedSeniorPoolContribution)
   tranchedPool.estimatedLeverageRatio = new BigNumber(pool.estimatedLeverageRatio)
+  if (
+    tranchedPool.address === "0xd09a57127bc40d680be7cb061c2a6629fe71abef" ||
+    tranchedPool.address === "0x00c27fc71b159a346e179b4a1608a0865e8a7470" ||
+    tranchedPool.address === "0x418749e294cabce5a714efccc22a8aade6f9db57"
+  ) {
+    tranchedPool.estimatedLeverageRatio = new BigNumber(4)
+  }
 
   tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
   tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
