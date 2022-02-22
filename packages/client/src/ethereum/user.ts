@@ -69,7 +69,7 @@ import {Web3IO} from "../types/web3"
 import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
 import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
-import {BackerRewardsLoaded} from "./backerRewards"
+import {BackerRewardsLoaded, BackerRewardsPoolTokenPosition, BackerRewardsPosition} from "./backerRewards"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
@@ -1598,23 +1598,6 @@ async function getAndTransformBackerMerkleDirectDistributorEvents(
   return getAndTransformMerkleDirectDistributorEvents(address, backerMerkleDirectDistributor)
 }
 
-type BackerRewardsPoolTokenPosition = {
-  tokenId: string
-  claimable: {
-    backersOnly: BigNumber
-    seniorPoolMatching: BigNumber
-  }
-  unvested: {
-    backersOnly: BigNumber
-    seniorPoolMatching: BigNumber
-  }
-}
-
-type BackerRewardsPosition = {
-  backer: TranchedPoolBacker
-  tokenPositions: BackerRewardsPoolTokenPosition[]
-}
-
 type UserBackerRewardsLoadedInfo = {
   currentBlock: BlockInfo
   positions: BackerRewardsPosition[]
@@ -1646,35 +1629,46 @@ export class UserBackerRewards {
   ): Promise<void> {
     const positions = (
       await Promise.all(
-        rewardableTranchedPoolBackers.map(
-          async (backer): Promise<BackerRewardsPosition> => ({
-            backer,
-            tokenPositions: await Promise.all(
-              backer.tokenInfos.map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
-                const tokenId = tokenInfo.id
-                const [backersOnly, seniorPoolMatching] = await Promise.all([
-                  backerRewards.contract.readOnly.methods
-                    .poolTokenClaimableRewards(tokenId)
-                    .call(undefined, currentBlock.number),
-                  backerRewards.contract.readOnly.methods
-                    .stakingRewardsEarnedSinceLastCheckpoint(tokenId)
-                    .call(undefined, currentBlock.number),
-                ])
-                return {
-                  tokenId,
-                  claimable: {
-                    backersOnly: new BigNumber(backersOnly),
-                    seniorPoolMatching: new BigNumber(seniorPoolMatching),
-                  },
-                  unvested: {
-                    backersOnly: new BigNumber(0),
-                    seniorPoolMatching: new BigNumber(0),
-                  },
-                }
-              })
-            ),
-          })
-        )
+        rewardableTranchedPoolBackers.map(async (backer): Promise<BackerRewardsPosition> => {
+          const tokenPositions = await Promise.all(
+            backer.tokenInfos.map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
+              const tokenId = tokenInfo.id
+              const [
+                backersOnlyClaimable,
+                seniorPoolMatchingClaimable,
+                backersOnlyTokenInfo,
+                seniorPoolMatchingClaimed,
+              ] = await Promise.all([
+                backerRewards.contract.readOnly.methods
+                  .poolTokenClaimableRewards(tokenId)
+                  .call(undefined, currentBlock.number),
+                backerRewards.contract.readOnly.methods
+                  .stakingRewardsEarnedSinceLastWithdraw(tokenId)
+                  .call(undefined, currentBlock.number),
+                backerRewards.contract.readOnly.methods.tokens(tokenId).call(undefined, currentBlock.number),
+                backerRewards.contract.readOnly.methods
+                  .stakingRewardsClaimed(tokenId)
+                  .call(undefined, currentBlock.number),
+              ])
+              return {
+                tokenId,
+                claimed: {
+                  backersOnly: new BigNumber(backersOnlyTokenInfo.rewardsClaimed),
+                  seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimed),
+                },
+                claimable: {
+                  backersOnly: new BigNumber(backersOnlyClaimable),
+                  seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimable),
+                },
+                unvested: {
+                  backersOnly: new BigNumber(0),
+                  seniorPoolMatching: new BigNumber(0),
+                },
+              }
+            })
+          )
+          return new BackerRewardsPosition(backer, tokenPositions)
+        })
       )
     ).filter(
       // Remove rewardable tranched pools for which the user has no pool tokens (and for which they
@@ -1682,8 +1676,8 @@ export class UserBackerRewards {
       (position) => position.tokenPositions.length
     )
 
-    const claimable = UserBackerRewards.calculateClaimableRewards(positions)
-    const unvested = UserBackerRewards.calculateUnvestedRewards(positions)
+    const claimable = defaultSum(positions.map((position) => position.claimable))
+    const unvested = defaultSum(positions.map((position) => position.unvested))
 
     this.info = {
       loaded: true,
@@ -1694,29 +1688,6 @@ export class UserBackerRewards {
         unvested,
       },
     }
-  }
-
-  static calculateClaimableRewards(positions: BackerRewardsPosition[]): BigNumber {
-    return defaultSum(
-      positions.map((position) =>
-        defaultSum(
-          position.tokenPositions.map((tokenPosition) =>
-            tokenPosition.claimable.backersOnly.plus(tokenPosition.claimable.seniorPoolMatching)
-          )
-        )
-      )
-    )
-  }
-  static calculateUnvestedRewards(positions: BackerRewardsPosition[]): BigNumber {
-    return defaultSum(
-      positions.map((position) =>
-        defaultSum(
-          position.tokenPositions.map((tokenPosition) =>
-            tokenPosition.unvested.backersOnly.plus(tokenPosition.unvested.seniorPoolMatching)
-          )
-        )
-      )
-    )
   }
 }
 

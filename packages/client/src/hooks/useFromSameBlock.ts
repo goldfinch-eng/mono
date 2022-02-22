@@ -180,7 +180,8 @@ export function useFromSameBlock<
   D extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   E extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
   F extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
-  G extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
+  G extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>,
+  H extends WithLoadedInfo<{info: Loadable<InfoWithCurrentBlock>}, InfoWithCurrentBlock>
 >(
   config: UseFromSameBlockConfig,
   currentBlock: BlockInfo | undefined,
@@ -198,9 +199,10 @@ export function useFromSameBlock<
     D | undefined,
     E | undefined,
     F | undefined,
-    G | undefined
+    G | undefined,
+    H | undefined
   ]
-): [T, U, V, W, X, Y, Z, A, B, C, D, E, F, G] | undefined
+): [T, U, V, W, X, Y, Z, A, B, C, D, E, F, G, H] | undefined
 
 /**
  * Hook for ensuring that the loadable items provided to it are all loaded with

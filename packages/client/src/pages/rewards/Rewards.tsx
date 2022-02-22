@@ -9,6 +9,7 @@ import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
 import {BackerMerkleDirectDistributorLoaded} from "../../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "../../ethereum/backerMerkleDistributor"
+import {BackerRewardsLoaded, BackerRewardsPosition} from "../../ethereum/backerRewards"
 import {CommunityRewardsGrant, CommunityRewardsLoaded} from "../../ethereum/communityRewards"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic} from "../../ethereum/gfi"
 import {MerkleDirectDistributorLoaded} from "../../ethereum/merkleDirectDistributor"
@@ -141,6 +142,17 @@ const compareStakingRewards = (a: StakingRewardsPosition, b: StakingRewardsPosit
   // Order staking rewards by start time.
   a.storedPosition.rewards.startTime - b.storedPosition.rewards.startTime
 
+const compareBackerRewards = (a: BackerRewardsPosition, b: BackerRewardsPosition) => {
+  // Order backer rewards by tranched pool launch time.
+
+  const aLaunchTime = a.backer.tranchedPool.metadata?.launchTime
+  // We expect `launchTime` to be defined for all tranched pools for which backers can earn backer rewards.
+  assertNonNullable(aLaunchTime)
+  const bLaunchTime = b.backer.tranchedPool.metadata?.launchTime
+  assertNonNullable(bLaunchTime)
+  return aLaunchTime - bLaunchTime
+}
+
 const compareMerkleDistributorRewards = (a: SortableMerkleDistributorRewards, b: SortableMerkleDistributorRewards) => {
   // Order MerkleDistributor rewards by grant index.
   const aIndex = getMerkleDistributorGrantIndex(a)
@@ -174,6 +186,7 @@ function Rewards() {
     backerMerkleDistributor: _backerMerkleDistributor,
     backerMerkleDirectDistributor: _backerMerkleDirectDistributor,
     communityRewards: _communityRewards,
+    backerRewards: _backerRewards,
     userMerkleDistributor: _userMerkleDistributor,
     userMerkleDirectDistributor: _userMerkleDirectDistributor,
     userCommunityRewards: _userCommunityRewards,
@@ -193,6 +206,7 @@ function Rewards() {
     BackerMerkleDistributorLoaded,
     BackerMerkleDirectDistributorLoaded,
     CommunityRewardsLoaded,
+    BackerRewardsLoaded,
     UserMerkleDistributorLoaded,
     UserMerkleDirectDistributorLoaded,
     UserCommunityRewardsLoaded,
@@ -210,6 +224,7 @@ function Rewards() {
     _backerMerkleDistributor,
     _backerMerkleDirectDistributor,
     _communityRewards,
+    _backerRewards,
     _userMerkleDistributor,
     _userMerkleDirectDistributor,
     _userCommunityRewards,
@@ -236,6 +251,7 @@ function Rewards() {
       backerMerkleDistributor,
       backerMerkleDirectDistributor,
       communityRewards,
+      backerRewards,
       userMerkleDistributor,
       userMerkleDirectDistributor,
       userCommunityRewards,
@@ -273,6 +289,7 @@ function Rewards() {
         userBackerMerkleDistributor.info.value.notAcceptedClaimable
       )
       .plus(userBackerMerkleDirectDistributor.info.value.claimable)
+      .plus(userBackerRewards.info.value.claimable)
     unvested = userStakingRewards.info.value.unvested
       .plus(userCommunityRewards.info.value.unvested)
       .plus(
@@ -285,6 +302,7 @@ function Rewards() {
         userBackerMerkleDistributor.info.value.notAcceptedUnvested
       )
       .plus(userBackerMerkleDirectDistributor.info.value.unvested)
+      .plus(userBackerRewards.info.value.unvested)
 
     totalBalance = gfiBalance.plus(claimable).plus(unvested)
     totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
@@ -294,6 +312,8 @@ function Rewards() {
     } else {
       const sortedStakingRewards: StakingRewardsPosition[] =
         userStakingRewards.info.value.positions.sort(compareStakingRewards)
+      const sortedBackerRewards: BackerRewardsPosition[] =
+        userBackerRewards.info.value.positions.sort(compareBackerRewards)
       const sortedMerkleDistributorRewards: SortableMerkleDistributorRewards[] = [
         ...userMerkleDistributor.info.value.airdrops.notAccepted.map<SortableMerkleDistributorRewards>((grantInfo) => ({
           type: "merkleDistributor",
@@ -370,6 +390,22 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
+              backerRewards={backerRewards}
+            />
+          ))}
+          {sortedBackerRewards.map((position) => (
+            <RewardActionsContainer
+              key={`backerRewards-${position.backer.tranchedPool.address}`}
+              disabled={disabled}
+              type="backerRewards"
+              item={position}
+              user={user}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+              backerRewards={backerRewards}
             />
           ))}
           {sortedMerkleDistributorRewards.map((sorted) => {
@@ -387,6 +423,7 @@ function Rewards() {
                     merkleDirectDistributor={merkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
+                    backerRewards={backerRewards}
                   />
                 )
               case "merkleDistributor":
@@ -402,6 +439,7 @@ function Rewards() {
                     merkleDirectDistributor={merkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
+                    backerRewards={backerRewards}
                   />
                 )
               default:
@@ -420,6 +458,7 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
+              backerRewards={backerRewards}
             />
           ))}
           {sortedBackerMerkleDistributorRewards.map((sorted) => {
@@ -437,6 +476,7 @@ function Rewards() {
                     merkleDirectDistributor={backerMerkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
+                    backerRewards={backerRewards}
                   />
                 )
               case "backerMerkleDistributor":
@@ -452,6 +492,7 @@ function Rewards() {
                     merkleDirectDistributor={backerMerkleDirectDistributor}
                     stakingRewards={stakingRewards}
                     communityRewards={communityRewards}
+                    backerRewards={backerRewards}
                   />
                 )
               default:
@@ -470,6 +511,7 @@ function Rewards() {
               merkleDirectDistributor={backerMerkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
+              backerRewards={backerRewards}
             />
           ))}
           {unknownCommunityRewards.map((info) => (
@@ -484,6 +526,7 @@ function Rewards() {
               merkleDirectDistributor={merkleDirectDistributor}
               stakingRewards={stakingRewards}
               communityRewards={communityRewards}
+              backerRewards={backerRewards}
             />
           ))}
         </>

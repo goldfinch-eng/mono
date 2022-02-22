@@ -15,11 +15,11 @@ import {
   ScheduledRepaymentEstimatedReward,
 } from "../types/tranchedPool"
 import {Web3IO} from "../types/web3"
-import {assertNonNullable, BlockInfo, sameBlock} from "../utils"
+import {assertNonNullable, BlockInfo, defaultSum, sameBlock} from "../utils"
 import {GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded} from "./pool"
-import {PoolState, TranchedPool} from "./tranchedPool"
+import {PoolState, TranchedPool, TranchedPoolBacker} from "./tranchedPool"
 import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 type BackerRewardsLoadedInfo = {
@@ -458,5 +458,88 @@ export class BackerRewards {
       ...defaultEstimatedApyFromGfi,
       ...rewardableEstimatedApyFromGfi,
     }
+  }
+}
+
+export type BackerRewardsPoolTokenPosition = {
+  tokenId: string
+  claimed: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+  claimable: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+  unvested: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+}
+
+/**
+ * Models a user's position in terms of backer rewards, as the backer of a tranched pool.
+ */
+export class BackerRewardsPosition {
+  backer: TranchedPoolBacker
+  tokenPositions: BackerRewardsPoolTokenPosition[]
+
+  constructor(backer: TranchedPoolBacker, tokenPositions: BackerRewardsPoolTokenPosition[]) {
+    this.backer = backer
+    this.tokenPositions = tokenPositions
+  }
+
+  get title(): string {
+    return `Backer of ${this.backer.tranchedPool.metadata?.name || `Pool ${this.backer.tranchedPool.address}`}`
+  }
+
+  get description(): string {
+    // const date = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
+    //   month: "short",
+    //   day: "numeric",
+    //   year: "numeric",
+    // })
+    // const origStakedAmount = fiduFromAtomic(this.stakedEvent.returnValues.amount)
+    // const remainingAmount = fiduFromAtomic(this.storedPosition.amount)
+    // return `Staked ${displayNumber(origStakedAmount, 2)} FIDU on ${date}${
+    //   origStakedAmount === remainingAmount ? "" : ` (${displayNumber(remainingAmount, 2)} FIDU remaining)`
+    // }`
+    return "TODO[PR]"
+  }
+
+  get shortDescription(): string {
+    return "TODO[PR]"
+  }
+
+  get granted(): BigNumber {
+    return this.vested.plus(this.unvested)
+  }
+
+  get vested(): BigNumber {
+    return this.claimed.plus(this.claimable)
+  }
+
+  get unvested(): BigNumber {
+    return defaultSum(
+      this.tokenPositions.map((tokenPosition) =>
+        tokenPosition.unvested.backersOnly.plus(tokenPosition.unvested.seniorPoolMatching)
+      )
+    )
+  }
+
+  get claimed(): BigNumber {
+    return defaultSum(
+      this.tokenPositions.map((tokenPosition) =>
+        tokenPosition.claimed.backersOnly.plus(tokenPosition.claimed.seniorPoolMatching)
+      )
+    )
+  }
+
+  get claimable(): BigNumber {
+    return defaultSum(
+      this.tokenPositions.map((tokenPosition) =>
+        tokenPosition.claimable.backersOnly.plus(tokenPosition.claimable.seniorPoolMatching)
+      )
+    )
   }
 }
