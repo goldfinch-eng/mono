@@ -128,6 +128,18 @@ tranchedPools(block: {number: 13845148}) {
   - Beaware that running `generalBackerValidation` will run the validations for all backers which is subject to rate limit of the web3 provider
 - On `src/graphql/client.ts` change the `API_URLS` for the url of the subgraph you want to validate
 
+## Running Tests
+Subgraph tests use [Matchstick](https://github.com/LimeChain/matchstick) as a unit testing framework which is still in the early stages of development.
+
+```
+cd packages/subgraph
+docker build -t matchstick . && docker run --rm matchstick
+```
+
+- [Unit Testing Framework](https://thegraph.com/docs/en/developer/matchstick/)
+- [Demo Subgraph (The Graph) showcasing unit testing with Matchstick](https://github.com/LimeChain/demo-subgraph)
+- [aavegotchi-matic-subgraph tests](https://github.com/aavegotchi/aavegotchi-matic-subgraph/tree/main/src/tests)
+
 ## Resources
 - [The Graph Academy](https://thegraph.academy/developers/)
 - [The Graph Academy Hub](https://github.com/TheGraphAcademy/Graph-Academy-Hub)
