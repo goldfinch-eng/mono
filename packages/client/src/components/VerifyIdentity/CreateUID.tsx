@@ -157,8 +157,8 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
             .
             <br />
             <br />
-            Note: Non-U.S. individuals are eligible to participate in Borrower Pools, the Senior Pool, and Goldfinch
-            governance. U.S. individuals are only eligible to participate in governance.
+            TODO Note: Non-U.S. individuals are eligible to participate in Borrower Pools, the Senior Pool, and
+            Goldfinch governance. U.S. individuals are only eligible to participate in governance.
           </>
         }
       />
