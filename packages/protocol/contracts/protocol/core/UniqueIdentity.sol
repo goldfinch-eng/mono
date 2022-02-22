@@ -16,11 +16,11 @@ import "../../interfaces/IUniqueIdentity.sol";
 contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
   bytes32 public constant SIGNER_ROLE = keccak256("SIGNER_ROLE");
 
-  uint256 public constant ID_TYPE_0 = 0; // non-US
-  uint256 public constant ID_TYPE_1 = 1; // US accredited
-  uint256 public constant ID_TYPE_2 = 2; // US non accredited
-  uint256 public constant ID_TYPE_3 = 3;
-  uint256 public constant ID_TYPE_4 = 4;
+  uint256 public constant ID_TYPE_0 = 0; // non-US individual
+  uint256 public constant ID_TYPE_1 = 1; // US accredited individual
+  uint256 public constant ID_TYPE_2 = 2; // US non accredited individual
+  uint256 public constant ID_TYPE_3 = 3; // US entity
+  uint256 public constant ID_TYPE_4 = 4; // non-US entity
   uint256 public constant ID_TYPE_5 = 5;
   uint256 public constant ID_TYPE_6 = 6;
   uint256 public constant ID_TYPE_7 = 7;
