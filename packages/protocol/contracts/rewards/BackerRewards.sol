@@ -141,13 +141,13 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 principalDeployedAtDrawdown,
     uint256 rewardsAccumulatorAtDrawdown
   ) external onlyAdmin {
-    require(config.getPoolTokens().validPool(pool), "Invalid pool!");
-    require(poolInfo.slicesInfo.length <= 1, "trying to overwrite multi slice rewards info!");
+    require(config.getPoolTokens().validPool(address(pool)), "Invalid pool!");
     require(fiduSharePriceAtDrawdown != 0, "Invalid: 0");
     require(principalDeployedAtDrawdown != 0, "Invalid: 0");
     require(rewardsAccumulatorAtDrawdown != 0, "Invalid: 0");
 
     StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
+    require(poolInfo.slicesInfo.length <= 1, "trying to overwrite multi slice rewards info!");
 
     // NOTE: making this overwrite behavior to make it so that we have
     //           an escape hatch in case the incorrect value is set for some reason
@@ -312,13 +312,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
    */
   function stakingRewardsClaimed(uint256 tokenId) public view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
-    IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
+    IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(tokenId);
 
-    if (_isSeniorTrancheToken(tokenInfo)) {
+    if (_isSeniorTrancheToken(poolTokenInfo)) {
       return 0;
     }
 
-    uint256 sliceIndex = _juniorTrancheIdToSliceIndex(tokenInfo.tranche);
+    ITranchedPool pool = ITranchedPool(poolTokenInfo.pool);
+    uint256 sliceIndex = _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche);
 
     if (!_poolRewardsHaveBeenInitialized(pool) || !_sliceRewardsHaveBeenInitialized(pool, sliceIndex)) {
       return 0;
@@ -331,7 +332,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 sliceAccumulator = sliceInfo.accumulatedRewardsPerTokenAtDrawdown;
     uint256 tokenAccumulator = _getTokenAccumulatorAtLastWithdraw(tokenInfo, sliceInfo);
     uint256 rewardsPerFidu = tokenAccumulator.sub(sliceAccumulator);
-    uint256 principalAsFidu = _fiduToUsdc(tokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
+    uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
     uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(_fiduMantissa());
     return rewards;
   }
