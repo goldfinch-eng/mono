@@ -1,12 +1,15 @@
+import keyBy from "lodash/keyBy"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
-import React, {useContext} from "react"
+import React, {useContext, useEffect, useState} from "react"
 import {useMediaQuery} from "react-responsive"
 import {Link} from "react-router-dom"
 import {AppContext} from "../../App"
 import ConnectionNotice from "../../components/connectionNotice"
 import RewardActionsContainer from "../../components/rewardActionsContainer"
 import {WIDTH_TYPES} from "../../components/styleConstants"
+import {useEarn} from "../../contexts/EarnContext"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 import {BackerMerkleDirectDistributorLoaded} from "../../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "../../ethereum/backerMerkleDistributor"
 import {BackerRewardsLoaded, BackerRewardsPosition} from "../../ethereum/backerRewards"
@@ -23,6 +26,7 @@ import {
   UserLoaded,
   UserMerkleDirectDistributorLoaded,
   UserMerkleDistributorLoaded,
+  UserBackerRewards,
 } from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
 import {useSession} from "../../hooks/useSignIn"
@@ -31,7 +35,9 @@ import {
   NotAcceptedMerkleDirectDistributorGrant,
 } from "../../types/merkleDirectDistributor"
 import {NotAcceptedMerkleDistributorGrant} from "../../types/merkleDistributor"
-import {assertNonNullable, displayDollars, displayNumber} from "../../utils"
+import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../../utils"
+import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
+import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 
 interface RewardsSummaryProps {
   claimable: BigNumber | undefined
@@ -178,6 +184,7 @@ function compareAbstractMerkleDirectDistributorGrants<
 
 function Rewards() {
   const {
+    goldfinchProtocol,
     stakingRewards: _stakingRewards,
     gfi: _gfi,
     user: _user,
@@ -192,11 +199,51 @@ function Rewards() {
     userCommunityRewards: _userCommunityRewards,
     userBackerMerkleDirectDistributor: _userBackerMerkleDirectDistributor,
     userBackerMerkleDistributor: _userBackerMerkleDistributor,
-    userBackerRewards: _userBackerRewards,
     currentBlock,
   } = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
   const session = useSession()
+  const {
+    earnStore: {backers},
+  } = useEarn()
+  const [_userBackerRewards, setUserBackerRewards] = useState<UserBackerRewardsLoaded>()
+
+  const _consistent = useFromSameBlock<UserLoaded, BackerRewardsLoaded>(
+    {setAsLeaf: false},
+    currentBlock,
+    _user,
+    _backerRewards
+  )
+
+  useEffect(() => {
+    if (_consistent && goldfinchProtocol && backers.loaded && currentBlock) {
+      const _user2 = _consistent[0]
+      const _backerRewards2 = _consistent[1]
+      refreshUserBackerRewards(_user2.address, goldfinchProtocol, _backerRewards2, backers, currentBlock)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_consistent, goldfinchProtocol, backers, currentBlock])
+
+  async function refreshUserBackerRewards(
+    userAddress: string,
+    goldfinchProtocol: GoldfinchProtocol,
+    backerRewards: BackerRewardsLoaded,
+    backers: Loaded<TranchedPoolBacker[]>,
+    currentBlock: BlockInfo
+  ) {
+    const rewardsEligibleTranchedPools = keyBy(
+      backerRewards.filterRewardsEligibleTranchedPools(backers.value.map((backer) => backer.tranchedPool)),
+      (tranchedPool) => tranchedPool.address
+    )
+    const rewardsEligibleBackers = backers.value.filter(
+      (backer) => backer.tranchedPool.address in rewardsEligibleTranchedPools
+    )
+    const userBackerRewards = new UserBackerRewards(userAddress, goldfinchProtocol)
+    userBackerRewards.initialize(backerRewards, rewardsEligibleBackers, currentBlock)
+    assertWithLoadedInfo(userBackerRewards)
+    setUserBackerRewards(userBackerRewards)
+  }
+
   const consistent = useFromSameBlock<
     StakingRewardsLoaded,
     GFILoaded,

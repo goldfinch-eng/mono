@@ -664,6 +664,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
   function renderRewardsItemWithForm<T extends ClaimableItemWithDetails>(
     itemWithDetails: T,
     getAllClaimedStatus: (item: T["item"]) => RewardStatus.TemporarilyAllClaimed | RewardStatus.PermanentlyAllClaimed,
+    disabled: boolean,
     handleClaim: () => Promise<void>
   ) {
     const {item, details} = itemWithDetails
@@ -678,7 +679,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
-          disabled={props.disabled}
+          disabled={disabled}
         />
       )
     } else if (!showAction) {
@@ -691,7 +692,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
-          disabled={props.disabled}
+          disabled={disabled}
         />
       )
     }
@@ -702,7 +703,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           await handleClaim()
           onCloseForm()
         }}
-        disabled={item.claimable.eq(0)}
+        disabled={disabled}
         claimable={item.claimable}
         totalUSD={gfiInDollars(gfiToDollarsAtomic(item.claimable, props.gfi.info.value.price))}
         onCloseForm={onCloseForm}
@@ -726,6 +727,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       {item, details},
       (item: StakingRewardsPosition) =>
         item.storedPosition.amount.eq(0) ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
+      props.disabled || props.stakingRewards.info.value.isPaused,
       () => handleClaimSingle(props.stakingRewards, item.tokenId)
     )
   } else if (props.type === "backerRewards") {
@@ -744,6 +746,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       {item, details},
       (item: BackerRewardsPosition) =>
         item.backer.tranchedPool.isRepaid ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
+      props.disabled || !item.rewardsAreWithdrawable,
       () =>
         handleClaimMultiple(
           props.backerRewards,
@@ -779,6 +782,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
             ? RewardStatus.PermanentlyAllClaimed
             : RewardStatus.TemporarilyAllClaimed
           : RewardStatus.PermanentlyAllClaimed,
+      props.disabled || props.communityRewards.info.value.isPaused,
       () => handleClaimSingle(props.communityRewards, item.tokenId)
     )
   } else if (props.type === "merkleDistributor") {
@@ -793,7 +797,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
-        disabled={props.disabled}
+        disabled={props.disabled || props.communityRewards.info.value.isPaused}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
@@ -808,7 +812,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
-        disabled={props.disabled}
+        disabled={props.disabled || props.merkleDirectDistributor.info.value.isPaused}
       />
     )
   } else {

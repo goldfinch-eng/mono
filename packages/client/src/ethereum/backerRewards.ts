@@ -75,17 +75,32 @@ export class BackerRewards {
     }
   }
 
-  filterRewardableTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
+  /**
+   * Whether we'd expect calling `BackerRewards.withdraw()` for a junior-tranche pool token
+   * belonging to `tranchedPool` to succeed. Thus the definition here should correspond to
+   * the conditions in `BackerRewards.withdraw()` that prevent withdrawing rewards.
+   */
+  juniorTranchePoolTokenRewardsAreWithdrawable(tranchedPool: TranchedPool): boolean {
+    assertWithLoadedInfo(this)
+    return !this.info.value.isPaused && !tranchedPool.isPaused && !tranchedPool.creditLine.isLate
+  }
+
+  filterRewardsEligibleTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
     return tranchedPools.filter((tranchedPool: TranchedPool): boolean => {
       const eligible =
         tranchedPool.creditLine.termStartTime.isZero() ||
         tranchedPool.creditLine.termStartTime.toNumber() >= this.startBlock.timestamp
+      return eligible
+    })
+  }
+  filterRewardableTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
+    return this.filterRewardsEligibleTranchedPools(tranchedPools).filter((tranchedPool: TranchedPool): boolean => {
       // If a borrower is late on their payment, the rewards earned by their backers are not claimable. And
       // we don't know whether those rewards will ever become claimable again (because we don't know whether the
       // borrower will become current again). So the UX we must serve is not to represent the tranched pool
       // as earning rewards.
       const current = !tranchedPool.creditLine.isLate
-      return eligible && current
+      return current
     })
   }
 
@@ -482,10 +497,16 @@ export type BackerRewardsPoolTokenPosition = {
  */
 export class BackerRewardsPosition {
   backer: TranchedPoolBacker
+  rewardsAreWithdrawable: boolean
   tokenPositions: BackerRewardsPoolTokenPosition[]
 
-  constructor(backer: TranchedPoolBacker, tokenPositions: BackerRewardsPoolTokenPosition[]) {
+  constructor(
+    backer: TranchedPoolBacker,
+    rewardsAreWithdrawable: boolean,
+    tokenPositions: BackerRewardsPoolTokenPosition[]
+  ) {
     this.backer = backer
+    this.rewardsAreWithdrawable = rewardsAreWithdrawable
     this.tokenPositions = tokenPositions
   }
 

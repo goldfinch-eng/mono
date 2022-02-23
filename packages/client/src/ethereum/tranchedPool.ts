@@ -13,6 +13,7 @@ import {
   PAYMENT_APPLIED_EVENT,
   SHARE_PRICE_UPDATED_EVENT,
 } from "../types/events"
+import {assertWithLoadedInfo} from "../types/loadable"
 import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
@@ -130,6 +131,7 @@ class TranchedPool {
   reserveFeePercent!: BigNumber
   estimatedLeverageRatio!: BigNumber
   estimatedSeniorPoolContribution!: BigNumber
+  numTranchesPerSlice!: BigNumber
 
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
@@ -183,17 +185,24 @@ class TranchedPool {
 
     this.poolState = this.getPoolState(currentBlock)
 
-    const [totalDeployed, fundableAt] = await Promise.all(
+    const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
       this.isMultipleDrawdownsCompatible
         ? [
             this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number),
             this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number),
+            this.contract.readOnly.methods.NUM_TRANCHES_PER_SLICE().call(undefined, currentBlock.number),
           ]
-        : ["0", "0"]
+        : ["0", "0", "2"]
     )
 
     this.totalDeployed = new BigNumber(totalDeployed)
     this.fundableAt = new BigNumber(fundableAt)
+    this.numTranchesPerSlice = new BigNumber(numTranchesPerSlice)
+  }
+
+  isSeniorTrancheId(trancheId: BigNumber): boolean {
+    assertNonNullable(this.numTranchesPerSlice)
+    return trancheId.mod(this.numTranchesPerSlice).eq(new BigNumber(1))
   }
 
   getPoolState(currentBlock: BlockInfo): PoolState {

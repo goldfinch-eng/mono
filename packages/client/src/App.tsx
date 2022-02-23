@@ -1,40 +1,47 @@
+import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import * as Sentry from "@sentry/react"
 import React, {useEffect, useState} from "react"
 import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
-import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import Borrow from "./components/borrow"
 import DevTools from "./components/devTools"
 import Earn from "./components/Earn"
 import Footer from "./components/footer"
-import SeniorPoolView from "./components/SeniorPool"
-import TranchedPoolView from "./components/TranchedPool"
+import NetworkIndicators from "./components/networkIndicators"
+import NotFound from "./components/NotFound"
 import PrivacyPolicy from "./components/privacyPolicy"
+import SeniorPoolView from "./components/SeniorPool"
 import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
 import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService"
+import TranchedPoolView from "./components/TranchedPool"
 import Transactions from "./components/transactions"
 import VerifyIdentity from "./components/VerifyIdentity"
 import {BorrowProvider} from "./contexts/BorrowContext"
 import {EarnProvider} from "./contexts/EarnContext"
-import {BackerRewards} from "./ethereum/backerRewards"
+import {
+  BackerMerkleDirectDistributor,
+  BackerMerkleDirectDistributorLoaded,
+} from "./ethereum/backerMerkleDirectDistributor"
+import {BackerMerkleDistributor, BackerMerkleDistributorLoaded} from "./ethereum/backerMerkleDistributor"
+import {BackerRewards, BackerRewardsLoaded} from "./ethereum/backerRewards"
 import {CommunityRewards, CommunityRewardsLoaded} from "./ethereum/communityRewards"
 import {ERC20, Tickers} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
 import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
+import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
+import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
 import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
-import {CurrentTx, TxType} from "./types/transactions"
 import {
   getUserData,
   UserBackerMerkleDirectDistributor,
   UserBackerMerkleDirectDistributorLoaded,
   UserBackerMerkleDistributor,
   UserBackerMerkleDistributorLoaded,
-  UserBackerRewardsLoaded,
   UserCommunityRewards,
   UserCommunityRewardsLoaded,
   UserLoaded,
@@ -44,27 +51,22 @@ import {
   UserMerkleDistributorLoaded,
 } from "./ethereum/user"
 import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
+import getApolloClient from "./graphql/client"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"
+import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import Rewards from "./pages/rewards"
 import {defaultTheme} from "./styles/theme"
 import {assertWithLoadedInfo} from "./types/loadable"
-import {SessionData} from "./types/session"
-import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
-import web3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
-import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
-import getApolloClient from "./graphql/client"
-import NetworkIndicators from "./components/networkIndicators"
-import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 import {
   ABOUT_ROUTE,
   AppRoute,
   BORROW_ROUTE,
   EARN_ROUTE,
+  GFI_ROUTE,
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
-  GFI_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
   SENIOR_POOL_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
@@ -72,15 +74,11 @@ import {
   TRANSACTIONS_ROUTE,
   VERIFY_ROUTE,
 } from "./types/routes"
-import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
-import {UseGraphQuerierConfig} from "./hooks/useGraphQuerier"
-import {BackerRewardsLoaded} from "./ethereum/backerRewards"
-import NotFound from "./components/NotFound"
-import {
-  BackerMerkleDirectDistributorLoaded,
-  BackerMerkleDirectDistributor,
-} from "./ethereum/backerMerkleDirectDistributor"
-import {BackerMerkleDistributorLoaded, BackerMerkleDistributor} from "./ethereum/backerMerkleDistributor"
+import {SessionData} from "./types/session"
+import {CurrentTx, TxType} from "./types/transactions"
+import {UserWalletWeb3Status, Web3IO} from "./types/web3"
+import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
+import web3, {getUserWalletWeb3Status, SESSION_DATA_KEY} from "./web3"
 
 interface GeolocationData {
   ip: string
@@ -160,7 +158,6 @@ export interface GlobalState {
   userBackerMerkleDirectDistributor?: UserBackerMerkleDirectDistributorLoaded
   userBackerMerkleDistributor?: UserBackerMerkleDistributorLoaded
   backerRewards?: BackerRewardsLoaded
-  userBackerRewards?: UserBackerRewardsLoaded
   pool?: SeniorPoolLoaded
   creditDesk?: Web3IO<CreditDesk>
   user?: UserLoaded
@@ -208,7 +205,6 @@ function App() {
   const [userBackerMerkleDirectDistributor, setUserBackerMerkleDirectDistributor] =
     useState<UserBackerMerkleDirectDistributorLoaded>()
   const [userCommunityRewards, setUserCommunityRewards] = useState<UserCommunityRewardsLoaded>()
-  const [userBackerRewards, setUserBackerRewards] = useState<UserBackerRewardsLoaded>()
   const [usdc, setUSDC] = useState<ERC20>()
   const [overrideAddress, setOverrideAdress] = useState<string>()
   const [user, setUser] = useState<UserLoaded>()
@@ -616,7 +612,6 @@ function App() {
     userCommunityRewards,
     userBackerMerkleDirectDistributor,
     userBackerMerkleDistributor,
-    userBackerRewards,
     usdc,
     goldfinchConfig,
     network,

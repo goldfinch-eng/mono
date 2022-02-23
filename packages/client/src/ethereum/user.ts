@@ -1624,50 +1624,56 @@ export class UserBackerRewards {
 
   async initialize(
     backerRewards: BackerRewardsLoaded,
-    rewardableTranchedPoolBackers: TranchedPoolBacker[],
+    rewardsEligibleTranchedPoolBackers: TranchedPoolBacker[],
     currentBlock: BlockInfo
   ): Promise<void> {
     const positions = (
       await Promise.all(
-        rewardableTranchedPoolBackers.map(async (backer): Promise<BackerRewardsPosition> => {
+        rewardsEligibleTranchedPoolBackers.map(async (backer): Promise<BackerRewardsPosition> => {
           const tokenPositions = await Promise.all(
-            backer.tokenInfos.map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
-              const tokenId = tokenInfo.id
-              const [
-                backersOnlyClaimable,
-                seniorPoolMatchingClaimable,
-                backersOnlyTokenInfo,
-                seniorPoolMatchingClaimed,
-              ] = await Promise.all([
-                backerRewards.contract.readOnly.methods
-                  .poolTokenClaimableRewards(tokenId)
-                  .call(undefined, currentBlock.number),
-                backerRewards.contract.readOnly.methods
-                  .stakingRewardsEarnedSinceLastWithdraw(tokenId)
-                  .call(undefined, currentBlock.number),
-                backerRewards.contract.readOnly.methods.tokens(tokenId).call(undefined, currentBlock.number),
-                backerRewards.contract.readOnly.methods
-                  .stakingRewardsClaimed(tokenId)
-                  .call(undefined, currentBlock.number),
-              ])
-              return {
-                tokenId,
-                claimed: {
-                  backersOnly: new BigNumber(backersOnlyTokenInfo.rewardsClaimed),
-                  seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimed),
-                },
-                claimable: {
-                  backersOnly: new BigNumber(backersOnlyClaimable),
-                  seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimable),
-                },
-                unvested: {
-                  backersOnly: new BigNumber(0),
-                  seniorPoolMatching: new BigNumber(0),
-                },
-              }
-            })
+            backer.tokenInfos
+              .filter(
+                // Exclude senior-tranche pool tokens, which aren't eligible for backer rewards.
+                (tokenInfo) => !backer.tranchedPool.isSeniorTrancheId(tokenInfo.tranche)
+              )
+              .map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
+                const tokenId = tokenInfo.id
+                const [
+                  backersOnlyClaimable,
+                  seniorPoolMatchingClaimable,
+                  backersOnlyTokenInfo,
+                  seniorPoolMatchingClaimed,
+                ] = await Promise.all([
+                  backerRewards.contract.readOnly.methods
+                    .poolTokenClaimableRewards(tokenId)
+                    .call(undefined, currentBlock.number),
+                  backerRewards.contract.readOnly.methods
+                    .stakingRewardsEarnedSinceLastWithdraw(tokenId)
+                    .call(undefined, currentBlock.number),
+                  backerRewards.contract.readOnly.methods.tokens(tokenId).call(undefined, currentBlock.number),
+                  backerRewards.contract.readOnly.methods
+                    .stakingRewardsClaimed(tokenId)
+                    .call(undefined, currentBlock.number),
+                ])
+                return {
+                  tokenId,
+                  claimed: {
+                    backersOnly: new BigNumber(backersOnlyTokenInfo.rewardsClaimed),
+                    seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimed),
+                  },
+                  claimable: {
+                    backersOnly: new BigNumber(backersOnlyClaimable),
+                    seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimable),
+                  },
+                  unvested: {
+                    backersOnly: new BigNumber(0),
+                    seniorPoolMatching: new BigNumber(0),
+                  },
+                }
+              })
           )
-          return new BackerRewardsPosition(backer, tokenPositions)
+          const rewardsAreWithdrawable = backerRewards.juniorTranchePoolTokenRewardsAreWithdrawable(backer.tranchedPool)
+          return new BackerRewardsPosition(backer, rewardsAreWithdrawable, tokenPositions)
         })
       )
     ).filter(
