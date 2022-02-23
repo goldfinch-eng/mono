@@ -13,7 +13,6 @@ import {
   PAYMENT_APPLIED_EVENT,
   SHARE_PRICE_UPDATED_EVENT,
 } from "../types/events"
-import {assertWithLoadedInfo} from "../types/loadable"
 import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
