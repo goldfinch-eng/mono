@@ -34,13 +34,13 @@ export function getIDType({address, kycStatus}: {address: string; kycStatus?: KY
   } else if (isNonUSEntity(address)) {
     // non US entity
     idVersion = NON_US_ENTITY_ID_TYPE_4
+  } else if (isUSAccreditedIndividual(address)) {
+    // US accredited individual
+    idVersion = US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
   } else if (kycStatus?.countryCode !== US_COUNTRY_CODE) {
     // non US individual
     idVersion = NON_US_INDIVIDUAL_ID_TYPE_0
-  } else if (kycStatus?.countryCode === US_COUNTRY_CODE && isUSAccreditedIndividual(address)) {
-    // US accredited individual
-    idVersion = US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
-  } else if (kycStatus?.countryCode === US_COUNTRY_CODE && !isUSAccreditedIndividual(address)) {
+  } else if (kycStatus?.countryCode === US_COUNTRY_CODE) {
     // US non accredited individual
     idVersion = US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
   } else {
