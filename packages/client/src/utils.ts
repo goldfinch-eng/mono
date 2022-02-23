@@ -15,8 +15,7 @@ export function eligibleForSeniorPool(user: UserLoaded | undefined): boolean {
     user?.info.value.hasNonUSUID ||
     user?.info.value.hasUSAccreditedUID ||
     user?.info.value.hasUSEntityUID ||
-    user?.info.value.hasNonUSEntityUID ||
-    user?.info.value.hasUSNonAccreditedUID
+    user?.info.value.hasNonUSEntityUID
 
   return !!goListed
 }
