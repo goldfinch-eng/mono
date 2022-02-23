@@ -112,7 +112,6 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
       let version
       try {
         const response = await client.fetchKYCStatus(userAddress)
-        // TODO right here
         if (response.ok) {
           version = getIDType({
             address: userAddress,

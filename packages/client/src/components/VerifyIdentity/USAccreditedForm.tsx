@@ -1,6 +1,6 @@
 import TransactionForm from "../transactionForm"
 
-export default function USAccreditedForm({onClose}) {
+export default function USAccreditedForm({onClose}: {onClose: () => void}) {
   return (
     <TransactionForm
       headerMessage="U.S. Accredited Individual"

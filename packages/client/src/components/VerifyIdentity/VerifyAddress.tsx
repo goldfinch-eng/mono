@@ -12,8 +12,18 @@ import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
-import {isUSAccreditedIndividual} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {
+  isNonUSEntity,
+  isUSAccreditedEntity,
+  isUSAccreditedIndividual,
+} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import USAccreditedForm from "./USAccreditedForm"
+
+export const NON_US_INDIVIDUAL_ENTITY_TYPE = "Non-US-Individual"
+export const US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Accredited-Individual"
+export const US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Non-Accredited-Individual"
+export const US_ENTITY_ENTITY_TYPE = "US-Entity"
+export const NON_US_ENTITY_ENTITY_TYPE = "Non-US-Entity"
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
   return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
@@ -43,7 +53,13 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
 
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
-    } else if (isEligible(kyc, user) && !disabled) {
+    } else if (
+      (isEligible(kyc, user) ||
+        isNonUSEntity(user?.address) ||
+        isUSAccreditedEntity(user?.address) ||
+        isUSAccreditedIndividual(user?.address)) &&
+      !disabled
+    ) {
       dispatch({type: CREATE_UID})
     }
   })
@@ -63,12 +79,10 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     try {
       const response = await client.fetchKYCStatus(userAddress)
-      // TODO right here
-
       if (response.ok) {
         setKYC(response.json)
         if (response.json.countryCode === US_COUNTRY_CODE) {
-          setEntityType(US_COUNTRY_CODE)
+          setEntityType(US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)
         }
       }
     } catch (err: unknown) {
@@ -82,72 +96,79 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     setEntityType(chosenType)
   }
 
-  function renderForm() {
-    if (user && user.info.value.goListed) {
-      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
-    } else if (loading) {
-      return <LoadingCard title="Verify your address" />
-    } else if (errored) {
-      return <ErrorCard title="Verify your address" />
-    } else if (kyc?.status === "failed") {
-      return (
-        <VerificationNotice
-          icon={iconAlert}
-          notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
-        />
-      )
-    } else if (entityType === US_COUNTRY_CODE) {
-      return (
-        <USForm
-          kycStatus={kyc?.status}
-          entityType={entityType}
-          onClose={() => setEntityType("")}
-          network={network?.name}
-          address={user?.address}
-          onEvent={() => fetchKYCStatus(session)}
-        />
-      )
-    } else if (entityType === "us-accredited" && user && isUSAccreditedIndividual(user?.address)) {
-      return <USAccreditedForm onClose={() => setEntityType("")} />
-    } else if (entityType === "entity") {
-      return <EntityForm onClose={() => setEntityType("")} />
-    } else if (isEligible(kyc, user)) {
-      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
-    } else if (entityType === "non-US") {
-      return (
-        <NonUSForm
-          onClose={() => setEntityType("")}
-          entityType={entityType}
-          network={network?.name}
-          address={user?.address}
-          onEvent={() => fetchKYCStatus(session)}
-        />
-      )
-    } else {
-      return (
-        <VerifyCard title="Verify your address" disabled={disabled}>
-          <div className="form-message">Who is verifying this address?</div>
-          <div className="verify-types">
-            <button className={"button"} onClick={() => chooseEntity("non-US")}>
-              Non-U.S. Individual
-            </button>
-            <button className={"button"} onClick={() => chooseEntity("non-US")}>
-              Non-U.S. Entity
-            </button>
-            <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
-              Non-Accredited U.S. Individual
-            </button>
-            <button className={"button"} onClick={() => chooseEntity("us-accredited")}>
-              U.S. Accredited Individual
-            </button>
-            <button className={"button"} onClick={() => chooseEntity("entity")}>
-              U.S. Entity
-            </button>
-          </div>
-        </VerifyCard>
-      )
-    }
+  if (!user) {
+    return <></>
   }
 
-  return renderForm()
+  if (user.info.value.goListed) {
+    return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
+  } else if (loading) {
+    return <LoadingCard title="Verify your address" />
+  } else if (errored) {
+    return <ErrorCard title="Verify your address" />
+  } else if (kyc?.status === "failed") {
+    return (
+      <VerificationNotice
+        icon={iconAlert}
+        notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
+      />
+    )
+  } else if (entityType === US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE) {
+    return (
+      <USForm
+        kycStatus={kyc?.status}
+        entityType={entityType}
+        onClose={() => setEntityType("")}
+        network={network?.name}
+        address={user?.address}
+        onEvent={() => fetchKYCStatus(session)}
+      />
+    )
+  } else if (entityType === US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE && !isUSAccreditedIndividual(user.address)) {
+    return <USAccreditedForm onClose={() => setEntityType("")} />
+  } else if (entityType === US_ENTITY_ENTITY_TYPE && !isUSAccreditedEntity(user.address)) {
+    return <EntityForm onClose={() => setEntityType("")} />
+  } else if (entityType === NON_US_ENTITY_ENTITY_TYPE && !isNonUSEntity(user.address)) {
+    return <EntityForm onClose={() => setEntityType("")} />
+  } else if (
+    isEligible(kyc, user) ||
+    isUSAccreditedEntity(user.address) ||
+    isUSAccreditedIndividual(user.address) ||
+    isNonUSEntity(user.address)
+  ) {
+    return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
+  } else if (entityType === NON_US_INDIVIDUAL_ENTITY_TYPE) {
+    return (
+      <NonUSForm
+        onClose={() => setEntityType("")}
+        entityType={entityType}
+        network={network?.name}
+        address={user?.address}
+        onEvent={() => fetchKYCStatus(session)}
+      />
+    )
+  } else {
+    return (
+      <VerifyCard title="Verify your address" disabled={disabled}>
+        <div className="form-message">Who is verifying this address?</div>
+        <div className="verify-types">
+          <button className={"button"} onClick={() => chooseEntity(NON_US_INDIVIDUAL_ENTITY_TYPE)}>
+            Non-U.S. Individual
+          </button>
+          <button className={"button"} onClick={() => chooseEntity(NON_US_ENTITY_ENTITY_TYPE)}>
+            Non-U.S. Entity
+          </button>
+          <button className={"button"} onClick={() => chooseEntity(US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)}>
+            Non-Accredited U.S. Individual
+          </button>
+          <button className={"button"} onClick={() => chooseEntity(US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)}>
+            U.S. Accredited Individual
+          </button>
+          <button className={"button"} onClick={() => chooseEntity(US_ENTITY_ENTITY_TYPE)}>
+            U.S. Entity
+          </button>
+        </div>
+      </VerifyCard>
+    )
+  }
 }

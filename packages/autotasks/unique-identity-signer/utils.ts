@@ -10,15 +10,18 @@ export const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = 2 // US non accredited ind
 export const US_ENTITY_ID_TYPE_3 = 3 // US entity
 export const NON_US_ENTITY_ID_TYPE_4 = 4 // non-US entity
 
-export function isUSAccreditedIndividual(address: string): boolean {
+export function isUSAccreditedIndividual(address?: string): boolean {
+  if (!address) return false
   return USAccreditedIndividualsList.includes(address)
 }
 
-export function isUSAccreditedEntity(address: string): boolean {
+export function isUSAccreditedEntity(address?: string): boolean {
+  if (!address) return false
   return USAccreditedEntitiesList.includes(address)
 }
 
-export function IsNonUSEntity(address: string): boolean {
+export function isNonUSEntity(address?: string): boolean {
+  if (!address) return false
   return NonUSEntitiesList.includes(address)
 }
 
@@ -28,7 +31,7 @@ export function getIDType({address, kycStatus}: {address: string; kycStatus?: KY
   if (isUSAccreditedEntity(address)) {
     // US accredited entity
     idVersion = US_ENTITY_ID_TYPE_3
-  } else if (IsNonUSEntity(address)) {
+  } else if (isNonUSEntity(address)) {
     // non US entity
     idVersion = NON_US_ENTITY_ID_TYPE_4
   } else if (kycStatus?.countryCode !== US_COUNTRY_CODE) {
