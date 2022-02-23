@@ -477,7 +477,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return getTrancheInfo(tranche);
   }
 
-  function numSlices() public view returns (uint256) {
+  function numSlices() public view override returns (uint256) {
     return poolSlices.length;
   }
 

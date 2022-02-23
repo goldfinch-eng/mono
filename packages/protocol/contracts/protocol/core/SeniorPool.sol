@@ -191,7 +191,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(amount > 0, "Investment amount must be positive");
 
     approvePool(pool, amount);
-    pool.deposit(uint256(ITranchedPool.Tranches.Senior), amount);
+    uint256 nSlices = pool.numSlices();
+    require(nSlices >= 1, "Pool has no slices");
+    uint256 sliceIndex = nSlices.sub(1);
+    uint256 seniorTrancheId = _sliceIndexToSeniorTrancheId(sliceIndex);
+    pool.deposit(seniorTrancheId, amount);
 
     emit InvestmentMadeInSenior(address(pool), amount);
     totalLoansOutstanding = totalLoansOutstanding.add(amount);
@@ -487,5 +491,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   function initZapperRole() external onlyAdmin {
     _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
+  }
+
+  /// @notice Returns the senion tranche id for the given slice index
+  /// @param index slice index
+  /// @return senior tranche id of given slice index
+  function _sliceIndexToSeniorTrancheId(uint256 index) internal pure returns (uint256) {
+    return index.mul(2).add(1);
   }
 }
