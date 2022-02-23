@@ -63,6 +63,8 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
     try {
       const response = await client.fetchKYCStatus(userAddress)
+      // TODO right here
+
       if (response.ok) {
         setKYC(response.json)
         if (response.json.countryCode === US_COUNTRY_CODE) {
@@ -95,17 +97,6 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
         />
       )
     } else if (entityType === US_COUNTRY_CODE) {
-      return (
-        <USForm
-          kycStatus={kyc?.status}
-          entityType={entityType}
-          onClose={() => setEntityType("")}
-          network={network?.name}
-          address={user?.address}
-          onEvent={() => fetchKYCStatus(session)}
-        />
-      )
-    } else if (entityType === "us-accredited" && user && isUSAccreditedIndividual(user?.address)) {
       return (
         <USForm
           kycStatus={kyc?.status}
