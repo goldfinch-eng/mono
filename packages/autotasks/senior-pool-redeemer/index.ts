@@ -9,7 +9,7 @@ import {SeniorPool, PoolTokens, TranchedPool} from "@goldfinch-eng/protocol/type
 // Entrypoint for the Autotask
 export async function handler(event: RelayerParams) {
   const provider = new DefenderRelayProvider(event as RelayerParams)
-  const signer = new DefenderRelaySigner(event, provider, {speed: "safeLow"})
+  const signer = new DefenderRelaySigner(event, provider, {speed: "average"})
   const seniorPool = new ethers.Contract(SeniorPoolDeployment.address, SeniorPoolDeployment.abi, signer) as SeniorPool
   const poolTokens = new ethers.Contract(PoolTokensDeployment.address, PoolTokensDeployment.abi, provider) as PoolTokens
 

@@ -1,5 +1,6 @@
 import chai from "chai"
 import hre from "hardhat"
+import sinon from "sinon"
 import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 
@@ -13,6 +14,7 @@ import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
 import {FetchKYCFunction, KYC, UniqueIdentityAbi} from "../unique-identity-signer"
+import * as utils from "../unique-identity-signer/utils"
 
 const TEST_TIMEOUT = 30000
 
@@ -35,6 +37,7 @@ describe("unique-identity-signer", () => {
   let signer: Signer
   let network: ethers.providers.Network
   let fetchKYCFunction: FetchKYCFunction
+  const sandbox = sinon.createSandbox()
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
     const {protocol_owner} = await getNamedAccounts()
@@ -56,6 +59,10 @@ describe("unique-identity-signer", () => {
 
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: owner})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: owner})
+  })
+
+  afterEach(() => {
+    sandbox.restore()
   })
 
   describe("main", () => {
@@ -193,6 +200,55 @@ describe("unique-identity-signer", () => {
             })
 
             await uniqueIdentity.burn(anotherUser, usNonAccreditedIdType, result.expiresAt, result.signature, {
+              from: anotherUser,
+            })
+            expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          }).timeout(TEST_TIMEOUT)
+        })
+
+        describe("US accredited investor", () => {
+          it("returns a signature that can be used to mint", async () => {
+            const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+            const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+            const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+            // stub as accredited investor
+            sandbox.stub(utils, "getIDType").returns(usAccreditedIdType.toNumber())
+            const auth = {
+              "x-goldfinch-address": anotherUser,
+              "x-goldfinch-signature": "test_signature",
+              "x-goldfinch-signature-block-num": "fake_block_number",
+            }
+            await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
+
+            let result = await uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+
+            // mint accredited investor
+            await uniqueIdentity.mint(usAccreditedIdType, result.expiresAt, result.signature, {
+              from: anotherUser,
+              value: web3.utils.toWei("0.00083"),
+            })
+            expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
+            expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(1))
+            expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+
+            // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+            result = await uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+
+            await uniqueIdentity.burn(anotherUser, usAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
             })
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))

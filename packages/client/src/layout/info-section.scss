@@ -4,7 +4,7 @@
 
 .small-info-item {
   display: inline-block;
-  margin: 30px 0 0;
+  margin: 20px 0 0;
   width: 100%;
 
   .value {
@@ -22,9 +22,10 @@
   color: $sand-xxdark;
 }
 
-@media only screen and (min-width: $screen-s) {
+@media only screen and (min-width: $screen-m) {
   .small-info-item {
     width: 50%;
+    margin: 30px 0 0;
   }
 }
 

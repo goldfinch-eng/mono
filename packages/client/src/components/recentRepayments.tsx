@@ -5,13 +5,16 @@ import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {CombinedRepaymentTx} from "../ethereum/pool"
 import {getEtherscanSubdomain} from "../ethereum/utils"
-import {displayDollars, croppedAddress, assertNonNullable} from "../utils"
+import {displayDollars, croppedAddress, assertNonNullable, displayDollarsTruncated} from "../utils"
 import {iconOutArrow} from "./icons"
 import {populateDates} from "../ethereum/events"
+import {useMediaQuery} from "react-responsive"
+import {WIDTH_TYPES} from "./styleConstants"
 
 function RecentRepayments() {
   const {pool, user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [repayments, setRepayments] = useState<CombinedRepaymentTx[]>([])
+  const isMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenM})`})
   let transactionRows
 
   useEffect(() => {
@@ -38,11 +41,11 @@ function RecentRepayments() {
           .multipliedBy(tx.interestAmountBN)
       )
 
-      yourPortion = displayDollars(yourPortionValue, 4)
+      yourPortion = isMobile ? displayDollarsTruncated(yourPortionValue) : displayDollars(yourPortionValue, 4)
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'string' is not assignable to par... Remove this comment to see the full error message
       yourPortionClass = isFinite(yourPortionValue) && yourPortionValue > 0 ? "" : "zero"
     } else if (!user) {
-      yourPortion = displayDollars(0, 4)
+      yourPortion = isMobile ? displayDollars(0, 0) : displayDollars(0, 4)
     } else {
       yourPortion = "Loading..."
     }
@@ -60,7 +63,9 @@ function RecentRepayments() {
             {iconOutArrow}
           </a>
         </td>
-        <td className="transaction-amount numeric">+{displayDollars(tx.amount)}</td>
+        <td className="transaction-amount numeric">
+          +{isMobile ? displayDollarsTruncated(tx.amount) : displayDollars(tx.amount)}
+        </td>
         <td className={`transaction-portion numeric ${yourPortionClass}`}>+{yourPortion}</td>
       </tr>
     )
