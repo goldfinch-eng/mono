@@ -239,7 +239,7 @@ function Rewards() {
       (backer) => backer.tranchedPool.address in rewardsEligibleTranchedPools
     )
     const userBackerRewards = new UserBackerRewards(userAddress, goldfinchProtocol)
-    userBackerRewards.initialize(backerRewards, rewardsEligibleBackers, currentBlock)
+    await userBackerRewards.initialize(backerRewards, rewardsEligibleBackers, currentBlock)
     assertWithLoadedInfo(userBackerRewards)
     setUserBackerRewards(userBackerRewards)
   }
