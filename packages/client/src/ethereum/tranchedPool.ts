@@ -3,7 +3,7 @@ import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
-import {assertNonNullable, assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {
