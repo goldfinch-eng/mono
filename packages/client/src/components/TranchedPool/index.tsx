@@ -20,8 +20,10 @@ import {ActionsContainer} from "./ActionsContainer"
 import {CreditStatus} from "./CreditStatus"
 import {EstimatedSeniorPoolMatchingGFILaunchBanner} from "./EstimatedSeniorPoolMatchingGFILaunchBanner"
 import {Overview} from "./Overview"
+import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
 import {V1DealSupplyStatus} from "./V1DealSupplyStatus"
+import {BorrowerOverview} from "./BorrowerOverview"
 
 interface TranchedPoolViewURLParams {
   poolAddress: string
@@ -148,7 +150,13 @@ function TranchedPoolView() {
       ) : (
         <SupplyStatus tranchedPool={tranchedPool} />
       )}
-      <Overview tranchedPool={tranchedPool} handleDetails={handleDetails} />
+      {tranchedPool?.metadata?.description && tranchedPool?.metadata?.description !== "" && (
+        <Overview tranchedPool={tranchedPool} handleDetails={handleDetails} />
+      )}
+      {tranchedPool?.metadata?.poolDescription && (
+        <PoolOverview tranchedPool={tranchedPool} handleDetails={handleDetails} />
+      )}
+      {tranchedPool?.metadata?.borrowerDescription && <BorrowerOverview tranchedPool={tranchedPool} />}
       <NdaPrompt
         show={showModal}
         onClose={() => setShowModal(false)}

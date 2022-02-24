@@ -9,7 +9,7 @@ import EtherscanLink from "../etherscanLink"
 import {iconOutArrow} from "../icons"
 import InfoSection from "../infoSection"
 
-export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedPool; handleDetails: () => void}) {
+export function PoolOverview({tranchedPool, handleDetails}: {tranchedPool: TranchedPool; handleDetails: () => void}) {
   const {user} = useContext(AppContext)
   const session = useSession()
 
@@ -49,11 +49,13 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
     )
   }
 
+  const highlights = tranchedPool.metadata?.poolHighlights
+
   return (
     <div className={`pool-overview background-container ${!tranchedPool && "placeholder"}`}>
       <div className="background-container-inner">
         <div className="pool-header">
-          <h2 className="pool-overview-title">Overview</h2>
+          <h2 className="pool-overview-title">Pool Overview</h2>
           <div className="pool-links pool-overview-links">
             {detailsLink}
             {tranchedPool.metadata?.agreement && (
@@ -66,12 +68,22 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
                 Dataroom {iconOutArrow}
               </a>
             )}
-            <EtherscanLink address={tranchedPool.address!}>
+            <EtherscanLink address={tranchedPool?.address!}>
               Pool<span className="outbound-link">{iconOutArrow}</span>
             </EtherscanLink>
           </div>
         </div>
-        <p className="pool-description">{tranchedPool.metadata?.description}</p>
+        <p className="pool-description pool-loan-description">{tranchedPool.metadata?.poolDescription}</p>
+        {highlights && highlights.length > 0 && (
+          <div className="pool-highlights pool-loan-description">
+            <h3>Highlights</h3>
+            <ul>
+              {highlights.map((el) => {
+                return <li className="pool-highlight">{el}</li>
+              })}
+            </ul>
+          </div>
+        )}
       </div>
       <InfoSection rows={rows} classNames="pool-info-section" />
     </div>
