@@ -62,7 +62,7 @@ async function main() {
     (grouped) => {
       assertNonNullable(grouped[0])
       const result: genericEvent = {blockNumber: 0, args: {owner: grouped[0].args.owner, amount: new BigNumber(0)}}
-      grouped.map((e) => {
+      grouped.forEach((e) => {
         assertNonNullable(result.args.amount)
         if (e.args.amount) {
           result.args.amount = result.args.amount.plus(String(e.args.amount))
@@ -72,7 +72,7 @@ async function main() {
       })
       return result
     }
-  )
+  ).filter((e) => e.args.amount?.gt(new BigNumber(0)))
 
   const blocks: {[blockNumber: number]: Block} = {}
 
