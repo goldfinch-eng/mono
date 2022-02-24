@@ -514,8 +514,15 @@ class TranchedPool {
     // start at the first next-due-time (aligned with (i)'s schedule) that occurs *after* the optimistic
     // start of that borrowing, and then (again, aligned with (i)'s schedule), one payment every
     // `paymentPeriodInDays`, until the final payment at `termEndTime`.
+
     if (!(nextRepaymentTimeAlreadyBorrowed || nextRepaymentTimeToBeBorrowed)) {
-      throw new Error("Failed to identify next repayment time.")
+      if (this.creditLine.termEndTime.eq(0) && this.poolState === PoolState.WithdrawalsUnlocked) {
+        // The pool has reached the WithdrawalsUnlocked state without any amount being drawndown. We'll
+        // assume that no amount will be borrowed.
+        return []
+      } else {
+        throw new Error("Failed to identify next repayment time.")
+      }
     }
     const nextRepaymentTime = BigNumber.min(
       nextRepaymentTimeAlreadyBorrowed || new BigNumber(Infinity),
