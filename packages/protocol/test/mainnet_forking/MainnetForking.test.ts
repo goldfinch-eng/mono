@@ -1320,22 +1320,22 @@ describe("mainnet forking tests", async function () {
           expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
 
           // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          // result = await uniqueIdentitySigner.main({
-          //   auth,
-          //   signer,
-          //   network,
-          //   uniqueIdentity: ethersUniqueIdentity,
-          //   fetchKYCStatus: fetchKYCFunction,
-          // })
+          result = await uniqueIdentitySigner.main({
+            auth,
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchKYCFunction,
+          })
 
-          // await uniqueIdentity.burn(address, usAccreditedIdType, result.expiresAt, result.signature, {
-          //   from: address,
-          // })
-          // expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          // expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          // expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          // expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-          // expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+          await uniqueIdentity.burn(address, usAccreditedIdType, result.expiresAt, result.signature, {
+            from: address,
+          })
+          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
         }).timeout(TEST_TIMEOUT)
       })
 
