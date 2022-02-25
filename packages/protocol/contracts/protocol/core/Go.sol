@@ -127,7 +127,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     if (account == config.stakingRewardsAddress() || _getLegacyGoList().goList(account)) {
       return true;
     }
-    uint256[2] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1];
+    uint256[4] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1, ID_TYPE_3, ID_TYPE_4];
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, seniorPoolIdTypes[i]);
       if (idTypeBalance > 0) {
