@@ -1339,126 +1339,129 @@ describe("mainnet forking tests", async function () {
         }).timeout(TEST_TIMEOUT)
       })
 
-      // describe("US entity", () => {
-      //   beforeEach(() => {
-      //     fetchKYCFunction = fetchStubbedKycStatus({
-      //       status: "approved",
-      //       countryCode: "CA",
-      //     })
-      //   })
+      describe("US entity", () => {
+        beforeEach(() => {
+          fetchKYCFunction = fetchStubbedKycStatus({
+            status: "approved",
+            countryCode: "CA",
+          })
+        })
 
-      //   it("returns a signature that can be used to mint", async () => {
-      //     const address = "0x948D99554dC5b90ac3DD00daeCF76100d3219B02"
-      //     await impersonateAccount(hre, address)
-      //     await fundWithWhales(["ETH"], [address])
-      //     const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-      //     const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-      //     const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-      //     const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-      //     const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-      //     const auth = {
-      //       "x-goldfinch-address": address,
-      //       "x-goldfinch-signature": "test_signature",
-      //       "x-goldfinch-signature-block-num": "fake_block_number",
-      //     }
-      //     await uniqueIdentity.setSupportedUIDTypes([usEntityIdType], [true])
+        it("returns a signature that can be used to mint", async () => {
+          const address = "0x79e92C775F4AB5a6a0eC1FDf05E8cEC6Eaa17bcb"
+          await impersonateAccount(hre, address)
+          await fundWithWhales(["ETH"], [address])
+          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+          const auth = {
+            "x-goldfinch-address": address,
+            "x-goldfinch-signature": "test_signature",
+            "x-goldfinch-signature-block-num": "fake_block_number",
+          }
+          await uniqueIdentity.setSupportedUIDTypes([usEntityIdType], [true])
 
-      //     let result = await uniqueIdentitySigner.main({
-      //       auth,
-      //       signer,
-      //       network,
-      //       uniqueIdentity: ethersUniqueIdentity,
-      //       fetchKYCStatus: fetchKYCFunction,
-      //     })
+          let result = await uniqueIdentitySigner.main({
+            auth,
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchKYCFunction,
+          })
 
-      //     await uniqueIdentity.mint(usEntityIdType, result.expiresAt, result.signature, {
-      //       from: address,
-      //       value: web3.utils.toWei("0.00083"),
-      //     })
-      //     expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(1))
-      //     expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+          await uniqueIdentity.mint(usEntityIdType, result.expiresAt, result.signature, {
+            from: address,
+            value: web3.utils.toWei("0.00083"),
+          })
+          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(1))
+          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
 
-      //     // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-      //     result = await uniqueIdentitySigner.main({
-      //       auth,
-      //       signer,
-      //       network,
-      //       uniqueIdentity: ethersUniqueIdentity,
-      //       fetchKYCStatus: fetchKYCFunction,
-      //     })
+          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+          result = await uniqueIdentitySigner.main({
+            auth,
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchKYCFunction,
+          })
 
-      //     await uniqueIdentity.burn(address, usEntityIdType, result.expiresAt, result.signature, {
-      //       from: address,
-      //     })
-      //     expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-      //   }).timeout(TEST_TIMEOUT)
-      // })
+          await uniqueIdentity.burn(address, usEntityIdType, result.expiresAt, result.signature, {
+            from: address,
+          })
+          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+        }).timeout(TEST_TIMEOUT)
+      })
 
-      // describe("non US entity", () => {
-      //   beforeEach(() => {
-      //     fetchKYCFunction = fetchStubbedKycStatus({
-      //       status: "approved",
-      //       countryCode: "CA",
-      //     })
-      //   })
+      describe("non US entity", () => {
+        beforeEach(() => {
+          fetchKYCFunction = fetchStubbedKycStatus({
+            status: "approved",
+            countryCode: "CA",
+          })
+        })
 
-      //   it("returns a signature that can be used to mint", async () => {
-      //     const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-      //     const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-      //     const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-      //     const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-      //     const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-      //     const auth = {
-      //       "x-goldfinch-address": person3,
-      //       "x-goldfinch-signature": "test_signature",
-      //       "x-goldfinch-signature-block-num": "fake_block_number",
-      //     }
-      //     await uniqueIdentity.setSupportedUIDTypes([nonUsEntityIdType], [true])
+        it("returns a signature that can be used to mint", async () => {
+          const address = "0x0cdb67d1A9A847492da820f1BB3804516f8F5422"
+          await impersonateAccount(hre, address)
+          await fundWithWhales(["ETH"], [address])
+          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+          const auth = {
+            "x-goldfinch-address": person3,
+            "x-goldfinch-signature": "test_signature",
+            "x-goldfinch-signature-block-num": "fake_block_number",
+          }
+          await uniqueIdentity.setSupportedUIDTypes([nonUsEntityIdType], [true])
 
-      //     let result = await uniqueIdentitySigner.main({
-      //       auth,
-      //       signer,
-      //       network,
-      //       uniqueIdentity: ethersUniqueIdentity,
-      //       fetchKYCStatus: fetchKYCFunction,
-      //     })
+          let result = await uniqueIdentitySigner.main({
+            auth,
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchKYCFunction,
+          })
 
-      //     await uniqueIdentity.mint(nonUsEntityIdType, result.expiresAt, result.signature, {
-      //       from: person3,
-      //       value: web3.utils.toWei("0.00083"),
-      //     })
-      //     expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(1))
+          await uniqueIdentity.mint(nonUsEntityIdType, result.expiresAt, result.signature, {
+            from: person3,
+            value: web3.utils.toWei("0.00083"),
+          })
+          expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(1))
 
-      //     // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-      //     result = await uniqueIdentitySigner.main({
-      //       auth,
-      //       signer,
-      //       network,
-      //       uniqueIdentity: ethersUniqueIdentity,
-      //       fetchKYCStatus: fetchKYCFunction,
-      //     })
+          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+          result = await uniqueIdentitySigner.main({
+            auth,
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchKYCFunction,
+          })
 
-      //     await uniqueIdentity.burn(person3, nonUsEntityIdType, result.expiresAt, result.signature, {
-      //       from: person3,
-      //     })
-      //     expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
-      //     expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-      //   }).timeout(TEST_TIMEOUT)
-      // })
+          await uniqueIdentity.burn(person3, nonUsEntityIdType, result.expiresAt, result.signature, {
+            from: person3,
+          })
+          expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
+          expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+        }).timeout(TEST_TIMEOUT)
+      })
     })
   })
 })
