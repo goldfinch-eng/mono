@@ -29,7 +29,7 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
+import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,
@@ -149,33 +149,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   config = config.connect(protocolOwnerSigner)
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
-
-  await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
-
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
-
-  const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
-  const lastEventArgs = getLastEventArgs(result)
-  const protocolBorrowerCon = lastEventArgs[0]
-  logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
-
-  const commonPool = await createPoolForBorrower({
-    getOrNull,
-    underwriter,
-    goldfinchFactory,
-    borrower: protocolBorrowerCon,
-    erc20,
-  })
-  await writePoolMetadata({pool: commonPool, borrower: "GFI"})
-
-  const empty = await createPoolForBorrower({
-    getOrNull,
-    underwriter,
-    goldfinchFactory,
-    borrower: protocolBorrowerCon,
-    erc20,
-  })
-  await writePoolMetadata({pool: empty, borrower: "Empty"})
 
   await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
@@ -187,9 +161,32 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       seniorPool,
       goldfinchFactory,
     })
-  }
+  } else {
+    await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
-  if (!requestFromClient) {
+    const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
+    const lastEventArgs = getLastEventArgs(result)
+    const protocolBorrowerCon = lastEventArgs[0]
+    logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
+
+    const commonPool = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+    })
+    await writePoolMetadata({pool: commonPool, borrower: "GFI"})
+
+    const empty = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+    })
+    await writePoolMetadata({pool: empty, borrower: "Empty"})
+
     await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
 
     // Have the senior fund invest
