@@ -4,9 +4,7 @@
   "private": true,
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "jest": {
-    "testPathIgnorePatterns": [
-      "/__utils__/"
-    ]
+    "testPathIgnorePatterns": ["/__utils__/"]
   },
   "dependencies": {
     "@apollo/client": "^3.4.16",
@@ -63,7 +61,7 @@
     "start:murmuration": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
     "start:murmuration:liquidity-mining": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK= HARDHAT_FORK= MURMURATION=yes npm run start",
     "build": "react-app-rewired build",
-    "test": "cd ../protocol && npm run deploy-for-client-test && cd ../client && react-app-rewired test --env=jsdom",
+    "test": "cd ../protocol && npm run deploy-for-client-test && cd ../client && NODE_OPTIONS=--unhandled-rejections=strict react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
     "lint": "npm run tsc && npx eslint .",
     "lint:fix": "eslint . --fix && prettier . --write",
@@ -72,17 +70,9 @@
     "gen-graphql-types": "npx apollo client:codegen ./src/graphql/types.ts --endpoint=https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch --target=typescript --outputFlat --tagName=gql --includes=./src/graphql/*.ts"
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": [
-      "prettier --write",
-      "eslint --fix"
-    ]
+    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --fix"]
   },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ],
+  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"],
   "devDependencies": {
     "@hookform/devtools": "^2.2.1",
     "@nomiclabs/buidler": "^1.4.4",
