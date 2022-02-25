@@ -10,7 +10,7 @@ import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import {asNonNullable, assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {
@@ -66,7 +66,8 @@ import {
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
 } from "../types/transactions"
 import {Web3IO} from "../types/web3"
-import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
+import {assertNonNullable, assertNumber, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
+import web3 from "../web3"
 import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BackerRewardsLoaded, BackerRewardsPoolTokenPosition, BackerRewardsPosition} from "./backerRewards"
@@ -1627,16 +1628,23 @@ export class UserBackerRewards {
     rewardsEligibleTranchedPoolBackers: TranchedPoolBacker[],
     currentBlock: BlockInfo
   ): Promise<void> {
-    const positions = (
-      await Promise.all(
-        rewardsEligibleTranchedPoolBackers.map(async (backer): Promise<BackerRewardsPosition> => {
-          const tokenPositions = await Promise.all(
-            backer.tokenInfos
-              .filter(
-                // Exclude senior-tranche pool tokens, which aren't eligible for backer rewards.
-                (tokenInfo) => !backer.tranchedPool.isSeniorTrancheId(tokenInfo.tranche)
-              )
-              .map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
+    const positions = await Promise.all(
+      rewardsEligibleTranchedPoolBackers
+        .filter(
+          // Remove rewardable tranched pools for which the user has no junior-tranche pool tokens (and for
+          // which they therefore cannot earn any backer rewards).
+          (backer) =>
+            !!backer.tokenInfos.filter((tokenInfo) => !backer.tranchedPool.isSeniorTrancheId(tokenInfo.tranche)).length
+        )
+        .map(async (backer): Promise<BackerRewardsPosition> => {
+          // We expect `firstDepositBlockNumber` to be non-nullable, because we have filtered out tranched pools
+          // in which the user holds no pool tokens. So we expect to have found the block number of the first
+          // DepositMade event corresponding to the set of pool tokens they have for this pool.
+          const firstDepositBlockNumber = asNonNullable(backer.firstDepositBlockNumber)
+
+          const [tokenPositions, firstDepositBlock] = await Promise.all([
+            Promise.all(
+              backer.tokenInfos.map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
                 const tokenId = tokenInfo.id
                 const [
                   backersOnlyClaimable,
@@ -1671,15 +1679,17 @@ export class UserBackerRewards {
                   },
                 }
               })
-          )
+            ),
+            web3.readOnly.eth.getBlock(firstDepositBlockNumber),
+          ])
+
+          const firstDepositTime = firstDepositBlock.timestamp
+          assertNumber(firstDepositTime)
+
           const rewardsAreWithdrawable = backerRewards.juniorTranchePoolTokenRewardsAreWithdrawable(backer.tranchedPool)
-          return new BackerRewardsPosition(backer, rewardsAreWithdrawable, tokenPositions)
+
+          return new BackerRewardsPosition(backer, firstDepositTime, rewardsAreWithdrawable, tokenPositions)
         })
-      )
-    ).filter(
-      // Remove rewardable tranched pools for which the user has no pool tokens (and for which they
-      // therefore cannot earn any backer rewards).
-      (position) => position.tokenPositions.length
     )
 
     const claimable = defaultSum(positions.map((position) => position.claimable))

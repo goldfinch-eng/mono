@@ -1,5 +1,4 @@
 import {ApolloError} from "@apollo/client"
-import {User} from "@sentry/browser"
 import _ from "lodash"
 import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
@@ -8,6 +7,7 @@ import {usdcToAtomic} from "../ethereum/erc20"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {CapitalProvider} from "../ethereum/pool"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "../ethereum/tranchedPool"
+import {UserLoaded} from "../ethereum/user"
 import {RINKEBY} from "../ethereum/utils"
 import {parseBackers} from "../graphql/parsers"
 import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
@@ -91,7 +91,7 @@ export function usePoolBackersWeb3(skip = false): {
   backers: Loadable<TranchedPoolBacker[]>
   poolsAddresses: Loadable<string[]>
 } {
-  const {user, goldfinchProtocol, currentBlock, network} = useNonNullContext(AppContext)
+  const {user, goldfinchProtocol, currentBlock, network} = useContext(AppContext)
   let [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
@@ -102,8 +102,11 @@ export function usePoolBackersWeb3(skip = false): {
   })
 
   useEffect(() => {
-    async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
-      user = user || {address: undefined}
+    async function loadTranchedPools(
+      goldfinchProtocol: GoldfinchProtocol,
+      user: UserLoaded | undefined,
+      currentBlock: BlockInfo
+    ) {
       let poolEvents = await goldfinchProtocol.queryEvents(
         "GoldfinchFactory",
         [POOL_CREATED_EVENT],
@@ -113,7 +116,7 @@ export function usePoolBackersWeb3(skip = false): {
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
 
       // Remove invalid pool on rinkeby that returns wrong number of values for getTranche
-      if (network.name === RINKEBY) {
+      if (network?.name === RINKEBY) {
         poolAddresses = _.remove(poolAddresses, "0x3622Bf116643c5f2f1764924Ce6ce8814302BA76")
       }
 
@@ -126,7 +129,7 @@ export function usePoolBackersWeb3(skip = false): {
       tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
-        .map((p) => new TranchedPoolBacker(user.address, p, goldfinchProtocol))
+        .map((p) => new TranchedPoolBacker(user?.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize(currentBlock)))
       setBackers({
         loaded: true,

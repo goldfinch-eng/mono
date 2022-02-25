@@ -15,8 +15,9 @@ import {
   ScheduledRepaymentEstimatedReward,
 } from "../types/tranchedPool"
 import {Web3IO} from "../types/web3"
-import {assertNonNullable, BlockInfo, defaultSum, sameBlock} from "../utils"
-import {GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {assertNonNullable, BlockInfo, defaultSum, displayDollars, displayNumber, sameBlock} from "../utils"
+import {usdcFromAtomic} from "./erc20"
+import {gfiFromAtomic, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded} from "./pool"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "./tranchedPool"
@@ -497,15 +498,18 @@ export type BackerRewardsPoolTokenPosition = {
  */
 export class BackerRewardsPosition {
   backer: TranchedPoolBacker
+  firstDepositTime: number
   rewardsAreWithdrawable: boolean
   tokenPositions: BackerRewardsPoolTokenPosition[]
 
   constructor(
     backer: TranchedPoolBacker,
+    firstDepositTime: number,
     rewardsAreWithdrawable: boolean,
     tokenPositions: BackerRewardsPoolTokenPosition[]
   ) {
     this.backer = backer
+    this.firstDepositTime = firstDepositTime
     this.rewardsAreWithdrawable = rewardsAreWithdrawable
     this.tokenPositions = tokenPositions
   }
@@ -515,21 +519,27 @@ export class BackerRewardsPosition {
   }
 
   get description(): string {
-    // const date = new Date(this.storedPosition.rewards.startTime * 1000).toLocaleDateString(undefined, {
-    //   month: "short",
-    //   day: "numeric",
-    //   year: "numeric",
-    // })
-    // const origStakedAmount = fiduFromAtomic(this.stakedEvent.returnValues.amount)
-    // const remainingAmount = fiduFromAtomic(this.storedPosition.amount)
-    // return `Staked ${displayNumber(origStakedAmount, 2)} FIDU on ${date}${
-    //   origStakedAmount === remainingAmount ? "" : ` (${displayNumber(remainingAmount, 2)} FIDU remaining)`
-    // }`
-    return "TODO[PR]"
+    const transactionDate = new Date(this.firstDepositTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    const principalDepositedAmount = usdcFromAtomic(this.backer.principalAmount)
+    const principalRemainingAmount = usdcFromAtomic(this.backer.principalAtRisk)
+    return `Supplied ${displayDollars(principalDepositedAmount, 2)} USDC beginning on ${transactionDate}${
+      principalDepositedAmount === principalRemainingAmount
+        ? ""
+        : ` (${displayDollars(principalRemainingAmount, 2)} USDC remaining)`
+    }`
   }
 
   get shortDescription(): string {
-    return "TODO[PR]"
+    const transactionDate = new Date(this.firstDepositTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI • ${transactionDate}`
   }
 
   get granted(): BigNumber {
