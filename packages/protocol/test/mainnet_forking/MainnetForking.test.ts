@@ -1300,7 +1300,7 @@ describe("mainnet forking tests", async function () {
           }
           await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
 
-          const result = await uniqueIdentitySigner.main({
+          let result = await uniqueIdentitySigner.main({
             auth,
             signer,
             network,
