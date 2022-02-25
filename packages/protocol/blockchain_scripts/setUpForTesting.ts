@@ -160,6 +160,11 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       getOrNull,
       seniorPool,
       goldfinchFactory,
+      // NOTE: We make the borrower a depositor in their own pool here, for the sake of convenience
+      // in manual testing: this enables the test user to use the borrow page UI to drawdown and repay
+      // the loan, and because they're a depositor (i.e. backer) in that pool, they can also use the
+      // GFI page UI to receive backer rewards for the pool upon repayments.
+      depositor: borrower,
     })
   } else {
     await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
@@ -361,12 +366,14 @@ async function createBorrowerContractAndPool({
   getOrNull,
   seniorPool,
   goldfinchFactory,
+  depositor,
 }: {
   erc20: Contract
   address: string
   getOrNull: any
   seniorPool: SeniorPool
   goldfinchFactory: GoldfinchFactory
+  depositor: string | undefined
 }): Promise<void> {
   const protocol_owner = await getProtocolOwner()
   const underwriter = await getProtocolOwner()
@@ -384,7 +391,7 @@ async function createBorrowerContractAndPool({
     goldfinchFactory,
     borrower: bwrConAddr,
     erc20,
-    depositor: protocol_owner,
+    depositor: depositor || protocol_owner,
   })
   let txn = await filledPool.lockJuniorCapital()
   await txn.wait()
@@ -431,6 +438,8 @@ async function writePoolMetadata({
     metadata = {}
   }
   const name = `${borrower.slice(0, 6)}: ${_.sample(names)}`
+  const launchTime = await getCurrentTimestamp()
+
   logger(`Write metadata for ${pool.address}:${name}`)
   metadata[pool.address.toLowerCase()] = {
     name,
@@ -441,6 +450,7 @@ async function writePoolMetadata({
     NDAUrl,
     backerLimit,
     disabled: _.sample(status),
+    launchTime,
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
