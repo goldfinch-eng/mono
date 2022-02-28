@@ -1,5 +1,5 @@
 import {eligibleForSeniorPool} from "./utils"
-import {UserLoaded} from "./ethereum/user"
+import {UserLoaded} from "../../ethereum/user"
 
 describe("eligibleForSeniorPool", () => {
   describe("goListed", () => {

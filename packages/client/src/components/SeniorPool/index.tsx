@@ -9,8 +9,8 @@ import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
-import EarnActionsContainer from "../earnActionsContainer"
-import InvestorNotice from "../investorNotice"
+import EarnActionsContainer from "../EarnActionsContainer"
+import InvestorNotice from "../InvestorNotice"
 import SeniorPoolStatus from "../seniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 import {Overview} from "./Overview"
@@ -102,7 +102,7 @@ function SeniorPoolView(): JSX.Element {
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
-      <InvestorNotice />
+      <InvestorNotice user={user} />
       <EarnActionsContainer
         disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}

@@ -2,10 +2,11 @@ import {useContext, useState} from "react"
 import {AppContext} from "../App"
 import {CapitalProvider} from "../ethereum/pool"
 import {useFromSameBlock} from "../hooks/useFromSameBlock"
-import {assertNonNullable, eligibleForSeniorPool} from "../utils"
+import {assertNonNullable} from "../utils"
 import DepositForm from "./depositForm"
 import DepositStatus from "./depositStatus"
 import {iconDownArrow, iconUpArrow} from "./icons"
+import {eligibleForSeniorPool} from "./SeniorPool/utils"
 import WithdrawalForm from "./withdrawalForm"
 
 interface EarnActionsContainerProps {
