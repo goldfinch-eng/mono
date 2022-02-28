@@ -210,6 +210,23 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     }
   }
 
+  function totalUnclaimed(address owner) external view returns (uint256) {
+    uint256 result = 0;
+    for (uint256 i = 0; i < balanceOf(owner); i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(owner, i);
+      result = result.add(_unclaimed(tokenId));
+    }
+    return result;
+  }
+
+  function unclaimed(uint256 tokenId) external view returns (uint256) {
+    return _unclaimed(tokenId);
+  }
+
+  function _unclaimed(uint256 tokenId) internal view returns (uint256) {
+    return grants[tokenId].totalGranted - grants[tokenId].totalClaimed;
+  }
+
   /* ========== MODIFIERS ========== */
 
   function isAdmin() public view returns (bool) {
