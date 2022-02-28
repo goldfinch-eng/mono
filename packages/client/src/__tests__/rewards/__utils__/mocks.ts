@@ -182,6 +182,8 @@ export async function mockUserRelatedInitializationContractCalls(
       hasNonUSUID: true,
       hasUSAccreditedUID: true,
       hasUSNonAccreditedUID: true,
+      hasUSEntityUID: true,
+      hasNonUSEntityUID: true,
     })
   }
 
