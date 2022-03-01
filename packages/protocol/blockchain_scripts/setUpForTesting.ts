@@ -1,3 +1,4 @@
+import {NON_US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
@@ -541,7 +542,7 @@ async function createPoolForBorrower({
   const principalGracePeriodInDays = String(new BN(185))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
-  const allowedUIDTypes = []
+  const allowedUIDTypes = [NON_US_UID_TYPES]
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)
