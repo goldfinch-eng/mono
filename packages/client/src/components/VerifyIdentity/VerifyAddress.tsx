@@ -22,8 +22,7 @@ import USAccreditedForm from "./USAccreditedForm"
 export const NON_US_INDIVIDUAL_ENTITY_TYPE = "Non-US-Individual"
 export const US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Accredited-Individual"
 export const US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Non-Accredited-Individual"
-export const US_ENTITY_ENTITY_TYPE = "US-Entity"
-export const NON_US_ENTITY_ENTITY_TYPE = "Non-US-Entity"
+export const ENTITY_ENTITY_TYPE = "Entity"
 
 function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
   return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
@@ -126,9 +125,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     )
   } else if (entityType === US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE && !isUSAccreditedIndividual(user.address)) {
     return <USAccreditedForm onClose={() => setEntityType("")} />
-  } else if (entityType === US_ENTITY_ENTITY_TYPE && !isUSAccreditedEntity(user.address)) {
-    return <EntityForm onClose={() => setEntityType("")} />
-  } else if (entityType === NON_US_ENTITY_ENTITY_TYPE && !isNonUSEntity(user.address)) {
+  } else if (entityType === ENTITY_ENTITY_TYPE && !isUSAccreditedEntity(user.address) && !isNonUSEntity(user.address)) {
     return <EntityForm onClose={() => setEntityType("")} />
   } else if (
     isEligible(kyc, user) ||
@@ -155,17 +152,14 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           <button className={"button"} onClick={() => chooseEntity(NON_US_INDIVIDUAL_ENTITY_TYPE)}>
             Non-U.S. Individual
           </button>
-          <button className={"button"} onClick={() => chooseEntity(NON_US_ENTITY_ENTITY_TYPE)}>
-            Non-U.S. Entity
+          <button className={"button"} onClick={() => chooseEntity(ENTITY_ENTITY_TYPE)}>
+            Entity
           </button>
           <button className={"button"} onClick={() => chooseEntity(US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)}>
-            Non-Accredited U.S. Individual
+            U.S. Non-Accredited Individual
           </button>
           <button className={"button"} onClick={() => chooseEntity(US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)}>
             U.S. Accredited Individual
-          </button>
-          <button className={"button"} onClick={() => chooseEntity(US_ENTITY_ENTITY_TYPE)}>
-            U.S. Entity
           </button>
         </div>
       </VerifyCard>

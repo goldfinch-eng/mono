@@ -134,7 +134,7 @@ function TranchedPoolView() {
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {maxCapacityNotice}
-      <InvestorNotice />
+      <InvestorNotice user={user} />
       {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
         <EstimatedSeniorPoolMatchingGFILaunchBanner />
       ) : undefined}
