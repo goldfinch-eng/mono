@@ -7,10 +7,10 @@ import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {Signer} from "ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import * as migrate2_5 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.5/migrate"
-import {MAINNET_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
+import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
+import * as migrate25 from "../../blockchain_scripts/migrations/v2.5/migrate"
+import {MAINNET_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 const {deployments, web3} = hre
 
 const TEST_TIMEOUT = 180000 // 3 mins
@@ -67,7 +67,7 @@ describe("UID", () => {
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: await getProtocolOwner()})
 
-    await migrate2_5.main()
+    await migrate25.main()
   })
 
   describe("KYC is elligible", () => {
