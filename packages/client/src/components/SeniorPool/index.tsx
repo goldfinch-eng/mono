@@ -10,10 +10,11 @@ import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "../EarnActionsContainer"
-import InvestorNotice from "../InvestorNotice"
+import InvestorNotice from "../KYCNotice/InvestorNotice"
 import SeniorPoolStatus from "../seniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 import {Overview} from "./Overview"
+import {seniorPoolAllowedUIDTypes} from "./utils"
 
 function SeniorPoolView(): JSX.Element {
   const {
@@ -102,7 +103,7 @@ function SeniorPoolView(): JSX.Element {
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
-      <InvestorNotice user={user} />
+      <InvestorNotice user={user} allowedUIDTypes={seniorPoolAllowedUIDTypes} />
       <EarnActionsContainer
         disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}

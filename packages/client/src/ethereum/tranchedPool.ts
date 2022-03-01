@@ -1,3 +1,4 @@
+import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
@@ -89,6 +90,7 @@ export interface TranchedPoolMetadata {
   poolHighlights?: Array<string>
   borrowerDescription?: string
   borrowerHighlights?: Array<string>
+  allowedUIDTypes: Array<number>
 }
 
 enum PoolState {
@@ -134,6 +136,7 @@ class TranchedPool {
   reserveFeePercent!: BigNumber
   estimatedLeverageRatio!: BigNumber
   estimatedSeniorPoolContribution!: BigNumber
+  allowedUIDTypes!: number[]
 
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
@@ -156,6 +159,7 @@ class TranchedPool {
     this.creditLine = new CreditLine(this.creditLineAddress, this.goldfinchProtocol)
     await this.creditLine.initialize(currentBlock)
     this.metadata = await this.loadPoolMetadata()
+    this.allowedUIDTypes = await this.getAllowedUIDTypes(currentBlock)
 
     let juniorTranche = await this.contract.readOnly.methods
       .getTranche(TRANCHES.Junior)
@@ -280,6 +284,14 @@ class TranchedPool {
     } else {
       return this.estimatedTotalAssets().minus(juniorContribution).dividedBy(juniorContribution)
     }
+  }
+
+  async getAllowedUIDTypes(currentBlock: BlockInfo): Promise<number[]> {
+    // first, check the json for legacy pools
+    if (this.metadata && this.metadata?.allowedUIDTypes) {
+      return this.metadata.allowedUIDTypes
+    }
+    return [NON_US_INDIVIDUAL_ID_TYPE_0]
   }
 
   async recentTransactions(currentBlock: BlockInfo) {

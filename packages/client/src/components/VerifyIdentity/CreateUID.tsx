@@ -192,8 +192,8 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
                 community privileges.
                 <br />
                 <br />
-                TODO TODO Note: U.S. individuals are only eligible to participate in Goldfinch governance-related
-                activities. They may not participate in the senior pool and borrower pools.
+                Note: U.S. individuals are only eligible to participate in Goldfinch governance-related activities. They
+                may not participate in the senior pool and borrower pools.
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />

@@ -6,18 +6,25 @@ export default function USAccreditedForm({onClose}: {onClose: () => void}) {
       headerMessage="U.S. Accredited Individual"
       render={() => {
         return (
-          <>
-            <div className="form-message paragraph">
-              Goldfinch is open to U.S. accredited investors. TODO NEED CONTENT
-            </div>
-            <div className="form-message paragraph">
-              To verify or pre-verify, please fill out{" "}
-              <a className="link" target="_blank" rel="noopener noreferrer" href="https://forms.gle/fWErQMxREWwkGhe18">
-                this form
-              </a>
-              . Then we will reach out with next steps.
-            </div>
-          </>
+          <div className="form-message paragraph">
+            If you are an accredited U.S. investor, please complete the verification process through our partner{" "}
+            <a
+              className="link"
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://bridge.parallelmarkets.com/goldfinch"
+            >
+              Parallel Markets
+            </a>
+            .
+            <br />
+            <br />
+            We will reach out with next steps within 24-72 hours. If you encounter any issues, please reach out to{" "}
+            <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:accredited@goldfinch.finance">
+              accredited@goldfinch.finance
+            </a>
+            .
+          </div>
         )
       }}
       closeForm={onClose}

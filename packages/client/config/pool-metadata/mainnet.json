@@ -5,7 +5,8 @@
     "description": "Cauris is a mission driven company that applies advanced technology to solve financial inclusion issues while providing high risk adjusted returns to its investors.\n\nWe aim to give 100 million more people access to capital. We believe that access to credit is key to empowering individuals and enabling economic growth. We use a combination of strong underwriting, legal protections and advanced analytics to secure our debt investments in our fintechs clients.\n\nThis pool will be dedicated to backing African fintechs in their quest to provide access to financial services to millions of customers. We will be investing in companies providing consumer lending products, SME, Trade and equipment financings. Our investments will include senior secured loans to companies such as:\n\n• Ramani (https://www.ramani.io/), a supply chain financing company operating in Tanzanian\n• Jetstream (https://jetstreamafrica.com/), a trade finance company operating in Ghana and Nigeria\n• Asaak (https://www.asaak.com/), an equipment financing company providing motorcycle financing to boda bodas (motorcycle taxis) in Uganda\n• Gozem (https://gozem.co/en/), on-demand transportation, delivery and cashless payment solutions provider operating in Francophone West and Central Africa",
     "icon": "%PUBLIC_URL%/icons/cauris.png",
     "agreement": "https://docsend.com/view/s/hbhpdkjv63kgwi47",
-    "launchTime": 1645027200
+    "launchTime": 1645027200,
+    "allowedUIDTypes": [0, 1]
   },
   "0x00c27fc71b159a346e179b4a1608a0865e8a7470": {
     "name": "Secured U.S. Fintech Yield via Stratos",
@@ -23,7 +24,8 @@
     "borrowerHighlights": [
       "Stratos has never had a late payment, missed payment, or default in 5 years (60 months) of operation.",
       "Since inception in 2016, the Stratos Evergreen Structured Credit Fund (\"SCF\"), our longest running credit focused strategy, has generated gross annualized total returns of 18.95%"
-    ]
+    ],
+    "allowedUIDTypes": [0, 1]
   },
   "0x418749e294cabce5a714efccc22a8aade6f9db57": {
     "name": "Almavest Basket #6",
@@ -31,7 +33,8 @@
     "description": "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
     "icon": "%PUBLIC_URL%/icons/almavest.png",
     "agreement": "https://docsend.com/view/vcxfarda3vn72mxz/d/sc6a39p3my8k3uw8",
-    "launchTime": 1644249600
+    "launchTime": 1644249600,
+    "allowedUIDTypes": [0]
   },
   "0x1d596d28a7923a22aa013b0e7082bba23daa656b": {
     "name": "Almavest Basket #5",

@@ -29,16 +29,6 @@ interface Scenario {
 }
 
 const testUserAddress = "0xtest"
-const noWeb3: UserWalletWeb3Status = {
-  type: "no_web3",
-  networkName: undefined,
-  address: undefined,
-}
-const hasWeb3: UserWalletWeb3Status = {
-  type: "has_web3",
-  networkName: "localhost",
-  address: undefined,
-}
 
 const scenarios: Scenario[] = [
   {
