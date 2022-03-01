@@ -1,8 +1,9 @@
-import { Address, BigInt } from '@graphprotocol/graph-ts'
-import { JuniorTrancheInfo, SeniorTrancheInfo } from "../../generated/schema"
-import { SeniorPool as SeniorPoolContract } from '../../generated/templates/GoldfinchFactory/SeniorPool'
-import { GoldfinchConfig as GoldfinchConfigContract } from '../../generated/templates/GoldfinchFactory/GoldfinchConfig'
-import { GOLDFINCH_CONFIG_ADDRESS, LeverageRatioConfigIndex, SENIOR_POOL_ADDRESS } from '../constants'
+import {Address, BigDecimal, BigInt, JSONValueKind} from "@graphprotocol/graph-ts"
+import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine} from "../../generated/schema"
+import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
+import {GOLDFINCH_CONFIG_ADDRESS, LeverageRatioConfigIndex, SENIOR_POOL_ADDRESS} from "../constants"
+import {MAINNET_METADATA} from "../metadata"
 
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
@@ -11,7 +12,11 @@ export function fiduFromAtomic(amount: BigInt): BigInt {
   return amount.div(FIDU_DECIMALS)
 }
 
-export function getTotalDeposited(address: Address, juniorTranches: JuniorTrancheInfo[], seniorTranches: SeniorTrancheInfo[]): BigInt {
+export function getTotalDeposited(
+  address: Address,
+  juniorTranches: JuniorTrancheInfo[],
+  seniorTranches: SeniorTrancheInfo[]
+): BigInt {
   let totalDeposited = new BigInt(0)
 
   for (let i = 0, k = juniorTranches.length; i < k; ++i) {
@@ -24,12 +29,15 @@ export function getTotalDeposited(address: Address, juniorTranches: JuniorTranch
 
     totalDeposited = totalDeposited.plus(jrTranche.principalDeposited)
     totalDeposited = totalDeposited.plus(srTranche.principalDeposited)
-
   }
   return totalDeposited
 }
 
-export function getEstimatedTotalAssets(address: Address, juniorTranches: JuniorTrancheInfo[], seniorTranches: SeniorTrancheInfo[]): BigInt {
+export function getEstimatedTotalAssets(
+  address: Address,
+  juniorTranches: JuniorTrancheInfo[],
+  seniorTranches: SeniorTrancheInfo[]
+): BigInt {
   let totalAssets = new BigInt(0)
   totalAssets = getTotalDeposited(address, juniorTranches, seniorTranches)
 
@@ -39,7 +47,11 @@ export function getEstimatedTotalAssets(address: Address, juniorTranches: Junior
   return totalAssets
 }
 
-export function getEstimatedLeverageRatio(address: Address, juniorTranches: JuniorTrancheInfo[], seniorTranches: SeniorTrancheInfo[]): BigInt {
+export function getEstimatedLeverageRatio(
+  address: Address,
+  juniorTranches: JuniorTrancheInfo[],
+  seniorTranches: SeniorTrancheInfo[]
+): BigInt {
   let juniorContribution = new BigInt(0)
 
   for (let i = 0, k = juniorTranches.length; i < k; ++i) {
@@ -56,4 +68,55 @@ export function getEstimatedLeverageRatio(address: Address, juniorTranches: Juni
   const totalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
   const estimatedLeverageRatio = totalAssets.minus(juniorContribution).div(juniorContribution)
   return estimatedLeverageRatio
+}
+
+export function isKnownTranchedPool(address: Address): boolean {
+  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
+  if (poolMetadata != null) {
+    return true
+  }
+  return false
+}
+
+export function getTranchedPoolName(address: Address): string {
+  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
+  if (poolMetadata != null) {
+    const poolName = poolMetadata.toObject().get("name")
+    if (poolName != null) {
+      return poolName.toString()
+    }
+  }
+  return ""
+}
+
+export function isV1StyleDeal(address: Address): boolean {
+  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
+  if (poolMetadata != null) {
+    const isV1StyleDeal = poolMetadata.toObject().get("v1StyleDeal")
+    if (isV1StyleDeal != null) {
+      return isV1StyleDeal.toBool()
+    }
+  }
+  return false
+}
+
+export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string): BigDecimal {
+  const tranchedPool = TranchedPool.load(tranchedPoolId)
+  if (!tranchedPool) {
+    return BigDecimal.fromString("0")
+  }
+  const creditLine = CreditLine.load(tranchedPool.creditLine)
+  if (!creditLine) {
+    return BigDecimal.fromString("0")
+  }
+
+  const protocolFee = BigDecimal.fromString("0.1")
+  const balance = creditLine.balance.toBigDecimal()
+  const interestAprDecimal = creditLine.interestAprDecimal
+  const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(BigDecimal.fromString("100"))
+  const isV1Pool = tranchedPool.isV1StyleDeal
+  const seniorPoolPercentageOfInterest = BigDecimal.fromString("1")
+    .minus(isV1Pool ? BigDecimal.fromString("0") : juniorFeePercentage)
+    .minus(protocolFee)
+  return balance.times(interestAprDecimal).times(seniorPoolPercentageOfInterest)
 }
