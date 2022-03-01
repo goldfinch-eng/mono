@@ -229,6 +229,23 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       );
   }
 
+  function totalOptimisticClaimable(address owner) external view returns (uint256) {
+    uint256 result = 0;
+    for (uint256 i = 0; i < balanceOf(owner); i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(owner, i);
+      result = result.add(_optimisticClaimable(tokenId));
+    }
+    return result;
+  }
+
+  function optimisticClaimable(uint256 tokenId) external view returns (uint256) {
+    return _optimisticClaimable(tokenId);
+  }
+
+  function _optimisticClaimable(uint256 tokenId) internal view returns (uint256) {
+    return earnedSinceLastCheckpoint(tokenId).add(claimableRewards(tokenId));
+  }
+
   /// @notice Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
   ///   account vesting schedule.
   /// @return rewards Amount of rewards denominated in `rewardsToken()`
