@@ -39,6 +39,7 @@ import {
 } from "../testHelpers"
 import * as migrate231 from "../../blockchain_scripts/migrations/v2.3.1/migrate"
 import * as migrate233 from "../../blockchain_scripts/migrations/v2.3.3/migrate"
+import * as migrate25 from "../../blockchain_scripts/migrations/v2.5/migrate"
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {
   BackerRewardsInstance,
@@ -74,7 +75,6 @@ import {DepositedAndStaked, RewardPaid} from "@goldfinch-eng/protocol/typechain/
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
-import * as migrate2_5 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.5/migrate"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
@@ -88,7 +88,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
 
   await migrate231.main()
   await migrate233.main()
-  await migrate2_5.main()
+  await migrate25.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
