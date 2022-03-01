@@ -33,6 +33,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let readyAndEligible = false
   if (consistent) {
+    // TODO NEED TO FIX
     const [pool, user] = consistent
     readyAndEligible =
       !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(user)
