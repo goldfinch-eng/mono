@@ -178,6 +178,42 @@ describe("CommunityRewards", () => {
     })
   })
 
+  describe("total unclaimed", () => {
+    it("handles multiple tokens", async () => {
+      const amount = new BN(2e6)
+      await mintAndLoadRewards(gfi, communityRewards, owner, amount)
+      const tokenId = await grant({
+        recipient: anotherUser,
+        amount: amount.div(new BN(2)),
+        vestingLength: new BN(0),
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+
+      await grant({
+        recipient: anotherUser,
+        amount: amount.div(new BN(2)),
+        vestingLength: new BN(0),
+        cliffLength: new BN(0),
+        vestingInterval: new BN(1),
+      })
+
+      const claimable = await communityRewards.claimableRewards(tokenId)
+      expect(claimable).to.bignumber.equal(amount.div(new BN(2)))
+
+      // Total should include both grants
+      let totalUnclaimed = await communityRewards.totalUnclaimed(anotherUser)
+      expect(totalUnclaimed).to.bignumber.equal(amount)
+
+      // Claim one of them
+      await communityRewards.getReward(tokenId, {from: anotherUser})
+
+      // Total should now only include the unclaimed grant
+      totalUnclaimed = await communityRewards.totalUnclaimed(anotherUser)
+      expect(totalUnclaimed).to.bignumber.equal(amount.div(new BN(2)))
+    })
+  })
+
   describe("grant", () => {
     beforeEach(async () => {
       const amount = new BN(1e6)
