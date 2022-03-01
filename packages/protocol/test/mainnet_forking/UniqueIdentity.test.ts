@@ -7,10 +7,10 @@ import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {Signer} from "ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
-import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-import * as migrate2_5 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.5/migrate"
-import {MAINNET_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
+import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
+import * as migrate25 from "../../blockchain_scripts/migrations/v2.5/migrate"
+import {MAINNET_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 const {deployments, web3} = hre
 
 const TEST_TIMEOUT = 180000 // 3 mins
@@ -66,335 +66,317 @@ describe("UID", () => {
 
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: await getProtocolOwner()})
+
+    await migrate25.main()
   })
 
-  it("properly upgrades UniqueIdentity", async () => {
-    expect(await uniqueIdentity.supportedUIDTypes(0)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(1)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(2)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(3)).to.equal(false)
-    expect(await uniqueIdentity.supportedUIDTypes(4)).to.equal(false)
-    await migrate2_5.main()
-    expect(await uniqueIdentity.supportedUIDTypes(0)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(1)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(2)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(3)).to.equal(true)
-    expect(await uniqueIdentity.supportedUIDTypes(4)).to.equal(true)
-  })
+  describe("KYC is elligible", () => {
+    describe("non accredited investor", () => {
+      beforeEach(() => {
+        fetchKYCFunction = fetchStubbedKycStatus({
+          status: "approved",
+          countryCode: "US",
+        })
+      })
 
-  context("after migration", () => {
-    beforeEach(async () => {
-      await migrate2_5.main()
+      it("returns a signature that can be used to mint", async () => {
+        const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+        const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+        const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+        const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+        const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+        const auth = {
+          "x-goldfinch-address": person3,
+          "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-block-num": "fake_block_number",
+        }
+        await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
+
+        let result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
+        })
+
+        // mint non-accredited investor
+        await uniqueIdentity.mint(usNonAccreditedIdType, result.expiresAt, result.signature, {
+          from: person3,
+          value: web3.utils.toWei("0.00083"),
+        })
+        expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
+        expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+
+        // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+        result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
+        })
+
+        await uniqueIdentity.burn(person3, usNonAccreditedIdType, result.expiresAt, result.signature, {
+          from: person3,
+        })
+        expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+      }).timeout(TEST_TIMEOUT)
     })
 
-    describe("KYC is elligible", () => {
-      describe("non accredited investor", () => {
-        beforeEach(() => {
-          fetchKYCFunction = fetchStubbedKycStatus({
-            status: "approved",
-            countryCode: "US",
-          })
+    describe("non US investor", () => {
+      beforeEach(() => {
+        fetchKYCFunction = fetchStubbedKycStatus({
+          status: "approved",
+          countryCode: "CA",
         })
-
-        it("returns a signature that can be used to mint", async () => {
-          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-          const auth = {
-            "x-goldfinch-address": person3,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-block-num": "fake_block_number",
-          }
-          await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
-
-          let result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          // mint non-accredited investor
-          await uniqueIdentity.mint(usNonAccreditedIdType, result.expiresAt, result.signature, {
-            from: person3,
-            value: web3.utils.toWei("0.00083"),
-          })
-          expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
-          expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-
-          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.burn(person3, usNonAccreditedIdType, result.expiresAt, result.signature, {
-            from: person3,
-          })
-          expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-        }).timeout(TEST_TIMEOUT)
       })
 
-      describe("non US investor", () => {
-        beforeEach(() => {
-          fetchKYCFunction = fetchStubbedKycStatus({
-            status: "approved",
-            countryCode: "CA",
-          })
+      it("returns a signature that can be used to mint", async () => {
+        const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+        const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+        const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+        const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+        const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+        const auth = {
+          "x-goldfinch-address": person3,
+          "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-block-num": "fake_block_number",
+        }
+        await uniqueIdentity.setSupportedUIDTypes([nonUSIdType], [true])
+
+        let result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
         })
 
-        it("returns a signature that can be used to mint", async () => {
-          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-          const auth = {
-            "x-goldfinch-address": person3,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-block-num": "fake_block_number",
-          }
-          await uniqueIdentity.setSupportedUIDTypes([nonUSIdType], [true])
+        // mint non-accredited investor
+        await uniqueIdentity.mint(nonUSIdType, result.expiresAt, result.signature, {
+          from: person3,
+          value: web3.utils.toWei("0.00083"),
+        })
+        expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(1))
+        expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
 
-          let result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          // mint non-accredited investor
-          await uniqueIdentity.mint(nonUSIdType, result.expiresAt, result.signature, {
-            from: person3,
-            value: web3.utils.toWei("0.00083"),
-          })
-          expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(1))
-          expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-
-          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.burn(person3, nonUSIdType, result.expiresAt, result.signature, {
-            from: person3,
-          })
-          expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-        }).timeout(TEST_TIMEOUT)
-      })
-
-      describe("US accredited investor", () => {
-        beforeEach(() => {
-          fetchKYCFunction = fetchStubbedKycStatus({
-            status: "approved",
-            countryCode: "US",
-          })
+        // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+        result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
         })
 
-        it("returns a signature that can be used to mint", async () => {
-          const address = "0x948D99554dC5b90ac3DD00daeCF76100d3219B02"
-          await impersonateAccount(hre, address)
-          await fundWithWhales(["ETH"], [address])
+        await uniqueIdentity.burn(person3, nonUSIdType, result.expiresAt, result.signature, {
+          from: person3,
+        })
+        expect(await uniqueIdentity.balanceOf(person3, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(person3, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+      }).timeout(TEST_TIMEOUT)
+    })
 
-          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-          const auth = {
-            "x-goldfinch-address": address,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-block-num": "fake_block_number",
-          }
-          await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
-
-          let result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          // mint non-accredited investor
-          await uniqueIdentity.mint(usAccreditedIdType, result.expiresAt, result.signature, {
-            from: address,
-            value: web3.utils.toWei("0.00083"),
-          })
-          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(1))
-          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-
-          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.burn(address, usAccreditedIdType, result.expiresAt, result.signature, {
-            from: address,
-          })
-          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-        }).timeout(TEST_TIMEOUT)
+    describe("US accredited investor", () => {
+      beforeEach(() => {
+        fetchKYCFunction = fetchStubbedKycStatus({
+          status: "approved",
+          countryCode: "US",
+        })
       })
 
-      describe("US entity", () => {
-        beforeEach(() => {
-          fetchKYCFunction = fetchStubbedKycStatus({
-            status: "approved",
-            countryCode: "CA",
-          })
+      it("returns a signature that can be used to mint", async () => {
+        const address = "0x948D99554dC5b90ac3DD00daeCF76100d3219B02"
+        await impersonateAccount(hre, address)
+        await fundWithWhales(["ETH"], [address])
+
+        const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+        const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+        const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+        const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+        const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+        const auth = {
+          "x-goldfinch-address": address,
+          "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-block-num": "fake_block_number",
+        }
+        await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
+
+        let result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
         })
 
-        it("returns a signature that can be used to mint", async () => {
-          const address = "0x79e92C775F4AB5a6a0eC1FDf05E8cEC6Eaa17bcb"
-          await impersonateAccount(hre, address)
-          await fundWithWhales(["ETH"], [address])
-          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-          const auth = {
-            "x-goldfinch-address": address,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-block-num": "fake_block_number",
-          }
-          await uniqueIdentity.setSupportedUIDTypes([usEntityIdType], [true])
+        // mint non-accredited investor
+        await uniqueIdentity.mint(usAccreditedIdType, result.expiresAt, result.signature, {
+          from: address,
+          value: web3.utils.toWei("0.00083"),
+        })
+        expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(1))
+        expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
 
-          let result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.mint(usEntityIdType, result.expiresAt, result.signature, {
-            from: address,
-            value: web3.utils.toWei("0.00083"),
-          })
-          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(1))
-          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-
-          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.burn(address, usEntityIdType, result.expiresAt, result.signature, {
-            from: address,
-          })
-          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-        }).timeout(TEST_TIMEOUT)
-      })
-
-      describe("non US entity", () => {
-        beforeEach(() => {
-          fetchKYCFunction = fetchStubbedKycStatus({
-            status: "approved",
-            countryCode: "CA",
-          })
+        // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+        result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
         })
 
-        it("returns a signature that can be used to mint", async () => {
-          const address = "0x0cdb67d1A9A847492da820f1BB3804516f8F5422"
-          await impersonateAccount(hre, address)
-          await fundWithWhales(["ETH"], [address])
-          const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-          const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-          const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-          const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
-          const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
-          const auth = {
-            "x-goldfinch-address": address,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-block-num": "fake_block_number",
-          }
-          await uniqueIdentity.setSupportedUIDTypes([nonUsEntityIdType], [true])
+        await uniqueIdentity.burn(address, usAccreditedIdType, result.expiresAt, result.signature, {
+          from: address,
+        })
+        expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+      }).timeout(TEST_TIMEOUT)
+    })
 
-          let result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.mint(nonUsEntityIdType, result.expiresAt, result.signature, {
-            from: address,
-            value: web3.utils.toWei("0.00083"),
-          })
-          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(1))
-
-          // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
-
-          await uniqueIdentity.burn(address, nonUsEntityIdType, result.expiresAt, result.signature, {
-            from: address,
-          })
-          expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
-          expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
-        }).timeout(TEST_TIMEOUT)
+    describe("US entity", () => {
+      beforeEach(() => {
+        fetchKYCFunction = fetchStubbedKycStatus({
+          status: "approved",
+          countryCode: "CA",
+        })
       })
+
+      it("returns a signature that can be used to mint", async () => {
+        const address = "0x79e92C775F4AB5a6a0eC1FDf05E8cEC6Eaa17bcb"
+        await impersonateAccount(hre, address)
+        await fundWithWhales(["ETH"], [address])
+        const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+        const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+        const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+        const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+        const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+        const auth = {
+          "x-goldfinch-address": address,
+          "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-block-num": "fake_block_number",
+        }
+        await uniqueIdentity.setSupportedUIDTypes([usEntityIdType], [true])
+
+        let result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
+        })
+
+        await uniqueIdentity.mint(usEntityIdType, result.expiresAt, result.signature, {
+          from: address,
+          value: web3.utils.toWei("0.00083"),
+        })
+        expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(1))
+        expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+
+        // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+        result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
+        })
+
+        await uniqueIdentity.burn(address, usEntityIdType, result.expiresAt, result.signature, {
+          from: address,
+        })
+        expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+      }).timeout(TEST_TIMEOUT)
+    })
+
+    describe("non US entity", () => {
+      beforeEach(() => {
+        fetchKYCFunction = fetchStubbedKycStatus({
+          status: "approved",
+          countryCode: "CA",
+        })
+      })
+
+      it("returns a signature that can be used to mint", async () => {
+        const address = "0x0cdb67d1A9A847492da820f1BB3804516f8F5422"
+        await impersonateAccount(hre, address)
+        await fundWithWhales(["ETH"], [address])
+        const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+        const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+        const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+        const usEntityIdType = await uniqueIdentity.ID_TYPE_3()
+        const nonUsEntityIdType = await uniqueIdentity.ID_TYPE_4()
+        const auth = {
+          "x-goldfinch-address": address,
+          "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-block-num": "fake_block_number",
+        }
+        await uniqueIdentity.setSupportedUIDTypes([nonUsEntityIdType], [true])
+
+        let result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
+        })
+
+        await uniqueIdentity.mint(nonUsEntityIdType, result.expiresAt, result.signature, {
+          from: address,
+          value: web3.utils.toWei("0.00083"),
+        })
+        expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(1))
+
+        // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
+        result = await uniqueIdentitySigner.main({
+          auth,
+          signer,
+          network,
+          uniqueIdentity: ethersUniqueIdentity,
+          fetchKYCStatus: fetchKYCFunction,
+        })
+
+        await uniqueIdentity.burn(address, nonUsEntityIdType, result.expiresAt, result.signature, {
+          from: address,
+        })
+        expect(await uniqueIdentity.balanceOf(address, nonUSIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, usEntityIdType)).to.bignumber.eq(new BN(0))
+        expect(await uniqueIdentity.balanceOf(address, nonUsEntityIdType)).to.bignumber.eq(new BN(0))
+      }).timeout(TEST_TIMEOUT)
     })
   })
 })
