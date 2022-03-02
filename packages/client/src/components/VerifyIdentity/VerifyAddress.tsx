@@ -6,7 +6,6 @@ import {Session, useSignIn} from "../../hooks/useSignIn"
 import {assertNonNullable} from "../../utils"
 import {iconAlert, iconCircleCheck} from "../icons"
 import EntityForm from "./EntityForm"
-import VerificationNotice from "./VerificationNotice"
 import NonUSForm from "./NonUSForm"
 import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
@@ -18,6 +17,7 @@ import {
   isUSAccreditedIndividual,
 } from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import USAccreditedForm from "./USAccreditedForm"
+import Banner from "../banner"
 
 export const NON_US_INDIVIDUAL_ENTITY_TYPE = "Non-US-Individual"
 export const US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Accredited-Individual"
@@ -100,17 +100,17 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   }
 
   if (user.info.value.goListed) {
-    return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
+    return <Banner icon={iconCircleCheck}>Your verification was approved.</Banner>
   } else if (loading) {
     return <LoadingCard title="Verify your address" />
   } else if (errored) {
     return <ErrorCard title="Verify your address" />
   } else if (kyc?.status === "failed") {
     return (
-      <VerificationNotice
-        icon={iconAlert}
-        notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
-      />
+      <Banner icon={iconAlert}>
+        There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your
+        address.
+      </Banner>
     )
   } else if (entityType === US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE) {
     return (
@@ -133,7 +133,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     isUSAccreditedIndividual(user.address) ||
     isNonUSEntity(user.address)
   ) {
-    return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
+    return <Banner icon={iconCircleCheck}>Your verification was approved.</Banner>
   } else if (entityType === NON_US_INDIVIDUAL_ENTITY_TYPE) {
     return (
       <NonUSForm

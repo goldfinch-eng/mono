@@ -16,8 +16,8 @@ import {assertNonNullable} from "../../utils"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
 import {Action, END} from "./constants"
-import VerificationNotice from "./VerificationNotice"
 import ErrorCard from "./ErrorCard"
+import Banner from "../banner"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
@@ -140,27 +140,24 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
 
   if (user && user.info.value.hasUID) {
     return (
-      <VerificationNotice
-        icon={iconCircleCheck}
-        notice={
-          <>
-            Your UID has been created. View your UID on{" "}
-            <a
-              className="form-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              href={`https://opensea.io/${user.address}/uid?search[sortBy]=LISTING_DATE`}
-            >
-              OpenSea
-            </a>
-            .
-            <br />
-            <br />
-            Note: U.S. individuals who are not accredited are only eligible to participate in Goldfinch
-            governance-related activities. They may not participate in the senior pool or borrower pools.
-          </>
-        }
-      />
+      <Banner icon={iconCircleCheck} className="verify-card subtle">
+        <>
+          Your UID has been created. View your UID on{" "}
+          <a
+            className="form-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://opensea.io/${user.address}/uid?search[sortBy]=LISTING_DATE`}
+          >
+            OpenSea
+          </a>
+          .
+          <br />
+          <br />
+          Note: U.S. individuals who are not accredited are only eligible to participate in Goldfinch governance-related
+          activities. They may not participate in the senior pool or borrower pools.
+        </>
+      </Banner>
     )
   } else if (user && user.info.value.legacyGolisted) {
     return (
