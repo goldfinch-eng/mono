@@ -98,6 +98,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
+  console.log("xxx", {chainId, LOCAL_CHAIN_ID}, isMainnetForking())
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
     logger("🐳 Funding from local whales")
     await fundFromLocalWhale(gf_deployer, erc20s, {logger})
@@ -124,13 +125,28 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   // Grant local signer role
   await impersonateAccount(hre, protocol_owner)
-  const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
-    protocolOwnerSigner
-  )
-  const {protocol_owner: trustedSigner} = await getNamedAccounts()
-  assertNonNullable(trustedSigner)
-  const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
-  await tx.wait()
+
+  // setup UID supported types for local dev
+  if (!isMainnetForking()) {
+    const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
+      protocolOwnerSigner
+    )
+    const {protocol_owner: trustedSigner} = await getNamedAccounts()
+    assertNonNullable(trustedSigner)
+    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+    await tx.wait()
+
+    await uniqueIdentity.setSupportedUIDTypes(
+      [
+        await uniqueIdentity.ID_TYPE_0(),
+        await uniqueIdentity.ID_TYPE_1(),
+        await uniqueIdentity.ID_TYPE_2(),
+        await uniqueIdentity.ID_TYPE_3(),
+        await uniqueIdentity.ID_TYPE_4(),
+      ],
+      [true, true, true, true, true]
+    )
+  }
 
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
