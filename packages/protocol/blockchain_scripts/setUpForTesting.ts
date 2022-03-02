@@ -1,4 +1,4 @@
-import {NON_US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
@@ -181,8 +181,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     goldfinchFactory,
     borrower: protocolBorrowerCon,
     erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
   })
-  await writePoolMetadata({pool: commonPool, borrower: "GFI"})
+  await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
 
   const empty = await createPoolForBorrower({
     getOrNull,
@@ -190,8 +191,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     goldfinchFactory,
     borrower: protocolBorrowerCon,
     erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
   })
-  await writePoolMetadata({pool: empty, borrower: "Empty"})
+  await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
 
   await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
@@ -404,6 +406,7 @@ async function createBorrowerContractAndPool({
     borrower: bwrConAddr,
     erc20,
     depositor: protocol_owner,
+    allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
   })
   let txn = await filledPool.lockJuniorCapital()
   await txn.wait()
@@ -540,6 +543,7 @@ async function createPoolForBorrower({
   borrower,
   depositor,
   erc20,
+  allowedUIDTypes,
 }: {
   getOrNull: any
   underwriter: string
@@ -547,6 +551,7 @@ async function createPoolForBorrower({
   borrower: string
   depositor?: string
   erc20: Contract
+  allowedUIDTypes: Array<number>
 }): Promise<TranchedPool> {
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
@@ -557,7 +562,6 @@ async function createPoolForBorrower({
   const principalGracePeriodInDays = String(new BN(185))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
-  const allowedUIDTypes = [...NON_US_UID_TYPES]
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)

@@ -10,7 +10,6 @@ import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
 import {KYC} from "../hooks/useGoldfinchClient"
-import {UserWalletWeb3Status} from "../types/web3"
 import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
 
 interface Scenario {

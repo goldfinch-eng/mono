@@ -8,7 +8,6 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
@@ -917,13 +916,7 @@ export type UserLoadedInfo = {
   >[]
   poolTxs: HistoricalTx<PoolEventType>[]
   goListed: boolean
-  legacyGolisted: boolean
-  hasUID: boolean
-  hasNonUSUID: boolean
-  hasUSAccreditedUID: boolean
-  hasUSEntityUID: boolean
-  hasNonUSEntityUID: boolean
-  hasUSNonAccreditedUID: boolean
+  uidTypeToBalance: {[x: string]: boolean}
   gfiBalance: BigNumber
   usdcIsUnlocked: {
     earn: {
@@ -1023,16 +1016,7 @@ export class User {
     )
     pastTxs = await populateDates(pastTxs)
 
-    const {
-      golisted: goListed,
-      legacyGolisted,
-      hasUID,
-      hasNonUSUID,
-      hasUSAccreditedUID,
-      hasUSEntityUID,
-      hasNonUSEntityUID,
-      hasUSNonAccreditedUID,
-    } = await this._fetchGolistStatus(this.address, currentBlock)
+    const {goListed, uidTypeToBalance} = await this._fetchGoListStatus(this.address, currentBlock)
 
     const gfiBalance = new BigNumber(
       await gfi.contract.readOnly.methods.balanceOf(this.address).call(undefined, currentBlock.number)
@@ -1053,13 +1037,7 @@ export class User {
         pastTxs,
         poolTxs,
         goListed,
-        legacyGolisted,
-        hasUID,
-        hasNonUSUID,
-        hasUSAccreditedUID,
-        hasUSNonAccreditedUID,
-        hasUSEntityUID,
-        hasNonUSEntityUID,
+        uidTypeToBalance,
         gfiBalance,
         usdcIsUnlocked: {
           earn: {
@@ -1210,12 +1188,15 @@ export class User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
-    const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-    const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
-
+  async _fetchGoListStatus(
+    address: string,
+    currentBlock: BlockInfo
+  ): Promise<{
+    goListed: boolean
+    uidTypeToBalance: {[x: string]: boolean}
+  }> {
     const go = this.goldfinchProtocol.getContract<Go>("Go")
-    const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const goListed = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
     // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
@@ -1236,9 +1217,7 @@ export class User {
         ]
       )
       .call(undefined, currentBlock.number)
-    console.log({balances})
 
-    const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
     const hasNonUSUID = !new BigNumber(String(balances[0])).isZero()
     const hasUSAccreditedUID = !new BigNumber(String(balances[1])).isZero()
     const hasUSNonAccreditedUID = !new BigNumber(String(balances[2])).isZero()
@@ -1246,14 +1225,14 @@ export class User {
     const hasNonUSEntityUID = !new BigNumber(String(balances[4])).isZero()
 
     return {
-      legacyGolisted,
-      golisted,
-      hasUID,
-      hasNonUSUID,
-      hasUSAccreditedUID,
-      hasUSNonAccreditedUID,
-      hasUSEntityUID,
-      hasNonUSEntityUID,
+      goListed,
+      uidTypeToBalance: {
+        [NON_US_INDIVIDUAL_ID_TYPE_0]: hasNonUSUID,
+        [US_ACCREDITED_INDIVIDUAL_ID_TYPE_1]: hasUSAccreditedUID,
+        [US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2]: hasUSNonAccreditedUID,
+        [US_ENTITY_ID_TYPE_3]: hasUSEntityUID,
+        [NON_US_ENTITY_ID_TYPE_4]: hasNonUSEntityUID,
+      },
     }
   }
 

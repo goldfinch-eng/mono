@@ -79,16 +79,6 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
 
-  useEffect(() => {
-    if (disabled) {
-      return
-    }
-
-    if (user && user.info.value.hasUID) {
-      dispatch({type: END})
-    }
-  })
-
   const action = async () => {
     assertNonNullable(currentBlock)
     assertNonNullable(refreshCurrentBlock)
@@ -138,7 +128,9 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
     }
   }
 
-  if (user && user.info.value.hasUID) {
+  const uidTypeToBalance = (user && user.info.value.uidTypeToBalance) || {}
+  const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
+  if (user && hasAnyUID) {
     return (
       <Banner icon={iconCircleCheck} className="verify-card subtle">
         <>
@@ -159,7 +151,7 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
         </>
       </Banner>
     )
-  } else if (user && user.info.value.legacyGolisted) {
+  } else if (user && user.info.value.goListed) {
     return (
       <FormProvider {...formMethods}>
         <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
