@@ -290,6 +290,13 @@ class TranchedPool {
     // first, check the json for legacy pools
     if (this.metadata && this.metadata?.allowedUIDTypes) {
       return this.metadata.allowedUIDTypes
+    } else {
+      try {
+        const result = await this.contract.readOnly.methods.getAllowedUIDTypes().call(undefined, currentBlock.number)
+        return result.map((x) => parseInt(x))
+      } catch (e) {
+        console.error("getAllowedUIDTypes function does not exist on TranchedPool")
+      }
     }
     return [NON_US_INDIVIDUAL_ID_TYPE_0]
   }

@@ -1,8 +1,8 @@
-import {GFI} from "../ethereum/gfi"
-import {CapitalProvider, SeniorPoolData} from "../ethereum/pool"
-import {InfoIcon} from "../ui/icons"
-import {displayDollars, displayPercent} from "../utils"
-import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
+import {GFI} from "../../ethereum/gfi"
+import {CapitalProvider, SeniorPoolData} from "../../ethereum/pool"
+import {InfoIcon} from "../../ui/icons"
+import {displayDollars, displayPercent} from "../../utils"
+import AnnualGrowthTooltipContent from "../AnnualGrowthTooltipContent"
 
 interface DepositStatusProps {
   poolData: SeniorPoolData | undefined

@@ -1,13 +1,13 @@
 import {useContext, useState} from "react"
-import {AppContext} from "../App"
-import {CapitalProvider} from "../ethereum/pool"
-import {useFromSameBlock} from "../hooks/useFromSameBlock"
-import {assertNonNullable} from "../utils"
-import DepositForm from "./depositForm"
-import DepositStatus from "./depositStatus"
-import {iconDownArrow, iconUpArrow} from "./icons"
-import {eligibleForSeniorPool} from "./SeniorPool/utils"
-import WithdrawalForm from "./withdrawalForm"
+import {AppContext} from "../../App"
+import {CapitalProvider} from "../../ethereum/pool"
+import {useFromSameBlock} from "../../hooks/useFromSameBlock"
+import {assertNonNullable} from "../../utils"
+import DepositForm from "../depositForm"
+import DepositStatus from "./DepositStatus"
+import {iconDownArrow, iconUpArrow} from "../icons"
+import {eligibleForSeniorPool} from "./utils"
+import WithdrawalForm from "../withdrawalForm"
 
 interface EarnActionsContainerProps {
   disabled: boolean
@@ -33,7 +33,6 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
 
   let readyAndEligible = false
   if (consistent) {
-    // TODO NEED TO FIX
     const [pool, user] = consistent
     readyAndEligible =
       !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(user)

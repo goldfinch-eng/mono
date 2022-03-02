@@ -1236,6 +1236,7 @@ export class User {
         ]
       )
       .call(undefined, currentBlock.number)
+    console.log({balances})
 
     const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
     const hasNonUSUID = !new BigNumber(String(balances[0])).isZero()
