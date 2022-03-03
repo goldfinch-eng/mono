@@ -6,8 +6,8 @@ import {assertNonNullable} from "../../utils"
 import DepositForm from "../depositForm"
 import DepositStatus from "./DepositStatus"
 import {iconDownArrow, iconUpArrow} from "../icons"
-import {eligibleForSeniorPool} from "./utils"
 import WithdrawalForm from "../withdrawalForm"
+import {eligibleForSeniorPool} from "./utils"
 
 interface EarnActionsContainerProps {
   disabled: boolean
@@ -34,8 +34,13 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   let readyAndEligible = false
   if (consistent) {
     const [pool, user] = consistent
+
     readyAndEligible =
-      !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(user)
+      !disabled &&
+      !!user &&
+      !!pool.info.value.poolData &&
+      !!props.capitalProvider &&
+      eligibleForSeniorPool(user, pool.info.value.poolData.allowedSeniorPoolIdTypes)
   }
 
   let placeholderClass = ""

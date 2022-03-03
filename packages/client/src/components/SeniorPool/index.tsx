@@ -14,7 +14,6 @@ import InvestorNotice from "../KYCNotice/InvestorNotice"
 import SeniorPoolStatus from "../seniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 import {Overview} from "./Overview"
-import {seniorPoolAllowedUIDTypes} from "./utils"
 
 function SeniorPoolView(): JSX.Element {
   const {
@@ -103,7 +102,7 @@ function SeniorPoolView(): JSX.Element {
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
-      <InvestorNotice user={user} allowedUIDTypes={seniorPoolAllowedUIDTypes} />
+      <InvestorNotice user={user} allowedUIDTypes={pool?.info.value.poolData.allowedSeniorPoolIdTypes || []} />
       <EarnActionsContainer
         disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}

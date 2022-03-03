@@ -1,152 +1,137 @@
 import {eligibleForSeniorPool} from "./utils"
-import {UserLoaded} from "../../ethereum/user"
 
-describe("eligibleForSeniorPool", () => {
+describe.only("eligibleForSeniorPool", () => {
   describe("goListed", () => {
     it("returns true if golisted", async () => {
       expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              goListed: true,
+        eligibleForSeniorPool(
+          {
+            info: {
+              value: {
+                goListed: true,
+                uidTypeToBalance: {
+                  "0": false,
+                  "1": false,
+                  "2": false,
+                  "3": false,
+                  "4": false,
+                },
+              },
             },
-          },
-        } as UserLoaded)
+          } as any,
+          [0, 1, 3, 4]
+        )
       ).toEqual(true)
     })
 
     it("returns false if not golisted", async () => {
       expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              goListed: false,
+        eligibleForSeniorPool(
+          {
+            info: {
+              value: {
+                goListed: false,
+                uidTypeToBalance: {
+                  "0": false,
+                  "1": false,
+                  "2": false,
+                  "3": false,
+                  "4": false,
+                },
+              },
             },
-          },
-        } as UserLoaded)
-      ).toEqual(false)
-    })
-  })
-  describe("hasUSAccreditedUID", () => {
-    it("returns true if hasUSAccreditedUID", async () => {
-      expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              hasUSAccreditedUID: true,
-            },
-          },
-        } as UserLoaded)
-      ).toEqual(true)
-    })
-
-    it("returns false if not hasUSAccreditedUID", async () => {
-      expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              hasUSAccreditedUID: false,
-            },
-          },
-        } as UserLoaded)
-      ).toEqual(false)
-    })
-  })
-  describe("hasNonUSUID", () => {
-    it("returns true if hasNonUSUID", async () => {
-      expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              hasNonUSUID: true,
-            },
-          },
-        } as UserLoaded)
-      ).toEqual(true)
-    })
-
-    it("returns false if not hasNonUSUID", async () => {
-      expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              hasNonUSUID: false,
-            },
-          },
-        } as UserLoaded)
+          } as any,
+          [0, 1, 3, 4]
+        )
       ).toEqual(false)
     })
   })
 
-  describe("goListed || hasUSAccreditedUID || hasNonUSUID", () => {
-    it("returns true if all true", async () => {
-      expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              goListed: true,
-              hasUSAccreditedUID: true,
-              hasNonUSUID: true,
-            },
-          },
-        } as UserLoaded)
-      ).toEqual(true)
-    })
-
-    it("returns true if goListed true", async () => {
-      expect(
-        eligibleForSeniorPool({
-          info: {
-            value: {
-              goListed: true,
-              hasUSAccreditedUID: false,
-              hasNonUSUID: false,
-            },
-          },
-        } as UserLoaded)
-      ).toEqual(true)
-    })
-
-    it("returns true if hasUSAccreditedUID true", async () => {
-      expect(
-        eligibleForSeniorPool({
+  it("returns true if hasUSAccreditedUID", async () => {
+    expect(
+      eligibleForSeniorPool(
+        {
           info: {
             value: {
               goListed: false,
-              hasUSAccreditedUID: true,
-              hasNonUSUID: false,
+              uidTypeToBalance: {
+                "0": false,
+                "1": true,
+                "2": false,
+                "3": false,
+                "4": false,
+              },
             },
           },
-        } as UserLoaded)
-      ).toEqual(true)
-    })
+        } as any,
+        [0, 1, 3, 4]
+      )
+    ).toEqual(true)
+  })
 
-    it("returns true if hasNonUSUID true", async () => {
-      expect(
-        eligibleForSeniorPool({
+  it("returns false if has us no accredited uid", async () => {
+    expect(
+      eligibleForSeniorPool(
+        {
           info: {
             value: {
               goListed: false,
-              hasUSAccreditedUID: false,
-              hasNonUSUID: true,
+              uidTypeToBalance: {
+                "0": false,
+                "1": false,
+                "2": true,
+                "3": false,
+                "4": false,
+              },
             },
           },
-        } as UserLoaded)
-      ).toEqual(true)
-    })
+        } as any,
+        [0, 1, 3, 4]
+      )
+    ).toEqual(false)
+  })
 
-    it("returns false if all false", async () => {
-      expect(
-        eligibleForSeniorPool({
+  it("returns true if has us entity", async () => {
+    expect(
+      eligibleForSeniorPool(
+        {
           info: {
             value: {
               goListed: false,
-              hasUSAccreditedUID: false,
-              hasNonUSUID: false,
+              uidTypeToBalance: {
+                "0": false,
+                "1": false,
+                "2": false,
+                "3": true,
+                "4": false,
+              },
             },
           },
-        } as UserLoaded)
-      ).toEqual(false)
-    })
+        } as any,
+        [0, 1, 3, 4]
+      )
+    ).toEqual(true)
+  })
+
+  it("returns true if non us entity", async () => {
+    expect(
+      eligibleForSeniorPool(
+        {
+          info: {
+            value: {
+              goListed: false,
+              uidTypeToBalance: {
+                "0": false,
+                "1": false,
+                "2": false,
+                "3": false,
+                "4": true,
+              },
+            },
+          },
+        } as any,
+        [0, 1, 3, 4]
+      )
+    ).toEqual(true)
   })
 })

@@ -3,6 +3,7 @@ import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
+import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {assertUnreachable, genExhaustiveTuple} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
@@ -331,6 +332,7 @@ type SeniorPoolData = {
   assetsAsOf: typeof assetsAsOf
   getRepaymentEvents: typeof getRepaymentEvents
   remainingCapacity: typeof remainingCapacity
+  allowedSeniorPoolIdTypes: number[]
 }
 
 async function fetchSeniorPoolData(
@@ -382,6 +384,11 @@ async function fetchSeniorPoolData(
     .dividedBy(GFI_DECIMALS)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
+  const go = pool.goldfinchProtocol.getContract<Go>("Go")
+  const allowedSeniorPoolIdTypes = (
+    await go.readOnly.methods.getSeniorPoolIdTypes().call(undefined, currentBlock.number)
+  ).map((x) => parseInt(x))
+
   return {
     rawBalance,
     compoundBalance,
@@ -399,6 +406,7 @@ async function fetchSeniorPoolData(
     estimatedApy,
     estimatedApyFromGfi,
     defaultRate,
+    allowedSeniorPoolIdTypes,
   }
 }
 
