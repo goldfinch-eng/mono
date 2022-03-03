@@ -171,7 +171,7 @@ describe("CommunityRewards", () => {
         amount,
         vestingLength: new BN(0),
         cliffLength: new BN(0),
-        vestingInterval: new BN(1),
+        vestingInterval: new BN(0),
       })
       const claimable = await communityRewards.claimableRewards(tokenId)
       expect(claimable).to.bignumber.equal(amount)
@@ -187,7 +187,7 @@ describe("CommunityRewards", () => {
         amount: amount.div(new BN(2)),
         vestingLength: new BN(0),
         cliffLength: new BN(0),
-        vestingInterval: new BN(1),
+        vestingInterval: new BN(0),
       })
 
       await grant({
@@ -195,7 +195,7 @@ describe("CommunityRewards", () => {
         amount: amount.div(new BN(2)),
         vestingLength: new BN(0),
         cliffLength: new BN(0),
-        vestingInterval: new BN(1),
+        vestingInterval: new BN(0),
       })
 
       const claimable = await communityRewards.claimableRewards(tokenId)
@@ -223,7 +223,7 @@ describe("CommunityRewards", () => {
     it("allows owner who has distributor role", async () => {
       expect(await communityRewards.hasRole(OWNER_ROLE, owner)).to.equal(true)
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, owner)).to.equal(true)
-      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {from: owner})).to
         .be.fulfilled
     })
 
@@ -232,7 +232,7 @@ describe("CommunityRewards", () => {
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(false)
       await communityRewards.grantRole(DISTRIBUTOR_ROLE, anotherUser)
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(true)
-      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {from: owner})).to
         .be.fulfilled
     })
 
@@ -240,18 +240,24 @@ describe("CommunityRewards", () => {
       expect(await communityRewards.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
       expect(await communityRewards.hasRole(DISTRIBUTOR_ROLE, anotherUser)).to.equal(false)
       await expect(
-        communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: anotherUser})
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {from: anotherUser})
       ).to.be.rejectedWith(/Must have distributor role to perform this action/)
     })
 
     it("rejects 0 grant amount", async () => {
       await expect(
-        communityRewards.grant(anotherUser, new BN(0), new BN(0), new BN(0), new BN(1), {from: owner})
+        communityRewards.grant(anotherUser, new BN(0), new BN(1), new BN(0), new BN(1), {from: owner})
       ).to.be.rejectedWith(/Cannot grant 0 amount/)
     })
 
+    it("rejects a vestingInterval greater than vestingLength", async () => {
+      await expect(
+        communityRewards.grant(anotherUser, new BN(1e3), new BN(1000), new BN(0), new BN(1001), {from: owner})
+      ).to.be.rejectedWith(/Invalid vestingInterval/)
+    })
+
     it("allows 0 vesting length", async () => {
-      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {from: owner})).to
         .be.fulfilled
     })
 
@@ -261,7 +267,7 @@ describe("CommunityRewards", () => {
     })
 
     it("allows 0 cliff length", async () => {
-      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {from: owner})).to
         .be.fulfilled
     })
 
@@ -324,7 +330,7 @@ describe("CommunityRewards", () => {
     })
 
     it("allows a vesting interval of 1", async () => {
-      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {from: owner})).to
+      await expect(communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {from: owner})).to
         .be.fulfilled
     })
 
@@ -370,7 +376,7 @@ describe("CommunityRewards", () => {
     it("rejects granting an amount that exceeds the available rewards", async () => {
       expect(await communityRewards.rewardsAvailable()).to.bignumber.equal(new BN(1e6))
       await expect(
-        communityRewards.grant(anotherUser, new BN(1e6 + 1), new BN(0), new BN(0), new BN(1), {from: owner})
+        communityRewards.grant(anotherUser, new BN(1e6 + 1), new BN(1), new BN(0), new BN(1), {from: owner})
       ).to.be.rejectedWith(/Cannot grant amount due to insufficient funds/)
     })
 
@@ -380,7 +386,7 @@ describe("CommunityRewards", () => {
       const tokenId = await grant({
         recipient: anotherUser,
         amount: new BN(1e3),
-        vestingLength: new BN(0),
+        vestingLength: new BN(1),
         cliffLength: new BN(0),
         vestingInterval: new BN(1),
       })
@@ -396,7 +402,7 @@ describe("CommunityRewards", () => {
       const tokenId2 = await grant({
         recipient: anotherUser,
         amount: new BN(1e3),
-        vestingLength: new BN(0),
+        vestingLength: new BN(1),
         cliffLength: new BN(0),
         vestingInterval: new BN(1),
       })
@@ -410,7 +416,7 @@ describe("CommunityRewards", () => {
     })
 
     it("uses the expected amount of gas", async () => {
-      const receipt = await communityRewards.grant(anotherUser, new BN(1e3), new BN(0), new BN(0), new BN(1), {
+      const receipt = await communityRewards.grant(anotherUser, new BN(1e3), new BN(1), new BN(0), new BN(1), {
         from: owner,
       })
       expect(receipt.receipt.gasUsed).to.be.lte(321454)
@@ -565,7 +571,7 @@ describe("CommunityRewards", () => {
         const tokenId = await grant({
           recipient: anotherUser,
           amount: amount,
-          vestingLength: new BN(0),
+          vestingLength: new BN(1),
           cliffLength: new BN(0),
           vestingInterval: new BN(1),
         })
@@ -697,7 +703,7 @@ describe("CommunityRewards", () => {
           amount,
           vestingLength: new BN(0),
           cliffLength: new BN(0),
-          vestingInterval: new BN(1),
+          vestingInterval: new BN(0),
         })
         const claimableBefore = await communityRewards.claimableRewards(tokenId)
         expect(claimableBefore).to.bignumber.equal(amount)
@@ -1048,7 +1054,7 @@ describe("CommunityRewards", () => {
         const tokenId = await grant({
           recipient: anotherUser,
           amount,
-          vestingLength: new BN(0),
+          vestingLength: new BN(1),
           cliffLength: new BN(0),
           vestingInterval: new BN(1),
         })
