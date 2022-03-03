@@ -1,4 +1,8 @@
-import {US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {
+  US_ACCREDITED_INDIVIDUAL_ID_TYPE_1,
+  US_ENTITY_ID_TYPE_3,
+  US_UID_TYPES,
+} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {GeolocationData} from "../../App"
 import {UserLoaded} from "../../ethereum/user"
 import {US_COUNTRY_CODE} from "../VerifyIdentity/constants"
@@ -27,7 +31,8 @@ export function getLegalLanguage({
   const isUSEnabled = allowedUIDTypes.some((r) => US_UID_TYPES.includes(r))
   if (
     isUSEnabled &&
-    (geolocation?.country === US_COUNTRY_CODE || user?.info.value.hasUSAccreditedUID || user?.info.value.hasUSEntityUID)
+    (geolocation?.country === US_COUNTRY_CODE ||
+      [US_ACCREDITED_INDIVIDUAL_ID_TYPE_1, US_ENTITY_ID_TYPE_3].some((x) => !!user?.info.value.uidTypeToBalance[x]))
   ) {
     title = US_TITLE
     message = US_MESSAGE

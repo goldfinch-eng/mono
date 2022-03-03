@@ -47,7 +47,7 @@ describe.only("eligibleForSeniorPool", () => {
     })
   })
 
-  it("returns true if hasUSAccreditedUID", async () => {
+  it("returns true if has US accredited UID", async () => {
     expect(
       eligibleForSeniorPool(
         {
