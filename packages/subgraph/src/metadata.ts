@@ -4,21 +4,6 @@ export const MAINNET_METADATA = json
   .fromString(
     `
 {
-  "0xd09a57127bc40d680be7cb061c2a6629fe71abef": {
-    "name": "Cauris Fund #2: Africa Innovation Pool"
-  },
-  "0x00c27fc71b159a346e179b4a1608a0865e8a7470": {
-    "name": "Secured U.S. Fintech Yield via Stratos"
-  },
-  "0x418749e294cabce5a714efccc22a8aade6f9db57": {
-    "name": "Almavest Basket #6"
-  },
-  "0x1d596d28a7923a22aa013b0e7082bba23daa656b": {
-    "name": "Almavest Basket #5"
-  },
-  "0xc9bdd0d3b80cc6efe79a82d850f44ec9b55387ae": {
-    "name": "Cauris"
-  },
   "0xf74ea34ac88862b7ff419e60e476be2651433e68": {
     "name": "Divibank",
     "v1StyleDeal": true
@@ -29,61 +14,39 @@ export const MAINNET_METADATA = json
   },
   "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": {
     "name": "QuickCheck #1",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0xeee76ffacd818bd54cedacd5e970736c91deb795"
+    "v1StyleDeal": true
   },
   "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c": {
     "name": "QuickCheck #2",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0x6ddc3a7233ecd5514607fb1a0e3475a7da6e58ed"
+    "v1StyleDeal": true
   },
   "0x1cc90f7bb292dab6fa4398f3763681cfe497db97": {
     "name": "QuickCheck #3",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0x96b10e62695a915a8beea6c3d6842137c83d22b8"
+    "v1StyleDeal": true
   },
   "0x3634855ec1beaf6f9be0f7d2f67fc9cb5f4eeea4": {
     "name": "Aspire #1",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0x8b57ecdac654d32a6befc33204f4b041b459dff4"
+    "v1StyleDeal": true
   },
   "0x9e8b9182abba7b4c188c979bc8f4c79f7f4c90d3": {
     "name": "Aspire #2",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44"
+    "v1StyleDeal": true
   },
   "0x8bbd80f88e662e56b918c353da635e210ece93c6": {
     "name": "Aspire #3",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0x7ec34e4075b6bfacce771144285a8e74bb8c309b"
+    "v1StyleDeal": true
   },
   "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7": {
     "name": "PayJoy",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0x0039ab09f6691f5a7716890864a289903b3ae548"
+    "v1StyleDeal": true
   },
   "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": {
     "name": "Almavest Basket #1",
-    "v1StyleDeal": true,
-    "migrated": true,
-    "migratedFrom": "0x306e330d084f7996f41bb113b5f0f15501c821a5"
+    "v1StyleDeal": true
   },
   "0xe32c22e4d95cae1fb805c60c9e0026ed57971bcf": {
     "name": "Almavest Basket #2",
     "v1StyleDeal": true
-  },
-  "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": {
-    "name": "Almavest Basket #3"
-  },
-  "0xe6c30756136e07eb5268c3232efbfbe645c1ba5a": {
-    "name": "Almavest Basket #4"
   },
   "0xc13465ce9ae3aa184eb536f04fdc3f54d2def277": {
     "name": "Oya, via Almavest",

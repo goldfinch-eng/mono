@@ -70,25 +70,6 @@ export function getEstimatedLeverageRatio(
   return estimatedLeverageRatio
 }
 
-export function isKnownTranchedPool(address: Address): boolean {
-  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
-  if (poolMetadata != null) {
-    return true
-  }
-  return false
-}
-
-export function getTranchedPoolName(address: Address): string {
-  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
-  if (poolMetadata != null) {
-    const poolName = poolMetadata.toObject().get("name")
-    if (poolName != null) {
-      return poolName.toString()
-    }
-  }
-  return ""
-}
-
 export function isV1StyleDeal(address: Address): boolean {
   const poolMetadata = MAINNET_METADATA.get(address.toHexString())
   if (poolMetadata != null) {

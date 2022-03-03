@@ -15,14 +15,7 @@ import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
-import {
-  getEstimatedLeverageRatio,
-  getTotalDeposited,
-  getEstimatedTotalAssets,
-  isKnownTranchedPool,
-  getTranchedPoolName,
-  isV1StyleDeal,
-} from "./helpers"
+import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, isV1StyleDeal} from "./helpers"
 
 export function updatePoolCreditLine(address: Address): void {
   const contract = TranchedPoolContract.bind(address)
@@ -128,8 +121,6 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.isPaused = poolContract.paused()
-  tranchedPool.isValid = isKnownTranchedPool(address)
-  tranchedPool.name = getTranchedPoolName(address)
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
 
   if (isCreating) {
@@ -142,7 +133,7 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
 
   tranchedPool.save()
 
-  if (isCreating && tranchedPool.isValid) {
+  if (isCreating) {
     const seniorPoolStatus = getOrInitSeniorPoolStatus()
     const tpl = seniorPoolStatus.tranchedPools
     tpl.push(tranchedPool.id)
