@@ -144,13 +144,14 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   /// @notice Grant rewards to a recipient. The recipient address receives an
   ///   an NFT representing their rewards grant. They can present the NFT to `getReward()`
-  ///   to claim their rewards. Rewards vest over a schedule.
+  ///   to claim their rewards. Rewards vest over a schedule. If the given `vestingInterval`
+  ///   is 0, then `vestingInterval` will be equal to `vestingLength`.
   /// @param recipient The recipient of the grant.
   /// @param amount The amount of `rewardsToken()` to grant.
   /// @param vestingLength The duration (in seconds) over which the grant vests.
   /// @param cliffLength The duration (in seconds) from the start of the grant, before which has elapsed
   /// the vested amount remains 0.
-  /// @param vestingInterval The interval (in seconds) at which vesting occurs. Must be a factor of `vestingLength`.
+  /// @param vestingInterval The interval (in seconds) at which vesting occurs.
   function grant(
     address recipient,
     uint256 amount,
