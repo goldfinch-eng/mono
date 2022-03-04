@@ -74,8 +74,7 @@ const scenarios: Scenario[] = [
     setUpFallthrough: ({props}) => {
       props.requireGolist = false
     },
-    expectedText:
-      /This offering is only available to non-U.S. persons. To participate, you must first verify your address./,
+    expectedText: /This pool is disabled for unverified addresses. You must first verify your address/,
   },
   {
     devName: "kyc_error",
