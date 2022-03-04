@@ -12,5 +12,6 @@ module.exports = {
           "explicitTypes": "always"
         }
       }
-    ]
+    ],
+    "plugins": [require("prettier-plugin-tailwindcss")],
 }
