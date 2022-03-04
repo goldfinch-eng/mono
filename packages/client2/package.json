@@ -35,6 +35,7 @@
     "babel-loader": "^8.2.3",
     "eslint": "8.10.0",
     "eslint-config-next": "12.1.0",
+    "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-storybook": "^0.5.7",
     "postcss": "^8.4.7",
     "prettier": "^2.5.1",

@@ -1,4 +1,3 @@
-import React from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { ReactNode, Fragment } from "react";

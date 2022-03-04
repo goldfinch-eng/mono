@@ -1,9 +1,8 @@
-import { ReactNode } from "react";
+import clsx from "clsx";
+import { useRouter } from "next/router";
 
 import { Link } from "@/components/link";
 import { GoldfinchLogo } from "@/components/logo";
-import { useRouter } from "next/router";
-import clsx from "clsx";
 
 const navItems = [
   { label: "Earn", href: "/earn" },
