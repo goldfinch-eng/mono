@@ -1,7 +1,6 @@
-import { Story, Meta } from "@storybook/react";
-import React from "react";
+import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { Button, ButtonProps } from "./index";
+import { Button } from ".";
 
 export default {
   title: "Components/Button",
@@ -16,9 +15,11 @@ export default {
   parameters: {
     controls: { expanded: true },
   },
-} as Meta;
+} as ComponentMeta<typeof Button>;
 
-export const ButtonStory: Story<ButtonProps> = (args) => <Button {...args} />;
+export const ButtonStory: ComponentStory<typeof Button> = (args) => (
+  <Button {...args} />
+);
 
 ButtonStory.args = {
   children: "Hello World",
