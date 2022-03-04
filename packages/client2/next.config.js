@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/earn",
+        permanent: false,
+      },
+    ];
+  },
   reactStrictMode: true,
   // Note that this function can have more arguments. See https://nextjs.org/docs/api-reference/next.config.js/custom-webpack-config
   webpack: (config) => {

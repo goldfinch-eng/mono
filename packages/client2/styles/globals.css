@@ -4,6 +4,11 @@
 
 @layer base {
   @import url("https://use.typekit.net/oib7cgq.css");
+  html,
+  body,
+  #__next {
+    height: 100%;
+  }
   body {
     @apply font-sans font-normal text-purple-400;
   }
