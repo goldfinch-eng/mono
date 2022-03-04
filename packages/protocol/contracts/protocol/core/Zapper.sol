@@ -133,7 +133,7 @@ contract Zapper is BaseUpgradeablePausable {
 
     SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), fiduAmount);
 
-    stakingRewards.depositToCurveAndStakeFrom(address(this), msg.sender, fiduAmount, 0);
+    stakingRewards.depositToCurveAndStakeFrom(msg.sender, fiduAmount, 0);
   }
 
   function _hasAllowedUID(ITranchedPool pool) internal view returns (bool) {

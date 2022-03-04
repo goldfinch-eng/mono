@@ -394,14 +394,13 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function depositToCurveAndStake(uint256 fiduAmount, uint256 usdcAmount) public {
-    depositToCurveAndStakeFrom(msg.sender, msg.sender, fiduAmount, usdcAmount);
+    depositToCurveAndStakeFrom(msg.sender, fiduAmount, usdcAmount);
   }
 
   /// @notice Deposit to FIDU and USDC into the Curve LP, and stake your Curve LP tokens in the same transaction.
   /// @param fiduAmount The amount of FIDU to deposit
   /// @param usdcAmount The amount of USDC to deposit
   function depositToCurveAndStakeFrom(
-    address staker,
     address nftRecipient,
     uint256 fiduAmount,
     uint256 usdcAmount
@@ -415,11 +414,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // Transfer FIDU and USDC from staker to StakingRewards, and allow the Curve LP contract to spend
     // this contract's FIDU and USDC
     if (fiduAmount > 0) {
-      fidu.safeTransferFrom(staker, address(this), fiduAmount);
+      fidu.safeTransferFrom(msg.sender, address(this), fiduAmount);
       fidu.safeIncreaseAllowance(address(curveLP), fiduAmount);
     }
     if (usdcAmount > 0) {
-      usdc.safeTransferFrom(staker, address(this), usdcAmount);
+      usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
