@@ -151,22 +151,6 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
         </>
       </Banner>
     )
-  } else if (user && user.info.value.goListed) {
-    return (
-      <FormProvider {...formMethods}>
-        <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
-          <h1 className="title">Create your UID</h1>
-          <div className="info-banner subtle">
-            <div className="message">
-              <div>
-                <p className="font-small mb-2">Your verification was approved.</p>
-              </div>
-            </div>
-            <LoadingButton disabled={disabled} action={action} text="Create UID" />
-          </div>
-        </div>
-      </FormProvider>
-    )
   } else if (errored) {
     return <ErrorCard title="Create your UID" />
   } else {

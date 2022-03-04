@@ -4,7 +4,9 @@ import {AppContext} from "../../App"
 import {useCurrentRoute} from "../../hooks/useCurrentRoute"
 import {useSignIn} from "../../hooks/useSignIn"
 import {assertNonNullable} from "../../utils"
+import Banner from "../banner"
 import ConnectionNotice from "../connectionNotice"
+import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
 import {Action, CREATE_UID, END, SIGN_IN, START, State, VERIFY_ADDRESS} from "./constants"
 import CreateUID from "./CreateUID"
@@ -55,10 +57,13 @@ const reducer = (state: State, action: Action): State => {
 }
 
 function VerifyIdentity() {
-  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
+  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock, user} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
   const currentRoute = useCurrentRoute()
+
+  const uidTypeToBalance = (user && user.info.value.uidTypeToBalance) || {}
+  const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
 
   useEffect(() => {
     if (state.step === START && session.status !== "authenticated") {
@@ -100,6 +105,11 @@ function VerifyIdentity() {
   } else {
     children = (
       <>
+        {user?.info.value.goListed && !hasAnyUID && (
+          <Banner icon={iconCircleCheck}>
+            You have been GoListed. We recommend you mint your UID to participate in governance.
+          </Banner>
+        )}
         <VerifyAddress disabled={state.step !== VERIFY_ADDRESS} dispatch={dispatch} />
         <CreateUID disabled={state.step !== CREATE_UID} dispatch={dispatch} />
       </>
