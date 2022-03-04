@@ -1,3 +1,4 @@
+import { GoldfinchLogo } from "@/components/logo";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
@@ -52,6 +53,7 @@ const Home: NextPage = () => {
           </a>
         </div>
         <div className="bg-sand-500 text-black">i&apos;m a little teapot</div>
+        <GoldfinchLogo className="h-24 w-24" />
       </main>
 
       <footer className={styles.footer}>
