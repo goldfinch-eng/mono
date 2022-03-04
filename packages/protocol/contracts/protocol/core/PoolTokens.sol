@@ -92,7 +92,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     returns (uint256 tokenId)
   {
     address poolAddress = _msgSender();
-    tokenId = createToken(params, poolAddress);
+    tokenId = _createToken(params, poolAddress);
     _mint(to, tokenId);
     config.getBackerRewards().setPoolTokenAccRewardsPerPrincipalDollarAtMint(_msgSender(), tokenId);
     emit TokenMinted(to, poolAddress, tokenId, params.principalAmount, params.tranche);
@@ -140,7 +140,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     address owner = ownerOf(tokenId);
     require(canBurn || fromTokenPool, "ERC721Burnable: caller cannot burn this token");
     require(token.principalRedeemed == token.principalAmount, "Can only burn fully redeemed tokens");
-    destroyAndBurn(tokenId);
+    _destroyAndBurn(tokenId);
     emit TokenBurned(owner, token.pool, tokenId);
   }
 
@@ -171,7 +171,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return _validPool(sender);
   }
 
-  function createToken(MintParams calldata params, address poolAddress) internal returns (uint256 tokenId) {
+  function _createToken(MintParams calldata params, address poolAddress) internal returns (uint256 tokenId) {
     PoolInfo storage pool = pools[poolAddress];
 
     _tokenIdTracker.increment();
@@ -187,7 +187,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return tokenId;
   }
 
-  function destroyAndBurn(uint256 tokenId) internal {
+  function _destroyAndBurn(uint256 tokenId) internal {
     delete tokens[tokenId];
     _burn(tokenId);
   }

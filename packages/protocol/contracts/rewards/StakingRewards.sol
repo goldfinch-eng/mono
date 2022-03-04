@@ -190,7 +190,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   by the amount of rewards that are available for distribution; if there aren't enough
   ///   rewards in the balance of this contract, then we shouldn't be giving them out.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
-  function additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
+  function _additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
     require(time >= lastUpdateTime, "Invalid end time for range");
 
     if (totalStakedSupply == 0) {
@@ -212,7 +212,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Returns accumulated rewards per token up to the current block timestamp
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function rewardPerToken() public view returns (uint256) {
-    uint256 additionalRewardsPerToken = additionalRewardsPerTokenSinceLastUpdate(block.timestamp);
+    uint256 additionalRewardsPerToken = _additionalRewardsPerTokenSinceLastUpdate(block.timestamp);
     return accumulatedRewardsPerToken.add(additionalRewardsPerToken);
   }
 
@@ -222,7 +222,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function earnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
-    uint256 effectiveAmount = positionToEffectiveAmount(position);
+    uint256 effectiveAmount = _positionToEffectiveAmount(position);
     return
       effectiveAmount.mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId])).div(
         stakingTokenMantissa()
@@ -305,7 +305,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return maxRate.sub(maxRate.sub(minRate).mul(x.sub(intervalStart)).div(intervalEnd.sub(intervalStart)));
   }
 
-  function positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
+  function _positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
     return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
   }
 
@@ -332,7 +332,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function currentEarnRatePerToken() public view returns (uint256) {
     uint256 time = block.timestamp == lastUpdateTime ? block.timestamp + 1 : block.timestamp;
     uint256 elapsed = time.sub(lastUpdateTime);
-    return additionalRewardsPerTokenSinceLastUpdate(time).div(elapsed);
+    return _additionalRewardsPerTokenSinceLastUpdate(time).div(elapsed);
   }
 
   /// @notice The amount of rewards currently being earned per second, for a given position. This function
@@ -341,7 +341,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function positionCurrentEarnRate(uint256 tokenId) external view returns (uint256) {
     StakedPosition storage position = positions[tokenId];
-    uint256 effectiveAmount = positionToEffectiveAmount(position);
+    uint256 effectiveAmount = _positionToEffectiveAmount(position);
     return currentEarnRatePerToken().mul(effectiveAmount).div(stakingTokenMantissa());
   }
 
@@ -361,12 +361,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
   ///   will be staked.
   function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
-    uint256 fiduAmount = depositToSeniorPool(usdcAmount);
+    uint256 fiduAmount = _depositToSeniorPool(usdcAmount);
     uint256 tokenId = _stakeFidu(address(this), msg.sender, fiduAmount);
     emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount);
   }
 
-  function depositToSeniorPool(uint256 usdcAmount) internal returns (uint256 fiduAmount) {
+  function _depositToSeniorPool(uint256 usdcAmount) internal returns (uint256 fiduAmount) {
     require(config.getGo().goSeniorPool(msg.sender), "This address has not been go-listed");
     IERC20withDec usdc = config.getUSDC();
     usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
@@ -508,7 +508,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     });
     _mint(nftRecipient, tokenId);
 
-    uint256 effectiveAmount = positionToEffectiveAmount(positions[tokenId]);
+    uint256 effectiveAmount = _positionToEffectiveAmount(positions[tokenId]);
     totalStakedSupply = totalStakedSupply.add(effectiveAmount);
 
     // Staker is address(this) when using depositAndStake or other convenience functions
@@ -658,11 +658,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       "Cannot update position to a lower effective multiplier"
     );
 
-    uint256 prevEffectiveAmount = positionToEffectiveAmount(position);
+    uint256 prevEffectiveAmount = _positionToEffectiveAmount(position);
 
     position.effectiveMultiplier = newEffectiveMultiplier;
 
-    uint256 newEffectiveAmount = positionToEffectiveAmount(position);
+    uint256 newEffectiveAmount = _positionToEffectiveAmount(position);
 
     totalStakedSupply = totalStakedSupply.sub(prevEffectiveAmount).add(newEffectiveAmount);
   }

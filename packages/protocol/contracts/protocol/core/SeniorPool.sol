@@ -71,7 +71,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
-    require(sharesWithinLimit(potentialNewTotalShares), "Deposit would put the senior pool over the total limit.");
+    require(_sharesWithinLimit(potentialNewTotalShares), "Deposit would put the senior pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
@@ -127,7 +127,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     if (compoundBalance > 0) {
       _sweepFromCompound();
     }
-    uint256 usdcAmount = getUSDCAmountFromShares(fiduAmount);
+    uint256 usdcAmount = _getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
     return _withdraw(usdcAmount, withdrawShares);
   }
@@ -156,7 +156,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     bool success = usdc.approve(address(cUSDC), usdcBalance);
     require(success, "Failed to approve USDC for compound");
 
-    sweepToCompound(cUSDC, usdcBalance);
+    _sweepToCompound(cUSDC, usdcBalance);
 
     // Remove compound approval to be extra safe
     success = config.getUSDC().approve(address(cUSDC), 0);
@@ -179,7 +179,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param pool An ITranchedPool whose senior tranche should be considered for investment
    */
   function invest(ITranchedPool pool) public override whenNotPaused nonReentrant {
-    require(validPool(pool), "Pool must be valid");
+    require(_isValidPool(pool), "Pool must be valid");
 
     if (compoundBalance > 0) {
       _sweepFromCompound();
@@ -190,7 +190,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     require(amount > 0, "Investment amount must be positive");
 
-    approvePool(pool, amount);
+    _approvePool(pool, amount);
     uint256 nSlices = pool.numSlices();
     require(nSlices >= 1, "Pool has no slices");
     uint256 sliceIndex = nSlices.sub(1);
@@ -202,7 +202,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   function estimateInvestment(ITranchedPool pool) public view override returns (uint256) {
-    require(validPool(pool), "Pool must be valid");
+    require(_isValidPool(pool), "Pool must be valid");
     ISeniorPoolStrategy strategy = config.getSeniorPoolStrategy();
     return strategy.estimateInvestment(this, pool);
   }
@@ -233,7 +233,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     IPoolTokens.TokenInfo memory tokenInfo = poolTokens.getTokenInfo(tokenId);
     ITranchedPool pool = ITranchedPool(tokenInfo.pool);
-    require(validPool(pool), "Pool must be valid");
+    require(_isValidPool(pool), "Pool must be valid");
 
     uint256 principalRemaining = tokenInfo.principalAmount.sub(tokenInfo.principalRedeemed);
 
@@ -247,7 +247,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     int256 writedownDelta = int256(prevWritedownAmount) - int256(writedownAmount);
     writedowns[pool] = writedownAmount;
-    distributeLosses(writedownDelta);
+    _distributeLosses(writedownDelta);
     if (writedownDelta > 0) {
       // If writedownDelta is positive, that means we got money back. So subtract from totalWritedowns.
       totalWritedowns = totalWritedowns.sub(uint256(writedownDelta));
@@ -285,7 +285,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @param amount USDC amount to convert to FIDU
    */
   function getNumShares(uint256 amount) public view override returns (uint256) {
-    return usdcToFidu(amount).mul(fiduMantissa()).div(sharePrice);
+    return _usdcToFidu(amount).mul(_fiduMantissa()).div(sharePrice);
   }
 
   /* Internal Functions */
@@ -309,41 +309,41 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return block.timestamp;
   }
 
-  function distributeLosses(int256 writedownDelta) internal {
+  function _distributeLosses(int256 writedownDelta) internal {
     if (writedownDelta > 0) {
-      uint256 delta = usdcToSharePrice(uint256(writedownDelta));
+      uint256 delta = _usdcToSharePrice(uint256(writedownDelta));
       sharePrice = sharePrice.add(delta);
     } else {
       // If delta is negative, convert to positive uint, and sub from sharePrice
-      uint256 delta = usdcToSharePrice(uint256(writedownDelta * -1));
+      uint256 delta = _usdcToSharePrice(uint256(writedownDelta * -1));
       sharePrice = sharePrice.sub(delta);
     }
   }
 
-  function fiduMantissa() internal pure returns (uint256) {
+  function _fiduMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(18);
   }
 
-  function usdcMantissa() internal pure returns (uint256) {
+  function _usdcMantissa() internal pure returns (uint256) {
     return uint256(10)**uint256(6);
   }
 
-  function usdcToFidu(uint256 amount) internal pure returns (uint256) {
-    return amount.mul(fiduMantissa()).div(usdcMantissa());
+  function _usdcToFidu(uint256 amount) internal pure returns (uint256) {
+    return amount.mul(_fiduMantissa()).div(_usdcMantissa());
   }
 
-  function fiduToUSDC(uint256 amount) internal pure returns (uint256) {
-    return amount.div(fiduMantissa().div(usdcMantissa()));
+  function _fiduToUSDC(uint256 amount) internal pure returns (uint256) {
+    return amount.div(_fiduMantissa().div(_usdcMantissa()));
   }
 
-  function getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
-    return fiduToUSDC(fiduAmount.mul(sharePrice).div(fiduMantissa()));
+  function _getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
+    return _fiduToUSDC(fiduAmount.mul(sharePrice).div(_fiduMantissa()));
   }
 
-  function sharesWithinLimit(uint256 _totalShares) internal view returns (bool) {
+  function _sharesWithinLimit(uint256 _totalShares) internal view returns (bool) {
     return
-      _totalShares.mul(sharePrice).div(fiduMantissa()) <=
-      usdcToFidu(config.getNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit)));
+      _totalShares.mul(sharePrice).div(_fiduMantissa()) <=
+      _usdcToFidu(config.getNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit)));
   }
 
   function doUSDCTransfer(
@@ -370,7 +370,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     if (!isZapper()) {
       reserveAmount = usdcAmount.div(config.getWithdrawFeeDenominator());
       userAmount = userAmount.sub(reserveAmount);
-      sendToReserve(reserveAmount, msg.sender);
+      _sendToReserve(reserveAmount, msg.sender);
     }
 
     // Send to user
@@ -385,7 +385,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return userAmount;
   }
 
-  function sweepToCompound(ICUSDCContract cUSDC, uint256 usdcAmount) internal {
+  function _sweepToCompound(ICUSDCContract cUSDC, uint256 usdcAmount) internal {
     // Our current design requires we re-normalize by withdrawing everything and recognizing interest gains
     // before we can add additional capital to Compound
     require(compoundBalance == 0, "Cannot sweep when we already have a compound balance");
@@ -397,10 +397,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   function _sweepFromCompound() internal {
     ICUSDCContract cUSDC = config.getCUSDCContract();
-    sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
+    _sweepFromCompound(cUSDC, cUSDC.balanceOf(address(this)));
   }
 
-  function sweepFromCompound(ICUSDCContract cUSDC, uint256 cUSDCAmount) internal {
+  function _sweepFromCompound(ICUSDCContract cUSDC, uint256 cUSDCAmount) internal {
     uint256 cBalance = compoundBalance;
     require(cBalance != 0, "No funds on compound");
     require(cUSDCAmount != 0, "Amount to sweep cannot be zero");
@@ -408,7 +408,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     IERC20 usdc = config.getUSDC();
     uint256 preRedeemUSDCBalance = usdc.balanceOf(address(this));
     uint256 cUSDCExchangeRate = cUSDC.exchangeRateCurrent();
-    uint256 redeemedUSDC = cUSDCToUSDC(cUSDCExchangeRate, cUSDCAmount);
+    uint256 redeemedUSDC = _cUSDCToUSDC(cUSDCExchangeRate, cUSDCAmount);
 
     uint256 error = cUSDC.redeem(cUSDCAmount);
     uint256 postRedeemUSDCBalance = usdc.balanceOf(address(this));
@@ -422,13 +422,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     _collectInterestAndPrincipal(address(this), poolAmount, 0);
 
     if (reserveAmount > 0) {
-      sendToReserve(reserveAmount, address(cUSDC));
+      _sendToReserve(reserveAmount, address(cUSDC));
     }
 
     compoundBalance = 0;
   }
 
-  function cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal pure returns (uint256) {
+  function _cUSDCToUSDC(uint256 exchangeRate, uint256 amount) internal pure returns (uint256) {
     // See https://compound.finance/docs#protocol-math
     // But note, the docs and reality do not agree. Docs imply that that exchange rate is
     // scaled by 1e18, but tests and mainnet forking make it appear to be scaled by 1e16
@@ -449,7 +449,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 interest,
     uint256 principal
   ) internal {
-    uint256 increment = usdcToSharePrice(interest);
+    uint256 increment = _usdcToSharePrice(interest);
     sharePrice = sharePrice.add(increment);
 
     if (interest > 0) {
@@ -461,25 +461,25 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     }
   }
 
-  function sendToReserve(uint256 amount, address userForEvent) internal {
+  function _sendToReserve(uint256 amount, address userForEvent) internal {
     emit ReserveFundsCollected(userForEvent, amount);
     bool success = doUSDCTransfer(address(this), config.reserveAddress(), amount);
     require(success, "Reserve transfer was not successful");
   }
 
-  function usdcToSharePrice(uint256 usdcAmount) internal view returns (uint256) {
-    return usdcToFidu(usdcAmount).mul(fiduMantissa()).div(totalShares());
+  function _usdcToSharePrice(uint256 usdcAmount) internal view returns (uint256) {
+    return _usdcToFidu(usdcAmount).mul(_fiduMantissa()).div(totalShares());
   }
 
   function totalShares() internal view returns (uint256) {
     return config.getFidu().totalSupply();
   }
 
-  function validPool(ITranchedPool pool) internal view returns (bool) {
+  function _isValidPool(ITranchedPool pool) internal view returns (bool) {
     return config.getPoolTokens().validPool(address(pool));
   }
 
-  function approvePool(ITranchedPool pool, uint256 allowance) internal {
+  function _approvePool(ITranchedPool pool, uint256 allowance) internal {
     IERC20withDec usdc = config.getUSDC();
     bool success = usdc.approve(address(pool), allowance);
     require(success, "Failed to approve USDC");
