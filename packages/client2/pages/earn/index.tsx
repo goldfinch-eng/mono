@@ -1,3 +1,9 @@
+import { Heading } from "@/components/typography";
+
 export default function EarnPage() {
-  return <div>Earn page</div>;
+  return (
+    <div>
+      <Heading level={1}>Earn Page</Heading>
+    </div>
+  );
 }
