@@ -14,6 +14,7 @@ import "../interfaces/IStakingRewards.sol";
 import "../interfaces/ITranchedPool.sol";
 import "../interfaces/IBackerRewards.sol";
 import "../interfaces/ISeniorPool.sol";
+import "../interfaces/IEvents.sol";
 
 // Basically, Every time a interest payment comes back
 // we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
@@ -30,7 +31,7 @@ import "../interfaces/ISeniorPool.sol";
 // Every time a PoolToken withdraws rewards, we determine the allocated rewards,
 // increase that PoolToken's rewardsClaimed, and transfer the owner the gfi
 
-contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Transfer {
+contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Transfer, IEvents {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
@@ -401,7 +402,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // an even greater amount of rewards than `newGrossRewards`, due to dividing by less than 1.
     // This scenario and its mitigation are analogous to that of
     // `StakingRewards.additionalRewardsPerTokenSinceLastUpdate()`.
+
     if (totalJuniorDepositsAtomic < GFI_MANTISSA) {
+      emit SafetyCheckTriggered();
       return;
     }
 
@@ -443,6 +446,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // If for any reason the new accumulator is less than our last one, abort for safety.
     if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      emit SafetyCheckTriggered();
       return;
     }
 
@@ -475,6 +479,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // If for any reason the new accumulator is less than our last one, abort for safety.
     if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      emit SafetyCheckTriggered();
       return;
     }
     uint256 rewardsAccruedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
@@ -535,6 +540,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       newAccumulatedRewardsPerTokenAtLastWithdraw <
       tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw
     ) {
+      emit SafetyCheckTriggered();
       return;
     }
 
