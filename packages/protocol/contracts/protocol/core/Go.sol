@@ -117,7 +117,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     return false;
   }
 
-  function getSeniorPoolIdTypes() public pure returns (uint256[4] memory) {
+  function getSeniorPoolIdTypes() public pure returns (uint256[] memory) {
     return [ID_TYPE_0, ID_TYPE_1, ID_TYPE_3, ID_TYPE_4];
   }
 
