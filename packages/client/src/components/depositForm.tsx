@@ -12,6 +12,8 @@ import useERC20Permit from "../hooks/useERC20Permit"
 import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE, SUPPLY_TX_TYPE} from "../types/transactions"
 import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
 import {iconOutArrow} from "./icons"
+import {getLegalLanguage} from "./KYCNotice/utils"
+import useGeolocation from "../hooks/useGeolocation"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
@@ -27,6 +29,12 @@ function DepositForm(props: DepositFormProps) {
   const {pool, usdc, user, goldfinchConfig, stakingRewards} = useNonNullContext(AppContext)
   const sendFromUser = useSendFromUser()
   const {gatherPermitSignature} = useERC20Permit()
+  const geolocation = useGeolocation()
+  const {seniorPoolLegalRoute} = getLegalLanguage({
+    user,
+    allowedUIDTypes: pool?.info.value.poolData.allowedUIDTypes || [],
+    geolocation,
+  })
 
   async function approve(depositAmount: string, operator: SeniorPoolLoaded | StakingRewardsLoaded): Promise<void> {
     const alreadyApprovedAmount = new BigNumber(
@@ -175,7 +183,12 @@ function DepositForm(props: DepositFormProps) {
             <div>
               <div className="checkbox-label-primary">
                 I agree to the&nbsp;
-                <a className="form-link checkbox-label-link" href="/senior-pool-agreement-non-us" target="_blank">
+                <a
+                  className="form-link checkbox-label-link"
+                  href={seniorPoolLegalRoute}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Senior Pool Agreement.
                 </a>
               </div>
