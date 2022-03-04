@@ -687,7 +687,7 @@ function App() {
                     <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
                       <SeniorPoolAgreementNonUS />
                     </Route>
-                    <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
+                    <Route path={SENIOR_POOL_AGREEMENT_US_ROUTE}>
                       <SeniorPoolAgreementUS />
                     </Route>
                     <Route path="*">
