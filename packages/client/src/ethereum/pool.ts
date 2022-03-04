@@ -332,7 +332,7 @@ type SeniorPoolData = {
   assetsAsOf: typeof assetsAsOf
   getRepaymentEvents: typeof getRepaymentEvents
   remainingCapacity: typeof remainingCapacity
-  allowedSeniorPoolIdTypes: number[]
+  allowedUIDTypes: number[]
 }
 
 async function fetchSeniorPoolData(
@@ -385,9 +385,9 @@ async function fetchSeniorPoolData(
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   const go = pool.goldfinchProtocol.getContract<Go>("Go")
-  const allowedSeniorPoolIdTypes = (
-    await go.readOnly.methods.getSeniorPoolIdTypes().call(undefined, currentBlock.number)
-  ).map((x) => parseInt(x))
+  const allowedUIDTypes = (await go.readOnly.methods.getSeniorPoolIdTypes().call(undefined, currentBlock.number)).map(
+    (x) => parseInt(x)
+  )
 
   return {
     rawBalance,
@@ -406,7 +406,7 @@ async function fetchSeniorPoolData(
     estimatedApy,
     estimatedApyFromGfi,
     defaultRate,
-    allowedSeniorPoolIdTypes,
+    allowedUIDTypes,
   }
 }
 

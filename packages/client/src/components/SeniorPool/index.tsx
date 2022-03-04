@@ -102,7 +102,7 @@ function SeniorPoolView(): JSX.Element {
       <div className="page-header"> {earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist isPaused={pool ? pool.info.value.isPaused : undefined} />
       {maxCapacityNotice}
-      <InvestorNotice user={user} allowedUIDTypes={pool?.info.value.poolData.allowedSeniorPoolIdTypes || []} />
+      <InvestorNotice user={user} allowedUIDTypes={pool?.info.value.poolData.allowedUIDTypes || []} />
       <EarnActionsContainer
         disabled={disabled}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}

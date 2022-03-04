@@ -98,7 +98,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
-  console.log("xxx", {chainId, LOCAL_CHAIN_ID}, isMainnetForking())
   if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
     logger("🐳 Funding from local whales")
     await fundFromLocalWhale(gf_deployer, erc20s, {logger})

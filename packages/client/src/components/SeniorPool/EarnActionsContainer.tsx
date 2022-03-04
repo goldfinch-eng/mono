@@ -40,7 +40,7 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
       !!user &&
       !!pool.info.value.poolData &&
       !!props.capitalProvider &&
-      eligibleForSeniorPool(user, pool.info.value.poolData.allowedSeniorPoolIdTypes)
+      eligibleForSeniorPool(user, pool.info.value.poolData.allowedUIDTypes)
   }
 
   let placeholderClass = ""
