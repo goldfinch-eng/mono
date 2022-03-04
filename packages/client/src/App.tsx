@@ -6,7 +6,7 @@ import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom
 import {ThemeProvider} from "styled-components"
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
 import Borrow from "./components/Borrow"
-import DevTools from "./components/devTools"
+import DevTools from "./components/DevTools"
 import Earn from "./components/Earn"
 import Footer from "./components/footer"
 import SeniorPoolView from "./components/SeniorPool"
