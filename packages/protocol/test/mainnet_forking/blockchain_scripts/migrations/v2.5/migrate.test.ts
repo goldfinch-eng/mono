@@ -20,7 +20,6 @@ import {
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {getExistingContracts, MAINNET_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import BN from "bn.js"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -59,7 +58,7 @@ const setupTest = deployments.createFixture(async () => {
 })
 
 describe("v2.5", async function () {
-  let uniqueIdentity, tranchedPool: TranchedPoolInstance, goldfinchFactory, usdc
+  let uniqueIdentity, tranchedPool: TranchedPoolInstance, goldfinchFactory, usdc, go: GoInstance
   let borrower
   this.timeout(TEST_TIMEOUT)
 
@@ -68,6 +67,7 @@ describe("v2.5", async function () {
     uniqueIdentity = setupTestResult.uniqueIdentity
     usdc = setupTestResult.usdc
     goldfinchFactory = setupTestResult.goldfinchFactory
+    go = setupTestResult.go
   })
 
   it("v2.5 properly upgrades UniqueIdentity", async () => {
@@ -87,6 +87,20 @@ describe("v2.5", async function () {
   context("after deploy", async () => {
     beforeEach(async () => {
       await migrate25.main()
+    })
+
+    context("Go", () => {
+      context("getSeniorPoolIdTypes", () => {
+        it("getSeniorPoolIdTypes", async () => {
+          const received = await go.getSeniorPoolIdTypes()
+          expect(received).deep.equal([
+            await go.ID_TYPE_0(),
+            await go.ID_TYPE_1(),
+            await go.ID_TYPE_3(),
+            await go.ID_TYPE_4(),
+          ])
+        })
+      })
     })
 
     it("properly returns supportedUIDTypes", async () => {
