@@ -7,7 +7,8 @@ export const repaidPoolAddressesToPauseDrawdowns: string[] = [
   "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7", // payjoy
   "0xd798d527f770ad920bb50680dbc202bb0a1dafd6", // quickcheck #1
   "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c", // quickcheck #2
-]
+  "0xf74ea34ac88862b7ff419e60e476be2651433e68", // divibank
+].map((x) => x.toLowerCase())
 
 const formatEtherscanLink = (address) => `https://etherscan.io/address/${address}`
 
@@ -27,12 +28,12 @@ export async function getPoolAddressesToPause(): Promise<string[]> {
   const pools: string[] = []
   for (const address of poolAddresses) {
     if (await poolAddressHasZeroBalance(address)) {
-      pools.push(address)
+      pools.push(address.toLowerCase())
     }
   }
 
   // we need to dedupli
-  const allPools = Array.from(new Set([...pools, ...repaidPoolAddressesToPauseDrawdowns]))
+  const allPools = [...new Set([...pools, ...repaidPoolAddressesToPauseDrawdowns])]
 
   return allPools
 }

@@ -11,7 +11,7 @@
     "test:unfiltered": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test --show-stack-traces",
     "test:mainnet-forking": "NODE_OPTIONS=--unhandled-rejections=strict HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test $(find test/mainnet_forking/ -name '*.test.ts') --show-stack-traces",
     "test:tenderly": "NODE_OPTIONS=--unhandled-rejections=strict HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test $(find test/mainnet_forking/ -name '*.test.ts') --show-stack-traces --network localhost",
-    "build": "npx hardhat compile && npm run typechain",
+    "build": "npx hardhat compile",
     "pre-commit": "npx lint-staged",
     "deploy-for-client-test": "npm run generate-merkle-root:client-test && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.client_test.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.client_test.json BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.client_test.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.client_test.json npx hardhat deploy --export-all deployments/all_client_test.json",
     "lint": "eslint --resolve-plugins-relative-to=. .",
@@ -24,7 +24,6 @@
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.ts --network localhost",
     "generate-manifest": "npx hardhat run ./blockchain_scripts/deployHelpers/generateHardhatUpgradesManifest.ts --network mainnet",
     "pool-admin": "npx hardhat run ./blockchain_scripts/tranchedPoolAdmin.ts --network",
-    "typechain": "npx hardhat typechain && npx hardhat run ./blockchain_scripts/typechain-ethers.ts && npx hardhat run ./blockchain_scripts/typechain-web3.ts",
     "tsc": "tsc",
     "pre-push": "",
     "_generate-merkle-distributor-grants:local": "node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateGrantsFromTemplate -i ./blockchain_scripts/merkle/merkleDistributor/grants.dev.template.json -o ./blockchain_scripts/merkle/merkleDistributor/grants.dev.json",
@@ -56,14 +55,8 @@
     "generate-merkle-root:client-test": "MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-merkle-grants:client-test && MERKLE_GRANT_RECIPIENTS=0x0000000000000000000000000000000000000000 npm run _generate-backer-merkle-grants:client-test && npm run _generate-merkle-info:client-test && npm run _generate-backer-merkle-info:client-test"
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": [
-      "prettier --write",
-      "eslint --resolve-plugins-relative-to=. --fix"
-    ],
-    "*.sol": [
-      "prettier --write",
-      "solhint --fix"
-    ]
+    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"],
+    "*.sol": ["prettier --write", "solhint --fix"]
   },
   "repository": {
     "type": "git",
