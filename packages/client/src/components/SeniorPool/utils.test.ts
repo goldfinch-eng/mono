@@ -1,6 +1,6 @@
 import {eligibleForSeniorPool} from "./utils"
 
-describe.only("eligibleForSeniorPool", () => {
+describe("eligibleForSeniorPool", () => {
   describe("goListed", () => {
     it("returns true if golisted", async () => {
       expect(
