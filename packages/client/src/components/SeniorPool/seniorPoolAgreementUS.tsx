@@ -1,4 +1,4 @@
-function SeniorPoolAgreementNonUS(props) {
+function SeniorPoolAgreementUS() {
   return (
     <div className="content-section">
       <div className="legal-legend">
@@ -460,4 +460,4 @@ function SeniorPoolAgreementNonUS(props) {
   )
 }
 
-export default SeniorPoolAgreementNonUS
+export default SeniorPoolAgreementUS
