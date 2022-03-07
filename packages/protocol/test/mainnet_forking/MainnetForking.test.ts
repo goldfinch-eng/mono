@@ -94,8 +94,6 @@ import {
 import {ContractReceipt, Signer} from "ethers"
 import BigNumber from "bignumber.js"
 import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
-import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
-import {Signer} from "ethers"
 import * as migrate2_5 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.5/migrate"
 
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
