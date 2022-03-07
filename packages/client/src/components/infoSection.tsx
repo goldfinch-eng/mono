@@ -7,6 +7,7 @@ interface InfoSectionRow {
 
 interface InfoSectionProps {
   rows: InfoSectionRow[]
+  classNames?: string
 }
 
 export default class InfoSection extends Component<InfoSectionProps> {
@@ -20,6 +21,6 @@ export default class InfoSection extends Component<InfoSectionProps> {
   }
 
   render() {
-    return <div className="info-section">{(this.props as any).rows.map(this.convertRowToItem)}</div>
+    return <div className={`info-section ${this.props.classNames}`}>{this.props.rows.map(this.convertRowToItem)}</div>
   }
 }

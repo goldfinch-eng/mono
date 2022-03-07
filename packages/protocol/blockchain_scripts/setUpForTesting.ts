@@ -128,8 +128,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
   await tx.wait()
   await uniqueIdentity.setSupportedUIDTypes(
-    [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_2()],
-    [true, true]
+    [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_1(), await uniqueIdentity.ID_TYPE_2()],
+    [true, true, true]
   )
 
   await impersonateAccount(hre, protocol_owner)

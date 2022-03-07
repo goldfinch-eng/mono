@@ -1028,7 +1028,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
   })
 
@@ -1305,7 +1305,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
   })
 
@@ -1338,7 +1338,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1370,7 +1370,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1403,7 +1403,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1435,7 +1435,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1660,7 +1660,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
@@ -1682,7 +1682,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1721,7 +1721,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
@@ -1741,7 +1741,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000002`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000002`
     )
   })
 
@@ -1782,7 +1782,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
 
     fireEvent.click(screen.getByText("Staked 50K FIDU"))
@@ -1806,7 +1806,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
 
     fireEvent.click(screen.getByText("Goldfinch Investment"))
@@ -1826,7 +1826,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1860,7 +1860,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000000`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000`
     )
   })
 
@@ -1893,7 +1893,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1931,7 +1931,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000001`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
   })
 
@@ -1962,7 +1962,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000002`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000002`
     )
   })
 
@@ -1994,7 +1994,7 @@ describe("Rewards list and detail", () => {
 
     expect(screen.getByText("Etherscan").closest("a")).toHaveAttribute(
       "href",
-      `https://${network.name}.etherscan.io/address/0x0000000000000000000000000000000000000000000000000000000000000002`
+      `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000002`
     )
   })
 
