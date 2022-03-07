@@ -33,6 +33,7 @@ export function Button({
   return (
     <button
       className={clsx(
+        "rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
         size === "sm"
           ? "py-1.5 px-3"
           : size === "md"
@@ -40,7 +41,6 @@ export function Button({
           : size === "lg"
           ? "py-3.5 px-6"
           : "py-5 px-8 text-lg",
-        "outline-none ring-offset-0 focus:ring-1 disabled:pointer-events-none",
         variant === "solid"
           ? colorScheme === "blue"
             ? "bg-blue-100 text-purple-400 ring-blue-200 hover:bg-blue-200 active:bg-blue-300 disabled:bg-blue-50 disabled:text-opacity-50"
@@ -50,8 +50,6 @@ export function Button({
             ? "bg-sand-200 text-purple-400 ring-sand-500 hover:bg-sand-300 active:bg-sand-400 disabled:bg-sand-100 disabled:text-sand-600"
             : null
           : null,
-        "rounded-md",
-        "transition-all hover:shadow active:brightness-75",
         className
       )}
       {...rest}
