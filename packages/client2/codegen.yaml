@@ -1,0 +1,12 @@
+schema: https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch
+documents:
+  - ./pages/**/*.tsx
+  - ./components/**/*.tsx
+generates:
+  lib/graphql/generated.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typescript-react-apollo
+    config:
+      withHooks: true
