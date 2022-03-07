@@ -338,7 +338,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 tokenAccumulator = _getTokenAccumulatorAtLastWithdraw(tokenInfo, sliceInfo);
     uint256 rewardsPerFidu = tokenAccumulator.sub(sliceAccumulator);
     uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
-    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(_fiduMantissa());
+    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(FIDU_MANTISSA);
     return rewards;
   }
 
