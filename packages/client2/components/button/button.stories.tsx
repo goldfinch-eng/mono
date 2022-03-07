@@ -25,4 +25,6 @@ ButtonStory.args = {
   children: "Hello World",
   size: "md",
   variant: "solid",
+  colorScheme: "blue",
+  disabled: false,
 };
