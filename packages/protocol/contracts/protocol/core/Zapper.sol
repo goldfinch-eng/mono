@@ -54,9 +54,9 @@ contract Zapper is BaseUpgradeablePausable {
     IStakingRewards stakingRewards = config.getStakingRewards();
     ISeniorPool seniorPool = config.getSeniorPool();
 
-    require(validPool(tranchedPool), "Invalid pool");
+    require(_validPool(tranchedPool), "Invalid pool");
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
-    require(hasAllowedUID(tranchedPool), "Address not go-listed");
+    require(_hasAllowedUID(tranchedPool), "Address not go-listed");
 
     uint256 shares = seniorPool.getNumShares(usdcAmount);
     stakingRewards.unstake(tokenId, shares);
@@ -133,14 +133,14 @@ contract Zapper is BaseUpgradeablePausable {
 
     SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), fiduAmount);
 
-    stakingRewards.depositToCurveAndStakeFrom(address(this), msg.sender, fiduAmount, 0);
+    stakingRewards.depositToCurveAndStakeFrom(msg.sender, fiduAmount, 0);
   }
 
-  function hasAllowedUID(ITranchedPool pool) internal view returns (bool) {
+  function _hasAllowedUID(ITranchedPool pool) internal view returns (bool) {
     return IRequiresUID(address(pool)).hasAllowedUID(msg.sender);
   }
 
-  function validPool(ITranchedPool pool) internal view returns (bool) {
+  function _validPool(ITranchedPool pool) internal view returns (bool) {
     return config.getPoolTokens().validPool(address(pool));
   }
 }

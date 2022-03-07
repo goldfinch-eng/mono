@@ -34,6 +34,7 @@ import {
   getCurrentTimestamp,
   usdcToFidu,
   decimals,
+  tolerance,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
@@ -323,6 +324,29 @@ describe("StakingRewards", function () {
         const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).mul(new BN(4)).div(new BN(5))
         expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
         expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
+    })
+
+    context("when trying to view their claimable amount", async () => {
+      it("handles multiple tokens", async () => {
+        await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: fiduAmount, from: anotherUser})
+        await advanceTime({seconds: yearInSeconds})
+        // Need to tickle the contract so there's a new checkpoint
+        await stake({amount: fiduAmount, from: investor})
+        const amountClaimable = await stakingRewards.totalOptimisticClaimable(anotherUser)
+        // In this example, the user was the only one staking, so they got all the rewards
+        expect(amountClaimable).to.bignumber.equal(totalRewards)
+      })
+
+      it("handles partial time periods, and many people staking", async () => {
+        await stake({amount: fiduAmount, from: anotherUser})
+        await stake({amount: new BN(1), from: investor})
+        await advanceTime({seconds: yearInSeconds.div(new BN(2))})
+        // Need to tickle the contract so there's a new checkpoint
+        await stake({amount: new BN(1), from: investor})
+        const amountClaimable = await stakingRewards.totalOptimisticClaimable(anotherUser)
+        expect(amountClaimable).to.bignumber.closeTo(totalRewards.div(new BN(2)), totalRewards.div(new BN(100)))
       })
     })
 

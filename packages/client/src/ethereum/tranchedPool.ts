@@ -75,7 +75,7 @@ export interface TranchedPoolMetadata {
   name: string
   category: string
   icon: string
-  description: string
+  description?: string
   detailsUrl?: string
   disabled?: boolean
   backerLimit?: string
@@ -85,6 +85,10 @@ export interface TranchedPoolMetadata {
   migratedFrom?: string
   NDAUrl?: string
   launchTime?: number
+  poolDescription?: string
+  poolHighlights?: Array<string>
+  borrowerDescription?: string
+  borrowerHighlights?: Array<string>
 }
 
 enum PoolState {

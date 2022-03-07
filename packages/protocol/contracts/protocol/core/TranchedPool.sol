@@ -149,7 +149,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     whenNotPaused
     returns (uint256 tokenId)
   {
-    TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche locked");
     require(amount > 0, "Must deposit > zero");
     require(hasAllowedUID(msg.sender), "Address not go-listed");
@@ -194,7 +194,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
     return _withdraw(trancheInfo, tokenInfo, tokenId, amount);
   }
@@ -226,7 +226,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
 
@@ -340,7 +340,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    */
   function pay(uint256 amount) external override whenNotPaused {
     require(amount > 0, "Must pay more than zero");
-    collectPayment(amount);
+    _collectPayment(amount);
     _assess();
   }
 
@@ -474,10 +474,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function getTranche(uint256 tranche) public view override returns (TrancheInfo memory) {
-    return getTrancheInfo(tranche);
+    return _getTrancheInfo(tranche);
   }
 
-  function numSlices() public view returns (uint256) {
+  function numSlices() public view override returns (uint256) {
     return poolSlices.length;
   }
 
@@ -526,7 +526,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestRedeemable, uint256 principalRedeemable)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
     if (currentTime() > trancheInfo.lockedUntil) {
       return redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
@@ -685,7 +685,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       )
     );
 
-    sendToReserve(totalReserveAmount);
+    _sendToReserve(totalReserveAmount);
     return totalReserveAmount;
   }
 
@@ -719,7 +719,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
-  function getTrancheInfo(uint256 trancheId) internal view returns (TrancheInfo storage) {
+  function _getTrancheInfo(uint256 trancheId) internal view returns (TrancheInfo storage) {
     require(trancheId > 0 && trancheId <= poolSlices.length.mul(NUM_TRANCHES_PER_SLICE), "Unsupported tranche");
     uint256 sliceId = ((trancheId.add(trancheId.mod(NUM_TRANCHES_PER_SLICE))).div(NUM_TRANCHES_PER_SLICE)).sub(1);
     PoolSlice storage slice = poolSlices[sliceId];
@@ -733,7 +733,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return block.timestamp;
   }
 
-  function sendToReserve(uint256 amount) internal {
+  function _sendToReserve(uint256 amount) internal {
     emit ReserveFundsCollected(address(this), amount);
     safeERC20TransferFrom(
       config.getUSDC(),
@@ -744,7 +744,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
-  function collectPayment(uint256 amount) internal {
+  function _collectPayment(uint256 amount) internal {
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
 

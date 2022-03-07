@@ -263,41 +263,6 @@ describe("MerkleDistributor", () => {
       await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/Grant already accepted/)
     })
 
-    it("rejection does not perform granting", async () => {
-      // This test is arguably an unnecessary sanity check, because it should be impossible for
-      // a reverted transaction on the EVM to be state-changing.
-
-      await mintAndLoadRewards(gfi, communityRewards, owner, new BN(1e3))
-
-      const grantedTokenId = await acceptGrant(acceptGrantParams)
-
-      const rewardsAvailableBefore = await communityRewards.rewardsAvailable()
-      expect(rewardsAvailableBefore).to.bignumber.equal(new BN(1e3))
-
-      await expect(acceptGrant(acceptGrantParams)).to.be.rejectedWith(/Grant already accepted/)
-
-      // Check that rewards available was not decremented as part of the rejection.
-      const rewardsAvailableAfter = await communityRewards.rewardsAvailable()
-      expect(rewardsAvailableAfter).to.bignumber.equal(rewardsAvailableBefore)
-
-      const otherGrantInfo = fixtures.output.grants[1]
-      assertNonNullable(otherGrantInfo)
-
-      const otherIndex = otherGrantInfo.index
-      const otherGrantedTokenId = await acceptGrant({
-        from: otherGrantInfo.account,
-        index: otherIndex,
-        amount: web3.utils.toBN(otherGrantInfo.grant.amount),
-        vestingLength: web3.utils.toBN(otherGrantInfo.grant.vestingLength),
-        cliffLength: web3.utils.toBN(otherGrantInfo.grant.cliffLength),
-        vestingInterval: web3.utils.toBN(otherGrantInfo.grant.vestingInterval),
-        proof: otherGrantInfo.proof,
-      })
-
-      // Check that no token was issued as part of the rejection.
-      expect(otherGrantedTokenId).to.bignumber.equal(grantedTokenId.add(new BN(1)))
-    })
-
     it("rejects a non-existent grant index", async () => {
       const invalidIndex = fixtures.output.grants.length
       const acceptance = acceptGrant({

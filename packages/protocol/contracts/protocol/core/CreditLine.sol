@@ -99,7 +99,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
     }
 
-    (uint256 _interestOwed, uint256 _principalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+    (uint256 _interestOwed, uint256 _principalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
     balance = balance.add(amount);
 
     updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
@@ -208,7 +208,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       uint256 secondsPerPeriod = paymentPeriodInDays.mul(SECONDS_PER_DAY);
       timeToAssess = timeToAssess.sub(secondsPerPeriod);
     }
-    return handlePayment(getUSDCBalance(address(this)), timeToAssess);
+    return handlePayment(_getUSDCBalance(address(this)), timeToAssess);
   }
 
   function calculateNextDueTime() internal view returns (uint256) {
@@ -270,7 +270,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
       uint256
     )
   {
-    (uint256 newInterestOwed, uint256 newPrincipalOwed) = updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
+    (uint256 newInterestOwed, uint256 newPrincipalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
     Accountant.PaymentAllocation memory pa = Accountant.allocatePayment(
       paymentAmount,
       balance,
@@ -295,7 +295,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     return (paymentRemaining, pa.interestPayment, totalPrincipalPayment);
   }
 
-  function updateAndGetInterestAndPrincipalOwedAsOf(uint256 timestamp) internal returns (uint256, uint256) {
+  function _updateAndGetInterestAndPrincipalOwedAsOf(uint256 timestamp) internal returns (uint256, uint256) {
     (uint256 interestAccrued, uint256 principalAccrued) = Accountant.calculateInterestAndPrincipalAccrued(
       this,
       timestamp,
@@ -338,7 +338,7 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     setNextDueTime(calculateNextDueTime());
   }
 
-  function getUSDCBalance(address _address) internal view returns (uint256) {
+  function _getUSDCBalance(address _address) internal view returns (uint256) {
     return config.getUSDC().balanceOf(_address);
   }
 }

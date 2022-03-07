@@ -547,19 +547,19 @@ describe("SeniorPool", () => {
 
   describe("USDC Mantissa", async () => {
     it("should equal 1e6", async () => {
-      expect(await seniorPool._usdcMantissa()).to.bignumber.equal(USDC_DECIMALS)
+      expect(await seniorPool.usdcMantissa()).to.bignumber.equal(USDC_DECIMALS)
     })
   })
 
   describe("Fidu Mantissa", async () => {
     it("should equal 1e18", async () => {
-      expect(await seniorPool._fiduMantissa()).to.bignumber.equal(decimals)
+      expect(await seniorPool.fiduMantissa()).to.bignumber.equal(decimals)
     })
   })
 
   describe("usdcToFidu", async () => {
     it("should equal 1e12", async () => {
-      expect(await seniorPool._usdcToFidu(new BN(1))).to.bignumber.equal(new BN(1e12))
+      expect(await seniorPool.usdcToFidu(new BN(1))).to.bignumber.equal(new BN(1e12))
     })
   })
 
@@ -917,7 +917,7 @@ describe("SeniorPool", () => {
 
         const newSharePrice = await seniorPool.sharePrice()
         const delta = originalSharePrice.sub(newSharePrice)
-        const normalizedWritedown = await seniorPool._usdcToFidu(expectedWritedown)
+        const normalizedWritedown = await seniorPool.usdcToFidu(expectedWritedown)
         const expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
 
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)
@@ -955,7 +955,7 @@ describe("SeniorPool", () => {
 
         const finalSharePrice = await seniorPool.sharePrice()
         const delta = originalSharePrice.sub(finalSharePrice)
-        const normalizedWritedown = await seniorPool._usdcToFidu(expectedNewWritedown)
+        const normalizedWritedown = await seniorPool.usdcToFidu(expectedNewWritedown)
         const expectedDelta = normalizedWritedown.mul(decimals).div(originalTotalShares)
 
         expect(delta).to.be.bignumber.closeTo(expectedDelta, fiduTolerance)

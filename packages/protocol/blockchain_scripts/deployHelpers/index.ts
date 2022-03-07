@@ -20,7 +20,7 @@ const STAKING_REWARDS_MULTIPLIER_DECIMALS = new BN(String(1e18))
 const ETHDecimals = new BN(String(1e18))
 const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
-const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
+const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
 import {AdminClient} from "defender-admin-client"
 import PROTOCOL_CONFIG from "../../protocol_config.json"
@@ -345,9 +345,8 @@ function toAtomic(amount: BN, decimals = USDCDecimals): string {
 }
 
 function getDefenderClient() {
-  if (DEFENDER_API_SECRET == null) {
-    throw new Error("DEFENDER_API_SECRET is null. It must be set as an envvar")
-  }
+  assertNonNullable(DEFENDER_API_KEY, "DEFENDER_API_KEY is null. It must be set as an envvar")
+  assertNonNullable(DEFENDER_API_SECRET, "DEFENDER_API_SECRET is null. It must be set as an envvar")
   return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 

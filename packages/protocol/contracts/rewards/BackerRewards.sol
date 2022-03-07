@@ -14,6 +14,7 @@ import "../interfaces/IStakingRewards.sol";
 import "../interfaces/ITranchedPool.sol";
 import "../interfaces/IBackerRewards.sol";
 import "../interfaces/ISeniorPool.sol";
+import "../interfaces/IEvents.sol";
 
 // Basically, Every time a interest payment comes back
 // we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
@@ -30,10 +31,14 @@ import "../interfaces/ISeniorPool.sol";
 // Every time a PoolToken withdraws rewards, we determine the allocated rewards,
 // increase that PoolToken's rewardsClaimed, and transfer the owner the gfi
 
-contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Transfer {
+contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Transfer, IEvents {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
+
+  uint256 internal constant GFI_MANTISSA = 10**18;
+  uint256 internal constant FIDU_MANTISSA = 10**18;
+  uint256 internal constant USDC_MANTISSA = 10**6;
 
   struct BackerRewardsInfo {
     uint256 accRewardsPerPrincipalDollar; // accumulator gfi per interest dollar
@@ -188,7 +193,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function setTotalRewards(uint256 _totalRewards) public onlyAdmin {
     totalRewards = _totalRewards;
     uint256 totalGFISupply = config.getGFI().totalSupply();
-    totalRewardPercentOfTotalGFI = _totalRewards.mul(_gfiMantissa()).div(totalGFISupply).mul(100);
+    totalRewardPercentOfTotalGFI = _totalRewards.mul(GFI_MANTISSA).div(totalGFISupply).mul(100);
     emit BackerRewardsSetTotalRewards(_msgSender(), _totalRewards, totalRewardPercentOfTotalGFI);
   }
 
@@ -288,7 +293,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 diffOfAccRewardsPerPrincipalDollar = pools[tokenInfo.pool].accRewardsPerPrincipalDollar.sub(
       tokens[tokenId].accRewardsPerPrincipalDollarAtMint
     );
-    uint256 rewardsClaimed = tokens[tokenId].rewardsClaimed.mul(_gfiMantissa());
+    uint256 rewardsClaimed = tokens[tokenId].rewardsClaimed.mul(GFI_MANTISSA);
 
     /*
       equation for token claimable rewards:
@@ -299,7 +304,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     return
       _usdcToAtomic(tokenInfo.principalAmount).mul(diffOfAccRewardsPerPrincipalDollar).sub(rewardsClaimed).div(
-        _gfiMantissa()
+        GFI_MANTISSA
       );
   }
 
@@ -413,7 +418,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 tokenAccumulator = _getTokenAccumulatorAtLastWithdraw(tokenInfo, sliceInfo);
     uint256 rewardsPerFidu = sliceAccumulator.sub(tokenAccumulator);
     uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
-    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(_fiduMantissa());
+    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(FIDU_MANTISSA);
     return rewards;
   }
 
@@ -438,13 +443,15 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // an even greater amount of rewards than `newGrossRewards`, due to dividing by less than 1.
     // This scenario and its mitigation are analogous to that of
     // `StakingRewards.additionalRewardsPerTokenSinceLastUpdate()`.
-    if (totalJuniorDepositsAtomic < _gfiMantissa()) {
+
+    if (totalJuniorDepositsAtomic < GFI_MANTISSA) {
+      emit SafetyCheckTriggered();
       return;
     }
 
     // example: (6708203932437400000000 * 10^18) / (100000*10^18)
     _poolInfo.accRewardsPerPrincipalDollar = _poolInfo.accRewardsPerPrincipalDollar.add(
-      newGrossRewards.mul(_gfiMantissa()).div(totalJuniorDepositsAtomic)
+      newGrossRewards.mul(GFI_MANTISSA).div(totalJuniorDepositsAtomic)
     );
 
     totalInterestReceived = _totalInterestReceived.add(_interestPaymentAmount);
@@ -480,6 +487,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // If for any reason the new accumulator is less than our last one, abort for safety.
     if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      emit SafetyCheckTriggered();
       return;
     }
 
@@ -512,6 +520,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // If for any reason the new accumulator is less than our last one, abort for safety.
     if (newStakingRewardsAccumulator < poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint) {
+      emit SafetyCheckTriggered();
       return;
     }
     uint256 rewardsAccruedSinceLastCheckpoint = newStakingRewardsAccumulator.sub(
@@ -535,10 +544,10 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
     // the percentage we need to scale the rewards accumualated by
     uint256 deployedScalingFactor = _usdcToAtomic(
-      sliceInfo.principalDeployedAtLastCheckpoint.mul(_usdcMantissa()).div(juniorTranche.principalDeposited)
+      sliceInfo.principalDeployedAtLastCheckpoint.mul(USDC_MANTISSA).div(juniorTranche.principalDeposited)
     );
 
-    uint256 scaledRewardsForPeriod = rewardsAccruedSinceLastCheckpoint.mul(deployedScalingFactor).div(_fiduMantissa());
+    uint256 scaledRewardsForPeriod = rewardsAccruedSinceLastCheckpoint.mul(deployedScalingFactor).div(FIDU_MANTISSA);
 
     sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint = sliceInfo
       .unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint
@@ -572,6 +581,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       newAccumulatedRewardsPerTokenAtLastWithdraw <
       tokenStakingRewards[tokenId].accumulatedRewardsPerTokenAtLastWithdraw
     ) {
+      emit SafetyCheckTriggered();
       return;
     }
 
@@ -641,17 +651,17 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       .div(sqrtMaxInterestDollarsEligible)
       .div(100)
       .mul(totalGFISupply)
-      .div(_gfiMantissa());
+      .div(GFI_MANTISSA);
 
     // Extra safety check to make sure the logic is capped at a ceiling of potential rewards
     // Calculating the gfi/$ for first dollar of interest to the protocol, and multiplying by new interest amount
     uint256 absoluteMaxGfiCheckPerDollar = Babylonian
-      .sqrt((uint256)(1).mul(_gfiMantissa()))
+      .sqrt((uint256)(1).mul(GFI_MANTISSA))
       .mul(totalRewardPercentOfTotalGFI)
       .div(sqrtMaxInterestDollarsEligible)
       .div(100)
       .mul(totalGFISupply)
-      .div(_gfiMantissa());
+      .div(GFI_MANTISSA);
     require(
       newGrossRewards < absoluteMaxGfiCheckPerDollar.mul(newTotalInterest),
       "newGrossRewards cannot be greater then the max gfi per dollar"
@@ -667,26 +677,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     return tokenInfo.tranche.mod(NUM_TRANCHES_PER_SLICE) == 1;
   }
 
-  function _gfiMantissa() internal pure returns (uint256) {
-    return uint256(10)**uint256(18);
-  }
-
-  function _fiduMantissa() internal pure returns (uint256) {
-    return uint256(10)**uint256(18);
-  }
-
-  function _usdcMantissa() internal pure returns (uint256) {
-    return uint256(10)**uint256(6);
-  }
-
   /// @notice Returns an amount with the base of usdc (1e6) as an 1e18 number
   function _usdcToAtomic(uint256 amount) internal pure returns (uint256) {
-    return amount.mul(_gfiMantissa()).div(_usdcMantissa());
+    return amount.mul(GFI_MANTISSA).div(USDC_MANTISSA);
   }
 
   /// @notice Returns an amount with the base 1e18 as a usdc amount (1e6)
   function _atomicToUsdc(uint256 amount) internal pure returns (uint256) {
-    return amount.div(_gfiMantissa().div(_usdcMantissa()));
+    return amount.div(GFI_MANTISSA.div(USDC_MANTISSA));
   }
 
   /// @notice Returns the equivalent amount of USDC given an amount of fidu and a share price
@@ -694,7 +692,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @param sharePrice share price of FIDU
   /// @return equivalent amount of USDC
   function _fiduToUsdc(uint256 amount, uint256 sharePrice) internal pure returns (uint256) {
-    return _usdcToAtomic(amount).mul(_fiduMantissa()).div(sharePrice);
+    return _usdcToAtomic(amount).mul(FIDU_MANTISSA).div(sharePrice);
   }
 
   /// @notice Returns the junior tranche id for the given slice index
@@ -796,7 +794,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   function _getPrincipalDeployedForTranche(ITranchedPool.TrancheInfo memory tranche) internal pure returns (uint256) {
     return
       tranche.principalDeposited.sub(
-        _atomicToUsdc(tranche.principalSharePrice.mul(_usdcToAtomic(tranche.principalDeposited)).div(_fiduMantissa()))
+        _atomicToUsdc(tranche.principalSharePrice.mul(_usdcToAtomic(tranche.principalDeposited)).div(FIDU_MANTISSA))
       );
   }
 
@@ -829,12 +827,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 currentTime,
     uint256 endTime
   ) internal pure returns (uint256) {
-    uint256 slopeNumerator = rewardsAccruedSinceLastCheckpoint.mul(_fiduMantissa());
+    uint256 slopeNumerator = rewardsAccruedSinceLastCheckpoint.mul(FIDU_MANTISSA);
     uint256 slopeDivisor = currentTime.sub(lastUpdatedTime);
 
     uint256 slope = slopeNumerator.div(slopeDivisor);
     uint256 span = endTime.sub(lastUpdatedTime);
-    uint256 rewards = slope.mul(span).div(_fiduMantissa());
+    uint256 rewards = slope.mul(span).div(FIDU_MANTISSA);
     return rewards;
   }
 
