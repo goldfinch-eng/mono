@@ -87,6 +87,8 @@ export async function prepareUserRelatedDeps(
     deps.communityRewards,
     deps.merkleDistributor,
     deps.merkleDirectDistributor,
+    deps.backerMerkleDistributor,
+    deps.backerMerkleDirectDistributor,
     rewardsMock.currentBlock
   )
   assertWithLoadedInfo(user)
@@ -732,6 +734,8 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
     baseDeps.merkleDirectDistributor,
+    baseDeps.backerMerkleDistributor,
+    baseDeps.backerMerkleDirectDistributor,
     currentBlock
   )
 

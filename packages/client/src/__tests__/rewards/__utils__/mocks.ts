@@ -176,6 +176,8 @@ export async function mockUserRelatedInitializationContractCalls(
       [],
       [],
       [],
+      [],
+      [],
     ])
   }
   user._fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
@@ -321,6 +323,8 @@ export async function mockUserRelatedInitializationContractCalls(
         {poolEvents: [], poolTxs: []},
         [],
         {stakedEvents: {currentBlock: rewardsMock.currentBlock, value: stakedEvents}, stakingRewardsTxs: []},
+        [],
+        [],
         [],
         [],
         [],
