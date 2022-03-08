@@ -532,6 +532,39 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     stakingToken(positionType).safeTransfer(msg.sender, amount);
   }
 
+  /// @notice Unstake multiple positions and transfer to msg.sender.
+  ///
+  /// @dev This function checkpoints rewards
+  /// @param tokenIds A list of position token IDs
+  /// @param amounts A list of amounts of `stakingToken()` to be unstaked from the position
+  function unstakeMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) public nonReentrant whenNotPaused {
+    require(tokenIds.length == amounts.length, "tokenIds and amounts must be the same length");
+
+    uint256 fiduAmountToUnstake = 0;
+    uint256 curveAmountToUnstake = 0;
+
+    for (uint256 i = 0; i < amounts.length; i++) {
+      StakedPositionType positionType = positions[tokenIds[i]].positionType;
+      _unstake(tokenIds[i], amounts[i]);
+      if (positionType == StakedPositionType.Fidu) {
+        fiduAmountToUnstake = fiduAmountToUnstake.add(amounts[i]);
+      } else if (positionType == StakedPositionType.CurveLP) {
+        curveAmountToUnstake = curveAmountToUnstake.add(amounts[i]);
+      } else {
+        revert("unsupported StakedPositionType");
+      }
+    }
+
+    if (fiduAmountToUnstake > 0) {
+      stakingToken(StakedPositionType.Fidu).safeTransfer(msg.sender, fiduAmountToUnstake);
+    }
+    if (curveAmountToUnstake > 0) {
+      stakingToken(StakedPositionType.CurveLP).safeTransfer(msg.sender, curveAmountToUnstake);
+    }
+
+    emit UnstakedMultiple(msg.sender, tokenIds, amounts);
+  }
+
   function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) public nonReentrant whenNotPaused {
     (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenId, usdcAmount);
 
@@ -824,6 +857,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 amount
   );
   event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
+  event UnstakedMultiple(address indexed user, uint256[] tokenIds, uint256[] amounts);
   event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
   event UnstakedAndWithdrewMultiple(
     address indexed user,
