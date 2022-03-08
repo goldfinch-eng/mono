@@ -42,6 +42,7 @@ import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {deployBaseFixture} from "./util/fixtures"
 import {StakedPositionType} from "../blockchain_scripts/deployHelpers"
+import {UnstakedMultiple} from "../typechain/truffle/TestStakingRewards"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
@@ -990,6 +991,177 @@ describe("StakingRewards", function () {
         const tokenId = await stake({amount: bigVal(100), from: investor})
         await stakingRewards.pause()
         await expect(stakingRewards.addToStake(tokenId, bigVal(100), {from: owner})).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("unstakeMultiple", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+    let firstToken: BN, secondToken: BN, thirdToken: BN, fourthToken: BN, fifthTokenFromDifferentUser: BN
+    let firstTokenAmount: BN, secondTokenAmount: BN, thirdTokenAmount: BN, fourthTokenAmount: BN, fifthTokenAmount: BN
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Set up stakes
+      firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
+      firstToken = await stake({amount: firstTokenAmount, from: investor})
+
+      secondTokenAmount = fiduAmount.mul(new BN(1)).div(new BN(4))
+      secondToken = await stake({amount: secondTokenAmount, from: investor})
+
+      thirdTokenAmount = curveLPAmount.mul(new BN(3)).div(new BN(4))
+      thirdToken = await stake({amount: thirdTokenAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      fourthTokenAmount = curveLPAmount.mul(new BN(1)).div(new BN(4))
+      fourthToken = await stake({amount: fourthTokenAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      fifthTokenAmount = fiduAmount.mul(new BN(4))
+      fifthTokenFromDifferentUser = await stake({amount: fifthTokenAmount, from: anotherUser})
+    })
+
+    it("unstakes multiple fidu positions", async () => {
+      await expectAction(() =>
+        stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
+          from: investor,
+        })
+      ).toChange([
+        [() => seniorPool.assets(), {by: new BN(0)}],
+        [() => fidu.balanceOf(investor), {by: firstTokenAmount.add(secondTokenAmount)}],
+        [() => stakingRewards.totalStakedSupply(), {by: firstTokenAmount.add(secondTokenAmount).neg()}],
+      ])
+      await expect(
+        stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
+          from: investor,
+        })
+      ).to.be.rejected
+    })
+
+    it("unstakes multiple curve positions", async () => {
+      await expectAction(() =>
+        stakingRewards.unstakeMultiple([thirdToken, fourthToken], [thirdTokenAmount, fourthTokenAmount], {
+          from: investor,
+        })
+      ).toChange([
+        [() => seniorPool.assets(), {by: new BN(0)}],
+        [() => fiduUSDCCurveLP.balanceOf(investor), {by: thirdTokenAmount.add(fourthTokenAmount)}],
+        [() => stakingRewards.totalStakedSupply(), {by: thirdTokenAmount.add(fourthTokenAmount).neg()}],
+      ])
+
+      await expect(
+        stakingRewards.unstakeMultiple([thirdToken, fourthToken], [thirdTokenAmount, fourthTokenAmount], {
+          from: investor,
+        })
+      ).to.be.rejected
+    })
+
+    it("unstakes for multiple fidu and curve tokens", async () => {
+      await expectAction(() =>
+        stakingRewards.unstakeMultiple(
+          [firstToken, secondToken, thirdToken, fourthToken],
+
+          [firstTokenAmount, secondTokenAmount, thirdTokenAmount, fourthTokenAmount],
+          {
+            from: investor,
+          }
+        )
+      ).toChange([
+        [() => seniorPool.assets(), {by: new BN(0)}],
+        [() => fidu.balanceOf(investor), {by: firstTokenAmount.add(secondTokenAmount)}],
+        [() => fiduUSDCCurveLP.balanceOf(investor), {by: thirdTokenAmount.add(fourthTokenAmount)}],
+        [
+          () => stakingRewards.totalStakedSupply(),
+          {by: firstTokenAmount.add(secondTokenAmount).add(thirdTokenAmount).add(fourthTokenAmount).neg()},
+        ],
+      ])
+      await expect(
+        stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
+          from: investor,
+        })
+      ).to.be.rejected
+    })
+
+    it("emits an UnstakedMultiple event", async () => {
+      const receipt = await stakingRewards.unstakeMultiple(
+        [firstToken, thirdToken],
+        [firstTokenAmount, thirdTokenAmount],
+        {from: investor}
+      )
+
+      const unstakedMultipleEvent = getFirstLog<UnstakedMultiple>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "UnstakedMultiple")
+      )
+
+      expect(unstakedMultipleEvent.args.user).to.equal(investor)
+      expect(unstakedMultipleEvent.args.tokenIds.length).to.equal(2)
+      expect(unstakedMultipleEvent.args.tokenIds[0]).to.bignumber.equal(firstToken)
+      expect(unstakedMultipleEvent.args.tokenIds[1]).to.bignumber.equal(thirdToken)
+      expect(unstakedMultipleEvent.args.amounts.length).to.equal(2)
+      expect(unstakedMultipleEvent.args.amounts[0]).to.bignumber.equal(firstTokenAmount)
+      expect(unstakedMultipleEvent.args.amounts[1]).to.bignumber.equal(thirdTokenAmount)
+    })
+
+    describe("validations", async () => {
+      context("user does not own position token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeMultiple(
+              [firstToken, secondToken, fifthTokenFromDifferentUser],
+              [firstTokenAmount, secondTokenAmount, fifthTokenAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("paused", async () => {
+        it("reverts", async () => {
+          await stakingRewards.pause()
+          await expect(
+            stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount, thirdTokenAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/paused/)
+        })
+      })
+
+      context("any amount exceeds withdrawable amount for that token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeMultiple(
+              [firstToken, thirdToken],
+              [firstTokenAmount, thirdTokenAmount.add(new BN(100))],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+        })
+      })
+
+      context("tokenIds and amounts lengths mismatch", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/tokenIds and amounts must be the same length/)
+        })
       })
     })
   })
