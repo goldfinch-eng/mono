@@ -35,7 +35,7 @@ gql`
 `;
 
 export default function EarnPage() {
-  const { data, loading, error } = useExampleQuery();
+  const { data, error } = useExampleQuery();
   const seniorPool = data?.seniorPools[0];
   const tranchedPools = data?.tranchedPools.filter(
     (tranchedPool) => tranchedPool.name !== null
@@ -56,11 +56,11 @@ export default function EarnPage() {
       <Heading level={2} className="mb-4">
         Senior Pool
       </Heading>
-      <div>
+      <div className="mb-12">
         {error ? (
           "Unable to load senior pool"
         ) : !seniorPool ? (
-          "Loading"
+          <PoolCard isPlaceholder />
         ) : (
           <PoolCard
             title={seniorPool.name}
@@ -73,24 +73,30 @@ export default function EarnPage() {
       <Heading level={2} className="mb-4">
         Borrower Pools
       </Heading>
-      <Paragraph className="mb-8">
+      <Paragraph className="mb-4">
         The more active, higher risk, higher return option. Earn higher APYs by
         vetting borrowers and supplying first-loss capital directly to
         individual pools.
       </Paragraph>
       {error ? (
         "Unable to load borrower pools"
-      ) : loading ? (
-        "Loading"
       ) : (
         <div className="flex flex-col space-y-4">
-          {tranchedPools?.map((tranchedPool) => (
-            <TranchedPoolCard
-              key={tranchedPool.id}
-              tranchedPool={tranchedPool}
-              href={`/pools/${tranchedPool.id}`}
-            />
-          ))}
+          {!tranchedPools ? (
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
+              <PoolCard key={nonce} isPlaceholder />
+            ))
+          ) : (
+            <div className="flex flex-col space-y-4">
+              {tranchedPools?.map((tranchedPool) => (
+                <TranchedPoolCard
+                  key={tranchedPool.id}
+                  tranchedPool={tranchedPool}
+                  href={`/pools/${tranchedPool.id}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
       <Paragraph className="mb-12">

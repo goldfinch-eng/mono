@@ -45,7 +45,20 @@ module.exports = {
     fontFamily: {
       sans: ['"aktiv-grotesk"', "sans-serif"],
     },
-    extend: {},
+    extend: {
+      keyframes: {
+        "background-oscillate": {
+          "0%": { "background-position": "0 50%" },
+          "25%": { "background-position": "50 50%" },
+          "50%": { "background-position": "100% 50%" },
+          "75%": { "background-position": "50% 50%" },
+          "100%": { "background-position": "0 50%" },
+        },
+      },
+      animation: {
+        "background-oscillate-slow": "background-oscillate 4s ease-in infinite",
+      },
+    },
   },
   plugins: [],
 };

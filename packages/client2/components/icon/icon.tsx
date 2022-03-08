@@ -34,7 +34,7 @@ export function Icon({ name, size = "text", className }: IconProps) {
           : size === "lg"
           ? "h-10 w-10"
           : size === "text"
-          ? "h-em w-em"
+          ? "h-[1em] w-[1em]"
           : null,
         "inline",
         className
