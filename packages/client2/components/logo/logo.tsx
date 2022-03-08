@@ -1,4 +1,7 @@
+import goldfinchLogoPng from "./goldfinch-logo.png";
 import GoldfinchLogoSvg from "./goldfinch-logo.svg";
+
+export const goldfinchLogoPngUrl = goldfinchLogoPng.src;
 
 interface GoldfinchLogoProps {
   width?: number;

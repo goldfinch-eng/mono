@@ -14,7 +14,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         {/* remove this if we decide we want Google to index the app pages (unlikely) */}
         <meta name="robots" content="noindex" />
       </Head>
-      <div className="flex h-full flex-col md:flex-row">
+      <div className="flex min-h-full flex-col md:flex-row">
         <Sidebar />
         <div className="flex-grow px-10 py-8 md:pt-20">
           <Component {...pageProps} />

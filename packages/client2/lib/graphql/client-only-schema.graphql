@@ -1,10 +1,12 @@
 extend type SeniorPool {
   name: String!
-  description: String!
+  category: String!
+  icon: String!
 }
 
 extend type TranchedPool {
-  name: String!
+  name: String
   category: String
   description: String
+  icon: String
 }

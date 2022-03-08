@@ -905,7 +905,8 @@ export type QueryUsersArgs = {
 export type SeniorPool = {
   __typename?: 'SeniorPool';
   capitalProviders: Array<User>;
-  description: Scalars['String'];
+  category: Scalars['String'];
+  icon: Scalars['String'];
   id: Scalars['ID'];
   investmentsMade: Array<TranchedPool>;
   latestPoolStatus: SeniorPoolStatus;
@@ -1623,6 +1624,7 @@ export type TranchedPool = {
   estimatedLeverageRatio: Scalars['BigInt'];
   estimatedSeniorPoolContribution: Scalars['BigInt'];
   estimatedTotalAssets: Scalars['BigInt'];
+  icon?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   isPaused: Scalars['Boolean'];
   /**
@@ -1632,7 +1634,7 @@ export type TranchedPool = {
   isV1StyleDeal: Scalars['Boolean'];
   juniorFeePercent: Scalars['BigInt'];
   juniorTranches: Array<JuniorTrancheInfo>;
-  name: Scalars['String'];
+  name?: Maybe<Scalars['String']>;
   remainingCapacity: Scalars['BigInt'];
   remainingJuniorCapacity: Scalars['BigInt'];
   reserveFeePercent: Scalars['BigInt'];
@@ -2167,28 +2169,40 @@ export enum _SubgraphErrorPolicy_ {
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, description: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: any, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name: string, description?: string | null, category?: string | null }> } }> };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: any, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> };
 
+export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null };
 
+export const TranchedPoolCardFieldsFragmentDoc = gql`
+    fragment TranchedPoolCardFields on TranchedPool {
+  id
+  name @client
+  category @client
+  icon @client
+}
+    `;
 export const ExampleDocument = gql`
     query Example {
   seniorPools(first: 1) {
     id
     name @client
-    description @client
+    category @client
+    icon @client
     latestPoolStatus {
       id
       estimatedApy
-      tranchedPools(first: 3) {
+      tranchedPools {
         id
-        name @client
-        description @client
-        category @client
+        ...TranchedPoolCardFields
       }
     }
   }
+  tranchedPools {
+    id
+    ...TranchedPoolCardFields
+  }
 }
-    `;
+    ${TranchedPoolCardFieldsFragmentDoc}`;
 
 /**
  * __useExampleQuery__
