@@ -16,6 +16,9 @@ import {
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
+import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-signer"
+import {FetchKYCFunction, KYC} from "@goldfinch-eng/autotasks/unique-identity-signer"
+import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -99,17 +102,16 @@ import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/tr
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
+const performV250Migrations = deployments.createFixture(async () => {
+  await migrate250.main()
+})
+
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
   // we need it here, because the "fixture" part is what let's hardhat
   // snapshot and give us a clean blockchain before each test.
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
-
-  await migrate231.main()
-  await migrate233.main()
-  await migrate235.main()
-  await migrate25.main()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
