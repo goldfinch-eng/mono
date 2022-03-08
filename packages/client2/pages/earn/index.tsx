@@ -5,11 +5,19 @@ import { useExampleQuery } from "@/lib/graphql/generated";
 
 gql`
   query Example {
-    seniorPools(first: 5) {
+    seniorPools(first: 1) {
       id
+      name @client
+      description @client
       latestPoolStatus {
         id
         estimatedApy
+        tranchedPools(first: 3) {
+          id
+          name @client
+          description @client
+          category @client
+        }
       }
     }
   }

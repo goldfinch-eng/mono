@@ -4,6 +4,7 @@ documents:
   - ./components/**/*.tsx
 generates:
   lib/graphql/generated.ts:
+    schema: ./lib/graphql/client-only-schema.graphql
     plugins:
       - typescript
       - typescript-operations
