@@ -1063,6 +1063,26 @@ describe("StakingRewards", function () {
       expect(unstakedAndWithdrewEvent.args.amount).to.bignumber.equal(withdrawAmount)
     })
 
+    context("for a Curve staking position", async () => {
+      it("does not allow the user to withdraw", async () => {
+        const seniorPoolBalanceBefore = await seniorPool.assets()
+        const usdcBalanceBefore = await usdc.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+        // Unstake and withdraw a FIDU-USDC Curve LP position
+        await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, new BN(1), {from: investor})).to.be.rejectedWith(
+          /This position does not support senior pool withdrawals/
+        )
+
+        expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+        expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      })
+    })
+
     context("user does not own position token", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
@@ -1154,6 +1174,26 @@ describe("StakingRewards", function () {
       )
       expect(unstakedAndWithdrewEvent.args.tokenId).to.bignumber.equal(tokenId)
       expect(unstakedAndWithdrewEvent.args.amount).to.bignumber.equal(withdrawAmount)
+    })
+
+    context("for a Curve staking position", async () => {
+      it("does not allow the user to withdraw", async () => {
+        const seniorPoolBalanceBefore = await seniorPool.assets()
+        const usdcBalanceBefore = await usdc.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+        // Unstake and withdraw a FIDU-USDC Curve LP position
+        await expect(stakingRewards.unstakeAndWithdraw(tokenId, new BN(1), {from: investor})).to.be.rejectedWith(
+          /This position does not support senior pool withdrawals/
+        )
+
+        expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+        expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      })
     })
 
     context("user does not own position token", async () => {
@@ -1285,6 +1325,37 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("with a Curve staking position", async () => {
+        it("does not allow the user to withdraw", async () => {
+          const seniorPoolBalanceBefore = await seniorPool.assets()
+          const usdcBalanceBefore = await usdc.balanceOf(investor)
+          const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          const curvePositionTokenId = await stake({
+            amount: curveLPAmount,
+            positionType: StakedPositionType.CurveLP,
+            from: investor,
+          })
+
+          // Unstake and withdraw a FIDU-USDC Curve LP position
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken, curvePositionTokenId],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, new BN(1)],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/This position does not support senior pool withdrawals/)
+
+          expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+          expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+          expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+          expect(await stakingRewards.ownerOf(curvePositionTokenId)).to.equal(investor)
         })
       })
 
@@ -1434,6 +1505,37 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/access denied/)
+        })
+      })
+
+      context("with a Curve staking position", async () => {
+        it("does not allow the user to withdraw", async () => {
+          const seniorPoolBalanceBefore = await seniorPool.assets()
+          const usdcBalanceBefore = await usdc.balanceOf(investor)
+          const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          const curvePositionTokenId = await stake({
+            amount: curveLPAmount,
+            positionType: StakedPositionType.CurveLP,
+            from: investor,
+          })
+
+          // Unstake and withdraw a FIDU-USDC Curve LP position
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken, curvePositionTokenId],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, new BN(1)],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/This position does not support senior pool withdrawals/)
+
+          expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+          expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+          expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+          expect(await stakingRewards.ownerOf(curvePositionTokenId)).to.equal(investor)
         })
       })
 
@@ -1923,6 +2025,26 @@ describe("StakingRewards", function () {
         await advanceTime({seconds: 10000})
 
         await expect(stakingRewards.exitAndWithdraw(tokenId, {from: anotherUser})).to.be.rejectedWith(/access denied/)
+      })
+    })
+
+    context("for a Curve staking position", async () => {
+      it("does not allow the user to withdraw", async () => {
+        const seniorPoolBalanceBefore = await seniorPool.assets()
+        const usdcBalanceBefore = await usdc.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+        // Unstake and withdraw a FIDU-USDC Curve LP position
+        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: investor})).to.be.rejectedWith(
+          /This position does not support senior pool withdrawals/
+        )
+
+        expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+        expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
       })
     })
 
