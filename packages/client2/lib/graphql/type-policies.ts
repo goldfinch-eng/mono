@@ -1,4 +1,5 @@
 import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { goldfinchLogoPngUrl } from "@/components/logo";
 import { metadata } from "@/constants";
@@ -19,40 +20,47 @@ function readFieldFromMetadata(
   };
 }
 
+function readAsBigNumber(n?: string) {
+  if (!n) {
+    return null;
+  }
+  return BigNumber.from(n);
+}
+
+function readAsFixedNumber(n?: string) {
+  if (!n) {
+    return null;
+  } else if (!n.includes(".")) {
+    return FixedNumber.fromString(n);
+  }
+  const [wholeNumber, decimals] = n.split(".");
+  const decimalWidth = 32; // This number was chosen arbitrarily. It seems precise enough for any math the frontend would have to do for displaying data to users, while not being limitless
+  return FixedNumber.fromString(
+    `${wholeNumber}.${decimals.substring(0, decimalWidth)}`,
+    decimalWidth
+  );
+}
+
 export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   SeniorPool: {
     fields: {
-      name: {
-        read() {
-          return "Goldfinch Senior Pool";
-        },
-      },
-      category: {
-        read() {
-          return "Automated diversified portfolio";
-        },
-      },
-      icon: {
-        read() {
-          return goldfinchLogoPngUrl;
-        },
-      },
+      name: { read: () => "Goldfinch Senior Pool" },
+      category: { read: () => "Automated diversified portfolio" },
+      icon: { read: () => goldfinchLogoPngUrl },
+    },
+  },
+  SeniorPoolStatus: {
+    fields: {
+      totalPoolAssets: { read: readAsBigNumber },
+      estimatedApy: { read: readAsFixedNumber },
     },
   },
   TranchedPool: {
     fields: {
-      name: {
-        read: readFieldFromMetadata("name"),
-      },
-      description: {
-        read: readFieldFromMetadata("description"),
-      },
-      category: {
-        read: readFieldFromMetadata("category"),
-      },
-      icon: {
-        read: readFieldFromMetadata("icon"),
-      },
+      name: { read: readFieldFromMetadata("name") },
+      description: { read: readFieldFromMetadata("description") },
+      category: { read: readFieldFromMetadata("category") },
+      icon: { read: readFieldFromMetadata("icon") },
     },
   },
 };

@@ -11,3 +11,6 @@ generates:
       - typescript-react-apollo
     config:
       withHooks: true
+      scalars:
+        BigInt: TheGraph_BigInt
+        BigDecimal: TheGraph_BigDecimal

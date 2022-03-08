@@ -13,8 +13,8 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  BigDecimal: any;
-  BigInt: any;
+  BigDecimal: TheGraph_BigDecimal;
+  BigInt: TheGraph_BigInt;
   Bytes: any;
 };
 
@@ -2169,7 +2169,7 @@ export enum _SubgraphErrorPolicy_ {
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: any, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, totalPoolAssets: TheGraph_BigInt, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> };
 
 export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null };
 
@@ -2190,6 +2190,7 @@ export const ExampleDocument = gql`
     icon @client
     latestPoolStatus {
       id
+      totalPoolAssets
       estimatedApy
       tranchedPools {
         id
