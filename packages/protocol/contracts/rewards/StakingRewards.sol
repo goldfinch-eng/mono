@@ -540,6 +540,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount)
     internal
+    canWithdraw(tokenId)
     updateReward(tokenId)
     returns (uint256 usdcAmountReceived, uint256 fiduUsed)
   {
@@ -586,6 +587,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount)
     internal
+    canWithdraw(tokenId)
     updateReward(tokenId)
     returns (uint256 usdcReceivedAmount)
   {
@@ -753,6 +755,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /* ========== MODIFIERS ========== */
+
+  /// @notice Checks if the user can withdraw funds from the senior pool for a staked position.
+  ///   A user should only be able to withdraw funds from the senior pool for a given staked position
+  ///   if the user has staked FIDU.
+  modifier canWithdraw(uint256 tokenId) {
+    StakedPosition storage position = positions[tokenId];
+    require(position.positionType == StakedPositionType.Fidu, "This position does not support senior pool withdrawals");
+    _;
+  }
 
   modifier updateReward(uint256 tokenId) {
     _updateReward(tokenId);
