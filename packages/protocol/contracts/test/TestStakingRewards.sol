@@ -10,6 +10,12 @@ contract TestStakingRewards is StakingRewards {
 
   mapping(StakedPositionType => uint256) private exchangeRates;
 
+  /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
+  ///   multipler will be reset to 1x.
+  /// @dev This will also checkpoint their rewards up to the current time.
+  // solhint-disable-next-line no-empty-blocks
+  function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
+
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view override returns (uint256) {
     uint256 exchangeRate = exchangeRates[positionType];
 
