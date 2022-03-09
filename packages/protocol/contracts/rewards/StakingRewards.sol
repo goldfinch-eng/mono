@@ -650,6 +650,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit Unstaked(msg.sender, tokenId, amount, position.positionType);
   }
 
+  /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
+  ///   multipler will be reset to 1x.
+  /// @dev This will also checkpoint their rewards up to the current time.
+  // solhint-disable-next-line no-empty-blocks
+  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
   /// @dev This will also checkpoint their rewards up to the current time.
