@@ -11,7 +11,7 @@ const navItems = [
   { label: "Transactions", href: "/transactions" },
 ];
 
-export function Sidebar() {
+export function Nav() {
   return (
     <div className="flex flex-row items-center justify-between gap-8 bg-sand-100 p-4 md:min-w-[180px] md:flex-col md:items-stretch md:justify-start md:pr-0">
       <GoldfinchLogo className="h-7 w-7 self-start" />

@@ -3,7 +3,7 @@ import { ApolloProvider } from "@apollo/client";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 
-import { Sidebar } from "@/components/sidebar";
+import { Nav } from "@/components/nav";
 import { apolloClient } from "@/lib/graphql/apollo";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
@@ -15,7 +15,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <meta name="robots" content="noindex" />
       </Head>
       <div className="flex min-h-full flex-col md:flex-row">
-        <Sidebar />
+        <Nav />
         <div className="flex-grow px-10 py-8 md:pt-20">
           <Component {...pageProps} />
         </div>
