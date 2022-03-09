@@ -13,7 +13,9 @@ export function ShimmerLines({
 }: ShimmerLinesProps) {
   const shimmers = [];
   for (let i = 0; i < lines; i++) {
-    shimmers.push(<Shimmer isTruncated={i === 0 && truncateFirstLine} />);
+    shimmers.push(
+      <Shimmer key={i} isTruncated={i === 0 && truncateFirstLine} />
+    );
   }
 
   return (
