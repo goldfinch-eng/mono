@@ -1,9 +1,9 @@
 import React, {useState, useEffect, useContext} from "react"
-import {fetchCreditLineData} from "../ethereum/creditLine"
-import {usdcFromAtomic} from "../ethereum/erc20"
-import {assertNonNullable, displayDollars} from "../utils"
-import Dropdown from "./dropdown"
-import {AppContext} from "../App"
+import {fetchCreditLineData} from "../../ethereum/creditLine"
+import {usdcFromAtomic} from "../../ethereum/erc20"
+import {assertNonNullable, displayDollars} from "../../utils"
+import Dropdown from "../dropdown"
+import {AppContext} from "../../App"
 
 function BorrowHeader(props): JSX.Element {
   const {goldfinchProtocol, currentBlock} = useContext(AppContext)

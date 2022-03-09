@@ -369,26 +369,4 @@ describe("FixedLeverageRatioStrategy", () => {
       })
     })
   })
-
-  describe("updateGoldfinchConfig", () => {
-    let tranchedPool
-    let goldfinchConfig
-    let owner
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({tranchedPool, goldfinchConfig, owner} = await setupTest())
-    })
-
-    describe("setting it", () => {
-      it("should emit an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address)
-        const tx = await tranchedPool.updateGoldfinchConfig()
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-  })
 })

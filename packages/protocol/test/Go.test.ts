@@ -314,6 +314,10 @@ describe("Go", () => {
       })
     })
 
+    it("getSeniorPoolIdTypes", async () => {
+      expect(await (await go.getSeniorPoolIdTypes()).map((x) => x.toNumber())).to.deep.equal([0, 1, 3, 4])
+    })
+
     context("goSeniorPool", () => {
       it("Validates zero address", async () => {
         await expect(go.goSeniorPool(ZERO_ADDRESS)).to.be.rejectedWith(/Zero address is not go-listed/)

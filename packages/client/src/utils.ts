@@ -6,7 +6,7 @@ import _ from "lodash"
 import {ChainInfoToAdd, isMainnetForking, SupportedChainId} from "./ethereum/utils"
 import {NetworkConfig} from "./types/network"
 import {AsyncReturnType} from "./types/util"
-import web3 from "./web3"
+import getWeb3 from "./web3"
 
 export function croppedAddress(address) {
   if (!address) {
@@ -188,6 +188,7 @@ export function assertBigNumber(val: unknown): asserts val is BigNumber {
 }
 
 export async function getCurrentBlock() {
+  const web3 = getWeb3()
   return await web3.readOnly.eth.getBlock("latest")
 }
 
@@ -297,6 +298,7 @@ export async function switchToNetwork(
 }
 
 export async function switchNetworkIfRequired(networkConfig: NetworkConfig): Promise<void> {
+  const web3 = getWeb3()
   const currentNetwork: SupportedChainId = SupportedChainId[networkConfig.name]
   let idealNetworkId: SupportedChainId = SupportedChainId.MAINNET
 
@@ -310,5 +312,17 @@ export async function switchNetworkIfRequired(networkConfig: NetworkConfig): Pro
 
   if (idealNetworkId && currentNetwork !== idealNetworkId) {
     await switchToNetwork(web3.userWallet.currentProvider as AbstractProvider, idealNetworkId)
+  }
+}
+
+export function GFITokenImageURL(): string {
+  if (process.env.NODE_ENV === "development") {
+    if (process.env.REACT_APP_MURMURATION === "yes") {
+      return "https://murmuration.goldfinch.finance/gfi-token.svg"
+    } else {
+      return "http://localhost:3000/gfi-token.svg"
+    }
+  } else {
+    return "https://app.goldfinch.finance/gfi-token.svg"
   }
 }

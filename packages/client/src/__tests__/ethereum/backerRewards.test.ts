@@ -17,7 +17,7 @@ import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import BigNumber from "bignumber.js"
 import {CreditLine} from "../../ethereum/creditLine"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {assertAllMocksAreCalled} from "../rewards/__utils__/mocks"
 import {assertNonNullable} from "../../utils"
 
@@ -25,6 +25,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
@@ -352,6 +353,7 @@ describe("BackerRewards", () => {
           tranchedPool.creditLine.balance = tranchedPoolMaxLimit
           tranchedPool.creditLine.interestOwed = new BigNumber(0)
 
+          tranchedPool.creditLine.currentLimit = tranchedPoolMaxLimit
           tranchedPool.poolState = PoolState.SeniorLocked
           tranchedPool.totalDeployed = tranchedPoolMaxLimit
           const juniorPrincipalDeposited = tranchedPoolMaxLimit.dividedBy(tranchedPool.estimatedLeverageRatio.plus(1))
@@ -363,6 +365,7 @@ describe("BackerRewards", () => {
             .dividedBy(tranchedPool.estimatedLeverageRatio.plus(1))
           tranchedPool.seniorTranche = {
             principalDeposited: seniorPrincipalDeposited,
+            lockedUntil: currentBlock.timestamp + 2 * utils.SECONDS_PER_DAY,
           } as TrancheInfo
           tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
 
