@@ -352,6 +352,7 @@ describe("BackerRewards", () => {
           tranchedPool.creditLine.balance = tranchedPoolMaxLimit
           tranchedPool.creditLine.interestOwed = new BigNumber(0)
 
+          tranchedPool.creditLine.currentLimit = tranchedPoolMaxLimit
           tranchedPool.poolState = PoolState.SeniorLocked
           tranchedPool.totalDeployed = tranchedPoolMaxLimit
           const juniorPrincipalDeposited = tranchedPoolMaxLimit.dividedBy(tranchedPool.estimatedLeverageRatio.plus(1))
@@ -363,6 +364,7 @@ describe("BackerRewards", () => {
             .dividedBy(tranchedPool.estimatedLeverageRatio.plus(1))
           tranchedPool.seniorTranche = {
             principalDeposited: seniorPrincipalDeposited,
+            lockedUntil: currentBlock.timestamp + 2 * utils.SECONDS_PER_DAY,
           } as TrancheInfo
           tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
 

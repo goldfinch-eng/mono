@@ -35,12 +35,13 @@ const setupTest = deployments.createFixture(async () => {
   const go = await getTruffleContract<GoInstance>("Go")
   const uniqueIdentity = await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity")
 
-  const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
-    .require("GoldfinchFactory")
-    .at(existingContracts.GoldfinchFactory.ExistingContract.address)
+  const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory", {
+    at: existingContracts.GoldfinchFactory.ExistingContract.address,
+  })
 
   const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
   assertIsString(usdcAddress)
+
   const usdc = await artifacts.require("IERC20withDec").at(usdcAddress)
 
   const {gf_deployer} = await getNamedAccounts()
@@ -70,7 +71,7 @@ describe("v2.5", async function () {
     go = setupTestResult.go
   })
 
-  it("v2.5 properly upgrades UniqueIdentity", async () => {
+  it("properly upgrades UniqueIdentity", async () => {
     expect(await uniqueIdentity.supportedUIDTypes(0)).to.equal(true)
     expect(await uniqueIdentity.supportedUIDTypes(1)).to.equal(true)
     expect(await uniqueIdentity.supportedUIDTypes(2)).to.equal(true)
