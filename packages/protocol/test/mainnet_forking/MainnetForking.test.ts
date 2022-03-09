@@ -9,15 +9,11 @@ import {
   MAINNET_CHAIN_ID,
   getProtocolOwner,
   getTruffleContract,
-  OWNER_ROLE,
-  SIGNER_ROLE,
   getEthersContract,
 } from "../../blockchain_scripts/deployHelpers"
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-signer"
-import {FetchKYCFunction, KYC} from "@goldfinch-eng/autotasks/unique-identity-signer"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
@@ -44,12 +40,7 @@ import {
   toEthers,
   mineInSameBlock,
   mineBlock,
-  mochaEach,
 } from "../testHelpers"
-import * as migrate231 from "../../blockchain_scripts/migrations/v2.3.1/migrate"
-import * as migrate233 from "../../blockchain_scripts/migrations/v2.3.3/migrate"
-import * as migrate235 from "../../blockchain_scripts/migrations/v2.3.5/migrate"
-import * as migrate25 from "../../blockchain_scripts/migrations/v2.5/migrate"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
 import {

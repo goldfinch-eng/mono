@@ -1,5 +1,5 @@
 import {bigVal} from "@goldfinch-eng/protocol/test/testHelpers"
-import {BackerRewards, GFI, GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {BackerRewards, GFI, GoldfinchConfig, UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import BigNumber from "bignumber.js"
 import {
   ContractDeployer,
@@ -33,7 +33,7 @@ export async function main() {
 
   // 2. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["BackerRewards", "SeniorPool", "StakingRewards", "CommunityRewards"],
+    contracts: ["BackerRewards", "SeniorPool", "StakingRewards", "CommunityRewards", "Go"],
   })
 
   // 3. Change implementations
@@ -76,6 +76,13 @@ export async function main() {
       await gfi.populateTransaction.transferFrom(owner, backerRewards.address, totalRewards),
       await backerRewards.populateTransaction.setTotalRewards(totalRewards.toString()),
       await backerRewards.populateTransaction.setMaxInterestDollarsEligible(maxInterestDollarsEligible),
+    ],
+  })
+
+  const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
+  await deployEffects.add({
+    deferred: [
+      await uniqueIdentity.populateTransaction.setSupportedUIDTypes([0, 1, 2, 3, 4], [true, true, true, true, true]),
     ],
   })
 
