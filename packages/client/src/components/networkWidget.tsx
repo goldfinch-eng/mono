@@ -138,7 +138,6 @@ function NetworkWidget(props: NetworkWidgetProps) {
         .request({method: "eth_requestAccounts"})
         .then(() => {
           props.connectionComplete()
-          handleSignIn()
         })
         .catch((error) => {
           console.error("Error connecting to metamask", error)
@@ -399,31 +398,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (userWalletWeb3Status?.type === "connected" && session.status !== "authenticated") {
-    return (
-      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
-          Connect Wallet
-        </button>
-        <div className="network-widget-info">
-          <div className="network-widget-section wallet-address">
-            <span>Wallet address</span>
-            <div className="address">{userAddressForDisplay}</div>
-          </div>
-          <div className="network-widget-section">
-            <button
-              className={`button bold ${isSignInPending && "wallet active"}`}
-              disabled={isSignInPending}
-              onClick={handleSignIn}
-            >
-              {isSignInPending ? "Waiting..." : "Connect"}
-            </button>
-            {isSignInPending && <span className="check-wallet">Check your wallet to finish signing</span>}
-          </div>
-        </div>
-      </div>
-    )
-  } else if (userWalletWeb3Status?.type === "connected" && session.status === "authenticated") {
+  } else if (userWalletWeb3Status?.type === "connected") {
     const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
     return (
       <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
