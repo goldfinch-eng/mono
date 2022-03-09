@@ -1,11 +1,11 @@
 import clsx from "clsx";
-import React, { forwardRef, HTMLAttributes } from "react";
+import React, { forwardRef, HTMLAttributes, ReactNode } from "react";
 
 interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
   /**
    * Content within the button
    */
-  children: string | number;
+  children: ReactNode;
   /**
    * Determines the size of the button via padding and font size
    */
