@@ -1302,11 +1302,13 @@ describe("BackerRewards", function () {
 
       const juniorClaimable = await backerRewards.poolTokenClaimableRewards(juniorTokenId)
       expect(juniorClaimable.gt(new BN(0))).to.be.true
-      expect(backerRewards.withdraw(juniorTokenId)).to.be.fulfilled
+      expect(backerRewards.withdraw(juniorTokenId, {from: anotherUser})).to.be.fulfilled
 
       const seniorClaimable = await backerRewards.poolTokenClaimableRewards(seniorTokenId)
       expect(seniorClaimable).to.bignumber.equal(new BN(0))
-      expect(backerRewards.withdraw(seniorTokenId)).to.be.rejectedWith(/Ineligible senior tranche token/)
+      expect(backerRewards.withdraw(seniorTokenId, {from: investor})).to.be.rejectedWith(
+        /Ineligible senior tranche token/
+      )
     })
 
     context("Pool is paused", () => {

@@ -314,15 +314,19 @@ describe("Go", () => {
       })
     })
 
+    it("getSeniorPoolIdTypes", async () => {
+      expect(await (await go.getSeniorPoolIdTypes()).map((x) => x.toNumber())).to.deep.equal([0, 1, 3, 4])
+    })
+
     context("goSeniorPool", () => {
       it("Validates zero address", async () => {
         await expect(go.goSeniorPool(ZERO_ADDRESS)).to.be.rejectedWith(/Zero address is not go-listed/)
       })
 
       it("returns true if called by staking rewards contract", async () => {
-        const tokenId = new BN(0)
+        const uidTokenId = await uniqueIdentity.ID_TYPE_0()
         await uniqueIdentity.setSupportedUIDTypes([], [])
-        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(0))
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(0))
         const stakingRewardsContract = await getContract<StakingRewards, StakingRewardsInstance>(
           "StakingRewards",
           TRUFFLE_CONTRACT_PROVIDER
@@ -330,12 +334,45 @@ describe("Go", () => {
         await expect(go.goSeniorPool(stakingRewardsContract.address)).to.be.fulfilled
       })
 
-      it("returns true if has UID and not legacy golisted", async () => {
-        const tokenId = new BN(0)
+      it("returns true if has non-US UID and not legacy golisted", async () => {
+        const uidTokenId = await uniqueIdentity.ID_TYPE_0()
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
-        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
-        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        await uniqueIdentity.setSupportedUIDTypes([uidTokenId], [true])
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns true if has US accredited UID and not legacy golisted", async () => {
+        const uidTokenId = await uniqueIdentity.ID_TYPE_1()
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([uidTokenId], [true])
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns true if has US entity UID and not legacy golisted", async () => {
+        const uidTokenId = await uniqueIdentity.ID_TYPE_3()
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([uidTokenId], [true])
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(1))
+        expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
+        expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
+        expect(await go.goSeniorPool(anotherUser)).to.equal(true)
+      })
+
+      it("returns true if has non US entity UID and not legacy golisted", async () => {
+        const uidTokenId = await uniqueIdentity.ID_TYPE_4()
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await uniqueIdentity.setSupportedUIDTypes([uidTokenId], [true])
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(1))
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
         expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         expect(await go.goSeniorPool(anotherUser)).to.equal(true)
@@ -350,11 +387,11 @@ describe("Go", () => {
       })
 
       it("returns false if not legacy golisted and no included UID", async () => {
-        const tokenId = new BN(2)
+        const uidTokenId = await uniqueIdentity.ID_TYPE_2()
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
-        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
-        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        await uniqueIdentity.setSupportedUIDTypes([uidTokenId], [true])
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(1))
         expect(await goldfinchConfig.goList(anotherUser)).to.equal(false)
         expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         expect(await go.goSeniorPool(anotherUser)).to.equal(false)
@@ -386,11 +423,11 @@ describe("Go", () => {
 
     context("paused", () => {
       beforeEach(async () => {
-        const tokenId = new BN(0)
+        const uidTokenId = await uniqueIdentity.ID_TYPE_0()
         const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await uniqueIdentity.setSupportedUIDTypes([tokenId], [true])
-        await mint(hre, uniqueIdentity, tokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
-        expect(await uniqueIdentity.balanceOf(anotherUser, tokenId)).to.bignumber.equal(new BN(1))
+        await uniqueIdentity.setSupportedUIDTypes([uidTokenId], [true])
+        await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, anotherUser)
+        expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(1))
       })
 
       it("returns anyway", async () => {

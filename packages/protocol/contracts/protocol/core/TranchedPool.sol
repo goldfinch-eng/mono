@@ -47,7 +47,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principalWithdrawn
   );
 
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event TranchedPoolAssessed(address indexed pool);
   event PaymentApplied(
     address indexed payer,
@@ -134,6 +133,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       "Must not have balance"
     );
     allowedUIDTypes = ids;
+  }
+
+  function getAllowedUIDTypes() public view returns (uint256[] memory) {
+    return allowedUIDTypes;
   }
 
   /**
@@ -342,15 +345,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(amount > 0, "Must pay more than zero");
     _collectPayment(amount);
     _assess();
-  }
-
-  /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    creditLine.updateGoldfinchConfig();
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**

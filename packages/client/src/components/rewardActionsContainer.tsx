@@ -35,16 +35,10 @@ import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {BackerMerkleDirectDistributorLoaded} from "../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "../ethereum/backerMerkleDistributor"
+import {requestUserAddGfiTokenToWallet} from "../web3"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
-const GFI_TOKEN_IMAGE_URL = `${
-  process.env.NODE_ENV === "development"
-    ? process.env.REACT_APP_MURMURATION === "yes"
-      ? "https://murmuration.goldfinch.finance"
-      : "http://localhost:3000"
-    : "https://app.goldfinch.finance"
-}/gfi-token.svg`
 
 enum RewardStatus {
   Acceptable,
@@ -229,7 +223,7 @@ function Details(props: DetailsProps) {
       {columns}
       {props.itemDetails.etherscanAddress && (
         <EtherscanLinkContainer className="pool-links">
-          <EtherscanLink address={props.itemDetails.etherscanAddress}>
+          <EtherscanLink txHash={props.itemDetails.etherscanAddress}>
             Etherscan<span className="outbound-link">{iconOutArrow}</span>
           </EtherscanLink>
         </EtherscanLinkContainer>
@@ -312,7 +306,6 @@ function RewardsListItem(props: RewardsListItemProps) {
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
 
   const disabledText = props.status === RewardStatus.Acceptable
-  const valueDisabledClass = disabledText ? "disabled-text" : ""
 
   const actionButtonComponent = <ActionButton {...getActionButtonProps(props)} />
 
@@ -334,13 +327,13 @@ function RewardsListItem(props: RewardsListItemProps) {
               <div className="item-details">
                 <div className="detail-container">
                   <span className="detail-label">Locked GFI</span>
-                  <div className={`${valueDisabledClass}`} data-testid="detail-unvested">
+                  <div className={`${unvestedGFIZeroDisabled}`} data-testid="detail-unvested">
                     {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
                   </div>
                 </div>
                 <div className="detail-container">
                   <span className="detail-label">Claimable GFI</span>
-                  <div className={`${valueDisabledClass}`} data-testid="detail-claimable">
+                  <div className={`${claimableGFIZeroDisabled}`} data-testid="detail-claimable">
                     {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
                   </div>
                 </div>
@@ -358,16 +351,10 @@ function RewardsListItem(props: RewardsListItemProps) {
                 {props.title}
                 <div className="subtitle">{props.subtitle}</div>
               </div>
-              <div
-                className={`table-cell col20 numeric ${valueDisabledClass} ${unvestedGFIZeroDisabled}`}
-                data-testid="detail-unvested"
-              >
+              <div className={`table-cell col20 numeric ${unvestedGFIZeroDisabled}`} data-testid="detail-unvested">
                 {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
               </div>
-              <div
-                className={`table-cell col20 numeric ${valueDisabledClass} ${claimableGFIZeroDisabled}`}
-                data-testid="detail-claimable"
-              >
+              <div className={`table-cell col20 numeric ${claimableGFIZeroDisabled}`} data-testid="detail-claimable">
                 {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
               </div>
               {actionButtonComponent}
@@ -575,27 +562,9 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  async function requestUserAddGfiTokenToWallet(previousGfiBalance: BigNumber): Promise<void> {
+  async function handleAddGfiTokenToWallet(previousGfiBalance: BigNumber, address: string): Promise<void> {
     if (previousGfiBalance.eq(0)) {
-      return (window as any).ethereum
-        .request({
-          method: "wallet_watchAsset",
-          params: {
-            type: "ERC20",
-            options: {
-              address: props.gfi.address,
-              symbol: "GFI",
-              decimals: 18,
-              image: GFI_TOKEN_IMAGE_URL,
-            },
-          },
-        })
-        .then((success: boolean) => {
-          if (!success) {
-            throw new Error("Failed to add GFI token to wallet.")
-          }
-        })
-        .catch(console.error)
+      await requestUserAddGfiTokenToWallet(props.gfi.address)
     } else {
       // Don't ask the user to add the GFI asset to their wallet, as for Metamask this was
       // observed to prompt the user with another dialog even if GFI was already an asset in
@@ -622,7 +591,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
-    await requestUserAddGfiTokenToWallet(previousGfiBalance)
+    await handleAddGfiTokenToWallet(previousGfiBalance, props.gfi.address)
   }
 
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
@@ -648,6 +617,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     // grant does not transfer GFI to the user. For MerkleDistributor grants, it's most relevant to ask the user to
     // add GFI to their wallet only as part of `handleClaim()`.
   }
+
   async function handleAcceptMerkleDirectDistributorGrant(info: MerkleDirectDistributorGrantInfo): Promise<void> {
     assertNonNullable(props.merkleDirectDistributor)
     const previousGfiBalance = props.user.info.value.gfiBalance
@@ -663,7 +633,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
     // For MerkleDirectDistributor grants (unlike MerkleDistributor grants), accepting the grant does transfer GFI
     // to them, so it is relevant to ask the user here to add GFI to their wallet.
-    await requestUserAddGfiTokenToWallet(previousGfiBalance)
+    await handleAddGfiTokenToWallet(previousGfiBalance, props.gfi.address)
   }
 
   if (props.type === "communityRewards" || props.type === "stakingRewards") {

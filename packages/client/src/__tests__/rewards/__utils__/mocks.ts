@@ -45,7 +45,7 @@ import {
   getBackerMerkleDirectDistributorAbi,
 } from "./constants"
 import isEqual from "lodash/isEqual"
-import web3 from "../../../web3"
+import getWeb3 from "../../../web3"
 import {
   MerkleDirectDistributorGrantInfo,
   MerkleDirectDistributorInfo,
@@ -793,6 +793,7 @@ export async function mockStakeFiduBannerCalls(
   allowanceAmount: string,
   notStakedFidu: string
 ) {
+  const web3 = getWeb3()
   const DEPLOYMENTS = await getDeployments()
   const balanceMock = mock({
     blockchain,

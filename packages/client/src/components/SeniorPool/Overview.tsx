@@ -25,18 +25,15 @@ export function Overview(props: OverviewProps): JSX.Element {
         <span className="highlights">Highlights</span>
         <ul className="highlights-list">
           <li>
-            <span className="list-dot">•</span>
             <span>
               Earn passive yield. Capital is automatically deployed across a diverse portfolio of Borrowers that are
               vetted by Backers.
             </span>
           </li>
           <li>
-            <span className="list-dot">•</span>
             <span>Lower risk. Losses are protected by the first-loss capital supplied by Backers.</span>
           </li>
           <li>
-            <span className="list-dot">•</span>
             <span>
               Stable returns. Receive USDC APY from the underlying interest, driven by real-world activity that is
               uncorrelated with crypto, plus GFI from liquidity mining distributions.

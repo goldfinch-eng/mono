@@ -109,3 +109,5 @@ packages/subgraph/build/
 packages/subgraph/data/
 packages/subgraph/generated/
 packages/subgraph/docker-compose.yml
+
+*.wasm
