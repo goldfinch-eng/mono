@@ -23,23 +23,7 @@ import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
 import {V1DealSupplyStatus} from "./V1DealSupplyStatus"
 import {BorrowerOverview} from "./BorrowerOverview"
-import {useForm, FormProvider} from "react-hook-form"
-import LoadingButton from "../loadingButton"
-import {useSignIn} from "../../hooks/useSignIn"
-
-function SignInForm({action, disabled}) {
-  const formMethods = useForm({mode: "onChange", shouldUnregister: false})
-  return (
-    <FormProvider {...formMethods}>
-      <div className="info-banner background-container">
-        <div className="message small">
-          <p>Please sign the request in your wallet to continue.</p>
-        </div>
-        <LoadingButton text="Sign request" action={action} disabled={disabled} />
-      </div>
-    </FormProvider>
-  )
-}
+import {AuthenticatedSession, useSignIn} from "../../hooks/useSignIn"
 
 interface TranchedPoolViewURLParams {
   poolAddress: string
@@ -113,10 +97,23 @@ function TranchedPoolView() {
     assertNonNullable(user)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
+    let userSession: AuthenticatedSession
     if (session.status !== "authenticated") {
-      return
+      try {
+        const result = await signIn()
+        if (result.status !== "authenticated") {
+          return
+        } else {
+          userSession = result
+        }
+      } catch (e) {
+        return
+      }
+    } else {
+      userSession = session
     }
-    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+
+    const client = new DefaultGoldfinchClient(network.name!, userSession, setSessionData)
     return client
       .signNDA(user.address, tranchedPool!.address)
       .then((r) => {
@@ -148,7 +145,6 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
-      {session.status !== "authenticated" && <SignInForm disabled={false} action={signIn} />}
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {maxCapacityNotice}
       <InvestorNotice />
