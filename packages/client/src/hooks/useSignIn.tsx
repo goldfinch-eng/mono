@@ -4,7 +4,7 @@ import difference from "lodash/difference"
 import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SESSION_DATA_VERSION} from "../types/session"
-import {isCodedErrorLike, assertNonNullable} from "../utils"
+import {isCodedErrorLike, assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
 import getWeb3, {getUserWalletWeb3Status} from "../web3"
 import walletConnect from "../walletConnect"
 
@@ -65,9 +65,10 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
   const signIn = useCallback(
     async function () {
       const userWalletWeb3Status = await getUserWalletWeb3Status()
+      const _currentBlock = currentBlock ?? getBlockInfo(await getCurrentBlock())
       assertNonNullable(userWalletWeb3Status)
       assertNonNullable(setSessionData)
-      assertNonNullable(currentBlock)
+      assertNonNullable(_currentBlock)
       const userAddress = userWalletWeb3Status.address
       if (!userAddress) {
         setSessionData(undefined)
@@ -77,8 +78,8 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
       const signer = provider.getSigner(userAddress)
 
-      const signatureBlockNum = currentBlock.number
-      const signatureBlockNumTimestamp = currentBlock.timestamp
+      const signatureBlockNum = _currentBlock.number
+      const signatureBlockNumTimestamp = _currentBlock.timestamp
       const version = SESSION_DATA_VERSION
       let signature: string | undefined
 
