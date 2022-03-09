@@ -23,7 +23,6 @@ import {
   UserMerkleDistributorLoaded,
 } from "../../ethereum/user"
 import {useFromSameBlock} from "../../hooks/useFromSameBlock"
-import {useSession} from "../../hooks/useSignIn"
 import {
   AcceptedMerkleDirectDistributorGrant,
   NotAcceptedMerkleDirectDistributorGrant,
@@ -181,7 +180,6 @@ function Rewards() {
     currentBlock,
   } = useContext(AppContext)
   const isTabletOrMobile = useMediaQuery({query: `(max-width: ${WIDTH_TYPES.screenL})`})
-  const session = useSession()
   const consistent = useFromSameBlock<
     StakingRewardsLoaded,
     GFILoaded,
@@ -214,7 +212,7 @@ function Rewards() {
     _userBackerMerkleDistributor
   )
 
-  const disabled = session.status !== "authenticated"
+  const disabled = false
   let loaded: boolean = false
   let claimable: BigNumber | undefined
   let unvested: BigNumber | undefined
