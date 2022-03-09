@@ -3,7 +3,7 @@ import {AppContext} from "../App"
 import {TranchedPool} from "../ethereum/tranchedPool"
 import {UserLoaded} from "../ethereum/user"
 import {useAsyncFn, useStaleWhileRevalidating} from "./useAsync"
-import {SimpleGoldfinchClient} from "./useGoldfinchClient"
+import {ReadOnlyGoldfinchClient} from "./useGoldfinchClient"
 import useNonNullContext from "./useNonNullContext"
 
 export function useFetchNDA({user, tranchedPool}: {user?: UserLoaded; tranchedPool?: TranchedPool}) {
@@ -14,7 +14,7 @@ export function useFetchNDA({user, tranchedPool}: {user?: UserLoaded; tranchedPo
       return
     }
 
-    const client = new SimpleGoldfinchClient(network.name!)
+    const client = new ReadOnlyGoldfinchClient(network.name!)
     return client.fetchNDA(user.address, tranchedPool!.address).then((r) => r.json)
   }, [network, user?.address, tranchedPool?.address])
   const nda = useStaleWhileRevalidating(result)

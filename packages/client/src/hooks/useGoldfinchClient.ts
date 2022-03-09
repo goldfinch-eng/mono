@@ -145,7 +145,7 @@ class DefaultGoldfinchClient implements GoldfinchAuthenticatedClient {
   }
 }
 
-export class SimpleGoldfinchClient implements GoldfinchUnauthenticatedClient {
+export class ReadOnlyGoldfinchClient implements GoldfinchUnauthenticatedClient {
   private readonly baseURL: string
 
   constructor(networkName: string) {

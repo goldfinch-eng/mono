@@ -2,7 +2,6 @@ import BigNumber from "bignumber.js"
 import {useContext, useState} from "react"
 import {AppContext} from "../../App"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "../../ethereum/tranchedPool"
-import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
 import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
 import {iconDownArrow, iconUpArrow} from "../icons"
@@ -23,7 +22,6 @@ export function ActionsContainer({
 }) {
   const {user, currentBlock} = useContext(AppContext)
   const [action, setAction] = useState<"" | "deposit" | "withdraw">("")
-  const session = useSession()
 
   function actionComplete() {
     onComplete().then(() => {

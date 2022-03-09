@@ -6,7 +6,6 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
 import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
-import {useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {
   ACCEPT_TX_TYPE,
@@ -68,20 +67,10 @@ interface NetworkWidgetProps {
 
 function NetworkWidget(props: NetworkWidgetProps) {
   const {userWalletWeb3Status, gfi} = useContext(AppContext)
-  const [session, signIn] = useSignIn()
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
   const [isEnablePending, setIsEnablePending] = useState<boolean>(false)
-  const [isSignInPending, setIsSignInPending] = useState<boolean>(false)
   const [noWeb3Widget, setNoWeb3Widget] = useState<boolean>(false)
   const [showInstallWallet, setShowInstallWallet] = useState<boolean>(false)
-
-  async function handleSignIn(): Promise<void> {
-    setIsSignInPending(true)
-    await signIn().catch((error) => {
-      console.error("Error connecting to metamask", error)
-    })
-    setIsSignInPending(false)
-  }
 
   async function handleEnable(): Promise<void> {
     if (
