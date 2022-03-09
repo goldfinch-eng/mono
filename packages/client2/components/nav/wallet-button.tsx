@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { useWallet } from "@/lib/wallet";
 
 import { MetaMaskButton } from "./metamask-button";
+import { WalletConnectButton } from "./walletconnect-button";
 
 export function WalletButton() {
   const [referenceElement, setReferenceElement] = useState();
@@ -54,8 +55,9 @@ function WalletSelection() {
   return (
     <div>
       <div className="text-lg">Choose a wallet</div>
-      <div>
+      <div className="flex space-x-4">
         <MetaMaskButton />
+        <WalletConnectButton />
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 import { Button } from "@/components/button";
-import { metaMask, hooks } from "@/lib/wallet/connectors/metamask";
+import { metaMask, metaMaskHooks } from "@/lib/wallet/connectors/metamask";
 
 import MetaMaskLogo from "./metamask-logo.svg";
 
 export function MetaMaskButton() {
-  const isActive = hooks.useIsActive();
-  const isActivating = hooks.useIsActivating();
+  const isActive = metaMaskHooks.useIsActive();
+  const isActivating = metaMaskHooks.useIsActivating();
   const handleConnectMetaMask = () => {
     metaMask.activate();
   };
