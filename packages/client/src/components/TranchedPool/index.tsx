@@ -8,7 +8,6 @@ import {SeniorPoolLoaded} from "../../ethereum/pool"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import {useFetchNDA} from "../../hooks/useNDA"
-import {useSession} from "../../hooks/useSignIn"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {Loadable, Loaded} from "../../types/loadable"
 import {assertNonNullable, croppedAddress, sameBlock} from "../../utils"
@@ -24,6 +23,23 @@ import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
 import {V1DealSupplyStatus} from "./V1DealSupplyStatus"
 import {BorrowerOverview} from "./BorrowerOverview"
+import {useForm, FormProvider} from "react-hook-form"
+import LoadingButton from "../loadingButton"
+import {useSignIn} from "../../hooks/useSignIn"
+
+function SignInForm({action, disabled}) {
+  const formMethods = useForm({mode: "onChange", shouldUnregister: false})
+  return (
+    <FormProvider {...formMethods}>
+      <div className="info-banner background-container">
+        <div className="message small">
+          <p>Please sign the request in your wallet to continue.</p>
+        </div>
+        <LoadingButton text="Sign request" action={action} disabled={disabled} />
+      </div>
+    </FormProvider>
+  )
+}
 
 interface TranchedPoolViewURLParams {
   poolAddress: string
@@ -31,12 +47,12 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
+  const [session, signIn] = useSignIn()
   const {goldfinchProtocol, backerRewards, pool, gfi, user, network, setSessionData, currentBlock} =
     useContext(AppContext)
   const {
     earnStore: {backers},
   } = useEarn()
-  const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
@@ -132,6 +148,7 @@ function TranchedPoolView() {
   return (
     <div className="content-section">
       <div className="page-header">{earnMessage}</div>
+      {session.status !== "authenticated" && <SignInForm disabled={false} action={signIn} />}
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {maxCapacityNotice}
       <InvestorNotice />
