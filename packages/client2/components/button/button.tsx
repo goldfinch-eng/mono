@@ -1,6 +1,5 @@
 import clsx from "clsx";
-import React from "react";
-import { HTMLAttributes } from "react";
+import React, { forwardRef, HTMLAttributes } from "react";
 
 interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
   /**
@@ -22,39 +21,45 @@ interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
 }
 
-export function Button({
-  children,
-  size = "md",
-  variant = "solid",
-  colorScheme = "blue",
-  className,
-  ...rest
-}: ButtonProps) {
-  return (
-    <button
-      className={clsx(
-        "rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
-        size === "sm"
-          ? "py-1.5 px-3"
-          : size === "md"
-          ? "py-2.5 px-4"
-          : size === "lg"
-          ? "py-3.5 px-6"
-          : "py-5 px-8 text-lg",
-        variant === "solid"
-          ? colorScheme === "blue"
-            ? "bg-blue-100 text-purple-400 ring-blue-200 hover:bg-blue-200 active:bg-blue-300 disabled:bg-blue-50 disabled:text-opacity-50"
-            : colorScheme === "purple"
-            ? "bg-purple-200 text-white ring-purple-300 hover:bg-purple-300 active:bg-purple-400 disabled:bg-purple-50 disabled:text-purple-200"
-            : colorScheme === "sand"
-            ? "bg-sand-200 text-purple-400 ring-sand-500 hover:bg-sand-300 active:bg-sand-400 disabled:bg-sand-100 disabled:text-sand-600"
-            : null
-          : null,
-        className
-      )}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-}
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    {
+      children,
+      size = "md",
+      variant = "solid",
+      colorScheme = "blue",
+      className,
+      ...rest
+    },
+    ref
+  ) {
+    return (
+      <button
+        ref={ref}
+        className={clsx(
+          "rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
+          size === "sm"
+            ? "py-1.5 px-3"
+            : size === "md"
+            ? "py-2.5 px-4"
+            : size === "lg"
+            ? "py-3.5 px-6"
+            : "py-5 px-8 text-lg",
+          variant === "solid"
+            ? colorScheme === "blue"
+              ? "bg-blue-100 text-purple-400 ring-blue-200 hover:bg-blue-200 active:bg-blue-300 disabled:bg-blue-50 disabled:text-opacity-50"
+              : colorScheme === "purple"
+              ? "bg-purple-200 text-white ring-purple-300 hover:bg-purple-300 active:bg-purple-400 disabled:bg-purple-50 disabled:text-purple-200"
+              : colorScheme === "sand"
+              ? "bg-sand-200 text-purple-400 ring-sand-500 hover:bg-sand-300 active:bg-sand-400 disabled:bg-sand-100 disabled:text-sand-600"
+              : null
+            : null,
+          className
+        )}
+        {...rest}
+      >
+        {children}
+      </button>
+    );
+  }
+);
