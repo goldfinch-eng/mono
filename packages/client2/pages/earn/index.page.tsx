@@ -99,11 +99,6 @@ export default function EarnPage() {
           )}
         </div>
       )}
-      <Paragraph className="mb-12">
-        This is the Earn page, AKA the home page of the app
-      </Paragraph>
-      <Heading level={2}>Example Data</Heading>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>
   );
 }
