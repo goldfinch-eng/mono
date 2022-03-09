@@ -49,11 +49,13 @@
     background-color: $blue;
     border-radius: 10px;
     color: white;
-    left: 0;
+    right: 0;
     position: absolute;
     text-align: center;
     top: 0;
-    width: 100%;
+    padding: 0 34px;
+    width: auto;
+    max-width: 235px;
     visibility: hidden;
 
     & .icon {
@@ -96,7 +98,7 @@
   justify-content: center;
   position: relative;
 
-  .metamask-logo {
+  .wallet-logo {
     position: absolute;
     left: 12px;
   }
@@ -115,11 +117,16 @@
   color: $purp-dark;
 }
 
-.no-wallet {
+.no-wallet,
+.other-wallets {
   display: block;
   margin: 26px 0 16px 0;
   text-align: center;
   width: 100%;
+}
+
+.other-wallets {
+  margin: 21px 0 11px 0;
 }
 
 .install-wallet-info,
@@ -134,6 +141,7 @@
 
   a.button.wallet {
     margin-top: 20px;
+    margin-bottom: 10px;
     display: flex;
 
     .out-icon {
@@ -210,6 +218,10 @@
 
   .value {
     float: right;
+  }
+
+  .button.wallet:not(:first-of-type) {
+    margin-top: 10px;
   }
 }
 
@@ -350,7 +362,8 @@
   width: 100%;
 }
 
-.add-gfi-to-wallet {
+.add-gfi-to-wallet,
+.disconnect {
   display: flex;
   align-items: center;
   padding: 21px 18px 16px;
@@ -363,6 +376,18 @@
     width: 15px;
     margin-left: 12px;
   }
+}
+
+.disconnect {
+  svg {
+    margin-left: 0px;
+    margin-right: 12px;
+  }
+}
+
+div.walletconnect-connect__buttons__wrapper__wrap {
+  white-space: nowrap;
+  font-size: $sans-size-xxs;
 }
 
 @media only screen and (min-width: 400px) {

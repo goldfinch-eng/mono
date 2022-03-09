@@ -17,7 +17,7 @@ import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
@@ -369,6 +369,7 @@ class TranchedPool {
   }
 
   async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
+    const web3 = getWeb3()
     const blockTimestamps = await Promise.all(
       transactions.map((tx) => {
         return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {

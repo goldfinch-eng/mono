@@ -134,7 +134,7 @@ export function usePoolBackersWeb3(skip = false): {
       })
     }
 
-    if (goldfinchProtocol && currentBlock && !skip) {
+    if (goldfinchProtocol && user && currentBlock && !skip) {
       loadTranchedPools(goldfinchProtocol, user, currentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

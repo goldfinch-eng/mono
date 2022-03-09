@@ -5,9 +5,11 @@ import moment from "moment"
 import Web3 from "web3"
 import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
+import {ethers} from "ethers"
 import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "../types/transactions"
 import {assertErrorLike, BlockInfo, ErrorLike, isCodedErrorLike} from "../utils"
+import walletConnect from "../walletConnect"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
 
@@ -36,10 +38,21 @@ class NetworkMonitor {
     this.networkId = await this.userWalletWeb3.eth.getChainId()
     this.notifySdk = Notify({dappId: NOTIFY_API_KEY, networkId: this.networkId})
     this.currentBlockNumber = currentBlock.number
-    this.blockHeaderSubscription = this.userWalletWeb3.eth.subscribe("newBlockHeaders")
-    this.blockHeaderSubscription.on("data", (blockHeader) => {
-      this.newBlockHeaderReceived(blockHeader)
-    })
+    if (walletConnect.isWCProvider(this.userWalletWeb3.currentProvider)) {
+      walletConnect.subscribe(this.networkId, {
+        tag: "block",
+        params: ["newHeads"],
+        processFunction: (blockHeader: BlockHeader | unknown) => {
+          const formatter = new ethers.providers.Formatter()
+          this.newBlockHeaderReceived(formatter.block(blockHeader))
+        },
+      })
+    } else {
+      this.blockHeaderSubscription = this.userWalletWeb3.eth.subscribe("newBlockHeaders")
+      this.blockHeaderSubscription.on("data", (blockHeader: BlockHeader) => {
+        this.newBlockHeaderReceived(blockHeader)
+      })
+    }
   }
 
   get isLocalNetwork() {
@@ -87,7 +100,9 @@ class NetworkMonitor {
     txData.id = txHash
 
     if (this.isLocalNetwork) {
-      // Blocknative does not work for the local network
+      // On a local network, we expect the transaction to be included in the next block to be mined.
+      // We set this so that we can listen for the block to be mined and mark it successful in updatePendingTxs
+      this.updateTX(txData, {blockNumber: this.currentBlockNumber + 1})
       return
     }
 
@@ -141,11 +156,6 @@ class NetworkMonitor {
       onConfirm: undefined,
       errorMessage: undefined,
       ...txData,
-    }
-    if (this.isLocalNetwork) {
-      // On a local network, we expect the transaction to be included in the next block to be mined.
-      // We set this so that we can listen for the block to be mined and mark it successful in updatePendingTxs
-      tx.blockNumber = this.currentBlockNumber + 1
     }
     this.setCurrentTxs((currentTxs) => {
       const newTxs: CurrentTx<TxType>[] = currentTxs.concat([tx as CurrentTx<TxType>])
