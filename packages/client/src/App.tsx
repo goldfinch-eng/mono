@@ -372,7 +372,8 @@ function App() {
 
       const currentBlock = getBlockInfo(await getCurrentBlock())
 
-      const protocol = new GoldfinchProtocol({name: MAINNET, supported: true})
+      const networkConfig: NetworkConfig = {name: MAINNET, supported: true}
+      const protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
 
       setCurrentBlock(currentBlock)
