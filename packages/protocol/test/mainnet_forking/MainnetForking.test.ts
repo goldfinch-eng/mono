@@ -113,6 +113,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
+  await performV250Migrations()
+
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
   assertNonNullable(bwr)

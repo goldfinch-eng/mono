@@ -50,7 +50,7 @@ export async function main() {
   const strategy = await deployFixedLeverageRatioStrategy(deployer, {config, deployEffects})
 
   // 3. deploy zapper
-  const zapper = await deployZapper(deployer, {config})
+  const zapper = await deployZapper(deployer, {config, deployEffects})
   const deployedContracts = {
     tranchedPool,
     strategy,

@@ -19,7 +19,6 @@ import {
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import BigNumber from "bignumber.js"
 
 const performV250Migration = deployments.createFixture(async () => {
   return await migrate250.main()
@@ -49,7 +48,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe.only("v2.5.0", async function () {
+describe("v2.5.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let gfi: GFIInstance
@@ -137,9 +136,8 @@ describe.only("v2.5.0", async function () {
 
       describe("totalRewardPercentOfTotalGFI", async () => {
         it("is correct", async () => {
-          expect((await backerRewards.totalRewardPercentOfTotalGFI()).toString()).to.eq(
-            params.backerRewards.totalRewards
-          )
+          const two = "2000000000000000000"
+          expect((await backerRewards.totalRewardPercentOfTotalGFI()).toString()).to.eq(two)
         })
       })
     })
