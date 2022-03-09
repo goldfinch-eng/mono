@@ -17,7 +17,7 @@ import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import BigNumber from "bignumber.js"
 import {CreditLine} from "../../ethereum/creditLine"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {assertAllMocksAreCalled} from "../rewards/__utils__/mocks"
 import {assertNonNullable} from "../../utils"
 
@@ -25,6 +25,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 

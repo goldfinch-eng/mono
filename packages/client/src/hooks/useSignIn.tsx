@@ -4,8 +4,9 @@ import difference from "lodash/difference"
 import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SESSION_DATA_VERSION} from "../types/session"
-import {assertNonNullable, isCodedErrorLike} from "../utils"
-import web3, {getUserWalletWeb3Status} from "../web3"
+import {isCodedErrorLike, assertNonNullable} from "../utils"
+import getWeb3, {getUserWalletWeb3Status} from "../web3"
+import walletConnect from "../walletConnect"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
@@ -72,6 +73,7 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
         setSessionData(undefined)
         return getSession(undefined)
       }
+      const web3 = getWeb3()
       const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
       const signer = provider.getSigner(userAddress)
 
@@ -79,15 +81,25 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
       const signatureBlockNumTimestamp = currentBlock.timestamp
       const version = SESSION_DATA_VERSION
       let signature: string | undefined
-      try {
-        signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
-      } catch (err: unknown) {
-        if (isCodedErrorLike(err) && err.code === 4001) {
-          // The user denied the request.
-        } else {
-          throw err
+
+      const genSignMessage = (blockNumber: number): string => `Sign in to Goldfinch: ${blockNumber}`
+
+      if (walletConnect.isWCProvider(web3.userWallet.currentProvider)) {
+        // WalletConnect needs to call the lower level connector
+        // or call personal_sign directly
+        signature = await walletConnect.signMessage(provider, userAddress, genSignMessage(signatureBlockNum))
+      } else {
+        try {
+          signature = await signer.signMessage(genSignMessage(signatureBlockNum))
+        } catch (err: unknown) {
+          if (isCodedErrorLike(err) && err.code === 4001) {
+            // The user denied the request.
+          } else {
+            throw err
+          }
         }
       }
+
       if (signature) {
         setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
         return getSession({address: userAddress, signature, signatureBlockNum, signatureBlockNumTimestamp, version})

@@ -45,7 +45,7 @@ import {
 import {SessionData} from "../../types/session"
 import {UserWalletWeb3Status} from "../../types/web3"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {blockchain, defaultCurrentBlock, getDeployments, network, recipient} from "../rewards/__utils__/constants"
 import {resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {
@@ -72,6 +72,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 

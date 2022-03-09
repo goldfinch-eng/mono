@@ -5,7 +5,7 @@ import React, {useEffect, useState} from "react"
 import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
-import Borrow from "./components/borrow"
+import Borrow from "./components/Borrow"
 import DevTools from "./components/DevTools"
 import Earn from "./components/Earn"
 import Footer from "./components/footer"
@@ -51,7 +51,7 @@ import {defaultTheme} from "./styles/theme"
 import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
-import web3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
+import getWeb3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
 import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
 import getApolloClient from "./graphql/client"
@@ -384,6 +384,7 @@ function App() {
     switchNetworkIfRequired(networkConfig)
 
     if (networkConfig.supported) {
+      const web3 = getWeb3()
       const currentBlock = getBlockInfo(await getCurrentBlock())
 
       const protocol = new GoldfinchProtocol(networkConfig)

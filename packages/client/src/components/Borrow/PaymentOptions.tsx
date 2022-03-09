@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect} from "react"
-import {displayDollars, displayNumber} from "../utils"
-import {useAmountTargetingMinAmount} from "../hooks/useOneInchQuote"
+import {displayDollars, displayNumber} from "../../utils"
+import {useAmountTargetingMinAmount} from "../../hooks/useOneInchQuote"
 
 function displayAmounts(amount, swappedAmount, ticker) {
   let amountDisplay = <span className="font-bold">{displayDollars(amount)}</span>

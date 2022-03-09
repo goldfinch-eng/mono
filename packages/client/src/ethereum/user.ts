@@ -70,7 +70,7 @@ import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, Community
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {GoldfinchProtocol, getCachedPastEvents} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
@@ -1253,7 +1253,7 @@ async function getAndTransformUSDCEvents(
   owner: string,
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
-  let approvalEvents = await usdc.contract.readOnly.getPastEvents(APPROVAL_EVENT, {
+  let approvalEvents = await getCachedPastEvents(usdc.contract.readOnly, APPROVAL_EVENT, {
     filter: {owner, spender},
     fromBlock: "earliest",
     toBlock: currentBlock.number,
@@ -1332,13 +1332,13 @@ async function getAndTransformCreditDeskEvents(
 ): Promise<HistoricalTx<CreditDeskEventType>[]> {
   const fromBlock = getFromBlock(networkId)
   const [paymentEvents, drawdownEvents] = await Promise.all(
-    CREDIT_DESK_EVENT_TYPES.map((eventName) => {
-      return creditDesk.readOnly.getPastEvents(eventName, {
+    CREDIT_DESK_EVENT_TYPES.map((eventName) =>
+      getCachedPastEvents(creditDesk.readOnly, eventName, {
         filter: {payer: address, borrower: address},
         fromBlock,
         toBlock: currentBlock.number,
       })
-    })
+    )
   )
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
   return await mapEventsToTx<CreditDeskEventType>(creditDeskEvents, CREDIT_DESK_EVENT_TYPES, {
