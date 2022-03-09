@@ -1051,7 +1051,7 @@ describe("StakingRewards", function () {
         stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
           from: investor,
         })
-      ).to.be.rejected
+      ).to.be.rejectedWith(/cannot unstake more than balance/)
     })
 
     it("unstakes multiple curve positions", async () => {
@@ -1069,7 +1069,7 @@ describe("StakingRewards", function () {
         stakingRewards.unstakeMultiple([thirdToken, fourthToken], [thirdTokenAmount, fourthTokenAmount], {
           from: investor,
         })
-      ).to.be.rejected
+      ).to.be.rejectedWith(/cannot unstake more than balance/)
     })
 
     it("unstakes for multiple fidu and curve tokens", async () => {
@@ -1095,7 +1095,7 @@ describe("StakingRewards", function () {
         stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
           from: investor,
         })
-      ).to.be.rejected
+      ).to.be.rejectedWith(/cannot unstake more than balance/)
     })
 
     it("emits an UnstakedMultiple event", async () => {
@@ -1150,7 +1150,7 @@ describe("StakingRewards", function () {
               [firstTokenAmount, thirdTokenAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+          ).to.be.rejectedWith(/cannot unstake more than balance/)
         })
       })
 
@@ -1160,7 +1160,7 @@ describe("StakingRewards", function () {
             stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount], {
               from: investor,
             })
-          ).to.be.rejectedWith(/tokenIds and amounts must be the same length/)
+          ).to.be.rejectedWith(/params must be the same length/)
         })
       })
     })
@@ -1245,7 +1245,7 @@ describe("StakingRewards", function () {
 
         // Unstake and withdraw a FIDU-USDC Curve LP position
         await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, new BN(1), {from: investor})).to.be.rejectedWith(
-          /This position does not support senior pool withdrawals/
+          /cannot withdraw/
         )
 
         expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
@@ -1358,7 +1358,7 @@ describe("StakingRewards", function () {
 
         // Unstake and withdraw a FIDU-USDC Curve LP position
         await expect(stakingRewards.unstakeAndWithdraw(tokenId, new BN(1), {from: investor})).to.be.rejectedWith(
-          /This position does not support senior pool withdrawals/
+          /cannot withdraw/
         )
 
         expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
@@ -1522,7 +1522,7 @@ describe("StakingRewards", function () {
               [firstTokenWithdrawAmount, secondTokenWithdrawAmount, new BN(1)],
               {from: investor}
             )
-          ).to.be.rejectedWith(/This position does not support senior pool withdrawals/)
+          ).to.be.rejectedWith(/cannot withdraw/)
 
           expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
           expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
@@ -1558,7 +1558,7 @@ describe("StakingRewards", function () {
               [firstTokenWithdrawAmount, secondTokenWithdrawAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+          ).to.be.rejectedWith(/cannot unstake more than balance/)
         })
       })
 
@@ -1570,7 +1570,7 @@ describe("StakingRewards", function () {
             stakingRewards.unstakeAndWithdrawMultiple([firstToken, secondToken], [firstTokenWithdrawAmount], {
               from: investor,
             })
-          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+          ).to.be.rejectedWith(/params must be the same length/)
         })
       })
     })
@@ -1702,7 +1702,7 @@ describe("StakingRewards", function () {
               [firstTokenWithdrawAmount, secondTokenWithdrawAmount, new BN(1)],
               {from: investor}
             )
-          ).to.be.rejectedWith(/This position does not support senior pool withdrawals/)
+          ).to.be.rejectedWith(/cannot withdraw/)
 
           expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
           expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
@@ -1732,7 +1732,7 @@ describe("StakingRewards", function () {
               [firstTokenAmount, secondTokenAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+          ).to.be.rejectedWith(/cannot unstake more than balance/)
         })
       })
 
@@ -1742,7 +1742,7 @@ describe("StakingRewards", function () {
             stakingRewards.unstakeAndWithdrawMultipleInFidu([firstToken, secondToken], [firstTokenAmount], {
               from: investor,
             })
-          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+          ).to.be.rejectedWith(/params must be the same length/)
         })
       })
     })
@@ -2133,7 +2133,7 @@ describe("StakingRewards", function () {
       expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardRate.mul(yearInSeconds))
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
       expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(new BN(0))
-      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/Cannot unstake 0/)
+      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/cannot unstake 0/)
     })
 
     context("user does not own position token", async () => {
@@ -2209,9 +2209,7 @@ describe("StakingRewards", function () {
         const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
 
         // Unstake and withdraw a FIDU-USDC Curve LP position
-        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: investor})).to.be.rejectedWith(
-          /This position does not support senior pool withdrawals/
-        )
+        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: investor})).to.be.rejectedWith(/cannot withdraw/)
 
         expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
         expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
@@ -2622,9 +2620,7 @@ describe("StakingRewards", function () {
 
     context("user is not admin", async () => {
       it("reverts", async () => {
-        await expect(stakingRewards.loadRewards(bigVal(1000), {from: anotherUser})).to.be.rejectedWith(
-          /Must have admin role/
-        )
+        await expect(stakingRewards.loadRewards(bigVal(1000), {from: anotherUser})).to.be.rejectedWith(/not an admin/)
       })
     })
   })
@@ -2719,7 +2715,7 @@ describe("StakingRewards", function () {
           stakingRewards.setRewardsParameters(newTargetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Must have admin role/)
+        ).to.be.rejectedWith(/not an admin/)
       })
     })
   })
@@ -2754,7 +2750,7 @@ describe("StakingRewards", function () {
       it("reverts", async () => {
         const vestingLength = halfYearInSeconds
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(
-          /Must have admin role/
+          /not an admin/
         )
       })
     })
@@ -2835,7 +2831,7 @@ describe("StakingRewards", function () {
           stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Must have admin role/)
+        ).to.be.rejectedWith(/not an admin/)
       })
     })
   })
@@ -2868,7 +2864,7 @@ describe("StakingRewards", function () {
 
   context("initZapperRole", async () => {
     it("is only callable by admin", async () => {
-      await expect(stakingRewards.initZapperRole({from: anotherUser})).to.be.rejectedWith(/Must have admin role/)
+      await expect(stakingRewards.initZapperRole({from: anotherUser})).to.be.rejectedWith(/not an admin/)
       await expect(stakingRewards.initZapperRole({from: owner})).to.be.fulfilled
     })
 

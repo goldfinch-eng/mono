@@ -1200,7 +1200,7 @@ describe("mainnet forking tests", async function () {
       describe("when I deposit and stake", async () => {
         it("it reverts", async () => {
           await expect(stakingRewards.depositAndStake(usdcVal(10), {from: unGoListedUser})).to.be.rejectedWith(
-            /This address has not been go-listed/i
+            /not go-listed/i
           )
         })
       })
