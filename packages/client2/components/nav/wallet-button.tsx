@@ -32,7 +32,7 @@ export function WalletButton() {
     <Popover>
       {/* @ts-expect-error the ref type doesn't cover callback refs, which are still valid */}
       <Popover.Button ref={setReferenceElement} as={Button}>
-        {isActive
+        {account
           ? `${account.substring(0, 6)}...${account.substring(
               account.length - 4
             )}`
