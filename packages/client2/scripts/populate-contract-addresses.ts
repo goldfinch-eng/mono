@@ -17,7 +17,7 @@ const pathname = path.resolve(
   "../constants/contracts/localhost.json"
 );
 const addresses = {
-  USCD: contracts.TestERC20.address,
+  USDC: contracts.TestERC20.address,
 };
 
 fs.writeFileSync(pathname, JSON.stringify(addresses, null, 2));
