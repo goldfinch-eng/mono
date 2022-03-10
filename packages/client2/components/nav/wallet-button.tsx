@@ -1,8 +1,10 @@
 import { Popover } from "@headlessui/react";
-import { useState } from "react";
+import { commify, formatUnits } from "ethers/lib/utils";
+import { useEffect, useState } from "react";
 import { usePopper } from "react-popper";
 
 import { Button } from "@/components/button";
+import { useUsdcContract } from "@/lib/contracts";
 import { useWallet } from "@/lib/wallet";
 
 import { MetaMaskButton } from "./metamask-button";
@@ -65,11 +67,24 @@ function WalletSelection() {
 
 export function WalletInfo() {
   const { account, connector } = useWallet();
+  const usdcContract = useUsdcContract();
+  const [usdcBalance, setUsdcBalance] = useState<string>();
+  useEffect(() => {
+    if (account && usdcContract) {
+      usdcContract
+        .balanceOf(account)
+        .then((value) => setUsdcBalance(commify(formatUnits(value, 6))));
+    }
+  }, [usdcContract, account]);
   return (
     <div className="space-y-2">
       <div>
         <div className="font-bold">Wallet address</div>
         <div>{account}</div>
+      </div>
+      <div>
+        <div className="font-bold">USDC Balance</div>
+        <div>{usdcBalance ?? "-.--"}</div>
       </div>
       <div className="flex justify-end">
         <Button colorScheme="sand" onClick={() => connector.deactivate()}>

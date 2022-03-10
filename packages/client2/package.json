@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npx ts-node scripts/populate-contract-addresses.ts",
+    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx typechain --target=ethers-v5 \"abis/*.json\"",
     "dev": "next dev",
-    "prebuild": "npx ts-node scripts/populate-contract-addresses.ts",
+    "prebuild": "npx ts-node scripts/populate-contract-addresses.ts && npx typechain --target=ethers-v5 \"abis/*.json\"",
     "build": "next build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build",
@@ -47,6 +47,7 @@
     "@storybook/react": "^6.4.19",
     "@storybook/testing-library": "0.0.9",
     "@svgr/webpack": "^6.2.1",
+    "@typechain/ethers-v5": "^9.0.0",
     "@types/node": "17.0.21",
     "@types/react": "17.0.39",
     "autoprefixer": "^10.4.2",
@@ -60,6 +61,7 @@
     "prettier-plugin-tailwindcss": "^0.1.8",
     "tailwindcss": "^3.0.23",
     "ts-node": "^10.7.0",
+    "typechain": "^7.0.1",
     "typescript": "4.6.2",
     "webpack": "^5.70.0"
   }
