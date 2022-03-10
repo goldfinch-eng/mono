@@ -23,7 +23,7 @@ const v231PerformMigration = deployments.createFixture(async () => {
   await migrate231.main()
 })
 
-xdescribe("V2.2 & v2.3 migration", async function () {
+describe.skip("V2.2 & v2.3 migration", async function () {
   this.timeout(TEST_TIMEOUT)
   let stakingRewards: StakingRewardsInstance
   let merkleDirectDistributor: MerkleDirectDistributorInstance
