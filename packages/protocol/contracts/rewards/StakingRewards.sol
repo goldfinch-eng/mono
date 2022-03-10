@@ -189,7 +189,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   rewards in the balance of this contract, then we shouldn't be giving them out.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function _additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
-    require(time >= lastUpdateTime, "invalid time");
+    require(time >= lastUpdateTime, "IT");
 
     if (totalStakedSupply == 0) {
       return 0;
@@ -633,7 +633,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     StakedPosition storage position = positions[tokenId];
     uint256 prevAmount = position.amount;
-    require(amount <= prevAmount, "cannot unstake more than balance");
+    require(amount <= prevAmount, "IA");
 
     require(block.timestamp >= position.lockedUntil, "LOCKED");
 
@@ -672,7 +672,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 newEffectiveMultiplier = getEffectiveMultiplier(position.positionType);
 
     // Prevent a user from accidentally lowering their effective multiplier
-    require(newEffectiveMultiplier >= position.effectiveMultiplier, "cannot update position");
+    require(newEffectiveMultiplier >= position.effectiveMultiplier, "LOW");
 
     uint256 prevEffectiveAmount = _positionToEffectiveAmount(position);
 
@@ -734,8 +734,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 _minRateAtPercent,
     uint256 _maxRateAtPercent
   ) external onlyAdmin updateReward(0) {
-    require(_maxRate >= _minRate, "maxRate must be >= then minRate");
-    require(_maxRateAtPercent <= _minRateAtPercent, "maxRateAtPercent must be <= minRateAtPercent");
+    require(_maxRate >= _minRate, "IR");
+    require(_maxRateAtPercent <= _minRateAtPercent, "IRAP");
     targetCapacity = _targetCapacity;
     minRate = _minRate;
     maxRate = _maxRate;

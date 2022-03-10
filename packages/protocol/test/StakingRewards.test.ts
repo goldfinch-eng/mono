@@ -1049,7 +1049,7 @@ describe("StakingRewards", function () {
         stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
           from: investor,
         })
-      ).to.be.rejectedWith(/cannot unstake more than balance/)
+      ).to.be.rejectedWith(/IA/)
     })
 
     it("unstakes multiple curve positions", async () => {
@@ -1067,7 +1067,7 @@ describe("StakingRewards", function () {
         stakingRewards.unstakeMultiple([thirdToken, fourthToken], [thirdTokenAmount, fourthTokenAmount], {
           from: investor,
         })
-      ).to.be.rejectedWith(/cannot unstake more than balance/)
+      ).to.be.rejectedWith(/IA/)
     })
 
     it("unstakes for multiple fidu and curve tokens", async () => {
@@ -1093,7 +1093,7 @@ describe("StakingRewards", function () {
         stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
           from: investor,
         })
-      ).to.be.rejectedWith(/cannot unstake more than balance/)
+      ).to.be.rejectedWith(/IA/)
     })
 
     it("emits an UnstakedMultiple event", async () => {
@@ -1148,7 +1148,7 @@ describe("StakingRewards", function () {
               [firstTokenAmount, thirdTokenAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than balance/)
+          ).to.be.rejectedWith(/IA/)
         })
       })
 
@@ -1554,7 +1554,7 @@ describe("StakingRewards", function () {
               [firstTokenWithdrawAmount, secondTokenWithdrawAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than balance/)
+          ).to.be.rejectedWith(/IA/)
         })
       })
 
@@ -1728,7 +1728,7 @@ describe("StakingRewards", function () {
               [firstTokenAmount, secondTokenAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than balance/)
+          ).to.be.rejectedWith(/IA/)
         })
       })
 
@@ -2681,7 +2681,7 @@ describe("StakingRewards", function () {
       const newMaxRate = bigVal(100)
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, newMinRate, newMaxRate, minRateAtPercent, maxRateAtPercent)
-      ).to.be.rejectedWith(/maxRate must be >= then minRate/)
+      ).to.be.rejectedWith(/IR/)
     })
 
     it("reverts if maxRateAtPercent > minRateAtPercent", async () => {
@@ -2689,7 +2689,7 @@ describe("StakingRewards", function () {
       let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e18)))
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
-      ).to.be.rejectedWith(/maxRateAtPercent must be <= minRateAtPercent/)
+      ).to.be.rejectedWith(/IRAP/)
 
       newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
       newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
