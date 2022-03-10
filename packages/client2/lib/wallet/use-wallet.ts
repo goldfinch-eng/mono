@@ -11,6 +11,7 @@ export function useWallet():
       connector: Connector;
       provider: undefined;
       account: undefined;
+      chainId: undefined;
       error: Error | undefined;
     }
   | {
@@ -18,6 +19,7 @@ export function useWallet():
       connector: Connector;
       provider: Web3Provider;
       account: string;
+      chainId: number;
       error: Error | undefined;
     } {
   // This hook basically runs through the given connectors and returns the first one that's actually connected
@@ -28,6 +30,7 @@ export function useWallet():
     usePriorityAccount,
     usePriorityIsActive,
     usePriorityError,
+    usePriorityChainId,
   } = getPriorityConnector(
     [metaMask, metaMaskHooks],
     [walletConnect, walletConnectHooks]
@@ -36,6 +39,7 @@ export function useWallet():
   const connector = usePriorityConnector();
   const provider = usePriorityProvider();
   const account = usePriorityAccount();
+  const chainId = usePriorityChainId();
   const isActive = usePriorityIsActive();
   const error = usePriorityError();
 
@@ -45,6 +49,7 @@ export function useWallet():
       connector,
       provider: provider as Web3Provider,
       account: account as string,
+      chainId: chainId as number,
       error,
     };
   }
@@ -53,6 +58,7 @@ export function useWallet():
     connector,
     provider: undefined,
     account: undefined,
+    chainId: undefined,
     error,
   };
 }
