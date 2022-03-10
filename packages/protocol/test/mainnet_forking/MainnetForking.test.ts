@@ -90,10 +90,6 @@ import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/tr
 const THREE_YEARS_IN_SECONDS = 365 * 24 * 60 * 60 * 3
 const TOKEN_LAUNCH_TIME = new BN(TOKEN_LAUNCH_TIME_IN_SECONDS).add(new BN(THREE_YEARS_IN_SECONDS))
 
-const performV250Migrations = deployments.createFixture(async () => {
-  await migrate250.main()
-})
-
 const setupTest = deployments.createFixture(async ({deployments}) => {
   // Note: base_deploy always returns when mainnet forking, however
   // we need it here, because the "fixture" part is what let's hardhat
@@ -179,7 +175,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
 
-  await performV250Migrations()
+  await migrate250.main()
 
   return {
     poolTokens,

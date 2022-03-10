@@ -114,6 +114,7 @@ jobs:
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep -v mainnet_forking | circleci tests split --split-by=timings)
+            echo $tests
             npm run test:unfiltered $tests
 
   mainnet_forking:
@@ -141,6 +142,7 @@ jobs:
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep mainnet_forking | circleci tests split --split-by=timings)
+            echo $tests
             HARDHAT_FORK=mainnet npm run test:unfiltered $tests
 
 # Invoke jobs via workflows
