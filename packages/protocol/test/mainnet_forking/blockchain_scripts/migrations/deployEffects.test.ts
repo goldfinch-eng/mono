@@ -1,6 +1,6 @@
 import {GoldfinchConfig} from "../../../../typechain/ethers"
 import hre, {ethers, deployments} from "hardhat"
-import {getEthersContract, getProtocolOwner} from "../../../../blockchain_scripts/deployHelpers"
+import {getEthersContract, getProtocolOwner, getTruffleContract} from "../../../../blockchain_scripts/deployHelpers"
 import {
   getDeployEffects,
   DeployEffects,
@@ -9,6 +9,7 @@ import {
 import {TEST_TIMEOUT} from "../../MainnetForking.test"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
+import {FiduInstance, PoolTokensInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 
 async function getImplementationAddress(address: string): Promise<string> {
   const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
@@ -58,8 +59,8 @@ describe("deployEffects", () => {
 
     it("handles changeImplementations", async () => {
       const deploys = {
-        PoolTokens: await deployments.get("PoolTokens"),
-        Fidu: await deployments.get("Fidu"),
+        PoolTokens: await getTruffleContract<PoolTokensInstance>("PoolTokens"),
+        Fidu: await getTruffleContract<FiduInstance>("Fidu"),
       }
       await deployEffects.add(
         await changeImplementations({

@@ -40,23 +40,11 @@ describe.skip("V2.2 & v2.3 migration", async function () {
     const {gf_deployer} = await getNamedAccounts()
     assertIsString(gf_deployer)
     await fundWithWhales(["ETH"], [gf_deployer])
-    const newConfigDeployment = await deployments.get("GoldfinchConfig")
-    const newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
-      at: newConfigDeployment.address,
-    })
+    const newConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig")
     const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
-    const gfi = await getTruffleContract<GFIInstance>("GFI", {
-      at: await (await deployments.get("GFI")).address,
-    })
-    const merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>(
-      "MerkleDirectDistributor",
-      {
-        at: (await deployments.get("MerkleDirectDistributor")).address,
-      }
-    )
-    const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards", {
-      at: (await deployments.get("CommunityRewards")).address,
-    })
+    const gfi = await getTruffleContract<GFIInstance>("GFI")
+    const merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
+    const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards")
     return {newConfig, stakingRewards, gfi, merkleDirectDistributor, communityRewards}
   })
 
