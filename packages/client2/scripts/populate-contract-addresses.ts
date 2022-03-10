@@ -14,7 +14,7 @@ const devDeployments = JSON.parse(
 const contracts = devDeployments["31337"].localhost.contracts;
 const pathname = path.resolve(
   __dirname,
-  "../constants/contracts/localhost.json"
+  "../constants/contract-addresses/localhost.json"
 );
 const addresses = {
   USDC: contracts.TestERC20.address,
