@@ -127,7 +127,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(existingContracts.GoldfinchConfig)
   assertNonNullable(existingContracts.GoldfinchFactory)
 
-  const seniorPool = getTruffleContract<SeniorPoolInstance>("SeniorPool")
+  const seniorPool = await getTruffleContract<SeniorPoolInstance>("SeniorPool")
   const fidu = await getTruffleContract<FiduInstance>("Fidu")
   const go = await getTruffleContract<GoInstance>("Go")
 
@@ -135,9 +135,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     at: await go.legacyGoList(),
   })
 
-  const goldfinchConfig: GoldfinchConfigInstance = await artifacts
-    .require("GoldfinchConfig")
-    .at(existingContracts.GoldfinchConfig.ExistingContract.address)
+  const goldfinchConfig: GoldfinchConfigInstance = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig")
 
   const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
   const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory")
