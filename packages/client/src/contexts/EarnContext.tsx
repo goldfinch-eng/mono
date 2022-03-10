@@ -43,7 +43,6 @@ function useTranchedPoolsData(
   poolsAddresses: Loadable<string[]>
   graphError: ApolloError | undefined
 } {
-  console.log("TRYING TO USE TRANCHED POOLS DATA. useWeb3:", useWeb3)
   const {error: graphError, backers: backersSubgraph} = useTranchedPoolSubgraphData(graphQuerierConfig, useWeb3)
   const {backers: backersWeb3, poolsAddresses: poolsAddressesWeb3} = usePoolBackersWeb3(!useWeb3)
   const backers = useWeb3 ? backersWeb3 : backersSubgraph

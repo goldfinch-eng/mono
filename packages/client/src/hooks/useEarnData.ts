@@ -42,7 +42,6 @@ export function useTranchedPoolSubgraphData(
   loading: boolean
   error: ApolloError | undefined
 } {
-  console.log("TRYING TO USE TRANCHED POOLS SUBGRAPH DATA")
   const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useContext(AppContext)
   const [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
@@ -75,17 +74,8 @@ export function useTranchedPoolSubgraphData(
       })
     }
 
-    if (userWalletWeb3Status?.type === "no_web3" && data?.tranchedPools && goldfinchProtocol && currentBlock) {
-      console.log("PARSING TRANCHED POOLS DATA")
+    if (data?.tranchedPools && goldfinchProtocol && currentBlock) {
       parseData(data.tranchedPools, goldfinchProtocol, currentBlock, user?.address)
-    } else {
-      console.log(
-        "NOT PARSING TRANCHED POOLS DATA",
-        userWalletWeb3Status?.type,
-        data?.tranchedPools,
-        goldfinchProtocol,
-        currentBlock
-      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goldfinchProtocol, data, user?.address, currentBlock, userWalletWeb3Status])
