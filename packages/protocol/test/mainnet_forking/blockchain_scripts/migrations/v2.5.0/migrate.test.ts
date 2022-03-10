@@ -137,7 +137,7 @@ describe("v2.5.0", async function () {
           })
         })
 
-        describe("SeniorPoolStrategy", async () => {
+        describe("LeverageRatio", async () => {
           it("is correct", async () => {
             expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.not.eq(
               leverageRatioStrategyAddressBeforeDeploy
