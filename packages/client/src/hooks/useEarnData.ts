@@ -74,7 +74,7 @@ export function useTranchedPoolSubgraphData(
       })
     }
 
-    if (userWalletWeb3Status?.type === "no_web3" && data?.tranchedPools && goldfinchProtocol && currentBlock) {
+    if (data?.tranchedPools && goldfinchProtocol && currentBlock) {
       parseData(data.tranchedPools, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
