@@ -127,52 +127,32 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   assertNonNullable(existingContracts.GoldfinchConfig)
   assertNonNullable(existingContracts.GoldfinchFactory)
 
-  const seniorPool: SeniorPoolInstance = await artifacts
-    .require("SeniorPool")
-    .at(existingContracts.SeniorPool.ExistingContract.address)
+  const seniorPool = getTruffleContract<SeniorPoolInstance>("SeniorPool")
+  const fidu = await getTruffleContract<FiduInstance>("Fidu")
+  const go = await getTruffleContract<GoInstance>("Go")
 
-  const fidu: FiduInstance = await artifacts.require("Fidu").at(existingContracts.Fidu.ExistingContract.address)
-
-  const go: GoInstance = await artifacts.require("Go").at(existingContracts.Go?.ExistingContract.address)
-
-  const legacyGoldfinchConfig = await artifacts.require("GoldfinchConfig").at(await go.legacyGoList())
+  const legacyGoldfinchConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig", {
+    at: await go.legacyGoList(),
+  })
 
   const goldfinchConfig: GoldfinchConfigInstance = await artifacts
     .require("GoldfinchConfig")
     .at(existingContracts.GoldfinchConfig.ExistingContract.address)
 
-  const backerRewards: BackerRewardsInstance = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
-
-  const goldfinchFactory: GoldfinchFactoryInstance = await artifacts
-    .require("GoldfinchFactory")
-    .at(existingContracts.GoldfinchFactory.ExistingContract.address)
-
-  const seniorPoolStrategyAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)
-  const seniorPoolStrategy: FixedLeverageRatioStrategyInstance = await artifacts
-    .require("FixedLeverageRatioStrategy")
-    .at(seniorPoolStrategyAddress)
-
+  const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
+  const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory")
+  const seniorPoolStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>("FixedLeverageRatioStrategy")
   const stakingRewards: StakingRewardsInstance = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
-
   const poolTokens: PoolTokensInstance = await getTruffleContract<PoolTokensInstance>("PoolTokens")
 
   // GFI is deployed by the temp multisig
-  const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
-
-  const communityRewards = await getDeployedAsTruffleContract<CommunityRewardsInstance>(deployments, "CommunityRewards")
+  const gfi = await getTruffleContract<GFIInstance>("GFI")
+  const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards")
   await communityRewards.setTokenLaunchTimeInSeconds(TOKEN_LAUNCH_TIME, {from: await getProtocolOwner()})
 
-  const merkleDistributor = await getDeployedAsTruffleContract<MerkleDistributorInstance>(
-    deployments,
-    "MerkleDistributor"
-  )
-
-  const merkleDirectDistributor = await getDeployedAsTruffleContract<MerkleDirectDistributorInstance>(
-    deployments,
-    "MerkleDirectDistributor"
-  )
-
-  const uniqueIdentity = await getDeployedAsTruffleContract<UniqueIdentityInstance>(deployments, "UniqueIdentity")
+  const merkleDistributor = await getTruffleContract<MerkleDistributorInstance>("MerkleDistributor")
+  const merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
+  const uniqueIdentity = await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity")
 
   const ethersUniqueIdentity = await toEthers<UniqueIdentity>(uniqueIdentity)
   const signer = ethersUniqueIdentity.signer
