@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npx ts-node scripts/populate-contract-addresses.ts",
     "dev": "next dev",
+    "prebuild": "npx ts-node scripts/populate-contract-addresses.ts",
     "build": "next build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build",
@@ -57,6 +59,7 @@
     "prettier": "^2.5.1",
     "prettier-plugin-tailwindcss": "^0.1.8",
     "tailwindcss": "^3.0.23",
+    "ts-node": "^10.7.0",
     "typescript": "4.6.2",
     "webpack": "^5.70.0"
   }
