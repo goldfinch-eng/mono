@@ -32,7 +32,7 @@ export async function main() {
 
   const deployEffects = await getDeployEffects({
     title: "v2.5 upgrade",
-    description: "",
+    description: "https://github.com/warbler-labs/mono/pull/390",
   })
 
   console.log("Beginning v2.5.0 upgrade")
@@ -45,6 +45,8 @@ export async function main() {
   const go = await getEthersContract<Go>("Go")
   const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
 
+  // TODO(PR): renumber these steps
+  // TODO(PR): log out parameters
   // 2. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
     contracts: ["BackerRewards", "SeniorPool", "StakingRewards", "CommunityRewards", "Go"],
@@ -77,6 +79,7 @@ export async function main() {
   console.log("Setting backer rewards parameters and loading in rewards")
   console.log(` totalRewards: ${totalRewards}`)
   console.log(` maxInterestDollarsEligible : ${maxInterestDollarsEligible}`)
+
   // 4. Load backer rewards
   deployEffects.add({
     deferred: [

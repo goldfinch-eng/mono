@@ -47,7 +47,6 @@ import {
   BackerRewardsInstance,
   BorrowerInstance,
   CommunityRewardsInstance,
-  CreditLineInstance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
   GFIInstance,
@@ -79,9 +78,7 @@ import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAc
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {
   BackerRewards,
-  Borrower as BorrowerEthers,
   CreditLine,
-  SeniorPool,
   StakingRewards,
   TranchedPool,
   UniqueIdentity,
@@ -103,8 +100,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // snapshot and give us a clean blockchain before each test.
   // Otherwise, we have state leaking across tests.
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
-
-  await performV250Migrations()
 
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
@@ -183,6 +178,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
+
+  await performV250Migrations()
 
   return {
     poolTokens,
