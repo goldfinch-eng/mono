@@ -23,7 +23,7 @@ import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
 import {deployZapper} from "../../baseDeploy/deployZapper"
 import {CONFIG_KEYS} from "../../configKeys"
-import {StakedPositionType} from "@goldfinch-eng/protocol/test/StakingRewards.test"
+import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)

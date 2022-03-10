@@ -41,6 +41,7 @@ import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {deployBaseFixture} from "./util/fixtures"
+import {StakedPositionType} from "../blockchain_scripts/deployHelpers"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
@@ -49,12 +50,6 @@ enum LockupPeriod {
   SixMonths,
   TwelveMonths,
   TwentyFourMonths,
-}
-
-// TODO(PR): move this to a test helper
-export enum StakedPositionType {
-  Fidu,
-  CurveLP,
 }
 
 async function quoteFiduToUSDC({

@@ -150,6 +150,11 @@ export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
 export const SIGNER_ROLE = web3.utils.keccak256("SIGNER_ROLE")
 
+export enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
+
 const TRANCHES = {
   Senior: 1,
   Junior: 2,

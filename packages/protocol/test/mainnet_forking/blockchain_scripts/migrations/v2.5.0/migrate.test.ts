@@ -33,7 +33,7 @@ import {
   expectProxyOwner,
   mochaEach,
 } from "@goldfinch-eng/protocol/test/testHelpers"
-import {StakedPositionType} from "@goldfinch-eng/protocol/test/StakingRewards.test"
+import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 
 const performV250Migration = deployments.createFixture(async () => {
   return await migrate250.main()
