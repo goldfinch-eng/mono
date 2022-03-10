@@ -1,3 +1,3 @@
 import { mainnetMetadata } from "./metadata/mainnet";
 
-export const metadata = mainnetMetadata;
+export const POOL_METADATA = mainnetMetadata;

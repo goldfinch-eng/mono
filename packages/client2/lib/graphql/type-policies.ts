@@ -2,7 +2,7 @@ import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { goldfinchLogoPngUrl } from "@/components/logo";
-import { metadata } from "@/constants";
+import { POOL_METADATA } from "@/constants";
 
 function readFieldFromMetadata(
   fieldName: string,
@@ -16,7 +16,7 @@ function readFieldFromMetadata(
       );
       return;
     }
-    return metadata[id]?.[fieldName] ?? fallback;
+    return POOL_METADATA[id]?.[fieldName] ?? fallback;
   };
 }
 
