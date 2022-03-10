@@ -1,8 +1,10 @@
 import hre, {deployments, getNamedAccounts} from "hardhat"
-import {assertIsString} from "packages/utils/src/type"
+import {asNonNullable, assertIsString} from "packages/utils/src/type"
 import {
   getProtocolOwner,
   getTruffleContract,
+  getUSDCAddress,
+  MAINNET_CHAIN_ID,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
@@ -13,12 +15,25 @@ import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/hel
 import {
   BackerRewardsInstance,
   CommunityRewardsInstance,
+  ERC20Instance,
   GFIInstance,
+  GoInstance,
   GoldfinchConfigInstance,
+  GoldfinchFactoryInstance,
   SeniorPoolInstance,
+  StakingRewardsInstance,
+  TranchedPoolInstance,
+  UniqueIdentityInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
+import {
+  createPoolWithCreditLine,
+  expectOwnerRole,
+  expectProxyOwner,
+  mochaEach,
+} from "@goldfinch-eng/protocol/test/testHelpers"
+import {StakedPositionType} from "@goldfinch-eng/protocol/test/StakingRewards.test"
 
 const performV250Migration = deployments.createFixture(async () => {
   return await migrate250.main()
@@ -27,11 +42,15 @@ const performV250Migration = deployments.createFixture(async () => {
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
+  const go = await getTruffleContract<GoInstance>("Go")
   const gfi = await getTruffleContract<GFIInstance>("GFI")
   const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards")
   const goldfinchConfig = await getTruffleContract<GoldfinchConfigInstance>("GoldfinchConfig")
   const backerRewards = await getTruffleContract<BackerRewardsInstance>("BackerRewards")
   const seniorPool = await getTruffleContract<SeniorPoolInstance>("SeniorPool")
+  const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
+  const uniqueIdentity = await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity")
+  const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory")
 
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)
@@ -45,6 +64,10 @@ const setupTest = deployments.createFixture(async () => {
     communityRewards,
     backerRewards,
     seniorPool,
+    stakingRewards,
+    go,
+    uniqueIdentity,
+    goldfinchFactory,
   }
 })
 
@@ -56,13 +79,27 @@ describe("v2.5.0", async function () {
   let backerRewards: BackerRewardsInstance
   let communityRewards: CommunityRewardsInstance
   let seniorPool: SeniorPoolInstance
+  let go: GoInstance
+  let stakingRewards: StakingRewardsInstance
+  let uniqueIdentity: UniqueIdentityInstance
+  let goldfinchFactory: GoldfinchFactoryInstance
 
   let tranchedPoolImplAddressBeforeDeploy: string
   let leverageRatioStrategyAddressBeforeDeploy: string
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, goldfinchConfig, backerRewards, communityRewards, seniorPool} = await setupTest())
+    ;({
+      gfi,
+      goldfinchConfig,
+      backerRewards,
+      communityRewards,
+      seniorPool,
+      go,
+      stakingRewards,
+      uniqueIdentity,
+      goldfinchFactory,
+    } = await setupTest())
 
     tranchedPoolImplAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
     leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
@@ -71,16 +108,29 @@ describe("v2.5.0", async function () {
   describe("after deploy", async () => {
     let params
     let zapper: ZapperInstance
+    const setupTest = deployments.createFixture(async () => {
+      const {params} = await performV250Migration()
+      const zapper = await getTruffleContract<ZapperInstance>("Zapper")
+      return {zapper, params}
+    })
+
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({params} = await performV250Migration())
-      zapper = await getTruffleContract<ZapperInstance>("Zapper")
+      ;({params, zapper} = await setupTest())
+    })
+
+    describe("UniqueIdentity", async () => {
+      describe("supportedUIDTyped", async () => {
+        mochaEach([0, 1, 2, 3, 4]).it("type %d is true", async (type: number) => {
+          expect(await uniqueIdentity.supportedUIDTypes(type)).to.equal(true)
+        })
+      })
     })
 
     describe("GoldfinchConfig", async () => {
       describe("getAddress", async () => {
         describe("TranchedPool", async () => {
-          it("is upgraded", async () => {
+          it("is upgraded address", async () => {
             expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)).to.not.eq(
               tranchedPoolImplAddressBeforeDeploy
             )
@@ -102,15 +152,21 @@ describe("v2.5.0", async function () {
             )
           })
         })
+      })
+    })
 
-        describe("Zapper", async () => {
-          // TODO: put zapper tests here
+    describe("Go", async () => {
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("Zapper to be true", async () => {
+            expect(await go.hasRole(await go.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
         })
       })
     })
 
     describe("Zapper", async () => {
-      // TODO
+      expectOwnerRole({toBe: getProtocolOwner, forContracts: ["Zapper"]})
     })
 
     describe("GFI", async () => {
@@ -142,10 +198,94 @@ describe("v2.5.0", async function () {
       })
     })
 
+    context("Go", () => {
+      expectProxyOwner({
+        toBe: getProtocolOwner,
+        forContracts: ["Go"],
+      })
+
+      expectOwnerRole({
+        toBe: async () => getProtocolOwner(),
+        forContracts: ["Go"],
+      })
+
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("Zapper to be true", async () => {
+            expect(await go.hasRole(await go.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
+      })
+
+      context("getSeniorPoolIdTypes", () => {
+        it("getSeniorPoolIdTypes", async () => {
+          const received = await go.getSeniorPoolIdTypes()
+          expect(received).deep.equal([
+            await go.ID_TYPE_0(),
+            await go.ID_TYPE_1(),
+            await go.ID_TYPE_3(),
+            await go.ID_TYPE_4(),
+          ])
+        })
+      })
+    })
+
+    describe("TranchedPool", async () => {
+      let tranchedPool: TranchedPoolInstance
+      const allowedUIDTypes = [0, 1, 2, 3, 4]
+
+      const testSetup = deployments.createFixture(async () => {
+        const [, , , , , maybeBorrower] = await hre.getUnnamedAccounts()
+        const borrower = asNonNullable(maybeBorrower)
+        const usdc = await getTruffleContract<ERC20Instance>("ERC20", {at: getUSDCAddress(MAINNET_CHAIN_ID)})
+        const {tranchedPool} = await createPoolWithCreditLine({
+          people: {borrower, owner: await getProtocolOwner()},
+          usdc,
+          goldfinchFactory,
+          allowedUIDTypes,
+        })
+
+        return {tranchedPool}
+      })
+
+      beforeEach(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;({tranchedPool} = await testSetup())
+      })
+
+      describe("getAllowedUIDTypes", async () => {
+        it("is correct", async () => {
+          const sampledUidTypes = (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())
+          expect(sampledUidTypes).to.deep.eq(allowedUIDTypes)
+        })
+      })
+    })
+
+    describe("SeniorPool", async () => {
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("Zapper is true", async () => {
+            expect(await seniorPool.hasRole(await seniorPool.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
+      })
+    })
+
     describe("StakingRewards", async () => {
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("Zapper to be true", async () => {
+            expect(await stakingRewards.hasRole(await stakingRewards.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
+      })
+
       describe("effectiveMultiplier", async () => {
-        it.skip("is correct", async () => {
-          // TODO:
+        describe("CurveLp", async () => {
+          it("is correct", async () => {
+            const point75 = "750000000000000000"
+            expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.eq(point75)
+          })
         })
       })
     })

@@ -1,5 +1,13 @@
 import {bigVal} from "@goldfinch-eng/protocol/test/testHelpers"
-import {BackerRewards, GFI, GoldfinchConfig, UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
+import {
+  BackerRewards,
+  GFI,
+  Go,
+  GoldfinchConfig,
+  SeniorPool,
+  StakingRewards,
+  UniqueIdentity,
+} from "@goldfinch-eng/protocol/typechain/ethers"
 import BigNumber from "bignumber.js"
 import {
   ContractDeployer,
@@ -7,6 +15,7 @@ import {
   getEthersContract,
   getProtocolOwner,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
+  ZAPPER_ROLE,
 } from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 import hre from "hardhat"
@@ -14,6 +23,7 @@ import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
 import {deployZapper} from "../../baseDeploy/deployZapper"
 import {CONFIG_KEYS} from "../../configKeys"
+import {StakedPositionType} from "@goldfinch-eng/protocol/test/StakingRewards.test"
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -27,9 +37,13 @@ export async function main() {
 
   console.log("Beginning v2.5.0 upgrade")
 
+  const owner = await getProtocolOwner()
   const gfi = await getEthersContract<GFI>("GFI")
   const backerRewards = await getEthersContract<BackerRewards>("BackerRewards")
-  const owner = await getProtocolOwner()
+  const stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
+  const seniorPool = await getEthersContract<SeniorPool>("SeniorPool")
+  const go = await getEthersContract<Go>("Go")
+  const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
 
   // 2. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
@@ -57,12 +71,6 @@ export async function main() {
     zapper,
   }
 
-  deployEffects.add({
-    deferred: [
-      await config.populateTransaction.setAddress(CONFIG_KEYS.FiduUSDCCurveLP, MAINNET_FIDU_USDC_CURVE_LP_ADDRESS),
-    ],
-  })
-
   // take 2% of the total GFI supply
   const totalRewards = new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString()
   const maxInterestDollarsEligible = bigVal(100_000_000).toString()
@@ -72,16 +80,18 @@ export async function main() {
   // 4. Load backer rewards
   deployEffects.add({
     deferred: [
+      await config.populateTransaction.setAddress(CONFIG_KEYS.FiduUSDCCurveLP, MAINNET_FIDU_USDC_CURVE_LP_ADDRESS),
+      await stakingRewards.populateTransaction.initZapperRole(),
+      await stakingRewards.populateTransaction.grantRole(ZAPPER_ROLE, zapper.address),
+      await seniorPool.populateTransaction.initZapperRole(),
+      await seniorPool.populateTransaction.grantRole(ZAPPER_ROLE, zapper.address),
+      await go.populateTransaction.initZapperRole(),
+      await go.populateTransaction.grantRole(ZAPPER_ROLE, zapper.address),
       await gfi.populateTransaction.approve(owner, totalRewards.toString()),
       await gfi.populateTransaction.transferFrom(owner, backerRewards.address, totalRewards),
       await backerRewards.populateTransaction.setTotalRewards(totalRewards.toString()),
       await backerRewards.populateTransaction.setMaxInterestDollarsEligible(maxInterestDollarsEligible),
-    ],
-  })
-
-  const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
-  await deployEffects.add({
-    deferred: [
+      await stakingRewards.populateTransaction.setEffectiveMultiplier("750000000000000000", StakedPositionType.CurveLP),
       await uniqueIdentity.populateTransaction.setSupportedUIDTypes([0, 1, 2, 3, 4], [true, true, true, true, true]),
     ],
   })

@@ -51,7 +51,8 @@ enum LockupPeriod {
   TwentyFourMonths,
 }
 
-enum StakedPositionType {
+// TODO(PR): move this to a test helper
+export enum StakedPositionType {
   Fidu,
   CurveLP,
 }

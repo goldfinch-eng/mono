@@ -140,6 +140,7 @@ const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
 }
 
+export const ZAPPER_ROLE = web3.utils.keccak256("ZAPPER_ROLE")
 export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
 export const PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
 export const GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
