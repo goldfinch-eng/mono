@@ -18,6 +18,12 @@ export type Scalars = {
   Bytes: any;
 };
 
+export type AppUser = {
+  __typename?: 'AppUser';
+  account?: Maybe<Scalars['String']>;
+  usdcBalance?: Maybe<Scalars['Float']>;
+};
+
 /** The block at which the query should be executed. */
 export type Block_Height = {
   /** Value containing a block hash */
@@ -640,6 +646,7 @@ export type Query = {
   capitalProviderStatuses: Array<CapitalProviderStatus>;
   creditLine?: Maybe<CreditLine>;
   creditLines: Array<CreditLine>;
+  currentUser: AppUser;
   juniorTrancheInfo?: Maybe<JuniorTrancheInfo>;
   juniorTrancheInfos: Array<JuniorTrancheInfo>;
   poolBacker?: Maybe<PoolBacker>;
@@ -2166,6 +2173,11 @@ export enum _SubgraphErrorPolicy_ {
   Deny = 'deny'
 }
 
+export type CurrentUserWalletInfoQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { __typename?: 'AppUser', account?: string | null, usdcBalance?: number | null } };
+
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2181,6 +2193,41 @@ export const TranchedPoolCardFieldsFragmentDoc = gql`
   icon @client
 }
     `;
+export const CurrentUserWalletInfoDocument = gql`
+    query CurrentUserWalletInfo {
+  currentUser @client {
+    account
+    usdcBalance
+  }
+}
+    `;
+
+/**
+ * __useCurrentUserWalletInfoQuery__
+ *
+ * To run a query within a React component, call `useCurrentUserWalletInfoQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCurrentUserWalletInfoQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCurrentUserWalletInfoQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useCurrentUserWalletInfoQuery(baseOptions?: Apollo.QueryHookOptions<CurrentUserWalletInfoQuery, CurrentUserWalletInfoQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<CurrentUserWalletInfoQuery, CurrentUserWalletInfoQueryVariables>(CurrentUserWalletInfoDocument, options);
+      }
+export function useCurrentUserWalletInfoLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<CurrentUserWalletInfoQuery, CurrentUserWalletInfoQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<CurrentUserWalletInfoQuery, CurrentUserWalletInfoQueryVariables>(CurrentUserWalletInfoDocument, options);
+        }
+export type CurrentUserWalletInfoQueryHookResult = ReturnType<typeof useCurrentUserWalletInfoQuery>;
+export type CurrentUserWalletInfoLazyQueryHookResult = ReturnType<typeof useCurrentUserWalletInfoLazyQuery>;
+export type CurrentUserWalletInfoQueryResult = Apollo.QueryResult<CurrentUserWalletInfoQuery, CurrentUserWalletInfoQueryVariables>;
 export const ExampleDocument = gql`
     query Example {
   seniorPools(first: 1) {

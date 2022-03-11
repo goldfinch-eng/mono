@@ -1,13 +1,14 @@
 import { Popover } from "@headlessui/react";
-import { commify, formatUnits } from "ethers/lib/utils";
 import { useEffect, useState } from "react";
 import { usePopper } from "react-popper";
 
 import { Button } from "@/components/button";
 import { useUsdcContract } from "@/lib/contracts";
+import { updateCurrentUserAttributes } from "@/lib/graphql/local-state/actions";
 import { useWallet } from "@/lib/wallet";
 
 import { MetaMaskButton } from "./metamask-button";
+import { WalletInfo } from "./wallet-info";
 import { WalletConnectButton } from "./walletconnect-button";
 
 export function WalletButton() {
@@ -30,6 +31,19 @@ export function WalletButton() {
     ],
   });
   const { isActive, account } = useWallet();
+
+  const usdcContract = useUsdcContract();
+  useEffect(() => {
+    if (account && usdcContract) {
+      usdcContract.balanceOf(account).then((value) =>
+        updateCurrentUserAttributes({
+          account: account,
+          usdcBalance: value.div(10 ** 6).toNumber(),
+        })
+      );
+    }
+  }, [usdcContract, account]);
+
   return (
     <Popover>
       {/* @ts-expect-error the ref type doesn't cover callback refs, which are still valid */}
@@ -60,36 +74,6 @@ function WalletSelection() {
       <div className="flex space-x-4">
         <MetaMaskButton />
         <WalletConnectButton />
-      </div>
-    </div>
-  );
-}
-
-export function WalletInfo() {
-  const { account, connector } = useWallet();
-  const usdcContract = useUsdcContract();
-  const [usdcBalance, setUsdcBalance] = useState<string>();
-  useEffect(() => {
-    if (account && usdcContract) {
-      usdcContract
-        .balanceOf(account)
-        .then((value) => setUsdcBalance(commify(formatUnits(value, 6))));
-    }
-  }, [usdcContract, account]);
-  return (
-    <div className="space-y-2">
-      <div>
-        <div className="font-bold">Wallet address</div>
-        <div>{account}</div>
-      </div>
-      <div>
-        <div className="font-bold">USDC Balance</div>
-        <div>{usdcBalance ?? "-.--"}</div>
-      </div>
-      <div className="flex justify-end">
-        <Button colorScheme="sand" onClick={() => connector.deactivate()}>
-          Disconnect Wallet
-        </Button>
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ import { BigNumber, FixedNumber } from "ethers";
 import { goldfinchLogoPngUrl } from "@/components/logo";
 import { POOL_METADATA } from "@/constants";
 
+import { currentUserVar } from "./local-state/vars";
+
 function readFieldFromMetadata(
   fieldName: string,
   fallback: any = null
@@ -42,6 +44,11 @@ function readAsFixedNumber(n?: string) {
 }
 
 export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
+  Query: {
+    fields: {
+      currentUser: { read: () => currentUserVar() },
+    },
+  },
   SeniorPool: {
     fields: {
       name: { read: () => "Goldfinch Senior Pool" },

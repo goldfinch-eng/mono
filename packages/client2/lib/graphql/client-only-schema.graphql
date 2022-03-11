@@ -10,3 +10,12 @@ extend type TranchedPool {
   description: String
   icon: String
 }
+
+type AppUser {
+  account: String
+  usdcBalance: Float
+}
+
+extend type Query {
+  currentUser: AppUser!
+}
