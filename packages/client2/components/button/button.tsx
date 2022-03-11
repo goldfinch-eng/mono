@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import React, { forwardRef, HTMLAttributes, ReactNode } from "react";
 
+import { Icon, IconProps } from "@/components/icon";
+
 interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
   /**
    * Content within the button
@@ -19,6 +21,8 @@ interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
    */
   colorScheme?: "blue" | "purple" | "sand";
   disabled?: boolean;
+  iconLeft?: IconProps["name"];
+  iconRight?: IconProps["name"];
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -28,6 +32,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "md",
       variant = "solid",
       colorScheme = "blue",
+      iconLeft,
+      iconRight,
       className,
       ...rest
     },
@@ -37,7 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={clsx(
-          "rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
+          "inline-flex items-center gap-2 rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
           size === "sm"
             ? "py-1.5 px-3"
             : size === "md"
@@ -58,7 +64,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...rest}
       >
+        {iconLeft ? <Icon name={iconLeft} /> : null}
         {children}
+        {iconRight ? <Icon name={iconRight} /> : null}
       </button>
     );
   }
