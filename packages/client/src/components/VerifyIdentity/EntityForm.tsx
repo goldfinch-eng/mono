@@ -13,7 +13,12 @@ export default function EntityForm({onClose}) {
             </div>
             <div className="form-message paragraph">
               To verify or pre-verify, please fill out{" "}
-              <a className="link" target="_blank" rel="noopener noreferrer" href="https://forms.gle/fWErQMxREWwkGhe18">
+              <a
+                className="link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://bridge.parallelmarkets.com/goldfinch"
+              >
                 this form
               </a>
               . Then we will reach out with next steps.

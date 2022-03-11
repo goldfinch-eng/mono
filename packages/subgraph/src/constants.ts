@@ -4,3 +4,4 @@ export const POOL_TOKENS_ADDRESS = "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df"
 export const GOLDFINCH_CONFIG_ADDRESS = "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
 export const LeverageRatioConfigIndex = 9
 export const ReserveDenominatorConfigIndex = 3
+export const V2_2_MIGRATION_TIME = "1643943600"

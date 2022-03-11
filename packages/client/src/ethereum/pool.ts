@@ -366,10 +366,11 @@ async function fetchSeniorPoolData(
   let totalLoansOutstanding = new BigNumber(
     await pool.contract.readOnly.methods.totalLoansOutstanding().call(undefined, currentBlock.number)
   )
+  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   let cumulativeWritedowns = await getCumulativeWritedowns(pool, currentBlock)
-  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock)
+  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock, tranchedPoolAddresses)
   let poolEvents = await getAllPoolEvents(pool, currentBlock)
-  let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock)
+  let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock, tranchedPoolAddresses)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   const currentEarnRatePerYear = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
   const estimatedApyFromGfi = gfiToDollarsAtomic(currentEarnRatePerYear, gfi.info.value.price)
@@ -502,9 +503,8 @@ async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo
   return sum.negated()
 }
 
-async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo) {
+async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo, tranchedPoolAddresses: string[]) {
   const protocol = pool.goldfinchProtocol
-  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
@@ -655,9 +655,12 @@ export function remainingCapacity(this: SeniorPoolData, maxPoolCapacity: BigNumb
 /**
  * Returns the amount of interest that the senior pool will accrue from tranched pools
  */
-async function getEstimatedTotalInterest(pool: SeniorPool, currentBlock: BlockInfo): Promise<BigNumber> {
+async function getEstimatedTotalInterest(
+  pool: SeniorPool,
+  currentBlock: BlockInfo,
+  tranchedPoolAddresses: string[]
+): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )

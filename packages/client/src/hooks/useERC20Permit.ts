@@ -4,7 +4,7 @@ import {ethers} from "ethers"
 import ERC20PermitABI from "../../abi/ERC20Permit.json"
 import {AppContext} from "../App"
 import {ERC20} from "../ethereum/erc20"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import useNonNullContext from "./useNonNullContext"
 const splitSignature = ethers.utils.splitSignature
 
@@ -60,6 +60,7 @@ export default function useERC20Permit(): {
     const deadline = new BigNumber(now).plus(deadlineFromNow)
 
     const nonce = await contract.userWallet.methods.nonces(owner).call(undefined, "latest")
+    const web3 = getWeb3()
     const chainId = await web3.userWallet.eth.getChainId()
     const message = {
       owner,

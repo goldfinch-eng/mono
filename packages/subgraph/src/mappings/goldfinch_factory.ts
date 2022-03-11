@@ -4,5 +4,5 @@ import { PoolCreated } from "../../generated/templates/GoldfinchFactory/Goldfinc
 
 export function handlePoolCreated(event: PoolCreated): void {
   TranchedPoolTemplate.create(event.params.pool)
-  getOrInitTranchedPool(event.params.pool)
+  getOrInitTranchedPool(event.params.pool, event.block.timestamp)
 }

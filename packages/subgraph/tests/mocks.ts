@@ -2,10 +2,83 @@ import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
 import { createMockedFunction } from 'matchstick-as/assembly/index'
 import { GOLDFINCH_CONFIG_ADDRESS, POOL_TOKENS_ADDRESS, ReserveDenominatorConfigIndex, SENIOR_POOL_ADDRESS } from '../src/constants'
 
+export function mockTranchedPoolMultipleSlicesCalls(
+  tranchedPoolAddress: Address,
+  creditLineAddress: Address,
+  jrPrincipalDeposited: string = "5000000000000",
+  numSlices: number = 2,
+): void {
+  createMockedFunction(
+    tranchedPoolAddress,
+    "numSlices",
+    "numSlices():(uint256)"
+  )
+  .withArgs([])
+  .returns([ethereum.Value.fromI32(numSlices as i32)])
+  createMockedFunction(
+    tranchedPoolAddress,
+    "totalDeployed",
+    "totalDeployed():(uint256)"
+  )
+  .withArgs([])
+  .returns([ethereum.Value.fromI32(1)])
+  createMockedFunction(
+    tranchedPoolAddress,
+    "fundableAt",
+    "fundableAt():(uint256)"
+  )
+  .withArgs([])
+  .returns([ethereum.Value.fromI32(1)])
+
+  mockTranchedPoolCalls(tranchedPoolAddress, creditLineAddress, jrPrincipalDeposited, false)
+
+  const seniorId = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(3))
+  const juniorId = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(4))
+  const defaultPrincipalDeposited = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0))
+  const defaultPrincipalSharePrice = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0))
+  const defaultInterestSharePrice = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(0))
+  const lockedUntil = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(1635209769))
+  const interestSharePrice = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("9611500737600000"))
+  const principalDeposited = ethereum.Value.fromUnsignedBigInt(BigInt.fromString(jrPrincipalDeposited))
+  const principalSharePrice = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("736000000"))
+  createMockedFunction(
+    tranchedPoolAddress,
+    "getTranche",
+    "getTranche(uint256):((uint256,uint256,uint256,uint256,uint256))"
+  )
+  .withArgs([ethereum.Value.fromI32(3)])
+  .returns([
+    ethereum.Value.fromTuple(changetype<ethereum.Tuple>([
+      seniorId,
+      defaultPrincipalDeposited,
+      defaultPrincipalSharePrice,
+      defaultInterestSharePrice,
+      lockedUntil,
+    ]))
+  ])
+
+  createMockedFunction(
+    tranchedPoolAddress,
+    "getTranche",
+    "getTranche(uint256):((uint256,uint256,uint256,uint256,uint256))"
+  )
+  .withArgs([ethereum.Value.fromI32(4)])
+  .returns([
+    ethereum.Value.fromTuple(changetype<ethereum.Tuple>([
+      juniorId,
+      principalDeposited,
+      principalSharePrice,
+      interestSharePrice,
+      lockedUntil,
+    ]))
+  ])
+}
+
 export function mockTranchedPoolCalls(
   tranchedPoolAddress: Address,
   creditLineAddress: Address,
-  jrPrincipalDeposited: string = "5000000000000"
+  jrPrincipalDeposited: string = "5000000000000",
+  v2_2: boolean = true
 ): void {
   const seniorId = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(1))
   const juniorId = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(2))
@@ -20,6 +93,30 @@ export function mockTranchedPoolCalls(
   const juniorFeePercent = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(20))
   const reserveDenominator = ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(10))
   const estimatedSeniorPoolContribution = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("15000000000000"))
+
+  if (v2_2) {
+    createMockedFunction(
+      tranchedPoolAddress,
+      "numSlices",
+      "numSlices():(uint256)"
+    )
+    .withArgs([])
+    .returns([ethereum.Value.fromI32(1)])
+    createMockedFunction(
+      tranchedPoolAddress,
+      "totalDeployed",
+      "totalDeployed():(uint256)"
+    )
+    .withArgs([])
+    .returns([ethereum.Value.fromI32(1)])
+    createMockedFunction(
+      tranchedPoolAddress,
+      "fundableAt",
+      "fundableAt():(uint256)"
+    )
+    .withArgs([])
+    .returns([ethereum.Value.fromI32(1)])
+  }
 
   createMockedFunction(
     tranchedPoolAddress,
@@ -92,10 +189,10 @@ export function mockTranchedPoolCalls(
   .withArgs([])
   .returns([ethereum.Value.fromAddress(creditLineAddress)])
 
-  mockCreditLineContractCalls(creditLineAddress)
+  mockCreditLineContractCalls(creditLineAddress, v2_2)
 }
 
-export function mockCreditLineContractCalls(creditLineAddress: Address, defaultBalance: string = "4999999996320"): void {
+export function mockCreditLineContractCalls(creditLineAddress: Address, v2_2: boolean = true, defaultBalance: string = "4999999996320"): void {
   const balance = ethereum.Value.fromUnsignedBigInt(BigInt.fromString(defaultBalance))
   const interestApr = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("130000000000000000"))
   const interestAccruedAsOf = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1637515148"))
@@ -103,6 +200,7 @@ export function mockCreditLineContractCalls(creditLineAddress: Address, defaultB
   const termInDays = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("730"))
   const nextDueTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1640107148"))
   const limit = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("5000000000000"))
+  const maxLimit = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("10000000000000"))
   const interestOwed = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("0"))
   const termEndTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1697995148"))
   const lastFullPaymentTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1637515148"))
@@ -177,6 +275,16 @@ export function mockCreditLineContractCalls(creditLineAddress: Address, defaultB
   )
   .withArgs([])
   .returns([lastFullPaymentTime])
+
+  if (v2_2) {
+    createMockedFunction(
+      creditLineAddress,
+      "maxLimit",
+      "maxLimit():(uint256)"
+    )
+    .withArgs([])
+    .returns([maxLimit])
+  }
 
 }
 
