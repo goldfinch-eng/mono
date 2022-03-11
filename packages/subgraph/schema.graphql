@@ -125,6 +125,7 @@ type CreditLine @entity {
   id: ID!
   tranchedPool: TranchedPool!
   limit: BigInt!
+  maxLimit: BigInt!
   interestApr: BigInt!
   balance: BigInt!
   remainingPeriodDueAmount: BigInt!
@@ -138,6 +139,7 @@ type CreditLine @entity {
   termEndTime: BigInt!
   lastFullPaymentTime: BigInt!
   termEndDate: BigInt!
+  version: TranchedPoolCreditLineVersion!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
@@ -147,6 +149,11 @@ type CreditLine @entity {
   totalDueAmount: BigInt
   dueDate: String
   name: String
+}
+
+enum TranchedPoolCreditLineVersion {
+  BEFORE_V2_2
+  V2_2
 }
 
 type TranchedPool @entity {
@@ -165,12 +172,15 @@ type TranchedPool @entity {
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
+  totalDeployed: BigInt!
+  fundableAt: BigInt!
   estimatedSeniorPoolContribution: BigInt!
   backers: [PoolBacker!]!
   tokens: [TranchedPoolToken!]!
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  version: TranchedPoolCreditLineVersion!
 }
 
 type TranchedPoolToken @entity {

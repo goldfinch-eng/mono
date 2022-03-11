@@ -117,6 +117,19 @@ contract Go is IGo, BaseUpgradeablePausable {
     return false;
   }
 
+  function getSeniorPoolIdTypes() public pure returns (uint256[] memory) {
+    // using a fixed size array because you can only define fixed size array literals.
+    uint256[4] memory allowedSeniorPoolIdTypesStaging = [ID_TYPE_0, ID_TYPE_1, ID_TYPE_3, ID_TYPE_4];
+
+    // create a dynamic array and copy the fixed array over so we return a dynamic array
+    uint256[] memory allowedSeniorPoolIdTypes = new uint256[](allowedSeniorPoolIdTypesStaging.length);
+    for (uint256 i = 0; i < allowedSeniorPoolIdTypesStaging.length; i++) {
+      allowedSeniorPoolIdTypes[i] = allowedSeniorPoolIdTypesStaging[i];
+    }
+
+    return allowedSeniorPoolIdTypes;
+  }
+
   /**
    * @notice Returns whether the provided account is go-listed for use of the SeniorPool on the Goldfinch protocol.
    * @param account The account whose go status to obtain
@@ -127,7 +140,7 @@ contract Go is IGo, BaseUpgradeablePausable {
     if (account == config.stakingRewardsAddress() || _getLegacyGoList().goList(account)) {
       return true;
     }
-    uint256[4] memory seniorPoolIdTypes = [ID_TYPE_0, ID_TYPE_1, ID_TYPE_3, ID_TYPE_4];
+    uint256[] memory seniorPoolIdTypes = getSeniorPoolIdTypes();
     for (uint256 i = 0; i < seniorPoolIdTypes.length; ++i) {
       uint256 idTypeBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(account, seniorPoolIdTypes[i]);
       if (idTypeBalance > 0) {

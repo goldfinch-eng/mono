@@ -42,7 +42,7 @@ export function useTranchedPoolSubgraphData(
   loading: boolean
   error: ApolloError | undefined
 } {
-  const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useNonNullContext(AppContext)
+  const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useContext(AppContext)
   const [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
@@ -57,8 +57,8 @@ export function useTranchedPoolSubgraphData(
   useEffect(() => {
     async function parseData(
       tranchedPools: getTranchedPoolsData_tranchedPools[],
-      goldfinchProtocol?: GoldfinchProtocol,
-      currentBlock?: BlockInfo,
+      goldfinchProtocol: GoldfinchProtocol,
+      currentBlock: BlockInfo,
       userAddress?: string
     ) {
       const backers = await parseBackers(tranchedPools, goldfinchProtocol, currentBlock, userAddress)
@@ -74,11 +74,7 @@ export function useTranchedPoolSubgraphData(
       })
     }
 
-    if (userWalletWeb3Status?.type === "no_web3" && data?.tranchedPools) {
-      parseData(data.tranchedPools)
-    }
-
-    if (userWalletWeb3Status?.type !== "no_web3" && data?.tranchedPools && goldfinchProtocol && currentBlock) {
+    if (data?.tranchedPools && goldfinchProtocol && currentBlock) {
       parseData(data.tranchedPools, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,7 +130,7 @@ export function usePoolBackersWeb3(skip = false): {
       })
     }
 
-    if (goldfinchProtocol && currentBlock && !skip) {
+    if (goldfinchProtocol && user && currentBlock && !skip) {
       loadTranchedPools(goldfinchProtocol, user, currentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

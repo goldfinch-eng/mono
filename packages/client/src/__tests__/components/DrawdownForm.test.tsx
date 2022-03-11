@@ -1,9 +1,9 @@
 import _ from "lodash"
 import BigNumber from "bignumber.js"
-import {AppContext} from "../App"
-import DrawdownForm from "./drawdownForm"
+import {AppContext} from "../../App"
+import DrawdownForm from "../../components/Borrow/DrawdownForm"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
-import {usdcToAtomic} from "../ethereum/erc20"
+import {usdcToAtomic} from "../../ethereum/erc20"
 
 function renderDrawdownForm(transactionLimit, creditLineBalance, seniorPoolremainingCapacity) {
   const mockAddress = "0x0000000000000000000000000"

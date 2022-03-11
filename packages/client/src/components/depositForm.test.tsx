@@ -14,7 +14,7 @@ import {
   getStakingRewardsAbi,
   network,
 } from "../__tests__/rewards/__utils__/constants"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {setupPartiallyClaimedStakingReward} from "../__tests__/rewards/__utils__/scenarios"
 import {resetAirdropMocks} from "../__tests__/rewards/__utils__/mocks"
 import {
@@ -35,6 +35,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 

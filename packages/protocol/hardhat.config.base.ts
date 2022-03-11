@@ -113,10 +113,6 @@ export default {
     currency: "USD",
     src: "contracts/protocol",
   },
-  typechain: {
-    outDir: "typechain/truffle",
-    target: "truffle-v5",
-  },
   tenderly: {
     project: "goldfinch-protocol",
     username: "goldfinch",

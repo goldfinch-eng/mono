@@ -5,3 +5,4 @@ export const GOLDFINCH_CONFIG_ADDRESS = "0x4eb844Ff521B4A964011ac8ecd42d500725C9
 export const STAKING_REWARDS_ADDRESS = "0xFD6FF39DA508d281C2d255e9bBBfAb34B6be60c3"
 export const LeverageRatioConfigIndex = 9
 export const ReserveDenominatorConfigIndex = 3
+export const V2_2_MIGRATION_TIME = "1643943600"
