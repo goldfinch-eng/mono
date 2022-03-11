@@ -52,6 +52,7 @@ describe("network widget sign in", () => {
       address: undefined,
     })
     expect(screen.getByText("MetaMask")).toBeInTheDocument()
+    expect(screen.getByAltText("WalletConnect Logo")).toBeInTheDocument()
     expect(screen.getByText("I don't have a wallet")).toBeInTheDocument()
   })
 
@@ -88,6 +89,20 @@ describe("network widget sign in", () => {
 
     fireEvent.click(screen.getByText("Connect Wallet"))
     expect(screen.getByText("Connect")).toBeInTheDocument()
+  })
+
+  it("shows walletConnect modal", async () => {
+    renderNetworkWidget(undefined, undefined, {
+      type: "has_web3",
+      networkName: "localhost",
+      address: undefined,
+    })
+
+    fireEvent.click(screen.getByText("Connect Wallet"))
+    expect(screen.getByText("MetaMask")).toBeInTheDocument()
+    expect(screen.getByAltText("WalletConnect Logo")).toBeInTheDocument()
+    fireEvent.click(screen.getByAltText("WalletConnect Logo"))
+    expect(screen.getByText("Scan with WalletConnect to connect")).toBeInTheDocument()
   })
 
   it("shows connect with metamask if session data is invalid", async () => {

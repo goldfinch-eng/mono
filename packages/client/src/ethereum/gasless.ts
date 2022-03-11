@@ -1,4 +1,4 @@
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES, isMainnetForking} from "./utils"
 const ForwarderAbi = require("../../../autotasks/relayer/Forwarder.json")
 const {ethers} = require("ethers")
@@ -42,6 +42,7 @@ const TypedData = {
 }
 
 async function submitGaslessTransaction(contractAddress, unsentAction) {
+  const web3 = getWeb3()
   const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider)
   const signer = provider.getSigner()
   const from = await signer.getAddress()

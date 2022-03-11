@@ -17,7 +17,7 @@ import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
@@ -377,6 +377,7 @@ class TranchedPool {
   }
 
   async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
+    const web3 = getWeb3()
     const blockTimestamps = await Promise.all(
       transactions.map((tx) => {
         return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
@@ -526,8 +527,15 @@ class TranchedPool {
     // start at the first next-due-time (aligned with (i)'s schedule) that occurs *after* the optimistic
     // start of that borrowing, and then (again, aligned with (i)'s schedule), one payment every
     // `paymentPeriodInDays`, until the final payment at `termEndTime`.
+
     if (!(nextRepaymentTimeAlreadyBorrowed || nextRepaymentTimeToBeBorrowed)) {
-      throw new Error("Failed to identify next repayment time.")
+      if (this.creditLine.termEndTime.eq(0) && this.poolState === PoolState.WithdrawalsUnlocked) {
+        // The pool has reached the WithdrawalsUnlocked state without any amount being drawndown. We'll
+        // assume that no amount will be borrowed.
+        return []
+      } else {
+        throw new Error("Failed to identify next repayment time.")
+      }
     }
     const nextRepaymentTime = BigNumber.min(
       nextRepaymentTimeAlreadyBorrowed || new BigNumber(Infinity),

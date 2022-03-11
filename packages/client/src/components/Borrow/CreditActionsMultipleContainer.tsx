@@ -1,8 +1,8 @@
 import React, {useState, useContext} from "react"
-import PaymentForm from "./paymentForm"
-import {iconUpArrow} from "./icons"
-import {AppContext} from "../App"
-import {displayDollars} from "../utils"
+import PaymentForm from "./PaymentForm"
+import {iconUpArrow} from "../icons"
+import {AppContext} from "../../App"
+import {displayDollars} from "../../utils"
 
 function CreditActionsMultipleContainer(props) {
   const {user} = useContext(AppContext)

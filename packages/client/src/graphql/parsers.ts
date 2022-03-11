@@ -49,7 +49,7 @@ function trancheInfo(tranche: JuniorTrancheGQL | SeniorTrancheGQL): TrancheInfo 
 async function parseTranchedPool(
   pool: TranchedPoolGQL,
   goldfinchProtocol: GoldfinchProtocol,
-  currentBlock?: BlockInfo
+  currentBlock: BlockInfo
 ): Promise<TranchedPool> {
   const creditLine = await parseCreditLine(pool.creditLine, goldfinchProtocol, currentBlock)
   const tranchedPool = new TranchedPool(pool.id, goldfinchProtocol)
@@ -109,7 +109,7 @@ async function parseTranchedPool(
 async function parseCreditLine(
   creditLineData: CreditLineGQL,
   goldfinchProtocol: GoldfinchProtocol,
-  currentBlock?: BlockInfo
+  currentBlock: BlockInfo
 ): Promise<CreditLine> {
   const creditLine = new CreditLine(creditLineData.id, goldfinchProtocol)
   creditLine.balance = new BigNumber(creditLineData.balance)
@@ -124,11 +124,8 @@ async function parseCreditLine(
   creditLine.termInDays = new BigNumber(creditLineData.termInDays)
   creditLine.lastFullPaymentTime = new BigNumber(creditLineData.lastFullPaymentTime)
   creditLine.interestAprDecimal = new BigNumber(creditLine.interestApr).div(INTEREST_DECIMALS.toString())
-
-  if (currentBlock) {
-    await creditLine.calculateFields(currentBlock)
-    creditLine.loaded = true
-  }
+  await creditLine.calculateFields(currentBlock)
+  creditLine.loaded = true
 
   return creditLine
 }
@@ -149,8 +146,8 @@ async function defaultGoldfinchProtocol(goldfinchProtocol: GoldfinchProtocol | u
 
 export async function parseBackers(
   tranchedPools: TranchedPoolGQL[],
-  goldfinchProtocol?: GoldfinchProtocol,
-  currentBlock?: BlockInfo,
+  goldfinchProtocol: GoldfinchProtocol,
+  currentBlock: BlockInfo,
   userAddress?: string
 ): Promise<TranchedPoolBacker[]> {
   const _goldfinchProtocol = await defaultGoldfinchProtocol(goldfinchProtocol)

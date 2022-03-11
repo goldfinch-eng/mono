@@ -1140,6 +1140,17 @@ describe("TranchedPool", () => {
       expect(await tranchedPool.allowedUIDTypes(1)).to.bignumber.equal(new BN(2))
     })
 
+    it("getAllowedUIDTypes", async () => {
+      await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
+      expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(1))
+      expect(await (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())).to.deep.equal([1])
+
+      await tranchedPool.setAllowedUIDTypes([1, 2], {from: borrower})
+      expect(await tranchedPool.allowedUIDTypes(0)).to.bignumber.equal(new BN(1))
+      expect(await tranchedPool.allowedUIDTypes(1)).to.bignumber.equal(new BN(2))
+      expect(await (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())).to.deep.equal([1, 2])
+    })
+
     it("validate must be locker", async () => {
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.fulfilled
@@ -2435,37 +2446,6 @@ describe("TranchedPool", () => {
         await expectAvailable(secondSliceJunior, "7.8", "60.00")
         await expectAvailable(secondSliceSenior, "8.4", "240.00")
       })
-    })
-  })
-
-  describe("updateGoldfinchConfig", async () => {
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-        const tx = await tranchedPool.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-  })
-
-  describe("hasAllowedUID", async () => {
-    it("returns true if `sender` has UID type", async () => {
-      const allowedUIDType = 1
-      await goldfinchConfig.bulkRemoveFromGoList([owner])
-      await tranchedPool.setAllowedUIDTypes([allowedUIDType], {from: borrower})
-
-      expect(await tranchedPool.hasAllowedUID(owner)).to.eq(false)
-
-      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-      await uniqueIdentity.setSupportedUIDTypes([1], [true])
-      await mint(hre, uniqueIdentity, new BN(allowedUIDType), expiresAt, new BN(0), owner, undefined, owner)
-
-      expect(await tranchedPool.hasAllowedUID(owner)).to.eq(true)
     })
   })
 })

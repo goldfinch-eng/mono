@@ -1,10 +1,10 @@
 import React, {useState, useContext} from "react"
-import PaymentForm from "./paymentForm"
-import DrawdownForm from "./drawdownForm"
-import {iconCircleCheck, iconUpArrow, iconDownArrow} from "./icons"
-import {AppContext} from "../App"
-import {displayDollars} from "../utils"
-import {displayDueDate} from "../ethereum/creditLine"
+import PaymentForm from "./PaymentForm"
+import DrawdownForm from "./DrawdownForm"
+import {iconCircleCheck, iconUpArrow, iconDownArrow} from "../icons"
+import {AppContext} from "../../App"
+import {displayDollars} from "../../utils"
+import {displayDueDate} from "../../ethereum/creditLine"
 
 function CreditActionsContainer(props) {
   const {user} = useContext(AppContext)

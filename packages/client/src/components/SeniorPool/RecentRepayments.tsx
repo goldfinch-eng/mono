@@ -1,15 +1,15 @@
 import {isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
 import React, {useEffect, useState, useContext} from "react"
-import {AppContext} from "../App"
-import {usdcFromAtomic} from "../ethereum/erc20"
-import {CombinedRepaymentTx} from "../ethereum/pool"
-import {getEtherscanSubdomain} from "../ethereum/utils"
-import {displayDollars, croppedAddress, assertNonNullable, displayDollarsTruncated} from "../utils"
-import {iconOutArrow} from "./icons"
-import {populateDates} from "../ethereum/events"
+import {AppContext} from "../../App"
+import {usdcFromAtomic} from "../../ethereum/erc20"
+import {CombinedRepaymentTx} from "../../ethereum/pool"
+import {getEtherscanSubdomain} from "../../ethereum/utils"
+import {displayDollars, croppedAddress, assertNonNullable, displayDollarsTruncated} from "../../utils"
+import {iconOutArrow} from "../icons"
+import {populateDates} from "../../ethereum/events"
 import {useMediaQuery} from "react-responsive"
-import {WIDTH_TYPES} from "./styleConstants"
+import {WIDTH_TYPES} from "../styleConstants"
 
 function RecentRepayments() {
   const {pool, user, network, goldfinchProtocol, currentBlock} = useContext(AppContext)

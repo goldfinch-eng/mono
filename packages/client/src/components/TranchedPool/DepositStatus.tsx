@@ -46,7 +46,7 @@ export function DepositStatus({
         <div className="deposit-status-sub-item-flex">
           <div className="sub-value">{`${displayPercent(estimatedApy)} with GFI`}</div>
           <span data-tip="" data-for="apy-tooltip" data-offset="{'top': 0, 'left': 80}" data-place="bottom">
-            <InfoIcon color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
+            <InfoIcon className="icon" color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
           </span>
         </div>
       </div>
