@@ -42,7 +42,7 @@ import {
   UserMerkleDistributor,
   UserMerkleDistributorLoaded,
 } from "./ethereum/user"
-import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
+import {MAINNET, mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import Rewards from "./pages/rewards"
@@ -368,6 +368,17 @@ function App() {
     const _userWalletWeb3Status = await getUserWalletWeb3Status()
     setUserWalletWeb3Status(_userWalletWeb3Status)
     if (_userWalletWeb3Status.type === "no_web3") {
+      // Initialize the chain state the app needs even when the user has no wallet.
+
+      const currentBlock = getBlockInfo(await getCurrentBlock())
+
+      const networkConfig: NetworkConfig = {name: MAINNET, supported: true}
+      const protocol = new GoldfinchProtocol(networkConfig)
+      await protocol.initialize()
+
+      setCurrentBlock(currentBlock)
+      setGoldfinchProtocol(protocol)
+
       return
     }
 
