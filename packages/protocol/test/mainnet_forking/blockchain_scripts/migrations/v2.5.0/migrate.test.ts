@@ -207,6 +207,74 @@ describe("v2.5.0", async function () {
         toBe: getProtocolOwner,
         forContracts: ["CommunityRewards"],
       })
+    })
+
+    describe("BackerRewards", async () => {
+      mochaEach(Object.entries(migrate250.BACKER_REWARDS_PARAMS_BY_POOL_ADDR)).describe(
+        "pool at '%s'",
+        (address, properties) => {
+          describe("poolStakingRewards", async () => {
+            let stakingRewardsPoolInfo
+            beforeEach(async () => {
+              stakingRewardsPoolInfo = await backerRewards.poolStakingRewards(address)
+            })
+
+            it("accumulatedRewardsPerTokenAtLastCheckpoint is correct", async () => {
+              expect(stakingRewardsPoolInfo).to.exist
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              expect(stakingRewardsPoolInfo.accumulatedRewardsPerTokenAtLastCheckpoint).to.bignumber.eq(
+                new BN(properties.accumulatedRewardsPerToken)
+              )
+            })
+
+            describe("slicesInfo", () => {
+              describe("for slice 0", () => {
+                let sliceInfo
+                beforeEach(async () => {
+                  // TODO(PR): how do we get a slice????????
+                })
+
+                it("fiduSharePriceAtDrawdown is correct is correct", async () => {
+                  expect(sliceInfo.fiduSharePriceAtDrawdown).to.bignumber.eq(new BN(params.fiduSharePriceAtDrawdown))
+                })
+
+                it("principalDeployedAtLastCheckpoint is correct", async () => {
+                  expect(sliceInfo.principalDeployedAtLastCheckpoint).to.bignumber.eq(
+                    new BN(params.principalDeployedAtDrawdown)
+                  )
+                })
+
+                it("accumulatedRewardsPerTokenAtDrawdown is correct", async () => {
+                  expect(sliceInfo.accumulatedRewardsPerTokenAtDrawdown).to.bignumber.eq(
+                    new BN(params.accumulatedRewardsPerToken)
+                  )
+                })
+
+                it("accumulatedRewardsPerTokenAtLastCheckpoint is correct", async () => {
+                  expect(sliceInfo.accumulatedRewardsPerTokenAtLastCheckpoint).to.bignumber.eq(
+                    new BN(params.accumulatedRewardsPerToken)
+                  )
+                })
+
+                it("unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint is correct", async () => {
+                  expect(sliceInfo.unrealizedAccumulatedRewardsPerTokenAtLastCheckpoint).to.bignumber.eq(
+                    new BN(params.accumulatedRewardsPerToken)
+                  )
+                })
+              })
+            })
+          })
+        }
+      )
+
+      describe("maxInterestDollarsElligible", async () => {
+        it("is correct", async () => {
+          expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(
+            params.BackerRewards.maxInterestDollarsEligible
+          )
+        })
+      })
 
       expectOwnerRole({
         toBe: async () => getProtocolOwner(),
