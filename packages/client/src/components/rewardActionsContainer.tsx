@@ -25,7 +25,7 @@ import {
 import {MerkleDirectDistributorGrant} from "../types/merkleDirectDistributor"
 import {NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
 import {ACCEPT_TX_TYPE, CLAIM_TX_TYPE} from "../types/transactions"
-import {assertNonNullable, displayDollars, displayNumber, displayPercent, getInjectedProvider} from "../utils"
+import {assertNonNullable, displayDollars, displayNumber, displayPercent} from "../utils"
 import EtherscanLink from "./etherscanLink"
 import {iconCarrotDown, iconCarrotUp, iconOutArrow} from "./icons"
 import LoadingButton from "./loadingButton"
@@ -35,16 +35,10 @@ import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {BackerMerkleDirectDistributorLoaded} from "../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "../ethereum/backerMerkleDistributor"
+import {requestUserAddGfiTokenToWallet} from "../web3"
 
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
-const GFI_TOKEN_IMAGE_URL = `${
-  process.env.NODE_ENV === "development"
-    ? process.env.REACT_APP_MURMURATION === "yes"
-      ? "https://murmuration.goldfinch.finance"
-      : "http://localhost:3000"
-    : "https://app.goldfinch.finance"
-}/gfi-token.svg`
 
 enum RewardStatus {
   Acceptable,
@@ -568,27 +562,9 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  async function requestUserAddGfiTokenToWallet(previousGfiBalance: BigNumber): Promise<void> {
+  async function handleAddGfiTokenToWallet(previousGfiBalance: BigNumber, address: string): Promise<void> {
     if (previousGfiBalance.eq(0)) {
-      return getInjectedProvider()
-        .request({
-          method: "wallet_watchAsset",
-          params: {
-            type: "ERC20",
-            options: {
-              address: props.gfi.address,
-              symbol: "GFI",
-              decimals: 18,
-              image: GFI_TOKEN_IMAGE_URL,
-            },
-          },
-        })
-        .then((success: boolean) => {
-          if (!success) {
-            throw new Error("Failed to add GFI token to wallet.")
-          }
-        })
-        .catch(console.error)
+      await requestUserAddGfiTokenToWallet(props.gfi.address)
     } else {
       // Don't ask the user to add the GFI asset to their wallet, as for Metamask this was
       // observed to prompt the user with another dialog even if GFI was already an asset in
@@ -615,7 +591,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
-    await requestUserAddGfiTokenToWallet(previousGfiBalance)
+    await handleAddGfiTokenToWallet(previousGfiBalance, props.gfi.address)
   }
 
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
@@ -641,6 +617,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     // grant does not transfer GFI to the user. For MerkleDistributor grants, it's most relevant to ask the user to
     // add GFI to their wallet only as part of `handleClaim()`.
   }
+
   async function handleAcceptMerkleDirectDistributorGrant(info: MerkleDirectDistributorGrantInfo): Promise<void> {
     assertNonNullable(props.merkleDirectDistributor)
     const previousGfiBalance = props.user.info.value.gfiBalance
@@ -656,7 +633,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
     // For MerkleDirectDistributor grants (unlike MerkleDistributor grants), accepting the grant does transfer GFI
     // to them, so it is relevant to ask the user here to add GFI to their wallet.
-    await requestUserAddGfiTokenToWallet(previousGfiBalance)
+    await handleAddGfiTokenToWallet(previousGfiBalance, props.gfi.address)
   }
 
   if (props.type === "communityRewards" || props.type === "stakingRewards") {

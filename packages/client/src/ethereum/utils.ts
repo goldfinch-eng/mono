@@ -15,6 +15,7 @@ import {KnownEventData, PoolEventType} from "../types/events"
 import {NetworkConfig} from "../types/network"
 import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
+import {getCachedPastEvents} from "./GoldfinchProtocol"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -316,7 +317,7 @@ async function getPoolEvents<T extends PoolEventType>(
           await Promise.all(
             chunks.map(
               (chunk): Promise<EventData[]> =>
-                pool.contract.readOnly.getPastEvents(eventName, {
+                getCachedPastEvents(pool.contract.readOnly, eventName, {
                   filter: address ? {capitalProvider: address} : undefined,
                   fromBlock: chunk.fromBlock,
                   toBlock: chunk.toBlock,

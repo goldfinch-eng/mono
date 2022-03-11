@@ -40,21 +40,17 @@ import {
   isProductionAndPrivateNetwork,
   getInjectedProvider,
 } from "../utils"
-import web3 from "../web3"
-import {iconCheck, iconOutArrow, iconSolidError, iconSolidCheck} from "./icons"
+import getWeb3, {
+  onWalletConnect,
+  closeWalletConnect,
+  isMetaMaskInpageProvider,
+  requestUserAddGfiTokenToWallet,
+} from "../web3"
+import {iconCheck, iconOutArrow, iconSolidError, iconSolidCheck, iconDisconnect} from "./icons"
 import NetworkErrors from "./networkErrors"
 import metaMaskLogo from "../images/metamask-logo.svg"
-
-let GFI_TOKEN_IMAGE_URL: string
-if (process.env.NODE_ENV === "development") {
-  if (process.env.REACT_APP_MURMURATION === "yes") {
-    GFI_TOKEN_IMAGE_URL = "https://murmuration.goldfinch.finance/gfi-token.svg"
-  } else {
-    GFI_TOKEN_IMAGE_URL = "http://localhost:3000/gfi-token.svg"
-  }
-} else {
-  GFI_TOKEN_IMAGE_URL = "https://app.goldfinch.finance/gfi-token.svg"
-}
+import walletConnectLogo from "../images/walletconnect-logo.svg"
+import {isWalletConnectProvider} from "../walletConnect"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -68,69 +64,54 @@ interface NetworkWidgetProps {
 function NetworkWidget(props: NetworkWidgetProps) {
   const {userWalletWeb3Status, gfi} = useContext(AppContext)
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
-  const [isEnablePending, setIsEnablePending] = useState<boolean>(false)
+  const [isEnablePending, setIsEnablePending] = useState<{metaMask: boolean; walletConnect: boolean}>({
+    walletConnect: false,
+    metaMask: false,
+  })
   const [noWeb3Widget, setNoWeb3Widget] = useState<boolean>(false)
   const [showInstallWallet, setShowInstallWallet] = useState<boolean>(false)
-
-  async function handleEnable(): Promise<void> {
-    if (
-      userWalletWeb3Status?.type === "no_web3" ||
-      (!window.hasOwnProperty("ethereum") && userWalletWeb3Status?.type === "has_web3")
-    ) {
-      return setNoWeb3Widget(true)
-    }
-    setIsEnablePending(true)
-    await enableMetamask()
-    setIsEnablePending(false)
-  }
-
-  async function requestUserAddGfiTokenToWallet(address: string): Promise<void> {
-    // Adding the injected provider for consistency to avoid conflicts in case the user
-    // has multiple wallets installed even though wallet_watchAsset appears not to be
-    // triggered by other injected providers (eg: coinbase wallet)
-    const injectedProvider = getInjectedProvider()
-    if (injectedProvider) {
-      return injectedProvider
-        .request({
-          method: "wallet_watchAsset",
-          params: {
-            type: "ERC20",
-            options: {
-              address: address,
-              symbol: "GFI",
-              decimals: 18,
-              image: GFI_TOKEN_IMAGE_URL,
-            },
-          },
-        })
-        .then((success: boolean) => {
-          if (!success) {
-            throw new Error("Failed to add GFI token to wallet.")
-          }
-        })
-        .catch(console.error)
-    } else {
-      console.error("Failed to get injected provider")
-    }
-  }
-
-  async function handleAddGFIToWallet() {
-    if (gfi?.address) {
-      await requestUserAddGfiTokenToWallet(gfi?.address)
-    }
-  }
+  const web3 = getWeb3()
 
   async function enableMetamask(): Promise<void> {
     const injectedProvider = getInjectedProvider()
     if (injectedProvider) {
       return injectedProvider
         .request({method: "eth_requestAccounts"})
-        .then(() => {
-          props.connectionComplete()
+        .then(async () => {
+          await props.connectionComplete()
         })
         .catch((error) => {
           console.error("Error connecting to metamask", error)
         })
+    }
+  }
+
+  async function handleMetamask(): Promise<void> {
+    if (
+      userWalletWeb3Status?.type === "no_web3" ||
+      (!window.hasOwnProperty("ethereum") && userWalletWeb3Status?.type === "has_web3") ||
+      !isMetaMaskInpageProvider(getInjectedProvider())
+    ) {
+      return setNoWeb3Widget(true)
+    }
+    setIsEnablePending({metaMask: true, walletConnect: false})
+    await enableMetamask()
+    setIsEnablePending({metaMask: false, walletConnect: false})
+  }
+
+  async function handleWalletConnect(): Promise<void> {
+    await onWalletConnect()
+      .then(async () => {
+        await props.connectionComplete()
+      })
+      .catch((error) => {
+        console.error("Error connecting to wallet", error)
+      })
+  }
+
+  async function handleAddGFIToWallet() {
+    if (gfi?.address) {
+      await requestUserAddGfiTokenToWallet(gfi?.address)
     }
   }
 
@@ -140,6 +121,19 @@ function NetworkWidget(props: NetworkWidgetProps) {
     } else {
       setShowNetworkWidgetInfo("")
     }
+  }
+
+  function walletConnectButton(): JSX.Element {
+    return (
+      <button
+        className={`button wallet ${(isEnablePending.metaMask || isEnablePending.walletConnect) && "active"}`}
+        onClick={handleWalletConnect}
+        disabled={isEnablePending.metaMask || isEnablePending.walletConnect}
+      >
+        <img className="wallet-logo" src={walletConnectLogo} alt="WalletConnect Logo" />
+        {isEnablePending.walletConnect ? "Working..." : "WalletConnect"}
+      </button>
+    )
   }
 
   let transactions: JSX.Element = <></>
@@ -343,7 +337,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
             </p>
             <p>Goldfinch is compatible with any Ethereum wallet, but here are some we recommend.</p>
             <a href="https://metamask.io/" rel="noreferrer" target="_blank" className="button wallet">
-              <img className="metamask-logo" src={metaMaskLogo} alt="MetaMask Logo" />
+              <img className="wallet-logo" src={metaMaskLogo} alt="MetaMask Logo" />
               <span>Install MetaMask</span>
               <span className="out-icon">{iconOutArrow}</span>
             </a>
@@ -376,10 +370,11 @@ function NetworkWidget(props: NetworkWidgetProps) {
               browser extension.
             </p>
             <a href="https://metamask.io/" rel="noreferrer" target="_blank" className="button wallet">
-              <img className="metamask-logo" src={metaMaskLogo} alt="MetaMask Logo" />
+              <img className="wallet-logo" src={metaMaskLogo} alt="MetaMask Logo" />
               <span>Install MetaMask</span>
               <span className="out-icon">{iconOutArrow}</span>
             </a>
+            {walletConnectButton()}
             <button className="no-wallet" onClick={() => setNoWeb3Widget(false)}>
               Back to wallets
             </button>
@@ -412,9 +407,15 @@ function NetworkWidget(props: NetworkWidgetProps) {
             USDC balance <span className="value">{usdcBalance}</span>
           </div>
           {transactions}
-          <button className="add-gfi-to-wallet" onClick={handleAddGFIToWallet}>
-            Add GFI token to wallet {iconOutArrow}
-          </button>
+          {isWalletConnectProvider(web3.readOnly.currentProvider) ? (
+            <button className="disconnect" onClick={closeWalletConnect}>
+              {iconDisconnect} Disconnect wallet
+            </button>
+          ) : (
+            <button className="add-gfi-to-wallet" onClick={handleAddGFIToWallet}>
+              Add GFI token to wallet {iconOutArrow}
+            </button>
+          )}
         </div>
       </div>
     )
@@ -440,13 +441,14 @@ function NetworkWidget(props: NetworkWidgetProps) {
               </p>
             </div>
             <button
-              className={`button wallet ${isEnablePending && "active"}`}
-              onClick={handleEnable}
-              disabled={isEnablePending}
+              className={`button wallet ${(isEnablePending.metaMask || isEnablePending.walletConnect) && "active"}`}
+              onClick={handleMetamask}
+              disabled={isEnablePending.metaMask || isEnablePending.walletConnect}
             >
-              <img className="metamask-logo" src={metaMaskLogo} alt="MetaMask Logo" />
-              {isEnablePending ? "Working..." : "MetaMask"}
+              <img className="wallet-logo" src={metaMaskLogo} alt="MetaMask Logo" />
+              {isEnablePending.metaMask ? "Working..." : "MetaMask"}
             </button>
+            {walletConnectButton()}
             <button className="no-wallet" onClick={() => setShowInstallWallet(true)}>
               I don't have a wallet
             </button>

@@ -5,7 +5,7 @@ import React, {useEffect, useState} from "react"
 import {BrowserRouter as Router, Redirect, Route, Switch} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
-import Borrow from "./components/borrow"
+import Borrow from "./components/Borrow"
 import DevTools from "./components/DevTools"
 import Earn from "./components/Earn"
 import Footer from "./components/footer"
@@ -42,7 +42,7 @@ import {
   UserMerkleDistributor,
   UserMerkleDistributorLoaded,
 } from "./ethereum/user"
-import {mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
+import {MAINNET, mapNetworkToID, SUPPORTED_NETWORKS} from "./ethereum/utils"
 import {useFromSameBlock} from "./hooks/useFromSameBlock"
 import {useSessionLocalStorage} from "./hooks/useSignIn"
 import Rewards from "./pages/rewards"
@@ -50,7 +50,7 @@ import {defaultTheme} from "./styles/theme"
 import {assertWithLoadedInfo} from "./types/loadable"
 import {SessionData} from "./types/session"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
-import web3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
+import getWeb3, {SESSION_DATA_KEY, getUserWalletWeb3Status} from "./web3"
 import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {NetworkConfig} from "./types/network"
 import getApolloClient from "./graphql/client"
@@ -368,6 +368,17 @@ function App() {
     const _userWalletWeb3Status = await getUserWalletWeb3Status()
     setUserWalletWeb3Status(_userWalletWeb3Status)
     if (_userWalletWeb3Status.type === "no_web3") {
+      // Initialize the chain state the app needs even when the user has no wallet.
+
+      const currentBlock = getBlockInfo(await getCurrentBlock())
+
+      const networkConfig: NetworkConfig = {name: MAINNET, supported: true}
+      const protocol = new GoldfinchProtocol(networkConfig)
+      await protocol.initialize()
+
+      setCurrentBlock(currentBlock)
+      setGoldfinchProtocol(protocol)
+
       return
     }
 
@@ -380,6 +391,7 @@ function App() {
     switchNetworkIfRequired(networkConfig)
 
     if (networkConfig.supported) {
+      const web3 = getWeb3()
       const currentBlock = getBlockInfo(await getCurrentBlock())
 
       const protocol = new GoldfinchProtocol(networkConfig)

@@ -2,7 +2,7 @@ import {useContext} from "react"
 import {AppContext} from "../App"
 import {CurrentTxDataByType, PendingCurrentTx, TxType} from "../types/transactions"
 import {assertError, assertErrorLike, assertNonNullable, isCodedErrorLike} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 
 type UseSendFromUserOptions = {
   value?: string
@@ -121,6 +121,7 @@ function useSendFromUser() {
     txData: TxData<U>,
     options: UseSendFromUserOptions = {}
   ) {
+    const web3 = getWeb3()
     return web3.userWallet.eth.getGasPrice().then(
       async (gasPrice) => {
         try {
