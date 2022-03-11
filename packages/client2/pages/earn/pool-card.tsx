@@ -1,13 +1,17 @@
 import { gql } from "@apollo/client";
+import { FixedNumber } from "ethers";
 import Image from "next/image";
 import NextLink from "next/link";
 
 import { ShimmerLines } from "@/components/spinners";
+import { formatPercent } from "@/lib/format";
 import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
 
 interface PoolCardProps {
   title?: string | null;
   subtitle?: string | null;
+  apy?: number | FixedNumber | null;
+  apyWithGfi?: number | FixedNumber | null;
   icon?: string | null;
   href?: string;
   /**
@@ -19,6 +23,8 @@ interface PoolCardProps {
 export function PoolCard({
   title,
   subtitle,
+  apy,
+  apyWithGfi,
   icon,
   href,
   isPlaceholder = false,
@@ -36,7 +42,7 @@ export function PoolCard({
           />
         ) : null}
       </div>
-      <div className="w-4/12">
+      <div className="grow">
         {isPlaceholder ? (
           <ShimmerLines lines={2} truncateFirstLine />
         ) : (
@@ -54,6 +60,14 @@ export function PoolCard({
           </>
         )}
       </div>
+      <div className="w-1/5">
+        <div className="text-lg">
+          {apy ? `${formatPercent(apy)} USDC` : "\u00A0"}
+        </div>
+        <div className="text-purple-100">
+          {apyWithGfi ? `${formatPercent(apyWithGfi)} with GFI` : "\u00A0"}
+        </div>
+      </div>
     </div>
   );
 }
@@ -64,6 +78,9 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     name @client
     category @client
     icon @client
+    creditLine {
+      interestApr
+    }
   }
 `;
 
@@ -81,6 +98,10 @@ export function TranchedPoolCard({
       title={tranchedPool.name}
       subtitle={tranchedPool.category}
       icon={tranchedPool.icon}
+      apy={
+        parseFloat(tranchedPool.creditLine.interestApr.toString()) / 10 ** 18 // TODO creditLine.interestApr should really be stored as a BigDecimal in The Graph. It's just not that helpful as a BigInt
+      }
+      apyWithGfi={0.9999} // TODO just a placeholder
       href={href}
     />
   );

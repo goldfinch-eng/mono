@@ -2181,9 +2181,9 @@ export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, totalPoolAssets: TheGraph_BigInt, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null }> };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, totalPoolAssets: TheGraph_BigInt, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> };
 
-export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null };
+export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
 
 export const TranchedPoolCardFieldsFragmentDoc = gql`
     fragment TranchedPoolCardFields on TranchedPool {
@@ -2191,6 +2191,9 @@ export const TranchedPoolCardFieldsFragmentDoc = gql`
   name @client
   category @client
   icon @client
+  creditLine {
+    interestApr
+  }
 }
     `;
 export const CurrentUserWalletInfoDocument = gql`
