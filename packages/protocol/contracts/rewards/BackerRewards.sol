@@ -104,6 +104,8 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 accumulatedRewardsPerTokenAtLastWithdraw;
   }
 
+  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
+
   /// @notice total amount of GFI rewards available, times 1e18
   uint256 public totalRewards;
 
@@ -127,8 +129,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   /// @notice Staking rewards info for each pool token
   mapping(uint256 => StakingRewardsTokenInfo) public tokenStakingRewards;
-
-  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
 
   // solhint-disable-next-line func-name-mixedcase
   function __initialize__(address owner, GoldfinchConfig _config) public initializer {

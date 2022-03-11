@@ -37,6 +37,16 @@
       "kind": "transparent"
     },
     {
+      "address": "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460",
+      "txHash": "0x90a8a44b3ca62d71ead3477ba61a78b4177ee9ab4284f2350bbfd58648cceb64",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x84AC02474c4656C88d4e08FCA63ff73070787C3d",
+      "txHash": "0x0d8b9df864dc4f44a881b68944b3f8022956e0571e13917fa621f8c883a5caac",
+      "kind": "transparent"
+    },
+    {
       "address": "0x384860F14B39CcD9C89A73519c70cD5f5394D0a6",
       "txHash": "0xabfdae678419c4b240b182e267471ee6e21c892454b5974b02962b0b68171405",
       "kind": "transparent"
@@ -49,16 +59,6 @@
     {
       "address": "0xFD6FF39DA508d281C2d255e9bBBfAb34B6be60c3",
       "txHash": "0x35209c1c82bcfffaed71d0837bc7a8604ba5be7910b458b8bc2d934e38aa36ca",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460",
-      "txHash": "0x90a8a44b3ca62d71ead3477ba61a78b4177ee9ab4284f2350bbfd58648cceb64",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x84AC02474c4656C88d4e08FCA63ff73070787C3d",
-      "txHash": "0x0d8b9df864dc4f44a881b68944b3f8022956e0571e13917fa621f8c883a5caac",
       "kind": "transparent"
     }
   ],
@@ -4694,7 +4694,7 @@
     },
     "8fc7d5581e41edb75262a328ca97acaa697d7a8729a5883bde5f1c8edb3f1874": {
       "address": "0xAfe1b5bdEbD4ae65AF2024738bf0735fbb65d44b",
-      "txHash": "0xc08a4d2125a7d51344335c923d41da06f2cb5727df62b268681e5d437b048af6",
+      "txHash": "0x751a88c1abc138ccb8b477c1abc8f07706f36c4a8e292263b2d12faaa730c884",
       "layout": {
         "storage": [
           {
@@ -4791,49 +4791,49 @@
             "contract": "BackerRewards",
             "label": "totalRewards",
             "type": "t_uint256",
-            "src": "contracts/rewards/BackerRewards.sol:108"
+            "src": "contracts/rewards/BackerRewards.sol:110"
           },
           {
             "contract": "BackerRewards",
             "label": "maxInterestDollarsEligible",
             "type": "t_uint256",
-            "src": "contracts/rewards/BackerRewards.sol:111"
+            "src": "contracts/rewards/BackerRewards.sol:113"
           },
           {
             "contract": "BackerRewards",
             "label": "totalInterestReceived",
             "type": "t_uint256",
-            "src": "contracts/rewards/BackerRewards.sol:114"
+            "src": "contracts/rewards/BackerRewards.sol:116"
           },
           {
             "contract": "BackerRewards",
             "label": "totalRewardPercentOfTotalGFI",
             "type": "t_uint256",
-            "src": "contracts/rewards/BackerRewards.sol:117"
+            "src": "contracts/rewards/BackerRewards.sol:119"
           },
           {
             "contract": "BackerRewards",
             "label": "tokens",
             "type": "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)29052_storage)",
-            "src": "contracts/rewards/BackerRewards.sol:120"
+            "src": "contracts/rewards/BackerRewards.sol:122"
           },
           {
             "contract": "BackerRewards",
             "label": "pools",
             "type": "t_mapping(t_address,t_struct(BackerRewardsInfo)29047_storage)",
-            "src": "contracts/rewards/BackerRewards.sol:123"
+            "src": "contracts/rewards/BackerRewards.sol:125"
           },
           {
             "contract": "BackerRewards",
             "label": "poolStakingRewards",
             "type": "t_mapping(t_contract(ITranchedPool)10607,t_struct(StakingRewardsPoolInfo)29060_storage)",
-            "src": "contracts/rewards/BackerRewards.sol:126"
+            "src": "contracts/rewards/BackerRewards.sol:128"
           },
           {
             "contract": "BackerRewards",
             "label": "tokenStakingRewards",
             "type": "t_mapping(t_uint256,t_struct(StakingRewardsTokenInfo)29074_storage)",
-            "src": "contracts/rewards/BackerRewards.sol:129"
+            "src": "contracts/rewards/BackerRewards.sol:131"
           }
         ],
         "types": {
@@ -4998,7 +4998,7 @@
     },
     "76055e6cd8d4bff5d6232bd05d18cd9291510dde12f715b93c93bd494b7b9b70": {
       "address": "0x2fc631e4B3018258759C52AF169200213e84ABab",
-      "txHash": "0xac02d7a1611235375c95e8669eea73c4683ce295d1b60974bb1ea37c8bf71969",
+      "txHash": "0x2166076a413847778df1b36629b4b932bd1844a5a142e84d51dc0f264ea2b7fd",
       "layout": {
         "storage": [
           {
@@ -5196,7 +5196,7 @@
     },
     "4a40257e1b838b359ec1ec1246102e93744be9cf01c004b108c37073e2e6d26c": {
       "address": "0x63cf2Cd54fE91e3545D1379abf5bfd194545259d",
-      "txHash": "0x5ddb9a5340bc1fc60959ee82f359877f3dbdd5b3f802d156d517574de9d9cb3f",
+      "txHash": "0xd49fa65b2fdf5a508fcfb5b99c4afa3bb920450e7df279cffce81e58ff98c983",
       "layout": {
         "storage": [
           {
@@ -5683,7 +5683,7 @@
     },
     "d57f23e97608988f68b0180cd473f276f1d55a804a264b24d7ac06562d3ab346": {
       "address": "0x1e2F4432bFeF9E9Ad39DA6d272F4aFf33629c770",
-      "txHash": "0x54ef9db6b5ae66aae3aa616a93ebf0bb7b8476873e7ec49a871010450994983e",
+      "txHash": "0x361cbf09dc5b219e022a3960f73afeedf78f46685dfd4bd826f89b57a78b9c33",
       "layout": {
         "storage": [
           {
@@ -6045,7 +6045,7 @@
     },
     "68d43777ded85e394a5949485264cf31b27d24d744d9c4048ff5f5bb2c9ccb42": {
       "address": "0x446e7636a5Fa9af46c3718719e465B547248bF62",
-      "txHash": "0x10a04e31982841a6a363b2b74d1987855f6184efd0eda1bd85a39b4c8b88b048",
+      "txHash": "0x1bc381deb9330eb9496b7c22e90690d09e2f01f987e7b69b0706aaa5a36ab63e",
       "layout": {
         "storage": [
           {

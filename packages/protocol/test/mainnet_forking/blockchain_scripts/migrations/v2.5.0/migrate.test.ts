@@ -35,10 +35,6 @@ import {
 } from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 
-const performV250Migration = deployments.createFixture(async () => {
-  return await migrate250.main()
-})
-
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
 
@@ -109,7 +105,7 @@ describe("v2.5.0", async function () {
     let params
     let zapper: ZapperInstance
     const setupTest = deployments.createFixture(async () => {
-      const {params} = await performV250Migration()
+      const {params} = await migrate250.main()
       const zapper = await getTruffleContract<ZapperInstance>("Zapper")
       return {zapper, params}
     })
@@ -120,8 +116,8 @@ describe("v2.5.0", async function () {
     })
 
     describe("UniqueIdentity", async () => {
-      describe("supportedUIDTyped", async () => {
-        mochaEach([0, 1, 2, 3, 4]).it("type %d is true", async (type: number) => {
+      describe("supportedUIDType", async () => {
+        mochaEach([0, 1, 2, 3, 4]).it("is true for type = %d", async (type: number) => {
           expect(await uniqueIdentity.supportedUIDTypes(type)).to.equal(true)
         })
       })
@@ -137,7 +133,7 @@ describe("v2.5.0", async function () {
           })
         })
 
-        describe("LeverageRatio", async () => {
+        describe("SeniorPoolStrategy", async () => {
           it("is correct", async () => {
             expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.not.eq(
               leverageRatioStrategyAddressBeforeDeploy
@@ -158,7 +154,7 @@ describe("v2.5.0", async function () {
     describe("Go", async () => {
       describe("hasRole", async () => {
         describe("ZAPPER_ROLE", async () => {
-          it("Zapper to be true", async () => {
+          it("is true for Zapper contract", async () => {
             expect(await go.hasRole(await go.ZAPPER_ROLE(), zapper.address)).to.be.true
           })
         })
@@ -166,6 +162,11 @@ describe("v2.5.0", async function () {
     })
 
     describe("Zapper", async () => {
+      expectProxyOwner({
+        toBe: getProtocolOwner,
+        forContracts: ["Zapper"],
+      })
+
       expectOwnerRole({toBe: getProtocolOwner, forContracts: ["Zapper"]})
     })
 
@@ -174,10 +175,17 @@ describe("v2.5.0", async function () {
         describe("BackerRewards", async () => {
           it("is correct", async () => {
             expect((await gfi.balanceOf(backerRewards.address)).toString()).to.bignumber.eq(
-              params.backerRewards.totalRewards
+              params.BackerRewards.totalRewards
             )
           })
         })
+      })
+    })
+
+    describe("FixedLeverageRatioStrategy", async () => {
+      expectOwnerRole({
+        toBe: getProtocolOwner,
+        forContracts: ["FixedLeverageRatioStrategy"],
       })
     })
 
@@ -185,13 +193,14 @@ describe("v2.5.0", async function () {
       describe("maxInterestDollarsElligible", async () => {
         it("is correct", async () => {
           expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(
-            params.backerRewards.maxInterestDollarsEligible
+            params.BackerRewards.maxInterestDollarsEligible
           )
         })
       })
 
       describe("totalRewardPercentOfTotalGFI", async () => {
         it("is correct", async () => {
+          // This function returns percentage points as the base unit. meaning that 1e18 = 1 percent
           const two = "2000000000000000000"
           expect((await backerRewards.totalRewardPercentOfTotalGFI()).toString()).to.eq(two)
         })
@@ -264,7 +273,7 @@ describe("v2.5.0", async function () {
     describe("SeniorPool", async () => {
       describe("hasRole", async () => {
         describe("ZAPPER_ROLE", async () => {
-          it("Zapper is true", async () => {
+          it("is true for Zapper contract", async () => {
             expect(await seniorPool.hasRole(await seniorPool.ZAPPER_ROLE(), zapper.address)).to.be.true
           })
         })
@@ -274,7 +283,7 @@ describe("v2.5.0", async function () {
     describe("StakingRewards", async () => {
       describe("hasRole", async () => {
         describe("ZAPPER_ROLE", async () => {
-          it("Zapper to be true", async () => {
+          it("is true for Zapper contract", async () => {
             expect(await stakingRewards.hasRole(await stakingRewards.ZAPPER_ROLE(), zapper.address)).to.be.true
           })
         })
@@ -283,8 +292,10 @@ describe("v2.5.0", async function () {
       describe("effectiveMultiplier", async () => {
         describe("CurveLp", async () => {
           it("is correct", async () => {
-            const point75 = "750000000000000000"
-            expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.eq(point75)
+            expect(params.StakingRewards.effectiveMultipler).to.bignumber.eq("750000000000000000")
+            expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.eq(
+              params.StakingRewards.effectiveMultipler
+            )
           })
         })
       })

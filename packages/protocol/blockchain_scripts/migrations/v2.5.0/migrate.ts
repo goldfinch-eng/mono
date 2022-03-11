@@ -45,27 +45,25 @@ export async function main() {
   const go = await getEthersContract<Go>("Go")
   const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
 
-  // TODO(PR): renumber these steps
-  // TODO(PR): log out parameters
-  // 2. Upgrade other contracts
+  // 1. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
     contracts: ["BackerRewards", "SeniorPool", "StakingRewards", "CommunityRewards", "Go"],
   })
 
-  // 3. Change implementations
+  // 2. Change implementations
   deployEffects.add(
     await changeImplementations({
       contracts: upgradedContracts,
     })
   )
 
-  // 1. Deploy upgraded tranched pool
+  // 3. Deploy upgraded tranched pool
   const tranchedPool = await deployTranchedPool(deployer, {config, deployEffects})
 
-  // 2. deploy upgraded fixed leverage ratio strategy
+  // 4. deploy upgraded fixed leverage ratio strategy
   const strategy = await deployFixedLeverageRatioStrategy(deployer, {config, deployEffects})
 
-  // 3. deploy zapper
+  // 5. deploy zapper
   const zapper = await deployZapper(deployer, {config, deployEffects})
   const deployedContracts = {
     tranchedPool,
@@ -73,29 +71,69 @@ export async function main() {
     zapper,
   }
 
-  // take 2% of the total GFI supply
-  const totalRewards = new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString()
-  const maxInterestDollarsEligible = bigVal(100_000_000).toString()
-  console.log("Setting backer rewards parameters and loading in rewards")
-  console.log(` totalRewards: ${totalRewards}`)
-  console.log(` maxInterestDollarsEligible : ${maxInterestDollarsEligible}`)
+  const params = {
+    BackerRewards: {
+      totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
+      maxInterestDollarsEligible: bigVal(100_000_000).toString(),
+    },
+    StakingRewards: {
+      effectiveMultiplier: "750000000000000000",
+    },
+    UniqueIdentity: {
+      supportedUidTypes: [0, 1, 2, 3, 4],
+    },
+  }
 
-  // 4. Load backer rewards
+  // take 2% of the total GFI supply
+  console.log("Setting BackerRewards parameters and loading in rewards")
+  console.log(` totalRewards = ${params.BackerRewards.totalRewards}`)
+  console.log(` maxInterestDollarsEligible = ${params.BackerRewards.maxInterestDollarsEligible}`)
+  console.log(
+    ` transferring ${params.BackerRewards.totalRewards} GFI to staking rewards at address ${stakingRewards.address}`
+  )
+  console.log("Setting StakingRewards parameters:")
+  console.log(` effectiveMultipler = ${params.StakingRewards.effectiveMultiplier}`)
+  console.log("Setting UniqueIdentity params:")
+  console.log(` setSupportedUIDTypes = ${params.UniqueIdentity.supportedUidTypes}`)
+
+  // 6. Add effects to deploy effects
   deployEffects.add({
     deferred: [
+      // set Goldfinchconfig key for fidu usdc lp pool
       await config.populateTransaction.setAddress(CONFIG_KEYS.FiduUSDCCurveLP, MAINNET_FIDU_USDC_CURVE_LP_ADDRESS),
+
+      // init zapper roles
       await stakingRewards.populateTransaction.initZapperRole(),
       await stakingRewards.populateTransaction.grantRole(ZAPPER_ROLE, zapper.address),
       await seniorPool.populateTransaction.initZapperRole(),
       await seniorPool.populateTransaction.grantRole(ZAPPER_ROLE, zapper.address),
       await go.populateTransaction.initZapperRole(),
       await go.populateTransaction.grantRole(ZAPPER_ROLE, zapper.address),
-      await gfi.populateTransaction.approve(owner, totalRewards.toString()),
-      await gfi.populateTransaction.transferFrom(owner, backerRewards.address, totalRewards),
-      await backerRewards.populateTransaction.setTotalRewards(totalRewards.toString()),
-      await backerRewards.populateTransaction.setMaxInterestDollarsEligible(maxInterestDollarsEligible),
-      await stakingRewards.populateTransaction.setEffectiveMultiplier("750000000000000000", StakedPositionType.CurveLP),
-      await uniqueIdentity.populateTransaction.setSupportedUIDTypes([0, 1, 2, 3, 4], [true, true, true, true, true]),
+
+      // load GFI into backer rewards
+      await gfi.populateTransaction.approve(owner, params.BackerRewards.totalRewards),
+      await gfi.populateTransaction.transferFrom(owner, backerRewards.address, params.BackerRewards.totalRewards),
+
+      // intialize backer rewards parameters
+      await backerRewards.populateTransaction.setTotalRewards(params.BackerRewards.totalRewards),
+      await backerRewards.populateTransaction.setMaxInterestDollarsEligible(
+        params.BackerRewards.maxInterestDollarsEligible
+      ),
+
+      // initialize staking rewards parameters for CurveLP positions
+      await stakingRewards.populateTransaction.setEffectiveMultiplier(
+        params.StakingRewards.effectiveMultiplier,
+        StakedPositionType.CurveLP
+      ),
+
+      // update supported UID types
+      await uniqueIdentity.populateTransaction.setSupportedUIDTypes(params.UniqueIdentity.supportedUidTypes, [
+        true,
+        true,
+        true,
+        true,
+        true,
+      ]),
     ],
   })
 
@@ -104,12 +142,7 @@ export async function main() {
   return {
     upgradedContracts,
     deployedContracts,
-    params: {
-      backerRewards: {
-        totalRewards,
-        maxInterestDollarsEligible,
-      },
-    },
+    params,
   }
 }
 
