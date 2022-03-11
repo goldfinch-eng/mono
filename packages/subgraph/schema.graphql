@@ -184,3 +184,8 @@ type TranchedPoolToken @entity {
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
 }
+
+type StakingRewards @entity {
+  id: ID! # Set to "1" because this is a singleton
+  currentEarnRatePerToken: BigInt!
+}
