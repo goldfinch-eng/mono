@@ -115,7 +115,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @notice counter of total interest repayments, times 1e6
   uint256 public totalInterestReceived;
 
-  /// @notice totalRewards/totalGFISupply, times 1e18
+  /// @notice totalRewards/totalGFISupply * 100, times 1e18
   uint256 public totalRewardPercentOfTotalGFI;
 
   /// @notice poolTokenId -> BackerRewardsTokenInfo
