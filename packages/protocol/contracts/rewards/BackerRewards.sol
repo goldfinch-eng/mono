@@ -146,8 +146,14 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 principalDeployedAtDrawdown,
     uint256 rewardsAccumulatorAtDrawdown
   ) external onlyAdmin {
+    require(config.getPoolTokens().validPool(address(pool)), "Invalid pool!");
+    require(fiduSharePriceAtDrawdown != 0, "Invalid: 0");
+    require(principalDeployedAtDrawdown != 0, "Invalid: 0");
+    require(rewardsAccumulatorAtDrawdown != 0, "Invalid: 0");
+
     StakingRewardsPoolInfo storage poolInfo = poolStakingRewards[pool];
     require(poolInfo.slicesInfo.length <= 1, "trying to overwrite multi slice rewards info!");
+
     // NOTE: making this overwrite behavior to make it so that we have
     //           an escape hatch in case the incorrect value is set for some reason
     bool firstSliceHasAlreadyBeenInitialized = poolInfo.slicesInfo.length != 0;
@@ -303,6 +309,40 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /**
+   * @notice Calculates the amount of staking rewards already claimed for a PoolToken.
+   * This function is provided for the sake of external (e.g. frontend client) consumption;
+   * it is not necessary as an input to the mutative calculations in this contract.
+   * @param tokenId Pool token id
+   * @return The amount of GFI claimed
+   */
+  function stakingRewardsClaimed(uint256 tokenId) external view returns (uint256) {
+    IPoolTokens poolTokens = config.getPoolTokens();
+    IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(tokenId);
+
+    if (_isSeniorTrancheToken(poolTokenInfo)) {
+      return 0;
+    }
+
+    ITranchedPool pool = ITranchedPool(poolTokenInfo.pool);
+    uint256 sliceIndex = _juniorTrancheIdToSliceIndex(poolTokenInfo.tranche);
+
+    if (!_poolRewardsHaveBeenInitialized(pool) || !_sliceRewardsHaveBeenInitialized(pool, sliceIndex)) {
+      return 0;
+    }
+
+    StakingRewardsPoolInfo memory poolInfo = poolStakingRewards[pool];
+    StakingRewardsSliceInfo memory sliceInfo = poolInfo.slicesInfo[sliceIndex];
+    StakingRewardsTokenInfo memory tokenInfo = tokenStakingRewards[tokenId];
+
+    uint256 sliceAccumulator = sliceInfo.accumulatedRewardsPerTokenAtDrawdown;
+    uint256 tokenAccumulator = _getTokenAccumulatorAtLastWithdraw(tokenInfo, sliceInfo);
+    uint256 rewardsPerFidu = tokenAccumulator.sub(sliceAccumulator);
+    uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
+    uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(FIDU_MANTISSA);
+    return rewards;
+  }
+
+  /**
    * @notice PoolToken request to withdraw multiple PoolTokens allocated rewards
    * @param tokenIds Array of pool token id
    */
@@ -335,7 +375,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     require(!_isSeniorTrancheToken(tokenInfo), "Ineligible senior tranche token");
 
     uint256 claimableBackerRewards = poolTokenClaimableRewards(tokenId);
-    uint256 claimableStakingRewards = stakingRewardsEarnedSinceLastCheckpoint(tokenId);
+    uint256 claimableStakingRewards = stakingRewardsEarnedSinceLastWithdraw(tokenId);
     uint256 totalClaimableRewards = claimableBackerRewards.add(claimableStakingRewards);
     uint256 poolTokenRewardsClaimed = tokens[tokenId].rewardsClaimed;
 
@@ -352,11 +392,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /**
-   * @notice Returns staking rewards earned by a given token from its last checkpoint
+   * @notice Returns the amount of staking rewards earned by a given token since the last
+   * time its staking rewards were withdrawn.
    * @param tokenId token id to get rewards
-   * @return amount of rewards earned since the last token checkpoint.
+   * @return amount of rewards
    */
-  function stakingRewardsEarnedSinceLastCheckpoint(uint256 tokenId) public view returns (uint256) {
+  function stakingRewardsEarnedSinceLastWithdraw(uint256 tokenId) public view returns (uint256) {
     IPoolTokens.TokenInfo memory poolTokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
     if (_isSeniorTrancheToken(poolTokenInfo)) {
       return 0;
