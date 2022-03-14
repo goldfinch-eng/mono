@@ -784,7 +784,7 @@ describe("mainnet forking tests", async function () {
     }
 
     async function getBackerRewardsForToken(tokenId: string, blockNum?: number): Promise<BN> {
-      const amount = await backerRewardsEthers.stakingRewardsEarnedSinceLastCheckpoint(tokenId, {
+      const amount = await backerRewardsEthers.stakingRewardsEarnedSinceLastWithdraw(tokenId, {
         blockTag: blockNum,
       })
 
@@ -1017,7 +1017,7 @@ describe("mainnet forking tests", async function () {
 
     describe("before drawdown", async () => {
       it("when a user withdraws they should earn 0 rewards", async () => {
-        const backerStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastCheckpoint(
+        const backerStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(
           backerStakingTokenId
         )
         expect(backerStakingRewardsEarned).to.bignumber.eq("0")
