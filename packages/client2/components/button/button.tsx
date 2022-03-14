@@ -43,14 +43,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={clsx(
-          "inline-flex items-center gap-2 rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
+          "inline-flex items-center justify-center gap-2 rounded-md outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
           size === "sm"
             ? "py-1.5 px-3"
             : size === "md"
             ? "py-2.5 px-4"
             : size === "lg"
-            ? "py-3.5 px-6"
-            : "py-5 px-8 text-lg",
+            ? "py-3.5 px-6 text-lg"
+            : "py-5 px-8 text-xl",
           variant === "solid"
             ? colorScheme === "blue"
               ? "bg-blue-100 text-purple-400 ring-blue-200 hover:bg-blue-200 active:bg-blue-300 disabled:bg-blue-50 disabled:text-opacity-50"
