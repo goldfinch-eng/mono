@@ -1723,12 +1723,13 @@ describe("BackerRewards", function () {
     })
   })
 
-  describe("stakingRewardsEarnedSinceLastWithdraw", () => {
+  describe("Staking-rewards-related view functions", () => {
     const maxInterestDollarsEligible = 1_000_000_000
     const totalGFISupply = 100_000_000
     const totalBackerRewards = totalGFISupply / 2
     const totalStakingRewards = totalGFISupply / 2
     const previousInterestReceived = 0
+
     const testSetup = deployments.createFixture(async () => {
       await setupBackerRewardsContract({
         totalGFISupply,
@@ -1743,8 +1744,8 @@ describe("BackerRewards", function () {
 
       // Configure the StakingRewards contract such that the current earn rate is non-zero.
       const targetCapacity = bigVal(1000)
-      const maxRate = bigVal(2).div(new BN(10))
-      const minRate = bigVal(1).div(new BN(10))
+      const maxRate = bigVal(2).div(new BN(100))
+      const minRate = bigVal(1).div(new BN(100))
       const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
       const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
       await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
@@ -1756,61 +1757,95 @@ describe("BackerRewards", function () {
       await stakingRewards.depositAndStake(usdcVal(1000), {from: owner})
     })
 
+    let juniorTokenId: BN
+    let seniorTokenId: BN
+    const totalPrincipal = 100_000
+    const juniorPrincipal = usdcVal(25_000)
+    let sharePrice: BN
+    let currentEarnRate: BN
+
     beforeEach(async () => {
       await testSetup()
+
+      const expectedCurrentEarnRate = new BN("18000000000000")
+      currentEarnRate = await stakingRewards.currentEarnRatePerToken()
+      expect(currentEarnRate).to.bignumber.equal(expectedCurrentEarnRate)
+      const expectedSharePrice = new BN("1000000000000000000")
+      sharePrice = await seniorPool.sharePrice()
+      expect(sharePrice).to.bignumber.equal(expectedSharePrice)
+
+      await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
+
+      await erc20Approve(usdc, tranchedPool.address, juniorPrincipal, [anotherUser])
+      const juniorResponse = await tranchedPool.deposit(TRANCHES.Junior, juniorPrincipal, {from: anotherUser})
+      const juniorLogs = decodeLogs<DepositMade>(juniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstJuniorLog = getFirstLog(juniorLogs)
+      juniorTokenId = firstJuniorLog.args.tokenId
+
+      await erc20Approve(usdc, tranchedPool.address, usdcVal(75_000), [investor])
+      const seniorRole = await tranchedPool.SENIOR_ROLE()
+      await tranchedPool.grantRole(seniorRole, investor)
+      const seniorResponse = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(75_000), {from: investor})
+      const seniorLogs = decodeLogs<DepositMade>(seniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstSeniorLog = getFirstLog(seniorLogs)
+      seniorTokenId = firstSeniorLog.args.tokenId
+
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.drawdown(usdcVal(totalPrincipal), {from: borrower})
+
+      const payAmount = usdcVal(
+        // Principal plus interest
+        totalPrincipal * 1.05
+      )
+      await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+      await advanceTime({toSecond: await creditLine.termEndTime()})
+      await tranchedPool.pay(payAmount, {from: borrower})
     })
 
-    context("Senior-tranche pool token", () => {
-      it("returns 0", async () => {
-        const expectedCurrentEarnRate = new BN("180000000000000")
-        const currentEarnRate = await stakingRewards.currentEarnRatePerToken()
-        expect(currentEarnRate).to.bignumber.equal(expectedCurrentEarnRate)
-        const expectedSharePrice = new BN("1000000000000000000")
-        const sharePrice = await seniorPool.sharePrice()
-        expect(sharePrice).to.bignumber.equal(expectedSharePrice)
-
-        const totalPrincipal = 100_000
-
-        await backerRewards.setTotalInterestReceived(usdcVal(previousInterestReceived))
-
-        const juniorPrincipal = usdcVal(25_000)
-        await erc20Approve(usdc, tranchedPool.address, juniorPrincipal, [anotherUser])
-        const juniorResponse = await tranchedPool.deposit(TRANCHES.Junior, juniorPrincipal, {from: anotherUser})
-        const juniorLogs = decodeLogs<DepositMade>(juniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstJuniorLog = getFirstLog(juniorLogs)
-        const juniorTokenId = firstJuniorLog.args.tokenId
-
-        await erc20Approve(usdc, tranchedPool.address, usdcVal(75_000), [investor])
-        const seniorRole = await tranchedPool.SENIOR_ROLE()
-        await tranchedPool.grantRole(seniorRole, investor)
-        const seniorResponse = await tranchedPool.deposit(TRANCHES.Senior, usdcVal(75_000), {from: investor})
-        const seniorLogs = decodeLogs<DepositMade>(seniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
-        const firstSeniorLog = getFirstLog(seniorLogs)
-        const seniorTokenId = firstSeniorLog.args.tokenId
-
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(totalPrincipal), {from: borrower})
-
-        const payAmount = usdcVal(
-          // Principal plus interest
-          totalPrincipal * 1.05
-        )
-        await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
-        await advanceTime({toSecond: await creditLine.termEndTime()})
-        await tranchedPool.pay(payAmount, {from: borrower})
-
+    describe("stakingRewardsEarnedSinceLastWithdraw", () => {
+      it("Junior-tranche pool token returns non-0 as appropriate", async () => {
         const juniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(juniorTokenId)
-        expect(juniorStakingRewardsEarned).to.bignumber.equal(
-          juniorPrincipal
-            .mul(FIDU_DECIMALS)
-            .div(USDC_DECIMALS)
-            .div(sharePrice)
-            .mul(currentEarnRate.mul(SECONDS_PER_YEAR))
-        )
-
+        const expectedJuniorStakingRewardsEarned = juniorPrincipal
+          .mul(FIDU_DECIMALS)
+          .div(USDC_DECIMALS)
+          .div(sharePrice)
+          .mul(currentEarnRate.mul(SECONDS_PER_YEAR))
+        expect(expectedJuniorStakingRewardsEarned).to.bignumber.equal("14191200000000000000000000")
+        expect(juniorStakingRewardsEarned).to.bignumber.equal(expectedJuniorStakingRewardsEarned)
+      })
+      it("Senior-tranched pool token returns 0", async () => {
         const seniorStakingRewardsEarned = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(seniorTokenId)
         expect(seniorStakingRewardsEarned).to.bignumber.equal(new BN(0))
+      })
+    })
+
+    describe("stakingRewardsClaimed", () => {
+      it("Junior-tranche pool token returns non-0 as appropriate", async () => {
+        const juniorStakingRewardsEarnedBefore = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(
+          juniorTokenId
+        )
+        const expectedJuniorStakingRewardsEarnedBefore = juniorPrincipal
+          .mul(FIDU_DECIMALS)
+          .div(USDC_DECIMALS)
+          .div(sharePrice)
+          .mul(currentEarnRate.mul(SECONDS_PER_YEAR))
+        expect(expectedJuniorStakingRewardsEarnedBefore).to.bignumber.equal("14191200000000000000000000")
+        expect(juniorStakingRewardsEarnedBefore).to.bignumber.equal(expectedJuniorStakingRewardsEarnedBefore)
+
+        const juniorStakingRewardsClaimedBefore = await backerRewards.stakingRewardsClaimed(juniorTokenId)
+        expect(juniorStakingRewardsClaimedBefore).to.bignumber.equal(new BN(0))
+
+        await backerRewards.withdraw(juniorTokenId, {from: anotherUser})
+
+        const juniorStakingRewardsEarnedAfter = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(juniorTokenId)
+        expect(juniorStakingRewardsEarnedAfter).to.bignumber.equal(new BN(0))
+        const juniorStakingRewardsClaimedAfter = await backerRewards.stakingRewardsClaimed(juniorTokenId)
+        expect(juniorStakingRewardsClaimedAfter).to.bignumber.equal(juniorStakingRewardsEarnedBefore)
+      })
+      it("Senior-tranche pool token returns 0", async () => {
+        const seniorStakingRewardsClaimed = await backerRewards.stakingRewardsClaimed(seniorTokenId)
+        expect(seniorStakingRewardsClaimed).to.bignumber.equal(new BN(0))
       })
     })
   })
