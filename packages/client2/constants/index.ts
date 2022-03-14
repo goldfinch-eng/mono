@@ -6,3 +6,5 @@ export const POOL_METADATA =
   process.env.NEXT_PUBLIC_POOL_METADATA_NETWORK === "mainnet"
     ? mainnetMetadata
     : localhostMetadata;
+
+export const USDC_DECIMALS = 6;

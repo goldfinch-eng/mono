@@ -62,6 +62,11 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       estimatedApy: { read: readAsFixedNumber },
     },
   },
+  SeniorPoolDeposit: {
+    fields: {
+      amount: { read: readAsBigNumber },
+    },
+  },
   TranchedPool: {
     fields: {
       name: { read: readFieldFromMetadata("name") },
