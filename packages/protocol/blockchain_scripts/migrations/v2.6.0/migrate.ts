@@ -43,7 +43,6 @@ export async function main() {
   const stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
   const seniorPool = await getEthersContract<SeniorPool>("SeniorPool")
   const go = await getEthersContract<Go>("Go")
-  const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
 
   // 1. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
@@ -109,12 +108,6 @@ export async function main() {
       await gfi.populateTransaction.approve(owner, params.BackerRewards.totalRewards),
       await gfi.populateTransaction.transferFrom(owner, backerRewards.address, params.BackerRewards.totalRewards),
 
-      // intialize backer rewards parameters
-      await backerRewards.populateTransaction.setTotalRewards(params.BackerRewards.totalRewards),
-      await backerRewards.populateTransaction.setMaxInterestDollarsEligible(
-        params.BackerRewards.maxInterestDollarsEligible
-      ),
-
       // initialize staking rewards parameters for CurveLP positions
       await stakingRewards.populateTransaction.setEffectiveMultiplier(
         params.StakingRewards.effectiveMultiplier,
@@ -124,7 +117,7 @@ export async function main() {
   })
 
   await deployEffects.executeDeferred()
-  console.log("finished v2.5.0 deploy")
+  console.log("finished v2.6.0 deploy")
   return {
     upgradedContracts,
     deployedContracts,

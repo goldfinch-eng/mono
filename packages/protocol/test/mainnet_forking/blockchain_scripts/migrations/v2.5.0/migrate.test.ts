@@ -163,13 +163,6 @@ describe("v2.5.0", async function () {
         ;({tranchedPool} = await testSetup())
       })
 
-      // describe("getAllowedUIDTypes", async () => {
-      //   it("is correct", async () => {
-      //     const sampledUidTypes = (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())
-      //     expect(sampledUidTypes).to.deep.eq(allowedUIDTypes)
-      //   })
-      // })
-
       describe("allowedUidTypes", () => {
         mochaEach(allowedUIDTypes).it("id type %d is allowed", async (uidType: number) => {
           const sampled = await tranchedPool.allowedUIDTypes(uidType)

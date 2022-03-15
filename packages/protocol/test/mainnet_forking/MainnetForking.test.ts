@@ -15,6 +15,7 @@ import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/m
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
+import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -176,6 +177,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
+  await migrate260.main()
 
   return {
     poolTokens,
