@@ -5,11 +5,8 @@ import {
   getTruffleContract,
   getUSDCAddress,
   MAINNET_CHAIN_ID,
-  MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
-  TRANCHES,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
-
 import * as migrate250 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.5.0/migrate"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
@@ -23,20 +20,15 @@ import {
   GoldfinchFactoryInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
-  TestUniqueIdentityInstance,
   TranchedPoolInstance,
   UniqueIdentityInstance,
-  ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
-import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {
   BN,
   createPoolWithCreditLine,
-  dbg,
   expectOwnerRole,
   expectProxyOwner,
   mochaEach,
-  usdcVal,
 } from "@goldfinch-eng/protocol/test/testHelpers"
 
 const setupTest = deployments.createFixture(async () => {
@@ -76,34 +68,14 @@ const setupTest = deployments.createFixture(async () => {
 describe("v2.5.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
-  let gfi: GFIInstance
-  let goldfinchConfig: GoldfinchConfigInstance
   let backerRewards: BackerRewardsInstance
-  let communityRewards: CommunityRewardsInstance
-  let seniorPool: SeniorPoolInstance
   let go: GoInstance
-  let stakingRewards: StakingRewardsInstance
   let uniqueIdentity: UniqueIdentityInstance
   let goldfinchFactory: GoldfinchFactoryInstance
-  let usdc: ERC20Instance
-
-  let tranchedPoolImplAddressBeforeDeploy: string
-  let leverageRatioStrategyAddressBeforeDeploy: string
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({
-      gfi,
-      usdc,
-      goldfinchConfig,
-      backerRewards,
-      communityRewards,
-      seniorPool,
-      go,
-      stakingRewards,
-      uniqueIdentity,
-      goldfinchFactory,
-    } = await setupTest())
+    ;({backerRewards, go, uniqueIdentity, goldfinchFactory} = await setupTest())
   })
 
   describe("after deploy", async () => {
