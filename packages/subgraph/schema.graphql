@@ -151,7 +151,7 @@ type CreditLine @entity {
 
 type TranchedPool @entity {
   id: ID!
-  estimatedJuniorApy: BigInt!
+  estimatedJuniorApy: BigDecimal!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!

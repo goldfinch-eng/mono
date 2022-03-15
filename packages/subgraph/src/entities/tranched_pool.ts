@@ -15,7 +15,7 @@ import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
-import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, isV1StyleDeal} from "./helpers"
+import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, isV1StyleDeal, estimateJuniorAPY} from "./helpers"
 
 export function updatePoolCreditLine(address: Address): void {
   const contract = TranchedPoolContract.bind(address)
@@ -131,6 +131,7 @@ export function initOrUpdateTranchedPool(address: Address): TranchedPool {
     tranchedPool.tokens = []
   }
 
+  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
   tranchedPool.save()
 
   if (isCreating) {
