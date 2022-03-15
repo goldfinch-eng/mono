@@ -1,4 +1,4 @@
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { USDC_DECIMALS } from "@/constants";
 
@@ -15,16 +15,6 @@ export function formatPercent(n: number | FixedNumber) {
   return percentageFormatter.format(n);
 }
 
-const dollarFormatter = new Intl.NumberFormat(undefined, {
-  style: "currency",
-  currency: "USD",
-  currencyDisplay: "symbol",
-});
-
-export function formatUsdc(n: BigNumber | number) {
-  const usdcDivisor = 10 ** USDC_DECIMALS;
-  if (n instanceof BigNumber) {
-    return dollarFormatter.format(n.div(usdcDivisor).toNumber());
-  }
-  return dollarFormatter.format(n / usdcDivisor);
+export function formatUsdc(n: BigNumber) {
+  return `$${utils.commify(utils.formatUnits(n, USDC_DECIMALS))}`;
 }

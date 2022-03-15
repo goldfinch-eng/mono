@@ -9,10 +9,12 @@ export function useSeniorPoolContract() {
   return useMemo(() => {
     if (provider && chainId) {
       const seniorPoolAddress = CONTRACT_ADDRESSES[chainId].SeniorPool;
-      return SeniorPool__factory.connect(
+      const seniorPoolContract = SeniorPool__factory.connect(
         seniorPoolAddress,
         provider.getSigner()
       );
+      return { seniorPoolAddress, seniorPoolContract };
     }
+    return { seniorPoolAddress: undefined, seniorPoolContract: undefined };
   }, [provider, chainId]);
 }

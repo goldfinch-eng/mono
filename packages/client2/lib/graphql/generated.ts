@@ -2187,6 +2187,7 @@ export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: 
 
 export type SeniorPoolPortfolioQueryVariables = Exact<{
   userId: Scalars['ID'];
+  minBlock: Scalars['Int'];
 }>;
 
 
@@ -2289,13 +2290,13 @@ export type ExampleQueryHookResult = ReturnType<typeof useExampleQuery>;
 export type ExampleLazyQueryHookResult = ReturnType<typeof useExampleLazyQuery>;
 export type ExampleQueryResult = Apollo.QueryResult<ExampleQuery, ExampleQueryVariables>;
 export const SeniorPoolPortfolioDocument = gql`
-    query SeniorPoolPortfolio($userId: ID!) {
-  user(id: $userId) {
+    query SeniorPoolPortfolio($userId: ID!, $minBlock: Int!) {
+  user(id: $userId, block: {number_gte: $minBlock}) {
     seniorPoolDeposits {
       amount
     }
   }
-  seniorPools(first: 1) {
+  seniorPools(first: 1, block: {number_gte: $minBlock}) {
     latestPoolStatus {
       estimatedApy
     }
@@ -2316,6 +2317,7 @@ export const SeniorPoolPortfolioDocument = gql`
  * const { data, loading, error } = useSeniorPoolPortfolioQuery({
  *   variables: {
  *      userId: // value for 'userId'
+ *      minBlock: // value for 'minBlock'
  *   },
  * });
  */
