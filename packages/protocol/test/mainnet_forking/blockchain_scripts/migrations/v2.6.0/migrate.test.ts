@@ -84,24 +84,14 @@ describe("v2.6.0", async function () {
   let stakingRewards: StakingRewardsInstance
   let uniqueIdentity: UniqueIdentityInstance
   let goldfinchFactory: GoldfinchFactoryInstance
-  let fixedLeverageRatioStrategy: FixedLeverageRatioStrategyInstance
 
   let tranchedPoolImplAddressBeforeDeploy: string
   let leverageRatioStrategyAddressBeforeDeploy: string
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({
-      gfi,
-      goldfinchConfig,
-      backerRewards,
-      seniorPool,
-      go,
-      stakingRewards,
-      uniqueIdentity,
-      goldfinchFactory,
-      fixedLeverageRatioStrategy,
-    } = await setupTest())
+    ;({gfi, goldfinchConfig, backerRewards, seniorPool, go, stakingRewards, uniqueIdentity, goldfinchFactory} =
+      await setupTest())
 
     tranchedPoolImplAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
     leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
@@ -110,16 +100,20 @@ describe("v2.6.0", async function () {
   describe("after deploy", async () => {
     let params
     let zapper: ZapperInstance
+    let fixedLeverageRatioStrategy: FixedLeverageRatioStrategyInstance
     const setupTest = deployments.createFixture(async () => {
       await migrate250.main()
       const {params} = await migrate260.main()
       const zapper = await getTruffleContract<ZapperInstance>("Zapper")
-      return {zapper, params}
+      const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
+        "FixedLeverageRatioStrategy"
+      )
+      return {zapper, fixedLeverageRatioStrategy, params}
     })
 
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({params, zapper} = await setupTest())
+      ;({params, zapper, fixedLeverageRatioStrategy} = await setupTest())
     })
 
     describe("UniqueIdentity", async () => {
@@ -136,7 +130,7 @@ describe("v2.6.0", async function () {
           it("is upgraded address", async () => {
             const configAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
             expect(configAddress).to.not.eq(tranchedPoolImplAddressBeforeDeploy)
-            expect(configAddress).to.eq((await deployments.get("TranchedPool")).address)
+            expect(configAddress).to.eq((await deployments.get("TranchedPool_Implementation")).address)
           })
         })
 

@@ -177,7 +177,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
-  await migrate260.main()
+  // await migrate260.main()
 
   return {
     poolTokens,
@@ -679,7 +679,9 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe("BackerRewards", () => {
+  // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
+  //        Main should be passing after only running the v2.5.0 upgrade
+  describe.skip("BackerRewards", () => {
     const microTolerance = "100000" // 1e5
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
@@ -1364,7 +1366,7 @@ describe("mainnet forking tests", async function () {
   describe("CommunityRewards", () => {
     describe("claimableRewards", () => {
       // no vesting to merkle direct distributor balance
-      describe("MerkleDistributor", () => {
+      describe.skip("MerkleDistributor", () => {
         it("proper reward allocation for users claimable", async () => {
           const vestingGrantsJson: MerkleDistributorInfo = JSON.parse(
             await fs.readFile(VESTING_MERKLE_INFO_PATH, {
@@ -1534,7 +1536,7 @@ describe("mainnet forking tests", async function () {
         }).timeout(TEST_TIMEOUT)
       })
 
-      describe("MerkleDirectDistributor", () => {
+      describe.skip("MerkleDirectDistributor", () => {
         it("proper reward allocation for users claimable", async () => {
           const noVestingGrantsJson: MerkleDirectDistributorInfo = JSON.parse(
             await fs.readFile(NO_VESTING_MERKLE_INFO_PATH, {
