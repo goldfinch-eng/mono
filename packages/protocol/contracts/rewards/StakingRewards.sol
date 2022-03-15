@@ -189,6 +189,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   rewards in the balance of this contract, then we shouldn't be giving them out.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function _additionalRewardsPerTokenSinceLastUpdate(uint256 time) internal view returns (uint256) {
+    /// @dev IT: Invalid end time for range
     require(time >= lastUpdateTime, "IT");
 
     if (totalStakedSupply == 0) {
@@ -351,6 +352,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
   ///   will be staked.
   function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
+    /// @dev GL: This address has not been go-listed
     require(isGoListed(), "GL");
     IERC20withDec usdc = config.getUSDC();
     usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
@@ -392,6 +394,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 fiduAmount,
     uint256 usdcAmount
   ) public nonReentrant whenNotPaused updateReward(0) {
+    /// @dev ZERO: Cannot stake 0
     require(fiduAmount > 0 || usdcAmount > 0, "ZERO");
 
     IERC20withDec usdc = config.getUSDC();
@@ -452,6 +455,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 amount,
     StakedPositionType positionType
   ) internal returns (uint256 tokenId) {
+    /// @dev ZERO: Cannot stake 0
     require(amount > 0, "ZERO");
 
     _tokenIdTracker.increment();
@@ -519,6 +523,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     nonReentrant
     whenNotPaused
   {
+    /// @dev LEN: Params must have the same length
     require(tokenIds.length == amounts.length, "LEN");
 
     uint256 fiduAmountToUnstake = 0;
@@ -555,7 +560,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     updateReward(tokenId)
     returns (uint256 usdcAmountReceived, uint256 fiduUsed)
   {
+    /// @dev CW: Cannot withdraw funds with this position
     require(canWithdraw(tokenId), "CW");
+    /// @dev GL: This address has not been go-listed
     require(isGoListed(), "GL");
     ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
@@ -577,6 +584,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     nonReentrant
     whenNotPaused
   {
+    /// @dev LEN: Params must have the same length
     require(tokenIds.length == usdcAmounts.length, "LEN");
 
     uint256 usdcReceivedAmountTotal = 0;
@@ -602,6 +610,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     updateReward(tokenId)
     returns (uint256 usdcReceivedAmount)
   {
+    /// @dev CW: Cannot withdraw funds with this position
     require(canWithdraw(tokenId), "CW");
 
     usdcReceivedAmount = config.getSeniorPool().withdrawInFidu(fiduAmount);
@@ -615,6 +624,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     nonReentrant
     whenNotPaused
   {
+    /// @dev LEN: Params must have the same length
     require(tokenIds.length == fiduAmounts.length, "LEN");
 
     uint256 usdcReceivedAmountTotal = 0;
@@ -628,13 +638,17 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
+    /// @dev AD: Access denied
     require(ownerOf(tokenId) == msg.sender || isZapper(), "AD");
+    /// @dev ZERO: Cannot unstake 0
     require(amount > 0, "ZERO");
 
     StakedPosition storage position = positions[tokenId];
     uint256 prevAmount = position.amount;
+    /// @dev IA: Invalid amount. Cannot unstake more than staked balance.
     require(amount <= prevAmount, "IA");
 
+    /// @dev LOCKED: Staked funds are locked.
     require(block.timestamp >= position.lockedUntil, "LOCKED");
 
     uint256 effectiveAmount = toEffectiveAmount(amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
@@ -665,13 +679,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     whenNotPaused
     updateReward(tokenId)
   {
+    /// @dev AD: Access denied
     require(ownerOf(tokenId) == msg.sender, "AD");
 
     StakedPosition storage position = positions[tokenId];
 
     uint256 newEffectiveMultiplier = getEffectiveMultiplier(position.positionType);
 
-    // Prevent a user from accidentally lowering their effective multiplier
+    /// Prevent a user from accidentally lowering their effective multiplier
+    /// @dev LOW: Cannot update position to a lower effective multiplier
     require(newEffectiveMultiplier >= position.effectiveMultiplier, "LOW");
 
     uint256 prevEffectiveAmount = _positionToEffectiveAmount(position);
@@ -686,6 +702,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Claim rewards for a given staked position
   /// @param tokenId A staking position token ID
   function getReward(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {
+    /// @dev AD: Access denied
     require(ownerOf(tokenId) == msg.sender, "AD");
     uint256 reward = claimableRewards(tokenId);
     if (reward > 0) {
@@ -708,6 +725,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
+    /// @dev AD: Access denied
     require(isZapper(), "AD");
 
     StakedPosition storage position = positions[tokenId];
@@ -734,7 +752,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 _minRateAtPercent,
     uint256 _maxRateAtPercent
   ) external onlyAdmin updateReward(0) {
+    /// @dev IR: Invalid rates. maxRate must be >= then minRate.
     require(_maxRate >= _minRate, "IR");
+    /// @dev IRAP: Invalid rates at percent. maxRateAtPercent must be <= minRateAtPercent.
     require(_maxRateAtPercent <= _minRateAtPercent, "IRAP");
     targetCapacity = _targetCapacity;
     minRate = _minRate;
@@ -802,6 +822,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   modifier onlyAdmin() {
+    /// @dev AD: Must have admin role to perform this action
     require(isAdmin(), "AD");
     _;
   }
