@@ -18,6 +18,7 @@ const pathname = path.resolve(
 );
 const addresses = {
   USDC: contracts.TestERC20.address,
+  SeniorPool: contracts.SeniorPool.address,
 };
 
 fs.writeFileSync(pathname, JSON.stringify(addresses, null, 2));
