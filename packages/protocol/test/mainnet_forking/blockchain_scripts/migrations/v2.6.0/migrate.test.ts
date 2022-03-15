@@ -36,6 +36,7 @@ import {
   mochaEach,
 } from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {Contract} from "ethers/lib/ethers"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -101,19 +102,25 @@ describe("v2.6.0", async function () {
     let params
     let zapper: ZapperInstance
     let fixedLeverageRatioStrategy: FixedLeverageRatioStrategyInstance
+    let tranchedPoolDeployment: Contract
     const setupTest = deployments.createFixture(async () => {
       await migrate250.main()
-      const {params} = await migrate260.main()
+      const {params, deployedContracts} = await migrate260.main()
       const zapper = await getTruffleContract<ZapperInstance>("Zapper")
       const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
         "FixedLeverageRatioStrategy"
       )
-      return {zapper, fixedLeverageRatioStrategy, params}
+      return {zapper, fixedLeverageRatioStrategy, params, deployedContracts}
     })
 
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({params, zapper, fixedLeverageRatioStrategy} = await setupTest())
+      ;({
+        params,
+        zapper,
+        fixedLeverageRatioStrategy,
+        deployedContracts: {tranchedPool: tranchedPoolDeployment},
+      } = await setupTest())
     })
 
     describe("UniqueIdentity", async () => {
@@ -130,7 +137,7 @@ describe("v2.6.0", async function () {
           it("is upgraded address", async () => {
             const configAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
             expect(configAddress).to.not.eq(tranchedPoolImplAddressBeforeDeploy)
-            expect(configAddress).to.eq((await deployments.get("TranchedPool_Implementation")).address)
+            expect(configAddress).to.eq(tranchedPoolDeployment.address)
           })
         })
 
