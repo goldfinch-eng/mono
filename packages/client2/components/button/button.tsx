@@ -2,6 +2,7 @@ import clsx from "clsx";
 import React, { forwardRef, ButtonHTMLAttributes, ReactNode } from "react";
 
 import { Icon, IconProps } from "@/components/icon";
+import { Spinner } from "@/components/spinners";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
@@ -23,6 +24,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
   iconLeft?: IconProps["name"];
   iconRight?: IconProps["name"];
+  isLoading?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -34,6 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       colorScheme = "blue",
       iconLeft,
       iconRight,
+      isLoading = false,
       className,
       ...rest
     },
@@ -64,9 +67,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...rest}
       >
-        {iconLeft ? <Icon name={iconLeft} /> : null}
+        {isLoading ? (
+          <Spinner className="!h-[1em] !w-[1em]" />
+        ) : iconLeft ? (
+          <Icon name={iconLeft} />
+        ) : null}
         {children}
-        {iconRight ? <Icon name={iconRight} /> : null}
+        {isLoading && iconRight && !iconLeft ? (
+          <Spinner className="!h-[1em] !w-[1em]" />
+        ) : iconRight ? (
+          <Icon name={iconRight} />
+        ) : null}
       </button>
     );
   }
