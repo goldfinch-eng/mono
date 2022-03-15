@@ -1,4 +1,19 @@
 {
+  "0x": {
+    "name": "LendEast TODO",
+    "category": "Global multi-sector loans",
+    "icon": "%PUBLIC_URL%/icons/lendeast.jpeg",
+    "agreement": "TODO",
+    "launchTime": 1647529200,
+    "poolDescription": "Proceeds will be used for additional funding via existing Lend East Credit Facilities to our portfolio companies and funding of new alternate lending platforms in Emerging Asia. All Lend East Credit Facilities are senior secured loans to high growth, tech forward Alternate Lenders who are backed by marquee equity investors like Ant Financial, Sequoia Capital, DST Global, Sinar Mas, Quona Capital & Arbor Ventures.\n\nEvery facility is structured to provide a healthy risk adjusted return to investors while ensuring capital preservation. Typical guardrails include excess portfolio cover (1.2x - 1.5x of the investment), established seniority over equity & other debt capital on the balance sheet and corporate guarantees from Holding Companies.",
+    "poolHighlights": [],
+    "borrowerDescription": "Lend East is a digital lending platform that connects global institutional capital with alternate lenders in Emerging Asia (Southeast Asia & India). Lend East is revolutionising alternate lending by offering scalable growth capital with zero dilution to technology ventures. Leveraging Spa{R}3k, its proprietary credit and risk analytics platform, Lend East has made high impact investments in Indonesia, the Philippines, Singapore & Vietnam since 2019.",
+    "borrowerHighlights": [
+      "Since inception, Lend East has evaluated over 100 alternate lenders and onboarded 60+ of them on Spa{R}3k, its proprietary credit analytics & risk platform",
+      "Lend East has committed US$50mn in investments across seven market leading platforms across Singapore, Indonesia, Philippines, Vietnam & India",
+      "Strong performance track record, generating healthy risk adjusted yields for investors with no delays or defaults in borrower repayments"
+    ]
+  },
   "0xd09a57127bc40d680be7cb061c2a6629fe71abef": {
     "name": "Cauris Fund #2: Africa Innovation Pool",
     "category": "Global multi-sector loans",
