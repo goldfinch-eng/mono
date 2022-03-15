@@ -206,22 +206,24 @@ type DecodedLog<T extends Truffle.AnyEvent> = {
 function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): DecodedLog<T>[] {
   const abi = emitter.abi
   const address = emitter.address
-  let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
-  if (eventABI.length === 0) {
+  const eventAbis = abi.filter((x) => x.type === "event" && x.name === eventName)
+  if (eventAbis.length === 0) {
     throw new Error(`No ABI entry for event '${eventName}'`)
-  } else if (eventABI.length > 1) {
+  } else if (eventAbis.length > 1) {
     throw new Error(`Multiple ABI entries for event '${eventName}', only uniquely named events are supported`)
   }
 
-  eventABI = eventABI[0]
+  const eventAbi = eventAbis[0]
 
   // The first topic will equal the hash of the event signature
-  const eventTopic = eventABI.signature
+  // If the signature isn't present (for example if a deployments file was passed)
+  // generate it.
+  const eventTopic = eventAbi.signature || web3.eth.abi.encodeEventSignature(eventAbi)
 
   // Only decode events of type 'EventName'
   return logs
     .filter((log) => log.topics.length > 0 && log.topics[0] === eventTopic && (!address || log.address === address))
-    .map((log) => web3.eth.abi.decodeLog(eventABI.inputs, log.data, log.topics.slice(1)))
+    .map((log) => web3.eth.abi.decodeLog(eventAbi.inputs, log.data, log.topics.slice(1)))
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
