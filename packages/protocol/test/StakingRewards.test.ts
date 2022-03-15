@@ -1960,6 +1960,37 @@ describe("StakingRewards", function () {
     })
   })
 
+  describe("setEffectiveMultiplier", async () => {
+    beforeEach(async () => {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Reset effective multiplier to 1x
+      await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+    })
+
+    it("the default effective multiplier is correct", async () => {
+      // Set the effective multiplier to the default value in the deploy script
+      await stakingRewards.setEffectiveMultiplier("750000000000000000", StakedPositionType.CurveLP)
+
+      // Investor stakes
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      const position = await stakingRewards.positions(tokenId)
+      expect(position[5]).to.bignumber.equal(MULTIPLIER_DECIMALS.mul(new BN(75)).div(new BN(100)))
+
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(bigVal(75))
+    })
+  })
+
   describe("updatePositionEffectiveMultiplier", async () => {
     beforeEach(async () => {
       // Mint rewards for a full year
