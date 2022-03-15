@@ -6,7 +6,6 @@ import {
   getUSDCAddress,
   MAINNET_CHAIN_ID,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
-  TRANCHES,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
@@ -23,21 +22,18 @@ import {
   GoldfinchFactoryInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
-  TestUniqueIdentityInstance,
   TranchedPoolInstance,
   UniqueIdentityInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {
-  BN,
   createPoolWithCreditLine,
-  dbg,
   expectOwnerRole,
   expectProxyOwner,
   mochaEach,
-  usdcVal,
 } from "@goldfinch-eng/protocol/test/testHelpers"
+import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -51,7 +47,6 @@ const setupTest = deployments.createFixture(async () => {
   const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
   const uniqueIdentity = await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity")
   const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory")
-  const usdc = await getTruffleContract<ERC20Instance>("ERC20", {at: getUSDCAddress(MAINNET_CHAIN_ID)})
 
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)
@@ -61,7 +56,6 @@ const setupTest = deployments.createFixture(async () => {
 
   return {
     gfi,
-    usdc,
     goldfinchConfig,
     communityRewards,
     backerRewards,
@@ -85,7 +79,6 @@ describe("v2.5.0", async function () {
   let stakingRewards: StakingRewardsInstance
   let uniqueIdentity: UniqueIdentityInstance
   let goldfinchFactory: GoldfinchFactoryInstance
-  let usdc: ERC20Instance
 
   let tranchedPoolImplAddressBeforeDeploy: string
   let leverageRatioStrategyAddressBeforeDeploy: string
@@ -94,7 +87,6 @@ describe("v2.5.0", async function () {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({
       gfi,
-      usdc,
       goldfinchConfig,
       backerRewards,
       communityRewards,
@@ -104,18 +96,23 @@ describe("v2.5.0", async function () {
       uniqueIdentity,
       goldfinchFactory,
     } = await setupTest())
+
+    tranchedPoolImplAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
+    leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
   })
 
   describe("after deploy", async () => {
     let params
+    let zapper: ZapperInstance
     const setupTest = deployments.createFixture(async () => {
       const {params} = await migrate250.main()
-      return {params}
+      const zapper = await getTruffleContract<ZapperInstance>("Zapper")
+      return {zapper, params}
     })
 
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({params} = await setupTest())
+      ;({params, zapper} = await setupTest())
     })
 
     describe("UniqueIdentity", async () => {
@@ -123,6 +120,72 @@ describe("v2.5.0", async function () {
         mochaEach([0, 1, 2, 3, 4]).it("is true for type = %d", async (type: number) => {
           expect(await uniqueIdentity.supportedUIDTypes(type)).to.equal(true)
         })
+      })
+    })
+
+    describe("GoldfinchConfig", async () => {
+      describe("getAddress", async () => {
+        describe("TranchedPool", async () => {
+          it("is upgraded address", async () => {
+            expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)).to.not.eq(
+              tranchedPoolImplAddressBeforeDeploy
+            )
+          })
+        })
+
+        describe("SeniorPoolStrategy", async () => {
+          it("is correct", async () => {
+            expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.not.eq(
+              leverageRatioStrategyAddressBeforeDeploy
+            )
+          })
+        })
+
+        describe("FiduUSDCCurveLP", async () => {
+          it("is correct", async () => {
+            expect(await goldfinchConfig.getAddress(CONFIG_KEYS.FiduUSDCCurveLP)).to.be.eq(
+              MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
+            )
+          })
+        })
+      })
+    })
+
+    describe("Go", async () => {
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("is true for Zapper contract", async () => {
+            expect(await go.hasRole(await go.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
+      })
+    })
+
+    describe("Zapper", async () => {
+      expectProxyOwner({
+        toBe: getProtocolOwner,
+        forContracts: ["Zapper"],
+      })
+
+      expectOwnerRole({toBe: getProtocolOwner, forContracts: ["Zapper"]})
+    })
+
+    describe("GFI", async () => {
+      describe("balanceOf", async () => {
+        describe("BackerRewards", async () => {
+          it("is correct", async () => {
+            expect((await gfi.balanceOf(backerRewards.address)).toString()).to.bignumber.eq(
+              params.BackerRewards.totalRewards
+            )
+          })
+        })
+      })
+    })
+
+    describe("FixedLeverageRatioStrategy", async () => {
+      expectOwnerRole({
+        toBe: getProtocolOwner,
+        forContracts: ["FixedLeverageRatioStrategy"],
       })
     })
 
@@ -153,6 +216,14 @@ describe("v2.5.0", async function () {
       expectOwnerRole({
         toBe: async () => getProtocolOwner(),
         forContracts: ["Go"],
+      })
+
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("Zapper to be true", async () => {
+            expect(await go.hasRole(await go.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
       })
 
       context("getSeniorPoolIdTypes", () => {
@@ -191,17 +262,41 @@ describe("v2.5.0", async function () {
         ;({tranchedPool} = await testSetup())
       })
 
-      // describe("getAllowedUIDTypes", async () => {
-      //   it("is correct", async () => {
-      //     const sampledUidTypes = (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())
-      //     expect(sampledUidTypes).to.deep.eq(allowedUIDTypes)
-      //   })
-      // })
+      describe("getAllowedUIDTypes", async () => {
+        it("is correct", async () => {
+          const sampledUidTypes = (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())
+          expect(sampledUidTypes).to.deep.eq(allowedUIDTypes)
+        })
+      })
+    })
 
-      describe("allowedUidTypes", () => {
-        mochaEach(allowedUIDTypes).it("id type %d is allowed", async (uidType: number) => {
-          const sampled = await tranchedPool.allowedUIDTypes(uidType)
-          expect(sampled).to.bignumber.eq(new BN(uidType))
+    describe("SeniorPool", async () => {
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("is true for Zapper contract", async () => {
+            expect(await seniorPool.hasRole(await seniorPool.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
+      })
+    })
+
+    describe("StakingRewards", async () => {
+      describe("hasRole", async () => {
+        describe("ZAPPER_ROLE", async () => {
+          it("is true for Zapper contract", async () => {
+            expect(await stakingRewards.hasRole(await stakingRewards.ZAPPER_ROLE(), zapper.address)).to.be.true
+          })
+        })
+      })
+
+      describe("effectiveMultiplier", async () => {
+        describe("CurveLp", async () => {
+          it("is correct", async () => {
+            expect(params.StakingRewards.effectiveMultiplier).to.eq("750000000000000000")
+            expect((await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).toString()).to.eq(
+              params.StakingRewards.effectiveMultiplier
+            )
+          })
         })
       })
     })
