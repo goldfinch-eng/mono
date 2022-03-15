@@ -1,9 +1,9 @@
 import clsx from "clsx";
-import React, { forwardRef, HTMLAttributes, ReactNode } from "react";
+import React, { forwardRef, ButtonHTMLAttributes, ReactNode } from "react";
 
 import { Icon, IconProps } from "@/components/icon";
 
-interface ButtonProps extends HTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Content within the button
    */
