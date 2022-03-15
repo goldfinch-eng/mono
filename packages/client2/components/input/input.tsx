@@ -73,7 +73,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           className={clsx(
             "w-full rounded bg-sand-200 py-2.5 px-3.5 outline-none ring-purple-400 ring-offset-0 placeholder:text-purple-200 focus:ring-2",
             disabled && "opacity-50",
-            icon ? "pl-8" : null,
+            icon ? "pr-8" : null,
             inputClassName
           )}
           ref={ref}
@@ -86,7 +86,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         {icon ? (
           <Icon
             name={icon}
-            className="absolute left-2 top-1/2 -translate-y-1/2"
+            className="absolute right-3.5 top-1/2 -translate-y-1/2"
           />
         ) : null}
       </div>
