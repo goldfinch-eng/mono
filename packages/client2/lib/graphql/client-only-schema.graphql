@@ -13,7 +13,7 @@ extend type TranchedPool {
 
 type AppUser {
   account: String
-  usdcBalance: Float
+  usdcBalance: BigInt
 }
 
 extend type Query {

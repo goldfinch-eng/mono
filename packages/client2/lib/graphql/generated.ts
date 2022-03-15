@@ -21,7 +21,7 @@ export type Scalars = {
 export type AppUser = {
   __typename?: 'AppUser';
   account?: Maybe<Scalars['String']>;
-  usdcBalance?: Maybe<Scalars['Float']>;
+  usdcBalance?: Maybe<Scalars['BigInt']>;
 };
 
 /** The block at which the query should be executed. */
@@ -2176,7 +2176,7 @@ export enum _SubgraphErrorPolicy_ {
 export type CurrentUserWalletInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { __typename?: 'AppUser', account?: string | null, usdcBalance?: number | null } };
+export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { __typename?: 'AppUser', account?: string | null, usdcBalance?: TheGraph_BigInt | null } };
 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 

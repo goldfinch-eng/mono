@@ -12,7 +12,8 @@
     "lint": "next lint",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
-    "codegen": "graphql-codegen"
+    "codegen": "graphql-codegen",
+    "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {
     "@apollo/client": "^3.5.10",

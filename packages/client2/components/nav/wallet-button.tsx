@@ -38,7 +38,7 @@ export function WalletButton() {
       usdcContract.balanceOf(account).then((value) =>
         updateCurrentUserAttributes({
           account: account,
-          usdcBalance: value.div(10 ** 6).toNumber(),
+          usdcBalance: value,
         })
       );
     }

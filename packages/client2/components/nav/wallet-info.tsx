@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 
 import { Button } from "@/components/button";
 import { Shimmer } from "@/components/spinners";
+import { formatUsdc } from "@/lib/format";
 import { useCurrentUserWalletInfoQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -19,10 +20,7 @@ export function WalletInfo() {
   const { data } = useCurrentUserWalletInfoQuery();
   const account = data?.currentUser.account;
   const usdcBalance = data?.currentUser.usdcBalance
-    ? new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-      }).format(data.currentUser.usdcBalance)
+    ? formatUsdc(data.currentUser.usdcBalance)
     : undefined;
 
   return (
