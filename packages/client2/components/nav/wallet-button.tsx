@@ -32,7 +32,7 @@ export function WalletButton() {
   });
   const { isActive, account } = useWallet();
 
-  const usdcContract = useUsdcContract();
+  const { usdcContract } = useUsdcContract();
   useEffect(() => {
     if (account && usdcContract) {
       usdcContract.balanceOf(account).then((value) =>

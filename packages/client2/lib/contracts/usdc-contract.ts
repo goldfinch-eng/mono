@@ -9,7 +9,12 @@ export function useUsdcContract() {
   return useMemo(() => {
     if (provider && chainId) {
       const usdcAddress = CONTRACT_ADDRESSES[chainId].USDC;
-      return Erc20__factory.connect(usdcAddress, provider.getSigner());
+      const usdcContract = Erc20__factory.connect(
+        usdcAddress,
+        provider.getSigner()
+      );
+      return { usdcAddress, usdcContract };
     }
+    return { usdcAddress: undefined, usdcContract: undefined };
   }, [provider, chainId]);
 }

@@ -25,7 +25,7 @@ gql`
 
 export function PortfolioSection() {
   const { account } = useWallet();
-  const usdcContract = useUsdcContract();
+  const { usdcContract } = useUsdcContract();
   const { seniorPoolContract, seniorPoolAddress } = useSeniorPoolContract();
   const { data, refetch } = useSeniorPoolPortfolioQuery({
     variables: { userId: account?.toLowerCase() ?? "", minBlock: 0 },
