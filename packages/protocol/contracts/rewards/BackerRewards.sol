@@ -417,7 +417,10 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 sliceAccumulator = _getSliceAccumulatorAtLastCheckpoint(sliceInfo, poolInfo);
     uint256 tokenAccumulator = _getTokenAccumulatorAtLastWithdraw(tokenInfo, sliceInfo);
     uint256 rewardsPerFidu = sliceAccumulator.sub(tokenAccumulator);
-    uint256 principalAsFidu = _fiduToUsdc(poolTokenInfo.principalAmount, sliceInfo.fiduSharePriceAtDrawdown);
+    // NOTE: Because backers are able to withdraw principal before the tranche has been locked using principalRedeemed
+    //        isn't enough to know the actual amount of principal that was made available to the borrower.
+    uint256 effectivePrincipal = poolTokenInfo.principalAmount.sub(poolTokenInfo.principalRedeemedBeforeLocking);
+    uint256 principalAsFidu = _fiduToUsdc(effectivePrincipal, sliceInfo.fiduSharePriceAtDrawdown);
     uint256 rewards = principalAsFidu.mul(rewardsPerFidu).div(FIDU_MANTISSA);
     return rewards;
   }
