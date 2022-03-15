@@ -79,7 +79,9 @@ export function Modal({
             )}
           >
             <div className="mb-4 px-6">
-              <Dialog.Title>{title}</Dialog.Title>
+              <Dialog.Title className={"text-xl font-bold"}>
+                {title}
+              </Dialog.Title>
               {description && (
                 <Dialog.Description>{description}</Dialog.Description>
               )}
@@ -91,8 +93,9 @@ export function Modal({
               size="sm"
               onClick={onClose}
               className="absolute top-4 right-4"
+              iconLeft="X"
             >
-              X
+              {" "}
             </Button>
           </div>
         </Transition.Child>
