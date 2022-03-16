@@ -16,7 +16,6 @@ import {POOL_CREATED_EVENT} from "../types/events"
 import {Loadable} from "../types/loadable"
 import {BlockInfo} from "../utils"
 import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
-import useNonNullContext from "./useNonNullContext"
 
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
