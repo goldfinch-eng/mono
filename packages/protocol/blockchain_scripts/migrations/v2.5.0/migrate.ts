@@ -21,7 +21,12 @@ export async function main() {
 
   const deployEffects = await getDeployEffects({
     title: "v2.5.0 upgrade",
-    description: "https://github.com/warbler-labs/mono/pull/390",
+    description: `
+    Upgrades Go and CommunityRewards contracts
+
+    https://github.com/warbler-labs/mono/pull/390
+    https://github.com/warbler-labs/mono/pull/412
+    `,
   })
 
   console.log("Beginning v2.5.0 upgrade")
@@ -31,7 +36,7 @@ export async function main() {
 
   // 1. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["Go"],
+    contracts: ["Go", "CommunityRewards"],
   })
 
   // 2. Change implementations

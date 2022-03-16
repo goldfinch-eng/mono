@@ -202,6 +202,18 @@ describe("v2.5.0", async function () {
       })
     })
 
+    context("CommunityRewards", () => {
+      expectProxyOwner({
+        toBe: getProtocolOwner,
+        forContracts: ["CommunityRewards"],
+      })
+
+      expectOwnerRole({
+        toBe: async () => getProtocolOwner(),
+        forContracts: ["CommunityRewards"],
+      })
+    })
+
     context("Go", () => {
       expectProxyOwner({
         toBe: getProtocolOwner,
