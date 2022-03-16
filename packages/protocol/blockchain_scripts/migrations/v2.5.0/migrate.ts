@@ -1,9 +1,9 @@
 import {bigVal} from "@goldfinch-eng/protocol/test/testHelpers"
 import {BackerRewards, GFI, UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import BigNumber from "bignumber.js"
+import hre from "hardhat"
 import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
-import hre from "hardhat"
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -41,7 +41,6 @@ export async function main() {
     },
   }
 
-  // take 2% of the total GFI supply
   console.log("Setting UniqueIdentity params:")
   console.log(` setSupportedUIDTypes = ${params.UniqueIdentity.supportedUidTypes}`)
 
