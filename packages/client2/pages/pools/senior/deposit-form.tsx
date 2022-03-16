@@ -63,6 +63,7 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
     let subgraphUpdated = false;
     while (!subgraphUpdated) {
       try {
+        // TODO move this min block check into a shared lib. Probably gonna want this in other areas of the app
         await apolloClient.query({
           query: MIN_BLOCK_CHECK,
           variables: { minBlock },
