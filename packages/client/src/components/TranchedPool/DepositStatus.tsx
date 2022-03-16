@@ -5,8 +5,8 @@ import {Loadable} from "../../types/loadable"
 import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent} from "../../utils"
 import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
-import EarnTooltipContent from "../Earn/EarnTooltipContent"
 import {TranchedPool, TranchedPoolBacker} from "../../ethereum/tranchedPool"
+import APYTooltip from "../APYTooltip"
 
 export function DepositStatus({
   tranchedPool,
@@ -82,7 +82,8 @@ export function DepositStatus({
         </div>
       </div>
       {rightStatusItem}
-      <EarnTooltipContent
+      <APYTooltip
+        classNames="apy-detail-tooltip clickable"
         longDescription="Includes the base USDC interest yield plus GFI from both liquidity mining and staking."
         rows={[
           {

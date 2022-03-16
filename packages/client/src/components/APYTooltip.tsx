@@ -1,16 +1,17 @@
-import Tooltip from "../../ui/components/Tooltip"
+import Tooltip from "../ui/components/Tooltip"
 import {useMediaQuery} from "react-responsive"
-import {WIDTH_TYPES} from "../styleConstants"
+import {WIDTH_TYPES} from "./styleConstants"
 
-type EarnTooltipContentProps = {
+type APYTooltipProps = {
   id?: string
   longDescription: string
   rows: Array<{text: string; subtext?: string; value: string}>
   total: {text: string; value: string}
   footer?: React.ReactNode
+  classNames?: string
 }
 
-const EarnTooltipContent = ({id, rows, total, footer, longDescription}: EarnTooltipContentProps) => {
+const APYTooltip = ({id, longDescription, rows, total, footer, classNames}: APYTooltipProps) => {
   const isTabletOrMobile = useMediaQuery({
     query: `(max-width: ${WIDTH_TYPES.screenM})`,
   })
@@ -18,7 +19,7 @@ const EarnTooltipContent = ({id, rows, total, footer, longDescription}: EarnTool
     <Tooltip
       id={id || "apy-tooltip"}
       delayHide={isTabletOrMobile ? 50 : 400}
-      className="apy-detail-tooltip clickable"
+      className={classNames || "tooltip-container"}
       place="left"
     >
       <div>
@@ -26,8 +27,8 @@ const EarnTooltipContent = ({id, rows, total, footer, longDescription}: EarnTool
         {rows.map(({text, subtext, value}) => (
           <div key={text}>
             <div className="tooltip-row">
-              <p>{text}</p>
-              <span>{value}</span>
+              <p data-testid="tooltip-row-label">{text}</p>
+              <span data-testid="tooltip-row-value">{value}</span>
             </div>
             {subtext && <div className="tooltip-small-row">{subtext}</div>}
           </div>
@@ -35,7 +36,7 @@ const EarnTooltipContent = ({id, rows, total, footer, longDescription}: EarnTool
         <div className="tooltip-divider"></div>
         <div className="tooltip-row">
           <p>{total.text}</p>
-          <span>{total.value}</span>
+          <span data-testid="tooltip-total-apy">{total.value}</span>
         </div>
         {footer && <div className="tooltip-footer">{footer}</div>}
       </div>
@@ -43,4 +44,4 @@ const EarnTooltipContent = ({id, rows, total, footer, longDescription}: EarnTool
   )
 }
 
-export default EarnTooltipContent
+export default APYTooltip

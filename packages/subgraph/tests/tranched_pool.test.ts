@@ -1,23 +1,47 @@
-import { Address, BigInt } from '@graphprotocol/graph-ts'
-import { clearStore, test, assert } from 'matchstick-as/assembly/index'
-import { createCreditLineMigratedEvent, createTranchedPoolDepositMadeEvent, createTranchedPoolDrawdownMadeEvent, createTranchedPoolPaymentAppliedEvent, createTranchedPoolWithdrawalMadeEvent } from './factories'
-import { handleCreditLineMigrated, handleDepositMade, handleDrawdownMade, handlePaymentApplied, handleWithdrawalMade } from '../src/mappings/tranched_pool'
-import { mockCreditLineContractCalls, mockPoolBackersContractCalls, mockTranchedPoolCalls, mockTranchedPoolTokenContractCalls } from './mocks'
-import { initOrUpdateTranchedPool } from '../src/entities/tranched_pool'
-import { getOrInitPoolBacker } from '../src/entities/pool_backer'
-import { initOrUpdateTranchedPoolToken } from '../src/entities/pool_tokens'
+import {Address, BigInt} from '@graphprotocol/graph-ts'
+import {clearStore, test, assert} from 'matchstick-as/assembly/index'
+import {
+  createCreditLineMigratedEvent,
+  createTranchedPoolDepositMadeEvent,
+  createTranchedPoolDrawdownMadeEvent,
+  createTranchedPoolPaymentAppliedEvent,
+  createTranchedPoolWithdrawalMadeEvent
+} from './factories'
+import {handleCreditLineMigrated, handleDepositMade, handleDrawdownMade, handlePaymentApplied, handleWithdrawalMade} from '../src/mappings/tranched_pool'
+import {mockCreditLineContractCalls, mockPoolBackersContractCalls, mockTranchedPoolCalls, mockTranchedPoolTokenContractCalls} from './mocks'
+import {BEFORE_V2_2_TIMESTAMP} from './utils'
+import {initOrUpdateTranchedPool} from '../src/entities/tranched_pool'
+import {getOrInitPoolBacker} from '../src/entities/pool_backer'
+import {initOrUpdateTranchedPoolToken} from '../src/entities/pool_tokens'
+import { VERSION_BEFORE_V2_2 } from '../src/utils'
 
 test('handleCreditLineMigrated updates or creates a new credit line record', () => {
   const tranchedPoolAddress = '0x9999999999999999999999999999999999999999'
   const oldCreditLineAddress = '0x1111111111111111111111111111111111111111'
   const newCreditLineAddress = '0x2222222222222222222222222222222222222222'
 
-  const creditLineMigratedEvent = createCreditLineMigratedEvent(tranchedPoolAddress, oldCreditLineAddress, newCreditLineAddress)
+  const creditLineMigratedEvent = createCreditLineMigratedEvent(
+    tranchedPoolAddress,
+    oldCreditLineAddress,
+    newCreditLineAddress,
+    false
+  )
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(oldCreditLineAddress))
-  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(oldCreditLineAddress),
+    "5000000000000",
+    false
+  )
+  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(newCreditLineAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(newCreditLineAddress),
+    "5000000000000",
+    false
+  )
+
   handleCreditLineMigrated(creditLineMigratedEvent)
 
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'limit', '5000000000000')
@@ -31,6 +55,7 @@ test('handleCreditLineMigrated updates or creates a new credit line record', () 
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'termEndTime', '1697995148')
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'lastFullPaymentTime', '1637515148')
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'termEndDate', '0')
+  assert.fieldEquals('CreditLine', newCreditLineAddress, 'version', VERSION_BEFORE_V2_2)
 
   clearStore()
 })
@@ -40,12 +65,17 @@ test('handleDeposit creates user and backer if not exists', () => {
   const userAddress = '0x1111111111111111111111111111111111111111'
   const creditLineAddress = '0x2222222222222222222222222222222222222222'
 
-  const depositMadeEvent = createTranchedPoolDepositMadeEvent(tranchedPoolAddress, userAddress)
+  const depositMadeEvent = createTranchedPoolDepositMadeEvent(tranchedPoolAddress, userAddress, false)
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(creditLineAddress),
+    "5000000000000",
+    false
+  )
+  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
 
-  mockCreditLineContractCalls(Address.fromString(creditLineAddress), "5000000000000")
+  mockCreditLineContractCalls(Address.fromString(creditLineAddress), false, "5000000000000")
   handleDepositMade(depositMadeEvent)
 
   assert.fieldEquals('User', userAddress, 'id', userAddress)
@@ -65,6 +95,8 @@ test('handleDeposit creates user and backer if not exists', () => {
 
   assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'backers', `[${backerAddress}]`)
   assert.fieldEquals('CreditLine', creditLineAddress, 'balance', '5000000000000')
+  assert.fieldEquals('CreditLine', creditLineAddress, 'version', VERSION_BEFORE_V2_2)
+  assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'version', VERSION_BEFORE_V2_2)
 
   const id = depositMadeEvent.transaction.hash.toHexString()
   assert.fieldEquals('TranchedPoolDeposit', id, 'user', userAddress)
@@ -83,10 +115,15 @@ test('handleDeposit with already one deposit', () => {
   const userAddress = '0x1111111111111111111111111111111111111111'
   const creditLineAddress = '0x2222222222222222222222222222222222222222'
 
-  const depositMadeEvent = createTranchedPoolDepositMadeEvent(tranchedPoolAddress, userAddress)
+  const depositMadeEvent = createTranchedPoolDepositMadeEvent(tranchedPoolAddress, userAddress, false)
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(creditLineAddress),
+    "5000000000000",
+    false
+  )
+  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
   let backers = ["0x1111111111111111111111111111111111111112"]
   tranchedPool.backers = backers
   tranchedPool.save()
@@ -96,7 +133,7 @@ test('handleDeposit with already one deposit', () => {
   backer.balance = BigInt.fromString("5000000000000")
   backer.save()
 
-  mockCreditLineContractCalls(Address.fromString(creditLineAddress))
+  mockCreditLineContractCalls(Address.fromString(creditLineAddress), false, "5000000000000")
   handleDepositMade(depositMadeEvent)
 
   assert.fieldEquals('User', userAddress, 'id', userAddress)
@@ -108,6 +145,8 @@ test('handleDeposit with already one deposit', () => {
   assert.fieldEquals('PoolBacker', backerAddress, 'balance', '5000000000000')
 
   assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'backers', `[0x1111111111111111111111111111111111111112, ${backerAddress}]`)
+  assert.fieldEquals('CreditLine', creditLineAddress, 'version', VERSION_BEFORE_V2_2)
+  assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'version', VERSION_BEFORE_V2_2)
 
   const id = depositMadeEvent.transaction.hash.toHexString()
   assert.fieldEquals('TranchedPoolDeposit', id, 'user', userAddress)
@@ -126,10 +165,15 @@ test('handlePaymentApplied updates credit line and tranched pool', () => {
   const tranchedPoolAddress = '0x9999999999999999999999999999999999999999'
   const creditLineAddress = '0x2222222222222222222222222222222222222222'
 
-  const paymentAppliedEvent = createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress)
+  const paymentAppliedEvent = createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress, false)
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(creditLineAddress),
+    "5000000000000",
+    false
+  )
+  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
   let backers = ["0x1111111111111111111111111111111111111112"]
   tranchedPool.backers = backers
   tranchedPool.save()
@@ -141,7 +185,7 @@ test('handlePaymentApplied updates credit line and tranched pool', () => {
     Address.fromString(creditLineAddress),
     newTranchedPoolPrincipalDeposited
   )
-  mockCreditLineContractCalls(Address.fromString(creditLineAddress), newCreditLineBalance)
+  mockCreditLineContractCalls(Address.fromString(creditLineAddress), false, newCreditLineBalance)
 
   const juniorPoolTrancheId = `${tranchedPoolAddress}-2`
   assert.fieldEquals('JuniorTrancheInfo', juniorPoolTrancheId, 'principalDeposited', '5000000000000')
@@ -151,6 +195,8 @@ test('handlePaymentApplied updates credit line and tranched pool', () => {
   assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'backers', `[0x1111111111111111111111111111111111111112]`)
   assert.fieldEquals('JuniorTrancheInfo', juniorPoolTrancheId, 'principalDeposited', newTranchedPoolPrincipalDeposited)
   assert.fieldEquals('CreditLine', creditLineAddress, 'balance', newCreditLineBalance)
+  assert.fieldEquals('CreditLine', creditLineAddress, 'version', VERSION_BEFORE_V2_2)
+  assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'version', VERSION_BEFORE_V2_2)
 
   clearStore()
 })
@@ -163,10 +209,15 @@ test('handleWithdrawalMade updates credit line, tranched pool, and backers', () 
   const token1Id = BigInt.fromI32(1)
   const token2Id = BigInt.fromI32(2)
 
-  const withdrawalMadeEvent = createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress)
+  const withdrawalMadeEvent = createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress, false)
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(creditLineAddress),
+    "5000000000000",
+    false
+  )
+  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
   let backers = [`${tranchedPoolAddress}-${user1Address}`, `${tranchedPoolAddress}-${user2Address}`]
   tranchedPool.backers = backers
   tranchedPool.save()
@@ -178,7 +229,7 @@ test('handleWithdrawalMade updates credit line, tranched pool, and backers', () 
     Address.fromString(creditLineAddress),
     newTranchedPoolPrincipalDeposited
   )
-  mockCreditLineContractCalls(Address.fromString(creditLineAddress), newCreditLineBalance)
+  mockCreditLineContractCalls(Address.fromString(creditLineAddress), false, newCreditLineBalance)
 
   mockTranchedPoolTokenContractCalls(token1Id, Address.fromString(tranchedPoolAddress), Address.fromString(user1Address))
   initOrUpdateTranchedPoolToken(token1Id)
@@ -221,6 +272,8 @@ test('handleWithdrawalMade updates credit line, tranched pool, and backers', () 
   assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'tokens', '[1, 2]')
   assert.fieldEquals('JuniorTrancheInfo', juniorPoolTrancheId, 'principalDeposited', newTranchedPoolPrincipalDeposited)
   assert.fieldEquals('CreditLine', creditLineAddress, 'balance', newCreditLineBalance)
+  assert.fieldEquals('CreditLine', creditLineAddress, 'version', VERSION_BEFORE_V2_2)
+  assert.fieldEquals('TranchedPool', tranchedPoolAddress, 'version', VERSION_BEFORE_V2_2)
 
   assert.fieldEquals('TranchedPoolToken', token1Id.toString(), 'id', token1Id.toString())
   assert.fieldEquals('TranchedPoolToken', token1Id.toString(), 'user', user1Address)
@@ -272,8 +325,13 @@ test('handleDrawdownMade updates credit line, tranched pool, and backers', () =>
 
   const drawdownMadeEvent = createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress)
 
-  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  mockTranchedPoolCalls(
+    Address.fromString(tranchedPoolAddress),
+    Address.fromString(creditLineAddress),
+    "5000000000000",
+    false
+  )
+  let tranchedPool = initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
   let backers = [`${tranchedPoolAddress}-${user1Address}`, `${tranchedPoolAddress}-${user2Address}`]
   tranchedPool.backers = backers
   tranchedPool.save()
@@ -285,7 +343,7 @@ test('handleDrawdownMade updates credit line, tranched pool, and backers', () =>
     Address.fromString(creditLineAddress),
     newTranchedPoolPrincipalDeposited
   )
-  mockCreditLineContractCalls(Address.fromString(creditLineAddress), newCreditLineBalance)
+  mockCreditLineContractCalls(Address.fromString(creditLineAddress), false, newCreditLineBalance)
 
   mockTranchedPoolTokenContractCalls(token1Id, Address.fromString(tranchedPoolAddress), Address.fromString(user1Address))
   initOrUpdateTranchedPoolToken(token1Id)

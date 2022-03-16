@@ -1,4 +1,5 @@
 import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {JsonRpcSigner} from "@goldfinch-eng/autotasks/node_modules/@ethersproject/providers/lib"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"
@@ -197,7 +198,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
   if (requestFromClient) {
-    await createBorrowerContractAndPool({
+    await createBorrowerContractAndPools({
       erc20,
       address: borrower,
       getOrNull,
@@ -375,7 +376,7 @@ async function fundAddressAndDepositToCommonPool({
 }
 
 // Create a borrower contract
-async function createBorrowerContractAndPool({
+async function createBorrowerContractAndPools({
   erc20,
   address,
   getOrNull,
@@ -407,16 +408,60 @@ async function createBorrowerContractAndPool({
     depositor: protocol_owner,
     allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
   })
-  let txn = await filledPool.lockJuniorCapital()
-  await txn.wait()
+
+  let filledPoolTxn = await filledPool.lockJuniorCapital()
+  await filledPoolTxn.wait()
   const ownerSigner = ethers.provider.getSigner(protocol_owner)
   await seniorPool.connect(ownerSigner).invest(filledPool.address)
 
-  txn = await filledPool.lockPool()
+  filledPoolTxn = await filledPool.lockPool()
+  await filledPoolTxn.wait()
+
+  await writePoolMetadata({pool: filledPool, borrower: address})
+
+  await createFullPool(address, bwrConAddr, erc20, getOrNull, goldfinchFactory, ownerSigner, underwriter)
+  await createFullPool(address, bwrConAddr, erc20, getOrNull, goldfinchFactory, ownerSigner, underwriter)
+
+  logger(`Pools ready for ${address}`)
+}
+
+async function createFullPool(
+  address: string,
+  bwrConAddr: string,
+  erc20: Contract,
+  getOrNull: any,
+  goldfinchFactory: GoldfinchFactory,
+  ownerSigner: JsonRpcSigner,
+  underwriter: string
+) {
+  const depositAmount = new BN(10000).mul(USDCDecimals)
+  let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
+
+  const pool = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower: bwrConAddr,
+    erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
+  })
+
+  let txn
+  txn = await erc20.connect(ownerSigner).approve(pool.address, String(depositAmount))
+  await txn.wait()
+  txn = await pool.connect(ownerSigner).deposit(TRANCHES.Junior, String(depositAmount))
+  await txn.wait()
+  logger(`Deposited ${depositAmount} into the full pool`)
+
+  txn = await pool.lockJuniorCapital()
   await txn.wait()
 
-  logger(`Pool ready for ${address}`)
-  await writePoolMetadata({pool: filledPool, borrower: address})
+  await pool.lockPool()
+  creditLine = creditLine.attach(await pool.creditLine())
+
+  await pool.drawdown((await creditLine.limit()).div(2))
+
+  await writePoolMetadata({pool: pool, borrower: address})
 }
 
 /**

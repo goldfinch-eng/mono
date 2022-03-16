@@ -136,6 +136,13 @@ cd packages/subgraph
 docker build -t matchstick . && docker run --rm matchstick
 ```
 
+or
+
+```
+cd packages/subgraph
+graph test
+```
+
 - [Unit Testing Framework](https://thegraph.com/docs/en/developer/matchstick/)
 - [Demo Subgraph (The Graph) showcasing unit testing with Matchstick](https://github.com/LimeChain/demo-subgraph)
 - [aavegotchi-matic-subgraph tests](https://github.com/aavegotchi/aavegotchi-matic-subgraph/tree/main/src/tests)
