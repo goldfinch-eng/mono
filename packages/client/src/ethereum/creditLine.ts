@@ -1,4 +1,4 @@
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
@@ -343,6 +343,7 @@ class MultipleCreditLines extends BaseCreditLine {
 }
 
 export function buildCreditLineReadOnly(address): CreditlineContract {
+  const web3 = getWeb3()
   return new web3.readOnly.eth.Contract(CreditLineAbi, address) as unknown as CreditlineContract
 }
 

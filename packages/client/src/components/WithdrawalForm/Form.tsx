@@ -1,25 +1,27 @@
 import BigNumber from "bignumber.js"
 import React, {useState} from "react"
-import {AppContext} from "../App"
+import {AppContext} from "../../App"
 import {
   getNumSharesFromUsdc,
-  getUsdcAmountNetOfProtocolFee,
   getUsdcFromNumShares,
   minimumNumber,
   usdcFromAtomic,
   usdcToAtomic,
-} from "../ethereum/erc20"
-import {fiduFromAtomic} from "../ethereum/fidu"
-import {gfiFromAtomic, gfiInDollars, gfiToDollarsAtomic} from "../ethereum/gfi"
-import {CapitalProvider, SeniorPoolData, StakingRewardsPosition} from "../ethereum/pool"
-import useDebounce from "../hooks/useDebounce"
-import useNonNullContext from "../hooks/useNonNullContext"
-import useSendFromUser from "../hooks/useSendFromUser"
-import {UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE, WITHDRAW_FROM_SENIOR_POOL_TX_TYPE} from "../types/transactions"
-import {assertNonNullable, displayDollars, displayNumber, roundDownPenny} from "../utils"
-import LoadingButton from "./loadingButton"
-import TransactionForm from "./transactionForm"
-import TransactionInput from "./transactionInput"
+} from "../../ethereum/erc20"
+import {fiduFromAtomic} from "../../ethereum/fidu"
+import {CapitalProvider, SeniorPoolData, StakingRewardsPosition} from "../../ethereum/pool"
+import useDebounce from "../../hooks/useDebounce"
+import useNonNullContext from "../../hooks/useNonNullContext"
+import useSendFromUser from "../../hooks/useSendFromUser"
+import {
+  UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+} from "../../types/transactions"
+import {assertNonNullable, roundDownPenny} from "../../utils"
+import LoadingButton from "../loadingButton"
+import TransactionInput from "../transactionInput"
+import ForfeitAdvisory from "./ForfeitAdvisory"
+import ForfeitGfiNotes from "./ForfeitGfiNotes"
 
 export class WithdrawalInfoError extends Error {}
 export class ExcessiveWithdrawalError extends Error {}
@@ -56,13 +58,6 @@ type WithdrawalInfo =
       unstakeAndWithdraw: undefined
     }
 
-interface WithdrawalFormProps {
-  poolData: SeniorPoolData
-  capitalProvider: CapitalProvider
-  actionComplete: () => void
-  closeForm: () => void
-}
-
 type TransactionConfig = {
   displayAmount: string
   // Whether the user intends to withdraw the maximum amount. If this is `true`, we should compute the
@@ -72,12 +67,39 @@ type TransactionConfig = {
   max: boolean
 }
 
-function WithdrawalForm(props: WithdrawalFormProps) {
-  const {goldfinchConfig, pool, stakingRewards} = useNonNullContext(AppContext)
-  const sendFromUser = useSendFromUser()
+interface FormProps {
+  formMethods: any
+  capitalProvider: CapitalProvider
+  poolData: SeniorPoolData
+}
 
+export default function Form(props: FormProps) {
+  const {goldfinchConfig} = useNonNullContext(AppContext)
+  const {pool, stakingRewards} = useNonNullContext(AppContext)
+  const sendFromUser = useSendFromUser()
   const [transactionConfig, setTransactionConfig] = useState<TransactionConfig | undefined>()
   const debouncedSetTransactionConfig = useDebounce(setTransactionConfig, 200)
+
+  function handleMaxButtonClick() {
+    const displayAmount = roundDownPenny(availableToWithdrawInDollars).toString(10)
+    const newConfig: TransactionConfig =
+      // Use `max: true` in the new config if and only if we're not limiting the withdrawable
+      // amount by some applicable limit (e.g. such as `goldfinchConfig.transactionLimit`).
+      availableToWithdrawInDollars === props.capitalProvider?.availableToWithdrawInDollars.toString(10)
+        ? {
+            displayAmount,
+            max: true,
+          }
+        : {
+            displayAmount,
+            max: false,
+          }
+    setTransactionConfig(newConfig)
+    props.formMethods.setValue("transactionAmount", displayAmount, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+  }
 
   function getWithdrawalInfo(config: TransactionConfig): WithdrawalInfo {
     const withdrawalUsdcDisplayAmount = new BigNumber(usdcToAtomic(config.displayAmount))
@@ -289,173 +311,92 @@ function WithdrawalForm(props: WithdrawalFormProps) {
     usdcFromAtomic(goldfinchConfig.transactionLimit)
   )
 
-  function renderForm({formMethods}) {
-    // NOTE: `props.capitalProvider.rewardsInfo` reflects unvested rewards from *all* positions,
-    // including any locked positions. Even though our UI doesn't enable using lock-up, it seems
-    // appropriate to use unvested rewards info here from all positions (rather than only the
-    // unstakeable positions), because (1) that does not impact correctness of the calculation
-    // of how much would be forfeited for the user's intended withdrawal amount; and (2) that amount
-    // of unvested rewards corresponds to what's shown as the "Locked" amount on the GFI
-    // page.
-    const lastVestingEnd = props.capitalProvider.rewardsInfo.hasUnvested
-      ? new Date(props.capitalProvider.rewardsInfo.lastVestingEndTime * 1000)
-      : undefined
+  // NOTE: The figure we show about how much GFI will be forfeited because it is unvested should
+  // be considered an estimate. That's because the actual amount forfeited is determined at the
+  // time of executing the unstaking transaction, and the unstaking transaction causes its own
+  // checkpointing / updating of rewards info. So the sum of unvested rewards we have computed
+  // here, as the basis for telling the user how much unvested rewards their withdrawal entails
+  // forfeiting, will not necessarily equal the amount that will actually be forfeited when the
+  // transaction is executed.
+  const forfeitAdvisory = props.capitalProvider.rewardsInfo.hasUnvested ? (
+    <ForfeitAdvisory capitalProvider={props.capitalProvider} />
+  ) : undefined
 
-    // NOTE: The figure we show about how much GFI will be forfeited because it is unvested should
-    // be considered an estimate. That's because the actual amount forfeited is determined at the
-    // time of executing the unstaking transaction, and the unstaking transaction causes its own
-    // checkpointing / updating of rewards info. So the sum of unvested rewards we have computed
-    // here, as the basis for telling the user how much unvested rewards their withdrawal entails
-    // forfeiting, will not necessarily equal the amount that will actually be forfeited when the
-    // transaction is executed.
-    const forfeitAdvisory = props.capitalProvider.rewardsInfo.hasUnvested ? (
-      <div className="form-message paragraph">
-        {"You have "}
-        {displayNumber(gfiFromAtomic(props.capitalProvider.rewardsInfo.unvested), 2)}
-        {" GFI ("}
-        {displayDollars(props.capitalProvider.rewardsInfo.unvestedInDollars, 2)}
-        {") that is still locked until "}
-        {lastVestingEnd!.toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
-        {". If you withdraw before then, you "}
-        {props.capitalProvider.shares.parts.notStaked.gt(0) ? "might" : "will"}
-        {" forfeit a portion of your locked GFI."}
-      </div>
-    ) : undefined
-    const protocolFeeAdvisory = (
-      <div className="form-message paragraph">
-        {forfeitAdvisory ? "Also as a reminder," : "Note that"}
-        {" the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."}
-      </div>
-    )
+  const protocolFeeAdvisory = (
+    <div className="form-message paragraph">
+      {forfeitAdvisory ? "Also as a reminder," : "Note that"}
+      {" the protocol will deduct a 0.50% fee from your withdrawal amount for protocol reserves."}
+    </div>
+  )
 
-    let notes: Array<{key: string; content: React.ReactNode}> = []
-    let withdrawalInfo: WithdrawalInfo | undefined
-    if (transactionConfig) {
-      const withdrawalUsdcDisplayAmount = new BigNumber(usdcToAtomic(transactionConfig.displayAmount))
-      if (withdrawalUsdcDisplayAmount.gt(0)) {
-        try {
-          withdrawalInfo = getWithdrawalInfo(transactionConfig)
-        } catch (err: unknown) {
-          if (err instanceof ExcessiveWithdrawalError) {
-            // It's possible for this case to arise due to the asynchronicity between when the form is
-            // reset after a successful withdrawal and when the `props.capitalProvider` data (which
-            // specify how many FIDU are withdrawable) are refreshed. That is, it's transiently possible
-            // for the transaction amount (in FIDU) from the successful withdrawal to exceed the number
-            // of withdrawable shares, if the `props.capitalProvider` data managed to be refreshed before
-            // the form was reset. So we catch this error and ignore it, as we expect it to be transient.
-          } else {
-            throw err
-          }
+  let notes: Array<{key: string; content: React.ReactNode}> = []
+  let withdrawalInfo: WithdrawalInfo | undefined
+  if (transactionConfig) {
+    const withdrawalUsdcDisplayAmount = new BigNumber(usdcToAtomic(transactionConfig.displayAmount))
+    if (withdrawalUsdcDisplayAmount.gt(0)) {
+      try {
+        withdrawalInfo = getWithdrawalInfo(transactionConfig)
+      } catch (err: unknown) {
+        if (err instanceof ExcessiveWithdrawalError) {
+          // It's possible for this case to arise due to the asynchronicity between when the form is
+          // reset after a successful withdrawal and when the `capitalProvider` data (which
+          // specify how many FIDU are withdrawable) are refreshed. That is, it's transiently possible
+          // for the transaction amount (in FIDU) from the successful withdrawal to exceed the number
+          // of withdrawable shares, if the `capitalProvider` data managed to be refreshed before
+          // the form was reset. So we catch this error and ignore it, as we expect it to be transient.
+        } else {
+          throw err
         }
-        const forfeitedGfi =
-          withdrawalInfo && withdrawalInfo.unstakeAndWithdraw
-            ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
-            : new BigNumber(0)
-        const forfeitedGfiNotesSuffix = (
-          <span>
-            {" and "}
-            <span className="font-bold">
-              {"forfeit "}
-              {displayNumber(gfiFromAtomic(forfeitedGfi), 2)}
-              {" GFI ("}
-              {displayDollars(gfiInDollars(gfiToDollarsAtomic(forfeitedGfi, props.capitalProvider.gfiPrice)), 2)}
-              {")"}
-            </span>
-            {" that is still locked"}
-          </span>
-        )
-        notes = [
-          {
-            key: "advisory",
-            content: (
-              <p>
-                {"You will "}
-                <span className="font-bold">
-                  {"receive "}
-                  {displayDollars(usdcFromAtomic(getUsdcAmountNetOfProtocolFee(withdrawalUsdcDisplayAmount)), 2)}
-                </span>
-                {" net of protocol reserves"}
-                {forfeitedGfiNotesSuffix}
-                {"."}
-              </p>
-            ),
-          },
-        ]
       }
+      const forfeitedGfi =
+        withdrawalInfo && withdrawalInfo.unstakeAndWithdraw
+          ? withdrawalInfo.unstakeAndWithdraw.forfeitedGfiSum
+          : new BigNumber(0)
+      notes = [
+        {
+          key: "advisory",
+          content: (
+            <ForfeitGfiNotes
+              withdrawalUsdcDisplayAmount={withdrawalUsdcDisplayAmount}
+              forfeitedGfi={forfeitedGfi}
+              capitalProvider={props.capitalProvider}
+            />
+          ),
+        },
+      ]
     }
-
-    return (
-      <div className="form-inputs">
-        {forfeitAdvisory}
-        {protocolFeeAdvisory}
-        <div className="form-inputs-footer">
-          <TransactionInput
-            formMethods={formMethods}
-            onChange={(e) => {
-              debouncedSetTransactionConfig({
-                displayAmount: formMethods.getValues("transactionAmount"),
-                max: false,
-              })
-            }}
-            maxAmountInDollars={availableToWithdrawInDollars}
-            rightDecoration={
-              <button
-                className="enter-max-amount"
-                type="button"
-                onClick={() => {
-                  const displayAmount = roundDownPenny(availableToWithdrawInDollars).toString(10)
-                  const newConfig: TransactionConfig =
-                    // Use `max: true` in the new config if and only if we're not limiting the withdrawable
-                    // amount by some applicable limit (e.g. such as `goldfinchConfig.transactionLimit`).
-                    availableToWithdrawInDollars === props.capitalProvider?.availableToWithdrawInDollars.toString(10)
-                      ? {
-                          displayAmount,
-                          max: true,
-                        }
-                      : {
-                          displayAmount,
-                          max: false,
-                        }
-                  setTransactionConfig(newConfig)
-                  formMethods.setValue("transactionAmount", displayAmount, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }}
-              >
-                Max
-              </button>
-            }
-            notes={notes}
-          />
-          <LoadingButton
-            disabled={!withdrawalInfo}
-            action={async (data): Promise<void> => {
-              await action(data)
-              formMethods.reset()
-              debouncedSetTransactionConfig()
-            }}
-          />
-        </div>
-      </div>
-    )
   }
 
   return (
-    <TransactionForm
-      title="Withdraw"
-      headerMessage={`Available to withdraw: ${displayDollars(
-        roundDownPenny(props.capitalProvider?.availableToWithdrawInDollars),
-        2
-      )}`}
-      render={renderForm}
-      closeForm={props.closeForm}
-    />
+    <div className="form-inputs">
+      {forfeitAdvisory}
+      {protocolFeeAdvisory}
+      <div className="form-inputs-footer">
+        <TransactionInput
+          formMethods={props.formMethods}
+          onChange={(e) => {
+            debouncedSetTransactionConfig({
+              displayAmount: props.formMethods.getValues("transactionAmount"),
+              max: false,
+            })
+          }}
+          maxAmountInDollars={availableToWithdrawInDollars}
+          rightDecoration={
+            <button className="enter-max-amount" type="button" onClick={handleMaxButtonClick}>
+              Max
+            </button>
+          }
+          notes={notes}
+        />
+        <LoadingButton
+          disabled={!withdrawalInfo}
+          action={async (data): Promise<void> => {
+            await action(data)
+            props.formMethods.reset()
+            debouncedSetTransactionConfig()
+          }}
+        />
+      </div>
+    </div>
   )
 }
-
-export default WithdrawalForm
