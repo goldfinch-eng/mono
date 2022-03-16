@@ -67,7 +67,7 @@ import {
 } from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {assertNonNullable, assertNumber, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BackerRewardsLoaded, BackerRewardsPoolTokenPosition, BackerRewardsPosition} from "./backerRewards"
@@ -76,7 +76,7 @@ import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, Community
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
-import {GoldfinchProtocol, getCachedPastEvents} from "./GoldfinchProtocol"
+import {getCachedPastEvents, GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
@@ -1628,6 +1628,7 @@ export class UserBackerRewards {
     rewardsEligibleTranchedPoolBackers: TranchedPoolBacker[],
     currentBlock: BlockInfo
   ): Promise<void> {
+    const web3 = getWeb3()
     const positions = await Promise.all(
       rewardsEligibleTranchedPoolBackers
         .filter(
