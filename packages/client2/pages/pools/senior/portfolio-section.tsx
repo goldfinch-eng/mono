@@ -84,6 +84,7 @@ export function PortfolioSection() {
       </div>
       <Modal
         title="Deposit into the Senior Pool"
+        size="sm"
         isOpen={isDepositFormOpen}
         onClose={() => setIsDepositFormOpen(false)}
       >
