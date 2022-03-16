@@ -62,7 +62,6 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   const requiresAccreditedInput = countrySelection === "value-type-us" && individualOrEntity === "value-type-individual"
 
   const onSubmit = (data) => {
-    console.log({data})
     if (countrySelection === "value-type-not-us" && individualOrEntity === "value-type-individual") {
       chooseEntity(NON_US_INDIVIDUAL_ENTITY_TYPE)
     } else if (
