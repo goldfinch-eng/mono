@@ -413,12 +413,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
-    // Calculate the expected number of Curve LP tokens to receive
     uint256[2] memory amounts = [fiduAmount, usdcAmount];
-    uint256 expectedAmount = curveLP.calc_token_amount(amounts);
 
     // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
-    uint256 curveLPTokens = curveLP.add_liquidity(amounts, expectedAmount, false, address(this));
+    uint256 curveLPTokens = curveLP.add_liquidity(amounts, 0, false, address(this));
 
     // Stake the Curve LP tokens on behalf of the user
     uint256 tokenId = _stake(address(this), nftRecipient, curveLPTokens, StakedPositionType.CurveLP);
