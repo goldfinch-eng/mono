@@ -5,11 +5,14 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 
 import "../interfaces/IGoldfinchConfig.sol";
+import "../interfaces/ICurveLP.sol";
 import "../protocol/core/ConfigOptions.sol";
 
-import "hardhat/console.sol";
-
-contract TestFiduUSDCCurveLP is ERC20("LP FIDU-USDC Curve", "FIDUUSDCCURVE"), ERC20Permit("LP FIDU-USDC Curve") {
+contract TestFiduUSDCCurveLP is
+  ERC20("LP FIDU-USDC Curve", "FIDUUSDCCURVE"),
+  ERC20Permit("LP FIDU-USDC Curve"),
+  ICurveLP
+{
   uint256 private constant MULTIPLIER_DECIMALS = 1e18;
 
   IGoldfinchConfig public config;
@@ -24,26 +27,31 @@ contract TestFiduUSDCCurveLP is ERC20("LP FIDU-USDC Curve", "FIDUUSDCCURVE"), ER
     config = _config;
   }
 
-  function getVirtualPrice() external view returns (uint256) {
+  function token() public view override returns (address) {
+    return address(this);
+  }
+
+  function get_virtual_price() public view override returns (uint256) {
     return MULTIPLIER_DECIMALS;
   }
 
   /// @notice Mock calcTokenAmount function that returns the sum of both token amounts
-  function calcTokenAmount(uint256[2] calldata amounts, bool isDeposit) external view returns (uint256) {
+  function calc_token_amount(uint256[2] memory amounts) public view override returns (uint256) {
     return amounts[0].add(amounts[1]);
   }
 
   /// @notice Mock addLiquidity function that mints Curve LP tokens
-  function addLiquidity(
-    uint256[2] calldata amounts,
-    uint256 minMintAmount,
+  function add_liquidity(
+    uint256[2] memory amounts,
+    uint256 min_mint_amount,
+    bool use_eth,
     address receiver
-  ) external returns (uint256) {
+  ) public override returns (uint256) {
     // Transfer FIDU and USDC from caller to this contract
     getFidu().transferFrom(msg.sender, address(this), amounts[0]);
     getUSDC().transferFrom(msg.sender, address(this), amounts[1]);
 
-    uint256 amount = this.calcTokenAmount(amounts, true);
+    uint256 amount = this.calc_token_amount(amounts);
 
     _mint(receiver, amount);
     return amount;

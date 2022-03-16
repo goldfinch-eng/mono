@@ -657,7 +657,7 @@ describe("StakingRewards", function () {
         decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
       )
 
-      const amount = await fiduUSDCCurveLP.calcTokenAmount([fiduAmount, new BN(0)], true)
+      const amount = await fiduUSDCCurveLP.calc_token_amount([fiduAmount, new BN(0)])
 
       // Verify events
       expect(stakedEvent.args.user).to.equal(investor)
@@ -694,7 +694,7 @@ describe("StakingRewards", function () {
         decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
       )
 
-      const amount = await fiduUSDCCurveLP.calcTokenAmount([new BN(0), usdcAmount], true)
+      const amount = await fiduUSDCCurveLP.calc_token_amount([new BN(0), usdcAmount])
 
       // Verify events
       expect(stakedEvent.args.user).to.equal(investor)
@@ -733,7 +733,7 @@ describe("StakingRewards", function () {
         decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurveAndStaked")
       )
 
-      const amount = await fiduUSDCCurveLP.calcTokenAmount([fiduAmount, usdcAmount], true)
+      const amount = await fiduUSDCCurveLP.calc_token_amount([fiduAmount, usdcAmount])
 
       // Verify events
       expect(stakedEvent.args.user).to.equal(investor)
