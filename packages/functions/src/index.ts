@@ -10,6 +10,7 @@ import {getAgreements, getConfig, getDb, getNDAs, getUsers} from "./db"
 import {genRequestHandler} from "./helpers"
 import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
+import {circulatingSupply} from "./handlers/circulatingSupply"
 dotenv.config({path: findEnvLocal()})
 
 const _config = getConfig(functions)
@@ -259,4 +260,4 @@ const personaCallback = genRequestHandler({
   },
 })
 
-export {kycStatus, personaCallback, signAgreement, signNDA, fetchNDA}
+export {kycStatus, personaCallback, signAgreement, signNDA, fetchNDA, circulatingSupply}
