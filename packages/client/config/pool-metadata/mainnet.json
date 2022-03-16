@@ -3,7 +3,7 @@
     "name": "Lend East #1: Emerging Asia Fintech Pool",
     "category": "Global multi-sector loans",
     "icon": "%PUBLIC_URL%/icons/lendeast.png",
-    "agreement": "TODO",
+    "agreement": "https://lendeast.docsend.com/view/s/i395ds3s3gsxkrcc",
     "launchTime": 1647529200,
     "poolDescription": "Proceeds will be used for additional funding via existing Lend East Credit Facilities to our portfolio companies and funding of new alternate lending platforms in Emerging Asia. All Lend East Credit Facilities are senior secured loans to high growth, tech forward Alternate Lenders who are backed by marquee equity investors like Ant Financial, Sequoia Capital, DST Global, Sinar Mas, Quona Capital & Arbor Ventures.\n\nEvery facility is structured to provide a healthy risk adjusted return to investors while ensuring capital preservation. Typical guardrails include excess portfolio cover (1.2x - 1.5x of the investment), established seniority over equity & other debt capital on the balance sheet and corporate guarantees from Holding Companies.",
     "poolHighlights": [
