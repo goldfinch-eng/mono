@@ -200,7 +200,7 @@ describe("UID", () => {
       })
 
       it("returns a signature that can be used to mint", async () => {
-        const address = "0x948D99554dC5b90ac3DD00daeCF76100d3219B02"
+        const address = "0xd4ad17f7F7f62915A1F225BB1CB88d2492F89769"
         await impersonateAccount(hre, address)
         await fundWithWhales(["ETH"], [address])
 
