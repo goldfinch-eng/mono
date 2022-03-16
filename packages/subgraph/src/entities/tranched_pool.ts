@@ -4,7 +4,7 @@ import { DepositMade } from "../../generated/templates/TranchedPool/TranchedPool
 import { SeniorPool as SeniorPoolContract } from '../../generated/templates/GoldfinchFactory/SeniorPool'
 import { TranchedPool as TranchedPoolContract } from '../../generated/templates/GoldfinchFactory/TranchedPool'
 import { GoldfinchConfig as GoldfinchConfigContract } from '../../generated/templates/GoldfinchFactory/GoldfinchConfig'
-import { GOLDFINCH_CONFIG_ADDRESS, ReserveDenominatorConfigIndex, SENIOR_POOL_ADDRESS } from '../constants'
+import { CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS } from '../constants'
 import { getOrInitUser } from './user'
 import { getOrInitCreditLine, initOrUpdateCreditLine } from './credit_line'
 import { getOrInitPoolBacker } from './pool_backer'
@@ -137,7 +137,11 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
-  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(configContract.getNumber(BigInt.fromI32(ReserveDenominatorConfigIndex)))
+  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
+    configContract.getNumber(
+      BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator)
+    )
+  )
   tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
   tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches)
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
