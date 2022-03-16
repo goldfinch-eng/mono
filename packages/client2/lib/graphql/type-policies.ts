@@ -29,9 +29,11 @@ function readAsBigNumber(n?: string) {
   return BigNumber.from(n);
 }
 
-function readAsFixedNumber(n?: string) {
+function readAsFixedNumber(n?: string | FixedNumber) {
   if (!n) {
     return null;
+  } else if (n instanceof FixedNumber) {
+    return n;
   } else if (!n.includes(".")) {
     return FixedNumber.fromString(n);
   }
@@ -47,9 +49,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       currentUser: { read: () => currentUserVar() },
-      user: {
-        keyArgs: ["id"], // This is done to make sure that user data isn't keyed with `block`. Latest should always overwrite
-      },
     },
   },
   SeniorPool: {

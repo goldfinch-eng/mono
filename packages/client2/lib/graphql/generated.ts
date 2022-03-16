@@ -2185,13 +2185,19 @@ export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typena
 
 export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
 
-export type SeniorPoolPortfolioQueryVariables = Exact<{
-  userId: Scalars['ID'];
+export type MinBlockCheckQueryVariables = Exact<{
   minBlock: Scalars['Int'];
 }>;
 
 
-export type SeniorPoolPortfolioQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', estimatedApy: TheGraph_BigDecimal } }> };
+export type MinBlockCheckQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', deployment: string } | null };
+
+export type SeniorPoolPortfolioQueryVariables = Exact<{
+  userId: Scalars['ID'];
+}>;
+
+
+export type SeniorPoolPortfolioQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal } }> };
 
 export const TranchedPoolCardFieldsFragmentDoc = gql`
     fragment TranchedPoolCardFields on TranchedPool {
@@ -2289,9 +2295,44 @@ export function useExampleLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<Ex
 export type ExampleQueryHookResult = ReturnType<typeof useExampleQuery>;
 export type ExampleLazyQueryHookResult = ReturnType<typeof useExampleLazyQuery>;
 export type ExampleQueryResult = Apollo.QueryResult<ExampleQuery, ExampleQueryVariables>;
+export const MinBlockCheckDocument = gql`
+    query MinBlockCheck($minBlock: Int!) {
+  _meta(block: {number_gte: $minBlock}) {
+    deployment
+  }
+}
+    `;
+
+/**
+ * __useMinBlockCheckQuery__
+ *
+ * To run a query within a React component, call `useMinBlockCheckQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMinBlockCheckQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMinBlockCheckQuery({
+ *   variables: {
+ *      minBlock: // value for 'minBlock'
+ *   },
+ * });
+ */
+export function useMinBlockCheckQuery(baseOptions: Apollo.QueryHookOptions<MinBlockCheckQuery, MinBlockCheckQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MinBlockCheckQuery, MinBlockCheckQueryVariables>(MinBlockCheckDocument, options);
+      }
+export function useMinBlockCheckLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MinBlockCheckQuery, MinBlockCheckQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MinBlockCheckQuery, MinBlockCheckQueryVariables>(MinBlockCheckDocument, options);
+        }
+export type MinBlockCheckQueryHookResult = ReturnType<typeof useMinBlockCheckQuery>;
+export type MinBlockCheckLazyQueryHookResult = ReturnType<typeof useMinBlockCheckLazyQuery>;
+export type MinBlockCheckQueryResult = Apollo.QueryResult<MinBlockCheckQuery, MinBlockCheckQueryVariables>;
 export const SeniorPoolPortfolioDocument = gql`
-    query SeniorPoolPortfolio($userId: ID!, $minBlock: Int!) {
-  user(id: $userId, block: {number_gte: $minBlock}) {
+    query SeniorPoolPortfolio($userId: ID!) {
+  user(id: $userId) {
     id
     seniorPoolDeposits {
       amount
@@ -2300,6 +2341,7 @@ export const SeniorPoolPortfolioDocument = gql`
   seniorPools(first: 1) {
     id
     latestPoolStatus {
+      id
       estimatedApy
     }
   }
@@ -2319,7 +2361,6 @@ export const SeniorPoolPortfolioDocument = gql`
  * const { data, loading, error } = useSeniorPoolPortfolioQuery({
  *   variables: {
  *      userId: // value for 'userId'
- *      minBlock: // value for 'minBlock'
  *   },
  * });
  */

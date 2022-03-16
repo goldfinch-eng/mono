@@ -1,3 +1,4 @@
+import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -9,15 +10,23 @@ import { wait } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface DepositFormProps {
-  // eslint-disable-next-line no-unused-vars
-  onCompleteDeposit: (blockNumber: number) => Promise<void>;
+  onCompleteDeposit: () => void;
 }
 
 interface FormFields {
   amount: number;
 }
 
+const MIN_BLOCK_CHECK = gql`
+  query MinBlockCheck($minBlock: Int!) {
+    _meta(block: { number_gte: $minBlock }) {
+      deployment
+    }
+  }
+`;
+
 export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
+  const apolloClient = useApolloClient();
   const {
     register,
     handleSubmit,
@@ -51,11 +60,22 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
     const transaction = await seniorPoolContract.deposit(depositAmount);
     const receipt = await transaction.wait();
     const minBlock = receipt.blockNumber;
-    let callbackSucceeded = false;
-    while (!callbackSucceeded) {
+    let subgraphUpdated = false;
+    while (!subgraphUpdated) {
       try {
-        await onCompleteDeposit(minBlock);
-        callbackSucceeded = true;
+        await apolloClient.query({
+          query: MIN_BLOCK_CHECK,
+          variables: { minBlock },
+        });
+        subgraphUpdated = true;
+        await apolloClient.refetchQueries({
+          updateCache(cache) {
+            cache.evict({ fieldName: "user" });
+            cache.evict({ fieldName: "seniorPools" });
+          },
+          optimistic: true,
+        });
+        onCompleteDeposit();
       } catch (e) {
         if (
           (e as Error).message.includes("has only indexed up to block number")

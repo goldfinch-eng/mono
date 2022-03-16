@@ -11,8 +11,8 @@ import { useWallet } from "@/lib/wallet";
 import { DepositForm } from "./deposit-form";
 
 gql`
-  query SeniorPoolPortfolio($userId: ID!, $minBlock: Int!) {
-    user(id: $userId, block: { number_gte: $minBlock }) {
+  query SeniorPoolPortfolio($userId: ID!) {
+    user(id: $userId) {
       id
       seniorPoolDeposits {
         amount
@@ -21,6 +21,7 @@ gql`
     seniorPools(first: 1) {
       id
       latestPoolStatus {
+        id
         estimatedApy
       }
     }
@@ -30,8 +31,8 @@ gql`
 export function PortfolioSection() {
   const [isDepositFormOpen, setIsDepositFormOpen] = useState(false);
   const { account } = useWallet();
-  const { data, refetch } = useSeniorPoolPortfolioQuery({
-    variables: { userId: account?.toLowerCase() ?? "", minBlock: 0 },
+  const { data } = useSeniorPoolPortfolioQuery({
+    variables: { userId: account?.toLowerCase() ?? "" },
   });
   const seniorPool = data?.seniorPools[0];
 
@@ -87,8 +88,7 @@ export function PortfolioSection() {
         onClose={() => setIsDepositFormOpen(false)}
       >
         <DepositForm
-          onCompleteDeposit={async (blockNumber) => {
-            await refetch({ minBlock: blockNumber });
+          onCompleteDeposit={() => {
             setIsDepositFormOpen(false);
           }}
         />
