@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
+import { refreshCurrentUserUsdcBalance } from "@/lib/graphql/local-state/actions";
 import { wait } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -83,6 +84,7 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
             });
           },
         });
+        refreshCurrentUserUsdcBalance(usdcContract);
         onCompleteDeposit();
       } catch (e) {
         if (
