@@ -3,9 +3,15 @@ import { newMockEvent } from "matchstick-as"
 import { PoolCreated } from "../generated/templates/GoldfinchFactory/GoldfinchFactory"
 import { CreditLineMigrated, DepositMade, DrawdownMade, PaymentApplied, WithdrawalMade } from "../generated/templates/TranchedPool/TranchedPool"
 import { TokenMinted, Transfer } from "../generated/PoolTokensProxy/PoolTokens"
+import { AFTER_V2_2_TIMESTAMP, BEFORE_V2_2_TIMESTAMP } from "./utils"
 
-export function createPoolCreatedEvent(poolAddress: string, borrower: string): PoolCreated {
+export function createPoolCreatedEvent(poolAddress: string, borrower: string, v2_2: boolean = true): PoolCreated {
   let mockEvent = newMockEvent()
+  if (v2_2) {
+    mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
+  } else {
+    mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
+  }
 
   const poolCreatedEvent = new PoolCreated(
     mockEvent.address,
@@ -32,8 +38,18 @@ export function createPoolCreatedEvent(poolAddress: string, borrower: string): P
   return poolCreatedEvent
 }
 
-export function createCreditLineMigratedEvent(tranchedPoolAddress: string, oldCreditLineAddress: string, newCreditLineAddress: string): CreditLineMigrated {
+export function createCreditLineMigratedEvent(
+  tranchedPoolAddress: string,
+  oldCreditLineAddress: string,
+  newCreditLineAddress: string,
+  v2_2: boolean = true
+): CreditLineMigrated {
   let mockEvent = newMockEvent()
+  if (v2_2) {
+    mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
+  } else {
+    mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
+  }
 
   const creditLineMigratedEvent = new CreditLineMigrated(
     Address.fromString(tranchedPoolAddress),
@@ -60,11 +76,16 @@ export function createCreditLineMigratedEvent(tranchedPoolAddress: string, oldCr
   return creditLineMigratedEvent
 }
 
-export function createTranchedPoolDepositMadeEvent(tranchedPoolAddress: string, owner: string): DepositMade {
+export function createTranchedPoolDepositMadeEvent(tranchedPoolAddress: string, owner: string, v2_2: boolean = true): DepositMade {
   let mockEvent = newMockEvent()
   const amount = BigInt.fromString("5000000000000")
   const tranche = BigInt.fromI32(2)
   const tokenId = BigInt.fromI32(1)
+  if (v2_2) {
+    mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
+  } else {
+    mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
+  }
 
   const depositMadeEvent = new DepositMade(
     Address.fromString(tranchedPoolAddress),
@@ -91,8 +112,13 @@ export function createTranchedPoolDepositMadeEvent(tranchedPoolAddress: string, 
   return depositMadeEvent
 }
 
-export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: string): PaymentApplied {
+export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: string, v2_2: boolean = true): PaymentApplied {
   let mockEvent = newMockEvent()
+  if (v2_2) {
+    mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
+  } else {
+    mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
+  }
   const defaultValue = ethereum.Value.fromString('1')
   const defaultPayer = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
   const defaultPool = ethereum.Value.fromAddress(Address.fromString(tranchedPoolAddress))
@@ -134,8 +160,13 @@ export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: strin
   return paymentAppliedEvent
 }
 
-export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: string): WithdrawalMade {
+export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: string, v2_2: boolean = true): WithdrawalMade {
   let mockEvent = newMockEvent()
+  if (v2_2) {
+    mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
+  } else {
+    mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
+  }
   const defaultValue = ethereum.Value.fromString('1')
   const defaultOwner = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
 
@@ -209,8 +240,14 @@ export function createTokenMintedEvent(tranchedPoolAddress: string, ownerAddress
 }
 
 
-export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string): DrawdownMade {
+export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string, v2_2: boolean = true): DrawdownMade {
   let mockEvent = newMockEvent()
+  if (v2_2) {
+    mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
+  } else {
+    mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
+  }
+
   const defaultValue = ethereum.Value.fromString('1')
   const defaultBorrower = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
 
