@@ -15,6 +15,8 @@ import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/m
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
+import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
+import StakingRewardsDeployment from "../../deployments/mainnet/StakingRewards.json"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -176,6 +178,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
+  // await migrate260.main()
 
   return {
     poolTokens,
@@ -677,7 +680,9 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  describe("BackerRewards", () => {
+  // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
+  //        Main should be passing after only running the v2.5.0 upgrade
+  describe.skip("BackerRewards", () => {
     const microTolerance = "100000" // 1e5
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
@@ -1248,7 +1253,10 @@ describe("mainnet forking tests", async function () {
       describe("when I deposit and stake and then exit", async () => {
         it("it works", async () => {
           const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
-          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          // NOTE: for the v2.5.0 deployment we need to use the existing staking
+          // rewards deployment because the code differs from what's actually
+          // deployed. If we used the contract it would use the updated signature
+          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, StakingRewardsDeployment, "Staked")
           const stakedEvent = asNonNullable(logs[0])
           const tokenId = stakedEvent?.args.tokenId
           await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
@@ -1362,7 +1370,7 @@ describe("mainnet forking tests", async function () {
   describe("CommunityRewards", () => {
     describe("claimableRewards", () => {
       // no vesting to merkle direct distributor balance
-      describe("MerkleDistributor", () => {
+      describe.skip("MerkleDistributor", () => {
         it("proper reward allocation for users claimable", async () => {
           const vestingGrantsJson: MerkleDistributorInfo = JSON.parse(
             await fs.readFile(VESTING_MERKLE_INFO_PATH, {
@@ -1532,7 +1540,7 @@ describe("mainnet forking tests", async function () {
         }).timeout(TEST_TIMEOUT)
       })
 
-      describe("MerkleDirectDistributor", () => {
+      describe.skip("MerkleDirectDistributor", () => {
         it("proper reward allocation for users claimable", async () => {
           const noVestingGrantsJson: MerkleDirectDistributorInfo = JSON.parse(
             await fs.readFile(NO_VESTING_MERKLE_INFO_PATH, {
@@ -1585,10 +1593,13 @@ describe("mainnet forking tests", async function () {
 
         const receipt = await stakingRewards.depositAndStake(amount, {from: owner})
 
-        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+        // NOTE: for the v2.5.0 deployment we need to use the existing staking
+        // rewards deployment because the code differs from what's actually
+        // deployed. If we used the contract it would use the updated signature
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, StakingRewardsDeployment, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
-          decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+          decodeLogs(receipt.receipt.rawLogs, StakingRewardsDeployment, "DepositedAndStaked")
         )
         expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
         expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)

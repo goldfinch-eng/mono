@@ -10,12 +10,14 @@ import {
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
 import * as migrate250 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.5.0/migrate"
+import * as migrate260 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.6.0/migrate"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import {
   BackerRewardsInstance,
   CommunityRewardsInstance,
   ERC20Instance,
+  FixedLeverageRatioStrategyInstance,
   GFIInstance,
   GoInstance,
   GoldfinchConfigInstance,
@@ -34,6 +36,7 @@ import {
   mochaEach,
 } from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {Contract} from "ethers/lib/ethers"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -47,6 +50,9 @@ const setupTest = deployments.createFixture(async () => {
   const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
   const uniqueIdentity = await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity")
   const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory")
+  const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
+    "FixedLeverageRatioStrategy"
+  )
 
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)
@@ -64,16 +70,16 @@ const setupTest = deployments.createFixture(async () => {
     go,
     uniqueIdentity,
     goldfinchFactory,
+    fixedLeverageRatioStrategy,
   }
 })
 
-describe.skip("v2.6.0", async function () {
+describe("v2.6.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let gfi: GFIInstance
   let goldfinchConfig: GoldfinchConfigInstance
   let backerRewards: BackerRewardsInstance
-  let communityRewards: CommunityRewardsInstance
   let seniorPool: SeniorPoolInstance
   let go: GoInstance
   let stakingRewards: StakingRewardsInstance
@@ -85,17 +91,8 @@ describe.skip("v2.6.0", async function () {
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({
-      gfi,
-      goldfinchConfig,
-      backerRewards,
-      communityRewards,
-      seniorPool,
-      go,
-      stakingRewards,
-      uniqueIdentity,
-      goldfinchFactory,
-    } = await setupTest())
+    ;({gfi, goldfinchConfig, backerRewards, seniorPool, go, stakingRewards, uniqueIdentity, goldfinchFactory} =
+      await setupTest())
 
     tranchedPoolImplAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
     leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
@@ -104,15 +101,26 @@ describe.skip("v2.6.0", async function () {
   describe("after deploy", async () => {
     let params
     let zapper: ZapperInstance
+    let fixedLeverageRatioStrategy: FixedLeverageRatioStrategyInstance
+    let tranchedPoolDeployment: Contract
     const setupTest = deployments.createFixture(async () => {
-      const {params} = await migrate250.main()
+      await migrate250.main()
+      const {params, deployedContracts} = await migrate260.main()
       const zapper = await getTruffleContract<ZapperInstance>("Zapper")
-      return {zapper, params}
+      const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
+        "FixedLeverageRatioStrategy"
+      )
+      return {zapper, fixedLeverageRatioStrategy, params, deployedContracts}
     })
 
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({params, zapper} = await setupTest())
+      ;({
+        params,
+        zapper,
+        fixedLeverageRatioStrategy,
+        deployedContracts: {tranchedPool: tranchedPoolDeployment},
+      } = await setupTest())
     })
 
     describe("UniqueIdentity", async () => {
@@ -127,25 +135,24 @@ describe.skip("v2.6.0", async function () {
       describe("getAddress", async () => {
         describe("TranchedPool", async () => {
           it("is upgraded address", async () => {
-            expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)).to.not.eq(
-              tranchedPoolImplAddressBeforeDeploy
-            )
+            const configAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
+            expect(configAddress).to.not.eq(tranchedPoolImplAddressBeforeDeploy)
+            expect(configAddress).to.eq(tranchedPoolDeployment.address)
           })
         })
 
         describe("SeniorPoolStrategy", async () => {
           it("is correct", async () => {
-            expect(await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)).to.not.eq(
-              leverageRatioStrategyAddressBeforeDeploy
-            )
+            const addressInConfig = await goldfinchConfig.getAddress(CONFIG_KEYS.SeniorPoolStrategy)
+            expect(addressInConfig).to.not.eq(leverageRatioStrategyAddressBeforeDeploy)
+            expect(addressInConfig).to.eq(fixedLeverageRatioStrategy.address)
           })
         })
 
         describe("FiduUSDCCurveLP", async () => {
           it("is correct", async () => {
-            expect(await goldfinchConfig.getAddress(CONFIG_KEYS.FiduUSDCCurveLP)).to.be.eq(
-              MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
-            )
+            const configAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.FiduUSDCCurveLP)
+            expect(configAddress).to.be.eq(MAINNET_FIDU_USDC_CURVE_LP_ADDRESS)
           })
         })
       })
