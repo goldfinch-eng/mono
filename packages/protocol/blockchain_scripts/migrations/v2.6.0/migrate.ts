@@ -1,4 +1,4 @@
-import {bigVal} from "@goldfinch-eng/protocol/test/testHelpers"
+import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   BackerRewards,
   GFI,
@@ -6,9 +6,13 @@ import {
   GoldfinchConfig,
   SeniorPool,
   StakingRewards,
-  UniqueIdentity,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import BigNumber from "bignumber.js"
+import hre from "hardhat"
+import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
+import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
+import {deployZapper} from "../../baseDeploy/deployZapper"
+import {CONFIG_KEYS} from "../../configKeys"
 import {
   ContractDeployer,
   ContractUpgrader,
@@ -18,12 +22,6 @@ import {
   ZAPPER_ROLE,
 } from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
-import hre from "hardhat"
-import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
-import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
-import {deployZapper} from "../../baseDeploy/deployZapper"
-import {CONFIG_KEYS} from "../../configKeys"
-import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -73,19 +71,14 @@ export async function main() {
   const params = {
     BackerRewards: {
       totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
-      maxInterestDollarsEligible: bigVal(100_000_000).toString(),
     },
     StakingRewards: {
       effectiveMultiplier: "750000000000000000",
     },
   }
 
-  // take 2% of the total GFI supply
-  console.log("Setting BackerRewards parameters and loading in rewards")
-  console.log(` totalRewards = ${params.BackerRewards.totalRewards}`)
-  console.log(` maxInterestDollarsEligible = ${params.BackerRewards.maxInterestDollarsEligible}`)
   console.log(
-    ` transferring ${params.BackerRewards.totalRewards} GFI to staking rewards at address ${stakingRewards.address}`
+    `Transferring ${params.BackerRewards.totalRewards} GFI to BackerRewards at address ${backerRewards.address}`
   )
   console.log("Setting StakingRewards parameters:")
   console.log(` effectiveMultipler = ${params.StakingRewards.effectiveMultiplier}`)
