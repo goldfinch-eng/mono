@@ -115,7 +115,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @notice counter of total interest repayments, times 1e6
   uint256 public totalInterestReceived;
 
-  /// @notice totalRewards/totalGFISupply, times 1e18
+  /// @notice totalRewards/totalGFISupply * 100, times 1e18
   uint256 public totalRewardPercentOfTotalGFI;
 
   /// @notice poolTokenId -> BackerRewardsTokenInfo
@@ -310,12 +310,12 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
 
   /**
    * @notice Calculates the amount of staking rewards already claimed for a PoolToken.
-   * This function is intended for public consumption and not as an input to the mutative
-   * calculations in this contract.
+   * This function is provided for the sake of external (e.g. frontend client) consumption;
+   * it is not necessary as an input to the mutative calculations in this contract.
    * @param tokenId Pool token id
    * @return The amount of GFI claimed
    */
-  function stakingRewardsClaimed(uint256 tokenId) public view returns (uint256) {
+  function stakingRewardsClaimed(uint256 tokenId) external view returns (uint256) {
     IPoolTokens poolTokens = config.getPoolTokens();
     IPoolTokens.TokenInfo memory poolTokenInfo = poolTokens.getTokenInfo(tokenId);
 
