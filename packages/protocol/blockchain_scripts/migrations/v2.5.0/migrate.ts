@@ -21,7 +21,12 @@ export async function main() {
 
   const deployEffects = await getDeployEffects({
     title: "v2.5.0 upgrade",
-    description: "https://github.com/warbler-labs/mono/pull/390",
+    description: `
+    Upgrades Go and CommunityRewards contracts
+
+    https://github.com/warbler-labs/mono/pull/390
+    https://github.com/warbler-labs/mono/pull/412
+    `,
   })
 
   console.log("Beginning v2.5.0 upgrade")
@@ -31,7 +36,7 @@ export async function main() {
 
   // 1. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["Go"],
+    contracts: ["Go", "CommunityRewards"],
   })
 
   // 2. Change implementations
@@ -43,7 +48,7 @@ export async function main() {
 
   const params: Migration250Params = {
     BackerRewards: {
-      totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
+      totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toFixed(),
       maxInterestDollarsEligible: bigVal(100_000_000).toString(),
     },
     UniqueIdentity: {
@@ -53,6 +58,9 @@ export async function main() {
 
   console.log("Setting UniqueIdentity params:")
   console.log(` setSupportedUIDTypes = ${params.UniqueIdentity.supportedUidTypes}`)
+  console.log("BackerRewards params")
+  console.log(`  setTotalRewards = ${params.BackerRewards.totalRewards}`)
+  console.log(`  maxInterestDollarsElligible = ${params.BackerRewards.maxInterestDollarsEligible}`)
 
   // 6. Add effects to deploy effects
   deployEffects.add({

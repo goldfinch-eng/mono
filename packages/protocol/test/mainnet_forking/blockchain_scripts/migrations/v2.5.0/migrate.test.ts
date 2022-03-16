@@ -13,21 +13,25 @@ import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/hel
 import {
   BackerRewardsInstance,
   CommunityRewardsInstance,
+  CreditLineInstance,
   ERC20Instance,
   GFIInstance,
   GoInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
+  PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
   TranchedPoolInstance,
   UniqueIdentityInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {
+  advanceTime,
   BN,
   createPoolWithCreditLine,
   expectOwnerRole,
   expectProxyOwner,
+  getTruffleContractAtAddress,
   mochaEach,
 } from "@goldfinch-eng/protocol/test/testHelpers"
 
@@ -43,6 +47,7 @@ const setupTest = deployments.createFixture(async () => {
   const stakingRewards = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
   const uniqueIdentity = await getTruffleContract<UniqueIdentityInstance>("UniqueIdentity")
   const goldfinchFactory = await getTruffleContract<GoldfinchFactoryInstance>("GoldfinchFactory")
+  const poolTokens = await getTruffleContract<PoolTokensInstance>("PoolTokens")
   const usdc = await getTruffleContract<ERC20Instance>("ERC20", {at: getUSDCAddress(MAINNET_CHAIN_ID)})
 
   const {gf_deployer} = await getNamedAccounts()
@@ -62,8 +67,18 @@ const setupTest = deployments.createFixture(async () => {
     go,
     uniqueIdentity,
     goldfinchFactory,
+    poolTokens,
   }
 })
+
+const almaPool6Info = {
+  address: "0x418749e294cabce5a714efccc22a8aade6f9db57",
+  aPoolToken: {
+    // Cf. https://etherscan.io/token/0x57686612c601cb5213b01aa8e80afeb24bbd01df?a=512
+    ownerAddress: "0xf21a3d0146b0ceb7cb45ba7543c3ca3525a8830d",
+    id: "512",
+  },
+}
 
 describe("v2.5.0", async function () {
   this.timeout(TEST_TIMEOUT)
@@ -72,10 +87,13 @@ describe("v2.5.0", async function () {
   let go: GoInstance
   let uniqueIdentity: UniqueIdentityInstance
   let goldfinchFactory: GoldfinchFactoryInstance
+  let gfi: GFIInstance
+  let poolTokens: PoolTokensInstance
+  let usdc: ERC20Instance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({backerRewards, go, uniqueIdentity, goldfinchFactory} = await setupTest())
+    ;({backerRewards, go, uniqueIdentity, goldfinchFactory, gfi, poolTokens, usdc} = await setupTest())
   })
 
   describe("after deploy", async () => {
@@ -99,6 +117,13 @@ describe("v2.5.0", async function () {
     })
 
     describe("BackerRewards", async () => {
+      describe("GFI balance", () => {
+        it("should be 0", async () => {
+          const gfiBalance = await gfi.balanceOf(backerRewards.address)
+          expect(gfiBalance).to.bignumber.equal(new BN(0))
+        })
+      })
+
       describe("maxInterestDollarsElligible", async () => {
         it("is correct", async () => {
           expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(
@@ -113,6 +138,79 @@ describe("v2.5.0", async function () {
           const two = "2000000000000000000"
           expect((await backerRewards.totalRewardPercentOfTotalGFI()).toString()).to.eq(two)
         })
+      })
+
+      describe("withdraw", () => {
+        const tokenInfo = almaPool6Info.aPoolToken
+
+        context("before interest repayment", function () {
+          beforeEach(async () => {
+            await impersonateAccount(hre, tokenInfo.ownerAddress)
+            await fundWithWhales(["ETH"], [tokenInfo.ownerAddress])
+            const info = await poolTokens.tokens(tokenInfo.id)
+            const principalAmount = info[2]
+            expect(principalAmount.gt(new BN(0))).to.be.true
+          })
+
+          it('allows "withdrawing" 0', async () => {
+            const claimableRewards = await backerRewards.poolTokenClaimableRewards(tokenInfo.id)
+            expect(claimableRewards).to.bignumber.equal(new BN(0))
+            const withdrawal = backerRewards.withdraw(tokenInfo.id, {
+              from: tokenInfo.ownerAddress,
+            })
+            await expect(withdrawal).to.be.fulfilled
+          })
+        })
+        context("after interest repayment", function () {
+          beforeEach(async () => {
+            await impersonateAccount(hre, tokenInfo.ownerAddress)
+            await fundWithWhales(["ETH"], [tokenInfo.ownerAddress])
+
+            const owner = await getProtocolOwner()
+            await fundWithWhales(["USDC"], [owner])
+
+            await advanceTime({days: "30"})
+
+            const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>(
+              "TranchedPool",
+              almaPool6Info.address
+            )
+            await tranchedPool.assess()
+            const creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
+              "CreditLine",
+              await tranchedPool.creditLine()
+            )
+            const interestOwedBefore = await creditLine.interestOwed()
+            expect(interestOwedBefore.gt(new BN(0))).to.be.true
+
+            await usdc.approve(tranchedPool.address, interestOwedBefore, {from: owner})
+            await tranchedPool.pay(interestOwedBefore.toString(), {from: owner})
+
+            const interestOwedAfter = await creditLine.interestOwed()
+            expect(interestOwedAfter).to.bignumber.equal(new BN(0))
+          })
+
+          it("rejects withdrawing non-zero amount, due to insufficient GFI", async () => {
+            const claimableRewards = await backerRewards.poolTokenClaimableRewards(tokenInfo.id)
+            expect(claimableRewards).to.bignumber.equal(new BN("3014668121250461200"))
+            const withdrawal = backerRewards.withdraw(tokenInfo.id, {
+              from: tokenInfo.ownerAddress,
+            })
+            await expect(withdrawal).to.be.rejectedWith(/ERC20: transfer amount exceeds balance/)
+          })
+        })
+      })
+    })
+
+    context("CommunityRewards", () => {
+      expectProxyOwner({
+        toBe: getProtocolOwner,
+        forContracts: ["CommunityRewards"],
+      })
+
+      expectOwnerRole({
+        toBe: async () => getProtocolOwner(),
+        forContracts: ["CommunityRewards"],
       })
     })
 
