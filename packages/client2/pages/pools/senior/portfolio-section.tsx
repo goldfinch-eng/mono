@@ -1,21 +1,25 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
+import { useState } from "react";
 
 import { Button } from "@/components/button";
-import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
+import { Modal } from "@/components/modal";
 import { formatPercent, formatUsdc } from "@/lib/format";
 import { useSeniorPoolPortfolioQuery } from "@/lib/graphql/generated";
-import { wait } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
+
+import { DepositForm } from "./deposit-form";
 
 gql`
   query SeniorPoolPortfolio($userId: ID!, $minBlock: Int!) {
     user(id: $userId, block: { number_gte: $minBlock }) {
+      id
       seniorPoolDeposits {
         amount
       }
     }
-    seniorPools(first: 1, block: { number_gte: $minBlock }) {
+    seniorPools(first: 1) {
+      id
       latestPoolStatus {
         estimatedApy
       }
@@ -24,9 +28,8 @@ gql`
 `;
 
 export function PortfolioSection() {
+  const [isDepositFormOpen, setIsDepositFormOpen] = useState(false);
   const { account } = useWallet();
-  const { usdcContract } = useUsdcContract();
-  const { seniorPoolContract, seniorPoolAddress } = useSeniorPoolContract();
   const { data, refetch } = useSeniorPoolPortfolioQuery({
     variables: { userId: account?.toLowerCase() ?? "", minBlock: 0 },
   });
@@ -37,43 +40,6 @@ export function PortfolioSection() {
   const portfolioBalance = data?.user?.seniorPoolDeposits
     .map((d) => d.amount)
     .reduce((prev, current) => current.add(prev), BigNumber.from(0));
-
-  const handleDeposit = async () => {
-    if (!account || !seniorPoolContract || !usdcContract) {
-      return;
-    }
-
-    const depositAmount = BigNumber.from("100000"); // ! hard-coded just for now
-
-    const allowance = await usdcContract.allowance(account, seniorPoolAddress);
-    if (depositAmount.gt(allowance)) {
-      // Approve a really big amount so the user doesn't have to spend gas approving this again in the future
-      const approvalTransaction = await usdcContract.approve(
-        seniorPoolAddress,
-        BigNumber.from(Number.MAX_SAFE_INTEGER - 1)
-      );
-      await approvalTransaction.wait();
-    }
-
-    const transaction = await seniorPoolContract.deposit(depositAmount);
-    const receipt = await transaction.wait();
-    const minBlock = receipt.blockNumber;
-    let subgraphUpdated = false;
-    while (!subgraphUpdated) {
-      try {
-        await refetch({ minBlock: minBlock });
-        subgraphUpdated = true;
-      } catch (e) {
-        if (
-          (e as Error).message.includes("has only indexed up to block number")
-        ) {
-          await wait(1000);
-        } else {
-          throw e;
-        }
-      }
-    }
-  };
 
   return (
     <div className="rounded bg-sand-100 p-6">
@@ -102,7 +68,7 @@ export function PortfolioSection() {
           className="grow"
           iconLeft="ArrowUp"
           disabled={isGreyedOut}
-          onClick={handleDeposit}
+          onClick={() => setIsDepositFormOpen(true)}
         >
           Supply
         </Button>
@@ -115,6 +81,18 @@ export function PortfolioSection() {
           Withdraw
         </Button>
       </div>
+      <Modal
+        title="Deposit into the Senior Pool"
+        isOpen={isDepositFormOpen}
+        onClose={() => setIsDepositFormOpen(false)}
+      >
+        <DepositForm
+          onCompleteDeposit={async (blockNumber) => {
+            await refetch({ minBlock: blockNumber });
+            setIsDepositFormOpen(false);
+          }}
+        />
+      </Modal>
     </div>
   );
 }

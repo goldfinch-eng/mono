@@ -2191,7 +2191,7 @@ export type SeniorPoolPortfolioQueryVariables = Exact<{
 }>;
 
 
-export type SeniorPoolPortfolioQuery = { __typename?: 'Query', user?: { __typename?: 'User', seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', latestPoolStatus: { __typename?: 'SeniorPoolStatus', estimatedApy: TheGraph_BigDecimal } }> };
+export type SeniorPoolPortfolioQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', estimatedApy: TheGraph_BigDecimal } }> };
 
 export const TranchedPoolCardFieldsFragmentDoc = gql`
     fragment TranchedPoolCardFields on TranchedPool {
@@ -2292,11 +2292,13 @@ export type ExampleQueryResult = Apollo.QueryResult<ExampleQuery, ExampleQueryVa
 export const SeniorPoolPortfolioDocument = gql`
     query SeniorPoolPortfolio($userId: ID!, $minBlock: Int!) {
   user(id: $userId, block: {number_gte: $minBlock}) {
+    id
     seniorPoolDeposits {
       amount
     }
   }
-  seniorPools(first: 1, block: {number_gte: $minBlock}) {
+  seniorPools(first: 1) {
+    id
     latestPoolStatus {
       estimatedApy
     }

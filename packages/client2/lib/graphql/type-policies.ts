@@ -47,6 +47,9 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       currentUser: { read: () => currentUserVar() },
+      user: {
+        keyArgs: ["id"], // This is done to make sure that user data isn't keyed with `block`. Latest should always overwrite
+      },
     },
   },
   SeniorPool: {

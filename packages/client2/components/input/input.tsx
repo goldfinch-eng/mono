@@ -50,6 +50,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     icon,
     inputClassName,
     className,
+    autoComplete = "off",
     ...rest
   },
   ref
@@ -81,6 +82,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           id={_id}
           type={type}
           disabled={disabled}
+          autoComplete={autoComplete}
           {...rest}
         />
         {icon ? (
