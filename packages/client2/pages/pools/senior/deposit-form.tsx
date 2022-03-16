@@ -70,10 +70,17 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
         subgraphUpdated = true;
         await apolloClient.refetchQueries({
           updateCache(cache) {
-            cache.evict({ fieldName: "user" });
-            cache.evict({ fieldName: "seniorPools" });
+            cache.modify({
+              fields: {
+                user(_, { INVALIDATE }) {
+                  return INVALIDATE;
+                },
+                seniorPools(_, { INVALIDATE }) {
+                  return INVALIDATE;
+                },
+              },
+            });
           },
-          optimistic: true,
         });
         onCompleteDeposit();
       } catch (e) {
