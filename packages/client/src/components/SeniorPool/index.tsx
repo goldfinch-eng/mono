@@ -11,7 +11,7 @@ import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import EarnActionsContainer from "./EarnActionsContainer"
 import InvestorNotice from "../KYCNotice/InvestorNotice"
-import SeniorPoolStatus from "../seniorPoolStatus"
+import SeniorPoolStatus from "./SeniorPoolStatus"
 import StakeFiduBanner from "../stakeFiduBanner"
 import {Overview} from "./Overview"
 
