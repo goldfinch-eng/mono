@@ -187,7 +187,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
-  // await migrate260.main()
+  await migrate260.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
