@@ -48,8 +48,7 @@ const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
-// TODO(@emily-hsia): Update with real Curve LP address when ready
-const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x55A8a39bc9694714E2874c1ce77aa1E599461E18"
+const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
 const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
@@ -140,6 +139,7 @@ const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
 }
 
+export const ZAPPER_ROLE = web3.utils.keccak256("ZAPPER_ROLE")
 export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
 export const PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
 export const GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
@@ -148,6 +148,11 @@ export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_S
 export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
 export const SIGNER_ROLE = web3.utils.keccak256("SIGNER_ROLE")
+
+export enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
 
 const TRANCHES = {
   Senior: 1,

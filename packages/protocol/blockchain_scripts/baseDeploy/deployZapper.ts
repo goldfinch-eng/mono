@@ -1,14 +1,11 @@
-import {GoldfinchConfig, Zapper} from "@goldfinch-eng/protocol/typechain/ethers"
+import {Zapper} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {ContractDeployer, getProtocolOwner} from "../deployHelpers"
-import {DeployEffects} from "../migrations/deployEffects"
+import {DeployOpts} from "../types"
 
 const logger = console.log
 
-export async function deployZapper(
-  deployer: ContractDeployer,
-  {config, deployEffects}: {config: GoldfinchConfig; deployEffects: DeployEffects}
-): Promise<any> {
+export async function deployZapper(deployer: ContractDeployer, {config}: DeployOpts): Promise<Zapper> {
   logger("About to deploy Zapper...")
   const {gf_deployer} = await deployer.getNamedAccounts()
   assertIsString(gf_deployer)
