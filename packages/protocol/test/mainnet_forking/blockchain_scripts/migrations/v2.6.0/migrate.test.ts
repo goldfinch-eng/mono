@@ -37,6 +37,7 @@ import {
 } from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Contract} from "ethers/lib/ethers"
+import {Migration260Params} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.6.0/migrate"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -99,7 +100,7 @@ describe("v2.6.0", async function () {
   })
 
   describe("after deploy", async () => {
-    let params
+    let params: Migration260Params
     let zapper: ZapperInstance
     let fixedLeverageRatioStrategy: FixedLeverageRatioStrategyInstance
     let tranchedPoolDeployment: Contract

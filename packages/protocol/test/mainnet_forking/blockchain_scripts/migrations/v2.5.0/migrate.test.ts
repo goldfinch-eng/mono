@@ -97,7 +97,7 @@ describe("v2.5.0", async function () {
   })
 
   describe("after deploy", async () => {
-    let params
+    let params: migrate250.Migration250Params
     const setupTest = deployments.createFixture(async () => {
       const {params} = await migrate250.main()
       return {params}

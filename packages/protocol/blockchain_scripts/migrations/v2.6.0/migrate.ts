@@ -9,6 +9,7 @@ import {
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import BigNumber from "bignumber.js"
 import hre from "hardhat"
+import {bigVal} from "../../../test/testHelpers"
 import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
 import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 import {deployZapper} from "../../baseDeploy/deployZapper"
@@ -22,6 +23,16 @@ import {
   ZAPPER_ROLE,
 } from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
+
+export type Migration260Params = {
+  BackerRewards: {
+    totalRewards: string
+    maxInterestDollarsEligible: string
+  }
+  StakingRewards: {
+    effectiveMultiplier: string
+  }
+}
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -68,9 +79,10 @@ export async function main() {
     zapper,
   }
 
-  const params = {
+  const params: Migration260Params = {
     BackerRewards: {
       totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
+      maxInterestDollarsEligible: bigVal(100_000_000).toString(),
     },
     StakingRewards: {
       effectiveMultiplier: "750000000000000000",

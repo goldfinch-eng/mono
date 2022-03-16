@@ -5,6 +5,16 @@ import hre from "hardhat"
 import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
+export type Migration250Params = {
+  BackerRewards: {
+    totalRewards: string
+    maxInterestDollarsEligible: string
+  }
+  UniqueIdentity: {
+    supportedUidTypes: number[]
+  }
+}
+
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
   const upgrader = new ContractUpgrader(deployer)
@@ -31,7 +41,7 @@ export async function main() {
     })
   )
 
-  const params = {
+  const params: Migration250Params = {
     BackerRewards: {
       totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
       maxInterestDollarsEligible: bigVal(100_000_000).toString(),
