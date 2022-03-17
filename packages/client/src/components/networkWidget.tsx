@@ -100,12 +100,16 @@ function NetworkWidget(props: NetworkWidgetProps) {
     }
   }
 
+  function isMetaMaskInstalled(): boolean {
+    return (
+      userWalletWeb3Status?.type === "has_web3" &&
+      window.hasOwnProperty("ethereum") &&
+      isMetaMaskInpageProvider(getInjectedProvider())
+    )
+  }
+
   async function handleMetamask(): Promise<void> {
-    if (
-      userWalletWeb3Status?.type === "no_web3" ||
-      (!window.hasOwnProperty("ethereum") && userWalletWeb3Status?.type === "has_web3") ||
-      !isMetaMaskInpageProvider(getInjectedProvider())
-    ) {
+    if (!isMetaMaskInstalled()) {
       return setNoWeb3Widget(true)
     }
     setIsEnablePending({metaMask: true, walletConnect: false})
