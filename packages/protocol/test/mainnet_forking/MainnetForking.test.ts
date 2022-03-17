@@ -1294,6 +1294,8 @@ describe("mainnet forking tests", async function () {
         })
 
         it("it works", async () => {
+          const curveBalanceBefore = await curvePool.balances(0)
+
           // Deposit and stake
           const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
           const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
@@ -1319,6 +1321,9 @@ describe("mainnet forking tests", async function () {
             new BN(stakedEvent.args.amount.toString(10))
           )
           expect(depositedToCurveAndStakeLog.args.usdcAmount).to.bignumber.equal(new BN(0))
+
+          const curveBalanceAfter = await curvePool.balances(0)
+          expect(curveBalanceAfter.sub(curveBalanceBefore)).to.bignumber.equal(unstakedLog.args.amount)
         })
       })
     })

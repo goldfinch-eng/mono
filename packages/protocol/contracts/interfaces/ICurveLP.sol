@@ -16,4 +16,6 @@ interface ICurveLP {
     bool use_eth,
     address receiver
   ) external returns (uint256);
+
+  function balances(uint256 arg0) external view returns (uint256);
 }

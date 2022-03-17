@@ -57,6 +57,10 @@ contract TestFiduUSDCCurveLP is
     return amount;
   }
 
+  function balances(uint256 arg0) public view override returns (uint256) {
+    return 0;
+  }
+
   function getUSDC() internal returns (ERC20) {
     return ERC20(config.getAddress(uint256(ConfigOptions.Addresses.USDC)));
   }
