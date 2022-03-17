@@ -1,4 +1,4 @@
-import { gql, useApolloClient } from "@apollo/client";
+import { useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
@@ -9,7 +9,7 @@ import { Link } from "@/components/link";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
 import { refreshCurrentUserUsdcBalance } from "@/lib/graphql/local-state/actions";
-import { wait } from "@/lib/utils";
+import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface DepositFormProps {
@@ -22,14 +22,6 @@ interface DepositFormProps {
 interface FormFields {
   amount: number;
 }
-
-const MIN_BLOCK_CHECK = gql`
-  query MinBlockCheck($minBlock: Int!) {
-    _meta(block: { number_gte: $minBlock }) {
-      deployment
-    }
-  }
-`;
 
 export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
   const apolloClient = useApolloClient();
@@ -75,46 +67,27 @@ export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
       { autoClose: false }
     );
     const receipt = await transaction.wait();
-    const minBlock = receipt.blockNumber;
-    let subgraphUpdated = false;
-    while (!subgraphUpdated) {
-      try {
-        // TODO move this min block check into a shared lib. Probably gonna want this in other areas of the app
-        await apolloClient.query({
-          query: MIN_BLOCK_CHECK,
-          variables: { minBlock },
-        });
-        subgraphUpdated = true;
-        await apolloClient.refetchQueries({
-          updateCache(cache) {
-            cache.modify({
-              fields: {
-                user(_, { INVALIDATE }) {
-                  return INVALIDATE;
-                },
-                seniorPools(_, { INVALIDATE }) {
-                  return INVALIDATE;
-                },
-              },
-            });
+    await waitForSubgraphBlock(receipt.blockNumber);
+    await apolloClient.refetchQueries({
+      updateCache(cache) {
+        cache.modify({
+          fields: {
+            user(_, { INVALIDATE }) {
+              return INVALIDATE;
+            },
+            seniorPools(_, { INVALIDATE }) {
+              return INVALIDATE;
+            },
           },
         });
-        refreshCurrentUserUsdcBalance(usdcContract);
-        toast.update(toastId, {
-          render: "Senior pool deposit completed",
-          type: "success",
-          autoClose: 5000,
-        });
-      } catch (e) {
-        if (
-          (e as Error).message.includes("has only indexed up to block number")
-        ) {
-          await wait(1000);
-        } else {
-          throw e;
-        }
-      }
-    }
+      },
+    });
+    refreshCurrentUserUsdcBalance(usdcContract);
+    toast.update(toastId, {
+      render: "Senior pool deposit completed",
+      type: "success",
+      autoClose: 5000,
+    });
   });
 
   return (
