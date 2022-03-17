@@ -9,7 +9,7 @@ import {displayDollars, displayPercent} from "../../utils"
 import Badge from "../badge"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../styleConstants"
-import EarnTooltipContent from "./EarnTooltipContent"
+import APYTooltip from "../APYTooltip"
 
 export default function TranchedPoolCard({
   poolBacker,
@@ -92,7 +92,8 @@ export default function TranchedPoolCard({
         {poolBacker.address ? displayDollars(poolBacker?.balanceInDollars) : displayDollars(undefined)}
       </div>
       <div className="pool-capacity">{badge}</div>
-      <EarnTooltipContent
+      <APYTooltip
+        classNames="apy-detail-tooltip clickable"
         id={`apy-tooltip-${tranchedPool.address}`}
         longDescription="Includes the base USDC interest yield plus GFI from both liquidity mining and staking."
         rows={[

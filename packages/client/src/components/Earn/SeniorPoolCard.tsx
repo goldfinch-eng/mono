@@ -4,9 +4,9 @@ import Badge from "../badge"
 import logo from "../../images/logomark-spaced.svg"
 import {InfoIcon} from "../../ui/icons"
 import {displayPercent} from "../../utils"
-import EarnTooltipContent from "./EarnTooltipContent"
 import {useMediaQuery} from "react-responsive"
 import {WIDTH_TYPES} from "../styleConstants"
+import APYTooltip from "../APYTooltip"
 
 type SeniorPoolCardProps = {
   balance: string
@@ -69,7 +69,8 @@ export default function SeniorPoolCard(props: SeniorPoolCardProps) {
           <Badge text="Open" variant="blue" fixedWidth />
         )}
       </div>
-      <EarnTooltipContent
+      <APYTooltip
+        classNames="apy-detail-tooltip clickable"
         longDescription="Includes the Senior pool yield from allocating to borrower pools, plus GFI distributions."
         rows={[
           {
