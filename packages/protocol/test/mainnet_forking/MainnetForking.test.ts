@@ -1199,7 +1199,12 @@ describe("mainnet forking tests", async function () {
 
       describe("when I deposit and stake", async () => {
         it("it reverts", async () => {
-          await expect(stakingRewards.depositAndStake(usdcVal(10), {from: unGoListedUser})).to.be.rejectedWith(/GL/i)
+          await expect(stakingRewards.depositAndStake(usdcVal(10), {from: unGoListedUser})).to.be.rejectedWith(
+            // NOTE: Use the old message since we're currently using the v2.5.0 upgrade
+            /This address has not been go-listed/i
+            // NOTE: Uncomment the line below to get the correct error message with the v2.6.0 upgrade
+            // /GL/i
+          )
         })
       })
     })
