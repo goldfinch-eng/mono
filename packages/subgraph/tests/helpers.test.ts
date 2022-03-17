@@ -83,31 +83,6 @@ test("estimates junior apy (cauris)", () => {
   clearStore()
 })
 
-// test("recalculate SeniorPool APY", () => {
-//   let creditLine = new CreditLine("0x1")
-//   creditLine.interestAprDecimal = BigDecimal.fromString("0.125")
-//   creditLine.balance = BigInt.fromString("5142673966942")
-//   creditLine.save()
-
-//   let tranchedPool = new TranchedPool("0x9999999999999999999999999999999999999999")
-//   tranchedPool.creditLine = creditLine.id
-//   tranchedPool.juniorFeePercent = BigInt.fromString("20")
-//   tranchedPool.estimatedLeverageRatio = BigInt.fromString("4")
-//   tranchedPool.isV1StyleDeal = true
-//   tranchedPool.isPaused = false
-//   tranchedPool.save()
-
-//   let seniorPoolStatus = new SeniorPoolStatus("0x1")
-//   seniorPoolStatus.totalPoolAssets
-//   seniorPoolStatus.tranchedPools = ["0x9999999999999999999999999999999999999999"]
-//   seniorPoolStatus.save()
-
-//   const apy = estimateJuniorAPY(tranchedPool.id)
-//   assert.equals(ethereum.Value.fromString("0.2125"), ethereum.Value.fromString(apy.toString()))
-
-//   clearStore()
-// })
-
 test("calculateEstimatedInterestForTranchedPool without credit line", () => {
   let tranchedPool = new TranchedPool("0xf74ea34ac88862b7ff419e60e476be2651433e68")
   tranchedPool.isV1StyleDeal = true
