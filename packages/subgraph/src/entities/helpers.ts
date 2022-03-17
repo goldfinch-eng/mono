@@ -2,7 +2,7 @@ import { Address, BigInt } from '@graphprotocol/graph-ts'
 import { JuniorTrancheInfo, SeniorTrancheInfo } from "../../generated/schema"
 import { SeniorPool as SeniorPoolContract } from '../../generated/templates/GoldfinchFactory/SeniorPool'
 import { GoldfinchConfig as GoldfinchConfigContract } from '../../generated/templates/GoldfinchFactory/GoldfinchConfig'
-import { GOLDFINCH_CONFIG_ADDRESS, LeverageRatioConfigIndex, SENIOR_POOL_ADDRESS } from '../constants'
+import { CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS } from '../constants'
 
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
@@ -49,7 +49,7 @@ export function getEstimatedLeverageRatio(address: Address, juniorTranches: Juni
 
   if (juniorContribution.isZero()) {
     const configContract = GoldfinchConfigContract.bind(Address.fromString(GOLDFINCH_CONFIG_ADDRESS))
-    const rawLeverageRatio = configContract.getNumber(BigInt.fromI32(LeverageRatioConfigIndex))
+    const rawLeverageRatio = configContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
     return fiduFromAtomic(rawLeverageRatio)
   }
 

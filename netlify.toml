@@ -16,4 +16,4 @@
   publish = "packages/client/build/"
 
   # Default build command.
-  command = "CI= && npx lerna bootstrap --ci && npx lerna run build"
+  command = "CI= && npx lerna bootstrap --ci && npm run build"

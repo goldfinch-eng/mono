@@ -1306,7 +1306,7 @@ describe("BackerRewards", function () {
 
       const seniorClaimable = await backerRewards.poolTokenClaimableRewards(seniorTokenId)
       expect(seniorClaimable).to.bignumber.equal(new BN(0))
-      expect(backerRewards.withdraw(seniorTokenId, {from: investor})).to.be.rejectedWith(
+      await expect(backerRewards.withdraw(seniorTokenId, {from: investor})).to.be.rejectedWith(
         /Ineligible senior tranche token/
       )
     })

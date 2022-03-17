@@ -21,7 +21,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const [owner, bwr] = await web3.eth.getAccounts()
   assertNonNullable(owner)
   assertNonNullable(bwr)
-  await fundWithWhales(["USDC"], [owner, bwr])
 
   // Ensure the multisig has funds for various transactions
   const ownerAccount = await getSignerForAddress(owner)

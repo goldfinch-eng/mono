@@ -1,11 +1,10 @@
 import { Address, BigInt } from '@graphprotocol/graph-ts'
 import { clearStore, test, assert } from 'matchstick-as/assembly/index'
-import { getOrInitPoolBacker } from '../src/entities/pool_backer'
-import { initOrUpdateTranchedPoolToken } from '../src/entities/pool_tokens'
 import { initOrUpdateTranchedPool } from '../src/entities/tranched_pool'
 import { handleTokenMinted, handleTransfer } from '../src/mappings/pool_tokens'
 import { createTokenMintedEvent, createTokenTransferEvent } from './factories'
 import { mockPoolBackersContractCalls, mockTranchedPoolCalls, mockTranchedPoolTokenContractCalls } from './mocks'
+import { BEFORE_V2_2_TIMESTAMP } from './utils'
 
 test('handleTokenMinted creates a new Tranched pool token record', () => {
   const tranchedPoolAddress = '0x9999999999999999999999999999999999999999'
@@ -14,7 +13,7 @@ test('handleTokenMinted creates a new Tranched pool token record', () => {
   const tokenId = BigInt.fromI32(1)
 
   mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
 
   const poolCreatedEvent = createTokenMintedEvent(tranchedPoolAddress, ownerAddress, tokenId)
   mockTranchedPoolTokenContractCalls(tokenId, Address.fromString(tranchedPoolAddress), Address.fromString(ownerAddress))
@@ -51,7 +50,7 @@ test('handleTransfer updates token and pool backer', () => {
   const tokenId = BigInt.fromI32(1)
 
   mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
-  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress))
+  initOrUpdateTranchedPool(Address.fromString(tranchedPoolAddress), BEFORE_V2_2_TIMESTAMP)
 
   mockTranchedPoolTokenContractCalls(tokenId, Address.fromString(tranchedPoolAddress), Address.fromString(user1Address))
   const poolCreatedEvent = createTokenMintedEvent(tranchedPoolAddress, user1Address, tokenId)
