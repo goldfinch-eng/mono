@@ -3,7 +3,6 @@ import {
   TranchedPool,
   JuniorTrancheInfo,
   SeniorTrancheInfo,
-  PoolBacker,
   TranchedPoolDeposit,
 } from "../../generated/schema"
 import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
@@ -15,7 +14,13 @@ import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
-import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, isV1StyleDeal} from "./helpers"
+import {
+  getEstimatedLeverageRatio,
+  getTotalDeposited,
+  getEstimatedTotalAssets,
+  isV1StyleDeal,
+  estimateJuniorAPY
+} from "./helpers"
 import {isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -165,6 +170,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.tokens = []
   }
 
+  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
   tranchedPool.save()
 
   if (isCreating) {
