@@ -16,6 +16,7 @@ import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
+import StakingRewardsDeployment from "../../deployments/mainnet/StakingRewards.json"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -186,9 +187,10 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
-  await migrate260.main()
+  //await migrate260.main()
 
-  const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
+  // NOTE: Uncomment for the v2.6.0 upgrade.
+  // const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
   return {
     poolTokens,
@@ -202,7 +204,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     go,
     stakingRewards,
     backerRewards,
-    zapper,
+    // NOTE: Uncomment for the v2.6.0 upgrade.
+    // zapper,
     gfi,
     communityRewards,
     merkleDistributor,
@@ -288,7 +291,8 @@ describe("mainnet forking tests", async function () {
       go,
       stakingRewards,
       backerRewards,
-      zapper,
+      // NOTE: Uncomment for the v2.6.0 upgrade.
+      // zapper,
       gfi,
       communityRewards,
       merkleDistributor,
@@ -1272,14 +1276,19 @@ describe("mainnet forking tests", async function () {
       describe("when I deposit and stake and then exit", async () => {
         it("it works", async () => {
           const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
-          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          // NOTE: for the v2.5.0 deployment we need to use the existing staking
+          // rewards deployment because the code differs from what's actually
+          // deployed. If we used the contract it would use the updated signature
+          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, StakingRewardsDeployment, "Staked")
           const stakedEvent = asNonNullable(logs[0])
           const tokenId = stakedEvent?.args.tokenId
           await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
         })
       })
 
-      describe("when I deposit and stake, and then zap to Curve", async () => {
+      // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
+      //        Main should be passing after only running the v2.5.0 upgrade
+      describe.skip("when I deposit and stake, and then zap to Curve", async () => {
         beforeEach(async () => {
           await erc20Approve(usdc, seniorPool.address, MAX_UINT, [owner])
           await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [goListedUser, owner])
@@ -1657,10 +1666,13 @@ describe("mainnet forking tests", async function () {
 
         const receipt = await stakingRewards.depositAndStake(amount, {from: owner})
 
-        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+        // NOTE: for the v2.5.0 deployment we need to use the existing staking
+        // rewards deployment because the code differs from what's actually
+        // deployed. If we used the contract it would use the updated signature
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, StakingRewardsDeployment, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
-          decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
+          decodeLogs(receipt.receipt.rawLogs, StakingRewardsDeployment, "DepositedAndStaked")
         )
         expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
         expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
