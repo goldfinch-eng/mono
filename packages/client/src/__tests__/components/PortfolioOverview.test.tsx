@@ -21,7 +21,7 @@ import * as utils from "../../ethereum/utils"
 import {USDC_DECIMALS} from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
 import {toDisplayPercent} from "../rewards/__utils__/display"
 import {mockCapitalProviderCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
@@ -31,6 +31,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
@@ -259,11 +260,14 @@ describe("Earn page portfolio overview", () => {
               "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
             )
           ).toBeInTheDocument()
-          expect(screen.getByText("Pools APY")).toBeInTheDocument()
+          expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Pools APY")
           expect(expectedDisplayApyFromSupplying).toEqual("3.49%")
-          expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayApyFromSupplying)
+          expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual(expectedDisplayApyFromSupplying)
+
+          expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
           expect(expectedDisplayGfiApy).toEqual("72.53%")
-          expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
+          expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual(expectedDisplayGfiApy)
+
           expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
         })
 
@@ -376,10 +380,13 @@ describe("Earn page portfolio overview", () => {
                 "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
               )
             ).toBeInTheDocument()
-            expect(screen.getByText("Pools APY")).toBeInTheDocument()
+            expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Pools APY")
             expect(expectedDisplayApyFromSupplying).toEqual("1.82%")
-            expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayApyFromSupplying)
-            expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+            expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual(expectedDisplayApyFromSupplying)
+
+            expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
+            expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual("--.--%")
+
             expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
           })
         })
@@ -493,9 +500,12 @@ describe("Earn page portfolio overview", () => {
               "Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
             )
           ).toBeInTheDocument()
-          expect(screen.getByText("Pools APY")).toBeInTheDocument()
-          expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
-          expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
+          expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Pools APY")
+          expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual(expectedDisplayPoolApy)
+
+          expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
+          expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual(expectedDisplayGfiApy)
+
           expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
         })
       })

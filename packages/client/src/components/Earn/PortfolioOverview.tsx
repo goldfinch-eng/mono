@@ -6,7 +6,7 @@ import {PoolState, TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {Loaded} from "../../types/loadable"
 import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent, roundDownPenny} from "../../utils"
-import AnnualGrowthTooltipContent from "../AnnualGrowthTooltipContent"
+import APYTooltip from "../APYTooltip"
 import {TranchedPoolsEstimatedApyFromGfi} from "./types"
 
 export default function PortfolioOverview({
@@ -229,11 +229,23 @@ export default function PortfolioOverview({
           }`}</div>
         </div>
       </div>
-      <AnnualGrowthTooltipContent
-        supplyingCombined={true}
-        estimatedApyFromSupplying={estimatedApyFromSupplying}
-        estimatedApyFromGfi={estimatedApyFromGfi}
-        estimatedApy={estimatedApy}
+      <APYTooltip
+        id="annual-growth-tooltip"
+        longDescription="Includes the combined yield from supplying to the senior pool and borrower pools, plus GFI distributions:"
+        rows={[
+          {
+            text: "Pools APY",
+            value: displayPercent(estimatedApyFromSupplying),
+          },
+          {
+            text: "GFI Distribution APY",
+            value: displayPercent(estimatedApyFromGfi),
+          },
+        ]}
+        total={{
+          text: "Total Est. APY",
+          value: displayPercent(estimatedApy),
+        }}
       />
     </div>
   )

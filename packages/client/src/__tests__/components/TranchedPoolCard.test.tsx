@@ -116,7 +116,7 @@ describe("Tranched pool card", () => {
           })
         })
       })
-      describe("has been repaid", async () => {
+      describe("has been repaid", () => {
         it("shows the repaid badge", async () => {
           renderTranchedPoolCard(false, new BigNumber(100), true, undefined, undefined, new BigNumber(0))
           await waitFor(() => {

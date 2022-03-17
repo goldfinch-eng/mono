@@ -21,7 +21,7 @@ import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
 import {mockCapitalProviderCalls, mockStakeFiduBannerCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {prepareBaseDeps, prepareUserRelatedDeps} from "../rewards/__utils__/scenarios"
@@ -29,6 +29,8 @@ import {prepareBaseDeps, prepareUserRelatedDeps} from "../rewards/__utils__/scen
 mock({
   blockchain: "ethereum",
 })
+
+const web3 = getWeb3()
 
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
