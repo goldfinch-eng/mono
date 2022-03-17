@@ -72,6 +72,9 @@ export function getEstimatedLeverageRatio(
   return estimatedLeverageRatio
 }
 
+/**
+ * This exists solely for legacy pools. It looks at a hard-coded metadata blob to determine whether a tranched pool's address is a known legacy pool
+ */
 export function isV1StyleDeal(address: Address): boolean {
   const poolMetadata = MAINNET_METADATA.get(address.toHexString())
   if (poolMetadata != null) {
