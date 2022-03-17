@@ -42,6 +42,7 @@ import {
   toEthers,
   mineInSameBlock,
   mineBlock,
+  decodeAndGetFirstLog,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -55,6 +56,7 @@ import {
   GoInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
+  ICurveLPInstance,
   MerkleDirectDistributorInstance,
   MerkleDistributorInstance,
   PoolTokensInstance,
@@ -62,6 +64,7 @@ import {
   StakingRewardsInstance,
   TranchedPoolInstance,
   UniqueIdentityInstance,
+  ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {DepositMade} from "@goldfinch-eng/protocol/typechain/truffle/TranchedPool"
 import {Granted} from "@goldfinch-eng/protocol/typechain/truffle/CommunityRewards"
@@ -75,7 +78,13 @@ import {
   VESTING_MERKLE_INFO_PATH,
 } from "../../blockchain_scripts/airdrop/community/calculation"
 import {MerkleDirectDistributorInfo} from "../../blockchain_scripts/merkle/merkleDirectDistributor/types"
-import {DepositedAndStaked, RewardPaid, Staked} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
+import {
+  DepositedAndStaked,
+  DepositedToCurveAndStaked,
+  RewardPaid,
+  Staked,
+  Unstaked,
+} from "@goldfinch-eng/protocol/typechain/truffle/StakingRewards"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {
@@ -177,7 +186,10 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
-  // await migrate260.main()
+  //await migrate260.main()
+
+  // NOTE: Uncomment for the v2.6.0 upgrade.
+  // const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
   return {
     poolTokens,
@@ -191,6 +203,8 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     go,
     stakingRewards,
     backerRewards,
+    // NOTE: Uncomment for the v2.6.0 upgrade.
+    // zapper,
     gfi,
     communityRewards,
     merkleDistributor,
@@ -221,7 +235,9 @@ describe("mainnet forking tests", async function () {
     seniorPoolStrategy,
     go: GoInstance,
     stakingRewards: StakingRewardsInstance,
+    curvePool: ICurveLPInstance,
     backerRewards: BackerRewardsInstance,
+    zapper: ZapperInstance,
     gfi: GFIInstance,
     communityRewards: CommunityRewardsInstance,
     merkleDistributor: MerkleDistributorInstance,
@@ -274,6 +290,8 @@ describe("mainnet forking tests", async function () {
       go,
       stakingRewards,
       backerRewards,
+      // NOTE: Uncomment for the v2.6.0 upgrade.
+      // zapper,
       gfi,
       communityRewards,
       merkleDistributor,
@@ -289,8 +307,10 @@ describe("mainnet forking tests", async function () {
     assertIsString(usdcAddress)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
     const usdtAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+    const curveAddress = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
     busd = await artifacts.require("IERC20withDec").at(busdAddress)
     usdt = await artifacts.require("IERC20withDec").at(usdtAddress)
+    curvePool = await artifacts.require("ICurveLP").at(curveAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
@@ -1262,6 +1282,56 @@ describe("mainnet forking tests", async function () {
           const stakedEvent = asNonNullable(logs[0])
           const tokenId = stakedEvent?.args.tokenId
           await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
+        })
+      })
+
+      // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
+      //        Main should be passing after only running the v2.5.0 upgrade
+      describe.skip("when I deposit and stake, and then zap to Curve", async () => {
+        beforeEach(async () => {
+          await erc20Approve(usdc, seniorPool.address, MAX_UINT, [owner])
+          await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [goListedUser, owner])
+          await erc20Approve(fidu, stakingRewards.address, MAX_UINT, [goListedUser, owner])
+
+          // Seed the Curve pool with funds
+          await fundWithWhales(["USDC"], [owner])
+          await seniorPool.deposit(usdcVal(100_000), {from: owner})
+          await stakingRewards.depositToCurveAndStake(bigVal(10_000), usdcVal(10_000), {
+            from: owner,
+          })
+        })
+
+        it("it works", async () => {
+          const curveBalanceBefore = await curvePool.balances(0)
+
+          // Deposit and stake
+          const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
+          const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          const tokenId = stakedEvent.args.tokenId
+
+          // Zap to curve
+          const zapperTx = await expect(
+            zapper.zapStakeToCurve(tokenId, new BN(stakedEvent?.args.amount.toString(10)), {
+              from: goListedUser,
+            })
+          ).to.be.fulfilled
+
+          const unstakedLog = await decodeAndGetFirstLog<Unstaked>(zapperTx.receipt.rawLogs, stakingRewards, "Unstaked")
+          expect(unstakedLog.args.tokenId).to.bignumber.equal(tokenId)
+          expect(unstakedLog.args.amount).to.bignumber.equal(new BN(stakedEvent.args.amount.toString(10)))
+
+          const depositedToCurveAndStakeLog = await decodeAndGetFirstLog<DepositedToCurveAndStaked>(
+            zapperTx.receipt.rawLogs,
+            stakingRewards,
+            "DepositedToCurveAndStaked"
+          )
+          expect(depositedToCurveAndStakeLog.args.fiduAmount).to.bignumber.equal(
+            new BN(stakedEvent.args.amount.toString(10))
+          )
+          expect(depositedToCurveAndStakeLog.args.usdcAmount).to.bignumber.equal(new BN(0))
+
+          const curveBalanceAfter = await curvePool.balances(0)
+          expect(curveBalanceAfter.sub(curveBalanceBefore)).to.bignumber.equal(unstakedLog.args.amount)
         })
       })
     })

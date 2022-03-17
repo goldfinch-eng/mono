@@ -3,16 +3,19 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./IERC20withDec.sol";
+interface ICurveLP {
+  function token() external view returns (address);
 
-abstract contract ICurveLP is IERC20withDec {
-  function getVirtualPrice() external view virtual returns (uint256);
+  function get_virtual_price() external view returns (uint256);
 
-  function calcTokenAmount(uint256[2] calldata amounts, bool isDeposit) external view virtual returns (uint256);
+  function calc_token_amount(uint256[2] calldata amounts) external view returns (uint256);
 
-  function addLiquidity(
+  function add_liquidity(
     uint256[2] calldata amounts,
-    uint256 minMintAmount,
+    uint256 min_mint_amount,
+    bool use_eth,
     address receiver
-  ) external virtual returns (uint256);
+  ) external returns (uint256);
+
+  function balances(uint256 arg0) external view returns (uint256);
 }

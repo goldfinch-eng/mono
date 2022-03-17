@@ -11,8 +11,9 @@ import {
   getContract,
   TRUFFLE_CONTRACT_PROVIDER,
   updateConfig,
-  MAINNET_CHAIN_ID,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
+  isMainnetForking,
+  LOCAL_CHAIN_ID,
 } from "../deployHelpers"
 
 const logger = console.log
@@ -21,9 +22,9 @@ export async function getOrDeployFiduUSDCCurveLP(deployer: ContractDeployer, con
   const {gf_deployer} = await getNamedAccounts()
   const chainId = await deployer.getChainId()
   assertIsChainId(chainId)
-  let fiduUSDCCurveLPAddress = chainId == MAINNET_CHAIN_ID && MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
+  let fiduUSDCCurveLPAddress = MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
   const protocolOwner = await getProtocolOwner()
-  if (!fiduUSDCCurveLPAddress) {
+  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
     logger("We don't have a FIDU-USDC Curve LP address for this network, so deploying a fake contract")
     const initialAmount = String(new BN("10000000000000").mul(new BN(String(1e18))))
     const decimalPlaces = String(new BN(18))

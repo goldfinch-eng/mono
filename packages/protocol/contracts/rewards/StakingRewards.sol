@@ -22,6 +22,7 @@ import "../library/StakingRewardsVesting.sol";
 contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
+  using SafeERC20 for IERC20;
   using ConfigHelper for GoldfinchConfig;
 
   using StakingRewardsVesting for StakingRewardsVesting.Rewards;
@@ -170,9 +171,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the token that is staked for a given position type
-  function stakingToken(StakedPositionType positionType) public view returns (IERC20withDec) {
+  function stakingToken(StakedPositionType positionType) public view returns (IERC20) {
     if (positionType == StakedPositionType.CurveLP) {
-      return config.getFiduUSDCCurveLP();
+      return IERC20(config.getFiduUSDCCurveLP().token());
     }
 
     return config.getFidu();
@@ -412,11 +413,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
-    // Calculate the expected number of Curve LP tokens to receive
-    uint256 expectedAmount = curveLP.calcTokenAmount([fiduAmount, usdcAmount], true);
+    uint256[2] memory amounts = [fiduAmount, usdcAmount];
 
     // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
-    uint256 curveLPTokens = curveLP.addLiquidity([fiduAmount, usdcAmount], expectedAmount, address(this));
+    uint256 curveLPTokens = curveLP.add_liquidity(amounts, 0, false, address(this));
 
     // Stake the Curve LP tokens on behalf of the user
     uint256 tokenId = _stake(address(this), nftRecipient, curveLPTokens, StakedPositionType.CurveLP);
@@ -440,7 +440,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view virtual returns (uint256) {
     if (positionType == StakedPositionType.CurveLP) {
       // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
-      uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().getVirtualPrice();
+      uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
       // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
       uint256 fiduPrice = config.getSeniorPool().sharePrice();
       return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
