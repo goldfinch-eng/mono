@@ -42,6 +42,7 @@ import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {deployBaseFixture} from "./util/fixtures"
 import {StakedPositionType} from "../blockchain_scripts/deployHelpers"
+import {UnstakedMultiple} from "../typechain/truffle/TestStakingRewards"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
@@ -882,9 +883,7 @@ describe("StakingRewards", function () {
 
         await advanceTime({seconds: 10000})
 
-        await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: anotherUser})).to.be.rejectedWith(
-          /access denied/
-        )
+        await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: anotherUser})).to.be.rejectedWith(/AD/)
       })
     })
 
@@ -961,7 +960,7 @@ describe("StakingRewards", function () {
     })
 
     it("can only be called by zapper", async () => {
-      await expect(stakingRewards.addToStake(1, bigVal(100), {from: anotherUser})).to.be.rejectedWith(/access denied/)
+      await expect(stakingRewards.addToStake(1, bigVal(100), {from: anotherUser})).to.be.rejectedWith(/AD/)
     })
 
     it("adds to stake without affecting vesting schedule", async () => {
@@ -990,6 +989,177 @@ describe("StakingRewards", function () {
         const tokenId = await stake({amount: bigVal(100), from: investor})
         await stakingRewards.pause()
         await expect(stakingRewards.addToStake(tokenId, bigVal(100), {from: owner})).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("unstakeMultiple", async () => {
+    let totalRewards: BN
+    let rewardRate: BN
+    let firstToken: BN, secondToken: BN, thirdToken: BN, fourthToken: BN, fifthTokenFromDifferentUser: BN
+    let firstTokenAmount: BN, secondTokenAmount: BN, thirdTokenAmount: BN, fourthTokenAmount: BN, fifthTokenAmount: BN
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      rewardRate = bigVal(100)
+
+      // Fix the reward rate
+      await stakingRewards.setRewardsParameters(
+        targetCapacity,
+        rewardRate,
+        rewardRate,
+        minRateAtPercent,
+        maxRateAtPercent
+      )
+
+      totalRewards = rewardRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Disable vesting
+      await stakingRewards.setVestingSchedule(new BN(0))
+
+      // Set up stakes
+      firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
+      firstToken = await stake({amount: firstTokenAmount, from: investor})
+
+      secondTokenAmount = fiduAmount.mul(new BN(1)).div(new BN(4))
+      secondToken = await stake({amount: secondTokenAmount, from: investor})
+
+      thirdTokenAmount = curveLPAmount.mul(new BN(3)).div(new BN(4))
+      thirdToken = await stake({amount: thirdTokenAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      fourthTokenAmount = curveLPAmount.mul(new BN(1)).div(new BN(4))
+      fourthToken = await stake({amount: fourthTokenAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      fifthTokenAmount = fiduAmount.mul(new BN(4))
+      fifthTokenFromDifferentUser = await stake({amount: fifthTokenAmount, from: anotherUser})
+    })
+
+    it("unstakes multiple fidu positions", async () => {
+      await expectAction(() =>
+        stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
+          from: investor,
+        })
+      ).toChange([
+        [() => seniorPool.assets(), {by: new BN(0)}],
+        [() => fidu.balanceOf(investor), {by: firstTokenAmount.add(secondTokenAmount)}],
+        [() => stakingRewards.totalStakedSupply(), {by: firstTokenAmount.add(secondTokenAmount).neg()}],
+      ])
+      await expect(
+        stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
+          from: investor,
+        })
+      ).to.be.rejectedWith(/IA/)
+    })
+
+    it("unstakes multiple curve positions", async () => {
+      await expectAction(() =>
+        stakingRewards.unstakeMultiple([thirdToken, fourthToken], [thirdTokenAmount, fourthTokenAmount], {
+          from: investor,
+        })
+      ).toChange([
+        [() => seniorPool.assets(), {by: new BN(0)}],
+        [() => fiduUSDCCurveLP.balanceOf(investor), {by: thirdTokenAmount.add(fourthTokenAmount)}],
+        [() => stakingRewards.totalStakedSupply(), {by: thirdTokenAmount.add(fourthTokenAmount).neg()}],
+      ])
+
+      await expect(
+        stakingRewards.unstakeMultiple([thirdToken, fourthToken], [thirdTokenAmount, fourthTokenAmount], {
+          from: investor,
+        })
+      ).to.be.rejectedWith(/IA/)
+    })
+
+    it("unstakes for multiple fidu and curve tokens", async () => {
+      await expectAction(() =>
+        stakingRewards.unstakeMultiple(
+          [firstToken, secondToken, thirdToken, fourthToken],
+
+          [firstTokenAmount, secondTokenAmount, thirdTokenAmount, fourthTokenAmount],
+          {
+            from: investor,
+          }
+        )
+      ).toChange([
+        [() => seniorPool.assets(), {by: new BN(0)}],
+        [() => fidu.balanceOf(investor), {by: firstTokenAmount.add(secondTokenAmount)}],
+        [() => fiduUSDCCurveLP.balanceOf(investor), {by: thirdTokenAmount.add(fourthTokenAmount)}],
+        [
+          () => stakingRewards.totalStakedSupply(),
+          {by: firstTokenAmount.add(secondTokenAmount).add(thirdTokenAmount).add(fourthTokenAmount).neg()},
+        ],
+      ])
+      await expect(
+        stakingRewards.unstakeMultiple([firstToken, secondToken], [firstTokenAmount, secondTokenAmount], {
+          from: investor,
+        })
+      ).to.be.rejectedWith(/IA/)
+    })
+
+    it("emits an UnstakedMultiple event", async () => {
+      const receipt = await stakingRewards.unstakeMultiple(
+        [firstToken, thirdToken],
+        [firstTokenAmount, thirdTokenAmount],
+        {from: investor}
+      )
+
+      const unstakedMultipleEvent = getFirstLog<UnstakedMultiple>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "UnstakedMultiple")
+      )
+
+      expect(unstakedMultipleEvent.args.user).to.equal(investor)
+      expect(unstakedMultipleEvent.args.tokenIds.length).to.equal(2)
+      expect(unstakedMultipleEvent.args.tokenIds[0]).to.bignumber.equal(firstToken)
+      expect(unstakedMultipleEvent.args.tokenIds[1]).to.bignumber.equal(thirdToken)
+      expect(unstakedMultipleEvent.args.amounts.length).to.equal(2)
+      expect(unstakedMultipleEvent.args.amounts[0]).to.bignumber.equal(firstTokenAmount)
+      expect(unstakedMultipleEvent.args.amounts[1]).to.bignumber.equal(thirdTokenAmount)
+    })
+
+    describe("validations", async () => {
+      context("user does not own position token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeMultiple(
+              [firstToken, secondToken, fifthTokenFromDifferentUser],
+              [firstTokenAmount, secondTokenAmount, fifthTokenAmount],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("paused", async () => {
+        it("reverts", async () => {
+          await stakingRewards.pause()
+          await expect(
+            stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount, thirdTokenAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/paused/)
+        })
+      })
+
+      context("any amount exceeds withdrawable amount for that token", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeMultiple(
+              [firstToken, thirdToken],
+              [firstTokenAmount, thirdTokenAmount.add(new BN(100))],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/IA/)
+        })
+      })
+
+      context("tokenIds and amounts lengths mismatch", async () => {
+        it("reverts", async () => {
+          await expect(
+            stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount], {
+              from: investor,
+            })
+          ).to.be.rejectedWith(/LEN/)
+        })
       })
     })
   })
@@ -1063,6 +1233,26 @@ describe("StakingRewards", function () {
       expect(unstakedAndWithdrewEvent.args.amount).to.bignumber.equal(withdrawAmount)
     })
 
+    context("for a Curve staking position", async () => {
+      it("does not allow the user to withdraw", async () => {
+        const seniorPoolBalanceBefore = await seniorPool.assets()
+        const usdcBalanceBefore = await usdc.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+        // Unstake and withdraw a FIDU-USDC Curve LP position
+        await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, new BN(1), {from: investor})).to.be.rejectedWith(
+          /CW/
+        )
+
+        expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+        expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      })
+    })
+
     context("user does not own position token", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
@@ -1071,7 +1261,7 @@ describe("StakingRewards", function () {
 
         await expect(
           stakingRewards.unstakeAndWithdrawInFidu(tokenId, fiduAmount, {from: anotherUser})
-        ).to.be.rejectedWith(/access denied/)
+        ).to.be.rejectedWith(/AD/)
       })
     })
 
@@ -1156,6 +1346,24 @@ describe("StakingRewards", function () {
       expect(unstakedAndWithdrewEvent.args.amount).to.bignumber.equal(withdrawAmount)
     })
 
+    context("for a Curve staking position", async () => {
+      it("does not allow the user to withdraw", async () => {
+        const seniorPoolBalanceBefore = await seniorPool.assets()
+        const usdcBalanceBefore = await usdc.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+        // Unstake and withdraw a FIDU-USDC Curve LP position
+        await expect(stakingRewards.unstakeAndWithdraw(tokenId, new BN(1), {from: investor})).to.be.rejectedWith(/CW/)
+
+        expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+        expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
+      })
+    })
+
     context("user does not own position token", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
@@ -1163,7 +1371,7 @@ describe("StakingRewards", function () {
         await advanceTime({seconds: 10000})
 
         await expect(stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(100), {from: anotherUser})).to.be.rejectedWith(
-          /access denied/
+          /AD/
         )
       })
     })
@@ -1284,7 +1492,38 @@ describe("StakingRewards", function () {
               [firstTokenWithdrawAmount, secondTokenWithdrawAmount, thirdTokenWithdrawAmount],
               {from: investor}
             )
-          ).to.be.rejectedWith(/access denied/)
+          ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("with a Curve staking position", async () => {
+        it("does not allow the user to withdraw", async () => {
+          const seniorPoolBalanceBefore = await seniorPool.assets()
+          const usdcBalanceBefore = await usdc.balanceOf(investor)
+          const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          const curvePositionTokenId = await stake({
+            amount: curveLPAmount,
+            positionType: StakedPositionType.CurveLP,
+            from: investor,
+          })
+
+          // Unstake and withdraw a FIDU-USDC Curve LP position
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken, curvePositionTokenId],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, new BN(1)],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/CW/)
+
+          expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+          expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+          expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+          expect(await stakingRewards.ownerOf(curvePositionTokenId)).to.equal(investor)
         })
       })
 
@@ -1315,7 +1554,7 @@ describe("StakingRewards", function () {
               [firstTokenWithdrawAmount, secondTokenWithdrawAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+          ).to.be.rejectedWith(/IA/)
         })
       })
 
@@ -1327,7 +1566,7 @@ describe("StakingRewards", function () {
             stakingRewards.unstakeAndWithdrawMultiple([firstToken, secondToken], [firstTokenWithdrawAmount], {
               from: investor,
             })
-          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+          ).to.be.rejectedWith(/LEN/)
         })
       })
     })
@@ -1433,7 +1672,38 @@ describe("StakingRewards", function () {
               [firstTokenAmount, secondTokenAmount, thirdTokenAmount],
               {from: investor}
             )
-          ).to.be.rejectedWith(/access denied/)
+          ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("with a Curve staking position", async () => {
+        it("does not allow the user to withdraw", async () => {
+          const seniorPoolBalanceBefore = await seniorPool.assets()
+          const usdcBalanceBefore = await usdc.balanceOf(investor)
+          const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+          const curvePositionTokenId = await stake({
+            amount: curveLPAmount,
+            positionType: StakedPositionType.CurveLP,
+            from: investor,
+          })
+
+          // Unstake and withdraw a FIDU-USDC Curve LP position
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken, curvePositionTokenId],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, new BN(1)],
+              {from: investor}
+            )
+          ).to.be.rejectedWith(/CW/)
+
+          expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+          expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+          expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+          expect(await stakingRewards.ownerOf(curvePositionTokenId)).to.equal(investor)
         })
       })
 
@@ -1458,7 +1728,7 @@ describe("StakingRewards", function () {
               [firstTokenAmount, secondTokenAmount.add(new BN(100))],
               {from: investor}
             )
-          ).to.be.rejectedWith(/cannot unstake more than staked balance/)
+          ).to.be.rejectedWith(/IA/)
         })
       })
 
@@ -1468,7 +1738,7 @@ describe("StakingRewards", function () {
             stakingRewards.unstakeAndWithdrawMultipleInFidu([firstToken, secondToken], [firstTokenAmount], {
               from: investor,
             })
-          ).to.be.rejectedWith(/tokenIds and usdcAmounts must be the same length/)
+          ).to.be.rejectedWith(/LEN/)
         })
       })
     })
@@ -1514,7 +1784,7 @@ describe("StakingRewards", function () {
 
         await advanceTime({seconds: 10000})
 
-        await expect(stakingRewards.getReward(tokenId, {from: anotherUser})).to.be.rejectedWith(/access denied/)
+        await expect(stakingRewards.getReward(tokenId, {from: anotherUser})).to.be.rejectedWith(/AD/)
       })
     })
 
@@ -1859,7 +2129,7 @@ describe("StakingRewards", function () {
       expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardRate.mul(yearInSeconds))
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
       expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(new BN(0))
-      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/Cannot unstake 0/)
+      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/ZERO/)
     })
 
     context("user does not own position token", async () => {
@@ -1868,7 +2138,7 @@ describe("StakingRewards", function () {
 
         await advanceTime({seconds: yearInSeconds})
 
-        await expect(stakingRewards.exit(tokenId, {from: anotherUser})).to.be.rejectedWith(/access denied/)
+        await expect(stakingRewards.exit(tokenId, {from: anotherUser})).to.be.rejectedWith(/AD/)
       })
     })
 
@@ -1922,7 +2192,25 @@ describe("StakingRewards", function () {
 
         await advanceTime({seconds: 10000})
 
-        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: anotherUser})).to.be.rejectedWith(/access denied/)
+        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: anotherUser})).to.be.rejectedWith(/AD/)
+      })
+    })
+
+    context("for a Curve staking position", async () => {
+      it("does not allow the user to withdraw", async () => {
+        const seniorPoolBalanceBefore = await seniorPool.assets()
+        const usdcBalanceBefore = await usdc.balanceOf(investor)
+        const fiduBalanceBefore = await fidu.balanceOf(investor)
+
+        const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+        // Unstake and withdraw a FIDU-USDC Curve LP position
+        await expect(stakingRewards.exitAndWithdraw(tokenId, {from: investor})).to.be.rejectedWith(/CW/)
+
+        expect(await seniorPool.assets()).to.bignumber.equal(seniorPoolBalanceBefore)
+        expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore)
+        expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore)
+        expect(await stakingRewards.ownerOf(tokenId)).to.equal(investor)
       })
     })
 
@@ -2328,9 +2616,7 @@ describe("StakingRewards", function () {
 
     context("user is not admin", async () => {
       it("reverts", async () => {
-        await expect(stakingRewards.loadRewards(bigVal(1000), {from: anotherUser})).to.be.rejectedWith(
-          /Must have admin role/
-        )
+        await expect(stakingRewards.loadRewards(bigVal(1000), {from: anotherUser})).to.be.rejectedWith(/AD/)
       })
     })
   })
@@ -2395,7 +2681,7 @@ describe("StakingRewards", function () {
       const newMaxRate = bigVal(100)
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, newMinRate, newMaxRate, minRateAtPercent, maxRateAtPercent)
-      ).to.be.rejectedWith(/maxRate must be >= then minRate/)
+      ).to.be.rejectedWith(/IR/)
     })
 
     it("reverts if maxRateAtPercent > minRateAtPercent", async () => {
@@ -2403,7 +2689,7 @@ describe("StakingRewards", function () {
       let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e18)))
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
-      ).to.be.rejectedWith(/maxRateAtPercent must be <= minRateAtPercent/)
+      ).to.be.rejectedWith(/IRAP/)
 
       newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
       newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
@@ -2425,7 +2711,7 @@ describe("StakingRewards", function () {
           stakingRewards.setRewardsParameters(newTargetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Must have admin role/)
+        ).to.be.rejectedWith(/AD/)
       })
     })
   })
@@ -2459,9 +2745,7 @@ describe("StakingRewards", function () {
     context("user is not admin", async () => {
       it("reverts", async () => {
         const vestingLength = halfYearInSeconds
-        await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(
-          /Must have admin role/
-        )
+        await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(/AD/)
       })
     })
   })
@@ -2541,7 +2825,7 @@ describe("StakingRewards", function () {
           stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP, {
             from: anotherUser,
           })
-        ).to.be.rejectedWith(/Must have admin role/)
+        ).to.be.rejectedWith(/AD/)
       })
     })
   })
@@ -2574,7 +2858,7 @@ describe("StakingRewards", function () {
 
   context("initZapperRole", async () => {
     it("is only callable by admin", async () => {
-      await expect(stakingRewards.initZapperRole({from: anotherUser})).to.be.rejectedWith(/Must have admin role/)
+      await expect(stakingRewards.initZapperRole({from: anotherUser})).to.be.rejectedWith(/AD/)
       await expect(stakingRewards.initZapperRole({from: owner})).to.be.fulfilled
     })
 
