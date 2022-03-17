@@ -13,7 +13,10 @@ import { wait } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface DepositFormProps {
-  onCompleteDeposit: () => void;
+  /**
+   * Callback that runs when the deposit transaction is submitted. Does _not_ mean that the transaction is complete, this just means it was sent to the blockchain
+   */
+  onTransactionSubmitted: () => void;
 }
 
 interface FormFields {
@@ -28,7 +31,7 @@ const MIN_BLOCK_CHECK = gql`
   }
 `;
 
-export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
+export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
   const apolloClient = useApolloClient();
   const {
     register,
@@ -61,6 +64,7 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
     }
 
     const transaction = await seniorPoolContract.deposit(depositAmount);
+    onTransactionSubmitted();
     const toastId = toast(
       <div>
         Deposit transaction submitted, view it on{" "}
@@ -101,7 +105,6 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
           type: "success",
           autoClose: 5000,
         });
-        onCompleteDeposit();
       } catch (e) {
         if (
           (e as Error).message.includes("has only indexed up to block number")

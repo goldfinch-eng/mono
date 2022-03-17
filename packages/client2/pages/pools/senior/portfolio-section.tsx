@@ -89,7 +89,7 @@ export function PortfolioSection() {
         onClose={() => setIsDepositFormOpen(false)}
       >
         <DepositForm
-          onCompleteDeposit={() => {
+          onTransactionSubmitted={() => {
             setIsDepositFormOpen(false);
           }}
         />
