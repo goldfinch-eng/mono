@@ -4,6 +4,7 @@
 
 @layer base {
   @import url("https://use.typekit.net/oib7cgq.css");
+  @import url("~node_modules/react-toastify/dist/ReactToastify.min.css");
   html,
   body,
   #__next {

@@ -1,9 +1,11 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { Link } from "@/components/link";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
 import { refreshCurrentUserUsdcBalance } from "@/lib/graphql/local-state/actions";
@@ -59,6 +61,15 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
     }
 
     const transaction = await seniorPoolContract.deposit(depositAmount);
+    const toastId = toast(
+      <div>
+        Deposit transaction submitted, view it on{" "}
+        <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
+          etherscan.io
+        </Link>
+      </div>,
+      { autoClose: false }
+    );
     const receipt = await transaction.wait();
     const minBlock = receipt.blockNumber;
     let subgraphUpdated = false;
@@ -85,6 +96,11 @@ export function DepositForm({ onCompleteDeposit }: DepositFormProps) {
           },
         });
         refreshCurrentUserUsdcBalance(usdcContract);
+        toast.update(toastId, {
+          render: "Senior pool deposit completed",
+          type: "success",
+          autoClose: 5000,
+        });
         onCompleteDeposit();
       } catch (e) {
         if (
