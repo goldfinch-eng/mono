@@ -20,7 +20,7 @@ export function getOrInitSeniorPool(address: Address): SeniorPool {
   return seniorPool as SeniorPool
 }
 
-const SENIOR_POOL_STATUS_ID = "1"
+export const SENIOR_POOL_STATUS_ID = "1"
 export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
   let poolStatus = SeniorPoolStatus.load(SENIOR_POOL_STATUS_ID)
   if (!poolStatus) {
@@ -90,7 +90,7 @@ export function updatePoolInvestments(seniorPoolAddress: Address, tranchedPoolAd
 const FIDU_DECIMALS = BigDecimal.fromString("1000000000000000000") // 18 zeroes
 const USDC_DECIMALS = BigDecimal.fromString("1000000") // 6 zeroes
 
-function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
+export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   let estimatedTotalInterest = BigDecimal.zero()
   for (let i = 0; i < poolStatus.tranchedPools.length; i++) {
     const tranchedPoolId = poolStatus.tranchedPools[i]
