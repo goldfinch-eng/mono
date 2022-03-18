@@ -19,6 +19,7 @@ function main() {
   configResult = configResult.replace(/0xd20508E1E971b80EE172c73517905bfFfcBD87f9/g, deployedGoldfinchFactoryProxyAddress)
   configResult = configResult.replace(/0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75/g, deployedPoolProxyAddress)
   configResult = configResult.replace(/0x57686612C601Cb5213b01AA8e80AfEb24BBd01df/g, deployedPoolTokensProxyAddress)
+  configResult = configResult.replace(/startBlock.*/g, "");
   fs.writeFileSync(subgraphConfigPath, configResult, {encoding: "utf8"})
 
   const subgraphConstantsFile = fs.readFileSync(subgraphConstantsPath, {encoding: "utf8"})
