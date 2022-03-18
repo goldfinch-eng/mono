@@ -165,4 +165,6 @@ test("handleDepositMade calls recalculateSeniorPoolAPY", () => {
   assert.fieldEquals("SeniorPoolStatus", SENIOR_POOL_STATUS_ID, "id", SENIOR_POOL_STATUS_ID)
   assert.fieldEquals("SeniorPoolStatus", SENIOR_POOL_STATUS_ID, "estimatedApy", "34999956717936000")
   assert.fieldEquals("SeniorPoolStatus", SENIOR_POOL_STATUS_ID, "estimatedTotalInterest", "874998917948.4")
+
+  clearStore()
 })
