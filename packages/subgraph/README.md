@@ -85,6 +85,10 @@ In practical terms, logs should be added to monitor the progress of the applicat
 - Run: `./reset-local.sh && ./start-local.sh` or `./start-local.sh`
   - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
 
+### Cleaning up after running locally
+- Run `docker-compose down -v` to tear down the Docker instances
+- Run `rm -rf ./data` from `packages/subgraph` to remove any leftover data from execution. If you forget this step, it can lead to errors on subsequent runs.
+
 ### Quick Runs
 - A quick run script is available: `packages/subgraph/quick-start.sh`. This requires a test dump to be restored to the postgres container.
   - This only works for mainnet forking
