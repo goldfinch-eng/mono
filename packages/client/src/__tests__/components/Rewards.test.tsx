@@ -179,6 +179,8 @@ function mockPoolBackersData(poolTokenIds: string[], poolAddress: string, curren
               }
             },
           } as unknown as TranchedPool,
+          principalAmount: new BigNumber(100).multipliedBy(utils.USDC_DECIMALS.toString(10)),
+          principalAtRisk: new BigNumber(50).multipliedBy(utils.USDC_DECIMALS.toString(10)),
           tokenInfos: poolTokenIds.map((poolTokenId) => ({
             id: poolTokenId,
             tranche: new BigNumber(2),
@@ -1344,6 +1346,59 @@ describe("Rewards list and detail", () => {
     )
   })
 
+  it("shows claimable backer reward on rewards list", async () => {
+    const poolTokenId = "1"
+    const poolAddress = "0xfoo"
+
+    mockPoolBackersData([poolTokenId], poolAddress, currentBlock)
+
+    const claimableBackersOnly = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+    const claimableSeniorPoolMatching = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+    const claimedBackersOnly = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+    const claimedSeniorPoolMatching = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+
+    const deps = await setupClaimableBackerReward(
+      goldfinchProtocol,
+      seniorPool,
+      [
+        {
+          poolTokenId,
+          claimableBackersOnly,
+          claimableSeniorPoolMatching,
+          claimedBackersOnly,
+          claimedSeniorPoolMatching,
+        },
+      ],
+      currentBlock
+    )
+
+    renderRewards(goldfinchProtocol, deps, currentBlock)
+
+    expect(await screen.findByText(`Backer of Pool ${poolAddress}`)).toBeVisible()
+    expect(screen.getByText("3.00 GFI • Dec 29, 2021")).toBeVisible()
+    expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+    expect(screen.getByTestId("detail-unvested").textContent).toEqual("0.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("3.00")
+
+    fireEvent.click(screen.getByText(`Backer of Pool ${poolAddress}`))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("Supplied $100.00 USDC beginning on Dec 29, 2021 ($50.00 USDC remaining)")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("100.00% (3.00 GFI) unlocked")).toBeVisible()
+
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
+    expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("$0.00 (0.00 GFI) claimed of your total unlocked 3.00 GFI")).toBeVisible()
+
+    expect(screen.queryByText("Etherscan")).not.toBeInTheDocument()
+  })
+
   it("shows vesting community reward on rewards list", async () => {
     const deps = await setupVestingCommunityReward(goldfinchProtocol, seniorPool, currentBlock)
 
@@ -1798,6 +1853,59 @@ describe("Rewards list and detail", () => {
       "href",
       `https://${network.name}.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000001`
     )
+  })
+
+  it("shows claimed backer reward", async () => {
+    const poolTokenId = "1"
+    const poolAddress = "0xfoo"
+
+    mockPoolBackersData([poolTokenId], poolAddress, currentBlock)
+
+    const claimableBackersOnly = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+    const claimableSeniorPoolMatching = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+    const claimedBackersOnly = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+    const claimedSeniorPoolMatching = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+
+    const deps = await setupClaimableBackerReward(
+      goldfinchProtocol,
+      seniorPool,
+      [
+        {
+          poolTokenId,
+          claimableBackersOnly,
+          claimableSeniorPoolMatching,
+          claimedBackersOnly,
+          claimedSeniorPoolMatching,
+        },
+      ],
+      currentBlock
+    )
+
+    renderRewards(goldfinchProtocol, deps, currentBlock)
+
+    expect(await screen.findByText(`Backer of Pool ${poolAddress}`)).toBeVisible()
+    expect(screen.getByText("3.00 GFI • Dec 29, 2021")).toBeVisible()
+    expect(screen.getByTestId("action-button").textContent).toEqual("Still Locked")
+
+    expect(screen.getByTestId("detail-unvested").textContent).toEqual("0.00")
+    expect(screen.getByTestId("detail-claimable").textContent).toEqual("0.00")
+
+    fireEvent.click(screen.getByText(`Backer of Pool ${poolAddress}`))
+    expect(await screen.findByText("Transaction details")).toBeVisible()
+    expect(
+      await screen.findByText("Supplied $100.00 USDC beginning on Dec 29, 2021 ($50.00 USDC remaining)")
+    ).toBeVisible()
+
+    expect(await screen.findByText("Unlock status")).toBeVisible()
+    expect(await screen.findByText("100.00% (3.00 GFI) unlocked")).toBeVisible()
+
+    expect(await screen.findByText("Unlock schedule")).toBeVisible()
+    expect(await screen.findByText("Immediate")).toBeVisible()
+
+    expect(await screen.findByText("Claim status")).toBeVisible()
+    expect(await screen.findByText("$6.00 (3.00 GFI) claimed of your total unlocked 3.00 GFI")).toBeVisible()
+
+    expect(screen.queryByText("Etherscan")).not.toBeInTheDocument()
   })
 
   it("staking reward partially claimed appears on list", async () => {
