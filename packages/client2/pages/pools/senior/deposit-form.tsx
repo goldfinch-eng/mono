@@ -68,20 +68,9 @@ export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
     );
     const receipt = await transaction.wait();
     await waitForSubgraphBlock(receipt.blockNumber);
-    await apolloClient.refetchQueries({
-      updateCache(cache) {
-        cache.modify({
-          fields: {
-            user(_, { INVALIDATE }) {
-              return INVALIDATE;
-            },
-            seniorPools(_, { INVALIDATE }) {
-              return INVALIDATE;
-            },
-          },
-        });
-      },
-    });
+    // PATTERN the "active" refetch strategy is a pretty decent medium between refetching everything and explicitly telling Apollo what to refetch
+    // It's recommended to use "active" by default unless you know for sure that it's insufficient (for example, there's a piece of data offscreen that needs to be refetched)
+    await apolloClient.refetchQueries({ include: "active" });
     refreshCurrentUserUsdcBalance(usdcContract);
     toast.update(toastId, {
       render: "Senior pool deposit completed",
