@@ -134,13 +134,13 @@ export interface RewardsMockData {
     gfiBalance?: string
   }
   backer?: {
-    poolTokenInfo: {
+    poolTokenInfos: Array<{
       id: string
       poolTokenClaimableRewards: string
       stakingRewardsEarnedSinceLastWithdraw: string
       backerRewardsTokenInfo: [string, string]
       stakingRewardsClaimed: string
-    }
+    }>
   }
 }
 
@@ -160,10 +160,10 @@ type ContractCallMocks = {
   callGrantsMock: ReturnType<typeof mock> | undefined
   callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   callCommunityRewardsTotalVestedAt: ReturnType<typeof mock> | undefined
-  callBackerRewardsPoolTokenClaimableRewards: ReturnType<typeof mock> | undefined
-  callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: ReturnType<typeof mock> | undefined
-  callBackerRewardsTokens: ReturnType<typeof mock> | undefined
-  callBackerRewardsStakingRewardsClaimed: ReturnType<typeof mock> | undefined
+  callBackerRewardsPoolTokenClaimableRewards: ReturnType<typeof mock>[] | undefined
+  callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: ReturnType<typeof mock>[] | undefined
+  callBackerRewardsTokens: ReturnType<typeof mock>[] | undefined
+  callBackerRewardsStakingRewardsClaimed: ReturnType<typeof mock>[] | undefined
 }
 
 type ContractCallMocksPlusExpectations = {
@@ -548,51 +548,67 @@ export async function mockUserRelatedInitializationContractCalls(
     })
   }
 
-  let callBackerRewardsPoolTokenClaimableRewards: ReturnType<typeof mock> | undefined
-  let callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: ReturnType<typeof mock> | undefined
-  let callBackerRewardsTokens: ReturnType<typeof mock> | undefined
-  let callBackerRewardsStakingRewardsClaimed: ReturnType<typeof mock> | undefined
+  let callBackerRewardsPoolTokenClaimableRewards: ReturnType<typeof mock>[] | undefined
+  let callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: ReturnType<typeof mock>[] | undefined
+  let callBackerRewardsTokens: ReturnType<typeof mock>[] | undefined
+  let callBackerRewardsStakingRewardsClaimed: ReturnType<typeof mock>[] | undefined
   if (rewardsMock.backer) {
-    callBackerRewardsPoolTokenClaimableRewards = mock({
-      blockchain,
-      call: {
-        to: backerRewards.address,
-        api: await getBackerRewardsAbi(),
-        method: "poolTokenClaimableRewards",
-        params: [rewardsMock.backer.poolTokenInfo.id],
-        return: rewardsMock.backer.poolTokenInfo.poolTokenClaimableRewards,
-      },
-    })
-    callBackerRewardsStakingRewardsEarnedSinceLastWithdraw = mock({
-      blockchain,
-      call: {
-        to: backerRewards.address,
-        api: await getBackerRewardsAbi(),
-        method: "stakingRewardsEarnedSinceLastWithdraw",
-        params: [rewardsMock.backer.poolTokenInfo.id],
-        return: rewardsMock.backer.poolTokenInfo.stakingRewardsEarnedSinceLastWithdraw,
-      },
-    })
-    callBackerRewardsTokens = mock({
-      blockchain,
-      call: {
-        to: backerRewards.address,
-        api: await getBackerRewardsAbi(),
-        method: "tokens",
-        params: [rewardsMock.backer.poolTokenInfo.id],
-        return: rewardsMock.backer.poolTokenInfo.backerRewardsTokenInfo,
-      },
-    })
-    callBackerRewardsStakingRewardsClaimed = mock({
-      blockchain,
-      call: {
-        to: backerRewards.address,
-        api: await getBackerRewardsAbi(),
-        method: "stakingRewardsClaimed",
-        params: [rewardsMock.backer.poolTokenInfo.id],
-        return: rewardsMock.backer.poolTokenInfo.stakingRewardsClaimed,
-      },
-    })
+    callBackerRewardsPoolTokenClaimableRewards = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "poolTokenClaimableRewards",
+            params: [info.id],
+            return: info.poolTokenClaimableRewards,
+          },
+        })
+      )
+    )
+    callBackerRewardsStakingRewardsEarnedSinceLastWithdraw = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "stakingRewardsEarnedSinceLastWithdraw",
+            params: [info.id],
+            return: info.stakingRewardsEarnedSinceLastWithdraw,
+          },
+        })
+      )
+    )
+    callBackerRewardsTokens = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "tokens",
+            params: [info.id],
+            return: info.backerRewardsTokenInfo,
+          },
+        })
+      )
+    )
+    callBackerRewardsStakingRewardsClaimed = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "stakingRewardsClaimed",
+            params: [info.id],
+            return: info.stakingRewardsClaimed,
+          },
+        })
+      )
+    )
   }
 
   return {
@@ -982,11 +998,19 @@ export function resetAirdropMocks(goldfinchProtocol: GoldfinchProtocol): void {
   })
 }
 
-export function assertAllMocksAreCalled(mocks: Record<string, ReturnType<typeof mock> | undefined>) {
+export function assertAllMocksAreCalled(
+  mocks: Record<string, ReturnType<typeof mock> | ReturnType<typeof mock>[] | undefined>
+) {
   Object.keys(mocks).forEach((key: string) => {
     const mock = mocks[key as keyof typeof mocks]
     if (mock) {
-      expect(mock).toHaveBeenCalled()
+      if (Array.isArray(mock)) {
+        mock.forEach((eachMock) => {
+          expect(eachMock).toHaveBeenCalled()
+        })
+      } else {
+        expect(mock).toHaveBeenCalled()
+      }
     }
   })
 }

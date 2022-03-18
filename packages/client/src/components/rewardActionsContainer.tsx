@@ -568,8 +568,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     }
   }
 
-  async function handleClaimSingle(rewards: StakingRewardsLoaded | CommunityRewardsLoaded, tokenId: string) {
-    assertNonNullable(rewards)
+  async function handleClaimViaGetReward(rewards: StakingRewardsLoaded | CommunityRewardsLoaded, tokenId: string) {
     const previousGfiBalance = props.user.info.value.gfiBalance
     await sendFromUser(
       rewards.contract.userWallet.methods.getReward(tokenId),
@@ -582,11 +581,14 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     await handleAddGfiTokenToWallet(previousGfiBalance)
   }
 
-  async function handleClaimMultiple(rewards: BackerRewardsLoaded, tokenIds: string[]) {
-    assertNonNullable(rewards)
+  async function handleClaimViaWithdraw(rewards: BackerRewardsLoaded, tokenIds: string[]) {
     const previousGfiBalance = props.user.info.value.gfiBalance
+    const tokenId = tokenIds[0]
+    assertNonNullable(tokenId)
     await sendFromUser(
-      rewards.contract.userWallet.methods.withdrawMultiple(tokenIds),
+      tokenIds.length === 1
+        ? rewards.contract.userWallet.methods.withdraw(tokenId)
+        : rewards.contract.userWallet.methods.withdrawMultiple(tokenIds),
       {
         type: CLAIM_TX_TYPE,
         data: {},
@@ -705,7 +707,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       (item: StakingRewardsPosition) =>
         item.storedPosition.amount.eq(0) ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
       props.disabled || props.stakingRewards.info.value.isPaused,
-      () => handleClaimSingle(props.stakingRewards, item.tokenId)
+      () => handleClaimViaGetReward(props.stakingRewards, item.tokenId)
     )
   } else if (props.type === "backerRewards") {
     const item = props.item
@@ -725,7 +727,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         item.backer.tranchedPool.isRepaid ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
       props.disabled || !item.rewardsAreWithdrawable,
       () =>
-        handleClaimMultiple(
+        handleClaimViaWithdraw(
           props.backerRewards,
           item.tokenPositions.map((tokenPosition) => tokenPosition.tokenId)
         )
@@ -760,7 +762,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
             : RewardStatus.TemporarilyAllClaimed
           : RewardStatus.PermanentlyAllClaimed,
       props.disabled || props.communityRewards.info.value.isPaused,
-      () => handleClaimSingle(props.communityRewards, item.tokenId)
+      () => handleClaimViaGetReward(props.communityRewards, item.tokenId)
     )
   } else if (props.type === "merkleDistributor") {
     const item = props.item

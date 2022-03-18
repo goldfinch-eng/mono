@@ -472,11 +472,13 @@ export async function setupPartiallyClaimedCommunityReward(
 export async function setupClaimableBackerReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
-  poolTokenId: string,
-  claimableBackersOnly: BigNumber,
-  claimableSeniorPoolMatching: BigNumber,
-  claimedBackersOnly: BigNumber,
-  claimedSeniorPoolMatching: BigNumber,
+  poolTokenInfos: Array<{
+    poolTokenId: string
+    claimableBackersOnly: BigNumber
+    claimableSeniorPoolMatching: BigNumber
+    claimedBackersOnly: BigNumber
+    claimedSeniorPoolMatching: BigNumber
+  }>,
   currentBlock: BlockInfo
 ) {
   const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
@@ -484,16 +486,16 @@ export async function setupClaimableBackerReward(
     {goldfinchProtocol, seniorPool, ...baseDeps},
     {
       backer: {
-        poolTokenInfo: {
-          id: poolTokenId,
-          poolTokenClaimableRewards: claimableBackersOnly.toString(10),
-          stakingRewardsEarnedSinceLastWithdraw: claimableSeniorPoolMatching.toString(10),
+        poolTokenInfos: poolTokenInfos.map((info) => ({
+          id: info.poolTokenId,
+          poolTokenClaimableRewards: info.claimableBackersOnly.toString(10),
+          stakingRewardsEarnedSinceLastWithdraw: info.claimableSeniorPoolMatching.toString(10),
           backerRewardsTokenInfo: [
-            claimedBackersOnly.toString(10),
+            info.claimedBackersOnly.toString(10),
             new BigNumber(0).multipliedBy(GFI_DECIMALS).toString(10),
           ],
-          stakingRewardsClaimed: claimedSeniorPoolMatching.toString(10),
-        },
+          stakingRewardsClaimed: info.claimedSeniorPoolMatching.toString(10),
+        })),
       },
       currentBlock,
     }

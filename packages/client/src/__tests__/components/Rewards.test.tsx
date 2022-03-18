@@ -1,7 +1,6 @@
 import {mock, resetMocks, setBlockData} from "@depay/web3-mock"
 import "@testing-library/jest-dom"
-import {fireEvent, render, screen, waitFor, waitForElementToBeRemoved} from "@testing-library/react"
-import {notDeepStrictEqual} from "assert"
+import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import BigNumber from "bignumber.js"
 import {MemoryRouter as Router} from "react-router-dom"
 import {ThemeProvider} from "styled-components"
@@ -159,6 +158,43 @@ function renderRewards(
       </ThemeProvider>
     </AppContext.Provider>
   )
+}
+
+function mockPoolBackersData(poolTokenIds: string[], poolAddress: string, currentBlock: BlockInfo) {
+  jest.spyOn(useEarnData, "usePoolBackersWeb3").mockReturnValue({
+    backers: {
+      loaded: true,
+      value: [
+        {
+          tranchedPool: {
+            address: poolAddress,
+            creditLine: {
+              termStartTime: new BigNumber(currentBlock.timestamp),
+            },
+            isSeniorTrancheId: (trancheId: BigNumber): boolean => {
+              if (trancheId.toString() === "2") {
+                return false
+              } else {
+                throw new Error(`Unexpected tranche id: ${typeof trancheId} ${trancheId}`)
+              }
+            },
+          } as unknown as TranchedPool,
+          tokenInfos: poolTokenIds.map((poolTokenId) => ({
+            id: poolTokenId,
+            tranche: new BigNumber(2),
+          })),
+          firstDepositBlockNumber: currentBlock.number,
+        } as TranchedPoolBacker,
+      ],
+    },
+    poolsAddresses: {
+      loaded: true,
+      value: [poolAddress],
+    },
+  })
+
+  // Mock the `getBlock()` call done by `UserBackerRewards.initialize()`.
+  setBlockData(currentBlock.number, currentBlock)
 }
 
 function mockUseEarnLogic() {
@@ -747,42 +783,7 @@ describe("Rewards summary", () => {
     beforeEach(async () => {
       // Override the mocking of `usePoolBackerWeb3()` done upstream, in order to define meaningful
       // `backers` info so that we can test behavior in the non-zero backer rewards scenario.
-      jest.spyOn(useEarnData, "usePoolBackersWeb3").mockReturnValue({
-        backers: {
-          loaded: true,
-          value: [
-            {
-              tranchedPool: {
-                address: poolAddress,
-                creditLine: {
-                  termStartTime: new BigNumber(currentBlock.timestamp),
-                },
-                isSeniorTrancheId: (trancheId: BigNumber): boolean => {
-                  if (trancheId.toString() === "2") {
-                    return false
-                  } else {
-                    throw new Error(`Unexpected tranche id: ${typeof trancheId} ${trancheId}`)
-                  }
-                },
-              } as unknown as TranchedPool,
-              tokenInfos: [
-                {
-                  id: poolTokenId,
-                  tranche: new BigNumber(2),
-                },
-              ],
-              firstDepositBlockNumber: currentBlock.number,
-            } as TranchedPoolBacker,
-          ],
-        },
-        poolsAddresses: {
-          loaded: true,
-          value: [poolAddress],
-        },
-      })
-
-      // Mock the `getBlock()` call done by `UserBackerRewards.initialize()`.
-      setBlockData(currentBlock.number, currentBlock)
+      mockPoolBackersData([poolTokenId], poolAddress, currentBlock)
     })
 
     it("for backer of tranched pool, reward with non-zero claimable amount appears on portfolio", async () => {
@@ -794,11 +795,15 @@ describe("Rewards summary", () => {
       const deps = await setupClaimableBackerReward(
         goldfinchProtocol,
         seniorPool,
-        poolTokenId,
-        claimableBackersOnly,
-        claimableSeniorPoolMatching,
-        claimedBackersOnly,
-        claimedSeniorPoolMatching,
+        [
+          {
+            poolTokenId,
+            claimableBackersOnly,
+            claimableSeniorPoolMatching,
+            claimedBackersOnly,
+            claimedSeniorPoolMatching,
+          },
+        ],
         currentBlock
       )
 
@@ -2384,6 +2389,169 @@ describe("Rewards list and detail", () => {
       })
 
       expect(getRewardMock).toHaveBeenCalled()
+      expect(watchAssetMock).toHaveBeenCalled()
+    })
+
+    it("clicking backer rewards button triggers sending `withdraw()`, if user has one pool token", async () => {
+      const poolTokenId = "1"
+      const poolAddress = "0xfoo"
+
+      mockPoolBackersData([poolTokenId], poolAddress, currentBlock)
+
+      const claimableBackersOnly = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+      const claimableSeniorPoolMatching = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+      const claimedBackersOnly = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+      const claimedSeniorPoolMatching = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+
+      const deps = await setupClaimableBackerReward(
+        goldfinchProtocol,
+        seniorPool,
+        [
+          {
+            poolTokenId,
+            claimableBackersOnly,
+            claimableSeniorPoolMatching,
+            claimedBackersOnly,
+            claimedSeniorPoolMatching,
+          },
+        ],
+        currentBlock
+      )
+      const networkMonitor = {
+        addPendingTX: () => {},
+        watch: () => {},
+        markTXErrored: () => {},
+      } as unknown as NetworkMonitor
+      const refreshCurrentBlock = jest.fn()
+
+      renderRewards(goldfinchProtocol, deps, currentBlock, refreshCurrentBlock, networkMonitor)
+
+      expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+      web3.userWallet.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const DEPLOYMENTS = await getDeployments()
+      const withdrawMock = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.BackerRewards.address,
+          api: DEPLOYMENTS.contracts.BackerRewards.abi,
+          method: "withdraw",
+          params: poolTokenId,
+        },
+      })
+      const watchAssetMock = mock({
+        blockchain,
+        watchAsset: {
+          params: {
+            type: "ERC20",
+            options: {
+              address: deps.gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: "https://app.goldfinch.finance/gfi-token.svg",
+            },
+          },
+          return: true,
+        },
+      })
+
+      fireEvent.click(screen.getByText("Claim GFI"))
+      await waitFor(async () => {
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+      })
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
+
+      expect(withdrawMock).toHaveBeenCalled()
+      expect(watchAssetMock).toHaveBeenCalled()
+    })
+    it("clicking backer rewards button triggers sending `withdrawMultiple()`, if user has multiple pool tokens", async () => {
+      const poolTokenId1 = "1"
+      const poolTokenId2 = "2"
+      const poolAddress = "0xfoo"
+
+      mockPoolBackersData([poolTokenId1, poolTokenId2], poolAddress, currentBlock)
+
+      const claimableBackersOnly = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+      const claimableSeniorPoolMatching = new BigNumber(1.5).multipliedBy(GFI_DECIMALS)
+      const claimedBackersOnly = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+      const claimedSeniorPoolMatching = new BigNumber(0).multipliedBy(GFI_DECIMALS)
+
+      const deps = await setupClaimableBackerReward(
+        goldfinchProtocol,
+        seniorPool,
+        [
+          {
+            poolTokenId: poolTokenId1,
+            claimableBackersOnly,
+            claimableSeniorPoolMatching,
+            claimedBackersOnly,
+            claimedSeniorPoolMatching,
+          },
+          {
+            poolTokenId: poolTokenId2,
+            claimableBackersOnly,
+            claimableSeniorPoolMatching,
+            claimedBackersOnly,
+            claimedSeniorPoolMatching,
+          },
+        ],
+        currentBlock
+      )
+      const networkMonitor = {
+        addPendingTX: () => {},
+        watch: () => {},
+        markTXErrored: () => {},
+      } as unknown as NetworkMonitor
+      const refreshCurrentBlock = jest.fn()
+
+      renderRewards(goldfinchProtocol, deps, currentBlock, refreshCurrentBlock, networkMonitor)
+
+      expect(await screen.findByText("Claim GFI")).toBeVisible()
+
+      web3.userWallet.eth.getGasPrice = () => {
+        return Promise.resolve("100000000")
+      }
+      const DEPLOYMENTS = await getDeployments()
+      const withdrawMultipleMock = mock({
+        blockchain,
+        transaction: {
+          to: DEPLOYMENTS.contracts.BackerRewards.address,
+          api: DEPLOYMENTS.contracts.BackerRewards.abi,
+          method: "withdrawMultiple",
+          params: [[poolTokenId1, poolTokenId2]],
+        },
+      })
+      const watchAssetMock = mock({
+        blockchain,
+        watchAsset: {
+          params: {
+            type: "ERC20",
+            options: {
+              address: deps.gfi.address,
+              symbol: "GFI",
+              decimals: 18,
+              image: "https://app.goldfinch.finance/gfi-token.svg",
+            },
+          },
+          return: true,
+        },
+      })
+
+      fireEvent.click(screen.getByText("Claim GFI"))
+      await waitFor(async () => {
+        expect(screen.getByText("Submit")).not.toBeDisabled()
+      })
+      fireEvent.click(screen.getByText("Submit"))
+      await waitFor(async () => {
+        expect(await screen.getByText("Submitting...")).toBeInTheDocument()
+      })
+
+      expect(withdrawMultipleMock).toHaveBeenCalled()
       expect(watchAssetMock).toHaveBeenCalled()
     })
   })
