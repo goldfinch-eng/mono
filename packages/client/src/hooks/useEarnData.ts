@@ -33,14 +33,16 @@ function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[
   )
 }
 
-export function useTranchedPoolSubgraphData(
-  graphQuerierConfig: UseGraphQuerierConfig,
-  skip = false
-): {
+export type TranchedPoolSubgraphData = {
   backers: Loadable<TranchedPoolBacker[]>
   loading: boolean
   error: ApolloError | undefined
-} {
+}
+
+export function useTranchedPoolSubgraphData(
+  graphQuerierConfig: UseGraphQuerierConfig,
+  skip = false
+): TranchedPoolSubgraphData {
   const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useContext(AppContext)
   const [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
@@ -82,10 +84,12 @@ export function useTranchedPoolSubgraphData(
   return {loading, error, backers}
 }
 
-export function usePoolBackersWeb3(skip = false): {
+export type PoolBackersWeb3Data = {
   backers: Loadable<TranchedPoolBacker[]>
   poolsAddresses: Loadable<string[]>
-} {
+}
+
+export function usePoolBackersWeb3(skip = false): PoolBackersWeb3Data {
   const {user, goldfinchProtocol, currentBlock, network} = useContext(AppContext)
   let [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
@@ -141,10 +145,12 @@ export function usePoolBackersWeb3(skip = false): {
   return {backers, poolsAddresses}
 }
 
+export type SeniorPoolStatusWeb3Data = {seniorPoolStatus: Loadable<SeniorPoolStatus>}
+
 export function useSeniorPoolStatusWeb3(
   capitalProvider: Loadable<CapitalProvider>,
   skip = false
-): {seniorPoolStatus: Loadable<SeniorPoolStatus>} {
+): SeniorPoolStatusWeb3Data {
   const {pool, goldfinchConfig} = useContext(AppContext)
   const [seniorPoolStatus, setSeniorPoolStatus] = useState<Loadable<SeniorPoolStatus>>({
     loaded: false,

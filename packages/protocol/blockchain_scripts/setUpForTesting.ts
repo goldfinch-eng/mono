@@ -53,6 +53,11 @@ import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 
 dotenv.config({path: findEnvLocal()})
 
+export const BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE = new BigNumber(100_000_000)
+  .multipliedBy(new BigNumber(1e18))
+  .toString(10)
+export const BACKER_REWARDS_PERCENT_OF_TOTAL_GFI = 2
+
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
 It is only really used for test purposes, and should never be used on Mainnet (which it automatically never does);
@@ -299,13 +304,9 @@ async function setUpRewards(
   }
 
   // Configure BackerRewards
-  const backerRewardsPercentOfTotalGfi = 2
-  const backerRewardsGfiAmount = amount.mul(new BN(backerRewardsPercentOfTotalGfi)).div(new BN(100))
+  const backerRewardsGfiAmount = amount.mul(new BN(BACKER_REWARDS_PERCENT_OF_TOTAL_GFI)).div(new BN(100))
   await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
-  await backerRewards.setMaxInterestDollarsEligible(
-    new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10),
-    {from: protocolOwner}
-  )
+  await backerRewards.setMaxInterestDollarsEligible(BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE, {from: protocolOwner})
   await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
 }
 

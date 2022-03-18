@@ -21,13 +21,16 @@ import {gfiFromAtomic, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded} from "./pool"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "./tranchedPool"
-import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
+import {DAYS_PER_YEAR, MAINNET, USDC_DECIMALS} from "./utils"
 
 type BackerRewardsLoadedInfo = {
   currentBlock: BlockInfo
   isPaused: boolean
   maxInterestDollarsEligible: BigNumber
   totalRewardPercentOfTotalGFI: BigNumber
+  // The block from which tranched pools created henceforth are able to earn GFI through
+  // the BackerRewards contract.
+  startBlock: BlockInfo
 }
 
 export type BackerRewardsLoaded = WithLoadedInfo<BackerRewards, BackerRewardsLoadedInfo>
@@ -37,12 +40,6 @@ export class BackerRewards {
   contract: Web3IO<BackerRewardsContract>
   address: string
   info: Loadable<BackerRewardsLoadedInfo>
-  // The block from which tranched pools created henceforth are able to earn GFI through
-  // the BackerRewards contract.
-  startBlock: BlockInfo = {
-    number: 14142864,
-    timestamp: 1644021439,
-  }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -55,14 +52,12 @@ export class BackerRewards {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
+    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
+
     const [isPaused, maxInterestDollarsEligible, totalRewardPercentOfTotalGFI] = await Promise.all([
       this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
-      // TEMP: Hard-code this value until the correct value has been set on the contract.
-      // this.contract.readOnly.methods.maxInterestDollarsEligible().call(undefined, currentBlock.number),
-      new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
-      // TEMP: Hard-code this value until the correct value has been set on the contract.
-      // this.contract.readOnly.methods.totalRewardPercentOfTotalGFI().call(undefined, currentBlock.number),
-      new BigNumber(2).multipliedBy(new BigNumber(1e18)),
+      this.contract.readOnly.methods.maxInterestDollarsEligible().call(undefined, currentBlock.number),
+      this.contract.readOnly.methods.totalRewardPercentOfTotalGFI().call(undefined, currentBlock.number),
     ])
 
     this.info = {
@@ -72,6 +67,20 @@ export class BackerRewards {
         isPaused,
         maxInterestDollarsEligible: new BigNumber(maxInterestDollarsEligible),
         totalRewardPercentOfTotalGFI: new BigNumber(totalRewardPercentOfTotalGFI),
+        startBlock: networkIsMainnet
+          ? {
+              number: 14142864,
+              timestamp: 1644021439,
+            }
+          : // If we're not on mainnet -- e.g. we're on the local network -- we'll define the
+            // start block such that effectively all tranched pools are eligible for backer rewards.
+            // If you want to test the scenario where only some tranched pools are eligible for
+            // backer rewards, you can overwrite this to be a value that is meaningful for the network
+            // you're testing on.
+            {
+              number: 1,
+              timestamp: 1,
+            },
       },
     }
   }
@@ -87,10 +96,12 @@ export class BackerRewards {
   }
 
   filterRewardsEligibleTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
+    assertWithLoadedInfo(this)
+    const loadedInfo = this.info.value
     return tranchedPools.filter((tranchedPool: TranchedPool): boolean => {
       const eligible =
         tranchedPool.creditLine.termStartTime.isZero() ||
-        tranchedPool.creditLine.termStartTime.toNumber() >= this.startBlock.timestamp
+        tranchedPool.creditLine.termStartTime.toNumber() >= loadedInfo.startBlock.timestamp
       return eligible
     })
   }

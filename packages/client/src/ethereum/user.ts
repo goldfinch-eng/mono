@@ -1683,7 +1683,6 @@ export class UserBackerRewards {
             ),
             web3.readOnly.eth.getBlock(firstDepositBlockNumber),
           ])
-
           const firstDepositTime = firstDepositBlock.timestamp
           assertNumber(firstDepositTime)
 
