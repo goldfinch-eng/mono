@@ -1,6 +1,12 @@
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts'
 import { createMockedFunction } from 'matchstick-as/assembly/index'
-import { CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, POOL_TOKENS_ADDRESS, SENIOR_POOL_ADDRESS } from '../src/constants'
+import {
+  FIDU_ADDRESS,
+  CONFIG_KEYS_NUMBERS,
+  GOLDFINCH_CONFIG_ADDRESS,
+  POOL_TOKENS_ADDRESS,
+  SENIOR_POOL_ADDRESS
+} from '../src/constants'
 
 export function mockTranchedPoolMultipleSlicesCalls(
   tranchedPoolAddress: Address,
@@ -288,7 +294,6 @@ export function mockCreditLineContractCalls(creditLineAddress: Address, v2_2: bo
 
 }
 
-
 export function mockPoolBackersContractCalls(
   tranchedPoolAddress: Address,
   tokenId: BigInt,
@@ -340,4 +345,84 @@ export function mockTranchedPoolTokenContractCalls(
   .returns([ethereum.Value.fromAddress(owner)])
 
   mockPoolBackersContractCalls(tranchedPoolAddress, tokenId)
+}
+
+export function mockUpdatePoolStatusCalls(seniorPoolAddress: string): void {
+  const amount = ethereum.Value.fromUnsignedBigInt(BigInt.fromString('5000000000000'))
+
+  createMockedFunction(
+    Address.fromString(seniorPoolAddress),
+    "sharePrice",
+    "sharePrice():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
+
+  createMockedFunction(
+    Address.fromString(seniorPoolAddress),
+    "compoundBalance",
+    "compoundBalance():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
+
+  createMockedFunction(
+    Address.fromString(seniorPoolAddress),
+    "totalLoansOutstanding",
+    "totalLoansOutstanding():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
+
+  createMockedFunction(
+    Address.fromString(seniorPoolAddress),
+    "assets",
+    "assets():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
+
+  createMockedFunction(
+    Address.fromString(seniorPoolAddress),
+    "totalWritedowns",
+    "totalWritedowns():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
+
+  createMockedFunction(
+    Address.fromString(FIDU_ADDRESS),
+    "totalSupply",
+    "totalSupply():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
+}
+
+export function mockUpdateUserCalls(seniorPoolAddress: Address, capitalProviderAddress: Address): void {
+  const amount = ethereum.Value.fromUnsignedBigInt(BigInt.fromString('5000000000000'))
+
+  createMockedFunction(
+    Address.fromString(FIDU_ADDRESS),
+    "balanceOf",
+    "balanceOf(address):(uint256)"
+  )
+  .withArgs([ethereum.Value.fromAddress(capitalProviderAddress)])
+  .returns([amount])
+
+  createMockedFunction(
+    Address.fromString(FIDU_ADDRESS),
+    "allowance",
+    "allowance(address,address):(uint256)"
+  )
+  .withArgs([ethereum.Value.fromAddress(capitalProviderAddress), ethereum.Value.fromAddress(seniorPoolAddress)])
+  .returns([amount])
+
+  createMockedFunction(
+    seniorPoolAddress,
+    "sharePrice",
+    "sharePrice():(uint256)"
+  )
+  .withArgs([])
+  .returns([amount])
 }
