@@ -88,6 +88,7 @@ In practical terms, logs should be added to monitor the progress of the applicat
 ### Cleaning up after running locally
 - Run `docker-compose down -v` to tear down the Docker instances
 - Run `rm -rf ./data` from `packages/subgraph` to remove any leftover data from execution. If you forget this step, it can lead to errors on subsequent runs.
+- Don't forget to close your locally-running blockchain from `packages/protocol`
 
 ### Quick Runs
 - A quick run script is available: `packages/subgraph/quick-start.sh`. This requires a test dump to be restored to the postgres container.
