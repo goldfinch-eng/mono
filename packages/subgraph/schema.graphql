@@ -4,7 +4,6 @@ Notes
 - We are using reverse lookups to create virtual fields:
   https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
 """
-
 type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
@@ -13,6 +12,9 @@ type SeniorPool @entity {
 }
 
 type SeniorPoolStatus @entity {
+  """
+  This entity is a singleton, so the id is always "1"
+  """
   id: ID!
   rawBalance: BigInt!
   compoundBalance: BigInt!
@@ -22,12 +24,12 @@ type SeniorPoolStatus @entity {
   totalPoolAssets: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
-  cumulativeDrawdowns: BigInt!      # TODO requries tranched pool data
-  estimatedTotalInterest: BigInt!   # TODO requries tranched pool data
-  estimatedApy: BigInt!             # TODO requires estimatedTotalInterest
-  defaultRate: BigInt!              # TODO requires cumulativeDrawdowns
-
-  remainingCapacity: BigInt         # TODO requires goldfinchConfig.totalFundsLimit
+  tranchedPools: [TranchedPool!]!
+  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
+  estimatedTotalInterest: BigDecimal!
+  estimatedApy: BigDecimal!
+  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
+  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
 
 type CapitalProviderStatus @entity {
@@ -38,9 +40,9 @@ type CapitalProviderStatus @entity {
   allowance: BigInt!
   weightedAverageSharePrice: BigDecimal
   unrealizedGains: BigDecimal
-  unrealizedGainsPercentage: BigDecimal   # TODO conversion issues
-  availableToWithdrawInDollars: BigInt    # TODO
-  unrealizedGainsInDollars: BigInt        # TODO
+  unrealizedGainsPercentage: BigDecimal # TODO conversion issues
+  availableToWithdrawInDollars: BigInt # TODO
+  unrealizedGainsInDollars: BigInt # TODO
 }
 
 type SeniorPoolDeposit @entity {
@@ -142,7 +144,7 @@ type CreditLine @entity {
   # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
   periodDueAmount: BigInt
-  interestAprDecimal: BigInt
+  interestAprDecimal: BigDecimal!
   collectedPaymentBalance: BigInt
   totalDueAmount: BigInt
   dueDate: String
@@ -156,13 +158,17 @@ enum TranchedPoolCreditLineVersion {
 
 type TranchedPool @entity {
   id: ID!
-  estimatedJuniorApy: BigInt!
+  estimatedJuniorApy: BigDecimal!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
+  """
+  Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
+  """
+  isV1StyleDeal: Boolean!
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
