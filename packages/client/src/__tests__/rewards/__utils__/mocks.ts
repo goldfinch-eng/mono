@@ -831,19 +831,15 @@ export async function mockBackerMerkleDirectDistributorContractCalls(
 }
 
 export async function mockBackerRewardsContractCalls(backerRewards: BackerRewards) {
-  const BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE = new BigNumber(100_000_000)
-    .multipliedBy(new BigNumber(1e18))
-    .toString(10)
-  const BACKER_REWARDS_PERCENT_OF_TOTAL_GFI = new BigNumber(2)
-    .multipliedBy(utils.INTEREST_DECIMALS.toString(10))
-    .toString(10)
+  const maxInterestDollarsEligible = new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10)
+  const percentOfTotalGfi = new BigNumber(2).multipliedBy(utils.INTEREST_DECIMALS.toString(10)).toString(10)
   let callMaxInterestDollarsEligibleMock = mock({
     blockchain,
     call: {
       to: backerRewards.address,
       api: await getBackerRewardsAbi(),
       method: "maxInterestDollarsEligible",
-      return: BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE,
+      return: maxInterestDollarsEligible,
     },
   })
   let callTotalRewardPercentOfTotalGFIMock = mock({
@@ -852,7 +848,7 @@ export async function mockBackerRewardsContractCalls(backerRewards: BackerReward
       to: backerRewards.address,
       api: await getBackerRewardsAbi(),
       method: "totalRewardPercentOfTotalGFI",
-      return: BACKER_REWARDS_PERCENT_OF_TOTAL_GFI,
+      return: percentOfTotalGfi,
     },
   })
   let callPausedMock = mock({
