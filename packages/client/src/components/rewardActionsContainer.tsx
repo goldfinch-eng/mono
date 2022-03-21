@@ -710,6 +710,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       () => handleClaimViaGetReward(props.stakingRewards, item.tokenId)
     )
   } else if (props.type === "backerRewards") {
+    // TODO Remove this after the v2.6 migration is deployed.
+    const tempDisabledPending26Migration = true
     const item = props.item
     const details: BackerRewardsDetails = {
       type: "backerRewards",
@@ -725,7 +727,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       {item, details},
       (item: BackerRewardsPosition) =>
         item.backer.tranchedPool.isRepaid ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
-      props.disabled || !item.rewardsAreWithdrawable,
+      props.disabled || !item.rewardsAreWithdrawable || tempDisabledPending26Migration,
       () =>
         handleClaimViaWithdraw(
           props.backerRewards,
