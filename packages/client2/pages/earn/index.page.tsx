@@ -30,6 +30,11 @@ gql`
       id
       ...TranchedPoolCardFields
     }
+    gfi @client {
+      price {
+        usd
+      }
+    }
   }
 `;
 

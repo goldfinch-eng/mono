@@ -410,6 +410,18 @@ export enum CreditLine_OrderBy {
   Version = 'version'
 }
 
+export type Gfi = {
+  __typename?: 'Gfi';
+  lastUpdated: Scalars['Int'];
+  price: GfiPrice;
+};
+
+/** Leaves some room to add other fiat currencies in the future */
+export type GfiPrice = {
+  __typename?: 'GfiPrice';
+  usd: Scalars['Float'];
+};
+
 export type JuniorTrancheInfo = {
   __typename?: 'JuniorTrancheInfo';
   id: Scalars['ID'];
@@ -652,6 +664,7 @@ export type Query = {
   creditLine?: Maybe<CreditLine>;
   creditLines: Array<CreditLine>;
   currentUser: AppUser;
+  gfi?: Maybe<Gfi>;
   juniorTrancheInfo?: Maybe<JuniorTrancheInfo>;
   juniorTrancheInfos: Array<JuniorTrancheInfo>;
   poolBacker?: Maybe<PoolBacker>;
@@ -664,6 +677,7 @@ export type Query = {
   seniorPools: Array<SeniorPool>;
   seniorTrancheInfo?: Maybe<SeniorTrancheInfo>;
   seniorTrancheInfos: Array<SeniorTrancheInfo>;
+  stakingRewards: Array<StakingRewards>;
   tranchedPool?: Maybe<TranchedPool>;
   tranchedPoolDeposit?: Maybe<TranchedPoolDeposit>;
   tranchedPoolDeposits: Array<TranchedPoolDeposit>;
@@ -821,6 +835,17 @@ export type QuerySeniorTrancheInfosArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<SeniorTrancheInfo_Filter>;
+};
+
+
+export type QueryStakingRewardsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<StakingRewards_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<StakingRewards_Filter>;
 };
 
 
@@ -1330,6 +1355,36 @@ export enum SeniorTrancheInfo_OrderBy {
   TranchedPool = 'tranchedPool'
 }
 
+export type StakingRewards = {
+  __typename?: 'StakingRewards';
+  currentEarnRatePerToken: Scalars['BigInt'];
+  id: Scalars['ID'];
+};
+
+export type StakingRewards_Filter = {
+  currentEarnRatePerToken?: InputMaybe<Scalars['BigInt']>;
+  currentEarnRatePerToken_gt?: InputMaybe<Scalars['BigInt']>;
+  currentEarnRatePerToken_gte?: InputMaybe<Scalars['BigInt']>;
+  currentEarnRatePerToken_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  currentEarnRatePerToken_lt?: InputMaybe<Scalars['BigInt']>;
+  currentEarnRatePerToken_lte?: InputMaybe<Scalars['BigInt']>;
+  currentEarnRatePerToken_not?: InputMaybe<Scalars['BigInt']>;
+  currentEarnRatePerToken_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  id?: InputMaybe<Scalars['ID']>;
+  id_gt?: InputMaybe<Scalars['ID']>;
+  id_gte?: InputMaybe<Scalars['ID']>;
+  id_in?: InputMaybe<Array<Scalars['ID']>>;
+  id_lt?: InputMaybe<Scalars['ID']>;
+  id_lte?: InputMaybe<Scalars['ID']>;
+  id_not?: InputMaybe<Scalars['ID']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+};
+
+export enum StakingRewards_OrderBy {
+  CurrentEarnRatePerToken = 'currentEarnRatePerToken',
+  Id = 'id'
+}
+
 export type Subscription = {
   __typename?: 'Subscription';
   /** Access to subgraph metadata */
@@ -1350,6 +1405,7 @@ export type Subscription = {
   seniorPools: Array<SeniorPool>;
   seniorTrancheInfo?: Maybe<SeniorTrancheInfo>;
   seniorTrancheInfos: Array<SeniorTrancheInfo>;
+  stakingRewards: Array<StakingRewards>;
   tranchedPool?: Maybe<TranchedPool>;
   tranchedPoolDeposit?: Maybe<TranchedPoolDeposit>;
   tranchedPoolDeposits: Array<TranchedPoolDeposit>;
@@ -1507,6 +1563,17 @@ export type SubscriptionSeniorTrancheInfosArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<SeniorTrancheInfo_Filter>;
+};
+
+
+export type SubscriptionStakingRewardsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<StakingRewards_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<StakingRewards_Filter>;
 };
 
 
@@ -2173,7 +2240,7 @@ export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
 
 export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
 
@@ -2279,6 +2346,11 @@ export const ExampleDocument = gql`
   tranchedPools {
     id
     ...TranchedPoolCardFields
+  }
+  gfi @client {
+    price {
+      usd
+    }
   }
 }
     ${TranchedPoolCardFieldsFragmentDoc}`;

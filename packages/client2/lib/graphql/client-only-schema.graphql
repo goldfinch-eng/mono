@@ -16,6 +16,19 @@ type AppUser {
   usdcBalance: BigInt
 }
 
+type Gfi {
+  price: GfiPrice!
+  lastUpdated: Int!
+}
+
+"""
+Leaves some room to add other fiat currencies in the future
+"""
+type GfiPrice {
+  usd: Float!
+}
+
 extend type Query {
   currentUser: AppUser!
+  gfi: Gfi
 }

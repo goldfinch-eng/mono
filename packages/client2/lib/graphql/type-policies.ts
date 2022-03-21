@@ -4,7 +4,7 @@ import { BigNumber, FixedNumber } from "ethers";
 import { goldfinchLogoPngUrl } from "@/components/logo";
 import { POOL_METADATA } from "@/constants";
 
-import { currentUserVar } from "./local-state/vars";
+import { currentUserVar, gfiVar } from "./local-state/vars";
 
 function readFieldFromMetadata(
   fieldName: string,
@@ -49,6 +49,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       currentUser: { read: () => currentUserVar() },
+      gfi: { read: () => gfiVar() },
     },
   },
   SeniorPool: {
