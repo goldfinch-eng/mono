@@ -571,7 +571,7 @@ describe("Zapper", async () => {
       const stakedPositionAfter = (await stakingRewards.positions(originalTokenId)) as any
       const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
 
-      const curveLPAmount = await fiduUSDCCurveLP.calcTokenAmount([fiduToMigrate, new BN(0)], true)
+      const curveLPAmount = await fiduUSDCCurveLP.calc_token_amount([fiduToMigrate, new BN(0)])
 
       const newTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args.tokenId
 
