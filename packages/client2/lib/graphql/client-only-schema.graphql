@@ -1,0 +1,21 @@
+extend type SeniorPool {
+  name: String!
+  category: String!
+  icon: String!
+}
+
+extend type TranchedPool {
+  name: String
+  category: String
+  description: String
+  icon: String
+}
+
+type AppUser {
+  account: String
+  usdcBalance: BigInt
+}
+
+extend type Query {
+  currentUser: AppUser!
+}

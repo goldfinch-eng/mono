@@ -1,21 +1,21 @@
 import {Address, BigInt, log} from "@graphprotocol/graph-ts"
-import {
-  TranchedPool,
-  JuniorTrancheInfo,
-  SeniorTrancheInfo,
-  PoolBacker,
-  TranchedPoolDeposit,
-} from "../../generated/schema"
+import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, TranchedPoolDeposit} from "../../generated/schema"
 import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
-import {GOLDFINCH_CONFIG_ADDRESS, ReserveDenominatorConfigIndex, SENIOR_POOL_ADDRESS} from "../constants"
+import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
-import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, isV1StyleDeal} from "./helpers"
+import {
+  getEstimatedLeverageRatio,
+  getTotalDeposited,
+  getEstimatedTotalAssets,
+  isV1StyleDeal,
+  estimateJuniorAPY,
+} from "./helpers"
 import {isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -145,7 +145,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
   tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
-    configContract.getNumber(BigInt.fromI32(ReserveDenominatorConfigIndex))
+    configContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
   )
   tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
   tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches)
@@ -165,6 +165,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.tokens = []
   }
 
+  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
   tranchedPool.save()
 
   if (isCreating) {

@@ -20,7 +20,7 @@ export function getOrInitSeniorPool(address: Address): SeniorPool {
   return seniorPool as SeniorPool
 }
 
-const SENIOR_POOL_STATUS_ID = "1"
+export const SENIOR_POOL_STATUS_ID = "1"
 export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
   let poolStatus = SeniorPoolStatus.load(SENIOR_POOL_STATUS_ID)
   if (!poolStatus) {
@@ -51,6 +51,9 @@ export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddre
   seniorPool.save()
 }
 
+const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
+const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
+
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
@@ -61,6 +64,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let totalLoansOutstanding = contract.totalLoansOutstanding()
   let totalSupply = fidu_contract.totalSupply()
   let totalPoolAssets = totalSupply.times(sharePrice)
+  let totalPoolAssetsUsdc = totalPoolAssets.times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
   let balance = contract.assets().minus(contract.totalLoansOutstanding()).plus(contract.totalWritedowns())
   let rawBalance = balance
 
@@ -72,6 +76,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.sharePrice = sharePrice
   poolStatus.rawBalance = rawBalance
   poolStatus.totalPoolAssets = totalPoolAssets
+  poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
 
@@ -87,10 +92,7 @@ export function updatePoolInvestments(seniorPoolAddress: Address, tranchedPoolAd
   seniorPool.save()
 }
 
-const FIDU_DECIMALS = BigDecimal.fromString("1000000000000000000") // 18 zeroes
-const USDC_DECIMALS = BigDecimal.fromString("1000000") // 6 zeroes
-
-function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
+export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   let estimatedTotalInterest = BigDecimal.zero()
   for (let i = 0; i < poolStatus.tranchedPools.length; i++) {
     const tranchedPoolId = poolStatus.tranchedPools[i]
@@ -101,14 +103,8 @@ function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   }
   poolStatus.estimatedTotalInterest = estimatedTotalInterest
 
-  if (poolStatus.totalPoolAssets.notEqual(BigInt.zero())) {
-    // The goofy-looking math here is required to get things in the right units for arithmetic
-    const totalPoolAssetsInDollars = poolStatus.totalPoolAssets
-      .toBigDecimal()
-      .div(FIDU_DECIMALS)
-      .div(FIDU_DECIMALS)
-      .times(USDC_DECIMALS)
-    let estimatedApy = estimatedTotalInterest.div(totalPoolAssetsInDollars)
+  if (poolStatus.totalPoolAssetsUsdc.notEqual(BigInt.zero())) {
+    let estimatedApy = estimatedTotalInterest.div(poolStatus.totalPoolAssetsUsdc.toBigDecimal())
     poolStatus.estimatedApy = estimatedApy
   }
 
