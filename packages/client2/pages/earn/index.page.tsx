@@ -19,7 +19,6 @@ gql`
       icon @client
       latestPoolStatus {
         id
-        totalPoolAssets
         estimatedApy
         tranchedPools {
           id
@@ -40,12 +39,6 @@ export default function EarnPage() {
   const tranchedPools = data?.tranchedPools.filter(
     (tranchedPool) => tranchedPool.name !== null
   );
-
-  // Proves these values are being parsed as the correct type
-  // eslint-disable-next-line no-console
-  console.log(seniorPool?.latestPoolStatus.estimatedApy);
-  // eslint-disable-next-line no-console
-  console.log(seniorPool?.latestPoolStatus.totalPoolAssets);
 
   return (
     <div>

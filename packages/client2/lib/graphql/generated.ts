@@ -2173,7 +2173,7 @@ export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, totalPoolAssets: TheGraph_BigInt, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> };
 
 export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
 
@@ -2182,11 +2182,13 @@ export type SeniorPoolPageQueryVariables = Exact<{
 }>;
 
 
-export type SeniorPoolPageQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal } }> };
+export type SeniorPoolPageQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, totalPoolAssetsUsdc: TheGraph_BigInt } }> };
 
 export type SeniorPoolPortfolioUserFieldsFragment = { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> };
 
 export type SeniorPoolPortfolioPoolFieldsFragment = { __typename?: 'SeniorPool', latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal } };
+
+export type SeniorPoolStatusFieldsFragment = { __typename?: 'SeniorPool', latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, totalPoolAssetsUsdc: TheGraph_BigInt } };
 
 export const TranchedPoolCardFieldsFragmentDoc = gql`
     fragment TranchedPoolCardFields on TranchedPool {
@@ -2212,6 +2214,14 @@ export const SeniorPoolPortfolioPoolFieldsFragmentDoc = gql`
   latestPoolStatus {
     id
     estimatedApy
+  }
+}
+    `;
+export const SeniorPoolStatusFieldsFragmentDoc = gql`
+    fragment SeniorPoolStatusFields on SeniorPool {
+  latestPoolStatus {
+    id
+    totalPoolAssetsUsdc
   }
 }
     `;
@@ -2259,7 +2269,6 @@ export const ExampleDocument = gql`
     icon @client
     latestPoolStatus {
       id
-      totalPoolAssets
       estimatedApy
       tranchedPools {
         id
@@ -2309,10 +2318,12 @@ export const SeniorPoolPageDocument = gql`
   seniorPools(first: 1) {
     id
     ...SeniorPoolPortfolioPoolFields
+    ...SeniorPoolStatusFields
   }
 }
     ${SeniorPoolPortfolioUserFieldsFragmentDoc}
-${SeniorPoolPortfolioPoolFieldsFragmentDoc}`;
+${SeniorPoolPortfolioPoolFieldsFragmentDoc}
+${SeniorPoolStatusFieldsFragmentDoc}`;
 
 /**
  * __useSeniorPoolPageQuery__

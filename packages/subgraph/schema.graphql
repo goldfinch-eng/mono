@@ -22,6 +22,7 @@ type SeniorPoolStatus @entity {
   sharePrice: BigInt!
   totalShares: BigInt!
   totalPoolAssets: BigInt!
+  totalPoolAssetsUsdc: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
   tranchedPools: [TranchedPool!]!

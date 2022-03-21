@@ -9,10 +9,13 @@ import {
   SENIOR_POOL_PORTFOLIO_USER_FIELDS,
   SENIOR_POOL_PORTFOLIO_POOL_FIELDS,
 } from "./portfolio-section";
+import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 
 gql`
   ${SENIOR_POOL_PORTFOLIO_USER_FIELDS}
   ${SENIOR_POOL_PORTFOLIO_POOL_FIELDS}
+
+  ${SENIOR_POOL_STATUS_FIELDS}
   query SeniorPoolPage($userId: ID!) {
     user(id: $userId) {
       id
@@ -21,6 +24,7 @@ gql`
     seniorPools(first: 1) {
       id
       ...SeniorPoolPortfolioPoolFields
+      ...SeniorPoolStatusFields
     }
   }
 `;
@@ -37,6 +41,7 @@ export default function SeniorPoolPage() {
     <div className="space-y-6">
       <Heading level={1}>Senior Pool</Heading>
       <PortfolioSection user={data?.user} seniorPool={seniorPool} />
+      <StatusSection seniorPool={seniorPool} />
     </div>
   );
 }

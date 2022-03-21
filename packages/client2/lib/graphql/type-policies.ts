@@ -61,6 +61,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   SeniorPoolStatus: {
     fields: {
       totalPoolAssets: { read: readAsBigNumber },
+      totalPoolAssetsUsdc: { read: readAsBigNumber },
       estimatedApy: { read: readAsFixedNumber },
     },
   },
