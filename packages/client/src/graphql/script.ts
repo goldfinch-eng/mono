@@ -570,7 +570,7 @@ function validateBacker(backer: TranchedPoolBacker, graphBacker: TranchedPoolBac
 
 function validateTokenInfo(address: string | undefined, tokenInfoWeb3: TokenInfo[], graphTokenInfo: TokenInfo[]) {
   if (!address) {
-    console.error("Web3 undefined addres")
+    console.error("Web3 undefined address")
     return
   }
   if (!tokenInfoWeb3) {
