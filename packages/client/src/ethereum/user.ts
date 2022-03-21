@@ -1632,7 +1632,7 @@ export class UserBackerRewards {
     const positions = await Promise.all(
       rewardsEligibleTranchedPoolBackers
         .filter(
-          // Remove rewardable tranched pools for which the user has no junior-tranche pool tokens (and for
+          // Remove rewards-eligible tranched pools for which the user has no junior-tranche pool tokens (and for
           // which they therefore cannot earn any backer rewards).
           (backer) =>
             !!backer.tokenInfos.filter((tokenInfo) => !backer.tranchedPool.isSeniorTrancheId(tokenInfo.tranche)).length
