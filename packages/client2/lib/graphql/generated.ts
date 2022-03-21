@@ -24,19 +24,9 @@ export type AppUser = {
   usdcBalance?: Maybe<Scalars['BigInt']>;
 };
 
-/** The block at which the query should be executed. */
 export type Block_Height = {
-  /** Value containing a block hash */
   hash?: InputMaybe<Scalars['Bytes']>;
-  /** Value containing a block number */
   number?: InputMaybe<Scalars['Int']>;
-  /**
-   * Value containing the minimum block number.
-   * In the case of `number_gte`, the query will be executed on the latest block only if
-   * the subgraph has progressed to or past the minimum block number.
-   * Defaults to the latest block when omitted.
-   *
-   */
   number_gte?: InputMaybe<Scalars['Int']>;
 };
 
@@ -169,6 +159,7 @@ export type CreditLine = {
   interestOwed: Scalars['BigInt'];
   lastFullPaymentTime: Scalars['BigInt'];
   limit: Scalars['BigInt'];
+  maxLimit: Scalars['BigInt'];
   name?: Maybe<Scalars['String']>;
   nextDueTime: Scalars['BigInt'];
   paymentPeriodInDays: Scalars['BigInt'];
@@ -180,6 +171,7 @@ export type CreditLine = {
   termInDays: Scalars['BigInt'];
   totalDueAmount?: Maybe<Scalars['BigInt']>;
   tranchedPool: TranchedPool;
+  version: TranchedPoolCreditLineVersion;
 };
 
 export type CreditLine_Filter = {
@@ -277,6 +269,14 @@ export type CreditLine_Filter = {
   limit_lte?: InputMaybe<Scalars['BigInt']>;
   limit_not?: InputMaybe<Scalars['BigInt']>;
   limit_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  maxLimit?: InputMaybe<Scalars['BigInt']>;
+  maxLimit_gt?: InputMaybe<Scalars['BigInt']>;
+  maxLimit_gte?: InputMaybe<Scalars['BigInt']>;
+  maxLimit_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  maxLimit_lt?: InputMaybe<Scalars['BigInt']>;
+  maxLimit_lte?: InputMaybe<Scalars['BigInt']>;
+  maxLimit_not?: InputMaybe<Scalars['BigInt']>;
+  maxLimit_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   name?: InputMaybe<Scalars['String']>;
   name_contains?: InputMaybe<Scalars['String']>;
   name_ends_with?: InputMaybe<Scalars['String']>;
@@ -377,6 +377,10 @@ export type CreditLine_Filter = {
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  version?: InputMaybe<TranchedPoolCreditLineVersion>;
+  version_in?: InputMaybe<Array<TranchedPoolCreditLineVersion>>;
+  version_not?: InputMaybe<TranchedPoolCreditLineVersion>;
+  version_not_in?: InputMaybe<Array<TranchedPoolCreditLineVersion>>;
 };
 
 export enum CreditLine_OrderBy {
@@ -391,6 +395,7 @@ export enum CreditLine_OrderBy {
   InterestOwed = 'interestOwed',
   LastFullPaymentTime = 'lastFullPaymentTime',
   Limit = 'limit',
+  MaxLimit = 'maxLimit',
   Name = 'name',
   NextDueTime = 'nextDueTime',
   PaymentPeriodInDays = 'paymentPeriodInDays',
@@ -401,7 +406,8 @@ export enum CreditLine_OrderBy {
   TermEndTime = 'termEndTime',
   TermInDays = 'termInDays',
   TotalDueAmount = 'totalDueAmount',
-  TranchedPool = 'tranchedPool'
+  TranchedPool = 'tranchedPool',
+  Version = 'version'
 }
 
 export type JuniorTrancheInfo = {
@@ -490,7 +496,6 @@ export enum JuniorTrancheInfo_OrderBy {
   TranchedPool = 'tranchedPool'
 }
 
-/** Defines the order direction, either ascending or descending */
 export enum OrderDirection {
   Asc = 'asc',
   Desc = 'desc'
@@ -659,7 +664,6 @@ export type Query = {
   seniorPools: Array<SeniorPool>;
   seniorTrancheInfo?: Maybe<SeniorTrancheInfo>;
   seniorTrancheInfos: Array<SeniorTrancheInfo>;
-  stakingRewards: Array<StakingRewards>;
   tranchedPool?: Maybe<TranchedPool>;
   tranchedPoolDeposit?: Maybe<TranchedPoolDeposit>;
   tranchedPoolDeposits: Array<TranchedPoolDeposit>;
@@ -817,17 +821,6 @@ export type QuerySeniorTrancheInfosArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<SeniorTrancheInfo_Filter>;
-};
-
-
-export type QueryStakingRewardsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']>;
-  orderBy?: InputMaybe<StakingRewards_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StakingRewards_Filter>;
 };
 
 
@@ -1051,6 +1044,7 @@ export type SeniorPoolStatus = {
   sharePrice: Scalars['BigInt'];
   totalLoansOutstanding: Scalars['BigInt'];
   totalPoolAssets: Scalars['BigInt'];
+  totalPoolAssetsUsdc: Scalars['BigInt'];
   totalShares: Scalars['BigInt'];
   tranchedPools: Array<TranchedPool>;
 };
@@ -1162,6 +1156,14 @@ export type SeniorPoolStatus_Filter = {
   totalLoansOutstanding_not?: InputMaybe<Scalars['BigInt']>;
   totalLoansOutstanding_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   totalPoolAssets?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc_gt?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc_gte?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalPoolAssetsUsdc_lt?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc_lte?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc_not?: InputMaybe<Scalars['BigInt']>;
+  totalPoolAssetsUsdc_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   totalPoolAssets_gt?: InputMaybe<Scalars['BigInt']>;
   totalPoolAssets_gte?: InputMaybe<Scalars['BigInt']>;
   totalPoolAssets_in?: InputMaybe<Array<Scalars['BigInt']>>;
@@ -1197,6 +1199,7 @@ export enum SeniorPoolStatus_OrderBy {
   SharePrice = 'sharePrice',
   TotalLoansOutstanding = 'totalLoansOutstanding',
   TotalPoolAssets = 'totalPoolAssets',
+  TotalPoolAssetsUsdc = 'totalPoolAssetsUsdc',
   TotalShares = 'totalShares',
   TranchedPools = 'tranchedPools'
 }
@@ -1327,36 +1330,6 @@ export enum SeniorTrancheInfo_OrderBy {
   TranchedPool = 'tranchedPool'
 }
 
-export type StakingRewards = {
-  __typename?: 'StakingRewards';
-  currentEarnRatePerToken: Scalars['BigInt'];
-  id: Scalars['ID'];
-};
-
-export type StakingRewards_Filter = {
-  currentEarnRatePerToken?: InputMaybe<Scalars['BigInt']>;
-  currentEarnRatePerToken_gt?: InputMaybe<Scalars['BigInt']>;
-  currentEarnRatePerToken_gte?: InputMaybe<Scalars['BigInt']>;
-  currentEarnRatePerToken_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  currentEarnRatePerToken_lt?: InputMaybe<Scalars['BigInt']>;
-  currentEarnRatePerToken_lte?: InputMaybe<Scalars['BigInt']>;
-  currentEarnRatePerToken_not?: InputMaybe<Scalars['BigInt']>;
-  currentEarnRatePerToken_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  id?: InputMaybe<Scalars['ID']>;
-  id_gt?: InputMaybe<Scalars['ID']>;
-  id_gte?: InputMaybe<Scalars['ID']>;
-  id_in?: InputMaybe<Array<Scalars['ID']>>;
-  id_lt?: InputMaybe<Scalars['ID']>;
-  id_lte?: InputMaybe<Scalars['ID']>;
-  id_not?: InputMaybe<Scalars['ID']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']>>;
-};
-
-export enum StakingRewards_OrderBy {
-  CurrentEarnRatePerToken = 'currentEarnRatePerToken',
-  Id = 'id'
-}
-
 export type Subscription = {
   __typename?: 'Subscription';
   /** Access to subgraph metadata */
@@ -1377,7 +1350,6 @@ export type Subscription = {
   seniorPools: Array<SeniorPool>;
   seniorTrancheInfo?: Maybe<SeniorTrancheInfo>;
   seniorTrancheInfos: Array<SeniorTrancheInfo>;
-  stakingRewards: Array<StakingRewards>;
   tranchedPool?: Maybe<TranchedPool>;
   tranchedPoolDeposit?: Maybe<TranchedPoolDeposit>;
   tranchedPoolDeposits: Array<TranchedPoolDeposit>;
@@ -1538,17 +1510,6 @@ export type SubscriptionSeniorTrancheInfosArgs = {
 };
 
 
-export type SubscriptionStakingRewardsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']>;
-  orderBy?: InputMaybe<StakingRewards_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StakingRewards_Filter>;
-};
-
-
 export type SubscriptionTranchedPoolArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID'];
@@ -1627,10 +1588,11 @@ export type TranchedPool = {
   creditLine: CreditLine;
   deposits: Array<TranchedPoolDeposit>;
   description?: Maybe<Scalars['String']>;
-  estimatedJuniorApy: Scalars['BigInt'];
+  estimatedJuniorApy: Scalars['BigDecimal'];
   estimatedLeverageRatio: Scalars['BigInt'];
   estimatedSeniorPoolContribution: Scalars['BigInt'];
   estimatedTotalAssets: Scalars['BigInt'];
+  fundableAt: Scalars['BigInt'];
   icon?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
   isPaused: Scalars['Boolean'];
@@ -1647,7 +1609,9 @@ export type TranchedPool = {
   reserveFeePercent: Scalars['BigInt'];
   seniorTranches: Array<SeniorTrancheInfo>;
   tokens: Array<TranchedPoolToken>;
+  totalDeployed: Scalars['BigInt'];
   totalDeposited: Scalars['BigInt'];
+  version: TranchedPoolCreditLineVersion;
 };
 
 
@@ -1694,6 +1658,11 @@ export type TranchedPoolTokensArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   where?: InputMaybe<TranchedPoolToken_Filter>;
 };
+
+export enum TranchedPoolCreditLineVersion {
+  BeforeV2_2 = 'BEFORE_V2_2',
+  V2_2 = 'V2_2'
+}
 
 export type TranchedPoolDeposit = {
   __typename?: 'TranchedPoolDeposit';
@@ -1928,14 +1897,14 @@ export type TranchedPool_Filter = {
   creditLine_not_in?: InputMaybe<Array<Scalars['String']>>;
   creditLine_not_starts_with?: InputMaybe<Scalars['String']>;
   creditLine_starts_with?: InputMaybe<Scalars['String']>;
-  estimatedJuniorApy?: InputMaybe<Scalars['BigInt']>;
-  estimatedJuniorApy_gt?: InputMaybe<Scalars['BigInt']>;
-  estimatedJuniorApy_gte?: InputMaybe<Scalars['BigInt']>;
-  estimatedJuniorApy_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  estimatedJuniorApy_lt?: InputMaybe<Scalars['BigInt']>;
-  estimatedJuniorApy_lte?: InputMaybe<Scalars['BigInt']>;
-  estimatedJuniorApy_not?: InputMaybe<Scalars['BigInt']>;
-  estimatedJuniorApy_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  estimatedJuniorApy?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApy_gt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApy_gte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApy_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  estimatedJuniorApy_lt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApy_lte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApy_not?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApy_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
   estimatedLeverageRatio?: InputMaybe<Scalars['BigInt']>;
   estimatedLeverageRatio_gt?: InputMaybe<Scalars['BigInt']>;
   estimatedLeverageRatio_gte?: InputMaybe<Scalars['BigInt']>;
@@ -1960,6 +1929,14 @@ export type TranchedPool_Filter = {
   estimatedTotalAssets_lte?: InputMaybe<Scalars['BigInt']>;
   estimatedTotalAssets_not?: InputMaybe<Scalars['BigInt']>;
   estimatedTotalAssets_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  fundableAt?: InputMaybe<Scalars['BigInt']>;
+  fundableAt_gt?: InputMaybe<Scalars['BigInt']>;
+  fundableAt_gte?: InputMaybe<Scalars['BigInt']>;
+  fundableAt_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  fundableAt_lt?: InputMaybe<Scalars['BigInt']>;
+  fundableAt_lte?: InputMaybe<Scalars['BigInt']>;
+  fundableAt_not?: InputMaybe<Scalars['BigInt']>;
+  fundableAt_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   id?: InputMaybe<Scalars['ID']>;
   id_gt?: InputMaybe<Scalars['ID']>;
   id_gte?: InputMaybe<Scalars['ID']>;
@@ -2012,6 +1989,14 @@ export type TranchedPool_Filter = {
   tokens_contains?: InputMaybe<Array<Scalars['String']>>;
   tokens_not?: InputMaybe<Array<Scalars['String']>>;
   tokens_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  totalDeployed?: InputMaybe<Scalars['BigInt']>;
+  totalDeployed_gt?: InputMaybe<Scalars['BigInt']>;
+  totalDeployed_gte?: InputMaybe<Scalars['BigInt']>;
+  totalDeployed_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalDeployed_lt?: InputMaybe<Scalars['BigInt']>;
+  totalDeployed_lte?: InputMaybe<Scalars['BigInt']>;
+  totalDeployed_not?: InputMaybe<Scalars['BigInt']>;
+  totalDeployed_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   totalDeposited?: InputMaybe<Scalars['BigInt']>;
   totalDeposited_gt?: InputMaybe<Scalars['BigInt']>;
   totalDeposited_gte?: InputMaybe<Scalars['BigInt']>;
@@ -2020,6 +2005,10 @@ export type TranchedPool_Filter = {
   totalDeposited_lte?: InputMaybe<Scalars['BigInt']>;
   totalDeposited_not?: InputMaybe<Scalars['BigInt']>;
   totalDeposited_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  version?: InputMaybe<TranchedPoolCreditLineVersion>;
+  version_in?: InputMaybe<Array<TranchedPoolCreditLineVersion>>;
+  version_not?: InputMaybe<TranchedPoolCreditLineVersion>;
+  version_not_in?: InputMaybe<Array<TranchedPoolCreditLineVersion>>;
 };
 
 export enum TranchedPool_OrderBy {
@@ -2030,6 +2019,7 @@ export enum TranchedPool_OrderBy {
   EstimatedLeverageRatio = 'estimatedLeverageRatio',
   EstimatedSeniorPoolContribution = 'estimatedSeniorPoolContribution',
   EstimatedTotalAssets = 'estimatedTotalAssets',
+  FundableAt = 'fundableAt',
   Id = 'id',
   IsPaused = 'isPaused',
   IsV1StyleDeal = 'isV1StyleDeal',
@@ -2040,7 +2030,9 @@ export enum TranchedPool_OrderBy {
   ReserveFeePercent = 'reserveFeePercent',
   SeniorTranches = 'seniorTranches',
   Tokens = 'tokens',
-  TotalDeposited = 'totalDeposited'
+  TotalDeployed = 'totalDeployed',
+  TotalDeposited = 'totalDeposited',
+  Version = 'version'
 }
 
 export type User = {
@@ -2185,19 +2177,16 @@ export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typena
 
 export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
 
-export type MinBlockCheckQueryVariables = Exact<{
-  minBlock: Scalars['Int'];
-}>;
-
-
-export type MinBlockCheckQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', deployment: string } | null };
-
-export type SeniorPoolPortfolioQueryVariables = Exact<{
+export type SeniorPoolPageQueryVariables = Exact<{
   userId: Scalars['ID'];
 }>;
 
 
-export type SeniorPoolPortfolioQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal } }> };
+export type SeniorPoolPageQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> } | null, seniorPools: Array<{ __typename?: 'SeniorPool', id: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal } }> };
+
+export type SeniorPoolPortfolioUserFieldsFragment = { __typename?: 'User', id: string, seniorPoolDeposits: Array<{ __typename?: 'SeniorPoolDeposit', amount: TheGraph_BigInt }> };
+
+export type SeniorPoolPortfolioPoolFieldsFragment = { __typename?: 'SeniorPool', latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal } };
 
 export const TranchedPoolCardFieldsFragmentDoc = gql`
     fragment TranchedPoolCardFields on TranchedPool {
@@ -2207,6 +2196,22 @@ export const TranchedPoolCardFieldsFragmentDoc = gql`
   icon @client
   creditLine {
     interestApr
+  }
+}
+    `;
+export const SeniorPoolPortfolioUserFieldsFragmentDoc = gql`
+    fragment SeniorPoolPortfolioUserFields on User {
+  id
+  seniorPoolDeposits {
+    amount
+  }
+}
+    `;
+export const SeniorPoolPortfolioPoolFieldsFragmentDoc = gql`
+    fragment SeniorPoolPortfolioPoolFields on SeniorPool {
+  latestPoolStatus {
+    id
+    estimatedApy
   }
 }
     `;
@@ -2295,83 +2300,44 @@ export function useExampleLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<Ex
 export type ExampleQueryHookResult = ReturnType<typeof useExampleQuery>;
 export type ExampleLazyQueryHookResult = ReturnType<typeof useExampleLazyQuery>;
 export type ExampleQueryResult = Apollo.QueryResult<ExampleQuery, ExampleQueryVariables>;
-export const MinBlockCheckDocument = gql`
-    query MinBlockCheck($minBlock: Int!) {
-  _meta(block: {number_gte: $minBlock}) {
-    deployment
-  }
-}
-    `;
-
-/**
- * __useMinBlockCheckQuery__
- *
- * To run a query within a React component, call `useMinBlockCheckQuery` and pass it any options that fit your needs.
- * When your component renders, `useMinBlockCheckQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useMinBlockCheckQuery({
- *   variables: {
- *      minBlock: // value for 'minBlock'
- *   },
- * });
- */
-export function useMinBlockCheckQuery(baseOptions: Apollo.QueryHookOptions<MinBlockCheckQuery, MinBlockCheckQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<MinBlockCheckQuery, MinBlockCheckQueryVariables>(MinBlockCheckDocument, options);
-      }
-export function useMinBlockCheckLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MinBlockCheckQuery, MinBlockCheckQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<MinBlockCheckQuery, MinBlockCheckQueryVariables>(MinBlockCheckDocument, options);
-        }
-export type MinBlockCheckQueryHookResult = ReturnType<typeof useMinBlockCheckQuery>;
-export type MinBlockCheckLazyQueryHookResult = ReturnType<typeof useMinBlockCheckLazyQuery>;
-export type MinBlockCheckQueryResult = Apollo.QueryResult<MinBlockCheckQuery, MinBlockCheckQueryVariables>;
-export const SeniorPoolPortfolioDocument = gql`
-    query SeniorPoolPortfolio($userId: ID!) {
+export const SeniorPoolPageDocument = gql`
+    query SeniorPoolPage($userId: ID!) {
   user(id: $userId) {
     id
-    seniorPoolDeposits {
-      amount
-    }
+    ...SeniorPoolPortfolioUserFields
   }
   seniorPools(first: 1) {
     id
-    latestPoolStatus {
-      id
-      estimatedApy
-    }
+    ...SeniorPoolPortfolioPoolFields
   }
 }
-    `;
+    ${SeniorPoolPortfolioUserFieldsFragmentDoc}
+${SeniorPoolPortfolioPoolFieldsFragmentDoc}`;
 
 /**
- * __useSeniorPoolPortfolioQuery__
+ * __useSeniorPoolPageQuery__
  *
- * To run a query within a React component, call `useSeniorPoolPortfolioQuery` and pass it any options that fit your needs.
- * When your component renders, `useSeniorPoolPortfolioQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useSeniorPoolPageQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSeniorPoolPageQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useSeniorPoolPortfolioQuery({
+ * const { data, loading, error } = useSeniorPoolPageQuery({
  *   variables: {
  *      userId: // value for 'userId'
  *   },
  * });
  */
-export function useSeniorPoolPortfolioQuery(baseOptions: Apollo.QueryHookOptions<SeniorPoolPortfolioQuery, SeniorPoolPortfolioQueryVariables>) {
+export function useSeniorPoolPageQuery(baseOptions: Apollo.QueryHookOptions<SeniorPoolPageQuery, SeniorPoolPageQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<SeniorPoolPortfolioQuery, SeniorPoolPortfolioQueryVariables>(SeniorPoolPortfolioDocument, options);
+        return Apollo.useQuery<SeniorPoolPageQuery, SeniorPoolPageQueryVariables>(SeniorPoolPageDocument, options);
       }
-export function useSeniorPoolPortfolioLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SeniorPoolPortfolioQuery, SeniorPoolPortfolioQueryVariables>) {
+export function useSeniorPoolPageLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SeniorPoolPageQuery, SeniorPoolPageQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<SeniorPoolPortfolioQuery, SeniorPoolPortfolioQueryVariables>(SeniorPoolPortfolioDocument, options);
+          return Apollo.useLazyQuery<SeniorPoolPageQuery, SeniorPoolPageQueryVariables>(SeniorPoolPageDocument, options);
         }
-export type SeniorPoolPortfolioQueryHookResult = ReturnType<typeof useSeniorPoolPortfolioQuery>;
-export type SeniorPoolPortfolioLazyQueryHookResult = ReturnType<typeof useSeniorPoolPortfolioLazyQuery>;
-export type SeniorPoolPortfolioQueryResult = Apollo.QueryResult<SeniorPoolPortfolioQuery, SeniorPoolPortfolioQueryVariables>;
+export type SeniorPoolPageQueryHookResult = ReturnType<typeof useSeniorPoolPageQuery>;
+export type SeniorPoolPageLazyQueryHookResult = ReturnType<typeof useSeniorPoolPageLazyQuery>;
+export type SeniorPoolPageQueryResult = Apollo.QueryResult<SeniorPoolPageQuery, SeniorPoolPageQueryVariables>;

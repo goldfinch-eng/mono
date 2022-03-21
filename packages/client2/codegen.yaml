@@ -1,4 +1,4 @@
-schema: https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch
+schema: http://localhost:8000/subgraphs/name/goldfinch-subgraph
 documents:
   - ./pages/**/*.tsx
   - ./components/**/*.tsx

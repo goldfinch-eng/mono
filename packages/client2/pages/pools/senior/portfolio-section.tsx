@@ -5,40 +5,40 @@ import { useState } from "react";
 import { Button } from "@/components/button";
 import { Modal } from "@/components/modal";
 import { formatPercent, formatUsdc } from "@/lib/format";
-import { useSeniorPoolPortfolioQuery } from "@/lib/graphql/generated";
-import { useWallet } from "@/lib/wallet";
+import {
+  SeniorPoolPortfolioUserFieldsFragment,
+  SeniorPoolPortfolioPoolFieldsFragment,
+} from "@/lib/graphql/generated";
 
 import { DepositForm } from "./deposit-form";
 
-gql`
-  query SeniorPoolPortfolio($userId: ID!) {
-    user(id: $userId) {
-      id
-      seniorPoolDeposits {
-        amount
-      }
-    }
-    seniorPools(first: 1) {
-      id
-      latestPoolStatus {
-        id
-        estimatedApy
-      }
+export const SENIOR_POOL_PORTFOLIO_USER_FIELDS = gql`
+  fragment SeniorPoolPortfolioUserFields on User {
+    id
+    seniorPoolDeposits {
+      amount
     }
   }
 `;
 
-export function PortfolioSection() {
+export const SENIOR_POOL_PORTFOLIO_POOL_FIELDS = gql`
+  fragment SeniorPoolPortfolioPoolFields on SeniorPool {
+    latestPoolStatus {
+      id
+      estimatedApy
+    }
+  }
+`;
+
+interface PortfolioSectionProps {
+  user?: SeniorPoolPortfolioUserFieldsFragment | null;
+  seniorPool?: SeniorPoolPortfolioPoolFieldsFragment;
+}
+
+export function PortfolioSection({ user, seniorPool }: PortfolioSectionProps) {
   const [isDepositFormOpen, setIsDepositFormOpen] = useState(false);
-  const { account } = useWallet();
-  const { data } = useSeniorPoolPortfolioQuery({
-    variables: { userId: account?.toLowerCase() ?? "" },
-  });
-  const seniorPool = data?.seniorPools[0];
-
-  const isGreyedOut = !data?.user;
-
-  const portfolioBalance = data?.user?.seniorPoolDeposits
+  const isGreyedOut = !user;
+  const portfolioBalance = user?.seniorPoolDeposits
     .map((d) => d.amount)
     .reduce((prev, current) => current.add(prev), BigNumber.from(0));
 
