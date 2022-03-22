@@ -44,6 +44,18 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
   return poolStatus
 }
 
+export function updateEstimatedApyFromGfiRaw(): void {
+  const stakingRewards = getStakingRewards()
+  const seniorPoolStatus = getOrInitSeniorPoolStatus()
+  seniorPoolStatus.estimatedApyFromGfiRaw = stakingRewards.currentEarnRatePerToken
+    .times(SECONDS_PER_YEAR)
+    .toBigDecimal()
+    .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
+    .div(seniorPoolStatus.sharePrice.toBigDecimal())
+    .div(GFI_DECIMALS.toBigDecimal())
+  seniorPoolStatus.save()
+}
+
 export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let seniorPoolCapitalProviders = seniorPool.capitalProviders
@@ -71,12 +83,6 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let totalPoolAssetsUsdc = totalPoolAssets.times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
   let balance = contract.assets().minus(contract.totalLoansOutstanding()).plus(contract.totalWritedowns())
   let rawBalance = balance
-  let estimatedApyFromGfiRaw = stakingRewards.currentEarnRatePerToken
-    .times(SECONDS_PER_YEAR)
-    .toBigDecimal()
-    .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
-    .div(sharePrice.toBigDecimal())
-    .div(GFI_DECIMALS.toBigDecimal())
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
   poolStatus.compoundBalance = compoundBalance
@@ -87,9 +93,9 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.rawBalance = rawBalance
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
-  poolStatus.estimatedApyFromGfiRaw = estimatedApyFromGfiRaw
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
+  updateEstimatedApyFromGfiRaw()
 
   seniorPool.latestPoolStatus = poolStatus.id
   seniorPool.save()

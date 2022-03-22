@@ -1,7 +1,9 @@
-import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {Address} from "@graphprotocol/graph-ts"
 
 import {StakingRewards} from "../../generated/schema"
 import {StakingRewards_Implementation as StakingRewardsContract} from "../../generated/templates/StakingRewards/StakingRewards_Implementation"
+
+import {updateEstimatedApyFromGfiRaw} from "./senior_pool"
 
 const STAKING_REWARDS_ID = "1"
 
@@ -20,5 +22,6 @@ export function updateCurrentEarnRate(contractAddress: Address): void {
     const stakingRewards = getStakingRewards()
     stakingRewards.currentEarnRatePerToken = callResult.value
     stakingRewards.save()
+    updateEstimatedApyFromGfiRaw()
   }
 }
