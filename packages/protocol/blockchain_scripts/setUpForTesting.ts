@@ -175,6 +175,10 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   } else {
     await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
+    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+      await setUpRewards(erc20, getOrNull, protocol_owner)
+    }
+
     const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
     const lastEventArgs = getLastEventArgs(result)
     const protocolBorrowerCon = lastEventArgs[0]
@@ -234,10 +238,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await bwrCon.pay(commonPool.address, payAmount.toString())
 
     await seniorPool.redeem(tokenId)
-
-    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-      await setUpRewards(erc20, getOrNull, protocol_owner)
-    }
   }
 }
 
