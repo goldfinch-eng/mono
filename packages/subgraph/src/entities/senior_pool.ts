@@ -4,6 +4,7 @@ import {SeniorPool as SeniorPoolContract} from "../../generated/templates/Senior
 import {Fidu_Implementation as FiduContract} from "../../generated/templates/SeniorPool/Fidu_Implementation"
 import {FIDU_ADDRESS} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
+import {getStakingRewards} from "./staking_rewards"
 
 export function getOrInitSeniorPool(address: Address): SeniorPool {
   let seniorPool = SeniorPool.load(address.toHexString())
@@ -52,11 +53,14 @@ export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddre
 }
 
 const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
+const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
 const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
+const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
+  const stakingRewards = getStakingRewards()
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
@@ -67,6 +71,12 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let totalPoolAssetsUsdc = totalPoolAssets.times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
   let balance = contract.assets().minus(contract.totalLoansOutstanding()).plus(contract.totalWritedowns())
   let rawBalance = balance
+  let estimatedApyFromGfiRaw = stakingRewards.currentEarnRatePerToken
+    .times(SECONDS_PER_YEAR)
+    .toBigDecimal()
+    .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
+    .div(sharePrice.toBigDecimal())
+    .div(GFI_DECIMALS.toBigDecimal())
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
   poolStatus.compoundBalance = compoundBalance
@@ -77,6 +87,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.rawBalance = rawBalance
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
+  poolStatus.estimatedApyFromGfiRaw = estimatedApyFromGfiRaw
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
 

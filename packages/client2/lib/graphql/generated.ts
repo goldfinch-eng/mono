@@ -1058,6 +1058,9 @@ export type SeniorPoolStatus = {
   cumulativeWritedowns: Scalars['BigInt'];
   defaultRate: Scalars['BigInt'];
   estimatedApy: Scalars['BigDecimal'];
+  /** Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field. */
+  estimatedApyFromGfi: Scalars['BigDecimal'];
+  estimatedApyFromGfiRaw?: Maybe<Scalars['BigDecimal']>;
   estimatedTotalInterest: Scalars['BigDecimal'];
   /**
    * This entity is a singleton, so the id is always "1"
@@ -1125,6 +1128,14 @@ export type SeniorPoolStatus_Filter = {
   defaultRate_not?: InputMaybe<Scalars['BigInt']>;
   defaultRate_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   estimatedApy?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw_gt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw_gte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  estimatedApyFromGfiRaw_lt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw_lte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw_not?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedApyFromGfiRaw_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
   estimatedApy_gt?: InputMaybe<Scalars['BigDecimal']>;
   estimatedApy_gte?: InputMaybe<Scalars['BigDecimal']>;
   estimatedApy_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
@@ -1217,6 +1228,7 @@ export enum SeniorPoolStatus_OrderBy {
   CumulativeWritedowns = 'cumulativeWritedowns',
   DefaultRate = 'defaultRate',
   EstimatedApy = 'estimatedApy',
+  EstimatedApyFromGfiRaw = 'estimatedApyFromGfiRaw',
   EstimatedTotalInterest = 'estimatedTotalInterest',
   Id = 'id',
   RawBalance = 'rawBalance',
@@ -1357,6 +1369,10 @@ export enum SeniorTrancheInfo_OrderBy {
 
 export type StakingRewards = {
   __typename?: 'StakingRewards';
+  /**
+   * The earn rate is a measure per second
+   *
+   */
   currentEarnRatePerToken: Scalars['BigInt'];
   id: Scalars['ID'];
 };
@@ -2240,7 +2256,7 @@ export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, estimatedApyFromGfiRaw?: TheGraph_BigDecimal | null, estimatedApyFromGfi: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
 
 export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
 
@@ -2337,6 +2353,8 @@ export const ExampleDocument = gql`
     latestPoolStatus {
       id
       estimatedApy
+      estimatedApyFromGfiRaw
+      estimatedApyFromGfi @client
       tranchedPools {
         id
         ...TranchedPoolCardFields

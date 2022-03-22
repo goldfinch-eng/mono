@@ -20,6 +20,8 @@ gql`
       latestPoolStatus {
         id
         estimatedApy
+        estimatedApyFromGfiRaw
+        estimatedApyFromGfi @client
         tranchedPools {
           id
           ...TranchedPoolCardFields
@@ -65,7 +67,7 @@ export default function EarnPage() {
             subtitle={seniorPool.category}
             icon={seniorPool.icon}
             apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyWithGfi={0.9999} // TODO this is a placeholder until senior pool APY from GFI is available
+            apyWithGfi={seniorPool.latestPoolStatus.estimatedApyFromGfi}
             href="/pools/senior"
           />
         )}

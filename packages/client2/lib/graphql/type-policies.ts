@@ -30,15 +30,15 @@ function readAsBigNumber(n?: string) {
 }
 
 function readAsFixedNumber(n?: string | FixedNumber) {
+  const decimalWidth = 32; // This number was chosen arbitrarily. It seems precise enough for any math the frontend would have to do for displaying data to users, while not being limitless
   if (!n) {
     return null;
   } else if (n instanceof FixedNumber) {
     return n;
   } else if (!n.includes(".")) {
-    return FixedNumber.fromString(n);
+    return FixedNumber.fromString(n, decimalWidth);
   }
   const [wholeNumber, decimals] = n.split(".");
-  const decimalWidth = 32; // This number was chosen arbitrarily. It seems precise enough for any math the frontend would have to do for displaying data to users, while not being limitless
   return FixedNumber.fromString(
     `${wholeNumber}.${decimals.substring(0, decimalWidth)}`,
     decimalWidth
@@ -64,6 +64,35 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       totalPoolAssets: { read: readAsBigNumber },
       totalPoolAssetsUsdc: { read: readAsBigNumber },
       estimatedApy: { read: readAsFixedNumber },
+      estimatedApyFromGfiRaw: { read: readAsFixedNumber },
+      estimatedApyFromGfi: {
+        read: (_, { readField }) => {
+          const gfiPrice = gfiVar()?.price.usd;
+          if (!gfiPrice) {
+            // It's possible that this warning will come up as a false positive, because gfi is added to the Apollo cache in an asynchronous way. This warning might get played even though the end result is eventually correct.
+            console.warn(
+              "Tried to read estimatedApyFromGfi but gfi was null. Please include gfi in this query."
+            );
+            return null;
+          }
+          const gfiPriceAsFixedNumber = readAsFixedNumber(
+            gfiPrice.toString()
+          ) as FixedNumber;
+          const estimatedApyFromGfiRaw = readField({
+            fieldName: "estimatedApyFromGfiRaw",
+          });
+          if (!estimatedApyFromGfiRaw) {
+            console.warn(
+              "Tried to read estimatedApyFromGfi but estimatedApyFromGfiRaw was null. Please include estimatedApyFromGfiRaw in this query."
+            );
+            return null;
+          }
+          return gfiPriceAsFixedNumber.mulUnsafe(
+            estimatedApyFromGfiRaw as unknown as FixedNumber
+          );
+        },
+      },
+      earnRatePerTokenPerYear: { read: readAsBigNumber },
     },
   },
   SeniorPoolDeposit: {

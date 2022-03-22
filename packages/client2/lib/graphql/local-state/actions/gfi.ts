@@ -39,7 +39,6 @@ async function fetchCoinbasePrice(): Promise<Gfi["price"]> {
 
 export async function refreshGfiPrice() {
   try {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
     const price = await fetchCoingeckoPrice();
     gfiVar({ price, lastUpdated: Date.now() });
   } catch (e) {
