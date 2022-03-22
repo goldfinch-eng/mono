@@ -18,14 +18,21 @@ import {
 } from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import USAccreditedForm from "./USAccreditedForm"
 import Banner from "../banner"
+import {User} from "../../ethereum/user"
 
 export const NON_US_INDIVIDUAL_ENTITY_TYPE = "Non-US-Individual"
 export const US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Accredited-Individual"
 export const US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Non-Accredited-Individual"
 export const ENTITY_ENTITY_TYPE = "Entity"
 
-function isEligible(kyc: KYC | undefined): boolean {
-  return kyc?.status === "approved" && kyc?.countryCode !== ""
+// Checks if kys status is approved, or on a eligible entity/accredited list
+function isEligible(kyc: KYC | undefined, user: User): boolean {
+  return (
+    (kyc?.status === "approved" && kyc?.countryCode !== "") ||
+    isNonUSEntity(user?.address) ||
+    isUSAccreditedEntity(user?.address) ||
+    isUSAccreditedIndividual(user?.address)
+  )
 }
 
 function LoadingCard({title}: {title?: string}) {
@@ -61,7 +68,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   const accreditedIndividual = watch("accreditedIndividual")
   const requiresAccreditedInput = countrySelection === "value-type-us" && individualOrEntity === "value-type-individual"
 
-  const onSubmit = (data) => {
+  const onSubmit = () => {
     if (countrySelection === "value-type-not-us" && individualOrEntity === "value-type-individual") {
       chooseEntity(NON_US_INDIVIDUAL_ENTITY_TYPE)
     } else if (
@@ -88,13 +95,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
 
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
-    } else if (
-      (isEligible(kyc) ||
-        isNonUSEntity(user?.address) ||
-        isUSAccreditedEntity(user?.address) ||
-        isUSAccreditedIndividual(user?.address)) &&
-      !disabled
-    ) {
+    } else if (isEligible(kyc, user) && !disabled) {
       dispatch({type: CREATE_UID})
     }
   })
@@ -116,7 +117,6 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
       const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {
         setKYC(response.json)
-        console.log(response.json)
         if (response.json.countryCode === US_COUNTRY_CODE) {
           setEntityType(US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)
         }
@@ -167,12 +167,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     return <USAccreditedForm onClose={() => setEntityType("")} />
   } else if (entityType === ENTITY_ENTITY_TYPE && !isUSAccreditedEntity(user.address) && !isNonUSEntity(user.address)) {
     return <EntityForm onClose={() => setEntityType("")} />
-  } else if (
-    isEligible(kyc) ||
-    isUSAccreditedEntity(user.address) ||
-    isUSAccreditedIndividual(user.address) ||
-    isNonUSEntity(user.address)
-  ) {
+  } else if (isEligible(kyc, user)) {
     return <Banner icon={iconCircleCheck}>Your verification was approved.</Banner>
   } else if (entityType === NON_US_INDIVIDUAL_ENTITY_TYPE) {
     return (

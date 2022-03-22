@@ -16,18 +16,15 @@ export const US_UID_TYPES = [
 ]
 export const NON_US_UID_TYPES = [NON_US_INDIVIDUAL_ID_TYPE_0, NON_US_ENTITY_ID_TYPE_4]
 
-export function isUSAccreditedIndividual(address?: string): boolean {
-  if (!address) return false
+export function isUSAccreditedIndividual(address: string): boolean {
   return USAccreditedIndividualsList.includes(address)
 }
 
-export function isUSAccreditedEntity(address?: string): boolean {
-  if (!address) return false
+export function isUSAccreditedEntity(address: string): boolean {
   return USAccreditedEntitiesList.includes(address)
 }
 
-export function isNonUSEntity(address?: string): boolean {
-  if (!address) return false
+export function isNonUSEntity(address: string): boolean {
   return NonUSEntitiesList.includes(address)
 }
 
