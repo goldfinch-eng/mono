@@ -92,7 +92,7 @@ export class BackerRewards {
    */
   juniorTranchePoolTokenRewardsAreWithdrawable(tranchedPool: TranchedPool): boolean {
     // TODO Remove this after the v2.6 migration is deployed.
-    const tempDisabledPending26Migration = true
+    const tempDisabledPending26Migration = process.env.NODE_ENV === "production"
 
     assertWithLoadedInfo(this)
     return (
