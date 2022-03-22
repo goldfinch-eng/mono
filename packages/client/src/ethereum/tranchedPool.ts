@@ -674,6 +674,11 @@ class TranchedPoolBacker {
               )
             )
           )
+          .then((tokenInfos: TokenInfo[]) =>
+            // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
+            // the instantiation-by-pool of TranchedPoolBacker instances.
+            tokenInfos.filter((tokenInfo) => tokenInfo.pool === this.tranchedPool.address)
+          )
       : []
 
     let zero = new BigNumber(0)
