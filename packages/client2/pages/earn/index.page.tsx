@@ -52,7 +52,10 @@ export default function EarnPage() {
       <Heading level={1} className="mb-4">
         Pools
       </Heading>
-      <Paragraph className="mb-12">Lorem ipsum</Paragraph>
+      <Paragraph className="mb-2">Lorem ipsum</Paragraph>
+      <Paragraph className="mb-12">
+        Price of GFI: ${data?.gfi?.price.usd ?? ""}
+      </Paragraph>
       <Heading level={2} className="mb-4">
         Senior Pool
       </Heading>
