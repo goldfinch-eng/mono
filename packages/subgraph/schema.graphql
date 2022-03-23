@@ -140,7 +140,6 @@ type CreditLine @entity {
   interestOwed: BigInt!
   termEndTime: BigInt!
   lastFullPaymentTime: BigInt!
-  termEndDate: BigInt!
   version: TranchedPoolCreditLineVersion!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
