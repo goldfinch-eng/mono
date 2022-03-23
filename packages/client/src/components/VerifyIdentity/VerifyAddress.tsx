@@ -95,7 +95,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
 
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
-    } else if (isEligible(kyc, user) && !disabled) {
+    } else if (user && isEligible(kyc, user) && !disabled) {
       dispatch({type: CREATE_UID})
     }
   })
