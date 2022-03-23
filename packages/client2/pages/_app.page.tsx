@@ -1,14 +1,16 @@
 import "../styles/globals.css";
-// import "react-toastify/dist/ReactToastify.min.css";
 import { ApolloProvider } from "@apollo/client";
 import type { AppProps } from "next/app";
 import Head from "next/head";
+import { useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 
 import { Nav } from "@/components/nav";
 import { apolloClient } from "@/lib/graphql/apollo";
+import { refreshGfiPrice } from "@/lib/graphql/local-state/actions";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  useAppInitialization();
   return (
     <ApolloProvider client={apolloClient}>
       <ToastContainer position="top-center" />
@@ -25,4 +27,13 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </div>
     </ApolloProvider>
   );
+}
+
+/**
+ * Side effects that should run on the client as the app initializes
+ */
+function useAppInitialization() {
+  useEffect(() => {
+    refreshGfiPrice();
+  }, []);
 }

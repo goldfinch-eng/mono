@@ -20,6 +20,8 @@ gql`
       latestPoolStatus {
         id
         estimatedApy
+        estimatedApyFromGfiRaw
+        estimatedApyFromGfi @client
         tranchedPools {
           id
           ...TranchedPoolCardFields
@@ -29,6 +31,11 @@ gql`
     tranchedPools {
       id
       ...TranchedPoolCardFields
+    }
+    gfi @client {
+      price {
+        usd
+      }
     }
   }
 `;
@@ -45,7 +52,10 @@ export default function EarnPage() {
       <Heading level={1} className="mb-4">
         Pools
       </Heading>
-      <Paragraph className="mb-12">Lorem ipsum</Paragraph>
+      <Paragraph className="mb-2">Lorem ipsum</Paragraph>
+      <Paragraph className="mb-12">
+        Price of GFI: ${data?.gfi?.price.usd ?? ""}
+      </Paragraph>
       <Heading level={2} className="mb-4">
         Senior Pool
       </Heading>
@@ -60,7 +70,7 @@ export default function EarnPage() {
             subtitle={seniorPool.category}
             icon={seniorPool.icon}
             apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyWithGfi={0.9999} // TODO this is a placeholder until senior pool APY from GFI is available
+            apyWithGfi={seniorPool.latestPoolStatus.estimatedApyFromGfi}
             href="/pools/senior"
           />
         )}

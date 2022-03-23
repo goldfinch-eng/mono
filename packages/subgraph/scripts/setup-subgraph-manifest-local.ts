@@ -16,6 +16,7 @@ const deployedPoolProxyAddress = devDeployments["31337"].localhost.contracts.Poo
 const deployedPoolTokensProxyAddress = devDeployments["31337"].localhost.contracts.PoolTokens_Proxy.address
 const deployedGoldfinchConfigAddress = devDeployments["31337"].localhost.contracts.GoldfinchConfig.address
 const deployedFiduAddress = devDeployments["31337"].localhost.contracts.Fidu.address
+const deployedStakingRewardsProxyAddress = devDeployments["31337"].localhost.contracts.StakingRewards_Proxy.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
@@ -34,6 +35,9 @@ for (let dataSource of subgraphManifest.dataSources) {
       break
     case "PoolTokensProxy":
       dataSource.source.address = deployedPoolTokensProxyAddress
+      break
+    case "StakingRewardsProxy":
+      dataSource.source.address = deployedStakingRewardsProxyAddress
       break
     default:
       break

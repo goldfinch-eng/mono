@@ -29,6 +29,7 @@ type SeniorPoolStatus @entity {
   cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
   estimatedTotalInterest: BigDecimal!
   estimatedApy: BigDecimal!
+  estimatedApyFromGfiRaw: BigDecimal
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
@@ -194,4 +195,12 @@ type TranchedPoolToken @entity {
   interestRedeemed: BigInt!
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
+}
+
+type StakingRewards @entity {
+  id: ID! # Set to "1" because this is a singleton
+  """
+  The earn rate is a measure per second
+  """
+  currentEarnRatePerToken: BigInt!
 }

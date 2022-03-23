@@ -4,6 +4,7 @@ import {SeniorPool as SeniorPoolContract} from "../../generated/templates/Senior
 import {Fidu_Implementation as FiduContract} from "../../generated/templates/SeniorPool/Fidu_Implementation"
 import {FIDU_ADDRESS} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
+import {getStakingRewards} from "./staking_rewards"
 
 export function getOrInitSeniorPool(address: Address): SeniorPool {
   let seniorPool = SeniorPool.load(address.toHexString())
@@ -43,6 +44,18 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
   return poolStatus
 }
 
+export function updateEstimatedApyFromGfiRaw(): void {
+  const stakingRewards = getStakingRewards()
+  const seniorPoolStatus = getOrInitSeniorPoolStatus()
+  seniorPoolStatus.estimatedApyFromGfiRaw = stakingRewards.currentEarnRatePerToken
+    .times(SECONDS_PER_YEAR)
+    .toBigDecimal()
+    .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
+    .div(seniorPoolStatus.sharePrice.toBigDecimal())
+    .div(GFI_DECIMALS.toBigDecimal())
+  seniorPoolStatus.save()
+}
+
 export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let seniorPoolCapitalProviders = seniorPool.capitalProviders
@@ -52,11 +65,14 @@ export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddre
 }
 
 const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
+const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
 const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
+const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
+  const stakingRewards = getStakingRewards()
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
@@ -79,6 +95,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
   poolStatus.save()
   recalculateSeniorPoolAPY(poolStatus)
+  updateEstimatedApyFromGfiRaw()
 
   seniorPool.latestPoolStatus = poolStatus.id
   seniorPool.save()
