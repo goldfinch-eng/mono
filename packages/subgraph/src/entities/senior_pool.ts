@@ -32,6 +32,7 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.totalShares = new BigInt(0)
     poolStatus.sharePrice = new BigInt(0)
     poolStatus.totalPoolAssets = new BigInt(0)
+    poolStatus.totalPoolAssetsUsdc = new BigInt(0)
     poolStatus.totalLoansOutstanding = new BigInt(0)
     poolStatus.cumulativeWritedowns = new BigInt(0)
     poolStatus.cumulativeDrawdowns = new BigInt(0)
@@ -120,8 +121,14 @@ export function recalculateSeniorPoolAPY(poolStatus: SeniorPoolStatus): void {
   }
   poolStatus.estimatedTotalInterest = estimatedTotalInterest
 
-  if (poolStatus.totalPoolAssetsUsdc.notEqual(BigInt.zero())) {
-    let estimatedApy = estimatedTotalInterest.div(poolStatus.totalPoolAssetsUsdc.toBigDecimal())
+  if (poolStatus.totalPoolAssets.notEqual(BigInt.zero())) {
+    // The goofy-looking math here is required to get things in the right units for arithmetic
+    const totalPoolAssetsInDollars = poolStatus.totalPoolAssets
+      .toBigDecimal()
+      .div(FIDU_DECIMALS.toBigDecimal())
+      .div(FIDU_DECIMALS.toBigDecimal())
+      .times(USDC_DECIMALS.toBigDecimal())
+    let estimatedApy = estimatedTotalInterest.div(totalPoolAssetsInDollars)
     poolStatus.estimatedApy = estimatedApy
   }
 
