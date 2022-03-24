@@ -139,6 +139,7 @@ type CreditLine @entity {
   nextDueTime: BigInt!
   interestOwed: BigInt!
   termEndTime: BigInt!
+  termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
   version: TranchedPoolCreditLineVersion!
   # These fields are marked as nullable as they
@@ -149,6 +150,8 @@ type CreditLine @entity {
   collectedPaymentBalance: BigInt
   totalDueAmount: BigInt
   dueDate: String
+  isLate: Boolean!
+  isEligibleForRewards: Boolean!
   name: String
 }
 
