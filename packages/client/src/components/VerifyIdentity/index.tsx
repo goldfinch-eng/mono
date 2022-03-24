@@ -107,7 +107,8 @@ function VerifyIdentity() {
       <>
         {user?.info.value.goListed && !hasAnyUID && (
           <Banner icon={iconCircleCheck}>
-            You were an early participant through our legacy validation system. You have been grandfathered in and can still participate, but we recommend you upgrade to the new UID system by minting your UID.
+            You were an early participant through our legacy validation system. You have been grandfathered in and can
+            still participate, but we recommend you upgrade to the new UID system by minting your UID.
           </Banner>
         )}
         <VerifyAddress disabled={state.step !== VERIFY_ADDRESS} dispatch={dispatch} />
