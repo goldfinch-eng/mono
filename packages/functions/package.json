@@ -11,7 +11,7 @@
     "start:murmuration": "npm run start",
     "start:murmuration:liquidity-mining": "npm run start",
     "logs": "firebase functions:log",
-    "test": "NODE_OPTIONS=\"--unhandled-rejections=strict\" NODE_ENV=test mocha --require ts-node/register test/**",
+    "test": "NODE_OPTIONS=\"--unhandled-rejections=strict\" NODE_ENV=test mocha --require ts-node/register test/**/*",
     "ci_test": "npx firebase emulators:exec --project=dev \"COMMIT_ID_FOR_TEST=$GITHUB_SHA npm test\"",
     "ci_functions_config_set": "npx firebase functions:config:set sentry.release=$GITHUB_SHA",
     "ci_functions_config_set_dev": "npm run ci_functions_config_set -- --project=dev",
@@ -32,11 +32,13 @@
     ]
   },
   "dependencies": {
+    "@goldfinch-eng/protocol": "^0.1.0",
     "@goldfinch-eng/utils": "^0.0.1",
     "@sentry/integrations": "^6.8.0",
     "@sentry/serverless": "^6.8.0",
+    "bignumber.js": "^9.0.2",
     "dotenv": "^14.2.0",
-    "ethers": "^5.3.0",
+    "ethers": "5.4.4",
     "firebase-admin": "^9.8.0",
     "firebase-functions": "^3.14.1"
   },

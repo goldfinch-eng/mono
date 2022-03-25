@@ -1,5 +1,5 @@
 import React from "react"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {ErrorMessage} from "@hookform/error-message"
 import {iconCheck} from "./icons"
 
@@ -8,6 +8,7 @@ function AddressInput(props) {
   const name = props.name || "sendToAddress"
   const watchName = props.formMethods.watch(name, false)
   const errors = props.formMethods.errors
+  const web3 = getWeb3()
   return (
     <div className="form-field">
       <div className="form-input-container">

@@ -21,7 +21,7 @@ import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
 import {toDisplayPercent} from "../rewards/__utils__/display"
 import {mockCapitalProviderCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
@@ -37,6 +37,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
@@ -127,9 +128,12 @@ describe("Senior pool page deposit status", () => {
         "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
-    expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
-    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual("0.48%")
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual("--.--%")
+    expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Senior Pool APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual("0.48%")
+
+    expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual("--.--%")
+
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual("0.48%")
   })
 
@@ -181,9 +185,12 @@ describe("Senior pool page deposit status", () => {
         "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
-    expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
-    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
+    expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Senior Pool APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual(expectedDisplayPoolApy)
+
+    expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual(expectedDisplayGfiApy)
+
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
   })
 
@@ -234,9 +241,12 @@ describe("Senior pool page deposit status", () => {
         "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
-    expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
-    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
+    expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Senior Pool APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual(expectedDisplayPoolApy)
+
+    expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual(expectedDisplayGfiApy)
+
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
   })
 
@@ -292,9 +302,12 @@ describe("Senior pool page deposit status", () => {
         "Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
       )
     ).toBeInTheDocument()
-    expect(screen.getByText("Senior Pool APY")).toBeInTheDocument()
-    expect(screen.getByTestId("tooltip-estimated-apy").textContent).toEqual(expectedDisplayPoolApy)
-    expect(screen.getByTestId("tooltip-gfi-apy").textContent).toEqual(expectedDisplayGfiApy)
+    expect(screen.getAllByTestId("tooltip-row-label")[0]?.textContent).toEqual("Senior Pool APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[0]?.textContent).toEqual(expectedDisplayPoolApy)
+
+    expect(screen.getAllByTestId("tooltip-row-label")[1]?.textContent).toEqual("GFI Distribution APY")
+    expect(screen.getAllByTestId("tooltip-row-value")[1]?.textContent).toEqual(expectedDisplayGfiApy)
+
     expect(screen.getByTestId("tooltip-total-apy").textContent).toEqual(expectedDisplayTotalApy)
   })
 })

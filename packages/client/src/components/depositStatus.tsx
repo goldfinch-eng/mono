@@ -2,7 +2,7 @@ import {GFI} from "../ethereum/gfi"
 import {CapitalProvider, SeniorPoolData} from "../ethereum/pool"
 import {InfoIcon} from "../ui/icons"
 import {displayDollars, displayPercent} from "../utils"
-import AnnualGrowthTooltipContent from "./AnnualGrowthTooltipContent"
+import APYTooltip from "./APYTooltip"
 
 interface DepositStatusProps {
   poolData: SeniorPoolData | undefined
@@ -66,11 +66,23 @@ function DepositStatus(props: DepositStatusProps) {
             estimatedApyFromGfi?.gt(0) ? " (with GFI)" : ""
           }`}</div>
         </div>
-        <AnnualGrowthTooltipContent
-          supplyingCombined={false}
-          estimatedApyFromSupplying={estimatedApyFromSupplying}
-          estimatedApyFromGfi={estimatedApyFromGfi}
-          estimatedApy={estimatedApy}
+        <APYTooltip
+          id="annual-growth-tooltip"
+          longDescription="Includes the senior pool yield from allocating to borrower pools, plus GFI distributions:"
+          rows={[
+            {
+              text: "Senior Pool APY",
+              value: displayPercent(estimatedApyFromSupplying),
+            },
+            {
+              text: "GFI Distribution APY",
+              value: displayPercent(estimatedApyFromGfi),
+            },
+          ]}
+          total={{
+            text: "Total Est. APY",
+            value: displayPercent(estimatedApy),
+          }}
         />
       </div>
     )

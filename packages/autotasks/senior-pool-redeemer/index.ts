@@ -1,4 +1,4 @@
-import {BigNumber, ethers} from "ethers"
+import {ethers} from "ethers"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import SeniorPoolDeployment from "@goldfinch-eng/protocol/deployments/mainnet/SeniorPool.json"
 import PoolTokensDeployment from "@goldfinch-eng/protocol/deployments/mainnet/PoolTokens.json"
@@ -6,34 +6,59 @@ import TranchedPoolDeploy from "@goldfinch-eng/protocol/deployments/mainnet/Tran
 import {RelayerParams} from "defender-relay-client/lib/relayer"
 import {SeniorPool, PoolTokens, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 
+// These are tokens that shouldn't be considered for redemption
+const tokenIgnoreList = [
+  // This token was created on an initial funding of the senior pool for
+  // Almavest Basket #6. The senior pool was inadvertantly withdrawn by an older
+  // version of this script. There's a bug in the script that's causing an underflow
+  // thats being caught by safe math. There's no principal to be redeemed from this token
+  // so we're going to ignore it
+  604,
+]
+
 // Entrypoint for the Autotask
 export async function handler(event: RelayerParams) {
   const provider = new DefenderRelayProvider(event as RelayerParams)
-  const signer = new DefenderRelaySigner(event, provider, {speed: "average"})
+  const signer = new DefenderRelaySigner(event, provider, {speed: "fast"})
   const seniorPool = new ethers.Contract(SeniorPoolDeployment.address, SeniorPoolDeployment.abi, signer) as SeniorPool
   const poolTokens = new ethers.Contract(PoolTokensDeployment.address, PoolTokensDeployment.abi, provider) as PoolTokens
 
   console.log("👵  getting senior pool pool token minting events ")
   const tokenMintedBySeniorPoolFilter = poolTokens.filters.TokenMinted(seniorPool.address)
   const seniorPoolMintingEvents = await poolTokens.queryFilter(tokenMintedBySeniorPoolFilter)
-  const poolsWithTokenIds: [string, string][] = seniorPoolMintingEvents.map((x) => [
-    x.args[1] as string, // address
-    (x.args[2] as BigNumber).toString(), // pool
-  ])
+  const poolsWithTokenIds = seniorPoolMintingEvents.map((x) => ({
+    poolAddress: x.args.pool,
+    tokenId: x.args.tokenId,
+    trancheId: x.args.tranche,
+  }))
   console.log(`✅  done getting minting events. Found ${poolsWithTokenIds.length}`)
 
   console.log("🧐  checking what tokensIds are redeemable")
   const activePoolTokens: string[] = (
     await Promise.all(
-      poolsWithTokenIds.map(async ([address, tokenId]) => {
-        console.log(` 🧐 checking tokenId = ${tokenId}, address = ${address}`)
-        const tranchedPool = new ethers.Contract(address, TranchedPoolDeploy.abi, provider) as TranchedPool
+      poolsWithTokenIds.map(async ({poolAddress, tokenId, trancheId}) => {
+        const tokenIsOnIgnoreList = tokenIgnoreList.indexOf(tokenId.toNumber()) !== -1
+        if (tokenIsOnIgnoreList) {
+          console.log(` 🙈 ignoring tokenId = ${tokenId}: found on the ignore list`)
+          return
+        }
+
+        console.log(` 🧐 checking tokenId = ${tokenId}, address = ${poolAddress}`)
+        const tranchedPool = new ethers.Contract(poolAddress, TranchedPoolDeploy.abi, provider) as TranchedPool
         try {
           const availableToWithdraw = await tranchedPool.availableToWithdraw(tokenId)
+          const tranche = await tranchedPool.getTranche(trancheId)
+          const lockedUntil = tranche.lockedUntil
+          const trancheHasntBeenLocked = lockedUntil.isZero()
+
+          if (trancheHasntBeenLocked) {
+            console.log(`🪙❌ tokenId = ${tokenId} hasn't drawndown yet. Skipping`)
+            return undefined
+          }
 
           if (!availableToWithdraw.interestRedeemable.eq("0") || !availableToWithdraw.principalRedeemable.eq("0")) {
-            console.log(` 🪙  adding tokenId = ${tokenId} from pool ${address} to redeem list`)
-            return tokenId
+            console.log(` 🪙  adding tokenId = ${tokenId} from pool ${poolAddress} to redeem list`)
+            return tokenId.toString()
           }
         } catch (e) {
           console.error(e)

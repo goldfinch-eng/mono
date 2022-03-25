@@ -5,7 +5,7 @@ import {Contract} from "web3-eth-contract"
 import {AbiItem} from "web3-utils/types"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import * as ERC20Contract from "./ERC20.json"
 import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -43,6 +43,7 @@ abstract class ERC20 {
   initializeContract(): Web3IO<Contract> {
     const config = this.goldfinchProtocol.deployments
     const localContract = this.localContractName && config.contracts[this.localContractName]
+    const web3 = getWeb3()
     let address
     if (localContract) {
       address = localContract.address

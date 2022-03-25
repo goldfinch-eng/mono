@@ -12,7 +12,7 @@ import {
   WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
 import {assertNumber, defaultSum} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {usdcFromAtomic} from "./erc20"
 import {fiduFromAtomic} from "./fidu"
 import {gfiFromAtomic} from "./gfi"
@@ -56,6 +56,7 @@ function getRichAmount(amount: AmountWithUnits): RichAmount {
 }
 
 async function populateDates<T extends KnownEventName, U extends HistoricalTx<T> | CombinedRepaymentTx>(txs: U[]) {
+  const web3 = getWeb3()
   return await Promise.all(
     txs.map((tx) => {
       return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {

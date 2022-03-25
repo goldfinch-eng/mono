@@ -23,18 +23,13 @@
     cursor: auto;
   }
 
-  .tooltip-description {
+  .tooltip-long-description {
     max-width: 214px;
     line-height: 19.2px;
 
     &:first-of-type {
       margin-bottom: 18px;
     }
-  }
-
-  .tooltip-long-description {
-    max-width: 320px;
-    margin-bottom: 18px;
   }
 
   .tooltip-row {
@@ -72,6 +67,11 @@
   span {
     line-height: 19.2px;
     font-size: 15px;
+  }
+
+  .tooltip-long-description {
+    max-width: 320px;
+    margin-bottom: 18px;
   }
 
   .tooltip-footer {

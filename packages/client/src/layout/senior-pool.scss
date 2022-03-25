@@ -8,7 +8,7 @@
 }
 
 .senior-pool-overview-links {
-  font-size: $sans-size-xs;
+  font-size: $sans-size-s;
   padding: 6px 9px;
   border-radius: 4px;
 
@@ -33,18 +33,26 @@
 }
 
 .senior-pool-overview-description {
-  font-size: $sans-size-xs;
+  font-size: $sans-size-s;
   line-height: normal;
+  margin-top: 30px;
 
   .highlights {
     display: block;
     font-weight: 600;
     margin-bottom: 8px;
+    margin-top: 30px;
   }
 
   .highlights-list li {
     display: flex;
-    margin-top: 4px;
+    margin-top: 6px;
+  }
+
+  .highlights-list li::before {
+    content: "•";
+    margin-right: 14px;
+    display: block;
   }
 
   .list-dot {
