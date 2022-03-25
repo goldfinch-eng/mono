@@ -104,7 +104,11 @@ export const UNSTAKE_TX_NAME = "Unstake"
 
 /**
  * This type defines the set of transactions this application supports handling the
- * historical occurrence of.
+ * historical occurrence of (i.e. in addition to the set, defined by `TxType`, that it
+ * *currently* supports sending). Note also that these transaction names need not map
+ * 1:1 to the function whose calling comprises the transaction; a given function could map
+ * to more than one of these names, so that in the UI we can describe / represent its
+ * calling differently depending on e.g. the params of its emitted event.
  */
 export type TxName =
   | TxType
