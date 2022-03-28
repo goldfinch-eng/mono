@@ -315,7 +315,6 @@ describe("unique-identity-signer", () => {
         if (acc.some((x) => curr.includes(x))) {
           throw new Error("Array intersection")
         }
-        console.log({acc, curr})
         return [...acc, ...curr]
       })
       return true
