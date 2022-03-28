@@ -386,9 +386,14 @@ async function fetchSeniorPoolData(
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
 
   const go = pool.goldfinchProtocol.getContract<Go>("Go")
-  const allowedUIDTypes = (await go.readOnly.methods.getSeniorPoolIdTypes().call(undefined, currentBlock.number)).map(
-    (x) => parseInt(x)
-  )
+  let getSeniorPoolIdTypes
+  try {
+    getSeniorPoolIdTypes = await go.readOnly.methods.getSeniorPoolIdTypes().call(undefined, currentBlock.number)
+  } catch (e) {
+    // @TODO gregegan hardcoded until v2.6 gets deployed, then we can remove this
+    getSeniorPoolIdTypes = [0, 1, 3, 4]
+  }
+  const allowedUIDTypes = getSeniorPoolIdTypes.map((x) => parseInt(x))
 
   return {
     rawBalance,
