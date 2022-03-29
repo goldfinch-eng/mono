@@ -43,9 +43,9 @@ export function mockTranchedPoolMultipleSlicesCalls(
           defaultPrincipalDeposited,
           defaultPrincipalSharePrice,
           defaultInterestSharePrice,
-          lockedUntil
+          lockedUntil,
         ])
-      )
+      ),
     ])
 
   createMockedFunction(
@@ -57,7 +57,7 @@ export function mockTranchedPoolMultipleSlicesCalls(
     .returns([
       ethereum.Value.fromTuple(
         changetype<ethereum.Tuple>([juniorId, principalDeposited, principalSharePrice, interestSharePrice, lockedUntil])
-      )
+      ),
     ])
 }
 
@@ -106,9 +106,9 @@ export function mockTranchedPoolCalls(
           defaultPrincipalDeposited,
           defaultPrincipalSharePrice,
           defaultInterestSharePrice,
-          lockedUntil
+          lockedUntil,
         ])
-      )
+      ),
     ])
 
   createMockedFunction(
@@ -120,7 +120,7 @@ export function mockTranchedPoolCalls(
     .returns([
       ethereum.Value.fromTuple(
         changetype<ethereum.Tuple>([juniorId, principalDeposited, principalSharePrice, interestSharePrice, lockedUntil])
-      )
+      ),
     ])
   createMockedFunction(tranchedPoolAddress, "juniorFeePercent", "juniorFeePercent():(uint256)")
     .withArgs([])
@@ -166,41 +166,27 @@ export function mockCreditLineContractCalls(
   const termEndTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1697995148"))
   const lastFullPaymentTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1637515148"))
 
-  createMockedFunction(creditLineAddress, "balance", "balance():(uint256)")
-    .withArgs([])
-    .returns([balance])
-  createMockedFunction(creditLineAddress, "interestApr", "interestApr():(uint256)")
-    .withArgs([])
-    .returns([interestApr])
+  createMockedFunction(creditLineAddress, "balance", "balance():(uint256)").withArgs([]).returns([balance])
+  createMockedFunction(creditLineAddress, "interestApr", "interestApr():(uint256)").withArgs([]).returns([interestApr])
   createMockedFunction(creditLineAddress, "interestAccruedAsOf", "interestAccruedAsOf():(uint256)")
     .withArgs([])
     .returns([interestAccruedAsOf])
   createMockedFunction(creditLineAddress, "paymentPeriodInDays", "paymentPeriodInDays():(uint256)")
     .withArgs([])
     .returns([paymentPeriodInDays])
-  createMockedFunction(creditLineAddress, "termInDays", "termInDays():(uint256)")
-    .withArgs([])
-    .returns([termInDays])
-  createMockedFunction(creditLineAddress, "nextDueTime", "nextDueTime():(uint256)")
-    .withArgs([])
-    .returns([nextDueTime])
-  createMockedFunction(creditLineAddress, "limit", "limit():(uint256)")
-    .withArgs([])
-    .returns([limit])
+  createMockedFunction(creditLineAddress, "termInDays", "termInDays():(uint256)").withArgs([]).returns([termInDays])
+  createMockedFunction(creditLineAddress, "nextDueTime", "nextDueTime():(uint256)").withArgs([]).returns([nextDueTime])
+  createMockedFunction(creditLineAddress, "limit", "limit():(uint256)").withArgs([]).returns([limit])
   createMockedFunction(creditLineAddress, "interestOwed", "interestOwed():(uint256)")
     .withArgs([])
     .returns([interestOwed])
-  createMockedFunction(creditLineAddress, "termEndTime", "termEndTime():(uint256)")
-    .withArgs([])
-    .returns([termEndTime])
+  createMockedFunction(creditLineAddress, "termEndTime", "termEndTime():(uint256)").withArgs([]).returns([termEndTime])
   createMockedFunction(creditLineAddress, "lastFullPaymentTime", "lastFullPaymentTime():(uint256)")
     .withArgs([])
     .returns([lastFullPaymentTime])
 
   if (v2_2) {
-    createMockedFunction(creditLineAddress, "maxLimit", "maxLimit():(uint256)")
-      .withArgs([])
-      .returns([maxLimit])
+    createMockedFunction(creditLineAddress, "maxLimit", "maxLimit():(uint256)").withArgs([]).returns([maxLimit])
   }
 }
 
@@ -240,9 +226,9 @@ export function mockTranchedPoolTokenContractCalls(
           tranche,
           principalAmount,
           principalRedeemed,
-          interestRedeemed
+          interestRedeemed,
         ])
-      )
+      ),
     ])
   createMockedFunction(Address.fromString(POOL_TOKENS_ADDRESS), "ownerOf", "ownerOf(uint256):(address)")
     .withArgs([ethereum.Value.fromUnsignedBigInt(tokenId)])
