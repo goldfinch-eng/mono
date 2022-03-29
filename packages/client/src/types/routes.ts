@@ -12,6 +12,7 @@ export const VERIFY_ROUTE = "/verify"
 export const TERMS_OF_SERVICE_ROUTE = "/terms"
 export const PRIVACY_POLICY_ROUTE = "/privacy"
 export const SENIOR_POOL_AGREEMENT_NON_US_ROUTE = "/senior-pool-agreement-non-us"
+export const SENIOR_POOL_AGREEMENT_US_ROUTE = "/senior-pool-agreement-us"
 
 export type AppRoute =
   | typeof INDEX_ROUTE
@@ -26,6 +27,7 @@ export type AppRoute =
   | typeof TERMS_OF_SERVICE_ROUTE
   | typeof PRIVACY_POLICY_ROUTE
   | typeof SENIOR_POOL_AGREEMENT_NON_US_ROUTE
+  | typeof SENIOR_POOL_AGREEMENT_US_ROUTE
 export function isAppRoute(val: unknown): val is AppRoute {
   return (
     val === INDEX_ROUTE ||
@@ -39,7 +41,8 @@ export function isAppRoute(val: unknown): val is AppRoute {
     val === VERIFY_ROUTE ||
     val === TERMS_OF_SERVICE_ROUTE ||
     val === PRIVACY_POLICY_ROUTE ||
-    val === SENIOR_POOL_AGREEMENT_NON_US_ROUTE
+    val === SENIOR_POOL_AGREEMENT_NON_US_ROUTE ||
+    val === SENIOR_POOL_AGREEMENT_US_ROUTE
   )
 }
 
@@ -55,5 +58,6 @@ export const appRoutes = genExhaustiveTuple<AppRoute>()(
   VERIFY_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
   PRIVACY_POLICY_ROUTE,
-  SENIOR_POOL_AGREEMENT_NON_US_ROUTE
+  SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
+  SENIOR_POOL_AGREEMENT_US_ROUTE
 )

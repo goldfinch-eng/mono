@@ -45,7 +45,6 @@ interface Account {
   countryCode: string
   email: string | null
   verificationCountryCode: string | null
-  discord: string | null
   golisted?: boolean
 }
 
@@ -79,7 +78,6 @@ async function fetchAllAccounts(): Promise<AllAccounts> {
           countryCode: account.attributes.countryCode,
           email: account.attributes.emailAddress || null,
           verificationCountryCode: verification.attributes.countryCode || null,
-          discord: (customFields.discordName && customFields.discordName.value) || null,
         }
       }
       paginationToken = event.id
@@ -165,11 +163,9 @@ async function main() {
   }
 
   const writeStream = fs.createWriteStream("accounts.csv")
-  writeStream.write("address, country_code, golisted, email, discord\n")
+  writeStream.write("address, country_code, golisted, email\n")
   for (const account of approvedAccounts) {
-    writeStream.write(
-      `"${account.id}", ${account.countryCode}, ${account.golisted}, ${account.email}, ${account.discord}\n`
-    )
+    writeStream.write(`"${account.id}", ${account.countryCode}, ${account.golisted}, ${account.email}\n`)
   }
   writeStream.end()
   await new Promise<void>((resolve) => {

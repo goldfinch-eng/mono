@@ -12,7 +12,8 @@ import Footer from "./components/footer"
 import SeniorPoolView from "./components/SeniorPool"
 import TranchedPoolView from "./components/TranchedPool"
 import PrivacyPolicy from "./components/privacyPolicy"
-import SeniorPoolAgreementNonUS from "./components/seniorPoolAgreementNonUS"
+import SeniorPoolAgreementNonUS from "./components/SeniorPool/seniorPoolAgreementNonUS"
+import SeniorPoolAgreementUS from "./components/SeniorPool/seniorPoolAgreementUS"
 import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService"
 import Transactions from "./components/transactions"
@@ -65,6 +66,7 @@ import {
   PRIVACY_POLICY_ROUTE,
   GFI_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
+  SENIOR_POOL_AGREEMENT_US_ROUTE,
   SENIOR_POOL_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
   TRANCHED_POOL_ROUTE,
@@ -223,6 +225,7 @@ function App() {
     [TERMS_OF_SERVICE_ROUTE]: undefined,
     [PRIVACY_POLICY_ROUTE]: undefined,
     [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+    [SENIOR_POOL_AGREEMENT_US_ROUTE]: undefined,
   })
   const [
     leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh,
@@ -240,6 +243,7 @@ function App() {
     [TERMS_OF_SERVICE_ROUTE]: undefined,
     [PRIVACY_POLICY_ROUTE]: undefined,
     [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+    [SENIOR_POOL_AGREEMENT_US_ROUTE]: undefined,
   })
   const [goldfinchConfig, setGoldfinchConfig] = useState<GoldfinchConfigData>()
   const [currentTxs, setCurrentTxs] = useState<CurrentTx<TxType>[]>([])
@@ -694,6 +698,9 @@ function App() {
                     </Route>
                     <Route path={SENIOR_POOL_AGREEMENT_NON_US_ROUTE}>
                       <SeniorPoolAgreementNonUS />
+                    </Route>
+                    <Route path={SENIOR_POOL_AGREEMENT_US_ROUTE}>
+                      <SeniorPoolAgreementUS />
                     </Route>
                     <Route path="*">
                       <NotFound />
