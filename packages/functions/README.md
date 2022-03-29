@@ -18,5 +18,5 @@ Example get variables
 `gcloud beta runtime-config configs variables get-value allowed_origins --config-name kyc --project goldfinch-frontends-prod`
 
 Example set variable
-`gcloud beta runtime-config configs variables set allowed_origins \ "http://localhost:3000,https://app.goldfinch.finance,https://deploy-preview-*--goldfinchfi.netlify.app" --config-name kyc --project goldfinch-frontends-prod``
+`gcloud beta runtime-config configs variables set allowed_origins \ "http://localhost:3000,https://app.goldfinch.finance,https://deploy-preview-*--goldfinchfi.netlify.app" --config-name kyc --project goldfinch-frontends-prod`
 
