@@ -24,6 +24,7 @@ const ALLOWED_SENDERS = {
     "0xFF27f53fdEC54f2077F80350c7011F76f84f9622", // Cauris Metamask
     "0xA8Bd929a04C1E67E5aB03C40e70E2f83238986B6", // Cauris (Use this as borrower EOA)
     "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D", // Stratos EOA
+    "0xb2A3D20999975E31727890c5084CC4A9458740F0", // LendEast metamask
   ],
 }
 
