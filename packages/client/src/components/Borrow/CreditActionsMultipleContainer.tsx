@@ -94,7 +94,11 @@ function CreditActionsMultipleContainer(props: CreditActionsMultipleContainerPro
           </div>
         </div>
         <div>
-          <button className={`button dark ${payClass}`} onClick={payAction} disabled={props.disabled}>
+          <button
+            className={`button dark ${payClass}`}
+            onClick={payAction}
+            disabled={props.creditLine.remainingPeriodDueAmount.eq(0) || props.disabled}
+          >
             {iconUpArrow} Pay All
           </button>
         </div>
