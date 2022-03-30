@@ -383,7 +383,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     depositAndStake(usdcAmount);
   }
 
-  function depositToCurve(uint256 fiduAmount, uint256 usdcAmount) public nonReentrant whenNotPaused {
+  function depositToCurve(uint256 fiduAmount, uint256 usdcAmount) external nonReentrant whenNotPaused {
     uint256 curveLPTokens = _depositToCurve(msg.sender, msg.sender, fiduAmount, usdcAmount);
 
     emit DepositedToCurve(msg.sender, fiduAmount, usdcAmount, curveLPTokens);
@@ -434,12 +434,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
-    uint256[2] memory amounts = [fiduAmount, usdcAmount];
-
     // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
-    uint256 curveLPTokens = curveLP.add_liquidity(amounts, 0, false, tokensRecipient);
-
-    return curveLPTokens;
+    return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, tokensRecipient);
   }
 
   /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
