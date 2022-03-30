@@ -3,10 +3,18 @@ import PaymentForm from "./PaymentForm"
 import DrawdownForm from "./DrawdownForm"
 import {iconCircleCheck, iconUpArrow, iconDownArrow} from "../icons"
 import {AppContext} from "../../App"
-import {displayDollars} from "../../utils"
-import {displayDueDate} from "../../ethereum/creditLine"
+import {assertNonNullable, displayDollars} from "../../utils"
+import {CreditLine, displayDueDate} from "../../ethereum/creditLine"
+import {BorrowerInterface} from "../../ethereum/borrower"
 
-function CreditActionsContainer(props) {
+type CreditActionsContainerProps = {
+  creditLine: CreditLine
+  actionComplete: () => Promise<void>
+  disabled: boolean
+  borrower: BorrowerInterface | undefined
+}
+
+function CreditActionsContainer(props: CreditActionsContainerProps) {
   const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState(null)
   const availableCredit = props.creditLine.availableCredit
@@ -34,7 +42,14 @@ function CreditActionsContainer(props) {
   let drawdownAction
   let drawdownClass = "disabled"
 
-  if (availableCredit.gt(0) && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked && !props.disabled) {
+  if (
+    availableCredit.gt(0) &&
+    user &&
+    user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
+    props.borrower &&
+    !props.borrower.getPoolDrawdownsPausedFromCL(props.creditLine.address) &&
+    !props.disabled
+  ) {
     drawdownAction = (e) => {
       openAction(e, "drawdown")
     }
@@ -43,7 +58,13 @@ function CreditActionsContainer(props) {
 
   let payAction
   let payClass = "disabled"
-  if (props.creditLine.isActive && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked) {
+  if (
+    props.creditLine.isActive &&
+    user &&
+    user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
+    props.borrower &&
+    !props.disabled
+  ) {
     payAction = (e) => {
       openAction(e, "payment")
     }
@@ -61,6 +82,7 @@ function CreditActionsContainer(props) {
   }
 
   if (showAction === "payment") {
+    assertNonNullable(props.borrower)
     return (
       <PaymentForm
         closeForm={closeForm}
@@ -71,6 +93,7 @@ function CreditActionsContainer(props) {
       />
     )
   } else if (showAction === "drawdown") {
+    assertNonNullable(props.borrower)
     return (
       <DrawdownForm
         closeForm={closeForm}
@@ -85,7 +108,7 @@ function CreditActionsContainer(props) {
         <div className="form-start-section">
           <div className="form-start-label">Available to borrow</div>
           <div className="form-start-value">{displayDollars(props.creditLine.availableCreditInDollars)}</div>
-          <button className={`button ${drawdownClass}`} onClick={drawdownAction}>
+          <button className={`button ${drawdownClass}`} onClick={drawdownAction} disabled={props.disabled}>
             {iconDownArrow} Borrow
           </button>
         </div>
@@ -95,7 +118,7 @@ function CreditActionsContainer(props) {
             {nextDueIcon}
             {nextDueDisplay}
           </div>
-          <button className={`button dark ${payClass}`} onClick={payAction}>
+          <button className={`button dark ${payClass}`} onClick={payAction} disabled={props.disabled}>
             {iconUpArrow} Pay
           </button>
         </div>

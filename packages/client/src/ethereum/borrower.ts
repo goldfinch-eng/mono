@@ -1,13 +1,13 @@
-import {submitGaslessTransaction} from "./gasless"
 import BigNumber from "bignumber.js"
-import {getOneInchContract} from "./oneInch"
 import {Contract} from "web3-eth-contract"
-import {ERC20, Tickers} from "./erc20"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {PoolState, TranchedPool} from "./tranchedPool"
-import {BlockInfo} from "../utils"
 import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
 import {Web3IO} from "../types/web3"
+import {BlockInfo} from "../utils"
+import {ERC20, Tickers} from "./erc20"
+import {submitGaslessTransaction} from "./gasless"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {getOneInchContract} from "./oneInch"
+import {TranchedPool} from "./tranchedPool"
 
 class BorrowerInterface {
   userAddress: string
@@ -52,9 +52,7 @@ class BorrowerInterface {
     for (let address of this.borrowerPoolAddresses) {
       const tranchedPool = new TranchedPool(address, this.goldfinchProtocol)
       await tranchedPool.initialize(currentBlock)
-      if (tranchedPool.poolState >= PoolState.SeniorLocked) {
-        this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
-      }
+      this.creditLinesAddresses.push(tranchedPool.creditLineAddress)
       this.tranchedPoolByCreditLine[tranchedPool.creditLineAddress] = tranchedPool
       this.tranchedPools[address] = tranchedPool
     }
@@ -64,20 +62,30 @@ class BorrowerInterface {
     )
   }
 
-  getPoolAddressFromCL(address: string): string {
+  private getPoolFromCL(address: string): TranchedPool {
     const pool = this.tranchedPoolByCreditLine[address]
     if (pool) {
-      return pool.address
+      return pool
     } else {
       throw new Error(`Tranched pool is undefined for address: ${address}`)
     }
+  }
+
+  getPoolAddressFromCL(address: string): string {
+    const pool = this.getPoolFromCL(address)
+    return pool.address
+  }
+
+  getPoolDrawdownsPausedFromCL(address: string): boolean {
+    const pool = this.getPoolFromCL(address)
+    return pool.drawdownsPaused
   }
 
   get shouldUseGasless(): boolean {
     return process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
   }
 
-  drawdown(creditLineAddress, drawdownAmount, sendToAddress) {
+  drawdown(creditLineAddress: string, drawdownAmount: string, sendToAddress: string) {
     sendToAddress = sendToAddress || this.userAddress
     return this.submit(
       this.borrowerContract.userWallet.methods.drawdown(

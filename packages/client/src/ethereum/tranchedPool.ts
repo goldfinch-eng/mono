@@ -147,6 +147,7 @@ class TranchedPool {
   isV1StyleDeal!: boolean
   isMigrated!: boolean
   isPaused!: boolean
+  drawdownsPaused!: boolean
 
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -188,6 +189,7 @@ class TranchedPool {
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
+    this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
 
     this.poolState = this.getPoolState(currentBlock)
 

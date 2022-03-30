@@ -496,7 +496,7 @@ async function writePoolMetadata({
   } catch (error) {
     metadata = {}
   }
-  const name = `${borrower.slice(0, 6)}: ${_.sample(names)}`
+  const name = `${borrower}: ${_.sample(names)}`
   logger(`Write metadata for ${pool.address}:${name}`)
   metadata[pool.address.toLowerCase()] = {
     name,
