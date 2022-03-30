@@ -22,19 +22,14 @@ function Borrow() {
     if (user && user.borrower && creditDesk) {
       const borrowerCreditLines = user.borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
-      if (!creditLine || !creditLine.loaded || (creditLine.loaded && !creditLine.address)) {
-        changeCreditLine(borrowerCreditLines)
-      }
+      changeCreditLine(borrowerCreditLines)
     }
   }
 
   useEffect(() => {
-    if (!creditDesk) {
-      return
-    }
     updateBorrowerAndCreditLine()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditDesk, user])
+  }, [creditDesk, user, currentBlock])
 
   useEffect(() => {
     if (creditLine) {
@@ -46,8 +41,9 @@ function Borrow() {
   const creditLineData = borrowStore.creditLine
 
   async function actionComplete(): Promise<void> {
-    assertNonNullable(creditLineData)
-    changeCreditLine(creditLineData.address)
+    // No need to do anything here to trigger refreshing the chain data;
+    // that refreshing is accomplished via the invocation of `updateBorrowerAndCreditLine()`
+    // upon the changing of `currentBlock`.
   }
 
   async function changeCreditLine(clAddresses: string | string[]) {
