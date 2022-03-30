@@ -41,7 +41,7 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
 
   let drawdownAction
   let drawdownClass = "disabled"
-
+  let drawdownDisabled = true
   if (
     availableCredit.gt(0) &&
     user &&
@@ -54,10 +54,12 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
       openAction(e, "drawdown")
     }
     drawdownClass = ""
+    drawdownDisabled = false
   }
 
   let payAction
   let payClass = "disabled"
+  let payDisabled = true
   if (
     props.creditLine.isActive &&
     user &&
@@ -69,6 +71,7 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
       openAction(e, "payment")
     }
     payClass = ""
+    payDisabled = false
   }
 
   let nextDueDisplay = "No payment due"
@@ -108,7 +111,7 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
         <div className="form-start-section">
           <div className="form-start-label">Available to borrow</div>
           <div className="form-start-value">{displayDollars(props.creditLine.availableCreditInDollars)}</div>
-          <button className={`button ${drawdownClass}`} onClick={drawdownAction} disabled={props.disabled}>
+          <button className={`button ${drawdownClass}`} onClick={drawdownAction} disabled={drawdownDisabled}>
             {iconDownArrow} Borrow
           </button>
         </div>
@@ -118,7 +121,7 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
             {nextDueIcon}
             {nextDueDisplay}
           </div>
-          <button className={`button dark ${payClass}`} onClick={payAction} disabled={props.disabled}>
+          <button className={`button dark ${payClass}`} onClick={payAction} disabled={payDisabled}>
             {iconUpArrow} Pay
           </button>
         </div>
