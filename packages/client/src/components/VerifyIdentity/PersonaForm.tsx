@@ -37,39 +37,18 @@ export default function PersonaForm({entityType, onEvent, network, address, form
     <>
       <div>
         <div className="form-input-label">Email</div>
-        <div className="form-field">
-          <div className="form-input-container">
-            <input
-              type="email"
-              name="email"
-              placeholder="email@example.com"
-              className="form-input small-text"
-              ref={formMethods.register({required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/})}
-            ></input>
-            <div className="form-input-note">
-              <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div className="form-input-label">(Optional) Discord username</div>
         <div className="form-inputs-footer">
           <div className="form-field">
             <div className="form-input-container">
               <input
-                type="text"
-                name="discord"
-                placeholder="user#1234"
+                type="email"
+                name="email"
+                placeholder="email@example.com"
                 className="form-input small-text"
-                ref={formMethods.register({pattern: /[a-zA-Z0-9]+#[0-9]{4}/})}
-              />
+                ref={formMethods.register({required: true, pattern: /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/})}
+              ></input>
               <div className="form-input-note">
-                <ErrorMessage
-                  errors={formMethods.errors}
-                  name="discord"
-                  message="That doesn't look like a valid discord username (make sure to include the # and the 4 digit number)"
-                />
+                <ErrorMessage errors={formMethods.errors} name="email" message="That doesn't look like a valid email" />
               </div>
             </div>
           </div>

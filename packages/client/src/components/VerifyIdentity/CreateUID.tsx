@@ -1,6 +1,6 @@
 import React from "react"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import {useContext, useEffect, useState} from "react"
+import {useContext, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
 import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
@@ -15,9 +15,9 @@ import {UserWalletWeb3Status} from "../../types/web3"
 import {assertNonNullable} from "../../utils"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
-import {Action, END, ID_TYPE_0} from "./constants"
-import VerificationNotice from "./VerificationNotice"
+import {Action} from "./constants"
 import ErrorCard from "./ErrorCard"
+import Banner from "../banner"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
   [LOCAL]: "/uniqueIdentitySigner", // Proxied by webpack to packages/server/index.ts
@@ -79,16 +79,6 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
 
-  useEffect(() => {
-    if (disabled) {
-      return
-    }
-
-    if (user && user.info.value.hasUID) {
-      dispatch({type: END})
-    }
-  })
-
   const action = async () => {
     assertNonNullable(currentBlock)
     assertNonNullable(refreshCurrentBlock)
@@ -109,7 +99,7 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      let version = ID_TYPE_0
+      let version
       try {
         const response = await client.fetchKYCStatus(userAddress)
         if (response.ok) {
@@ -138,45 +128,28 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
     }
   }
 
-  if (user && user.info.value.hasUID) {
+  const uidTypeToBalance = (user && user.info.value.uidTypeToBalance) || {}
+  const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
+  if (user && hasAnyUID) {
     return (
-      <VerificationNotice
-        icon={iconCircleCheck}
-        notice={
-          <>
-            Your UID has been created. View your UID on{" "}
-            <a
-              className="form-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              href={`https://opensea.io/${user.address}/uid?search[sortBy]=LISTING_DATE`}
-            >
-              OpenSea
-            </a>
-            .
-            <br />
-            <br />
-            Note: Non-U.S. individuals are eligible to participate in Borrower Pools, the Senior Pool, and Goldfinch
-            governance. U.S. individuals are only eligible to participate in governance.
-          </>
-        }
-      />
-    )
-  } else if (user && user.info.value.legacyGolisted) {
-    return (
-      <FormProvider {...formMethods}>
-        <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
-          <h1 className="title">Create your UID</h1>
-          <div className="info-banner subtle">
-            <div className="message">
-              <div>
-                <p className="font-small mb-2">Your verification was approved.</p>
-              </div>
-            </div>
-            <LoadingButton disabled={disabled} action={action} text="Create UID" />
-          </div>
-        </div>
-      </FormProvider>
+      <Banner icon={iconCircleCheck} className="verify-card subtle">
+        <>
+          Your UID has been created. View your UID on{" "}
+          <a
+            className="form-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://opensea.io/${user.address}/uid?search[sortBy]=LISTING_DATE`}
+          >
+            OpenSea
+          </a>
+          .
+          <br />
+          <br />
+          Note: U.S. individuals who are not accredited are only eligible to participate in Goldfinch governance-related
+          activities. They may not participate in the senior pool or borrower pools.
+        </>
+      </Banner>
     )
   } else if (errored) {
     return <ErrorCard title="Create your UID" />

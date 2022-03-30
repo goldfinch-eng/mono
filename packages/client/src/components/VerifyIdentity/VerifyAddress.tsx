@@ -1,20 +1,38 @@
 import {useContext, useEffect, useState} from "react"
+import {useForm} from "react-hook-form"
 import {AppContext} from "../../App"
-import {UserLoaded} from "../../ethereum/user"
 import DefaultGoldfinchClient, {KYC} from "../../hooks/useGoldfinchClient"
 import {Session, useSignIn} from "../../hooks/useSignIn"
 import {assertNonNullable} from "../../utils"
 import {iconAlert, iconCircleCheck} from "../icons"
 import EntityForm from "./EntityForm"
-import VerificationNotice from "./VerificationNotice"
 import NonUSForm from "./NonUSForm"
 import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
+import {
+  isNonUSEntity,
+  isUSAccreditedEntity,
+  isUSAccreditedIndividual,
+} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import USAccreditedForm from "./USAccreditedForm"
+import Banner from "../banner"
+import {User} from "../../ethereum/user"
 
-function isEligible(kyc: KYC | undefined, user: UserLoaded | undefined): boolean {
-  return (kyc?.status === "approved" && kyc?.countryCode !== "") || (!!user && user.info.value.goListed)
+export const NON_US_INDIVIDUAL_ENTITY_TYPE = "Non-US-Individual"
+export const US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Accredited-Individual"
+export const US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Non-Accredited-Individual"
+export const ENTITY_ENTITY_TYPE = "Entity"
+
+// Checks if kys status is approved, or on a eligible entity/accredited list
+function isEligible(kyc: KYC | undefined, user: User): boolean {
+  return (
+    (kyc?.status === "approved" && kyc?.countryCode !== "") ||
+    isNonUSEntity(user?.address) ||
+    isUSAccreditedEntity(user?.address) ||
+    isUSAccreditedIndividual(user?.address)
+  )
 }
 
 function LoadingCard({title}: {title?: string}) {
@@ -25,14 +43,50 @@ function LoadingCard({title}: {title?: string}) {
   )
 }
 
+type STATE_ENTITY_TYPE =
+  | ""
+  | typeof US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE
+  | typeof NON_US_INDIVIDUAL_ENTITY_TYPE
+  | typeof US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE
+  | typeof ENTITY_ENTITY_TYPE
+
 export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; dispatch: React.Dispatch<Action>}) {
   const {user, userWalletWeb3Status, network, setSessionData} = useContext(AppContext)
   const [kyc, setKYC] = useState<KYC>()
-  // Determines the form to show. Can be empty, "US" or "entity"
-  const [entityType, setEntityType] = useState<string>("")
+  const [entityType, setEntityType] = useState<STATE_ENTITY_TYPE>("")
   const [session] = useSignIn()
   const [loading, setLoading] = useState<boolean>(false)
   const [errored, setErrored] = useState<boolean>(false)
+  const {
+    watch,
+    register,
+    formState: {isValid},
+    handleSubmit,
+  } = useForm({mode: "onChange"})
+  const countrySelection = watch("countrySelection")
+  const individualOrEntity = watch("individualOrEntity")
+  const accreditedIndividual = watch("accreditedIndividual")
+  const requiresAccreditedInput = countrySelection === "value-type-us" && individualOrEntity === "value-type-individual"
+
+  const onSubmit = () => {
+    if (countrySelection === "value-type-not-us" && individualOrEntity === "value-type-individual") {
+      chooseEntity(NON_US_INDIVIDUAL_ENTITY_TYPE)
+    } else if (
+      countrySelection === "value-type-us" &&
+      individualOrEntity === "value-type-individual" &&
+      accreditedIndividual === "value-type-accredited"
+    ) {
+      chooseEntity(US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)
+    } else if (
+      countrySelection === "value-type-us" &&
+      individualOrEntity === "value-type-individual" &&
+      accreditedIndividual === "value-type-not-accredited"
+    ) {
+      chooseEntity(US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)
+    } else if (individualOrEntity === "value-type-entity") {
+      chooseEntity(ENTITY_ENTITY_TYPE)
+    }
+  }
 
   useEffect(() => {
     if (errored || loading) {
@@ -41,7 +95,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
 
     if (!kyc && session.status === "authenticated") {
       fetchKYCStatus(session)
-    } else if (isEligible(kyc, user) && !disabled) {
+    } else if (user && isEligible(kyc, user) && !disabled) {
       dispatch({type: CREATE_UID})
     }
   })
@@ -64,7 +118,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
       if (response.ok) {
         setKYC(response.json)
         if (response.json.countryCode === US_COUNTRY_CODE) {
-          setEntityType(US_COUNTRY_CODE)
+          setEntityType(US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE)
         }
       }
     } catch (err: unknown) {
@@ -78,64 +132,148 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     setEntityType(chosenType)
   }
 
-  function renderForm() {
-    if (user && user.info.value.goListed) {
-      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
-    } else if (loading) {
-      return <LoadingCard title="Verify your address" />
-    } else if (errored) {
-      return <ErrorCard title="Verify your address" />
-    } else if (kyc?.status === "failed") {
-      return (
-        <VerificationNotice
-          icon={iconAlert}
-          notice="There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your address."
-        />
-      )
-    } else if (entityType === US_COUNTRY_CODE) {
-      return (
-        <USForm
-          kycStatus={kyc?.status}
-          entityType={entityType}
-          onClose={() => setEntityType("")}
-          network={network?.name}
-          address={user?.address}
-          onEvent={() => fetchKYCStatus(session)}
-        />
-      )
-    } else if (entityType === "entity") {
-      return <EntityForm onClose={() => setEntityType("")} />
-    } else if (isEligible(kyc, user)) {
-      return <VerificationNotice icon={iconCircleCheck} notice={<>Your verification was approved.</>} />
-    } else if (entityType === "non-US") {
-      return (
-        <NonUSForm
-          onClose={() => setEntityType("")}
-          entityType={entityType}
-          network={network?.name}
-          address={user?.address}
-          onEvent={() => fetchKYCStatus(session)}
-        />
-      )
-    } else {
-      return (
-        <VerifyCard title="Verify your address" disabled={disabled}>
-          <div className="form-message">Who is verifying this address?</div>
-          <div className="verify-types">
-            <button className={"button"} onClick={() => chooseEntity("non-US")}>
-              Non-U.S. Individual
-            </button>
-            <button className={"button"} onClick={() => chooseEntity(US_COUNTRY_CODE)}>
-              U.S. Individual
-            </button>
-            <button className={"button"} onClick={() => chooseEntity("entity")}>
-              Entity
-            </button>
-          </div>
-        </VerifyCard>
-      )
-    }
+  if (!user) {
+    return <></>
   }
 
-  return renderForm()
+  const uidTypeToBalance = (user && user.info.value.uidTypeToBalance) || {}
+  const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
+
+  if (hasAnyUID) {
+    return <Banner icon={iconCircleCheck}>Your verification was approved.</Banner>
+  } else if (loading) {
+    return <LoadingCard title="Verify your address" />
+  } else if (errored) {
+    return <ErrorCard title="Verify your address" />
+  } else if (kyc?.status === "failed") {
+    return (
+      <Banner icon={iconAlert}>
+        There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your
+        address.
+      </Banner>
+    )
+  } else if (entityType === US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE) {
+    return (
+      <USForm
+        kycStatus={kyc?.status}
+        entityType={entityType}
+        onClose={() => setEntityType("")}
+        network={network?.name}
+        address={user?.address}
+        onEvent={() => fetchKYCStatus(session)}
+      />
+    )
+  } else if (entityType === US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE && !isUSAccreditedIndividual(user.address)) {
+    return <USAccreditedForm onClose={() => setEntityType("")} />
+  } else if (entityType === ENTITY_ENTITY_TYPE && !isUSAccreditedEntity(user.address) && !isNonUSEntity(user.address)) {
+    return <EntityForm onClose={() => setEntityType("")} />
+  } else if (isEligible(kyc, user)) {
+    return <Banner icon={iconCircleCheck}>Your verification was approved.</Banner>
+  } else if (entityType === NON_US_INDIVIDUAL_ENTITY_TYPE) {
+    return (
+      <NonUSForm
+        onClose={() => setEntityType("")}
+        entityType={entityType}
+        network={network?.name}
+        address={user?.address}
+        onEvent={() => fetchKYCStatus(session)}
+      />
+    )
+  } else {
+    return (
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <VerifyCard title="Tell us about yourself" disabled={disabled}>
+          <label htmlFor="countrySelection" className="group-label">
+            Where are you located?
+          </label>
+          <div className="value-option">
+            <input
+              {...register("countrySelection", {required: true})}
+              name="countrySelection"
+              type="radio"
+              id="value-type-us"
+              ref={(ref) => register(ref)}
+              value="value-type-us"
+            />
+            <div className="radio-check"></div>
+            <label htmlFor={"value-type-us"}>in the U.S.</label>
+          </div>
+          <div className="value-option">
+            <input
+              {...register("countrySelection", {required: true})}
+              name="countrySelection"
+              type="radio"
+              id="value-type-not-us"
+              value="value-type-not-us"
+              ref={(ref) => register(ref)}
+            />
+            <div className="radio-check"></div>
+            <label htmlFor={"value-type-not-us"}>outside of the U.S.</label>
+          </div>
+          <label htmlFor="individualOrEntity" className="group-label">
+            Who are you participating on behalf of?
+          </label>
+          <div className="value-option">
+            <input
+              {...register("individualOrEntity", {required: true})}
+              name="individualOrEntity"
+              type="radio"
+              id="value-type-individual"
+              value="value-type-individual"
+              ref={(ref) => register(ref)}
+            />
+            <div className="radio-check"></div>
+            <label htmlFor={"value-type-individual"}>an individual (myself)</label>
+          </div>
+          <div className="value-option">
+            <input
+              {...register("individualOrEntity", {required: true})}
+              name="individualOrEntity"
+              type="radio"
+              id="value-type-entity"
+              value="value-type-entity"
+              ref={(ref) => register(ref)}
+            />
+            <div className="radio-check"></div>
+            <label htmlFor="value-type-entity">an entitiy</label>
+          </div>
+          {requiresAccreditedInput && (
+            <>
+              <label htmlFor="accreditedIndividual" className="group-label">
+                Are you an accredited investor?
+              </label>
+              <div className="value-option">
+                <input
+                  name="accreditedIndividual"
+                  type="radio"
+                  id="value-type-accredited"
+                  value="value-type-accredited"
+                  {...register("accreditedIndividual", {required: true})}
+                  ref={(ref) => register(ref)}
+                />
+                <div className="radio-check"></div>
+                <label htmlFor={"value-type-accredited"}>Yes</label>
+              </div>
+              <div className="value-option">
+                <input
+                  name="accreditedIndividual"
+                  type="radio"
+                  id="value-type-not-accredited"
+                  value="value-type-not-accredited"
+                  {...register("accreditedIndividual", {required: true})}
+                  ref={(ref) => register(ref)}
+                />
+                <div className="radio-check"></div>
+                <label htmlFor={"value-type-not-accredited"}>No</label>
+              </div>
+            </>
+          )}
+
+          <button type="submit" className="button" disabled={!isValid}>
+            Next step
+          </button>
+        </VerifyCard>
+      </form>
+    )
+  }
 }
