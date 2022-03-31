@@ -116,7 +116,7 @@ async function upgradeContracts({
     //  2. checkout your branch
     //  3. copy/paste it to .openzeppelin/unknown-*.json
     //  4. run `npm run generate-manifest` again
-    await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
+    // await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
 
     const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDeployment.address})).connect(
       ethersSigner

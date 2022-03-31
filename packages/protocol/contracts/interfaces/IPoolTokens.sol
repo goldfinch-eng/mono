@@ -29,8 +29,6 @@ interface IPoolTokens is IERC721 {
     uint256 tranche;
     uint256 principalAmount;
     uint256 principalRedeemed;
-    // TODO(PR): evaluate need for principal amount
-    uint256 principalRedeemedBeforeLocking;
     uint256 interestRedeemed;
   }
 

@@ -129,6 +129,12 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
   }
 
+  function reducePrincipalAmount(uint256 tokenId, uint256 amount) external onlyAdmin {
+    TokenInfo storage tokenInfo = tokens[tokenId];
+    tokenInfo.principalAmount = tokenInfo.principalAmount.sub(amount);
+    tokenInfo.principalRedeemed = tokenInfo.principalAmount.sub(amount);
+  }
+
   /**
    * @dev Burns a specific ERC721 token, and removes the data from our mappings
    * @param tokenId uint256 id of the ERC721 token to be burned.
@@ -181,8 +187,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
       tranche: params.tranche,
       principalAmount: params.principalAmount,
       principalRedeemed: 0,
-      interestRedeemed: 0,
-      principalRedeemedBeforeLocking: 0
+      interestRedeemed: 0
     });
     pool.totalMinted = pool.totalMinted.add(params.principalAmount);
     return tokenId;
