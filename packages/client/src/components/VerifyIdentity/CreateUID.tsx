@@ -4,7 +4,7 @@ import React, {useContext, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../../App"
-import {US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2} from "../../ethereum/user"
+import {US_ACCREDITED_INDIVIDUAL_ID_TYPE_1, US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2} from "../../ethereum/user"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import useSendFromUser from "../../hooks/useSendFromUser"
@@ -131,8 +131,8 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
     <>
       <br />
       <br />
-      Note: U.S. individuals who are not accredited are only eligible to participate in Goldfinch governance-related
-      activities. They may not participate in the senior pool or borrower pools.
+      Note: U.S individuals who have not verified as accredited investors are only eligible to participate in governance
+      activities. They may not participate in the Senior or Borrower Pools.
     </>
   )
 
@@ -152,7 +152,11 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
             >
               OpenSea
             </a>
-            .{uidTypeToBalance[US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2] ? usNonAccreditedAdvisory : undefined}
+            .
+            {uidTypeToBalance[US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2] &&
+            !uidTypeToBalance[US_ACCREDITED_INDIVIDUAL_ID_TYPE_1]
+              ? usNonAccreditedAdvisory
+              : undefined}
           </>
         </Banner>
       )
@@ -169,8 +173,8 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
           <div className="info-banner subtle">
             <div className="message">
               <p className="font-small">
-                Your UID is an NFT that represents your unique identity and grants you access to certain Goldfinch
-                community privileges.
+                Your UID is an NFT that represents your unique identity, and grants you access to important Goldfinch
+                community privileges, including supplying capital and voting.
                 {usNonAccreditedAdvisory}
               </p>
             </div>
