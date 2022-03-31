@@ -10,7 +10,6 @@ import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
 import {KYC} from "../hooks/useGoldfinchClient"
-import {UserWalletWeb3Status} from "../types/web3"
 import ConnectionNotice, {ConnectionNoticeProps, strategies} from "./connectionNotice"
 
 interface Scenario {
@@ -29,16 +28,6 @@ interface Scenario {
 }
 
 const testUserAddress = "0xtest"
-const noWeb3: UserWalletWeb3Status = {
-  type: "no_web3",
-  networkName: undefined,
-  address: undefined,
-}
-const hasWeb3: UserWalletWeb3Status = {
-  type: "has_web3",
-  networkName: "localhost",
-  address: undefined,
-}
 
 const scenarios: Scenario[] = [
   {
@@ -85,8 +74,7 @@ const scenarios: Scenario[] = [
     setUpFallthrough: ({props}) => {
       props.requireGolist = false
     },
-    expectedText:
-      /This offering is only available to non-U.S. persons. To participate, you must first verify your address./,
+    expectedText: /This pool is disabled for unverified addresses. You must first verify your address/,
   },
   {
     devName: "kyc_error",

@@ -35,6 +35,10 @@ function usdcFromAtomic(amount: BigNumberish) {
 async function main() {
   assertNonNullable(process.env.FIREBASE_ACCOUNT_KEYS_FILE, "FIREBASE_ACCOUNT_KEYS_FILE envvar is required")
   assertNonNullable(process.env.POOL, "POOL envvar is required")
+  assertNonNullable(process.env.ALCHEMY_API_KEY, "ALCHEMY_API_KEY is required")
+
+  // Use AlchemyProvider directly to bypass hardhat's global timeout on provider
+  const provider = new ethers.providers.AlchemyProvider("mainnet", process.env.ALCHEMY_API_KEY)
 
   const poolAddress = process.env.POOL
 
@@ -66,6 +70,7 @@ async function main() {
         assertNonNullable(result.args.amount)
         if (e.args.amount) {
           result.args.amount = result.args.amount.plus(String(e.args.amount))
+          result.blockNumber = e.blockNumber
         } else if (e.args.principalWithdrawn) {
           result.args.amount = result.args.amount.minus(String(e.args.principalWithdrawn))
         }
@@ -87,7 +92,7 @@ async function main() {
 
       let block = blocks[e.blockNumber]
       if (!block) {
-        block = await ethers.provider.getBlock(e.blockNumber)
+        block = await provider.getBlock(e.blockNumber)
         blocks[block.number] = block
       }
 

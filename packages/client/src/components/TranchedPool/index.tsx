@@ -14,7 +14,7 @@ import {Loadable, Loaded} from "../../types/loadable"
 import {assertNonNullable, croppedAddress, sameBlock} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
-import InvestorNotice from "../investorNotice"
+import InvestorNotice from "../KYCNotice/InvestorNotice"
 import NdaPrompt from "../ndaPrompt"
 import {ActionsContainer} from "./ActionsContainer"
 import {CreditStatus} from "./CreditStatus"
@@ -134,7 +134,7 @@ function TranchedPoolView() {
       <div className="page-header">{earnMessage}</div>
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {maxCapacityNotice}
-      <InvestorNotice />
+      <InvestorNotice user={user} allowedUIDTypes={tranchedPool?.allowedUIDTypes || []} />
       {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
         <EstimatedSeniorPoolMatchingGFILaunchBanner />
       ) : undefined}
