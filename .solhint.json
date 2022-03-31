@@ -133,6 +133,7 @@
           "depositWithPermitAndStake": [],
           "depositAndStakeWithLockup": [],
           "depositWithPermitAndStakeWithLockup": [],
+          "depositToCurve": [],
           "depositToCurveAndStake": [],
           "depositToCurveAndStakeFrom": [],
           "unstake": [],

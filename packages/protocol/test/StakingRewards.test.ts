@@ -42,7 +42,7 @@ import {ecsign} from "ethereumjs-util"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {deployBaseFixture} from "./util/fixtures"
 import {StakedPositionType} from "../blockchain_scripts/deployHelpers"
-import {UnstakedMultiple} from "../typechain/truffle/TestStakingRewards"
+import {DepositedToCurve, UnstakedMultiple} from "../typechain/truffle/TestStakingRewards"
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
@@ -625,6 +625,133 @@ describe("StakingRewards", function () {
             from: investor,
           })
         ).to.be.rejectedWith(/paused/)
+      })
+    })
+  })
+
+  describe("depositToCurve", async () => {
+    const fiduAmount = bigVal(500)
+    const usdcAmount = usdcVal(1000)
+
+    beforeEach(async function () {
+      // Mint rewards for a full year
+      const totalRewards = maxRate.mul(yearInSeconds)
+      await mintRewards(totalRewards)
+
+      // Fix the reward rate to make testing easier
+      await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
+
+      // Disable vesting, to make testing base staking functionality easier
+      await stakingRewards.setVestingSchedule(new BN(0))
+    })
+
+    it("deposits a FIDU-only position into Curve", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const fiduBalanceBefore = await fidu.balanceOf(investor)
+      const fiduUSDCBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
+
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurve(fiduAmount, new BN(0), {from: investor})
+      const depositedToCurveEvent = getFirstLog<DepositedToCurve>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurve")
+      )
+
+      const amount = await fiduUSDCCurveLP.calc_token_amount([fiduAmount, new BN(0)])
+
+      // Verify event
+      expect(depositedToCurveEvent.args.user).to.equal(investor)
+      expect(depositedToCurveEvent.args.tokensReceived).to.bignumber.equal(amount)
+      expect(depositedToCurveEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
+      expect(depositedToCurveEvent.args.usdcAmount).to.bignumber.equal(new BN(0))
+
+      // Verify deposit worked
+      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+      expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(fiduUSDCBalanceBefore.add(amount))
+
+      // Verify that allowance was correctly used
+      expect(await fidu.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that it did not stake
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore)
+    })
+
+    it("deposits a USDC-only position into Curve", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const usdcBalanceBefore = await usdc.balanceOf(investor)
+      const fiduUSDCBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
+
+      await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurve(new BN(0), usdcAmount, {from: investor})
+      const depositedToCurveEvent = getFirstLog<DepositedToCurve>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurve")
+      )
+
+      const amount = await fiduUSDCCurveLP.calc_token_amount([new BN(0), usdcAmount])
+
+      // Verify event
+      expect(depositedToCurveEvent.args.user).to.equal(investor)
+      expect(depositedToCurveEvent.args.tokensReceived).to.bignumber.equal(amount)
+      expect(depositedToCurveEvent.args.fiduAmount).to.bignumber.equal(new BN(0))
+      expect(depositedToCurveEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
+
+      // Verify deposit worked
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(fiduUSDCBalanceBefore.add(amount))
+
+      // Verify that allowance was correctly used
+      expect(await usdc.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that it did not stake
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore)
+    })
+
+    it("deposits both FIDU and USDC into Curve", async () => {
+      const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+      const fiduBalanceBefore = await fidu.balanceOf(investor)
+      const usdcBalanceBefore = await usdc.balanceOf(investor)
+      const fiduUSDCBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
+
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+      await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+      const receipt = await stakingRewards.depositToCurve(fiduAmount, usdcAmount, {from: investor})
+      const depositedToCurveEvent = getFirstLog<DepositedToCurve>(
+        decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedToCurve")
+      )
+
+      const amount = await fiduUSDCCurveLP.calc_token_amount([fiduAmount, usdcAmount])
+
+      // Verify event
+      expect(depositedToCurveEvent.args.user).to.equal(investor)
+      expect(depositedToCurveEvent.args.tokensReceived).to.bignumber.equal(amount)
+      expect(depositedToCurveEvent.args.fiduAmount).to.bignumber.equal(fiduAmount)
+      expect(depositedToCurveEvent.args.usdcAmount).to.bignumber.equal(usdcAmount)
+
+      // Verify deposit worked
+      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+      expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(fiduUSDCBalanceBefore.add(amount))
+
+      // Verify that allowance was correctly used
+      expect(await fidu.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
+      expect(await usdc.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
+
+      // Verify that it did not stake
+      expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore)
+    })
+
+    context("paused", async () => {
+      it("reverts", async () => {
+        await stakingRewards.pause()
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+        await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+        await expect(stakingRewards.depositToCurve(fiduAmount, usdcAmount, {from: investor})).to.be.rejectedWith(
+          /paused/
+        )
       })
     })
   })

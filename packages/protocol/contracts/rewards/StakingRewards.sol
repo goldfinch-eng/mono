@@ -383,6 +383,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     depositAndStake(usdcAmount);
   }
 
+  /// @notice Deposits FIDU and USDC to Curve on behalf of the user. The Curve LP tokens will be minted
+  ///   directly to the user's address
+  /// @param fiduAmount The amount of FIDU to deposit
+  /// @param usdcAmount The amount of USDC to deposit
+  function depositToCurve(uint256 fiduAmount, uint256 usdcAmount) external nonReentrant whenNotPaused {
+    uint256 curveLPTokens = _depositToCurve(msg.sender, msg.sender, fiduAmount, usdcAmount);
+
+    emit DepositedToCurve(msg.sender, fiduAmount, usdcAmount, curveLPTokens);
+  }
+
   function depositToCurveAndStake(uint256 fiduAmount, uint256 usdcAmount) external {
     depositToCurveAndStakeFrom(msg.sender, fiduAmount, usdcAmount);
   }
@@ -395,6 +405,21 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 fiduAmount,
     uint256 usdcAmount
   ) public nonReentrant whenNotPaused updateReward(0) {
+    // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
+    uint256 curveLPTokens = _depositToCurve(msg.sender, address(this), fiduAmount, usdcAmount);
+
+    // Stake the Curve LP tokens on behalf of the user
+    uint256 tokenId = _stake(address(this), nftRecipient, curveLPTokens, StakedPositionType.CurveLP);
+
+    emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens);
+  }
+
+  function _depositToCurve(
+    address depositor,
+    address lpTokensRecipient,
+    uint256 fiduAmount,
+    uint256 usdcAmount
+  ) internal returns (uint256) {
     /// @dev ZERO: Cannot stake 0
     require(fiduAmount > 0 || usdcAmount > 0, "ZERO");
 
@@ -402,26 +427,19 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     IERC20withDec fidu = config.getFidu();
     ICurveLP curveLP = config.getFiduUSDCCurveLP();
 
-    // Transfer FIDU and USDC from staker to StakingRewards, and allow the Curve LP contract to spend
+    // Transfer FIDU and USDC from depositor to StakingRewards, and allow the Curve LP contract to spend
     // this contract's FIDU and USDC
     if (fiduAmount > 0) {
-      fidu.safeTransferFrom(msg.sender, address(this), fiduAmount);
+      fidu.safeTransferFrom(depositor, address(this), fiduAmount);
       fidu.safeIncreaseAllowance(address(curveLP), fiduAmount);
     }
     if (usdcAmount > 0) {
-      usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+      usdc.safeTransferFrom(depositor, address(this), usdcAmount);
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
-    uint256[2] memory amounts = [fiduAmount, usdcAmount];
-
-    // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
-    uint256 curveLPTokens = curveLP.add_liquidity(amounts, 0, false, address(this));
-
-    // Stake the Curve LP tokens on behalf of the user
-    uint256 tokenId = _stake(address(this), nftRecipient, curveLPTokens, StakedPositionType.CurveLP);
-
-    emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens);
+    // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
+    return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, lpTokensRecipient);
   }
 
   /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
@@ -850,6 +868,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 baseTokenExchangeRate
   );
   event DepositedAndStaked(address indexed user, uint256 depositedAmount, uint256 indexed tokenId, uint256 amount);
+  event DepositedToCurve(address indexed user, uint256 fiduAmount, uint256 usdcAmount, uint256 tokensReceived);
   event DepositedToCurveAndStaked(
     address indexed user,
     uint256 fiduAmount,
