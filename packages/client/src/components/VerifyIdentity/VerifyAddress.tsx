@@ -133,13 +133,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   }
 
   if (!user) {
-    if (loading) {
-      return <LoadingCard title="Verify your address" />
-    } else if (errored) {
-      return <ErrorCard title="Verify your address" />
-    } else {
-      return <></>
-    }
+    return <LoadingCard />
   }
 
   const uidTypeToBalance: UIDTypeToBalance = user.info.value.uidTypeToBalance
