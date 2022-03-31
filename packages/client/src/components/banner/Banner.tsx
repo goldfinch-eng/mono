@@ -21,7 +21,7 @@ function Banner(props: BaseBannerProps) {
     <div className={`background-container ${getVariantColor(props.variant)} ${props.className}`}>
       <div className="message">
         {props.icon}
-        <p>{props.children}</p>
+        <div>{props.children}</div>
       </div>
     </div>
   )

@@ -13,6 +13,7 @@ import {reduceToKnown} from "./events"
 import {getDeployments, getFromBlock} from "./utils"
 import {EventData} from "web3-eth-contract"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {NetworkConfig} from "../types/network"
 
 const pastEventsTempCache: {[key: string]: Promise<EventData[]>} = {}
 
@@ -44,7 +45,7 @@ class GoldfinchProtocol {
   networkId: string
   deployments: any
 
-  constructor(networkConfig) {
+  constructor(networkConfig: NetworkConfig) {
     this.networkId = networkConfig.name
   }
 

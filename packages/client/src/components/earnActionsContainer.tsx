@@ -7,7 +7,7 @@ import {assertNonNullable} from "../utils"
 import DepositForm from "./depositForm"
 import DepositStatus from "./depositStatus"
 import {iconDownArrow, iconUpArrow} from "./icons"
-import WithdrawalForm from "./withdrawalForm"
+import WithdrawalForm from "./WithdrawalForm"
 
 interface EarnActionsContainerProps {
   disabled: boolean

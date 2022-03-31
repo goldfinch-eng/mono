@@ -136,6 +136,7 @@
           "depositToCurveAndStake": [],
           "depositToCurveAndStakeFrom": [],
           "unstake": [],
+          "unstakeMultiple": [],
           "unstakeAndWithdraw": [],
           "unstakeAndWithdrawMultiple": [],
           "unstakeAndWithdrawInFidu": [],
