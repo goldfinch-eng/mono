@@ -56,11 +56,11 @@ function Borrow() {
 
   let creditActionsContainer
   let creditLineStatus
-  if (creditLineData) {
+  if (creditLineData && user?.borrower) {
     if (creditLineData.isMultiple) {
       creditActionsContainer = (
         <CreditActionsMultipleContainer
-          borrower={user?.borrower}
+          borrower={user.borrower}
           creditLine={creditLineData}
           actionComplete={actionComplete}
           disabled={disabled}
@@ -72,13 +72,15 @@ function Borrow() {
     } else {
       creditActionsContainer = (
         <CreditActionsContainer
-          borrower={user?.borrower}
+          borrower={user.borrower}
           creditLine={creditLineData}
           actionComplete={actionComplete}
           disabled={disabled}
         />
       )
-      creditLineStatus = <CreditStatus creditLine={creditLineData} user={user} disabled={disabled} />
+      creditLineStatus = (
+        <CreditStatus creditLine={creditLineData} user={user} borrower={user.borrower} disabled={disabled} />
+      )
     }
   }
 

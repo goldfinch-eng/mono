@@ -1,17 +1,17 @@
-import React, {useState, useContext} from "react"
-import PaymentForm from "./PaymentForm"
-import DrawdownForm from "./DrawdownForm"
-import {iconCircleCheck, iconUpArrow, iconDownArrow} from "../icons"
+import React, {useContext, useState} from "react"
 import {AppContext} from "../../App"
-import {assertNonNullable, displayDollars} from "../../utils"
-import {CreditLine, displayDueDate} from "../../ethereum/creditLine"
 import {BorrowerInterface} from "../../ethereum/borrower"
+import {CreditLine, displayDueDate} from "../../ethereum/creditLine"
+import {displayDollars} from "../../utils"
+import {iconCircleCheck, iconDownArrow, iconUpArrow} from "../icons"
+import DrawdownForm from "./DrawdownForm"
+import PaymentForm from "./PaymentForm"
 
 type CreditActionsContainerProps = {
   creditLine: CreditLine
   actionComplete: () => Promise<void>
   disabled: boolean
-  borrower: BorrowerInterface | undefined
+  borrower: BorrowerInterface
 }
 
 function CreditActionsContainer(props: CreditActionsContainerProps) {
@@ -47,7 +47,7 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
     user &&
     user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
     props.borrower &&
-    !props.borrower.getPoolDrawdownsPausedFromCL(props.creditLine.address) &&
+    !props.borrower.getPoolDrawdownDisabled(props.creditLine.address) &&
     !props.disabled
   ) {
     drawdownAction = (e) => {
@@ -85,7 +85,6 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
   }
 
   if (showAction === "payment") {
-    assertNonNullable(props.borrower)
     return (
       <PaymentForm
         closeForm={closeForm}
@@ -96,7 +95,6 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
       />
     )
   } else if (showAction === "drawdown") {
-    assertNonNullable(props.borrower)
     return (
       <DrawdownForm
         closeForm={closeForm}
@@ -110,7 +108,9 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
       <div className={`form-start split background-container ${placeholderClass}`}>
         <div className="form-start-section">
           <div className="form-start-label">Available to borrow</div>
-          <div className="form-start-value">{displayDollars(props.creditLine.availableCreditInDollars)}</div>
+          <div className="form-start-value">
+            {displayDollars(props.borrower.getAvailableToBorrowInDollarsForCreditLine(props.creditLine))}
+          </div>
           <button className={`button ${drawdownClass}`} onClick={drawdownAction} disabled={drawdownDisabled}>
             {iconDownArrow} Borrow
           </button>

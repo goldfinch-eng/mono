@@ -1,16 +1,16 @@
-import React, {useState, useContext} from "react"
-import PaymentForm from "./PaymentForm"
-import {iconUpArrow} from "../icons"
+import React, {useContext, useState} from "react"
 import {AppContext} from "../../App"
-import {assertNonNullable, displayDollars} from "../../utils"
-import {CreditLine} from "../../ethereum/creditLine"
 import {BorrowerInterface} from "../../ethereum/borrower"
+import {CreditLine} from "../../ethereum/creditLine"
+import {displayDollars} from "../../utils"
+import {iconUpArrow} from "../icons"
+import PaymentForm from "./PaymentForm"
 
 type CreditActionsMultipleContainerProps = {
   creditLine: CreditLine
   actionComplete: () => Promise<void>
   disabled: boolean
-  borrower: BorrowerInterface | undefined
+  borrower: BorrowerInterface
 }
 
 function CreditActionsMultipleContainer(props: CreditActionsMultipleContainerProps) {
@@ -72,7 +72,6 @@ function CreditActionsMultipleContainer(props: CreditActionsMultipleContainerPro
   }
 
   if (showAction === "payment") {
-    assertNonNullable(props.borrower)
     return (
       <PaymentForm
         closeForm={closeForm}
