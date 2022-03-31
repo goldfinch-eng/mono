@@ -1,6 +1,6 @@
 import {Address, BigInt, ethereum} from "@graphprotocol/graph-ts"
 import {createMockedFunction} from "matchstick-as/assembly/index"
-import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, POOL_TOKENS_ADDRESS, SENIOR_POOL_ADDRESS} from "../src/constants"
+import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, POOL_TOKENS_ADDRESS, SENIOR_POOL_ADDRESS, FIDU_ADDRESS} from "../src/constants"
 
 export function mockTranchedPoolMultipleSlicesCalls(
   tranchedPoolAddress: Address,
