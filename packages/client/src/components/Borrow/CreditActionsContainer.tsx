@@ -17,7 +17,6 @@ type CreditActionsContainerProps = {
 function CreditActionsContainer(props: CreditActionsContainerProps) {
   const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState(null)
-  const availableCredit = props.creditLine.availableCredit
 
   function openAction(e, action) {
     e.preventDefault()
@@ -43,11 +42,11 @@ function CreditActionsContainer(props: CreditActionsContainerProps) {
   let drawdownClass = "disabled"
   let drawdownDisabled = true
   if (
-    availableCredit.gt(0) &&
     user &&
     user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
     props.borrower &&
     !props.borrower.getPoolDrawdownDisabled(props.creditLine.address) &&
+    props.borrower.getAvailableToBorrowInDollarsForCreditLine(props.creditLine).gt(0) &&
     !props.disabled
   ) {
     drawdownAction = (e) => {
