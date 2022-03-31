@@ -102,7 +102,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
 
   function isMetaMaskInstalled(): boolean {
     return (
-      userWalletWeb3Status?.type === "has_web3" &&
+      (userWalletWeb3Status?.type === "has_web3" || userWalletWeb3Status?.type === "connected") &&
       window.hasOwnProperty("ethereum") &&
       isMetaMaskInpageProvider(getInjectedProvider())
     )
