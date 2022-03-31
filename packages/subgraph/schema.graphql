@@ -205,4 +205,5 @@ type StakingRewards @entity {
   The earn rate is a measure per second
   """
   currentEarnRatePerToken: BigInt!
+  gfiTotalSupply: BigInt!
 }

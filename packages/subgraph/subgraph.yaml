@@ -150,6 +150,8 @@ dataSources:
           file: ./abis/StakingRewards_Implementation.json
         - name: StakingRewards_Proxy
           file: ./abis/StakingRewards_Proxy.json
+        - name: GFI
+          file: ./abis/GFI.json
       eventHandlers:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
@@ -383,6 +385,8 @@ templates:
           file: ./abis/StakingRewards_Implementation.json
         - name: StakingRewards_Proxy
           file: ./abis/StakingRewards_Proxy.json
+        - name: GFI
+          file: ./abis/GFI.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
