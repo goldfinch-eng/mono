@@ -34,7 +34,8 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   creditLine.lastFullPaymentTime = contract.lastFullPaymentTime()
   creditLine.interestAprDecimal = creditLine.interestApr.toBigDecimal().div(INTEREST_DECIMALS)
   creditLine.version = VERSION_BEFORE_V2_2
-  creditLine.isLate = contract.isLate()
+  const isLateCall = contract.try_isLate()
+  creditLine.isLate = !isLateCall.reverted ? isLateCall.value : false
   creditLine.isEligibleForRewards =
     !creditLine.isLate &&
     (creditLine.termStartTime == BigInt.zero() || creditLine.termStartTime >= BigInt.fromString(BACKER_REWARDS_EPOCH))
