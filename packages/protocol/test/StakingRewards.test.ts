@@ -648,6 +648,7 @@ describe("StakingRewards", function () {
     it("deposits a FIDU-only position into Curve", async () => {
       const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
       const fiduBalanceBefore = await fidu.balanceOf(investor)
+      const fiduUSDCBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
 
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
 
@@ -666,6 +667,7 @@ describe("StakingRewards", function () {
 
       // Verify deposit worked
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
+      expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(fiduUSDCBalanceBefore.add(amount))
 
       // Verify that allowance was correctly used
       expect(await fidu.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
@@ -677,6 +679,7 @@ describe("StakingRewards", function () {
     it("deposits a USDC-only position into Curve", async () => {
       const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
       const usdcBalanceBefore = await usdc.balanceOf(investor)
+      const fiduUSDCBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
 
       await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
 
@@ -695,6 +698,7 @@ describe("StakingRewards", function () {
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(fiduUSDCBalanceBefore.add(amount))
 
       // Verify that allowance was correctly used
       expect(await usdc.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
@@ -707,6 +711,7 @@ describe("StakingRewards", function () {
       const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
       const fiduBalanceBefore = await fidu.balanceOf(investor)
       const usdcBalanceBefore = await usdc.balanceOf(investor)
+      const fiduUSDCBalanceBefore = await fiduUSDCCurveLP.balanceOf(investor)
 
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
       await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
@@ -727,6 +732,7 @@ describe("StakingRewards", function () {
       // Verify deposit worked
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduBalanceBefore.sub(fiduAmount))
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(usdcBalanceBefore.sub(usdcAmount))
+      expect(await fiduUSDCCurveLP.balanceOf(investor)).to.bignumber.equal(fiduUSDCBalanceBefore.add(amount))
 
       // Verify that allowance was correctly used
       expect(await fidu.allowance(stakingRewards.address, fiduUSDCCurveLP.address)).to.bignumber.equal(new BN(0))
