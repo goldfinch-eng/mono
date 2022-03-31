@@ -899,6 +899,20 @@ export type UserBackerMerkleDirectDistributorLoaded = WithLoadedInfo<
   UserMerkleDirectDistributorLoadedInfo
 >
 
+export const NON_US_INDIVIDUAL_ID_TYPE_0 = "0"
+export const US_ACCREDITED_INDIVIDUAL_ID_TYPE_1 = "1"
+export const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = "2"
+export const US_ENTITY_ID_TYPE_3 = "3"
+export const NON_US_ENTITY_ID_TYPE_4 = "4"
+
+export type UIDType =
+  | typeof NON_US_INDIVIDUAL_ID_TYPE_0
+  | typeof US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
+  | typeof US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
+  | typeof US_ENTITY_ID_TYPE_3
+  | typeof NON_US_ENTITY_ID_TYPE_4
+export type UIDTypeToBalance = Record<UIDType, boolean>
+
 export type UserLoadedInfo = {
   currentBlock: BlockInfo
   usdcBalance: BigNumber
@@ -916,7 +930,7 @@ export type UserLoadedInfo = {
   >[]
   poolTxs: HistoricalTx<PoolEventType>[]
   goListed: boolean
-  uidTypeToBalance: {[x: string]: boolean}
+  uidTypeToBalance: UIDTypeToBalance
   gfiBalance: BigNumber
   usdcIsUnlocked: {
     earn: {
@@ -1193,18 +1207,13 @@ export class User {
     currentBlock: BlockInfo
   ): Promise<{
     goListed: boolean
-    uidTypeToBalance: {[x: string]: boolean}
+    uidTypeToBalance: UIDTypeToBalance
   }> {
     const go = this.goldfinchProtocol.getContract<Go>("Go")
     const goListed = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
     // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-    const NON_US_INDIVIDUAL_ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
-    const US_ACCREDITED_INDIVIDUAL_ID_TYPE_1 = await uniqueIdentity.readOnly.methods.ID_TYPE_1().call()
-    const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
-    const US_ENTITY_ID_TYPE_3 = await uniqueIdentity.readOnly.methods.ID_TYPE_3().call()
-    const NON_US_ENTITY_ID_TYPE_4 = await uniqueIdentity.readOnly.methods.ID_TYPE_4().call()
     const balances = await uniqueIdentity.readOnly.methods
       .balanceOfBatch(
         [address, address, address, address, address],

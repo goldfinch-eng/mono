@@ -18,7 +18,7 @@ import {
 } from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import USAccreditedForm from "./USAccreditedForm"
 import Banner from "../banner"
-import {User} from "../../ethereum/user"
+import {UIDTypeToBalance, User} from "../../ethereum/user"
 
 export const NON_US_INDIVIDUAL_ENTITY_TYPE = "Non-US-Individual"
 export const US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE = "US-Accredited-Individual"
@@ -136,7 +136,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     return <></>
   }
 
-  const uidTypeToBalance = (user && user.info.value.uidTypeToBalance) || {}
+  const uidTypeToBalance: UIDTypeToBalance = user.info.value.uidTypeToBalance
   const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
 
   if (hasAnyUID) {
@@ -148,8 +148,11 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
   } else if (kyc?.status === "failed") {
     return (
       <Banner icon={iconAlert}>
-        There was an issue verifying your address. For help, please contact verify@goldfinch.finance and include your
-        address.
+        There was an issue verifying your address. For help, please contact{" "}
+        <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:verify@goldfinch.finance">
+          verify@goldfinch.finance
+        </a>{" "}
+        and include your address.
       </Banner>
     )
   } else if (entityType === US_NON_ACCREDITED_INDIVIDUAL_ENTITY_TYPE) {
