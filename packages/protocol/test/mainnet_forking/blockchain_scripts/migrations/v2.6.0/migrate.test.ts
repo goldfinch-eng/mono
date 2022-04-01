@@ -17,7 +17,6 @@ import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/hel
 import {
   BackerRewardsInstance,
   CommunityRewardsInstance,
-  CreditLineInstance,
   ERC20Instance,
   FixedLeverageRatioStrategyInstance,
   GFIInstance,
@@ -27,33 +26,15 @@ import {
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
-  TranchedPoolInstance,
   UniqueIdentityInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import {
-  advanceTime,
-  BN,
-  createPoolWithCreditLine,
-  expectOwnerRole,
-  expectProxyOwner,
-  getTruffleContractAtAddress,
-  mochaEach,
-} from "@goldfinch-eng/protocol/test/testHelpers"
+import {advanceTime, BN, expectOwnerRole, expectProxyOwner, mochaEach} from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Contract} from "ethers/lib/ethers"
 import {Migration260Params} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.6.0/migrate"
 import {Borrower, CreditLine, SeniorPool, StakingRewards, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
-
-const almaPool6Info = {
-  address: "0x418749e294cabce5a714efccc22a8aade6f9db57",
-  aPoolToken: {
-    // Cf. https://etherscan.io/token/0x57686612c601cb5213b01aa8e80afeb24bbd01df?a=512
-    ownerAddress: "0xf21a3d0146b0ceb7cb45ba7543c3ca3525a8830d",
-    id: "512",
-  },
-}
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
