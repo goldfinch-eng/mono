@@ -4,6 +4,7 @@ import {
   GFI,
   Go,
   GoldfinchConfig,
+  PoolTokens,
   SeniorPool,
   StakingRewards,
   TranchedPool,
@@ -11,7 +12,7 @@ import {
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import hre from "hardhat"
-import {bigVal} from "../../../test/testHelpers"
+import {bigVal, BN} from "../../../test/testHelpers"
 import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
 import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 import {deployZapper} from "../../baseDeploy/deployZapper"
@@ -52,39 +53,6 @@ export async function main() {
   const upgrader = new ContractUpgrader(deployer)
   const config = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
 
-  // const BACKER_REWARDS_PARAMS_BY_POOL_ADDR: {
-  //   [key: string]: StakingRewardsInfoInitValues
-  // } = {
-  //   // Stratos drawdown
-  //   // https://etherscan.io/tx/0x44adb6f8d03b7308e93f226ccc8fb6b6e39c2083c2ff15c6e3e8160b2eb932e1
-  //   // 14251940
-  //   // 0x44adb6f8d03b7308e93f226ccc8fb6b6e39c2083c2ff15c6e3e8160b2eb932e1
-  //   [STRATOS_POOL_ADDR]: {
-  //     accumulatedRewardsPerToken: "14764838139349853151",
-  //     fiduSharePriceAtDrawdown: "1049335199989661790",
-  //     // Stratos drawed down over 2 transactions
-  //     principalDeployedAtDrawdown: "20000000000000",
-  //   },
-  //   // Cauris #2 drawdown tx
-  //   // https://etherscan.io/tx/0xe228d3544e2f198308dc5fe968ffe995ab2bcbb82385b7751f4859b94391432e
-  //   // 14272551
-  //   // 0xe228d3544e2f198308dc5fe968ffe995ab2bcbb82385b7751f4859b94391432e
-  //   [CAURIS_2_POOL_ADDR]: {
-  //     accumulatedRewardsPerToken: "14765542624996072988",
-  //     fiduSharePriceAtDrawdown: "1049335199989661790",
-  //     principalDeployedAtDrawdown: "10000000000000",
-  //   },
-  //   // Almavest #6 drawdown tx
-  //   // https://etherscan.io/tx/0x2052a29593c467299d0863a43f48e71b7107b948627b16e6d503c3e27d8e5b32
-  //   // 14250440
-  //   // 0x2052a29593c467299d0863a43f48e71b7107b948627b16e6d503c3e27d8e5b32
-  //   [ALMA_6_POOL_ADDR]: {
-  //     accumulatedRewardsPerToken: "14764765626591738655",
-  //     fiduSharePriceAtDrawdown: "1048979727966257806",
-  //     principalDeployedAtDrawdown: "11812267272185",
-  //   },
-  // }
-
   const deployEffects = await getDeployEffects({
     title: "v2.6.0 upgrade",
     description: "https://github.com/warbler-labs/mono/pull/390",
@@ -112,10 +80,12 @@ export async function main() {
     const withdrawEventWithdrewPrincipal = (event) => event.args.principalWithdrawn.toString() !== "0"
     const withdrawalsOfPrincipalBeforeLocked = withdrawalEventsBeforeLocking.filter(withdrawEventWithdrewPrincipal)
 
-    const output = {}
+    const output: Record<string, string> = {}
     for (const event of withdrawalsOfPrincipalBeforeLocked) {
       // TODO(PR): account for multiple withdraws
-      output[event.args.tokenId.toString()] = event.args.principalWithdrawn.toString()
+      output[event.args.tokenId.toString()] = new BigNumber(output[event.args.tokenId.toString()] || 0)
+        .plus(event.args.principalWithdrawn.toString())
+        .toFixed()
     }
 
     return output
@@ -127,6 +97,7 @@ export async function main() {
   const stakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
   const seniorPool = await getEthersContract<SeniorPool>("SeniorPool")
   const go = await getEthersContract<Go>("Go")
+  const poolTokens = await getEthersContract<PoolTokens>("PoolTokens")
 
   const getRewardsParametersForPool = async (poolAddress: string): Promise<StakingRewardsInfoInitValues> => {
     const tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
@@ -192,8 +163,6 @@ export async function main() {
     BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
       const params = await getRewardsParametersForPool(addr)
 
-      console.log(addr, params)
-
       return backerRewards.populateTransaction.forceIntializeStakingRewardsPoolInfo(
         addr,
         params.fiduSharePriceAtDrawdown,
@@ -204,11 +173,21 @@ export async function main() {
   )
 
   // 7. Generate poolToken data fixup transactions
-  // const poolTokensWithPrincipalWithdrawnBeforeLockById = (await Promise.all(
-  //   BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => getPoolTokensThatRedeemedBeforeLocking(addr))
-  // )).reduce((acc, x) => ({...acc, ...x}), {})
+  const poolTokensWithPrincipalWithdrawnBeforeLockById = (
+    await Promise.all(
+      BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => getPoolTokensThatRedeemedBeforeLocking(addr))
+    )
+  ).reduce((acc, x) => ({...acc, ...x}), {})
 
-  // 7. Add effects to deploy effects
+  // console.log(poolTokensWithPrincipalWithdrawnBeforeLockById)
+
+  const txs = await Promise.all(
+    Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {
+      return poolTokens.populateTransaction.reducePrincipalAmount(id, amount)
+    })
+  )
+
+  // 8. Add effects to deploy effects
   deployEffects.add({
     deferred: [
       // set Goldfinchconfig key for fidu usdc lp pool
@@ -233,6 +212,7 @@ export async function main() {
       ),
 
       ...backerStakingRewardsInitTxs,
+      ...txs,
     ],
   })
 

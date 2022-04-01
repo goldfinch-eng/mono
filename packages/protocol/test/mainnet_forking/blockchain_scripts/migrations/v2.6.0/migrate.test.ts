@@ -95,7 +95,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-describe.only("v2.6.0", async function () {
+describe("v2.6.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let gfi: GFIInstance
@@ -201,14 +201,14 @@ describe.only("v2.6.0", async function () {
       })
     })
 
-    describe.only("FixedLeverageRatioStrategy", async () => {
+    describe("FixedLeverageRatioStrategy", async () => {
       expectOwnerRole({
         toBe: getProtocolOwner,
         forContracts: ["FixedLeverageRatioStrategy"],
       })
     })
 
-    describe.only("BackerRewards", async () => {
+    describe("BackerRewards", async () => {
       describe("maxInterestDollarsElligible", async () => {
         it("is correct", async () => {
           expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(
@@ -241,7 +241,7 @@ describe.only("v2.6.0", async function () {
         })
       })
 
-      describe.skip("withdraw", () => {
+      describe("withdraw", () => {
         const tokenInfo = almaPool6Info.aPoolToken
 
         context("before interest repayment", function () {
@@ -293,6 +293,24 @@ describe.only("v2.6.0", async function () {
         })
       })
 
+      const setupPoolTest = deployments.createFixture(async (hre, options?: {address: string}) => {
+        assertNonNullable(options)
+        const {address} = options
+        let tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: address})
+        const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
+        let borrowerContract = await getEthersContract<Borrower>("Borrower", {at: await creditLine.borrower()})
+        const borrowerEoa = await borrowerContract.getRoleMember(OWNER_ROLE, 0)
+        const ethersSeniorPool = await getEthersContract<SeniorPool>("SeniorPool")
+        const ethersStakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
+        await impersonateAccount(hre, borrowerEoa)
+        await fundWithWhales(["ETH", "USDC"], [borrowerEoa])
+        const borrowerSigner = await hre.ethers.provider.getSigner(borrowerEoa)
+        tranchedPool = tranchedPool.connect(borrowerSigner)
+        borrowerContract = borrowerContract.connect(borrowerSigner)
+
+        return {tranchedPool, creditLine, borrowerContract, ethersSeniorPool, ethersStakingRewards, borrowerEoa}
+      })
+
       mochaEach(migrate260.BACKER_REWARDS_PARAMS_POOL_ADDRS).describe("pool at '%s'", (address) => {
         let tranchedPool: TranchedPool
         let creditLine: CreditLine
@@ -306,25 +324,10 @@ describe.only("v2.6.0", async function () {
           return events.map((x) => x.args.tokenId.toString())
         }
 
-        const setupTest = deployments.createFixture(async () => {
-          let tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: address})
-          const creditLine = await getEthersContract<CreditLine>("CreditLine", {at: await tranchedPool.creditLine()})
-          let borrowerContract = await getEthersContract<Borrower>("Borrower", {at: await creditLine.borrower()})
-          const borrowerEoa = await borrowerContract.getRoleMember(OWNER_ROLE, 0)
-          const ethersSeniorPool = await getEthersContract<SeniorPool>("SeniorPool")
-          const ethersStakingRewards = await getEthersContract<StakingRewards>("StakingRewards")
-          await impersonateAccount(hre, borrowerEoa)
-          await fundWithWhales(["ETH", "USDC"], [borrowerEoa])
-          const borrowerSigner = await hre.ethers.provider.getSigner(borrowerEoa)
-          tranchedPool = tranchedPool.connect(borrowerSigner)
-          borrowerContract = borrowerContract.connect(borrowerSigner)
-
-          return {tranchedPool, creditLine, borrowerContract, ethersSeniorPool, ethersStakingRewards}
-        }, this.title)
-
         beforeEach(async () => {
           // eslint-disable-next-line @typescript-eslint/no-extra-semi
-          ;({tranchedPool, creditLine, borrowerContract, ethersSeniorPool, ethersStakingRewards} = await setupTest())
+          ;({tranchedPool, creditLine, borrowerContract, ethersSeniorPool, ethersStakingRewards, borrowerEoa} =
+            await setupPoolTest({address}))
           backerTokenIds = await getBackerTokenIds(tranchedPool)
         })
 
@@ -346,10 +349,15 @@ describe.only("v2.6.0", async function () {
             await tranchedPool.assess()
             const interestOwed = await creditLine.interestOwed()
             await usdc.approve(borrowerContract.address, interestOwed.toString(), {from: borrowerEoa})
-            const tx = await borrowerContract.pay(tranchedPool.address, interestOwed, {from: borrowerEoa})
+            // impersonate circle
+            await impersonateAccount(hre, "0x55FE002aefF02F77364de339a1292923A15844B8")
+            await usdc.approve(borrowerEoa, interestOwed.toString())
+            await usdc.transfer(borrowerEoa, interestOwed.toString())
+            await impersonateAccount(hre, borrowerEoa)
+            const tx = await borrowerContract.pay(tranchedPool.address, interestOwed)
             const receipt = await tx.wait()
             return {repaymentBlockNumber: receipt.blockNumber}
-          }, this.title)
+          })
 
           beforeEach(async () => {
             // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -366,7 +374,7 @@ describe.only("v2.6.0", async function () {
             return drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
           }
 
-          it.only("backers should earn equivalent staking rewards as LPs", async () => {
+          it("backers should earn equivalent staking rewards as LPs", async () => {
             const drawdownBlockNum = await getLatestDrawdownBlockNumber(tranchedPool)
             const sharePriceAtDrawdown = await ethersSeniorPool.sharePrice({blockTag: drawdownBlockNum})
             const rewardsAccAtDrawdown = await ethersStakingRewards.accumulatedRewardsPerToken({
@@ -412,21 +420,12 @@ describe.only("v2.6.0", async function () {
                 4. get the current stakingRewardsAcc
             */
             for (const [tokenId, principal, pRedeemed, rewardsEarned] of tokenIdsWithPrincipal) {
-              console.log("token = ", tokenId)
               assertNonNullable(principal)
               assertNonNullable(pRedeemed)
               const outstandingPrincipal = new BN(principal).sub(new BN(pRedeemed))
               assertNonNullable(outstandingPrincipal)
-              if (principal == outstandingPrincipal.toString()) {
-                console.log("deposited ", principal)
-                console.log("oustanding", outstandingPrincipal.toString())
-                console.log("all", principal == outstandingPrincipal.toString())
-                const expectedRewards = getExpectedRewards(outstandingPrincipal)
-                console.log("expected", expectedRewards.toString())
-                console.log("sampled", rewardsEarned?.toString())
-                console.log("DID PASS????", rewardsEarned?.toString() == expectedRewards.toString())
-                expect(rewardsEarned).to.bignumber.closeTo(expectedRewards, "100000000000")
-              }
+              const expectedRewards = getExpectedRewards(new BN(principal))
+              expect(rewardsEarned).to.bignumber.closeTo(expectedRewards, "100000000000")
             }
           })
         })

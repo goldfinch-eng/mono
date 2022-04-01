@@ -549,11 +549,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
-
-      // config.getPoolTokens().redeemPrincipalBeforeLocking(tokenId, amount);
-      tokenInfo.principalRedeemedBeforeLocking = tokenInfo.principalRedeemedBeforeLocking.add(amount);
-      // TODO(PR): we need to track the amount of principal that was withdrawn _before_ locking so that
-      //            we know how much
     }
 
     uint256 interestToRedeem = Math.min(interestRedeemable, amount);

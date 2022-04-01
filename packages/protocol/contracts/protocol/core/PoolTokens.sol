@@ -132,7 +132,7 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   function reducePrincipalAmount(uint256 tokenId, uint256 amount) external onlyAdmin {
     TokenInfo storage tokenInfo = tokens[tokenId];
     tokenInfo.principalAmount = tokenInfo.principalAmount.sub(amount);
-    tokenInfo.principalRedeemed = tokenInfo.principalAmount.sub(amount);
+    tokenInfo.principalRedeemed = tokenInfo.principalRedeemed.sub(amount);
   }
 
   /**
@@ -212,11 +212,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   function updateGoldfinchConfig() external onlyAdmin {
     config = GoldfinchConfig(config.configAddress());
     emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
-  function setPrincipalRedeemedBeforeLocking(uint256 tokenId, uint256 value) external onlyAdmin {
-    // TODO(PR): check that token exists
-    tokens[tokenId].principalRedeemedBeforeLocking = value;
   }
 
   modifier onlyAdmin() {
