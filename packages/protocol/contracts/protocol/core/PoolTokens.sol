@@ -137,6 +137,11 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
   }
 
+  /** @notice reduce a given pool token's principalAmount and principalRedeemed by a specified amount
+   *  @dev uses safemath to prevent underflow
+   *  @param tokenId id of token to decrease
+   *  @param amount amount to decrease by
+   */
   function reducePrincipalAmount(uint256 tokenId, uint256 amount) external onlyAdmin {
     TokenInfo storage tokenInfo = tokens[tokenId];
     tokenInfo.principalAmount = tokenInfo.principalAmount.sub(amount);
