@@ -16,7 +16,6 @@ import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
-import StakingRewardsDeployment from "../../deployments/mainnet/StakingRewards.json"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -186,7 +185,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
 
   await migrate250.main()
-  //await migrate260.main()
+  await migrate260.main()
 
   // NOTE: Uncomment for the v2.6.0 upgrade.
   // const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
@@ -1218,12 +1217,7 @@ describe("mainnet forking tests", async function () {
 
       describe("when I deposit and stake", async () => {
         it("it reverts", async () => {
-          await expect(stakingRewards.depositAndStake(usdcVal(10), {from: unGoListedUser})).to.be.rejectedWith(
-            // NOTE: Use the old message since we're currently using the v2.5.0 upgrade
-            /This address has not been go-listed/i
-            // NOTE: Uncomment the line below to get the correct error message with the v2.6.0 upgrade
-            // /GL/i
-          )
+          await expect(stakingRewards.depositAndStake(usdcVal(10), {from: unGoListedUser})).to.be.rejectedWith(/GL/i)
         })
       })
     })
@@ -1278,7 +1272,7 @@ describe("mainnet forking tests", async function () {
           // NOTE: for the v2.5.0 deployment we need to use the existing staking
           // rewards deployment because the code differs from what's actually
           // deployed. If we used the contract it would use the updated signature
-          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, StakingRewardsDeployment, "Staked")
+          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
           const stakedEvent = asNonNullable(logs[0])
           const tokenId = stakedEvent?.args.tokenId
           await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
@@ -1668,10 +1662,10 @@ describe("mainnet forking tests", async function () {
         // NOTE: for the v2.5.0 deployment we need to use the existing staking
         // rewards deployment because the code differs from what's actually
         // deployed. If we used the contract it would use the updated signature
-        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, StakingRewardsDeployment, "Staked"))
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
-          decodeLogs(receipt.receipt.rawLogs, StakingRewardsDeployment, "DepositedAndStaked")
+          decodeLogs(receipt.receipt.rawLogs, stakingRewards, "DepositedAndStaked")
         )
         expect(depositedAndStakedEvent.args.user).to.equal(stakedEvent.args.user)
         expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)

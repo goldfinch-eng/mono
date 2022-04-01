@@ -15,6 +15,7 @@
         "**/PoolTokens.sol:PoolTokens": {
           "mint": ["onlyPool"],
           "redeem": ["onlyPool"],
+          "withdrawPrincipal": ["onlyPool"],
           "onPoolCreated": ["onlyGoldfinchFactory"],
           "burn": [],
           "getTokenInfo": []

@@ -55,7 +55,7 @@ export async function main() {
 
   // 1. Upgrade other contracts
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["BackerRewards", "SeniorPool", "StakingRewards", "CommunityRewards"],
+    contracts: ["BackerRewards", "SeniorPool", "StakingRewards", "CommunityRewards", "PoolTokens"],
   })
 
   // 2. Change implementations
