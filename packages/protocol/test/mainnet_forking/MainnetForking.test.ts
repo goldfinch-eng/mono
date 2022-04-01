@@ -706,7 +706,6 @@ describe("mainnet forking tests", async function () {
     const trackedStakedAmount = usdcVal(2500)
     const untrackedStakedAmount = usdcVal(1000)
     const limit = trackedStakedAmount.add(untrackedStakedAmount).mul(new BN("5"))
-    console.log("ZZZ", limit.toString())
     const setup = deployments.createFixture(async () => {
       const result = await goldfinchFactory.createPool(
         bwr,

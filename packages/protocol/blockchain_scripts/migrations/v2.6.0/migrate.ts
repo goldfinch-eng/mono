@@ -41,7 +41,6 @@ export const BACKER_REWARDS_PARAMS_POOL_ADDRS = [
 export type Migration260Params = {
   BackerRewards: {
     totalRewards: string
-    maxInterestDollarsEligible: string
   }
   StakingRewards: {
     effectiveMultiplier: string
@@ -149,7 +148,6 @@ export async function main() {
   const params: Migration260Params = {
     BackerRewards: {
       totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
-      maxInterestDollarsEligible: bigVal(100_000_000).toString(),
     },
     StakingRewards: {
       effectiveMultiplier: "750000000000000000",
@@ -166,7 +164,6 @@ export async function main() {
   const backerStakingRewardsInitTxs = await Promise.all(
     BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
       const params = await getRewardsParametersForPool(addr)
-      console.log(params)
       return backerRewards.populateTransaction.forceIntializeStakingRewardsPoolInfo(
         addr,
         params.fiduSharePriceAtDrawdown,
@@ -183,7 +180,7 @@ export async function main() {
     )
   ).reduce((acc, x) => ({...acc, ...x}), {})
 
-  const txs = await Promise.all(
+  const poolTokenFixupTxs = await Promise.all(
     Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {
       return poolTokens.populateTransaction.reducePrincipalAmount(id, amount)
     })
@@ -214,7 +211,7 @@ export async function main() {
       ),
 
       ...backerStakingRewardsInitTxs,
-      ...txs,
+      ...poolTokenFixupTxs,
     ],
   })
 

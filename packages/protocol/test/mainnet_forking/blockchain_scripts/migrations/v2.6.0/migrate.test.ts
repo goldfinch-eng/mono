@@ -190,38 +190,6 @@ describe("v2.6.0", async function () {
     })
 
     describe("BackerRewards", async () => {
-      describe("maxInterestDollarsElligible", async () => {
-        it("is correct", async () => {
-          expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(
-            params.BackerRewards.maxInterestDollarsEligible
-          )
-        })
-      })
-
-      describe("totalRewardPercentOfTotalGFI", async () => {
-        it("is correct", async () => {
-          // This function returns percentage points as the base unit. meaning that 1e18 = 1 percent
-          const two = "2000000000000000000"
-          expect((await backerRewards.totalRewardPercentOfTotalGFI()).toString()).to.eq(two)
-        })
-      })
-
-      describe("maxInterestDollarsElligible", async () => {
-        it("is correct", async () => {
-          expect(await backerRewards.maxInterestDollarsEligible()).to.bignumber.eq(
-            params.BackerRewards.maxInterestDollarsEligible
-          )
-        })
-      })
-
-      describe("totalRewardPercentOfTotalGFI", async () => {
-        it("is correct", async () => {
-          // This function returns percentage points as the base unit. meaning that 1e18 = 1 percent
-          const two = "2000000000000000000"
-          expect((await backerRewards.totalRewardPercentOfTotalGFI()).toString()).to.eq(two)
-        })
-      })
-
       const setupPoolTest = deployments.createFixture(async (hre, options?: {address: string}) => {
         assertNonNullable(options)
         const {address} = options
@@ -278,11 +246,7 @@ describe("v2.6.0", async function () {
             await tranchedPool.assess()
             const interestOwed = await creditLine.interestOwed()
             await usdc.approve(borrowerContract.address, interestOwed.toString(), {from: borrowerEoa})
-            // impersonate circle because our whale doesn't have enough money at this point
-            await impersonateAccount(hre, "0x55FE002aefF02F77364de339a1292923A15844B8")
-            await usdc.approve(borrowerEoa, interestOwed.toString())
-            await usdc.transfer(borrowerEoa, interestOwed.toString())
-            await impersonateAccount(hre, borrowerEoa)
+            await fundWithWhales(["USDC"], [borrowerEoa])
             const tx = await borrowerContract.pay(tranchedPool.address, interestOwed)
             const receipt = await tx.wait()
             return {repaymentBlockNumber: receipt.blockNumber}
@@ -341,7 +305,7 @@ describe("v2.6.0", async function () {
 
             for (const {principalAmount, stakingRewardsSinceLastWithdraw} of tokenIdsWithPrincipal) {
               const expectedRewards = getExpectedRewards(new BN(principalAmount))
-              expect(stakingRewardsSinceLastWithdraw).to.bignumber.closeTo(expectedRewards, "100000000000")
+              expect(stakingRewardsSinceLastWithdraw).to.bignumber.eq(expectedRewards)
             }
           })
         })
@@ -351,11 +315,6 @@ describe("v2.6.0", async function () {
     context("Go", () => {
       expectProxyOwner({
         toBe: getProtocolOwner,
-        forContracts: ["Go"],
-      })
-
-      expectOwnerRole({
-        toBe: async () => getProtocolOwner(),
         forContracts: ["Go"],
       })
 
