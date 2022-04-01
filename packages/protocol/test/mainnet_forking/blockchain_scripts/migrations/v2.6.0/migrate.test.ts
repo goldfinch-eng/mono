@@ -241,58 +241,6 @@ describe("v2.6.0", async function () {
         })
       })
 
-      describe("withdraw", () => {
-        const tokenInfo = almaPool6Info.aPoolToken
-
-        context("before interest repayment", function () {
-          beforeEach(async () => {
-            await impersonateAccount(hre, tokenInfo.ownerAddress)
-            await fundWithWhales(["ETH"], [tokenInfo.ownerAddress])
-            const info = await poolTokens.tokens(tokenInfo.id)
-            const principalAmount = info[2]
-            expect(principalAmount.gt(new BN(0))).to.be.true
-          })
-
-          it('allows "withdrawing" 0', async () => {
-            const claimableRewards = await backerRewards.poolTokenClaimableRewards(tokenInfo.id)
-            expect(claimableRewards).to.bignumber.equal(new BN(0))
-            const withdrawal = backerRewards.withdraw(tokenInfo.id, {
-              from: tokenInfo.ownerAddress,
-            })
-            await expect(withdrawal).to.be.fulfilled
-          })
-        })
-        context("after interest repayment", function () {
-          beforeEach(async () => {
-            await impersonateAccount(hre, tokenInfo.ownerAddress)
-            await fundWithWhales(["ETH"], [tokenInfo.ownerAddress])
-
-            const owner = await getProtocolOwner()
-            await fundWithWhales(["USDC"], [owner])
-
-            await advanceTime({days: "30"})
-
-            const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>(
-              "TranchedPool",
-              almaPool6Info.address
-            )
-            await tranchedPool.assess()
-            const creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
-              "CreditLine",
-              await tranchedPool.creditLine()
-            )
-            const interestOwedBefore = await creditLine.interestOwed()
-            expect(interestOwedBefore.gt(new BN(0))).to.be.true
-
-            await usdc.approve(tranchedPool.address, interestOwedBefore, {from: owner})
-            await tranchedPool.pay(interestOwedBefore.toString(), {from: owner})
-
-            const interestOwedAfter = await creditLine.interestOwed()
-            expect(interestOwedAfter).to.bignumber.equal(new BN(0))
-          })
-        })
-      })
-
       const setupPoolTest = deployments.createFixture(async (hre, options?: {address: string}) => {
         assertNonNullable(options)
         const {address} = options
@@ -349,7 +297,7 @@ describe("v2.6.0", async function () {
             await tranchedPool.assess()
             const interestOwed = await creditLine.interestOwed()
             await usdc.approve(borrowerContract.address, interestOwed.toString(), {from: borrowerEoa})
-            // impersonate circle
+            // impersonate circle because our whale doesn't have enough money at this point
             await impersonateAccount(hre, "0x55FE002aefF02F77364de339a1292923A15844B8")
             await usdc.approve(borrowerEoa, interestOwed.toString())
             await usdc.transfer(borrowerEoa, interestOwed.toString())
