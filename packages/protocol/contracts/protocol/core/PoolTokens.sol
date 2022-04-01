@@ -48,6 +48,14 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     uint256 tranche
   );
 
+  event TokenPrincipalWithdrawn(
+    address indexed owner,
+    address indexed pool,
+    uint256 indexed tokenId,
+    uint256 principalWithdrawn,
+    uint256 tranche
+  );
+
   event TokenBurned(address indexed owner, address indexed pool, uint256 indexed tokenId);
 
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
@@ -133,6 +141,34 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     TokenInfo storage tokenInfo = tokens[tokenId];
     tokenInfo.principalAmount = tokenInfo.principalAmount.sub(amount);
     tokenInfo.principalRedeemed = tokenInfo.principalRedeemed.sub(amount);
+  }
+
+  /**
+   * @notice Decrement a token's principal amount. This is different from `redeem`, which captures changes to
+   *   principal and/or interest that occur when a loan is in progress.
+   * @param tokenId The token id to update (must be owned by the pool calling this function)
+   * @param principalAmount The incremental amount of principal redeemed (cannot be more than principal deposited)
+   */
+  function withdrawPrincipal(uint256 tokenId, uint256 principalAmount)
+    external
+    virtual
+    override
+    onlyPool
+    whenNotPaused
+  {
+    TokenInfo storage token = tokens[tokenId];
+    address poolAddr = token.pool;
+    require(_msgSender() == poolAddr, "Invalid sender");
+    require(token.principalRedeemed == 0, "Token redeemed");
+    require(token.principalAmount >= principalAmount, "Insufficient principal");
+
+    PoolInfo storage pool = pools[poolAddr];
+    pool.totalMinted = pool.totalMinted.sub(principalAmount);
+    require(pool.totalPrincipalRedeemed <= pool.totalMinted, "Cannot withdraw more than redeemed");
+
+    token.principalAmount = token.principalAmount.sub(principalAmount);
+
+    emit TokenPrincipalWithdrawn(ownerOf(tokenId), poolAddr, tokenId, principalAmount, token.tranche);
   }
 
   /**

@@ -40524,6 +40524,25 @@
             {
               "inputs": [
                 {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "totalUnclaimed",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "start",
                   "type": "uint256"
@@ -40591,6 +40610,25 @@
               "name": "transferFrom",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "unclaimed",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {
@@ -40734,7 +40772,7 @@
           ]
         },
         "CommunityRewards_Implementation": {
-          "address": "0x792c976adA1eF352665f24011B3Dbc868287cab4",
+          "address": "0xb91E2874C34C5A410Ff6baeCDd73a369119C4b03",
           "abi": [
             {
               "anonymous": false,
@@ -41808,6 +41846,25 @@
             {
               "inputs": [
                 {
+                  "internalType": "address",
+                  "name": "owner",
+                  "type": "address"
+                }
+              ],
+              "name": "totalUnclaimed",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "start",
                   "type": "uint256"
@@ -41875,6 +41932,25 @@
               "name": "transferFrom",
               "outputs": [],
               "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "unclaimed",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
               "type": "function"
             },
             {

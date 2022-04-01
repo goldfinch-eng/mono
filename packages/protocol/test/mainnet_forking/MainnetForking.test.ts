@@ -182,7 +182,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-
   await migrate260.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
@@ -1510,7 +1509,6 @@ describe("mainnet forking tests", async function () {
         await usdc.approve(stakingRewards.address, amount, {from: owner})
 
         const receipt = await stakingRewards.depositAndStake(amount, {from: owner})
-
         const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
