@@ -11,6 +11,9 @@ import {
   getCurrentTimestamp,
   advanceTime,
   setupBackerRewards,
+  decodeAndGetFirstLog,
+  bigVal,
+  Numberish,
 } from "./testHelpers"
 import {OWNER_ROLE, interestAprAsBN, GO_LISTER_ROLE} from "../blockchain_scripts/deployHelpers"
 import hre from "hardhat"
@@ -22,6 +25,8 @@ import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
 import {GFIInstance, BackerRewardsInstance, TranchedPoolInstance} from "../typechain/truffle"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
+import {TokenMinted} from "../typechain/truffle/IPoolTokens"
+import {TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -239,6 +244,113 @@ describe("PoolTokens", () => {
       it("reverts", async () => {
         // TODO
       })
+    })
+  })
+
+  describe("withdrawPrincipal", async () => {
+    const withdrawPrincipal = async (tokenId: Numberish, principal: Numberish) => {
+      // We need to fake the address so we can bypass the pool
+      return withPoolSender(() => poolTokens.withdrawPrincipal(tokenId, principal))
+    }
+
+    beforeEach(async () => {
+      const result = await goldfinchFactory.createPool(
+        person2,
+        new BN(20),
+        usdcVal(100),
+        interestAprAsBN("15.0"),
+        new BN(30),
+        new BN(365),
+        new BN(0),
+        new BN(185),
+        new BN(0),
+        [],
+        {from: owner}
+      )
+      const event = result.logs[result.logs.length - 1]
+      pool = await TranchedPool.at(event.args.pool)
+      // grant role so the person can deposit into the senior tranche
+      await pool.grantRole(await pool.SENIOR_ROLE(), person2)
+      await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
+    })
+
+    it("reverts when paused", async () => {
+      await poolTokens.pause({from: owner})
+      await expect(withdrawPrincipal(1, usdcVal(1000))).to.be.rejectedWith(/paused/)
+    })
+
+    it("disallows redeeming tokens that don't exist", async () => {
+      const nonExistentTokenId = (await poolTokens._tokenIdTracker()).add(new BN(1))
+      return expect(withdrawPrincipal(nonExistentTokenId, new BN("1000"))).to.be.rejectedWith(/Invalid sender/)
+    })
+
+    it("only allows redemptions that come from the token's pool", async () => {
+      const depositAmount = usdcVal(1000)
+      await erc20Approve(usdc, pool.address, depositAmount, [person2])
+      const result = await pool.deposit(new BN(1), depositAmount, {from: person2})
+      const event = decodeAndGetFirstLog<TokenMinted>(result.receipt.rawLogs, poolTokens, "TokenMinted")
+      const realTokenId = event.args.tokenId
+      const fakePool = person2
+
+      const fakePoolRedemption = withPoolSender(() => poolTokens.withdrawPrincipal(realTokenId, 1000), fakePool)
+      return expect(fakePoolRedemption).to.be.rejectedWith(/Invalid sender/)
+    })
+
+    it("disallows withdrawing principal on token that has been redeemeed", async () => {
+      const depositAmount = usdcVal(1000)
+      await erc20Approve(usdc, pool.address, depositAmount, [person2])
+      const depositResult = await pool.deposit(new BN(1), depositAmount, {from: person2})
+      const mintEvent = decodeAndGetFirstLog<TokenMinted>(depositResult.receipt.rawLogs, poolTokens, "TokenMinted")
+      const tokenId = mintEvent.args.tokenId
+      const withdrawAmount = depositAmount.div(new BN(4))
+
+      // Redeem some value
+      await withPoolSender(() => poolTokens.redeem(tokenId, usdcVal(100), usdcVal(0)))
+
+      await expect(withdrawPrincipal(tokenId, withdrawAmount)).to.be.rejectedWith(/Token redeemed/)
+    })
+
+    it("disallows withdrawing more than principalAmount", async () => {
+      const depositAmount = usdcVal(1000)
+      await erc20Approve(usdc, pool.address, depositAmount, [person2])
+      const depositResult = await pool.deposit(new BN(1), depositAmount, {from: person2})
+      const mintEvent = decodeAndGetFirstLog<TokenMinted>(depositResult.receipt.rawLogs, poolTokens, "TokenMinted")
+      const tokenId = mintEvent.args.tokenId
+      const withdrawAmount = depositAmount.add(new BN(1))
+
+      await expect(withdrawPrincipal(tokenId, withdrawAmount)).to.be.rejectedWith(/Insufficient principal/)
+    })
+
+    it("decrements the token's principal amount", async () => {
+      const depositAmount = usdcVal(1000)
+      await erc20Approve(usdc, pool.address, depositAmount, [person2])
+      const depositResult = await pool.deposit(new BN(1), depositAmount, {from: person2})
+      const mintEvent = decodeAndGetFirstLog<TokenMinted>(depositResult.receipt.rawLogs, poolTokens, "TokenMinted")
+      const tokenId = mintEvent.args.tokenId
+      const withdrawAmount = depositAmount.div(new BN(4))
+      const result = await withdrawPrincipal(tokenId, withdrawAmount)
+      const tokenInfo = await poolTokens.tokens(tokenId)
+
+      const principalAmountRemaining = depositAmount.sub(withdrawAmount)
+      // It decrements principalAmount and does not touch principalRedeemed
+      expect(tokenInfo.principalAmount).to.bignumber.eq(principalAmountRemaining)
+      expect(tokenInfo.principalRedeemed).to.bignumber.eq(new BN(0))
+
+      // It decrements pool.totalMinted
+      const poolInfo = await poolTokens.pools(pool.address)
+      expect(poolInfo.totalMinted).to.bignumber.eq(principalAmountRemaining)
+
+      // It emits an event
+      const event = decodeAndGetFirstLog<TokenPrincipalWithdrawn>(
+        result.receipt.rawLogs,
+        poolTokens,
+        "TokenPrincipalWithdrawn"
+      )
+      expect(event.args.principalWithdrawn).to.bignumber.eq(withdrawAmount)
+      expect(event.args.owner).to.eq(person2)
+      expect(event.args.pool).to.eq(pool.address)
+      expect(event.args.tokenId).to.bignumber.eq(tokenId)
+      expect(event.args.tranche).to.bignumber.eq(tokenInfo.tranche)
     })
   })
 

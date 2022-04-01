@@ -494,8 +494,8 @@ describe("Zapper", async () => {
         const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
 
         // Capital has been withdrawn from TranchedPool
-        expect(tokenInfo.principalRedeemed).to.bignumber.eq(usdcToZap)
-        expect(tokenInfo.principalAmount).to.bignumber.eq(tokenInfo.principalRedeemed)
+        expect(tokenInfo.principalRedeemed).to.bignumber.eq(new BN(0))
+        expect(tokenInfo.principalAmount).to.bignumber.eq(new BN(0))
         expect(tranchedPoolBalanceBefore.sub(tranchedPoolBalanceAfter)).to.bignumber.eq(usdcToZap)
 
         // Capital has been added back to existing staked position
