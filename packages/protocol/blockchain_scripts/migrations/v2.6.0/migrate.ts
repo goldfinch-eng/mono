@@ -12,7 +12,7 @@ import {
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import hre from "hardhat"
-import {bigVal, BN} from "../../../test/testHelpers"
+import {bigVal} from "../../../test/testHelpers"
 import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
 import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 import {deployZapper} from "../../baseDeploy/deployZapper"
@@ -82,7 +82,6 @@ export async function main() {
 
     const output: Record<string, string> = {}
     for (const event of withdrawalsOfPrincipalBeforeLocked) {
-      // TODO(PR): account for multiple withdraws
       output[event.args.tokenId.toString()] = new BigNumber(output[event.args.tokenId.toString()] || 0)
         .plus(event.args.principalWithdrawn.toString())
         .toFixed()
@@ -103,14 +102,19 @@ export async function main() {
     const tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
     const drawdownEvents = await tranchedPool.queryFilter(tranchedPool.filters.DrawdownMade())
     const lastDrawdownBlock = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
-    const totalDrawdown = drawdownEvents.reduce((acc, x) => acc.plus(x.args.amount.toString()), new BigNumber(0))
+    // TODO(PR): calculate the actual amount of backer capital drawdown
+    const backerCapitalDrawndown = (await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock}))
+      .principalDeposited
+
+    const fiduSharePriceAtDrawdown = (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString()
+    const accumulatedRewardsPerToken = (
+      await stakingRewards.accumulatedRewardsPerToken({blockTag: lastDrawdownBlock})
+    ).toString()
 
     return {
-      principalDeployedAtDrawdown: totalDrawdown.toString(),
-      fiduSharePriceAtDrawdown: (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString(),
-      accumulatedRewardsPerToken: (
-        await stakingRewards.accumulatedRewardsPerToken({blockTag: lastDrawdownBlock})
-      ).toString(),
+      principalDeployedAtDrawdown: backerCapitalDrawndown.toString(),
+      fiduSharePriceAtDrawdown,
+      accumulatedRewardsPerToken,
     }
   }
 
@@ -162,7 +166,7 @@ export async function main() {
   const backerStakingRewardsInitTxs = await Promise.all(
     BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
       const params = await getRewardsParametersForPool(addr)
-
+      console.log(params)
       return backerRewards.populateTransaction.forceIntializeStakingRewardsPoolInfo(
         addr,
         params.fiduSharePriceAtDrawdown,
@@ -178,8 +182,6 @@ export async function main() {
       BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => getPoolTokensThatRedeemedBeforeLocking(addr))
     )
   ).reduce((acc, x) => ({...acc, ...x}), {})
-
-  // console.log(poolTokensWithPrincipalWithdrawnBeforeLockById)
 
   const txs = await Promise.all(
     Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {

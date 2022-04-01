@@ -36,10 +36,11 @@ export default {
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
+      chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : undefined,
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 14496301, // Mar-31-2022 09:13:29 PM +UTC
+            blockNumber: 14502615, // Apr-01-2022 08:49:01 PM +UTC
           }
         : undefined,
     },

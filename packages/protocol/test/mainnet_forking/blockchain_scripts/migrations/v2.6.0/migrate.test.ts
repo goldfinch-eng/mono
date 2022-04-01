@@ -99,20 +99,20 @@ describe("v2.6.0", async function () {
     leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
   })
 
+  const setupAfterDeploy = deployments.createFixture(async () => {
+    const {params, deployedContracts} = await migrate260.main()
+    const zapper = await getTruffleContract<ZapperInstance>("Zapper")
+    const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
+      "FixedLeverageRatioStrategy"
+    )
+    return {zapper, fixedLeverageRatioStrategy, params, deployedContracts}
+  })
+
   describe("after deploy", async () => {
     let params: Migration260Params
     let zapper: ZapperInstance
     let fixedLeverageRatioStrategy: FixedLeverageRatioStrategyInstance
     let tranchedPoolDeployment: Contract
-    const setupTest = deployments.createFixture(async () => {
-      await migrate260.main()
-      const {params, deployedContracts} = await migrate260.main()
-      const zapper = await getTruffleContract<ZapperInstance>("Zapper")
-      const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
-        "FixedLeverageRatioStrategy"
-      )
-      return {zapper, fixedLeverageRatioStrategy, params, deployedContracts}
-    })
 
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -121,7 +121,7 @@ describe("v2.6.0", async function () {
         zapper,
         fixedLeverageRatioStrategy,
         deployedContracts: {tranchedPool: tranchedPoolDeployment},
-      } = await setupTest())
+      } = await setupAfterDeploy())
     })
 
     describe("GoldfinchConfig", async () => {
@@ -322,7 +322,6 @@ describe("v2.6.0", async function () {
                 .div(new BN(sharePriceAtDrawdown.toString()))
                 .mul(new BN(rewardsPerTokenSinceDrawdown.toString()))
                 .div(new BN("1000000000000000000"))
-                .mul(new BN("5")) // TODO(PR): why does * 5 fix this
             }
 
             const tokenIdsWithPrincipal = await Promise.all(
@@ -332,29 +331,17 @@ describe("v2.6.0", async function () {
                   backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenId),
                 ])
 
-                return [
+                return {
                   tokenId,
-                  tokenInfo.principalAmount.toString(),
-                  tokenInfo.principalRedeemed.toString(),
-                  stakingRewardsSinceLastWithdraw.toString(),
-                ]
+                  principalAmount: tokenInfo.principalAmount.toString(),
+                  stakingRewardsSinceLastWithdraw: stakingRewardsSinceLastWithdraw.toString(),
+                }
               })
             )
 
-            /*
-              TODO(PR): 
-                1. get the amount that the backer deposited
-                2. get the block number that the principal was withdrawn (latest drawdown event)
-                3. get the staking rewardsAcc and sharePrice
-                4. get the current stakingRewardsAcc
-            */
-            for (const [tokenId, principal, pRedeemed, rewardsEarned] of tokenIdsWithPrincipal) {
-              assertNonNullable(principal)
-              assertNonNullable(pRedeemed)
-              const outstandingPrincipal = new BN(principal).sub(new BN(pRedeemed))
-              assertNonNullable(outstandingPrincipal)
-              const expectedRewards = getExpectedRewards(new BN(principal))
-              expect(rewardsEarned).to.bignumber.closeTo(expectedRewards, "100000000000")
+            for (const {principalAmount, stakingRewardsSinceLastWithdraw} of tokenIdsWithPrincipal) {
+              const expectedRewards = getExpectedRewards(new BN(principalAmount))
+              expect(stakingRewardsSinceLastWithdraw).to.bignumber.closeTo(expectedRewards, "100000000000")
             }
           })
         })
