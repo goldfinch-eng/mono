@@ -13,6 +13,7 @@ import {
   BORROW_TX_TYPE,
   CLAIM_TX_TYPE,
   CurrentTx,
+  DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
   DRAWDOWN_TX_NAME,
   ERC20_APPROVAL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
@@ -29,6 +30,7 @@ import {
   SUPPLY_TX_TYPE,
   TxType,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  UNSTAKE_MULTIPLE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
@@ -189,7 +191,18 @@ function NetworkWidget(props: NetworkWidgetProps) {
           )} ${tx.name}`
           break
         }
+        case UNSTAKE_MULTIPLE_TX_TYPE: {
+          // TODO(@emilyhsia): Should we display this differently?
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)} ${tx.name}`
+          break
+        }
         case STAKE_TX_TYPE: {
+          // TODO(@emilyhsia): Update with dynamic ticker
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} FIDU ${tx.name}`
+          break
+        }
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE: {
+          // TODO(@emilyhsia): Display both FIDU and USDC
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
             tx.name
           }`
@@ -215,6 +228,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case BORROW_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case UNSTAKE_MULTIPLE_TX_TYPE:
         case STAKE_TX_TYPE:
         case INTEREST_COLLECTED_TX_NAME:
         case PRINCIPAL_COLLECTED_TX_NAME:

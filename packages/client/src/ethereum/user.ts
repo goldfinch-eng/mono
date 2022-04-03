@@ -72,7 +72,7 @@ import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BackerRewardsLoaded, BackerRewardsPoolTokenPosition, BackerRewardsPosition} from "./backerRewards"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
-import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
+import {ERC20, Ticker, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
 import {getCachedPastEvents, GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -974,7 +974,7 @@ export class User {
     backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
+    const usdc = this.goldfinchProtocol.getERC20(Ticker.USDC)
 
     const usdcBalance = await usdc.getBalance(this.address, currentBlock)
     const usdcBalanceInDollars = new BigNumber(usdcFromAtomic(usdcBalance))

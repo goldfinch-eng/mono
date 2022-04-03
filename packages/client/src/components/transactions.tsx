@@ -42,6 +42,8 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+  UNSTAKE_MULTIPLE_TX_TYPE,
+  DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
 } from "../types/transactions"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
@@ -217,9 +219,20 @@ function Transactions(props: TransactionsProps) {
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)
           break
         }
+        case UNSTAKE_MULTIPLE_TX_TYPE: {
+          direction = "outflow"
+          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)
+          break
+        }
         case STAKE_TX_TYPE:
+          direction = "outflow"
+          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
+          amountSuffix = ` ${(tx.data as CurrentTx<typeof tx.name>["data"]).ticker}`
+          break
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+          direction = "outflow"
+          // TODO(@emilyhsia): Display both FIDU and USDC
           amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)
-          amountSuffix = " FIDU"
           break
         default:
           assertUnreachable(tx)

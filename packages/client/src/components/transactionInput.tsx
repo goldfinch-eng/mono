@@ -4,7 +4,7 @@ import {Controller} from "react-hook-form"
 import {displayDollars} from "../utils"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {Tickers} from "../ethereum/erc20"
+import {Ticker} from "../ethereum/erc20"
 import NumberFormat from "react-number-format"
 
 type TransactionInputProps = {
@@ -34,7 +34,7 @@ function TransactionInput(props: TransactionInputProps) {
   let propsOnChange = props.onChange || ((val: unknown) => {})
   let validations = props.validations || {}
   let notes = _.compact(props.notes || [])
-  let ticker = props.ticker || Tickers.USDC
+  let ticker = props.ticker || Ticker.USDC
 
   let noteEls = notes.map(({key, content}) => (
     <div key={key} className="form-input-note">
@@ -61,7 +61,7 @@ function TransactionInput(props: TransactionInputProps) {
     <div className="form-field">
       <div className={`form-input-container ${inputClass}`}>
         <div className="transaction-input">
-          {ticker === Tickers.USDC && <div className="ticker before">$</div>}
+          {ticker === Ticker.USDC && <div className="ticker before">$</div>}
           <Controller
             control={props.formMethods.control}
             name={name}
@@ -99,7 +99,7 @@ function TransactionInput(props: TransactionInputProps) {
               )
             }}
           />
-          {ticker !== Tickers.USDC && <div className="ticker after">{ticker}</div>}
+          {ticker !== Ticker.USDC && <div className="ticker after">{ticker}</div>}
           {props.rightDecoration}
         </div>
         {noteEls}
