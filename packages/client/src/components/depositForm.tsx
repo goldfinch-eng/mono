@@ -14,6 +14,7 @@ import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
 import {iconOutArrow} from "./icons"
 import {getLegalLanguage} from "./KYCNotice/utils"
 import useGeolocation from "../hooks/useGeolocation"
+import StakingPrompt from "./StakingPrompt"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
@@ -195,6 +196,11 @@ function DepositForm(props: DepositFormProps) {
             </div>
           </label>
         </div>
+        <StakingPrompt
+          stakingApy={pool.info.value.poolData.estimatedApyFromGfi}
+          onToggle={(val) => formMethods.setValue(STAKING_FORM_VAL, val)}
+          formVal={STAKING_FORM_VAL}
+        />
         <div>
           <div className="form-input-label">Amount</div>
           <div className="form-inputs-footer">
