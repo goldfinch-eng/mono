@@ -201,7 +201,7 @@ function DepositForm(props: DepositFormProps) {
             <TransactionInput
               formMethods={formMethods}
               disabled={disabled}
-              maxAmountInDollars={maxTxAmountInDollars}
+              maxAmount={maxTxAmountInDollars}
               rightDecoration={
                 <button
                   className="enter-max-amount"
