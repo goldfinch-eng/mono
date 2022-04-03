@@ -6,7 +6,6 @@ import {AbiItem} from "web3-utils/types"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import getWeb3 from "../web3"
-import logo from "../images/logomark-spaced.svg"
 import * as ERC20Contract from "./ERC20.json"
 import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -40,7 +39,7 @@ export type ERC20Metadata = {
   ticker: Ticker
   decimals: number
   approvalTxType: TxType
-  icon: any
+  icon?: any
 }
 
 abstract class ERC20 {
@@ -129,8 +128,7 @@ class USDC extends ERC20 {
     ticker: Ticker.USDC,
     decimals: 6,
     approvalTxType: USDC_APPROVAL_TX_TYPE as TxType,
-    // TODO(@emilyhsia): Update
-    icon: logo,
+    icon: buildTokenIconURL("usdc.png"),
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -148,8 +146,6 @@ class USDT extends ERC20 {
     ticker: Ticker.USDT,
     decimals: 6,
     approvalTxType: ERC20_APPROVAL_TX_TYPE as TxType,
-    // TODO(@emilyhsia): Update
-    icon: logo,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -164,8 +160,6 @@ class BUSD extends ERC20 {
     ticker: Ticker.BUSD,
     decimals: 18,
     approvalTxType: ERC20_APPROVAL_TX_TYPE as TxType,
-    // TODO(@emilyhsia): Update
-    icon: logo,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -180,7 +174,7 @@ class FIDU extends ERC20 {
     ticker: Ticker.FIDU,
     decimals: 18,
     approvalTxType: FIDU_APPROVAL_TX_TYPE as TxType,
-    icon: logo,
+    icon: buildTokenIconURL("fidu.svg"),
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -195,8 +189,7 @@ class GFI extends ERC20 {
     ticker: Ticker.GFI,
     decimals: 18,
     approvalTxType: ERC20_APPROVAL_TX_TYPE as TxType,
-    // TODO(@emilyhsia): Update
-    icon: logo,
+    icon: buildTokenIconURL("gfi.svg"),
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -211,14 +204,25 @@ class CURVE_FIDU_USDC extends ERC20 {
     ticker: Ticker.CURVE_FIDU_USDC,
     decimals: 18,
     approvalTxType: FIDU_USDC_CURVE_APPROVAL_TX_TYPE as TxType,
-    // TODO(@emilyhsia): Update
-    icon: logo,
+    icon: buildTokenIconURL("curve.png"),
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     super(goldfinchProtocol, CURVE_FIDU_USDC.metadata)
     this.networksToAddress = CURVE_FIDU_USDC_ADDRESSES
     this.localContractName = "TestFiduUSDCCurveLP"
+  }
+}
+
+function buildTokenIconURL(path: string): string {
+  if (process.env.NODE_ENV === "development") {
+    if (process.env.REACT_APP_MURMURATION === "yes") {
+      return `https://murmuration.goldfinch.finance/icons/${path}`
+    } else {
+      return `http://localhost:3000/icons/${path}`
+    }
+  } else {
+    return `https://app.goldfinch.finance/icons/${path}`
   }
 }
 
