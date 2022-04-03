@@ -6,6 +6,7 @@ import {AbiItem} from "web3-utils/types"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import getWeb3 from "../web3"
+import logo from "../images/logomark-spaced.svg"
 import * as ERC20Contract from "./ERC20.json"
 import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -30,14 +31,16 @@ enum Ticker {
   USDT = "USDT",
   BUSD = "BUSD",
   FIDU = "FIDU",
+  GFI = "GFI",
   CURVE_FIDU_USDC = "FIDU-USDC-F",
 }
 
-type ERC20Metadata = {
+export type ERC20Metadata = {
   name: string
   ticker: Ticker
   decimals: number
   approvalTxType: TxType
+  icon: any
 }
 
 abstract class ERC20 {
@@ -126,6 +129,8 @@ class USDC extends ERC20 {
     ticker: Ticker.USDC,
     decimals: 6,
     approvalTxType: USDC_APPROVAL_TX_TYPE as TxType,
+    // TODO(@emilyhsia): Update
+    icon: logo,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -143,6 +148,8 @@ class USDT extends ERC20 {
     ticker: Ticker.USDT,
     decimals: 6,
     approvalTxType: ERC20_APPROVAL_TX_TYPE as TxType,
+    // TODO(@emilyhsia): Update
+    icon: logo,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
@@ -157,26 +164,13 @@ class BUSD extends ERC20 {
     ticker: Ticker.BUSD,
     decimals: 18,
     approvalTxType: ERC20_APPROVAL_TX_TYPE as TxType,
+    // TODO(@emilyhsia): Update
+    icon: logo,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     super(goldfinchProtocol, BUSD.metadata)
     this.networksToAddress = BUSD_ADDRESSES
-  }
-}
-
-class CURVE_FIDU_USDC extends ERC20 {
-  static metadata = {
-    name: "Curve.fi Factory Crypto Pool: Goldfinch FIDU/USDC",
-    ticker: Ticker.CURVE_FIDU_USDC,
-    decimals: 18,
-    approvalTxType: FIDU_USDC_CURVE_APPROVAL_TX_TYPE as TxType,
-  }
-
-  constructor(goldfinchProtocol: GoldfinchProtocol) {
-    super(goldfinchProtocol, CURVE_FIDU_USDC.metadata)
-    this.networksToAddress = CURVE_FIDU_USDC_ADDRESSES
-    this.localContractName = "TestFiduUSDCCurveLP"
   }
 }
 
@@ -186,11 +180,45 @@ class FIDU extends ERC20 {
     ticker: Ticker.FIDU,
     decimals: 18,
     approvalTxType: FIDU_APPROVAL_TX_TYPE as TxType,
+    icon: logo,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     super(goldfinchProtocol, FIDU.metadata)
     this.localContractName = "Fidu"
+  }
+}
+
+class GFI extends ERC20 {
+  static metadata = {
+    name: "GFI",
+    ticker: Ticker.GFI,
+    decimals: 18,
+    approvalTxType: ERC20_APPROVAL_TX_TYPE as TxType,
+    // TODO(@emilyhsia): Update
+    icon: logo,
+  }
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    super(goldfinchProtocol, FIDU.metadata)
+    this.localContractName = "Fidu"
+  }
+}
+
+class CURVE_FIDU_USDC extends ERC20 {
+  static metadata = {
+    name: "Curve.fi Factory Crypto Pool: Goldfinch FIDU/USDC",
+    ticker: Ticker.CURVE_FIDU_USDC,
+    decimals: 18,
+    approvalTxType: FIDU_USDC_CURVE_APPROVAL_TX_TYPE as TxType,
+    // TODO(@emilyhsia): Update
+    icon: logo,
+  }
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    super(goldfinchProtocol, CURVE_FIDU_USDC.metadata)
+    this.networksToAddress = CURVE_FIDU_USDC_ADDRESSES
+    this.localContractName = "TestFiduUSDCCurveLP"
   }
 }
 
@@ -204,6 +232,8 @@ function getERC20Metadata(ticker: Ticker): ERC20Metadata {
       return BUSD.metadata
     case Ticker.FIDU:
       return FIDU.metadata
+    case Ticker.GFI:
+      return GFI.metadata
     case Ticker.CURVE_FIDU_USDC:
       return CURVE_FIDU_USDC.metadata
     default:
@@ -226,6 +256,9 @@ let getERC20 = memoize(
         break
       case Ticker.FIDU:
         erc20 = new FIDU(goldfinchProtocol)
+        break
+      case Ticker.GFI:
+        erc20 = new GFI(goldfinchProtocol)
         break
       case Ticker.CURVE_FIDU_USDC:
         erc20 = new CURVE_FIDU_USDC(goldfinchProtocol)

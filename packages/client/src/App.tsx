@@ -66,6 +66,7 @@ import {
   BORROW_ROUTE,
   EARN_ROUTE,
   GFI_ROUTE,
+  STAKE_ROUTE,
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
@@ -81,6 +82,7 @@ import {CurrentTx, TxType} from "./types/transactions"
 import {UserWalletWeb3Status, Web3IO} from "./types/web3"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
 import getWeb3, {getUserWalletWeb3Status, SESSION_DATA_KEY} from "./web3"
+import Stake from "./components/Stake"
 
 interface GeolocationData {
   ip: string
@@ -216,6 +218,7 @@ function App() {
   const [leavesCurrentBlock, setLeavesCurrentBlock] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
+    [STAKE_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
     [GFI_ROUTE]: undefined,
     [BORROW_ROUTE]: undefined,
@@ -234,6 +237,7 @@ function App() {
   ] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
+    [STAKE_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
     [GFI_ROUTE]: undefined,
     [BORROW_ROUTE]: undefined,
@@ -684,6 +688,9 @@ function App() {
                     <Route path={ABOUT_ROUTE}>{/* <About /> */}</Route>
                     <Route path={EARN_ROUTE}>
                       <Earn />
+                    </Route>
+                    <Route path={STAKE_ROUTE}>
+                      <Stake />
                     </Route>
                     <Route path={GFI_ROUTE}>
                       <Rewards />

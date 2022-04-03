@@ -51,6 +51,7 @@ declare module "styled-components" {
     }
     heights: {
       widgetButtonHeight: string
+      iconHeight: string
     }
   }
 }

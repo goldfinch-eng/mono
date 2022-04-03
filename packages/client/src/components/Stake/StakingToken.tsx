@@ -1,0 +1,52 @@
+import styled from "styled-components"
+import {ERC20Metadata} from "../../ethereum/erc20"
+
+export enum Platform {
+  Goldfinch = "Goldfinch",
+  Curve = "Curve",
+}
+
+type StakingTokenProps = {
+  token: ERC20Metadata
+  platform: Platform
+}
+
+const Container = styled.div`
+  display: flex;
+`
+
+const Icon = styled.img`
+  background-color: #fff;
+  padding: 4px;
+  border-radius: 50%;
+  height: ${({theme}) => theme.heights.iconHeight};
+`
+
+const SymbolAndSubtitle = styled.div`
+  padding-left: 10px;
+  align-self: center;
+`
+
+const Symbol = styled.div`
+  font-size: 18px;
+  font-weight: normal;
+`
+
+const Subtitle = styled.div`
+  font-size: 14px;
+  font-weight: normal;
+  color: #897da3;
+  padding-top: 5px;
+`
+
+export default function StakingToken({token, platform}: StakingTokenProps) {
+  return (
+    <Container>
+      <Icon src={token.icon} alt={`${token.name} icon`} />
+      <SymbolAndSubtitle>
+        <Symbol>{token.ticker}</Symbol>
+        <Subtitle>{`via ${platform.toString()}`}</Subtitle>
+      </SymbolAndSubtitle>
+    </Container>
+  )
+}
