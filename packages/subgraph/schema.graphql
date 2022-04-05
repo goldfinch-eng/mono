@@ -139,8 +139,8 @@ type CreditLine @entity {
   nextDueTime: BigInt!
   interestOwed: BigInt!
   termEndTime: BigInt!
+  termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
-  termEndDate: BigInt!
   version: TranchedPoolCreditLineVersion!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
@@ -150,6 +150,8 @@ type CreditLine @entity {
   collectedPaymentBalance: BigInt
   totalDueAmount: BigInt
   dueDate: String
+  isLate: Boolean!
+  isEligibleForRewards: Boolean!
   name: String
 }
 
@@ -203,4 +205,5 @@ type StakingRewards @entity {
   The earn rate is a measure per second
   """
   currentEarnRatePerToken: BigInt!
+  gfiTotalSupply: BigInt!
 }

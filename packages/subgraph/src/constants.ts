@@ -14,6 +14,7 @@ import {
 } from "./localhost-addresses"
 
 export const V2_2_MIGRATION_TIME = "1643943600"
+export const BACKER_REWARDS_EPOCH = "1644021439"
 
 export let FIDU_ADDRESS = MAINNET_FIDU_ADDRESS
 export let GOLDFINCH_CONFIG_ADDRESS = MAINNET_GOLDFINCH_CONFIG_ADDRESS

@@ -2,6 +2,7 @@ import {Address} from "@graphprotocol/graph-ts"
 
 import {StakingRewards} from "../../generated/schema"
 import {StakingRewards_Implementation as StakingRewardsContract} from "../../generated/templates/StakingRewards/StakingRewards_Implementation"
+import {GFI as GFIContract} from "../../generated/templates/StakingRewards/GFI"
 
 import {updateEstimatedApyFromGfiRaw} from "./senior_pool"
 
@@ -21,7 +22,12 @@ export function updateCurrentEarnRate(contractAddress: Address): void {
   if (!callResult.reverted) {
     const stakingRewards = getStakingRewards()
     stakingRewards.currentEarnRatePerToken = callResult.value
+
+    const gfiContract = GFIContract.bind(contract.rewardsToken())
+    stakingRewards.gfiTotalSupply = gfiContract.totalSupply()
+
     stakingRewards.save()
     updateEstimatedApyFromGfiRaw()
   }
+  contract.rewardsToken
 }
