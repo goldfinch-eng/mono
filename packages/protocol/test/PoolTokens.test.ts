@@ -23,10 +23,16 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
-import {GFIInstance, BackerRewardsInstance, TranchedPoolInstance} from "../typechain/truffle"
+import {
+  GFIInstance,
+  BackerRewardsInstance,
+  GoldfinchFactoryInstance,
+  TestPoolTokensInstance,
+} from "../typechain/truffle"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
 import {TokenMinted} from "../typechain/truffle/IPoolTokens"
-import {TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
+import {PoolTokensInstance, TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
+import {PoolCreated} from "../typechain/truffle/GoldfinchFactory"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -58,9 +64,9 @@ describe("PoolTokens", () => {
     person2,
     person3,
     goldfinchConfig,
-    poolTokens,
+    poolTokens: PoolTokensInstance,
     pool,
-    goldfinchFactory,
+    goldfinchFactory: GoldfinchFactoryInstance,
     usdc,
     uniqueIdentity,
     backerRewards: BackerRewardsInstance,
@@ -68,9 +74,9 @@ describe("PoolTokens", () => {
 
   const withPoolSender = async (func, otherPoolAddress?) => {
     // We need to fake the address so we can bypass the pool
-    await poolTokens._setSender(otherPoolAddress || pool.address)
+    await (poolTokens as TestPoolTokensInstance)._setSender(otherPoolAddress || pool.address)
     return func().then(async (res) => {
-      await poolTokens._setSender("0x0000000000000000000000000000000000000000")
+      await (poolTokens as TestPoolTokensInstance)._setSender("0x0000000000000000000000000000000000000000")
       return res
     })
   }
@@ -90,7 +96,7 @@ describe("PoolTokens", () => {
       gfi,
     } = await testSetup())
 
-    await poolTokens._disablePoolValidation(true)
+    await (poolTokens as TestPoolTokensInstance)._disablePoolValidation(true)
   })
 
   async function addToLegacyGoList(target, goLister) {
@@ -137,7 +143,7 @@ describe("PoolTokens", () => {
         [],
         {from: owner}
       )
-      const event = result.logs[result.logs.length - 1]
+      const event = decodeAndGetFirstLog<PoolCreated>(result.receipt.rawLogs, goldfinchFactory, "PoolCreated")
       pool = await TranchedPool.at(event.args.pool)
       // grant role so the person can deposit into the senior tranche
       await pool.grantRole(await pool.SENIOR_ROLE(), person2)
@@ -146,7 +152,7 @@ describe("PoolTokens", () => {
 
     context("with real pool validation turned on", async () => {
       beforeEach(async () => {
-        await poolTokens._disablePoolValidation(false)
+        await (poolTokens as TestPoolTokensInstance)._disablePoolValidation(false)
       })
       it("should allow validly created pools to call the mint function", async () => {
         return expect(pool.deposit(new BN(1), usdcVal(5), {from: person2})).to.be.fulfilled
@@ -267,7 +273,7 @@ describe("PoolTokens", () => {
         [],
         {from: owner}
       )
-      const event = result.logs[result.logs.length - 1]
+      const event = decodeAndGetFirstLog<PoolCreated>(result.receipt.rawLogs, goldfinchFactory, "PoolCreated")
       pool = await TranchedPool.at(event.args.pool)
       // grant role so the person can deposit into the senior tranche
       await pool.grantRole(await pool.SENIOR_ROLE(), person2)
@@ -370,8 +376,12 @@ describe("PoolTokens", () => {
         [],
         {from: owner}
       )
-      let event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      const poolCreatedEvent = decodeAndGetFirstLog<PoolCreated>(
+        result.receipt.rawLogs,
+        goldfinchFactory,
+        "PoolCreated"
+      )
+      pool = await TranchedPool.at(poolCreatedEvent.args.pool)
       // grant role so the person can deposit into the senior tranche
       await pool.grantRole(await pool.SENIOR_ROLE(), person2)
 
@@ -379,13 +389,13 @@ describe("PoolTokens", () => {
 
       mintAmountA = usdcVal(5)
       result = await pool.deposit(new BN(1), mintAmountA, {from: person2})
-      event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
-      tokenIdA = event.args.tokenId
+      const firstMintEvent = decodeAndGetFirstLog<TokenMinted>(result.receipt.rawLogs, poolTokens, "TokenMinted")
+      tokenIdA = firstMintEvent.args.tokenId
 
       mintAmountB = usdcVal(50)
       result = await pool.deposit(new BN(1), mintAmountB, {from: person2})
-      event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
-      tokenIdB = event.args.tokenId
+      const secondMintEvent = decodeAndGetFirstLog<TokenMinted>(result.receipt.rawLogs, poolTokens, "TokenMinted")
+      tokenIdB = secondMintEvent.args.tokenId
     })
 
     const redeemToken = async (tokenId, principal, interest) => {
@@ -493,6 +503,123 @@ describe("PoolTokens", () => {
     })
   })
 
+  describe("reducePrincipalAmount", async () => {
+    let tokenId, mintAmount
+    beforeEach(async function () {
+      let result = await goldfinchFactory.createPool(
+        person2,
+        new BN(20),
+        usdcVal(100),
+        interestAprAsBN("15.0"),
+        new BN(30),
+        new BN(365),
+        new BN(0),
+        new BN(185),
+        new BN(0),
+        [],
+        {from: owner}
+      )
+      const poolCreatedEvent = decodeAndGetFirstLog<PoolCreated>(
+        result.receipt.rawLogs,
+        goldfinchFactory,
+        "PoolCreated"
+      )
+      pool = await TranchedPool.at(poolCreatedEvent.args.pool)
+      await erc20Approve(usdc, pool.address, usdcVal(100000), [person2])
+
+      mintAmount = usdcVal(5)
+      result = await pool.deposit(new BN(2), mintAmount, {from: person2})
+      const tokenMintedEvent = decodeAndGetFirstLog<TokenMinted>(result.receipt.rawLogs, poolTokens, "TokenMinted")
+      tokenId = tokenMintedEvent.args.tokenId
+
+      await pool.lockJuniorCapital({from: owner})
+      await pool.lockPool({from: owner})
+    })
+
+    const redeemToken = async (tokenId, principal, interest) => {
+      // We need to fake the address so we can bypass the pool
+      return withPoolSender(() => poolTokens.redeem(tokenId, principal, interest))
+    }
+
+    describe("before redeeming", async () => {
+      describe("as a wallet with OWNER ROLE", () => {
+        it("it fails because of insufficient principal redeemed", async () => {
+          await expect(poolTokens.reducePrincipalAmount(tokenId, mintAmount)).to.be.rejectedWith(
+            /SafeMath: subtraction overflow/i
+          )
+        })
+      })
+    })
+
+    describe("after partially redeeming", async () => {
+      let redemptionAmount
+      const testSetup = deployments.createFixture(async () => {
+        await redeemToken(tokenId, redemptionAmount, "0")
+      })
+
+      beforeEach(async () => {
+        redemptionAmount = mintAmount.div(new BN(2))
+        await testSetup()
+      })
+
+      describe("as a wallet with OWNER_ROLE", () => {
+        it("it works", async () => {
+          const tokenBefore = await poolTokens.getTokenInfo(tokenId)
+          await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount)).to.not.be.rejected
+          const tokenAfter = await poolTokens.getTokenInfo(tokenId)
+          expect(tokenAfter.principalAmount.toString()).to.eq(
+            tokenBefore.principalAmount.sub(redemptionAmount).toString()
+          )
+          expect(tokenAfter.principalRedeemed.toString()).to.eq(
+            tokenBefore.principalRedeemed.sub(redemptionAmount).toString()
+          )
+        })
+      })
+    })
+
+    describe("after fully redeeming", async () => {
+      let redemptionAmount
+
+      const testSetup = deployments.createFixture(async () => {
+        await redeemToken(tokenId, redemptionAmount, "0")
+      })
+
+      beforeEach(async () => {
+        redemptionAmount = mintAmount
+        await testSetup()
+      })
+
+      describe("as a wallet with OWNER_ROLE", () => {
+        it("it works", async () => {
+          const tokenBefore = await poolTokens.getTokenInfo(tokenId)
+          await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount)).to.not.be.rejected
+          const tokenAfter = await poolTokens.getTokenInfo(tokenId)
+          expect(tokenAfter.principalAmount.toString()).to.eq(
+            tokenBefore.principalAmount.sub(redemptionAmount).toString()
+          )
+          expect(tokenAfter.principalRedeemed).to.eq(tokenBefore.principalRedeemed.sub(redemptionAmount).toString())
+        })
+
+        describe("when a pool has redeemed less than we are reducing by", () => {
+          it("it fails", async () => {
+            await expect(
+              poolTokens.reducePrincipalAmount(tokenId, redemptionAmount.add(new BN(1)), {from: owner})
+            ).to.be.rejectedWith(/SafeMath: subtraction overflow/)
+          })
+        })
+      })
+
+      describe("as a wallet without OWNER_ROLE", () => {
+        it("it fails", async () => {
+          const notOwner = person2
+          await expect(
+            poolTokens.reducePrincipalAmount(tokenId, redemptionAmount, {from: notOwner})
+          ).to.be.rejectedWith(/Must have admin role to perform this action/i)
+        })
+      })
+    })
+  })
+
   describe("burning", async () => {
     let tokenId, mintAmount
     beforeEach(async function () {
@@ -509,8 +636,8 @@ describe("PoolTokens", () => {
         [],
         {from: owner}
       )
-      let event = result.logs[result.logs.length - 1]
-      pool = await TranchedPool.at(event.args.pool)
+      const poolCreateEvent = decodeAndGetFirstLog<PoolCreated>(result.receipt.rawLogs, goldfinchFactory, "PoolCreated")
+      pool = await TranchedPool.at(poolCreateEvent.args.pool)
       // grant role so the person can deposit into the senior tranche
       await pool.grantRole(await pool.SENIOR_ROLE(), person2)
 
@@ -518,8 +645,8 @@ describe("PoolTokens", () => {
 
       mintAmount = usdcVal(5)
       result = await pool.deposit(new BN(1), mintAmount, {from: person2})
-      event = decodeLogs(result.receipt.rawLogs, poolTokens, "TokenMinted")[0]
-      tokenId = event.args.tokenId
+      const mintEvent = decodeAndGetFirstLog<TokenMinted>(result.receipt.rawLogs, poolTokens, "TokenMinted")
+      tokenId = mintEvent.args.tokenId
     })
 
     it("should disallow burning if the token isn't fully redeemed", async () => {
@@ -594,7 +721,7 @@ describe("PoolTokens", () => {
         [],
         {from: owner}
       )
-      const event = result.logs[result.logs.length - 1]
+      const event = decodeAndGetFirstLog<PoolCreated>(result.receipt.rawLogs, goldfinchFactory, "PoolCreated")
       pool = await TranchedPool.at(event?.args.pool)
     })
     describe("mint", async () => {
