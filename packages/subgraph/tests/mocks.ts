@@ -162,8 +162,10 @@ export function mockCreditLineContractCalls(
   const limit = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("5000000000000"))
   const maxLimit = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("10000000000000"))
   const interestOwed = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("0"))
+  const termStartTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1634923148"))
   const termEndTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1697995148"))
   const lastFullPaymentTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1637515148"))
+  const isLate = ethereum.Value.fromBoolean(false)
 
   createMockedFunction(creditLineAddress, "balance", "balance():(uint256)").withArgs([]).returns([balance])
   createMockedFunction(creditLineAddress, "interestApr", "interestApr():(uint256)").withArgs([]).returns([interestApr])
@@ -179,10 +181,12 @@ export function mockCreditLineContractCalls(
   createMockedFunction(creditLineAddress, "interestOwed", "interestOwed():(uint256)")
     .withArgs([])
     .returns([interestOwed])
+  createMockedFunction(creditLineAddress, "termStartTime", "termStartTime():(uint256)").withArgs([]).returns([termStartTime])
   createMockedFunction(creditLineAddress, "termEndTime", "termEndTime():(uint256)").withArgs([]).returns([termEndTime])
   createMockedFunction(creditLineAddress, "lastFullPaymentTime", "lastFullPaymentTime():(uint256)")
     .withArgs([])
     .returns([lastFullPaymentTime])
+  createMockedFunction(creditLineAddress, "isLate", "isLate():(bool)").withArgs([]).returns([isLate])
 
   if (v2_2) {
     createMockedFunction(creditLineAddress, "maxLimit", "maxLimit():(uint256)").withArgs([]).returns([maxLimit])
