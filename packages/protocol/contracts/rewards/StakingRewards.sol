@@ -737,11 +737,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     getReward(tokenId);
   }
 
-  function exitAndWithdraw(uint256 tokenId) external {
-    unstakeAndWithdrawInFidu(tokenId, positions[tokenId].amount);
-    getReward(tokenId);
-  }
-
   function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
     /// @dev AD: Access denied
     require(isZapper(), "AD");

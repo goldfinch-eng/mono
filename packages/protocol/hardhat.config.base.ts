@@ -125,5 +125,7 @@ export default {
   },
   contractSizer: {
     runOnCompile: true,
+    strict: true,
+    except: [":Test.*", ":MigratedTranchedPool$"],
   },
 }
