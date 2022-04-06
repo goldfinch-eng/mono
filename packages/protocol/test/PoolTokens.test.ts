@@ -12,7 +12,6 @@ import {
   advanceTime,
   setupBackerRewards,
   decodeAndGetFirstLog,
-  bigVal,
   Numberish,
 } from "./testHelpers"
 import {OWNER_ROLE, interestAprAsBN, GO_LISTER_ROLE} from "../blockchain_scripts/deployHelpers"

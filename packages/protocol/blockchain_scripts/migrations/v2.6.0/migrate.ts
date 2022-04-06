@@ -10,9 +10,9 @@ import {
   TranchedPool,
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import _ from "lodash"
 import BigNumber from "bignumber.js"
 import hre from "hardhat"
-import {bigVal} from "../../../test/testHelpers"
 import {deployFixedLeverageRatioStrategy} from "../../baseDeploy/deployFixedLeverageRatioStrategy"
 import {deployTranchedPool} from "../../baseDeploy/deployTranchedPool"
 import {deployZapper} from "../../baseDeploy/deployZapper"
@@ -79,14 +79,16 @@ export async function main() {
     const withdrawEventWithdrewPrincipal = (event) => event.args.principalWithdrawn.toString() !== "0"
     const withdrawalsOfPrincipalBeforeLocked = withdrawalEventsBeforeLocking.filter(withdrawEventWithdrewPrincipal)
 
-    const output: Record<string, string> = {}
+    const balanceByTokenId: Record<string, string> = {}
     for (const event of withdrawalsOfPrincipalBeforeLocked) {
-      output[event.args.tokenId.toString()] = new BigNumber(output[event.args.tokenId.toString()] || 0)
+      balanceByTokenId[event.args.tokenId.toString()] = new BigNumber(
+        balanceByTokenId[event.args.tokenId.toString()] || 0
+      )
         .plus(event.args.principalWithdrawn.toString())
         .toFixed()
     }
 
-    return output
+    return balanceByTokenId
   }
 
   const owner = await getProtocolOwner()
@@ -174,11 +176,11 @@ export async function main() {
   )
 
   // 7. Generate poolToken data fixup transactions
-  const poolTokensWithPrincipalWithdrawnBeforeLockById = (
-    await Promise.all(
-      BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => getPoolTokensThatRedeemedBeforeLocking(addr))
-    )
-  ).reduce((acc, x) => ({...acc, ...x}), {})
+
+  const poolTokensWithPrincipalWithdrawnBeforeLockById: {[key: string]: string} = _.merge(
+    {},
+    ...(await Promise.all(BACKER_REWARDS_PARAMS_POOL_ADDRS.map(getPoolTokensThatRedeemedBeforeLocking)))
+  )
 
   const poolTokenFixupTxs = await Promise.all(
     Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {

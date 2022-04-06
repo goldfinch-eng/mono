@@ -693,7 +693,7 @@ describe("mainnet forking tests", async function () {
   })
 
   describe("BackerRewards", () => {
-    const microTolerance = "100000"
+    const microTolerance = String(1e5)
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
     let tranchedPoolWithBorrowerConnected: TranchedPool
