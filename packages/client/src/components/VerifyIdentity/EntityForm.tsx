@@ -1,3 +1,4 @@
+import {iconOutArrow} from "../icons"
 import TransactionForm from "../transactionForm"
 
 export default function EntityForm({onClose}) {
@@ -6,24 +7,31 @@ export default function EntityForm({onClose}) {
       headerMessage="Entity"
       render={() => {
         return (
-          <div className="form-message paragraph">
-            If you are an entity, please complete the verification process through our partner{" "}
-            <a
-              className="link"
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://bridge.parallelmarkets.com/goldfinch"
+          <div className="info-banner subtle">
+            <div className="message">
+              <p className="font-small">
+                We use Parallel Markets to complete verification for entities. After you have completed verification, we
+                will reach out within 24-72 hours. If you encounter any issues, please reach out to{" "}
+                <a
+                  className="link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="mailto:institutional@goldfinch.finance"
+                >
+                  institutional@goldfinch.finance
+                </a>
+                .
+              </p>
+            </div>
+            <button
+              className="button submit-form"
+              onClick={(e) => {
+                e.preventDefault()
+                window.open("https://bridge.parallelmarkets.com/goldfinch", "_blank")
+              }}
             >
-              Parallel Markets
-            </a>
-            .
-            <br />
-            <br />
-            We will reach out with next steps within 24-72 hours. If you encounter any issues, please reach out to{" "}
-            <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:institutional@goldfinch.finance">
-              institutional@goldfinch.finance
-            </a>
-            .
+              Get Verified {iconOutArrow}
+            </button>
           </div>
         )
       }}
