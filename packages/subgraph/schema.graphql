@@ -160,6 +160,13 @@ enum TranchedPoolCreditLineVersion {
   V2_2
 }
 
+enum PoolState {
+  OPEN
+  JUNIOR_LOCKED
+  SENIOR_LOCKED
+  WITHDRAWALS_UNLOCKED
+}
+
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigDecimal!
@@ -182,9 +189,13 @@ type TranchedPool @entity {
   backers: [PoolBacker!]!
   tokens: [TranchedPoolToken!]!
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
-  seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
-  juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  seniorTranches: [SeniorTrancheInfo!]!
+  juniorTranches: [JuniorTrancheInfo!]!
   version: TranchedPoolCreditLineVersion!
+  """
+  WARNING: This field is not updated on every block, because that would be too time-consuming. It's only updated every time a transaction happens on this tranched pool, so it's not good enough for real-time information. Consider removing this field from the schema
+  """
+  poolState: PoolState!
 }
 
 type TranchedPoolToken @entity {
@@ -199,6 +210,12 @@ type TranchedPoolToken @entity {
   principalRedeemable: BigInt!
 }
 
+type GFIData @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalSupply: BigInt!
+}
+
 type StakingRewards @entity {
   id: ID! # Set to "1" because this is a singleton
   """
@@ -206,4 +223,12 @@ type StakingRewards @entity {
   """
   currentEarnRatePerToken: BigInt!
   gfiTotalSupply: BigInt!
+}
+
+type BackerRewards @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalRewards: BigInt!
+  totalRewardPercentOfTotalGFI: BigDecimal!
+  maxInterestDollarsEligible: BigInt!
 }

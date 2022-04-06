@@ -1,4 +1,4 @@
-import {dataSource} from "@graphprotocol/graph-ts"
+import {dataSource, BigInt} from "@graphprotocol/graph-ts"
 
 import {
   MAINNET_FIDU_ADDRESS,
@@ -15,6 +15,11 @@ import {
 
 export const V2_2_MIGRATION_TIME = "1643943600"
 export const BACKER_REWARDS_EPOCH = "1644021439"
+export const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
+export const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
+export const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
+export const SECONDS_PER_DAY = BigInt.fromString("86400")
+export const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 
 export let FIDU_ADDRESS = MAINNET_FIDU_ADDRESS
 export let GOLDFINCH_CONFIG_ADDRESS = MAINNET_GOLDFINCH_CONFIG_ADDRESS

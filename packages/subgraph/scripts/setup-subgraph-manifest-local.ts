@@ -10,13 +10,16 @@ const devDeployments = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "../../protocol/deployments/all_dev.json")).toString()
 )
 
-const deployedSeniorPoolProxyAddress = devDeployments["31337"].localhost.contracts.SeniorPool_Proxy.address
-const deployedGoldfinchFactoryProxyAddress = devDeployments["31337"].localhost.contracts.GoldfinchFactory_Proxy.address
-const deployedPoolProxyAddress = devDeployments["31337"].localhost.contracts.Pool_Proxy.address
-const deployedPoolTokensProxyAddress = devDeployments["31337"].localhost.contracts.PoolTokens_Proxy.address
-const deployedGoldfinchConfigAddress = devDeployments["31337"].localhost.contracts.GoldfinchConfig.address
-const deployedFiduAddress = devDeployments["31337"].localhost.contracts.Fidu.address
-const deployedStakingRewardsProxyAddress = devDeployments["31337"].localhost.contracts.StakingRewards_Proxy.address
+const localhostContracts = devDeployments["31337"].localhost.contracts
+const deployedSeniorPoolProxyAddress = localhostContracts.SeniorPool_Proxy.address
+const deployedGoldfinchFactoryProxyAddress = localhostContracts.GoldfinchFactory_Proxy.address
+const deployedPoolProxyAddress = localhostContracts.Pool_Proxy.address
+const deployedPoolTokensProxyAddress = localhostContracts.PoolTokens_Proxy.address
+const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.address
+const deployedFiduAddress = localhostContracts.Fidu.address
+const deployedGfiAddress = localhostContracts.GFI.address
+const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Proxy.address
+const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
@@ -36,8 +39,14 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "PoolTokensProxy":
       dataSource.source.address = deployedPoolTokensProxyAddress
       break
+    case "GFI":
+      dataSource.source.address = deployedGfiAddress
+      break
     case "StakingRewardsProxy":
       dataSource.source.address = deployedStakingRewardsProxyAddress
+      break
+    case "BackerRewardsProxy":
+      dataSource.source.address = deployedBackerRewardsProxyAddress
       break
     default:
       break
