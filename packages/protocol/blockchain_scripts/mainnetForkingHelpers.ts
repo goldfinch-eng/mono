@@ -131,8 +131,10 @@ async function upgradeContracts({
       UpgradedImplAddress: upgradedImplAddress,
     }
 
-    await rewriteUpgradedDeployment(contractName)
-    await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
+    if (!isMainnetForking()) {
+      await rewriteUpgradedDeployment(contractName)
+      await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
+    }
   }
   return upgradedContracts
 }
