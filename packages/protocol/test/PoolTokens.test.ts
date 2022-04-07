@@ -30,7 +30,7 @@ import {
 } from "../typechain/truffle"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
 import {TokenMinted} from "../typechain/truffle/IPoolTokens"
-import {PoolTokensInstance, TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
+import {TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
 import {PoolCreated} from "../typechain/truffle/GoldfinchFactory"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -63,7 +63,7 @@ describe("PoolTokens", () => {
     person2,
     person3,
     goldfinchConfig,
-    poolTokens: PoolTokensInstance,
+    poolTokens,
     pool,
     goldfinchFactory: GoldfinchFactoryInstance,
     usdc,
@@ -73,9 +73,9 @@ describe("PoolTokens", () => {
 
   const withPoolSender = async (func, otherPoolAddress?) => {
     // We need to fake the address so we can bypass the pool
-    await (poolTokens as TestPoolTokensInstance)._setSender(otherPoolAddress || pool.address)
+    await poolTokens._setSender(otherPoolAddress || pool.address)
     return func().then(async (res) => {
-      await (poolTokens as TestPoolTokensInstance)._setSender("0x0000000000000000000000000000000000000000")
+      await poolTokens._setSender("0x0000000000000000000000000000000000000000")
       return res
     })
   }

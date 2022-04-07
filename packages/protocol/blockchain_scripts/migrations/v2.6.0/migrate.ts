@@ -104,8 +104,8 @@ export async function main() {
     const drawdownEvents = await tranchedPool.queryFilter(tranchedPool.filters.DrawdownMade())
     const lastDrawdownBlock = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
     // TODO(PR): calculate the actual amount of backer capital drawdown
-    const backerCapitalDrawndown = (await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock}))
-      .principalDeposited
+    const trancheInfo = await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock})
+    const backerCapitalDrawndown = trancheInfo.principalDeposited
 
     const fiduSharePriceAtDrawdown = (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString()
     const accumulatedRewardsPerToken = (
