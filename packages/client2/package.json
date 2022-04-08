@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx typechain --target=ethers-v5 \"abis/*.json\"",
     "dev": "next dev",
-    "prebuild": "npx ts-node scripts/populate-contract-addresses.ts && npx typechain --target=ethers-v5 \"abis/*.json\"",
+    "prebuild": "npx typechain --target=ethers-v5 \"abis/*.json\"",
     "build": "next build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build",
