@@ -170,6 +170,7 @@ export async function main() {
   console.log(` effectiveMultipler = ${params.StakingRewards.effectiveMultiplier}`)
 
   // 6. Generate rewards initialization params
+  console.log("Getting pool backer staking rewards parameters")
   const backerStakingRewardsInitTxs = await Promise.all(
     BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
       const params = await getRewardsParametersForPool(addr)
@@ -184,11 +185,12 @@ export async function main() {
   )
 
   // 7. Generate poolToken data fixup transactions
-
+  console.log("Getting pool tokens that redeemed before pools were locked")
   const poolTokensWithPrincipalWithdrawnBeforeLockById: {[key: string]: string} = _.merge(
     {},
     ...(await Promise.all(BACKER_REWARDS_PARAMS_POOL_ADDRS.map(getPoolTokensThatRedeemedBeforeLocking)))
   )
+  console.log(poolTokensWithPrincipalWithdrawnBeforeLockById)
 
   const poolTokenFixupTxs = await Promise.all(
     Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {

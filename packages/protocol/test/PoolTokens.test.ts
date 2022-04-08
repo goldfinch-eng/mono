@@ -567,10 +567,10 @@ describe("PoolTokens", () => {
           await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount)).to.not.be.rejected
           const tokenAfter = await poolTokens.getTokenInfo(tokenId)
           expect(tokenAfter.principalAmount.toString()).to.eq(
-            tokenBefore.principalAmount.sub(redemptionAmount).toString()
+            new BN(tokenBefore.principalAmount).sub(redemptionAmount).toString()
           )
           expect(tokenAfter.principalRedeemed.toString()).to.eq(
-            tokenBefore.principalRedeemed.sub(redemptionAmount).toString()
+            new BN(tokenBefore.principalRedeemed).sub(redemptionAmount).toString()
           )
         })
       })
@@ -594,9 +594,11 @@ describe("PoolTokens", () => {
           await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount)).to.not.be.rejected
           const tokenAfter = await poolTokens.getTokenInfo(tokenId)
           expect(tokenAfter.principalAmount.toString()).to.eq(
-            tokenBefore.principalAmount.sub(redemptionAmount).toString()
+            new BN(tokenBefore.principalAmount).sub(redemptionAmount).toString()
           )
-          expect(tokenAfter.principalRedeemed).to.eq(tokenBefore.principalRedeemed.sub(redemptionAmount).toString())
+          expect(tokenAfter.principalRedeemed).to.eq(
+            new BN(tokenBefore.principalRedeemed).sub(redemptionAmount).toString()
+          )
         })
 
         describe("when a pool has redeemed less than we are reducing by", () => {
