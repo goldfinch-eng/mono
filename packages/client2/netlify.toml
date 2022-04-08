@@ -1,4 +1,4 @@
 
 [build]
-  publish = "packages/client2/.next/"
+  publish = ".next"  
   command = "npm run build"
