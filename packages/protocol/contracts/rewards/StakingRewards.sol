@@ -50,7 +50,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // @notice Type of the staked position
     StakedPositionType positionType;
     // @notice Multiplier applied to staked amount to denominate in `baseStakingToken().decimals()`
-    uint256 effectiveMultiplier;
+    // @dev This field should not be used directly; it may be 0 for staked positions created prior to GIP-1.
+    //  If you need this field, use `safeEffectiveMultiplier()`, which correctly handles old staked positions.
+    uint256 unsafeEffectiveMultiplier;
     // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
     uint256 baseTokenExchangeRate;
   }
@@ -300,7 +302,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
-    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
+    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, safeEffectiveMultiplier(position));
   }
 
   function toEffectiveAmount(
@@ -442,9 +444,21 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, lpTokensRecipient);
   }
 
+  /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
+  ///   positions created prior to GIP-1 (before the `effectiveMultiplier` field was added).
+  /// @dev Always use this method to get the `effectiveMultiplier` to ensure proper handling of
+  ///   old staked positions.
+  function safeEffectiveMultiplier(StakedPosition storage position) internal view returns (uint256) {
+    if (position.unsafeEffectiveMultiplier > 0) {
+      return position.unsafeEffectiveMultiplier;
+    }
+
+    return MULTIPLIER_DECIMALS; // 1x
+  }
+
   /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
   ///   The multiplier is represented in `MULTIPLIER_DECIMALS`
-  function getEffectiveMultiplier(StakedPositionType positionType) public view returns (uint256) {
+  function getCurrentEffectiveMultiplierForPositionType(StakedPositionType positionType) public view returns (uint256) {
     if (effectiveMultipliers[positionType] > 0) {
       return effectiveMultipliers[positionType];
     }
@@ -486,7 +500,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _updateReward(tokenId);
 
     uint256 baseTokenExchangeRate = getBaseTokenExchangeRate(positionType);
-    uint256 effectiveMultiplier = getEffectiveMultiplier(positionType);
+    uint256 effectiveMultiplier = getCurrentEffectiveMultiplierForPositionType(positionType);
 
     positions[tokenId] = StakedPosition({
       positionType: positionType,
@@ -500,7 +514,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         endTime: block.timestamp.add(vestingLength)
       }),
       baseTokenExchangeRate: baseTokenExchangeRate,
-      effectiveMultiplier: effectiveMultiplier,
+      unsafeEffectiveMultiplier: effectiveMultiplier,
       leverageMultiplier: 0,
       lockedUntil: 0
     });
@@ -669,7 +683,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     /// @dev LOCKED: Staked funds are locked.
     require(block.timestamp >= position.lockedUntil, "LOCKED");
 
-    uint256 effectiveAmount = toEffectiveAmount(amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
+    uint256 effectiveAmount = toEffectiveAmount(
+      amount,
+      position.baseTokenExchangeRate,
+      safeEffectiveMultiplier(position)
+    );
     totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
     position.amount = prevAmount.sub(amount);
 
@@ -702,15 +720,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     StakedPosition storage position = positions[tokenId];
 
-    uint256 newEffectiveMultiplier = getEffectiveMultiplier(position.positionType);
+    uint256 newEffectiveMultiplier = getCurrentEffectiveMultiplierForPositionType(position.positionType);
 
     /// Prevent a user from accidentally lowering their effective multiplier
     /// @dev LOW: Cannot update position to a lower effective multiplier
-    require(newEffectiveMultiplier >= position.effectiveMultiplier, "LOW");
+    require(newEffectiveMultiplier >= safeEffectiveMultiplier(position), "LOW");
 
     uint256 prevEffectiveAmount = _positionToEffectiveAmount(position);
 
-    position.effectiveMultiplier = newEffectiveMultiplier;
+    position.unsafeEffectiveMultiplier = newEffectiveMultiplier;
 
     uint256 newEffectiveAmount = _positionToEffectiveAmount(position);
 
