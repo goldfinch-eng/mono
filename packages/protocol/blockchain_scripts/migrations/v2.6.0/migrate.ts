@@ -26,7 +26,6 @@ import {
   ZAPPER_ROLE,
 } from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
-import {fiduToUSDC, usdcToFidu} from "@goldfinch-eng/protocol/test/testHelpers"
 
 const STRATOS_POOL_ADDR = "0x00c27fc71b159a346e179b4a1608a0865e8a7470"
 const ALMA_6_POOL_ADDR = "0x418749e294cabce5a714efccc22a8aade6f9db57"
@@ -106,13 +105,7 @@ export async function main() {
     const lastDrawdownBlock = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
     const trancheInfo = await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock})
     const principalDeposited = trancheInfo.principalDeposited
-    const principalDepositedAsAtomic = principalDeposited.mul(String(1e12))
-    const sharePrice = trancheInfo.principalSharePrice
-    // This is a replication of this calculation
-    // https://github.com/warbler-labs/mono/blob/23e0847ffd23b73c5a1f03d15c4516fb7115da1c/packages/protocol/contracts/rewards/BackerRewards.sol#L794
-    const backerCapitalDrawndown = principalDeposited.sub(
-      sharePrice.mul(principalDepositedAsAtomic).div(FIDU_DECIMALS.toString()).div(String(1e12))
-    )
+    const backerCapitalDrawndown = principalDeposited
 
     const fiduSharePriceAtDrawdown = (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString()
     const accumulatedRewardsPerToken = (
