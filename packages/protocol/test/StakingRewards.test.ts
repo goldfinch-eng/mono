@@ -1004,6 +1004,28 @@ describe("StakingRewards", function () {
       })
     })
 
+    context("for an old position with effectiveMultiplier = 0", async () => {
+      it("correctly updates the total staked supply", async () => {
+        // Stake
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        // Check total staked supply after staking
+        const prevTotalStakedSupply = await stakingRewards.totalStakedSupply()
+
+        // Fake an old position by overriding the effective multiplier to 0
+        await stakingRewards.setPositionEffectiveMultiplier(tokenId, new BN(0))
+
+        await advanceTime({seconds: 10000})
+
+        // Unstake
+        await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
+
+        // The difference in the total staked supply should be exactly equal to fiduAmount
+        const newTotalStakedSupply = await stakingRewards.totalStakedSupply()
+        expect(prevTotalStakedSupply.sub(newTotalStakedSupply)).to.bignumber.equal(fiduAmount)
+      })
+    })
+
     context("user does not own position token", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
@@ -2462,6 +2484,36 @@ describe("StakingRewards", function () {
       gfiAnotherUser = await gfi.balanceOf(anotherUser)
       expectedRewards = maxRate.mul(halfYearInSeconds).div(new BN(3))
       expect(gfiAnotherUser.sub(prevGfiAnotherUserBalance)).to.bignumber.closeTo(expectedRewards, threshold)
+    })
+
+    context("for an old position with effectiveMultiplier = 0", async () => {
+      it("does not affect the total staked supply", async () => {
+        // Another user stakes
+        const otherUserTokenId = await stake({
+          amount: fiduAmount,
+          from: anotherUser,
+        })
+
+        // Investor stakes
+        const tokenId = await stake({amount: fiduAmount, positionType: StakedPositionType.Fidu, from: investor})
+
+        // Fake old positions by overriding the effective multiplier to 0
+        await stakingRewards.setPositionEffectiveMultiplier(otherUserTokenId, new BN(0))
+        await stakingRewards.setPositionEffectiveMultiplier(tokenId, new BN(0))
+
+        // Update the effective multiplier
+        await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+        let totalStakedSupply = await stakingRewards.totalStakedSupply()
+        expect(totalStakedSupply).to.bignumber.equal(fiduAmount.mul(new BN(2)))
+
+        // Trigger updating a position's effective multiplier
+        await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+        // The total staked supply should not be affected
+        totalStakedSupply = await stakingRewards.totalStakedSupply()
+        expect(totalStakedSupply).to.bignumber.equal(fiduAmount.mul(new BN(2)))
+      })
     })
   })
 

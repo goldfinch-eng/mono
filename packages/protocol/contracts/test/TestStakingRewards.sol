@@ -10,6 +10,13 @@ contract TestStakingRewards is StakingRewards {
 
   mapping(StakedPositionType => uint256) private exchangeRates;
 
+  /// @dev Used in unit tests to mock the effective multiplier for a given position
+  function setPositionEffectiveMultiplier(uint256 tokenId, uint256 newMultiplier) external {
+    StakedPosition storage position = positions[tokenId];
+
+    position.unsafeEffectiveMultiplier = newMultiplier;
+  }
+
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view override returns (uint256) {
     uint256 exchangeRate = exchangeRates[positionType];
 
@@ -26,6 +33,7 @@ contract TestStakingRewards is StakingRewards {
     }
   }
 
+  /// @dev Used in unit tests to set the base token exchange rate
   function _setBaseTokenExchangeRate(StakedPositionType positionType, uint256 exchangeRate) public returns (uint256) {
     exchangeRates[positionType] = exchangeRate;
   }
