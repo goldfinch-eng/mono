@@ -7,7 +7,8 @@
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
     "quotes": ["error", "double"],
-    "indent": "off"
+    "indent": "off",
+    "react/jsx-no-target-blank": "error"
   },
   "ignorePatterns": ["build"]
 }
