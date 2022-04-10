@@ -170,6 +170,7 @@ enum PoolState {
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigDecimal!
+  estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
@@ -230,5 +231,8 @@ type BackerRewards @entity {
   contractAddress: String!
   totalRewards: BigInt!
   totalRewardPercentOfTotalGFI: BigDecimal!
+  """
+  Note that this value is measured in GFI, not dollars
+  """
   maxInterestDollarsEligible: BigInt!
 }

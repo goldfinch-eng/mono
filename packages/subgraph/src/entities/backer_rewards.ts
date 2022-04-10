@@ -1,8 +1,8 @@
-import {Address} from "@graphprotocol/graph-ts"
+import {Address, BigDecimal} from "@graphprotocol/graph-ts"
 
 import {BackerRewards} from "../../generated/schema"
 import {BackerRewards_Implementation as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards_Implementation"
-import {GFI_DECIMALS} from "../constants"
+import {GFI_DECIMALS, USDC_DECIMALS} from "../constants"
 
 const BACKER_REWARDS_ID = "1"
 
@@ -21,7 +21,10 @@ export function updateBackerRewardsData(contractAddress: Address): void {
   backerRewards.totalRewards = contract.totalRewards()
   backerRewards.totalRewardPercentOfTotalGFI = contract
     .totalRewardPercentOfTotalGFI()
-    .divDecimal(GFI_DECIMALS.toBigDecimal())
+    .toBigDecimal()
+    .div(GFI_DECIMALS.toBigDecimal())
+    .div(BigDecimal.fromString("100"))
+  // Note that this is actually measured in GFI, not dollars
   backerRewards.maxInterestDollarsEligible = contract.maxInterestDollarsEligible()
   backerRewards.save()
 }

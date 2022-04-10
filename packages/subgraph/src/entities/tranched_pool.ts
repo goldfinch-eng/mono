@@ -14,8 +14,9 @@ import {
   CONFIG_KEYS_NUMBERS,
   GOLDFINCH_CONFIG_ADDRESS,
   SENIOR_POOL_ADDRESS,
-  SECONDS_PER_YEAR,
   SECONDS_PER_DAY,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
 } from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
@@ -28,7 +29,9 @@ import {
   isV1StyleDeal,
   estimateJuniorAPY,
 } from "./helpers"
-import {isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {getGfiEntity} from "./gfi"
+import {getBackerRewards} from "./backer_rewards"
 
 // AssemblyScript doesn't have enums in the language spec yet, so we'll use a class to fake it. Must match the PoolState enum in schema.graphql
 class PoolState {
@@ -225,9 +228,9 @@ function getPoolState(tranchedPool: TranchedPool, now: BigInt): string {
 }
 
 class Repayment {
-  tranchedPoolAddress: String
+  tranchedPoolAddress: string
   timestamp: BigInt
-  interestAmount: BigDecimal
+  interestAmount: BigInt
   toString(): string {
     return `{ tranchedPoolAddress: ${
       this.tranchedPoolAddress
@@ -236,7 +239,7 @@ class Repayment {
 }
 
 class GfiRewardOnInterest {
-  tranchedPoolAddress: String
+  tranchedPoolAddress: string
   timestamp: BigInt
   gfiAmount: BigDecimal
   toString(): string {
@@ -246,21 +249,73 @@ class GfiRewardOnInterest {
   }
 }
 
-function calculateApyFromGfiForAllPools(now: BigInt): void {
+const tranchedPoolBlacklist = [
+  "0x6b42b1a43abe9598052bb8c21fd34c46c9fbcb8b", // Bogus tranched pool with an enormous limit that skews rewards
+  "0x00c27fc71b159a346e179b4a1608a0865e8a7470", // Stratos, which for some reason is excluded from rewards on prod
+  "0xa49506632ce8ec826b0190262b89a800353675ec", // Another bogus pool
+]
+
+export function calculateApyFromGfiForAllPools(now: BigInt): void {
+  const gfi = getGfiEntity()
+  const backerRewards = getBackerRewards()
+  // Bail out early if the backer rewards parameters aren't populated yet
+  if (
+    gfi.totalSupply == BigInt.zero() ||
+    backerRewards.totalRewards == BigInt.zero() ||
+    backerRewards.maxInterestDollarsEligible == BigInt.zero()
+  ) {
+    return
+  }
   const seniorPoolStatus = getOrInitSeniorPoolStatus()
   const tranchedPoolList = seniorPoolStatus.tranchedPools
-  log.info("tranchedPoolList: {}", [tranchedPoolList.toString()])
   let repaymentSchedules: Repayment[] = []
   for (let i = 0; i < tranchedPoolList.length; i++) {
     const tranchedPool = TranchedPool.load(tranchedPoolList[i])
     if (!tranchedPool) {
       continue
     }
+    // There's a bogus tranched pool out in the wild that satisfies the requirements for rewards and has a ridiculous number-warping payout. It has to be excluded
+    if (tranchedPoolBlacklist.includes(tranchedPool.id)) {
+      continue
+    }
+    const creditLine = CreditLine.load(tranchedPool.creditLine)
+    if (!creditLine || !creditLine.isEligibleForRewards) {
+      continue
+    }
     const schedule = getApproximateRepaymentSchedule(tranchedPool, now)
     repaymentSchedules = repaymentSchedules.concat(schedule)
   }
   repaymentSchedules.sort(repaymentComparator)
-  log.info("repaymentSchedules: {}", [repaymentSchedules.toString()])
+
+  const rewardsSchedules = estimateRewards(
+    repaymentSchedules,
+    backerRewards.totalRewards,
+    backerRewards.maxInterestDollarsEligible
+  )
+  const summedRewardsByTranchedPool = new Map<String, BigDecimal>()
+  for (let i = 0; i < rewardsSchedules.length; i++) {
+    const reward = rewardsSchedules[i]
+    const tranchedPoolAddress = reward.tranchedPoolAddress
+    if (summedRewardsByTranchedPool.has(tranchedPoolAddress)) {
+      const currentSum = summedRewardsByTranchedPool.get(tranchedPoolAddress)
+      summedRewardsByTranchedPool.set(tranchedPoolAddress, currentSum.plus(reward.gfiAmount))
+    } else {
+      summedRewardsByTranchedPool.set(tranchedPoolAddress, reward.gfiAmount)
+    }
+  }
+  const gfiPerPrincipleDollar = calculateAnnualizedGfiRewardsPerPrincipleDollar(summedRewardsByTranchedPool)
+  // @ts-ignore .keys() returns an array in AssemblyScript
+  for (let i = 0; i < gfiPerPrincipleDollar.keys().length; i++) {
+    const tranchedPoolAddress = gfiPerPrincipleDollar.keys()[i]
+    const tranchedPool = TranchedPool.load(tranchedPoolAddress)
+    if (!tranchedPool) {
+      continue
+    }
+    tranchedPool.estimatedJuniorApyFromGfiRaw = gfiPerPrincipleDollar
+      .get(tranchedPoolAddress)
+      .div(GFI_DECIMALS.toBigDecimal())
+    tranchedPool.save()
+  }
 }
 
 // TODO tiebreaking logic
@@ -291,210 +346,72 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
 
   const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
 
+  const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
+  const interestAmount = expectedInterest.div(numRepayments.toBigDecimal()).times(numYears)
   const repayments: Repayment[] = []
-  const interestAmount = expectedInterest.div(numRepayments.toBigDecimal())
   for (let i = 0; i < numRepayments.toI32(); i++) {
     const repaymentTimestamp = startTime.plus(secondsPerPaymentPeriod.times(BigInt.fromI32(i)))
     repayments.push({
       tranchedPoolAddress: tranchedPool.id,
       timestamp: repaymentTimestamp,
-      interestAmount: interestAmount,
+      interestAmount: bigDecimalToBigInt(interestAmount),
     })
   }
   return repayments
 }
 
-// function getOptimisticRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt): BigDecimal[] {
-//   const creditLine = CreditLine.load(tranchedPool.creditLine)
-//   if (!creditLine) {
-//     return []
-//   }
-//   const juniorTranche = JuniorTrancheInfo.load(tranchedPool.juniorTranches[tranchedPool.juniorTranches.length - 1])
-//   if (!juniorTranche) {
-//     return []
-//   }
-//   const seniorTranche = SeniorTrancheInfo.load(tranchedPool.seniorTranches[tranchedPool.seniorTranches.length - 1])
-//   if (!seniorTranche) {
-//     return []
-//   }
+function estimateRewards(
+  repaymentSchedules: Repayment[],
+  totalGfiAvailableForBackerRewards: BigInt,
+  maxInterestDollarsEligible: BigInt
+): GfiRewardOnInterest[] {
+  const rewards: GfiRewardOnInterest[] = []
+  let oldTotalInterest = BigInt.zero()
+  for (let i = 0; i < repaymentSchedules.length; i++) {
+    const repayment = repaymentSchedules[i]
+    // Need to use big numbers to get decent accuracy during integer sqrt
+    const newTotalInterest = oldTotalInterest.plus(repayment.interestAmount.times(GFI_DECIMALS).div(USDC_DECIMALS))
+    const sqrtDiff = newTotalInterest.sqrt().minus(oldTotalInterest.sqrt())
+    const gfiAmount = sqrtDiff
+      .times(totalGfiAvailableForBackerRewards)
+      .divDecimal(maxInterestDollarsEligible.sqrt().toBigDecimal())
+    rewards.push({
+      tranchedPoolAddress: repayment.tranchedPoolAddress,
+      timestamp: repayment.timestamp,
+      gfiAmount: gfiAmount,
+    })
+    oldTotalInterest = newTotalInterest
+  }
 
-//   // 1. How much interest do we expect to be repaid in the remaining term of the loan?
-//   // The answer consists of two parts: (i) the expected interest on funds that have
-//   // *already* been borrowed (i.e. the current balance of the pool); plus (ii) the
-//   // interest on additional funds that we can reasonably expect (based on the pool's state)
-//   // will be borrowed. How much additional funds will be borrowed? We can't know exactly; we'll
-//   // optimistically assume (see below) the pool fills up and/or the borrower borrows as much as
-//   // they can.
-//   // TODO: In future, when we may have multiple pools open at the same time, we may want to
-//   // revise this optimistic repayment schedule calculation so that we don't assume that
-//   // *all* open pools will fill up. Such an assumption means that any open pool could significantly
-//   // impact the estimated rewards of every other pool; but such estimates seem likely
-//   // flawed, because in practice not every proposed pool is equally likely to fill up. One
-//   // alternative way to do the calculation could be to assume the given pool for which we're
-//   // estimating rewards will fill up, but NOT to make that assumption for all the other open pools.
+  return rewards
+}
 
-//   // (i)
-//   // Our approach to calculating this here follows `Accountant.calculateInterestAccruedOverPeriod()`.
-//   let expectedRemainingInterestFromAlreadyBorrowed = BigDecimal.zero()
-//   let lastRepaymentTimeAlreadyBorrowed: BigInt = BigInt.zero()
-//   let nextRepaymentTimeAlreadyBorrowed: BigInt = BigInt.zero()
-//   if (creditLine.termEndTime > BigInt.zero()) {
-//     lastRepaymentTimeAlreadyBorrowed = creditLine.lastFullPaymentTime
-//     nextRepaymentTimeAlreadyBorrowed = creditLine.nextDueTime
+// ! The estimate done here is very crude. It's not as accurate as the code that lives at `ethereum/backerRewards` in the old Goldfinch client
+function calculateAnnualizedGfiRewardsPerPrincipleDollar(
+  summedRewardsByTranchedPool: Map<String, BigDecimal>
+): Map<String, BigDecimal> {
+  const rewardsPerPrincipleDollar = new Map<String, BigDecimal>()
+  // @ts-ignore
+  for (let i = 0; i < summedRewardsByTranchedPool.keys().length; i++) {
+    const tranchedPoolAddress = summedRewardsByTranchedPool.keys()[i]
+    const tranchedPool = TranchedPool.load(tranchedPoolAddress)
+    if (!tranchedPool) {
+      throw new Error("Unable to load tranchedPool from summedRewardsByTranchedPool")
+    }
+    const creditLine = CreditLine.load(tranchedPool.creditLine)
+    if (!creditLine) {
+      throw new Error("Unable to load creditLine from summedRewardsByTranchedPool")
+    }
+    const juniorPrincipleDollars = creditLine.maxLimit
+      .div(USDC_DECIMALS)
+      .div(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)))
+      .toBigDecimal()
+    const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
+    const perPrincipleDollar = reward.div(juniorPrincipleDollars)
 
-//     const lastAccrualTimestamp = creditLine.interestAccruedAsOf
-//     const interestAccruingSecondsRemaining = creditLine.termEndTime.minus(lastAccrualTimestamp)
-//     const totalInterestPerYear = creditLine.balance.toBigDecimal().times(creditLine.interestAprDecimal)
-//     const interestToBeAccruedSinceLastAccrual = totalInterestPerYear
-//       .times(interestAccruingSecondsRemaining.toBigDecimal())
-//       .div(SECONDS_PER_YEAR.toBigDecimal())
-//     expectedRemainingInterestFromAlreadyBorrowed = creditLine.interestOwed
-//       .toBigDecimal()
-//       .plus(interestToBeAccruedSinceLastAccrual)
-
-//     tranchedPool.save()
-//   }
-
-//   // (ii)
-//   let expectedRemainingInterestFromToBeBorrowed: BigDecimal = BigDecimal.zero()
-//   const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
-//   let lastRepaymentTimeToBeBorrowed: BigInt
-//   let nextRepaymentTimeToBeBorrowed: BigInt
-//   let finalRepaymentTime: BigInt
-//   if (tranchedPool.poolState != PoolState.WITHDRAWALS_UNLOCKED) {
-//     // Because the pool is not in the WithdrawalsUnlocked state, there is the prospect of additional
-//     // capital being borrowed. (Actually, even in the WithdrawalsUnlocked state, the borrower could
-//     // drawdown additional capital that remains available in the pool (up to the pool's limit), but
-//     // for the purposes here, we'll assume that once we've reached the WithdrawalsUnlocked state, the
-//     // borrower isn't going to do so, as they had ample time to do so before withdrawals unlocked.)
-//     // So we want to make a best-guess about what this additional balance will be.
-//     //
-//     // If the pool is Open, we'll optimistically assume the pool gets filled to its max
-//     // limit and the borrower borrows all of this. We'll do the same if the pool is JuniorLocked;
-//     // in theory, it would be more accurate to use a best-estimate of the leverage ratio, and
-//     // use that to optimistically calculate how much the senior pool is going to invest, and assume
-//     // the borrower borrows all of this, but I don't think this added complexity passes the cost-benefit
-//     // test, given that the leverage ratio would be an estimate and therefore uncertain. If the pool is
-//     // SeniorLocked, we can use the pool's current limit (because that gets updated in locking the
-//     // senior tranche) and assume the borrower borrows all of it.
-//     let optimisticAdditionalBalance: BigInt
-//     if (tranchedPool.poolState == PoolState.OPEN || tranchedPool.poolState == PoolState.JUNIOR_LOCKED) {
-//       optimisticAdditionalBalance = creditLine.maxLimit.minus(tranchedPool.totalDeployed)
-//     } else if (tranchedPool.poolState == PoolState.SENIOR_LOCKED) {
-//       optimisticAdditionalBalance = creditLine.limit.minus(tranchedPool.totalDeployed)
-//     }
-//     // When should we say that interest will start being earned on this additional balance?
-//     // We can't be sure exactly. There's currently no notion of a deadline for funding
-//     // the pool, nor hard start time of the borrowing. We'll make a reasonable supposition: if the
-//     // pool is Open, we'll say the borrowing starts one week after the later of the current time
-//     // and the pool's `fundableAt` timestamp. If the pool is JuniorLocked or SeniorLocked, we'll also say
-//     // the borrowing won't start later than the relevant locked-until time (which is consistent with
-//     // our assumption that no additional funds will be borrowed once the WithdrawalsUnlocked state is reached).
-//     let _optimisticInterestAccrualStart = max(tranchedPool.fundableAt, now).plus(
-//       SECONDS_PER_DAY.times(BigInt.fromString("7"))
-//     )
-//     if (tranchedPool.poolState == PoolState.OPEN) {
-//       // pass
-//     } else if (tranchedPool.poolState == PoolState.JUNIOR_LOCKED) {
-//       _optimisticInterestAccrualStart = min(juniorTranche.lockedUntil, _optimisticInterestAccrualStart)
-//     } else if (tranchedPool.poolState == PoolState.SENIOR_LOCKED) {
-//       _optimisticInterestAccrualStart = min(seniorTranche.lockedUntil, _optimisticInterestAccrualStart)
-//     }
-
-//     let interestAccrualStart: BigInt, interestAccrualEnd: BigInt
-//     if (creditLine.termEndTime > BigInt.zero()) {
-//       interestAccrualStart = min(_optimisticInterestAccrualStart, creditLine.termEndTime)
-//       interestAccrualEnd = creditLine.termEndTime
-
-//       if (interestAccrualStart < creditLine.nextDueTime) {
-//         lastRepaymentTimeToBeBorrowed = interestAccrualStart
-//         nextRepaymentTimeToBeBorrowed = creditLine.nextDueTime
-//       } else {
-//         lastRepaymentTimeToBeBorrowed = creditLine.nextDueTime
-//         nextRepaymentTimeToBeBorrowed = min(
-//           lastRepaymentTimeToBeBorrowed.plus(secondsPerPaymentPeriod),
-//           interestAccrualEnd
-//         )
-//       }
-
-//       finalRepaymentTime = interestAccrualEnd
-//     } else {
-//       interestAccrualStart = _optimisticInterestAccrualStart
-//       interestAccrualEnd = interestAccrualStart.plus(creditLine.termInDays.times(SECONDS_PER_DAY))
-
-//       lastRepaymentTimeToBeBorrowed = interestAccrualStart
-//       nextRepaymentTimeToBeBorrowed = interestAccrualStart.plus(secondsPerPaymentPeriod)
-//       finalRepaymentTime = interestAccrualEnd
-//     }
-
-//     const interestAccruingSecondsRemaining = interestAccrualEnd.minus(interestAccrualStart)
-//     const totalInterestPerYear = optimisticAdditionalBalance.toBigDecimal().times(creditLine.interestAprDecimal)
-//     expectedRemainingInterestFromToBeBorrowed = totalInterestPerYear
-//       .times(interestAccruingSecondsRemaining.toBigDecimal())
-//       .div(SECONDS_PER_YEAR.toBigDecimal())
-//   } else {
-//     finalRepaymentTime = creditLine.termEndTime
-//   }
-//   const expectedRemainingInterest = expectedRemainingInterestFromAlreadyBorrowed.plus(
-//     expectedRemainingInterestFromToBeBorrowed
-//   )
-//   tranchedPool.expectedRemainingInterest = expectedRemainingInterest
-//   tranchedPool.save()
-
-//   // 2. On what schedule do we expect the remaining repayments to occur?
-//   // For (i) interest owed on the already-borrowed amount, we expect those payments to start at the
-//   // credit line's `nextDueTime`, then one payment every `paymentPeriodInDays`, until the final payment
-//   // at `termEndTime`. For (ii) interest on the to-be-borrowed amount, we expect those payments to
-//   // start at the first next-due-time (aligned with (i)'s schedule) that occurs *after* the optimistic
-//   // start of that borrowing, and then (again, aligned with (i)'s schedule), one payment every
-//   // `paymentPeriodInDays`, until the final payment at `termEndTime`.
-
-//   if (nextRepaymentTimeAlreadyBorrowed == BigInt.zero() || nextRepaymentTimeToBeBorrowed == BigInt.zero()) {
-//     return []
-//   }
-//   const nextRepaymentTime = min(nextRepaymentTimeAlreadyBorrowed, nextRepaymentTimeToBeBorrowed)
-//   const numRepaymentsRemaining = finalRepaymentTime
-//     .minus(nextRepaymentTime)
-//     .div(secondsPerPaymentPeriod)
-//     .plus(
-//       // This accounts for the payment due at `nextRepaymentTime`.
-//       BigInt.fromString("1")
-//     )
-//     .toI32()
-
-//   const scheduledRepayments: BigDecimal[] = []
-//   let previousRepaymentTimeAlreadyBorrowed: BigInt = lastRepaymentTimeAlreadyBorrowed
-//   let previousRepaymentTimeToBeBorrowed: BigInt = lastRepaymentTimeToBeBorrowed
-//   let repaymentTime: BigInt = nextRepaymentTime
-//   let workingRemainingInterest = expectedRemainingInterest
-//   for (let i = 0, ii = numRepaymentsRemaining; i < ii; i++) {
-//     let expectedRepaymentAlreadyBorrowed = BigDecimal.zero()
-//     if (previousRepaymentTimeAlreadyBorrowed) {
-//       expectedRepaymentAlreadyBorrowed = expectedRemainingInterestFromAlreadyBorrowed
-//         .times(repaymentTime.minus(previousRepaymentTimeAlreadyBorrowed).toBigDecimal())
-//         .div(finalRepaymentTime.minus(lastRepaymentTimeAlreadyBorrowed).toBigDecimal())
-
-//       previousRepaymentTimeAlreadyBorrowed = repaymentTime
-//     }
-
-//     let expectedRepaymentToBeBorrowed = BigDecimal.zero()
-//     if (previousRepaymentTimeToBeBorrowed) {
-//       if (repaymentTime > previousRepaymentTimeToBeBorrowed) {
-//         expectedRepaymentToBeBorrowed = expectedRemainingInterestFromToBeBorrowed
-//           .times(repaymentTime.minus(previousRepaymentTimeToBeBorrowed).toBigDecimal())
-//           .div(finalRepaymentTime.minus(lastRepaymentTimeToBeBorrowed).toBigDecimal())
-//       }
-
-//       previousRepaymentTimeToBeBorrowed = repaymentTime
-//     }
-
-//     const expectedRepayment = expectedRepaymentAlreadyBorrowed.plus(expectedRepaymentToBeBorrowed)
-
-//     scheduledRepayments.push(expectedRepayment)
-
-//     repaymentTime = min(repaymentTime.plus(secondsPerPaymentPeriod), finalRepaymentTime)
-//     workingRemainingInterest = workingRemainingInterest.minus(expectedRepayment)
-//   }
-
-//   return scheduledRepayments
-// }
+    const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
+    const annualizedPerPrincipleDollar = perPrincipleDollar.div(numYears)
+    rewardsPerPrincipleDollar.set(tranchedPoolAddress, annualizedPerPrincipleDollar)
+  }
+  return rewardsPerPrincipleDollar
+}

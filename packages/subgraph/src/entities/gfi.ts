@@ -1,4 +1,4 @@
-import {Address, log} from "@graphprotocol/graph-ts"
+import {Address} from "@graphprotocol/graph-ts"
 import {GFI as GFIContract} from "../../generated/GFI/GFI"
 import {GFIData as GFIEntity} from "../../generated/schema"
 
@@ -17,6 +17,5 @@ export function updateGfiData(contractAddress: Address): void {
   const gfiEntity = getGfiEntity()
   gfiEntity.contractAddress = contractAddress.toHexString()
   gfiEntity.totalSupply = gfiContract.totalSupply()
-  log.info("total supply: {}", [gfiEntity.totalSupply.toString()])
   gfiEntity.save()
 }
