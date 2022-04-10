@@ -2,12 +2,61 @@ import almavestLogo from "./icons/almavest.png";
 import aspireLogo from "./icons/aspire.png";
 import caurisLogo from "./icons/cauris.png";
 import divibankLogo from "./icons/divibank.png";
+import lendeastLogo from "./icons/lendeast.png";
 import payjoyLogo from "./icons/payjoy.png";
 import quickcheckLogo from "./icons/quickcheck.png";
 import stratosLogo from "./icons/stratos.jpeg";
 import tugendeLogo from "./icons/tugende.png";
 
 export const mainnetMetadata: Record<string, Record<string, any>> = {
+  "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": {
+    name: "Almavest Basket #7: Fintech and Carbon Reduction Basket",
+    category: "Global multi-sector loans",
+    description:
+      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+    icon: almavestLogo.src,
+    agreement: "https://docsend.com/view/i7gd73kutdaymw9z/d/fapydfdk3syv7pns",
+    dataroom:
+      "https://almavest.notion.site/ALMA-BASKET-7-Pool-Overview-dd4ae721d6ea4c1fad9b17ba8abdd3ac",
+    launchTime: 1649343600,
+    poolDescription:
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines and other markets.\n\nThe security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.\n\nIn addition, ALMA is helping Goldfinch to improve the climate impacts of DeFi by offsetting the carbon footprint of all ALMA Borrower Pool contracts for this, from the date they are created through the entire loan term on the Ethereum blockchain, effectively making this a carbon neutral DeFi pool.",
+    poolHighlights: [
+      "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
+      "JuanchoTePresta, a fintech Colombian lender that targets employees, gig workers, and students with on-demand loans, with 60% women customers.",
+      "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
+      "Impact Water, which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
+      "Trella, a leading digital transportation and logistics platform focused on the Middle East, with clients and investors including Maersk and Exxon",
+    ],
+    borrowerDescription:
+      "ALMA Sustainable Finance is an investment management firm that creatively deploys capital for sustainable development. Our debt platform serves high-growth, impact-oriented companies in a range of sectors, primarily in emerging and developing markets in Asia, Africa, and Latin America. ALMA invests in market-leading, impactful businesses led by experienced teams. Our portfolio companies and pipeline borrowers are backed by the world’s leading equity investors including Y Combinator, Acumen, Exxon Mobil, GE, FMO and others.\n\nWith prior executive or management roles at institutions such as CGAP (World Bank), FinDev Canada, SKS Microfinance (IPO), FastCash (acquired), Rainforest Alliance, and others, our leadership team has nearly 100 combined years of experience in building, scaling and exiting sustainable impact companies, impact debt and equity investing, and data analytics.",
+    borrowerHighlights: [
+      "Since launch in 2020, we've deployed nearly $40 million and committed nearly $50 million to 11 companies with diverse underlying exposure — to multiple economic sectors and nearly 20 different global markets across Asia, Africa, and Latin America.",
+    ],
+  },
+  "0xb26b42dd5771689d0a7faeea32825ff9710b9c11": {
+    name: "Lend East #1: Emerging Asia Fintech Pool",
+    category: "Global multi-sector loans",
+    icon: lendeastLogo.src,
+    agreement: "https://lendeast.docsend.com/view/s/i395ds3s3gsxkrcc",
+    launchTime: 1647529200,
+    poolDescription:
+      "Proceeds will be used for additional funding via existing Lend East Credit Facilities to our portfolio companies and funding of new alternate lending platforms in Emerging Asia. All Lend East Credit Facilities are senior secured loans to high growth, tech forward Alternate Lenders who are backed by marquee equity investors like Ant Financial, Sequoia Capital, DST Global, Sinar Mas, Quona Capital & Arbor Ventures.\n\nEvery facility is structured to provide a healthy risk adjusted return to investors while ensuring capital preservation. Typical guardrails include excess portfolio cover (1.2x - 1.5x of the investment), established seniority over equity & other debt capital on the balance sheet and corporate guarantees from Holding Companies.",
+    poolHighlights: [
+      "Project Puma: Largest alternate consumer lending player serving underserved segments in Indonesia; raised over US$ 250 million in equity till date",
+      "Project Ocelot: Leading alternate consumer lending player, pioneering Offline-to-Online (O2O) lending in The Philippines; raised over US$ 100 million in equity since inception",
+      "Project Falcon: Small business focused neo-bank operating in Singapore & Vietnam; raised over US$ 70 million dollar in equity till date",
+      "Project Stork: Fast growing digital consumer lending platform in Indonesia; raised over US$ 40 million dollar in equity till date",
+      "Project Toucan: Leading Buy-Now-Pay-Later (BNPL) based in Singapore; raised ~US$ 500 million dollars in equity till date",
+    ],
+    borrowerDescription:
+      "Lend East is a digital lending platform that connects global institutional capital with alternate lenders in Emerging Asia (Southeast Asia & India). Lend East is revolutionising alternate lending by offering scalable growth capital with zero dilution to technology ventures. Leveraging Spa{R}³k, its proprietary credit and risk analytics platform, Lend East has made high impact investments in Indonesia, the Philippines, Singapore & Vietnam since 2019.",
+    borrowerHighlights: [
+      "Since inception, Lend East has evaluated over 100 alternate lenders and onboarded 60+ of them on Spa{R}³k, its proprietary credit analytics & risk platform",
+      "Lend East has committed US$50mn in investments across seven market leading platforms across Singapore, Indonesia, Philippines, Vietnam & India",
+      "Strong performance track record, generating healthy risk adjusted yields for investors with no delays or defaults in borrower repayments",
+    ],
+  },
   "0xd09a57127bc40d680be7cb061c2a6629fe71abef": {
     name: "Cauris Fund #2: Africa Innovation Pool",
     category: "Global multi-sector loans",
