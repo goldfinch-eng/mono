@@ -24,9 +24,91 @@ export type AppUser = {
   usdcBalance?: Maybe<Scalars['BigInt']>;
 };
 
+export type BackerRewards = {
+  __typename?: 'BackerRewards';
+  contractAddress: Scalars['String'];
+  id: Scalars['ID'];
+  maxInterestDollarsEligible: Scalars['BigInt'];
+  totalRewardPercentOfTotalGFI: Scalars['BigDecimal'];
+  totalRewards: Scalars['BigInt'];
+};
+
+export type BackerRewards_Filter = {
+  contractAddress?: InputMaybe<Scalars['String']>;
+  contractAddress_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_gt?: InputMaybe<Scalars['String']>;
+  contractAddress_gte?: InputMaybe<Scalars['String']>;
+  contractAddress_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_lt?: InputMaybe<Scalars['String']>;
+  contractAddress_lte?: InputMaybe<Scalars['String']>;
+  contractAddress_not?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_not_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  id_gt?: InputMaybe<Scalars['ID']>;
+  id_gte?: InputMaybe<Scalars['ID']>;
+  id_in?: InputMaybe<Array<Scalars['ID']>>;
+  id_lt?: InputMaybe<Scalars['ID']>;
+  id_lte?: InputMaybe<Scalars['ID']>;
+  id_not?: InputMaybe<Scalars['ID']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+  maxInterestDollarsEligible?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_gt?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_gte?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  maxInterestDollarsEligible_lt?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_lte?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_not?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalRewardPercentOfTotalGFI?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_gt?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_gte?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  totalRewardPercentOfTotalGFI_lt?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_lte?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_not?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  totalRewards?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_gt?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_gte?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalRewards_lt?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_lte?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_not?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+};
+
+export enum BackerRewards_OrderBy {
+  ContractAddress = 'contractAddress',
+  Id = 'id',
+  MaxInterestDollarsEligible = 'maxInterestDollarsEligible',
+  TotalRewardPercentOfTotalGfi = 'totalRewardPercentOfTotalGFI',
+  TotalRewards = 'totalRewards'
+}
+
+/** The block at which the query should be executed. */
 export type Block_Height = {
+  /** Value containing a block hash */
   hash?: InputMaybe<Scalars['Bytes']>;
+  /** Value containing a block number */
   number?: InputMaybe<Scalars['Int']>;
+  /**
+   * Value containing the minimum block number.
+   * In the case of `number_gte`, the query will be executed on the latest block only if
+   * the subgraph has progressed to or past the minimum block number.
+   * Defaults to the latest block when omitted.
+   *
+   */
   number_gte?: InputMaybe<Scalars['Int']>;
 };
 
@@ -111,7 +193,9 @@ export type CapitalProviderStatus_Filter = {
   unrealizedGains_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
   user?: InputMaybe<Scalars['String']>;
   user_contains?: InputMaybe<Scalars['String']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']>;
   user_ends_with?: InputMaybe<Scalars['String']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_gt?: InputMaybe<Scalars['String']>;
   user_gte?: InputMaybe<Scalars['String']>;
   user_in?: InputMaybe<Array<Scalars['String']>>;
@@ -119,10 +203,14 @@ export type CapitalProviderStatus_Filter = {
   user_lte?: InputMaybe<Scalars['String']>;
   user_not?: InputMaybe<Scalars['String']>;
   user_not_contains?: InputMaybe<Scalars['String']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']>;
   user_not_ends_with?: InputMaybe<Scalars['String']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_not_in?: InputMaybe<Array<Scalars['String']>>;
   user_not_starts_with?: InputMaybe<Scalars['String']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user_starts_with?: InputMaybe<Scalars['String']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']>;
   weightedAverageSharePrice?: InputMaybe<Scalars['BigDecimal']>;
   weightedAverageSharePrice_gt?: InputMaybe<Scalars['BigDecimal']>;
   weightedAverageSharePrice_gte?: InputMaybe<Scalars['BigDecimal']>;
@@ -157,6 +245,8 @@ export type CreditLine = {
   interestApr: Scalars['BigInt'];
   interestAprDecimal: Scalars['BigDecimal'];
   interestOwed: Scalars['BigInt'];
+  isEligibleForRewards: Scalars['Boolean'];
+  isLate: Scalars['Boolean'];
   lastFullPaymentTime: Scalars['BigInt'];
   limit: Scalars['BigInt'];
   maxLimit: Scalars['BigInt'];
@@ -166,9 +256,9 @@ export type CreditLine = {
   periodDueAmount?: Maybe<Scalars['BigInt']>;
   remainingPeriodDueAmount: Scalars['BigInt'];
   remainingTotalDueAmount: Scalars['BigInt'];
-  termEndDate: Scalars['BigInt'];
   termEndTime: Scalars['BigInt'];
   termInDays: Scalars['BigInt'];
+  termStartTime: Scalars['BigInt'];
   totalDueAmount?: Maybe<Scalars['BigInt']>;
   tranchedPool: TranchedPool;
   version: TranchedPoolCreditLineVersion;
@@ -201,7 +291,9 @@ export type CreditLine_Filter = {
   collectedPaymentBalance_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   dueDate?: InputMaybe<Scalars['String']>;
   dueDate_contains?: InputMaybe<Scalars['String']>;
+  dueDate_contains_nocase?: InputMaybe<Scalars['String']>;
   dueDate_ends_with?: InputMaybe<Scalars['String']>;
+  dueDate_ends_with_nocase?: InputMaybe<Scalars['String']>;
   dueDate_gt?: InputMaybe<Scalars['String']>;
   dueDate_gte?: InputMaybe<Scalars['String']>;
   dueDate_in?: InputMaybe<Array<Scalars['String']>>;
@@ -209,10 +301,14 @@ export type CreditLine_Filter = {
   dueDate_lte?: InputMaybe<Scalars['String']>;
   dueDate_not?: InputMaybe<Scalars['String']>;
   dueDate_not_contains?: InputMaybe<Scalars['String']>;
+  dueDate_not_contains_nocase?: InputMaybe<Scalars['String']>;
   dueDate_not_ends_with?: InputMaybe<Scalars['String']>;
+  dueDate_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   dueDate_not_in?: InputMaybe<Array<Scalars['String']>>;
   dueDate_not_starts_with?: InputMaybe<Scalars['String']>;
+  dueDate_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   dueDate_starts_with?: InputMaybe<Scalars['String']>;
+  dueDate_starts_with_nocase?: InputMaybe<Scalars['String']>;
   id?: InputMaybe<Scalars['ID']>;
   id_gt?: InputMaybe<Scalars['ID']>;
   id_gte?: InputMaybe<Scalars['ID']>;
@@ -253,6 +349,14 @@ export type CreditLine_Filter = {
   interestOwed_lte?: InputMaybe<Scalars['BigInt']>;
   interestOwed_not?: InputMaybe<Scalars['BigInt']>;
   interestOwed_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  isEligibleForRewards?: InputMaybe<Scalars['Boolean']>;
+  isEligibleForRewards_in?: InputMaybe<Array<Scalars['Boolean']>>;
+  isEligibleForRewards_not?: InputMaybe<Scalars['Boolean']>;
+  isEligibleForRewards_not_in?: InputMaybe<Array<Scalars['Boolean']>>;
+  isLate?: InputMaybe<Scalars['Boolean']>;
+  isLate_in?: InputMaybe<Array<Scalars['Boolean']>>;
+  isLate_not?: InputMaybe<Scalars['Boolean']>;
+  isLate_not_in?: InputMaybe<Array<Scalars['Boolean']>>;
   lastFullPaymentTime?: InputMaybe<Scalars['BigInt']>;
   lastFullPaymentTime_gt?: InputMaybe<Scalars['BigInt']>;
   lastFullPaymentTime_gte?: InputMaybe<Scalars['BigInt']>;
@@ -279,7 +383,9 @@ export type CreditLine_Filter = {
   maxLimit_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   name?: InputMaybe<Scalars['String']>;
   name_contains?: InputMaybe<Scalars['String']>;
+  name_contains_nocase?: InputMaybe<Scalars['String']>;
   name_ends_with?: InputMaybe<Scalars['String']>;
+  name_ends_with_nocase?: InputMaybe<Scalars['String']>;
   name_gt?: InputMaybe<Scalars['String']>;
   name_gte?: InputMaybe<Scalars['String']>;
   name_in?: InputMaybe<Array<Scalars['String']>>;
@@ -287,10 +393,14 @@ export type CreditLine_Filter = {
   name_lte?: InputMaybe<Scalars['String']>;
   name_not?: InputMaybe<Scalars['String']>;
   name_not_contains?: InputMaybe<Scalars['String']>;
+  name_not_contains_nocase?: InputMaybe<Scalars['String']>;
   name_not_ends_with?: InputMaybe<Scalars['String']>;
+  name_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   name_not_in?: InputMaybe<Array<Scalars['String']>>;
   name_not_starts_with?: InputMaybe<Scalars['String']>;
+  name_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   name_starts_with?: InputMaybe<Scalars['String']>;
+  name_starts_with_nocase?: InputMaybe<Scalars['String']>;
   nextDueTime?: InputMaybe<Scalars['BigInt']>;
   nextDueTime_gt?: InputMaybe<Scalars['BigInt']>;
   nextDueTime_gte?: InputMaybe<Scalars['BigInt']>;
@@ -331,14 +441,6 @@ export type CreditLine_Filter = {
   remainingTotalDueAmount_lte?: InputMaybe<Scalars['BigInt']>;
   remainingTotalDueAmount_not?: InputMaybe<Scalars['BigInt']>;
   remainingTotalDueAmount_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  termEndDate?: InputMaybe<Scalars['BigInt']>;
-  termEndDate_gt?: InputMaybe<Scalars['BigInt']>;
-  termEndDate_gte?: InputMaybe<Scalars['BigInt']>;
-  termEndDate_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  termEndDate_lt?: InputMaybe<Scalars['BigInt']>;
-  termEndDate_lte?: InputMaybe<Scalars['BigInt']>;
-  termEndDate_not?: InputMaybe<Scalars['BigInt']>;
-  termEndDate_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   termEndTime?: InputMaybe<Scalars['BigInt']>;
   termEndTime_gt?: InputMaybe<Scalars['BigInt']>;
   termEndTime_gte?: InputMaybe<Scalars['BigInt']>;
@@ -355,6 +457,14 @@ export type CreditLine_Filter = {
   termInDays_lte?: InputMaybe<Scalars['BigInt']>;
   termInDays_not?: InputMaybe<Scalars['BigInt']>;
   termInDays_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  termStartTime?: InputMaybe<Scalars['BigInt']>;
+  termStartTime_gt?: InputMaybe<Scalars['BigInt']>;
+  termStartTime_gte?: InputMaybe<Scalars['BigInt']>;
+  termStartTime_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  termStartTime_lt?: InputMaybe<Scalars['BigInt']>;
+  termStartTime_lte?: InputMaybe<Scalars['BigInt']>;
+  termStartTime_not?: InputMaybe<Scalars['BigInt']>;
+  termStartTime_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   totalDueAmount?: InputMaybe<Scalars['BigInt']>;
   totalDueAmount_gt?: InputMaybe<Scalars['BigInt']>;
   totalDueAmount_gte?: InputMaybe<Scalars['BigInt']>;
@@ -365,7 +475,9 @@ export type CreditLine_Filter = {
   totalDueAmount_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPool?: InputMaybe<Scalars['String']>;
   tranchedPool_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_gt?: InputMaybe<Scalars['String']>;
   tranchedPool_gte?: InputMaybe<Scalars['String']>;
   tranchedPool_in?: InputMaybe<Array<Scalars['String']>>;
@@ -373,10 +485,14 @@ export type CreditLine_Filter = {
   tranchedPool_lte?: InputMaybe<Scalars['String']>;
   tranchedPool_not?: InputMaybe<Scalars['String']>;
   tranchedPool_not_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_starts_with_nocase?: InputMaybe<Scalars['String']>;
   version?: InputMaybe<TranchedPoolCreditLineVersion>;
   version_in?: InputMaybe<Array<TranchedPoolCreditLineVersion>>;
   version_not?: InputMaybe<TranchedPoolCreditLineVersion>;
@@ -393,6 +509,8 @@ export enum CreditLine_OrderBy {
   InterestApr = 'interestApr',
   InterestAprDecimal = 'interestAprDecimal',
   InterestOwed = 'interestOwed',
+  IsEligibleForRewards = 'isEligibleForRewards',
+  IsLate = 'isLate',
   LastFullPaymentTime = 'lastFullPaymentTime',
   Limit = 'limit',
   MaxLimit = 'maxLimit',
@@ -402,12 +520,64 @@ export enum CreditLine_OrderBy {
   PeriodDueAmount = 'periodDueAmount',
   RemainingPeriodDueAmount = 'remainingPeriodDueAmount',
   RemainingTotalDueAmount = 'remainingTotalDueAmount',
-  TermEndDate = 'termEndDate',
   TermEndTime = 'termEndTime',
   TermInDays = 'termInDays',
+  TermStartTime = 'termStartTime',
   TotalDueAmount = 'totalDueAmount',
   TranchedPool = 'tranchedPool',
   Version = 'version'
+}
+
+export type GfiData = {
+  __typename?: 'GFIData';
+  contractAddress: Scalars['String'];
+  id: Scalars['ID'];
+  totalSupply: Scalars['BigInt'];
+};
+
+export type GfiData_Filter = {
+  contractAddress?: InputMaybe<Scalars['String']>;
+  contractAddress_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_gt?: InputMaybe<Scalars['String']>;
+  contractAddress_gte?: InputMaybe<Scalars['String']>;
+  contractAddress_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_lt?: InputMaybe<Scalars['String']>;
+  contractAddress_lte?: InputMaybe<Scalars['String']>;
+  contractAddress_not?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_not_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  id_gt?: InputMaybe<Scalars['ID']>;
+  id_gte?: InputMaybe<Scalars['ID']>;
+  id_in?: InputMaybe<Array<Scalars['ID']>>;
+  id_lt?: InputMaybe<Scalars['ID']>;
+  id_lte?: InputMaybe<Scalars['ID']>;
+  id_not?: InputMaybe<Scalars['ID']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+  totalSupply?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_gt?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_gte?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalSupply_lt?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_lte?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_not?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+};
+
+export enum GfiData_OrderBy {
+  ContractAddress = 'contractAddress',
+  Id = 'id',
+  TotalSupply = 'totalSupply'
 }
 
 export type Gfi = {
@@ -484,7 +654,9 @@ export type JuniorTrancheInfo_Filter = {
   trancheId_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPool?: InputMaybe<Scalars['String']>;
   tranchedPool_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_gt?: InputMaybe<Scalars['String']>;
   tranchedPool_gte?: InputMaybe<Scalars['String']>;
   tranchedPool_in?: InputMaybe<Array<Scalars['String']>>;
@@ -492,10 +664,14 @@ export type JuniorTrancheInfo_Filter = {
   tranchedPool_lte?: InputMaybe<Scalars['String']>;
   tranchedPool_not?: InputMaybe<Scalars['String']>;
   tranchedPool_not_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum JuniorTrancheInfo_OrderBy {
@@ -508,6 +684,7 @@ export enum JuniorTrancheInfo_OrderBy {
   TranchedPool = 'tranchedPool'
 }
 
+/** Defines the order direction, either ascending or descending */
 export enum OrderDirection {
   Asc = 'asc',
   Desc = 'desc'
@@ -604,7 +781,9 @@ export type PoolBacker_Filter = {
   principalRedeemed_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPool?: InputMaybe<Scalars['String']>;
   tranchedPool_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_gt?: InputMaybe<Scalars['String']>;
   tranchedPool_gte?: InputMaybe<Scalars['String']>;
   tranchedPool_in?: InputMaybe<Array<Scalars['String']>>;
@@ -612,10 +791,14 @@ export type PoolBacker_Filter = {
   tranchedPool_lte?: InputMaybe<Scalars['String']>;
   tranchedPool_not?: InputMaybe<Scalars['String']>;
   tranchedPool_not_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_starts_with_nocase?: InputMaybe<Scalars['String']>;
   unrealizedGains?: InputMaybe<Scalars['BigInt']>;
   unrealizedGains_gt?: InputMaybe<Scalars['BigInt']>;
   unrealizedGains_gte?: InputMaybe<Scalars['BigInt']>;
@@ -626,7 +809,9 @@ export type PoolBacker_Filter = {
   unrealizedGains_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   user?: InputMaybe<Scalars['String']>;
   user_contains?: InputMaybe<Scalars['String']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']>;
   user_ends_with?: InputMaybe<Scalars['String']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_gt?: InputMaybe<Scalars['String']>;
   user_gte?: InputMaybe<Scalars['String']>;
   user_in?: InputMaybe<Array<Scalars['String']>>;
@@ -634,10 +819,14 @@ export type PoolBacker_Filter = {
   user_lte?: InputMaybe<Scalars['String']>;
   user_not?: InputMaybe<Scalars['String']>;
   user_not_contains?: InputMaybe<Scalars['String']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']>;
   user_not_ends_with?: InputMaybe<Scalars['String']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_not_in?: InputMaybe<Array<Scalars['String']>>;
   user_not_starts_with?: InputMaybe<Scalars['String']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user_starts_with?: InputMaybe<Scalars['String']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum PoolBacker_OrderBy {
@@ -655,16 +844,26 @@ export enum PoolBacker_OrderBy {
   User = 'user'
 }
 
+export enum PoolState {
+  JuniorLocked = 'JUNIOR_LOCKED',
+  Open = 'OPEN',
+  SeniorLocked = 'SENIOR_LOCKED',
+  WithdrawalsUnlocked = 'WITHDRAWALS_UNLOCKED'
+}
+
 export type Query = {
   __typename?: 'Query';
   /** Access to subgraph metadata */
   _meta?: Maybe<_Meta_>;
+  backerRewards: Array<BackerRewards>;
   capitalProviderStatus?: Maybe<CapitalProviderStatus>;
   capitalProviderStatuses: Array<CapitalProviderStatus>;
   creditLine?: Maybe<CreditLine>;
   creditLines: Array<CreditLine>;
   currentUser: AppUser;
   gfi?: Maybe<Gfi>;
+  gfidata?: Maybe<GfiData>;
+  gfidatas: Array<GfiData>;
   juniorTrancheInfo?: Maybe<JuniorTrancheInfo>;
   juniorTrancheInfos: Array<JuniorTrancheInfo>;
   poolBacker?: Maybe<PoolBacker>;
@@ -691,6 +890,17 @@ export type Query = {
 
 export type Query_MetaArgs = {
   block?: InputMaybe<Block_Height>;
+};
+
+
+export type QueryBackerRewardsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<BackerRewards_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<BackerRewards_Filter>;
 };
 
 
@@ -727,6 +937,24 @@ export type QueryCreditLinesArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<CreditLine_Filter>;
+};
+
+
+export type QueryGfidataArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryGfidatasArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<GfiData_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<GfiData_Filter>;
 };
 
 
@@ -1027,7 +1255,9 @@ export type SeniorPoolDeposit_Filter = {
   timestamp_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   user?: InputMaybe<Scalars['String']>;
   user_contains?: InputMaybe<Scalars['String']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']>;
   user_ends_with?: InputMaybe<Scalars['String']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_gt?: InputMaybe<Scalars['String']>;
   user_gte?: InputMaybe<Scalars['String']>;
   user_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1035,10 +1265,14 @@ export type SeniorPoolDeposit_Filter = {
   user_lte?: InputMaybe<Scalars['String']>;
   user_not?: InputMaybe<Scalars['String']>;
   user_not_contains?: InputMaybe<Scalars['String']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']>;
   user_not_ends_with?: InputMaybe<Scalars['String']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_not_in?: InputMaybe<Array<Scalars['String']>>;
   user_not_starts_with?: InputMaybe<Scalars['String']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user_starts_with?: InputMaybe<Scalars['String']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum SeniorPoolDeposit_OrderBy {
@@ -1217,8 +1451,10 @@ export type SeniorPoolStatus_Filter = {
   totalShares_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPools?: InputMaybe<Array<Scalars['String']>>;
   tranchedPools_contains?: InputMaybe<Array<Scalars['String']>>;
+  tranchedPools_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   tranchedPools_not?: InputMaybe<Array<Scalars['String']>>;
   tranchedPools_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  tranchedPools_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
 };
 
 export enum SeniorPoolStatus_OrderBy {
@@ -1244,8 +1480,10 @@ export enum SeniorPoolStatus_OrderBy {
 export type SeniorPool_Filter = {
   capitalProviders?: InputMaybe<Array<Scalars['String']>>;
   capitalProviders_contains?: InputMaybe<Array<Scalars['String']>>;
+  capitalProviders_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   capitalProviders_not?: InputMaybe<Array<Scalars['String']>>;
   capitalProviders_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  capitalProviders_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   id?: InputMaybe<Scalars['ID']>;
   id_gt?: InputMaybe<Scalars['ID']>;
   id_gte?: InputMaybe<Scalars['ID']>;
@@ -1256,11 +1494,15 @@ export type SeniorPool_Filter = {
   id_not_in?: InputMaybe<Array<Scalars['ID']>>;
   investmentsMade?: InputMaybe<Array<Scalars['String']>>;
   investmentsMade_contains?: InputMaybe<Array<Scalars['String']>>;
+  investmentsMade_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   investmentsMade_not?: InputMaybe<Array<Scalars['String']>>;
   investmentsMade_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  investmentsMade_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   latestPoolStatus?: InputMaybe<Scalars['String']>;
   latestPoolStatus_contains?: InputMaybe<Scalars['String']>;
+  latestPoolStatus_contains_nocase?: InputMaybe<Scalars['String']>;
   latestPoolStatus_ends_with?: InputMaybe<Scalars['String']>;
+  latestPoolStatus_ends_with_nocase?: InputMaybe<Scalars['String']>;
   latestPoolStatus_gt?: InputMaybe<Scalars['String']>;
   latestPoolStatus_gte?: InputMaybe<Scalars['String']>;
   latestPoolStatus_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1268,10 +1510,14 @@ export type SeniorPool_Filter = {
   latestPoolStatus_lte?: InputMaybe<Scalars['String']>;
   latestPoolStatus_not?: InputMaybe<Scalars['String']>;
   latestPoolStatus_not_contains?: InputMaybe<Scalars['String']>;
+  latestPoolStatus_not_contains_nocase?: InputMaybe<Scalars['String']>;
   latestPoolStatus_not_ends_with?: InputMaybe<Scalars['String']>;
+  latestPoolStatus_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   latestPoolStatus_not_in?: InputMaybe<Array<Scalars['String']>>;
   latestPoolStatus_not_starts_with?: InputMaybe<Scalars['String']>;
+  latestPoolStatus_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   latestPoolStatus_starts_with?: InputMaybe<Scalars['String']>;
+  latestPoolStatus_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum SeniorPool_OrderBy {
@@ -1343,7 +1589,9 @@ export type SeniorTrancheInfo_Filter = {
   trancheId_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPool?: InputMaybe<Scalars['String']>;
   tranchedPool_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_gt?: InputMaybe<Scalars['String']>;
   tranchedPool_gte?: InputMaybe<Scalars['String']>;
   tranchedPool_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1351,10 +1599,14 @@ export type SeniorTrancheInfo_Filter = {
   tranchedPool_lte?: InputMaybe<Scalars['String']>;
   tranchedPool_not?: InputMaybe<Scalars['String']>;
   tranchedPool_not_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum SeniorTrancheInfo_OrderBy {
@@ -1374,6 +1626,7 @@ export type StakingRewards = {
    *
    */
   currentEarnRatePerToken: Scalars['BigInt'];
+  gfiTotalSupply: Scalars['BigInt'];
   id: Scalars['ID'];
 };
 
@@ -1386,6 +1639,14 @@ export type StakingRewards_Filter = {
   currentEarnRatePerToken_lte?: InputMaybe<Scalars['BigInt']>;
   currentEarnRatePerToken_not?: InputMaybe<Scalars['BigInt']>;
   currentEarnRatePerToken_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  gfiTotalSupply?: InputMaybe<Scalars['BigInt']>;
+  gfiTotalSupply_gt?: InputMaybe<Scalars['BigInt']>;
+  gfiTotalSupply_gte?: InputMaybe<Scalars['BigInt']>;
+  gfiTotalSupply_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  gfiTotalSupply_lt?: InputMaybe<Scalars['BigInt']>;
+  gfiTotalSupply_lte?: InputMaybe<Scalars['BigInt']>;
+  gfiTotalSupply_not?: InputMaybe<Scalars['BigInt']>;
+  gfiTotalSupply_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   id?: InputMaybe<Scalars['ID']>;
   id_gt?: InputMaybe<Scalars['ID']>;
   id_gte?: InputMaybe<Scalars['ID']>;
@@ -1398,6 +1659,7 @@ export type StakingRewards_Filter = {
 
 export enum StakingRewards_OrderBy {
   CurrentEarnRatePerToken = 'currentEarnRatePerToken',
+  GfiTotalSupply = 'gfiTotalSupply',
   Id = 'id'
 }
 
@@ -1405,10 +1667,13 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Access to subgraph metadata */
   _meta?: Maybe<_Meta_>;
+  backerRewards: Array<BackerRewards>;
   capitalProviderStatus?: Maybe<CapitalProviderStatus>;
   capitalProviderStatuses: Array<CapitalProviderStatus>;
   creditLine?: Maybe<CreditLine>;
   creditLines: Array<CreditLine>;
+  gfidata?: Maybe<GfiData>;
+  gfidatas: Array<GfiData>;
   juniorTrancheInfo?: Maybe<JuniorTrancheInfo>;
   juniorTrancheInfos: Array<JuniorTrancheInfo>;
   poolBacker?: Maybe<PoolBacker>;
@@ -1435,6 +1700,17 @@ export type Subscription = {
 
 export type Subscription_MetaArgs = {
   block?: InputMaybe<Block_Height>;
+};
+
+
+export type SubscriptionBackerRewardsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<BackerRewards_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<BackerRewards_Filter>;
 };
 
 
@@ -1471,6 +1747,24 @@ export type SubscriptionCreditLinesArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<CreditLine_Filter>;
+};
+
+
+export type SubscriptionGfidataArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionGfidatasArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<GfiData_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<GfiData_Filter>;
 };
 
 
@@ -1672,12 +1966,16 @@ export type TranchedPool = {
   deposits: Array<TranchedPoolDeposit>;
   description?: Maybe<Scalars['String']>;
   estimatedJuniorApy: Scalars['BigDecimal'];
+  /** Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedJuniorApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field. */
+  estimatedJuniorApyFromGfi: Scalars['BigDecimal'];
+  estimatedJuniorApyFromGfiRaw: Scalars['BigDecimal'];
   estimatedLeverageRatio: Scalars['BigInt'];
   estimatedSeniorPoolContribution: Scalars['BigInt'];
   estimatedTotalAssets: Scalars['BigInt'];
   fundableAt: Scalars['BigInt'];
   icon?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
+  interestRepayments: Array<Scalars['BigInt']>;
   isPaused: Scalars['Boolean'];
   /**
    * Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
@@ -1687,9 +1985,16 @@ export type TranchedPool = {
   juniorFeePercent: Scalars['BigInt'];
   juniorTranches: Array<JuniorTrancheInfo>;
   name?: Maybe<Scalars['String']>;
+  /**
+   * WARNING: This field is not updated on every block, because that would be too time-consuming. It's only updated every time a transaction happens on this tranched pool, so it's not good enough for real-time information. Consider removing this field from the schema
+   *
+   */
+  poolState: PoolState;
   remainingCapacity: Scalars['BigInt'];
   remainingJuniorCapacity: Scalars['BigInt'];
   reserveFeePercent: Scalars['BigInt'];
+  rewards: Array<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar?: Maybe<Scalars['BigDecimal']>;
   seniorTranches: Array<SeniorTrancheInfo>;
   tokens: Array<TranchedPoolToken>;
   totalDeployed: Scalars['BigInt'];
@@ -1810,7 +2115,9 @@ export type TranchedPoolDeposit_Filter = {
   tranche_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPool?: InputMaybe<Scalars['String']>;
   tranchedPool_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_gt?: InputMaybe<Scalars['String']>;
   tranchedPool_gte?: InputMaybe<Scalars['String']>;
   tranchedPool_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1818,13 +2125,19 @@ export type TranchedPoolDeposit_Filter = {
   tranchedPool_lte?: InputMaybe<Scalars['String']>;
   tranchedPool_not?: InputMaybe<Scalars['String']>;
   tranchedPool_not_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user?: InputMaybe<Scalars['String']>;
   user_contains?: InputMaybe<Scalars['String']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']>;
   user_ends_with?: InputMaybe<Scalars['String']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_gt?: InputMaybe<Scalars['String']>;
   user_gte?: InputMaybe<Scalars['String']>;
   user_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1832,10 +2145,14 @@ export type TranchedPoolDeposit_Filter = {
   user_lte?: InputMaybe<Scalars['String']>;
   user_not?: InputMaybe<Scalars['String']>;
   user_not_contains?: InputMaybe<Scalars['String']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']>;
   user_not_ends_with?: InputMaybe<Scalars['String']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_not_in?: InputMaybe<Array<Scalars['String']>>;
   user_not_starts_with?: InputMaybe<Scalars['String']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user_starts_with?: InputMaybe<Scalars['String']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum TranchedPoolDeposit_OrderBy {
@@ -1921,7 +2238,9 @@ export type TranchedPoolToken_Filter = {
   tranche_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
   tranchedPool?: InputMaybe<Scalars['String']>;
   tranchedPool_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_gt?: InputMaybe<Scalars['String']>;
   tranchedPool_gte?: InputMaybe<Scalars['String']>;
   tranchedPool_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1929,13 +2248,19 @@ export type TranchedPoolToken_Filter = {
   tranchedPool_lte?: InputMaybe<Scalars['String']>;
   tranchedPool_not?: InputMaybe<Scalars['String']>;
   tranchedPool_not_contains?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_contains_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_ends_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_not_in?: InputMaybe<Array<Scalars['String']>>;
   tranchedPool_not_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   tranchedPool_starts_with?: InputMaybe<Scalars['String']>;
+  tranchedPool_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user?: InputMaybe<Scalars['String']>;
   user_contains?: InputMaybe<Scalars['String']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']>;
   user_ends_with?: InputMaybe<Scalars['String']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_gt?: InputMaybe<Scalars['String']>;
   user_gte?: InputMaybe<Scalars['String']>;
   user_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1943,10 +2268,14 @@ export type TranchedPoolToken_Filter = {
   user_lte?: InputMaybe<Scalars['String']>;
   user_not?: InputMaybe<Scalars['String']>;
   user_not_contains?: InputMaybe<Scalars['String']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']>;
   user_not_ends_with?: InputMaybe<Scalars['String']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   user_not_in?: InputMaybe<Array<Scalars['String']>>;
   user_not_starts_with?: InputMaybe<Scalars['String']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   user_starts_with?: InputMaybe<Scalars['String']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']>;
 };
 
 export enum TranchedPoolToken_OrderBy {
@@ -1964,11 +2293,15 @@ export enum TranchedPoolToken_OrderBy {
 export type TranchedPool_Filter = {
   backers?: InputMaybe<Array<Scalars['String']>>;
   backers_contains?: InputMaybe<Array<Scalars['String']>>;
+  backers_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   backers_not?: InputMaybe<Array<Scalars['String']>>;
   backers_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  backers_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   creditLine?: InputMaybe<Scalars['String']>;
   creditLine_contains?: InputMaybe<Scalars['String']>;
+  creditLine_contains_nocase?: InputMaybe<Scalars['String']>;
   creditLine_ends_with?: InputMaybe<Scalars['String']>;
+  creditLine_ends_with_nocase?: InputMaybe<Scalars['String']>;
   creditLine_gt?: InputMaybe<Scalars['String']>;
   creditLine_gte?: InputMaybe<Scalars['String']>;
   creditLine_in?: InputMaybe<Array<Scalars['String']>>;
@@ -1976,11 +2309,23 @@ export type TranchedPool_Filter = {
   creditLine_lte?: InputMaybe<Scalars['String']>;
   creditLine_not?: InputMaybe<Scalars['String']>;
   creditLine_not_contains?: InputMaybe<Scalars['String']>;
+  creditLine_not_contains_nocase?: InputMaybe<Scalars['String']>;
   creditLine_not_ends_with?: InputMaybe<Scalars['String']>;
+  creditLine_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   creditLine_not_in?: InputMaybe<Array<Scalars['String']>>;
   creditLine_not_starts_with?: InputMaybe<Scalars['String']>;
+  creditLine_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   creditLine_starts_with?: InputMaybe<Scalars['String']>;
+  creditLine_starts_with_nocase?: InputMaybe<Scalars['String']>;
   estimatedJuniorApy?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_gt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_gte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  estimatedJuniorApyFromGfiRaw_lt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_lte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_not?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
   estimatedJuniorApy_gt?: InputMaybe<Scalars['BigDecimal']>;
   estimatedJuniorApy_gte?: InputMaybe<Scalars['BigDecimal']>;
   estimatedJuniorApy_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
@@ -2028,6 +2373,12 @@ export type TranchedPool_Filter = {
   id_lte?: InputMaybe<Scalars['ID']>;
   id_not?: InputMaybe<Scalars['ID']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+  interestRepayments?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_contains?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_contains_nocase?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_not?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_not_contains?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_not_contains_nocase?: InputMaybe<Array<Scalars['BigInt']>>;
   isPaused?: InputMaybe<Scalars['Boolean']>;
   isPaused_in?: InputMaybe<Array<Scalars['Boolean']>>;
   isPaused_not?: InputMaybe<Scalars['Boolean']>;
@@ -2044,6 +2395,16 @@ export type TranchedPool_Filter = {
   juniorFeePercent_lte?: InputMaybe<Scalars['BigInt']>;
   juniorFeePercent_not?: InputMaybe<Scalars['BigInt']>;
   juniorFeePercent_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  juniorTranches?: InputMaybe<Array<Scalars['String']>>;
+  juniorTranches_contains?: InputMaybe<Array<Scalars['String']>>;
+  juniorTranches_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
+  juniorTranches_not?: InputMaybe<Array<Scalars['String']>>;
+  juniorTranches_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  juniorTranches_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
+  poolState?: InputMaybe<PoolState>;
+  poolState_in?: InputMaybe<Array<PoolState>>;
+  poolState_not?: InputMaybe<PoolState>;
+  poolState_not_in?: InputMaybe<Array<PoolState>>;
   remainingCapacity?: InputMaybe<Scalars['BigInt']>;
   remainingCapacity_gt?: InputMaybe<Scalars['BigInt']>;
   remainingCapacity_gte?: InputMaybe<Scalars['BigInt']>;
@@ -2068,10 +2429,32 @@ export type TranchedPool_Filter = {
   reserveFeePercent_lte?: InputMaybe<Scalars['BigInt']>;
   reserveFeePercent_not?: InputMaybe<Scalars['BigInt']>;
   reserveFeePercent_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  rewards?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewardsPerPrincipleDollar?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_gt?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_gte?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewardsPerPrincipleDollar_lt?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_lte?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_not?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_contains?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_contains_nocase?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_not?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_not_contains?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_not_contains_nocase?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  seniorTranches?: InputMaybe<Array<Scalars['String']>>;
+  seniorTranches_contains?: InputMaybe<Array<Scalars['String']>>;
+  seniorTranches_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
+  seniorTranches_not?: InputMaybe<Array<Scalars['String']>>;
+  seniorTranches_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  seniorTranches_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   tokens?: InputMaybe<Array<Scalars['String']>>;
   tokens_contains?: InputMaybe<Array<Scalars['String']>>;
+  tokens_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   tokens_not?: InputMaybe<Array<Scalars['String']>>;
   tokens_not_contains?: InputMaybe<Array<Scalars['String']>>;
+  tokens_not_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
   totalDeployed?: InputMaybe<Scalars['BigInt']>;
   totalDeployed_gt?: InputMaybe<Scalars['BigInt']>;
   totalDeployed_gte?: InputMaybe<Scalars['BigInt']>;
@@ -2099,18 +2482,23 @@ export enum TranchedPool_OrderBy {
   CreditLine = 'creditLine',
   Deposits = 'deposits',
   EstimatedJuniorApy = 'estimatedJuniorApy',
+  EstimatedJuniorApyFromGfiRaw = 'estimatedJuniorApyFromGfiRaw',
   EstimatedLeverageRatio = 'estimatedLeverageRatio',
   EstimatedSeniorPoolContribution = 'estimatedSeniorPoolContribution',
   EstimatedTotalAssets = 'estimatedTotalAssets',
   FundableAt = 'fundableAt',
   Id = 'id',
+  InterestRepayments = 'interestRepayments',
   IsPaused = 'isPaused',
   IsV1StyleDeal = 'isV1StyleDeal',
   JuniorFeePercent = 'juniorFeePercent',
   JuniorTranches = 'juniorTranches',
+  PoolState = 'poolState',
   RemainingCapacity = 'remainingCapacity',
   RemainingJuniorCapacity = 'remainingJuniorCapacity',
   ReserveFeePercent = 'reserveFeePercent',
+  Rewards = 'rewards',
+  RewardsPerPrincipleDollar = 'rewardsPerPrincipleDollar',
   SeniorTranches = 'seniorTranches',
   Tokens = 'tokens',
   TotalDeployed = 'totalDeployed',
@@ -2175,7 +2563,9 @@ export enum UserType {
 export type User_Filter = {
   capitalProviderStatus?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_contains?: InputMaybe<Scalars['String']>;
+  capitalProviderStatus_contains_nocase?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_ends_with?: InputMaybe<Scalars['String']>;
+  capitalProviderStatus_ends_with_nocase?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_gt?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_gte?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_in?: InputMaybe<Array<Scalars['String']>>;
@@ -2183,10 +2573,14 @@ export type User_Filter = {
   capitalProviderStatus_lte?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_not?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_not_contains?: InputMaybe<Scalars['String']>;
+  capitalProviderStatus_not_contains_nocase?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_not_ends_with?: InputMaybe<Scalars['String']>;
+  capitalProviderStatus_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_not_in?: InputMaybe<Array<Scalars['String']>>;
   capitalProviderStatus_not_starts_with?: InputMaybe<Scalars['String']>;
+  capitalProviderStatus_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
   capitalProviderStatus_starts_with?: InputMaybe<Scalars['String']>;
+  capitalProviderStatus_starts_with_nocase?: InputMaybe<Scalars['String']>;
   goListed?: InputMaybe<Scalars['Boolean']>;
   goListed_in?: InputMaybe<Array<Scalars['Boolean']>>;
   goListed_not?: InputMaybe<Scalars['Boolean']>;
@@ -2256,9 +2650,9 @@ export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, estimatedApyFromGfiRaw?: TheGraph_BigDecimal | null, estimatedApyFromGfi: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, estimatedApyFromGfiRaw?: TheGraph_BigDecimal | null, estimatedApyFromGfi: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, estimatedJuniorApy: TheGraph_BigDecimal, estimatedJuniorApyFromGfiRaw: TheGraph_BigDecimal, estimatedJuniorApyFromGfi: TheGraph_BigDecimal }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, estimatedJuniorApy: TheGraph_BigDecimal, estimatedJuniorApyFromGfiRaw: TheGraph_BigDecimal, estimatedJuniorApyFromGfi: TheGraph_BigDecimal }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
 
-export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
+export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, estimatedJuniorApy: TheGraph_BigDecimal, estimatedJuniorApyFromGfiRaw: TheGraph_BigDecimal, estimatedJuniorApyFromGfi: TheGraph_BigDecimal };
 
 export type SeniorPoolPageQueryVariables = Exact<{
   userId: Scalars['ID'];
@@ -2279,9 +2673,9 @@ export const TranchedPoolCardFieldsFragmentDoc = gql`
   name @client
   category @client
   icon @client
-  creditLine {
-    interestApr
-  }
+  estimatedJuniorApy
+  estimatedJuniorApyFromGfiRaw
+  estimatedJuniorApyFromGfi @client
 }
     `;
 export const SeniorPoolPortfolioUserFieldsFragmentDoc = gql`
