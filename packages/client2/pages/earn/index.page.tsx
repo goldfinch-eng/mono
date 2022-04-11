@@ -28,7 +28,7 @@ gql`
         }
       }
     }
-    tranchedPools {
+    tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
       ...TranchedPoolCardFields
     }

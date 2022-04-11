@@ -197,6 +197,7 @@ type TranchedPool @entity {
   WARNING: This field is not updated on every block, because that would be too time-consuming. It's only updated every time a transaction happens on this tranched pool, so it's not good enough for real-time information. Consider removing this field from the schema
   """
   poolState: PoolState!
+  createdAt: BigInt!
 }
 
 type TranchedPoolToken @entity {

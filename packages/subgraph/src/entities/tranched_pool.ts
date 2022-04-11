@@ -189,6 +189,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.creditLine = creditLine.id
     tranchedPool.backers = []
     tranchedPool.tokens = []
+    tranchedPool.createdAt = timestamp
   }
 
   tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
@@ -251,7 +252,6 @@ class GfiRewardOnInterest {
 
 const tranchedPoolBlacklist = [
   "0x6b42b1a43abe9598052bb8c21fd34c46c9fbcb8b", // Bogus tranched pool with an enormous limit that skews rewards
-  "0x00c27fc71b159a346e179b4a1608a0865e8a7470", // Stratos, which for some reason is excluded from rewards on prod
   "0xa49506632ce8ec826b0190262b89a800353675ec", // Another bogus pool
 ]
 
