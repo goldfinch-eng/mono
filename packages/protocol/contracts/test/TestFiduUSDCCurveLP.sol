@@ -17,6 +17,8 @@ contract TestFiduUSDCCurveLP is
 
   IGoldfinchConfig public config;
 
+  uint256 private virtual_price = MULTIPLIER_DECIMALS;
+
   constructor(
     uint256 initialSupply,
     uint8 decimals,
@@ -31,8 +33,12 @@ contract TestFiduUSDCCurveLP is
     return address(this);
   }
 
+  function _set_virtual_price(uint256 new_virtual_price) external {
+    virtual_price = new_virtual_price;
+  }
+
   function get_virtual_price() public view override returns (uint256) {
-    return MULTIPLIER_DECIMALS;
+    return virtual_price;
   }
 
   /// @notice Mock calcTokenAmount function that returns the sum of both token amounts

@@ -16,25 +16,4 @@ contract TestStakingRewards is StakingRewards {
 
     position.unsafeEffectiveMultiplier = newMultiplier;
   }
-
-  function getBaseTokenExchangeRate(StakedPositionType positionType) public view override returns (uint256) {
-    uint256 exchangeRate = exchangeRates[positionType];
-
-    if (exchangeRate > 0) {
-      return exchangeRate;
-    }
-
-    if (positionType == StakedPositionType.CurveLP) {
-      return MULTIPLIER_DECIMALS; // 1x
-    } else if (positionType == StakedPositionType.Fidu) {
-      return MULTIPLIER_DECIMALS; // 1x
-    } else {
-      revert("unsupported StakedPositionType");
-    }
-  }
-
-  /// @dev Used in unit tests to set the base token exchange rate
-  function _setBaseTokenExchangeRate(StakedPositionType positionType, uint256 exchangeRate) public returns (uint256) {
-    exchangeRates[positionType] = exchangeRate;
-  }
 }

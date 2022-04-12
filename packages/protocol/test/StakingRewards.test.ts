@@ -240,8 +240,8 @@ describe("StakingRewards", function () {
       // Reset the effective multiplier for the CurveLP to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
 
-      // Reset the exchange rate to 1x
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+      // Reset the Curve LP token virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     context("for a FIDU position", async () => {
@@ -462,7 +462,8 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2).mul(MULTIPLIER_DECIMALS))
+        // Set the Curve LP token virtual price to $2.00
+        await fiduUSDCCurveLP._set_virtual_price(new BN(2).mul(MULTIPLIER_DECIMALS))
 
         // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({
@@ -2340,7 +2341,6 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("the default effective multiplier is correct", async () => {
@@ -2371,7 +2371,6 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("checkpoints rewards before updating the position's multiplier", async () => {
