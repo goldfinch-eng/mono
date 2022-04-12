@@ -8,6 +8,7 @@ import {
   SeniorPoolInstance,
   TestStakingRewardsInstance,
   TestFiduUSDCCurveLPInstance,
+  TestSeniorPoolInstance,
 } from "../typechain/truffle"
 const {ethers, deployments} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
@@ -77,7 +78,7 @@ describe("StakingRewards", function () {
     anotherUser: string,
     gfi: GFIInstance,
     usdc: ERC20Instance,
-    seniorPool: SeniorPoolInstance,
+    seniorPool: TestSeniorPoolInstance,
     fidu: FiduInstance,
     fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance,
     stakingRewards: TestStakingRewardsInstance,
@@ -142,8 +143,16 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, fiduUSDCCurveLP, ...others} =
-      await deployBaseFixture()
+    const {
+      goldfinchConfig,
+      seniorPool: _seniorPool,
+      gfi,
+      stakingRewards,
+      fidu,
+      usdc,
+      fiduUSDCCurveLP,
+      ...others
+    } = await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -157,14 +166,14 @@ describe("StakingRewards", function () {
     await erc20Approve(fiduUSDCCurveLP, anotherUser, bigVal(100), [owner])
     await erc20Transfer(fiduUSDCCurveLP, [anotherUser], bigVal(100), owner)
 
-    await erc20Approve(usdc, seniorPool.address, usdcVal(50000), [anotherUser])
-    let receipt = await seniorPool.deposit(usdcVal(50000), {from: anotherUser})
-    let depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+    await erc20Approve(usdc, _seniorPool.address, usdcVal(50000), [anotherUser])
+    let receipt = await _seniorPool.deposit(usdcVal(50000), {from: anotherUser})
+    let depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, _seniorPool, "DepositMade"))
     const anotherUserFiduAmount = depositEvent.args.shares
 
-    await erc20Approve(usdc, seniorPool.address, usdcVal(5000), [investor])
-    receipt = await seniorPool.deposit(usdcVal(5000), {from: investor})
-    depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+    await erc20Approve(usdc, _seniorPool.address, usdcVal(5000), [investor])
+    receipt = await _seniorPool.deposit(usdcVal(5000), {from: investor})
+    depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, _seniorPool, "DepositMade"))
     const fiduAmount = new BN(depositEvent.args.shares)
     const curveLPAmount = bigVal(100)
 
@@ -181,7 +190,7 @@ describe("StakingRewards", function () {
       investor,
       anotherUser,
       goldfinchConfig,
-      seniorPool,
+      seniorPool: _seniorPool as TestSeniorPoolInstance,
       gfi,
       stakingRewards,
       fidu,
@@ -2962,6 +2971,55 @@ describe("StakingRewards", function () {
       it("reverts", async () => {
         const vestingLength = halfYearInSeconds
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(/AD/)
+      })
+    })
+  })
+
+  describe("getBaseTokenExchangeRate", async () => {
+    beforeEach(async () => {
+      await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+    })
+
+    context("for FIDU positions", async () => {
+      it("is correct", async () => {
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.Fidu)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS
+        )
+      })
+    })
+
+    context("for Curve LP positions", async () => {
+      it("is correct", async () => {
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS)
+
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS
+        )
+
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS.div(new BN(2)))
+
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS.mul(new BN(2))
+        )
+
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS.mul(new BN(2)))
+
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS.div(new BN(2))
+        )
+      })
+
+      it("reverts if the Curve LP token virtual price is too low", async () => {
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.div(new BN(3)))
+        await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/LOW/)
+      })
+
+      it("reverts if the Curve LP token virtual price is too high", async () => {
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(3)))
+        await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/HIGH/)
       })
     })
   })
