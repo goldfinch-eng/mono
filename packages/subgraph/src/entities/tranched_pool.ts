@@ -33,14 +33,6 @@ import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from
 import {getGfiEntity} from "./gfi"
 import {getBackerRewards} from "./backer_rewards"
 
-// AssemblyScript doesn't have enums in the language spec yet, so we'll use a class to fake it. Must match the PoolState enum in schema.graphql
-class PoolState {
-  static OPEN: string = "OPEN"
-  static JUNIOR_LOCKED: string = "JUNIOR_LOCKED"
-  static SENIOR_LOCKED: string = "SENIOR_LOCKED"
-  static WITHDRAWALS_UNLOCKED: string = "WITHDRAWALS_UNLOCKED"
-}
-
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
   let tranchedPool = getOrInitTranchedPool(address, timestamp)
@@ -165,9 +157,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
 
     counter++
   }
-  tranchedPool.seniorTranches = seniorTranches.map<string>((sti: SeniorTrancheInfo) => sti.id)
-  tranchedPool.juniorTranches = juniorTranches.map<string>((jti: JuniorTrancheInfo) => jti.id)
-  tranchedPool.poolState = getPoolState(tranchedPool, timestamp)
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
   tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
@@ -205,27 +194,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   calculateApyFromGfiForAllPools(timestamp)
 
   return tranchedPool
-}
-
-function getPoolState(tranchedPool: TranchedPool, now: BigInt): string {
-  const juniorTranches = tranchedPool.juniorTranches
-  const seniorTranches = tranchedPool.seniorTranches
-  const juniorTrancheInfo = JuniorTrancheInfo.load(juniorTranches[juniorTranches.length - 1])
-  const seniorTrancheInfo = SeniorTrancheInfo.load(seniorTranches[seniorTranches.length - 1])
-  if (!juniorTrancheInfo) {
-    throw new Error("Missing junior tranche when determining pool state")
-  }
-  if (!seniorTrancheInfo) {
-    throw new Error("Missing senior tranche when determining pool state")
-  }
-  if (now < seniorTrancheInfo.lockedUntil) {
-    return PoolState.SENIOR_LOCKED
-  } else if (juniorTrancheInfo.lockedUntil == BigInt.zero()) {
-    return PoolState.OPEN
-  } else if (now < juniorTrancheInfo.lockedUntil || seniorTrancheInfo.lockedUntil == BigInt.zero()) {
-    return PoolState.JUNIOR_LOCKED
-  }
-  return PoolState.WITHDRAWALS_UNLOCKED
 }
 
 class Repayment {
