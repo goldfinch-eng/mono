@@ -307,15 +307,24 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return toEffectiveAmount(position.amount, safeBaseTokenExchangeRate(position), safeEffectiveMultiplier(position));
   }
 
+  /// @notice Calculates the effective amount given the amount, (safe) base token exchange rate,
+  ///   and (safe) effective multiplier for a position
+  /// @param amount The amount of staked tokens
+  /// @param safeBaseTokenExchangeRate The (safe) base token exchange rate. See @dev comment below.
+  /// @param safeEffectiveMultiplier The (safe) effective multiplier. See @dev comment below.
+  /// @dev Do NOT pass in the unsafeBaseTokenExchangeRate or unsafeEffectiveMultiplier in storage.
+  ///   Convert it to safe values using `safeBaseTokenExchangeRate()` and `safeEffectiveMultiplier()`
+  //    before calling this function.
   function toEffectiveAmount(
     uint256 amount,
-    uint256 baseTokenExchangeRate,
-    uint256 effectiveMultiplier
+    uint256 safeBaseTokenExchangeRate,
+    uint256 safeEffectiveMultiplier
   ) internal pure returns (uint256) {
-    // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
-    uint256 exchangeRate = baseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : baseTokenExchangeRate;
     // Both the exchange rate and the effective multiplier are denominated in MULTIPLIER_DECIMALS
-    return amount.mul(exchangeRate).mul(effectiveMultiplier).div(MULTIPLIER_DECIMALS).div(MULTIPLIER_DECIMALS);
+    return
+      amount.mul(safeBaseTokenExchangeRate).mul(safeEffectiveMultiplier).div(MULTIPLIER_DECIMALS).div(
+        MULTIPLIER_DECIMALS
+      );
   }
 
   function stakingTokenMantissa() internal view returns (uint256) {
