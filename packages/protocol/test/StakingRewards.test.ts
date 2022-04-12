@@ -1005,7 +1005,7 @@ describe("StakingRewards", function () {
       })
     })
 
-    context("for an old position with effectiveMultiplier = 0", async () => {
+    context("for an old position with unsafeEffectiveMultiplier = 0", async () => {
       it("correctly updates the total staked supply", async () => {
         // Stake
         const tokenId = await stake({amount: fiduAmount, from: investor})
@@ -1013,7 +1013,7 @@ describe("StakingRewards", function () {
         // Check total staked supply after staking
         const prevTotalStakedSupply = await stakingRewards.totalStakedSupply()
 
-        // Fake an old position by overriding the effective multiplier to 0
+        // Fake an old position by overriding the unsafeEffectiveMultiplier to 0
         await stakingRewards._setPositionUnsafeEffectiveMultiplier(tokenId, new BN(0))
 
         await advanceTime({seconds: 10000})
@@ -2485,7 +2485,7 @@ describe("StakingRewards", function () {
       expect(gfiAnotherUser.sub(prevGfiAnotherUserBalance)).to.bignumber.closeTo(expectedRewards, threshold)
     })
 
-    context("for an old position with effectiveMultiplier = 0", async () => {
+    context("for an old position with unsafeEffectiveMultiplier = 0", async () => {
       it("does not affect the total staked supply", async () => {
         // Another user stakes
         const otherUserTokenId = await stake({
@@ -2496,7 +2496,7 @@ describe("StakingRewards", function () {
         // Investor stakes
         const tokenId = await stake({amount: fiduAmount, positionType: StakedPositionType.Fidu, from: investor})
 
-        // Fake old positions by overriding the effective multiplier to 0
+        // Fake old positions by overriding the unsafeEffectiveMultiplier to 0
         await stakingRewards._setPositionUnsafeEffectiveMultiplier(otherUserTokenId, new BN(0))
         await stakingRewards._setPositionUnsafeEffectiveMultiplier(tokenId, new BN(0))
 
