@@ -302,7 +302,7 @@ describe("v2.6.0", async function () {
           it("is correct", async () => {
             expect(params.StakingRewards.effectiveMultiplier).to.eq("750000000000000000")
             expect(
-              (await stakingRewards.getCurrentEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).toString()
+              (await stakingRewards.getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).toString()
             ).to.eq(params.StakingRewards.effectiveMultiplier)
           })
         })

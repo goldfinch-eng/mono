@@ -2875,13 +2875,13 @@ describe("StakingRewards", function () {
     })
 
     it("sets multipliers", async () => {
-      expect(
-        await stakingRewards.getCurrentEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)
-      ).to.bignumber.equal(bigVal(1))
+      expect(await stakingRewards.getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).to.bignumber.equal(
+        bigVal(1)
+      )
       await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      expect(
-        await stakingRewards.getCurrentEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)
-      ).to.bignumber.equal(bigVal(2))
+      expect(await stakingRewards.getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).to.bignumber.equal(
+        bigVal(2)
+      )
     })
 
     it("checkpoints rewards", async () => {

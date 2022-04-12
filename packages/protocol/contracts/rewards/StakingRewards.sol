@@ -467,9 +467,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return position.unsafeBaseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : position.unsafeBaseTokenExchangeRate;
   }
 
-  /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
-  ///   The multiplier is represented in `MULTIPLIER_DECIMALS`
-  function getCurrentEffectiveMultiplierForPositionType(StakedPositionType positionType) public view returns (uint256) {
+  /// @notice The effective multiplier to use with new staked positions of the provided `positionType`,
+  ///   for denominating them in terms of `baseStakingToken()`. This value is denominated in `MULTIPLIER_DECIMALS`.
+  function getEffectiveMultiplierForPositionType(StakedPositionType positionType) public view returns (uint256) {
     if (effectiveMultipliers[positionType] > 0) {
       return effectiveMultipliers[positionType];
     }
@@ -511,7 +511,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _updateReward(tokenId);
 
     uint256 baseTokenExchangeRate = getBaseTokenExchangeRate(positionType);
-    uint256 effectiveMultiplier = getCurrentEffectiveMultiplierForPositionType(positionType);
+    uint256 effectiveMultiplier = getEffectiveMultiplierForPositionType(positionType);
 
     positions[tokenId] = StakedPosition({
       positionType: positionType,
@@ -731,7 +731,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     StakedPosition storage position = positions[tokenId];
 
-    uint256 newEffectiveMultiplier = getCurrentEffectiveMultiplierForPositionType(position.positionType);
+    uint256 newEffectiveMultiplier = getEffectiveMultiplierForPositionType(position.positionType);
 
     /// Prevent a user from accidentally lowering their effective multiplier
     /// @dev LOW: Cannot update position to a lower effective multiplier
