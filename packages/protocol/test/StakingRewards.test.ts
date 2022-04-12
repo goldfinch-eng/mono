@@ -3100,6 +3100,12 @@ describe("StakingRewards", function () {
       expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
     })
 
+    it("does not allow multiplier to be set to 0", async () => {
+      await expect(stakingRewards.setEffectiveMultiplier(new BN(0), StakedPositionType.CurveLP)).to.be.rejectedWith(
+        /ZERO/
+      )
+    })
+
     context("user is not admin", async () => {
       it("reverts", async () => {
         await expect(

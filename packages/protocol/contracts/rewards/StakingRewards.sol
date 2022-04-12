@@ -862,6 +862,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     onlyAdmin
     updateReward(0)
   {
+    // @dev ZERO: Multiplier cannot be zero
+    require(multiplier > 0, "ZERO");
+
     effectiveMultipliers[positionType] = multiplier;
     emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
   }
