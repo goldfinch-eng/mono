@@ -1684,6 +1684,22 @@ describe("mainnet forking tests", async function () {
         expect(gfiBalance).to.bignumber.gt(new BN("0"))
         expect(gfiBalance).to.bignumber.equal(rewardEvent.args.reward)
       })
+
+      // NOTE: Skipping this tests for now because it depends on the v2.6.0 upgrade.
+      //        Main should be passing after only running the v2.5.0 upgrade
+      it.skip("does not affect reward calculations for a staked position created prior to GIP-1", async () => {
+        // Use a known staked position created prior to GIP-1
+        // Note: If this test starts failing, check that this position is still staked
+        const tokenId = new BN(70)
+
+        // The unsafeEffectiveMultiplier and unsafeBaseTokenExchangeRate should be 0
+        const position = await stakingRewards.positions(tokenId)
+        expect(position[5]).to.bignumber.equal(new BN(0))
+        expect(position[6]).to.bignumber.equal(new BN(0))
+
+        // The position's earnedSinceLastCheckpoint() should be greater an 0
+        expect(await stakingRewards.earnedSinceLastCheckpoint(tokenId)).to.bignumber.gt(new BN(0))
+      })
     })
   })
 })
