@@ -506,6 +506,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     if (positionType == StakedPositionType.CurveLP) {
       // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
       uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
+
+      // @dev LOW: The Curve LP token virtual price is too low
+      require(curveLPVirtualPrice > MULTIPLIER_DECIMALS.div(2), "LOW");
+      // @dev HIGH: The Curve LP token virtual price is too high
+      require(curveLPVirtualPrice < MULTIPLIER_DECIMALS.mul(2), "HIGH");
+
       // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
       uint256 fiduPrice = config.getSeniorPool().sharePrice();
       return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
