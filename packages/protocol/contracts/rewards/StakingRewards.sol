@@ -427,6 +427,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens);
   }
 
+  /// @notice Deposit to FIDU and USDC into the Curve LP. Returns the amount of Curve LP tokens minted,
+  ///   which is denominated in 1e18.
+  /// @param depositor The address of the depositor (i.e. the current owner of the FIDU and USDC to deposit)
+  /// @param lpTokensRecipient The receipient of the resulting LP tokens
+  /// @param fiduAmount The amount of FIDU to deposit
+  /// @param usdcAmount The amount of USDC to deposit
   function _depositToCurve(
     address depositor,
     address lpTokensRecipient,
@@ -452,6 +458,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     }
 
     // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
+    // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18
+    //
+    // solhint-disable-next-line max-line-length
+    // https://github.com/curvefi/curve-factory/blob/ab5e7f6934c0dcc3ad06ccda4d6b35ffbbc99d42/contracts/implementations/plain-4/Plain4Basic.vy#L76
+    // https://curve.readthedocs.io/factory-pools.html#StableSwap.decimals
     return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, lpTokensRecipient);
   }
 
