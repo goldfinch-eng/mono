@@ -54,7 +54,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     //  If you need this field, use `safeEffectiveMultiplier()`, which correctly handles old staked positions.
     uint256 unsafeEffectiveMultiplier;
     // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
-    uint256 baseTokenExchangeRate;
+    // @dev This field should not be used directly; it may be 0 for staked positions created prior to GIP-1.
+    //  If you need this field, use `safeBaseTokenExchangeRate()`, which correctly handles old staked positions.
+    uint256 unsafeBaseTokenExchangeRate;
   }
 
   /* ========== EVENTS =================== */
@@ -302,7 +304,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
-    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, safeEffectiveMultiplier(position));
+    return toEffectiveAmount(position.amount, safeBaseTokenExchangeRate(position), safeEffectiveMultiplier(position));
   }
 
   function toEffectiveAmount(
@@ -456,6 +458,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return MULTIPLIER_DECIMALS; // 1x
   }
 
+  /// @notice Returns the base token exchange rate for a given position. Defaults to 1 for all staked
+  ///   positions created prior to GIP-1 (before the `baseTokenExchangeRate` field was added).
+  /// @dev Always use this method to get the `baseTokenExchangeRate` to ensure proper handling of
+  ///   old staked positions.
+  function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
+    // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
+    return position.unsafeBaseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : position.unsafeBaseTokenExchangeRate;
+  }
+
   /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
   ///   The multiplier is represented in `MULTIPLIER_DECIMALS`
   function getCurrentEffectiveMultiplierForPositionType(StakedPositionType positionType) public view returns (uint256) {
@@ -513,7 +524,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         startTime: block.timestamp,
         endTime: block.timestamp.add(vestingLength)
       }),
-      baseTokenExchangeRate: baseTokenExchangeRate,
+      unsafeBaseTokenExchangeRate: baseTokenExchangeRate,
       unsafeEffectiveMultiplier: effectiveMultiplier,
       leverageMultiplier: 0,
       lockedUntil: 0
@@ -685,7 +696,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     uint256 effectiveAmount = toEffectiveAmount(
       amount,
-      position.baseTokenExchangeRate,
+      safeBaseTokenExchangeRate(position),
       safeEffectiveMultiplier(position)
     );
     totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
