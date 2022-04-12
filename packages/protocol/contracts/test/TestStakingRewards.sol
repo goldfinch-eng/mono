@@ -10,8 +10,8 @@ contract TestStakingRewards is StakingRewards {
 
   mapping(StakedPositionType => uint256) private exchangeRates;
 
-  /// @dev Used in unit tests to mock the effective multiplier for a given position
-  function setPositionEffectiveMultiplier(uint256 tokenId, uint256 newMultiplier) external {
+  /// @dev Used in unit tests to mock the `unsafeEffectiveMultiplier` for a given position
+  function _setPositionUnsafeEffectiveMultiplier(uint256 tokenId, uint256 newMultiplier) external {
     StakedPosition storage position = positions[tokenId];
 
     position.unsafeEffectiveMultiplier = newMultiplier;

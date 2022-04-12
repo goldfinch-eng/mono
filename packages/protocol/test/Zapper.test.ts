@@ -547,8 +547,10 @@ describe("Zapper", async () => {
 
   describe("zapStakeToCurve", async () => {
     beforeEach(async function () {
-      await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+      await stakingRewards._setPositionUnsafeEffectiveMultiplier(
+        new BN(2).mul(MULTIPLIER_DECIMALS),
+        StakedPositionType.CurveLP
+      )
     })
 
     it("creates a new staked position without slashing unvested rewards", async () => {

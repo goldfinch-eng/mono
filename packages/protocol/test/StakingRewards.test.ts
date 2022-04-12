@@ -1014,7 +1014,7 @@ describe("StakingRewards", function () {
         const prevTotalStakedSupply = await stakingRewards.totalStakedSupply()
 
         // Fake an old position by overriding the effective multiplier to 0
-        await stakingRewards.setPositionEffectiveMultiplier(tokenId, new BN(0))
+        await stakingRewards._setPositionUnsafeEffectiveMultiplier(tokenId, new BN(0))
 
         await advanceTime({seconds: 10000})
 
@@ -2497,8 +2497,8 @@ describe("StakingRewards", function () {
         const tokenId = await stake({amount: fiduAmount, positionType: StakedPositionType.Fidu, from: investor})
 
         // Fake old positions by overriding the effective multiplier to 0
-        await stakingRewards.setPositionEffectiveMultiplier(otherUserTokenId, new BN(0))
-        await stakingRewards.setPositionEffectiveMultiplier(tokenId, new BN(0))
+        await stakingRewards._setPositionUnsafeEffectiveMultiplier(otherUserTokenId, new BN(0))
+        await stakingRewards._setPositionUnsafeEffectiveMultiplier(tokenId, new BN(0))
 
         // Update the effective multiplier
         await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
