@@ -457,13 +457,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
+    // We will allow up to 25% slippage, so minMintAmount should be at least 75%
+    uint256 minMintAmount = curveLP.calc_token_amount([fiduAmount, usdcAmount]).mul(3).div(4);
+
     // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
     // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18
     //
     // solhint-disable-next-line max-line-length
     // https://github.com/curvefi/curve-factory/blob/ab5e7f6934c0dcc3ad06ccda4d6b35ffbbc99d42/contracts/implementations/plain-4/Plain4Basic.vy#L76
     // https://curve.readthedocs.io/factory-pools.html#StableSwap.decimals
-    return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, lpTokensRecipient);
+    return curveLP.add_liquidity([fiduAmount, usdcAmount], minMintAmount, false, lpTokensRecipient);
   }
 
   /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked

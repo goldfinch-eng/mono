@@ -752,6 +752,19 @@ describe("StakingRewards", function () {
       expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore)
     })
 
+    context("when the slippage is too high", async () => {
+      it("reverts", async () => {
+        await fiduUSDCCurveLP._set_slippage(MULTIPLIER_DECIMALS.div(new BN(2)))
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+        await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+        await expect(stakingRewards.depositToCurve(fiduAmount, usdcAmount, {from: investor})).to.be.rejectedWith(
+          /Slippage too high/
+        )
+      })
+    })
+
     context("paused", async () => {
       it("reverts", async () => {
         await stakingRewards.pause()
