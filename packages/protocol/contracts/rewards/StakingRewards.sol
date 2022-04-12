@@ -769,7 +769,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     uint256 newEffectiveMultiplier = getEffectiveMultiplierForPositionType(position.positionType);
 
-    /// Prevent a user from accidentally lowering their effective multiplier
+    /// We want to honor the original multiplier for the user's sake, so we don't want to
+    /// allow the effective multiplier for a given position to decrease.
     /// @dev LOW: Cannot update position to a lower effective multiplier
     require(newEffectiveMultiplier >= safeEffectiveMultiplier(position), "LOW");
 
