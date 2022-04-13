@@ -63,7 +63,7 @@ contract TestFiduUSDCCurveLP is
     getFidu().transferFrom(msg.sender, address(this), amounts[0]);
     getUSDC().transferFrom(msg.sender, address(this), amounts[1]);
 
-    uint256 amount = this.calc_token_amount(amounts).mul(slippage).div(MULTIPLIER_DECIMALS);
+    uint256 amount = calc_token_amount(amounts).mul(slippage).div(MULTIPLIER_DECIMALS);
 
     require(amount >= min_mint_amount, "Slippage too high");
 
