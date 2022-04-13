@@ -8,6 +8,7 @@ import {
   SeniorPoolInstance,
   TestStakingRewardsInstance,
   TestFiduUSDCCurveLPInstance,
+  TestSeniorPoolInstance,
 } from "../typechain/truffle"
 const {ethers, deployments} = hre
 import {DepositMade} from "../typechain/truffle/SeniorPool"
@@ -77,7 +78,7 @@ describe("StakingRewards", function () {
     anotherUser: string,
     gfi: GFIInstance,
     usdc: ERC20Instance,
-    seniorPool: SeniorPoolInstance,
+    seniorPool: TestSeniorPoolInstance,
     fidu: FiduInstance,
     fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance,
     stakingRewards: TestStakingRewardsInstance,
@@ -142,8 +143,16 @@ describe("StakingRewards", function () {
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
-    const {goldfinchConfig, seniorPool, gfi, stakingRewards, fidu, usdc, fiduUSDCCurveLP, ...others} =
-      await deployBaseFixture()
+    const {
+      goldfinchConfig,
+      seniorPool: _seniorPool,
+      gfi,
+      stakingRewards,
+      fidu,
+      usdc,
+      fiduUSDCCurveLP,
+      ...others
+    } = await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, anotherUser])
     await erc20Approve(usdc, investor, usdcVal(10000), [owner])
     await erc20Transfer(usdc, [investor], usdcVal(10000), owner)
@@ -157,14 +166,14 @@ describe("StakingRewards", function () {
     await erc20Approve(fiduUSDCCurveLP, anotherUser, bigVal(100), [owner])
     await erc20Transfer(fiduUSDCCurveLP, [anotherUser], bigVal(100), owner)
 
-    await erc20Approve(usdc, seniorPool.address, usdcVal(50000), [anotherUser])
-    let receipt = await seniorPool.deposit(usdcVal(50000), {from: anotherUser})
-    let depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+    await erc20Approve(usdc, _seniorPool.address, usdcVal(50000), [anotherUser])
+    let receipt = await _seniorPool.deposit(usdcVal(50000), {from: anotherUser})
+    let depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, _seniorPool, "DepositMade"))
     const anotherUserFiduAmount = depositEvent.args.shares
 
-    await erc20Approve(usdc, seniorPool.address, usdcVal(5000), [investor])
-    receipt = await seniorPool.deposit(usdcVal(5000), {from: investor})
-    depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+    await erc20Approve(usdc, _seniorPool.address, usdcVal(5000), [investor])
+    receipt = await _seniorPool.deposit(usdcVal(5000), {from: investor})
+    depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, _seniorPool, "DepositMade"))
     const fiduAmount = new BN(depositEvent.args.shares)
     const curveLPAmount = bigVal(100)
 
@@ -181,7 +190,7 @@ describe("StakingRewards", function () {
       investor,
       anotherUser,
       goldfinchConfig,
-      seniorPool,
+      seniorPool: _seniorPool as TestSeniorPoolInstance,
       gfi,
       stakingRewards,
       fidu,
@@ -462,12 +471,12 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        // Set the Curve LP token virtual price to $2.00
-        await fiduUSDCCurveLP._set_virtual_price(new BN(2).mul(MULTIPLIER_DECIMALS))
+        // Set the Curve LP token virtual price to $1.50
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(3)).div(new BN(2)))
 
-        // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
+        // anotherUser stakes 1.5x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({
-          amount: curveLPAmount.mul(new BN(2)),
+          amount: curveLPAmount.mul(new BN(3)).div(new BN(2)),
           from: anotherUser,
         })
         const startTime = await time.latest()
@@ -741,6 +750,19 @@ describe("StakingRewards", function () {
 
       // Verify that it did not stake
       expect(await stakingRewards.totalStakedSupply()).to.bignumber.equal(totalStakedSupplyBefore)
+    })
+
+    context("when the slippage is too high", async () => {
+      it("reverts", async () => {
+        await fiduUSDCCurveLP._set_slippage(MULTIPLIER_DECIMALS.div(new BN(2)))
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+        await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})
+
+        await expect(stakingRewards.depositToCurve(fiduAmount, usdcAmount, {from: investor})).to.be.rejectedWith(
+          /Slippage too high/
+        )
+      })
     })
 
     context("paused", async () => {
@@ -2354,58 +2376,6 @@ describe("StakingRewards", function () {
     })
   })
 
-  describe("exit", async () => {
-    let rewardRate: BN
-
-    beforeEach(async function () {
-      rewardRate = new BN(String(2e18))
-      // Fix the reward rate to make testing easier
-      await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        rewardRate,
-        rewardRate,
-        minRateAtPercent,
-        maxRateAtPercent
-      )
-
-      // Mint rewards for one year
-      const totalRewards = rewardRate.mul(yearInSeconds)
-      await mintRewards(totalRewards)
-    })
-
-    it("transfers staked tokens and rewards to sender", async () => {
-      const tokenId = await stake({amount: fiduAmount, from: investor})
-
-      await advanceTime({seconds: yearInSeconds})
-
-      await stakingRewards.exit(tokenId, {from: investor})
-
-      expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardRate.mul(yearInSeconds))
-      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
-      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(new BN(0))
-      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/ZERO/)
-    })
-
-    context("user does not own position token", async () => {
-      it("reverts", async () => {
-        const tokenId = await stake({amount: fiduAmount, from: investor})
-
-        await advanceTime({seconds: yearInSeconds})
-
-        await expect(stakingRewards.exit(tokenId, {from: anotherUser})).to.be.rejectedWith(/AD/)
-      })
-    })
-
-    context("paused", async () => {
-      it("reverts", async () => {
-        const tokenId = await stake({amount: bigVal(100), from: investor})
-        await advanceTime({seconds: 10000})
-        await stakingRewards.pause()
-        await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/paused/)
-      })
-    })
-  })
-
   describe("vesting", async () => {
     beforeEach(async function () {
       // Mint a small, fixed amount that limits reward disbursement
@@ -2897,7 +2867,7 @@ describe("StakingRewards", function () {
       const newMaxRate = bigVal(100)
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, newMinRate, newMaxRate, minRateAtPercent, maxRateAtPercent)
-      ).to.be.rejectedWith(/IR/)
+      ).to.be.rejectedWith(/IP/)
     })
 
     it("reverts if maxRateAtPercent > minRateAtPercent", async () => {
@@ -2905,7 +2875,7 @@ describe("StakingRewards", function () {
       let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e18)))
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
-      ).to.be.rejectedWith(/IRAP/)
+      ).to.be.rejectedWith(/IP/)
 
       newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
       newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
@@ -2962,6 +2932,55 @@ describe("StakingRewards", function () {
       it("reverts", async () => {
         const vestingLength = halfYearInSeconds
         await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(/AD/)
+      })
+    })
+  })
+
+  describe("getBaseTokenExchangeRate", async () => {
+    beforeEach(async () => {
+      await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+    })
+
+    context("for FIDU positions", async () => {
+      it("is correct", async () => {
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.Fidu)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS
+        )
+      })
+    })
+
+    context("for Curve LP positions", async () => {
+      it("is correct", async () => {
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS)
+
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS
+        )
+
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS.div(new BN(2)))
+
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS.mul(new BN(2))
+        )
+
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
+        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS.mul(new BN(2)))
+
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          MULTIPLIER_DECIMALS.div(new BN(2))
+        )
+      })
+
+      it("reverts if the Curve LP token virtual price is too low", async () => {
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.div(new BN(2)))
+        await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/LOW/)
+      })
+
+      it("reverts if the Curve LP token virtual price is too high", async () => {
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(2)))
+        await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/HIGH/)
       })
     })
   })
@@ -3040,6 +3059,12 @@ describe("StakingRewards", function () {
       const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
       expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
       expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+    })
+
+    it("does not allow multiplier to be set to 0", async () => {
+      await expect(stakingRewards.setEffectiveMultiplier(new BN(0), StakedPositionType.CurveLP)).to.be.rejectedWith(
+        /ZERO/
+      )
     })
 
     context("user is not admin", async () => {

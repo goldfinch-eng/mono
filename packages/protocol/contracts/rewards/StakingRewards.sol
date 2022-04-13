@@ -162,7 +162,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /* ========== VIEWS ========== */
 
-  /// @notice Returns the staked balance of a given position token
+  /// @notice Returns the staked balance of a given position token.
+  /// @dev The value returned is the bare amount, not the effective amount. The bare amount represents
+  ///   the number of tokens the user has staked for a given position.
   /// @param tokenId A staking position token ID
   /// @return Amount of staked tokens denominated in `stakingToken().decimals()`
   function stakedBalanceOf(uint256 tokenId) external view returns (uint256) {
@@ -170,12 +172,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the token being disbursed as rewards
-  function rewardsToken() public view returns (IERC20withDec) {
+  function rewardsToken() internal view returns (IERC20withDec) {
     return config.getGFI();
   }
 
   /// @notice The address of the token that is staked for a given position type
-  function stakingToken(StakedPositionType positionType) public view returns (IERC20) {
+  function stakingToken(StakedPositionType positionType) internal view returns (IERC20) {
     if (positionType == StakedPositionType.CurveLP) {
       return IERC20(config.getFiduUSDCCurveLP().token());
     }
@@ -184,7 +186,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the base token used to denominate staking rewards
-  function baseStakingToken() public view returns (IERC20withDec) {
+  function baseStakingToken() internal view returns (IERC20withDec) {
     return config.getFidu();
   }
 
@@ -216,8 +218,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Returns accumulated rewards per token up to the current block timestamp
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function rewardPerToken() public view returns (uint256) {
-    uint256 additionalRewardsPerToken = _additionalRewardsPerTokenSinceLastUpdate(block.timestamp);
-    return accumulatedRewardsPerToken.add(additionalRewardsPerToken);
+    return accumulatedRewardsPerToken.add(_additionalRewardsPerTokenSinceLastUpdate(block.timestamp));
   }
 
   /// @notice Returns rewards earned by a given position token from its last checkpoint up to the
@@ -427,6 +428,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens);
   }
 
+  /// @notice Deposit to FIDU and USDC into the Curve LP. Returns the amount of Curve LP tokens minted,
+  ///   which is denominated in 1e18.
+  /// @param depositor The address of the depositor (i.e. the current owner of the FIDU and USDC to deposit)
+  /// @param lpTokensRecipient The receipient of the resulting LP tokens
+  /// @param fiduAmount The amount of FIDU to deposit
+  /// @param usdcAmount The amount of USDC to deposit
   function _depositToCurve(
     address depositor,
     address lpTokensRecipient,
@@ -451,8 +458,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
+    // We will allow up to 25% slippage, so minMintAmount should be at least 75%
+    uint256 minMintAmount = curveLP.calc_token_amount([fiduAmount, usdcAmount]).mul(3).div(4);
+
     // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
-    return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, lpTokensRecipient);
+    // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18
+    //
+    // solhint-disable-next-line max-line-length
+    // https://github.com/curvefi/curve-factory/blob/ab5e7f6934c0dcc3ad06ccda4d6b35ffbbc99d42/contracts/implementations/plain-4/Plain4Basic.vy#L76
+    // https://curve.readthedocs.io/factory-pools.html#StableSwap.decimals
+    return curveLP.add_liquidity([fiduAmount, usdcAmount], minMintAmount, false, lpTokensRecipient);
   }
 
   /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
@@ -495,9 +510,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     if (positionType == StakedPositionType.CurveLP) {
       // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
       uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
+
+      // @dev LOW: The Curve LP token virtual price is too low
+      require(curveLPVirtualPrice > MULTIPLIER_DECIMALS.div(2), "LOW");
+      // @dev HIGH: The Curve LP token virtual price is too high
+      require(curveLPVirtualPrice < MULTIPLIER_DECIMALS.mul(2), "HIGH");
+
       // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
-      uint256 fiduPrice = config.getSeniorPool().sharePrice();
-      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
+      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(config.getSeniorPool().sharePrice());
     }
 
     return MULTIPLIER_DECIMALS; // 1x
@@ -562,9 +582,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
   function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
-    StakedPositionType positionType = positions[tokenId].positionType;
     _unstake(tokenId, amount);
-    stakingToken(positionType).safeTransfer(msg.sender, amount);
+    stakingToken(positions[tokenId].positionType).safeTransfer(msg.sender, amount);
   }
 
   /// @notice Unstake multiple positions and transfer to msg.sender.
@@ -618,12 +637,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     require(canWithdraw(tokenId), "CW");
     /// @dev GL: This address has not been go-listed
     require(isGoListed(), "GL");
-    ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
 
     uint256 fiduBalanceBefore = fidu.balanceOf(address(this));
 
-    usdcAmountReceived = seniorPool.withdraw(usdcAmount);
+    usdcAmountReceived = config.getSeniorPool().withdraw(usdcAmount);
 
     fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
 
@@ -653,7 +671,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
   }
 
-  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) public nonReentrant whenNotPaused {
+  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external nonReentrant whenNotPaused {
     uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
 
     emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
@@ -694,13 +712,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function _unstake(uint256 tokenId, uint256 amount) internal {
     /// @dev AD: Access denied
     require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
-    /// @dev ZERO: Cannot unstake 0
-    require(amount > 0, "ZERO");
 
     StakedPosition storage position = positions[tokenId];
     uint256 prevAmount = position.amount;
-    /// @dev IA: Invalid amount. Cannot unstake more than staked balance.
-    require(amount <= prevAmount, "IA");
+    /// @dev IA: Invalid amount. Cannot unstake zero, and cannot unstake more than staked balance.
+    require(amount > 0 && amount <= prevAmount, "IA");
 
     /// @dev LOCKED: Staked funds are locked.
     require(block.timestamp >= position.lockedUntil, "LOCKED");
@@ -729,7 +745,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   multipler will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
-  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+  function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
@@ -747,7 +763,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     uint256 newEffectiveMultiplier = getEffectiveMultiplierForPositionType(position.positionType);
 
-    /// Prevent a user from accidentally lowering their effective multiplier
+    /// We want to honor the original multiplier for the user's sake, so we don't want to
+    /// allow the effective multiplier for a given position to decrease.
     /// @dev LOW: Cannot update position to a lower effective multiplier
     require(newEffectiveMultiplier >= safeEffectiveMultiplier(position), "LOW");
 
@@ -771,13 +788,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       rewardsToken().safeTransfer(msg.sender, reward);
       emit RewardPaid(msg.sender, tokenId, reward);
     }
-  }
-
-  /// @notice Unstake the position's full amount and claim all rewards
-  /// @param tokenId A staking position token ID
-  function exit(uint256 tokenId) external {
-    unstake(tokenId, positions[tokenId].amount);
-    getReward(tokenId);
   }
 
   /// @notice Add to an existing position without affecting vesting schedule
@@ -822,10 +832,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 _minRateAtPercent,
     uint256 _maxRateAtPercent
   ) external onlyAdmin updateReward(0) {
-    /// @dev IR: Invalid rates. maxRate must be >= then minRate.
-    require(_maxRate >= _minRate, "IR");
-    /// @dev IRAP: Invalid rates at percent. maxRateAtPercent must be <= minRateAtPercent.
-    require(_maxRateAtPercent <= _minRateAtPercent, "IRAP");
+    /// @dev IP: Invalid parameters. maxRate must be >= then minRate. maxRateAtPercent must be <= minRateAtPercent.
+    require(_maxRate >= _minRate && _maxRateAtPercent <= _minRateAtPercent, "IP");
+
     targetCapacity = _targetCapacity;
     minRate = _minRate;
     maxRate = _maxRate;
@@ -845,6 +854,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     onlyAdmin
     updateReward(0)
   {
+    // @dev ZERO: Multiplier cannot be zero
+    require(multiplier > 0, "ZERO");
+
     effectiveMultipliers[positionType] = multiplier;
     emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
   }

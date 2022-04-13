@@ -1266,19 +1266,6 @@ describe("mainnet forking tests", async function () {
         })
       })
 
-      describe("when I deposit and stake and then exit", async () => {
-        it("it works", async () => {
-          const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
-          // NOTE: for the v2.5.0 deployment we need to use the existing staking
-          // rewards deployment because the code differs from what's actually
-          // deployed. If we used the contract it would use the updated signature
-          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
-          const stakedEvent = asNonNullable(logs[0])
-          const tokenId = stakedEvent?.args.tokenId
-          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
-        })
-      })
-
       // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
       //        Main should be passing after only running the v2.5.0 upgrade
       describe.skip("when I deposit and stake, and then zap to Curve", async () => {
