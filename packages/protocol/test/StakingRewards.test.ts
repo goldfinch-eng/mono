@@ -1027,13 +1027,25 @@ describe("StakingRewards", function () {
       })
     })
 
-    context("user does not own position token", async () => {
+    context("user does not own position token and is not approved", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
 
         await advanceTime({seconds: 10000})
 
         await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: anotherUser})).to.be.rejectedWith(/AD/)
+      })
+    })
+
+    context("user is approved", async () => {
+      it("succeeds", async () => {
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        await stakingRewards.approve(anotherUser, tokenId, {from: investor})
+
+        await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: anotherUser})).to.not.be.rejected
       })
     })
 
@@ -1051,12 +1063,13 @@ describe("StakingRewards", function () {
         await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), owner)
       })
 
-      it("can unstake on behalf of any user", async () => {
+      it("can unstake on behalf of a user who has approved", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
+        await stakingRewards.approve(owner, tokenId, {from: investor})
 
         await advanceTime({seconds: 10000})
 
-        // Owner has ZAPPER_ROLE
+        // Owner has ZAPPER_ROLE and is approved by token holder
         await expectAction(() => stakingRewards.unstake(tokenId, fiduAmount, {from: owner})).toChange([
           [() => fidu.balanceOf(owner), {by: fiduAmount}],
           [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
@@ -1068,6 +1081,7 @@ describe("StakingRewards", function () {
         await stakingRewards.setVestingSchedule(yearInSeconds)
 
         const tokenId = await stake({amount: fiduAmount, from: investor})
+        await stakingRewards.approve(owner, tokenId, {from: investor})
 
         await advanceTime({seconds: yearInSeconds.div(new BN(2))})
 
@@ -1113,6 +1127,20 @@ describe("StakingRewards", function () {
       await expect(stakingRewards.addToStake(1, bigVal(100), {from: anotherUser})).to.be.rejectedWith(/AD/)
     })
 
+    it("can only be called for fidu positions", async () => {
+      const tokenId = await stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+
+      await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+      const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+      const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+      const ownerFiduAmount = depositEvent.args.shares
+
+      await erc20Approve(fidu, stakingRewards.address, ownerFiduAmount, [owner])
+      await stakingRewards.approve(owner, tokenId, {from: investor})
+
+      await expect(stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})).to.be.rejectedWith(/PT/)
+    })
+
     it("adds to stake without affecting vesting schedule", async () => {
       const tokenId = await stake({amount: fiduAmount.div(new BN(2)), from: investor})
 
@@ -1121,7 +1149,12 @@ describe("StakingRewards", function () {
       const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
       const ownerFiduAmount = depositEvent.args.shares
 
+      // It reverts if Zapper is not approved
+      await expect(stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})).to.be.rejectedWith(/AD/)
+
       await erc20Approve(fidu, stakingRewards.address, ownerFiduAmount, [owner])
+      await stakingRewards.approve(owner, tokenId, {from: investor})
+
       await expectAction(() => stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})).toChange([
         // It adds to the tokenId's position
         [async () => ((await stakingRewards.positions(tokenId)) as any).amount, {by: ownerFiduAmount}],
@@ -1267,7 +1300,7 @@ describe("StakingRewards", function () {
     })
 
     describe("validations", async () => {
-      context("user does not own position token", async () => {
+      context("user does not own position token and is not approved", async () => {
         it("reverts", async () => {
           await expect(
             stakingRewards.unstakeMultiple(
@@ -1276,6 +1309,20 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("user is approved", async () => {
+        it("succeeds", async () => {
+          await stakingRewards.approve(investor, fifthTokenFromDifferentUser, {from: anotherUser})
+
+          await expect(
+            stakingRewards.unstakeMultiple(
+              [firstToken, secondToken, fifthTokenFromDifferentUser],
+              [firstTokenAmount, secondTokenAmount, fifthTokenAmount],
+              {from: investor}
+            )
+          ).to.not.be.rejected
         })
       })
 
@@ -1403,7 +1450,7 @@ describe("StakingRewards", function () {
       })
     })
 
-    context("user does not own position token", async () => {
+    context("user does not own position token and is not approved", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
 
@@ -1412,6 +1459,19 @@ describe("StakingRewards", function () {
         await expect(
           stakingRewards.unstakeAndWithdrawInFidu(tokenId, fiduAmount, {from: anotherUser})
         ).to.be.rejectedWith(/AD/)
+      })
+    })
+
+    context("user is approved", async () => {
+      it("succeeds", async () => {
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        await stakingRewards.approve(anotherUser, tokenId, {from: investor})
+
+        await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, fiduAmount, {from: anotherUser})).to.not.be
+          .rejected
       })
     })
 
@@ -1514,7 +1574,7 @@ describe("StakingRewards", function () {
       })
     })
 
-    context("user does not own position token", async () => {
+    context("user does not own position token and is not approved", async () => {
       it("reverts", async () => {
         const tokenId = await stake({amount: fiduAmount, from: investor})
 
@@ -1523,6 +1583,18 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(100), {from: anotherUser})).to.be.rejectedWith(
           /AD/
         )
+      })
+    })
+
+    context("user is approved", async () => {
+      it("succeeds", async () => {
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        await advanceTime({seconds: 10000})
+
+        await stakingRewards.approve(anotherUser, tokenId, {from: investor})
+
+        await expect(stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(100), {from: anotherUser})).to.not.be.rejected
       })
     })
 
@@ -1630,7 +1702,7 @@ describe("StakingRewards", function () {
     })
 
     describe("validations", async () => {
-      context("user does not own position token", async () => {
+      context("user does not own position token and is not approved", async () => {
         it("reverts", async () => {
           const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
           const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
@@ -1643,6 +1715,24 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("user is approved", async () => {
+        it("succeeds", async () => {
+          const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+          const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+          const thirdTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: thirdTokenAmount})
+
+          await stakingRewards.approve(investor, thirdTokenFromDifferentUser, {from: anotherUser})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple(
+              [firstToken, secondToken, thirdTokenFromDifferentUser],
+              [firstTokenWithdrawAmount, secondTokenWithdrawAmount, thirdTokenWithdrawAmount],
+              {from: investor}
+            )
+          ).to.not.be.rejected
         })
       })
 
@@ -1814,7 +1904,7 @@ describe("StakingRewards", function () {
     })
 
     describe("validations", async () => {
-      context("user does not own position token", async () => {
+      context("user does not own position token and is not approved", async () => {
         it("reverts", async () => {
           await expect(
             stakingRewards.unstakeAndWithdrawMultipleInFidu(
@@ -1823,6 +1913,20 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("user is approved", async () => {
+        it("succeeds", async () => {
+          await stakingRewards.approve(investor, thirdTokenFromDifferentUser, {from: anotherUser})
+
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu(
+              [firstToken, secondToken, thirdTokenFromDifferentUser],
+              [firstTokenAmount, secondTokenAmount, thirdTokenAmount],
+              {from: investor}
+            )
+          ).to.not.be.rejected
         })
       })
 
@@ -2945,32 +3049,6 @@ describe("StakingRewards", function () {
             from: anotherUser,
           })
         ).to.be.rejectedWith(/AD/)
-      })
-    })
-  })
-
-  describe("updateGoldfinchConfig", async () => {
-    let otherConfig: GoldfinchConfigInstance
-
-    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
-      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
-      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
-      return {goldfinchConfig}
-    })
-
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
-    })
-
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
-        const tx = await stakingRewards.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: otherConfig.address,
-        })
       })
     })
   })

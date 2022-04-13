@@ -198,6 +198,8 @@ describe("Zapper", async () => {
       const stakedPositionBefore = (await stakingRewards.positions(stakedTokenId)) as any
       const seniorPoolBalanceBefore = await seniorPool.assets()
 
+      await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor})
+
       const result = await zapper.zapStakeToTranchedPool(
         stakedTokenId,
         tranchedPool.address,
@@ -321,6 +323,8 @@ describe("Zapper", async () => {
         const stakedTokenId = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked")).args
           .tokenId
 
+        await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor})
+
         // Attempt to zap with UID with wrong type
         await expect(
           zapper.zapStakeToTranchedPool(stakedTokenId, tranchedPool.address, TRANCHES.Junior, usdcToZap, {
@@ -378,6 +382,8 @@ describe("Zapper", async () => {
       await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
 
       await stakingRewards.kick(stakedTokenId)
+
+      await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor})
 
       const result = await zapper.zapStakeToTranchedPool(
         stakedTokenId,
@@ -463,6 +469,8 @@ describe("Zapper", async () => {
       await advanceTime({seconds: SECONDS_PER_YEAR.div(new BN(2))})
 
       await stakingRewards.kick(stakedTokenId)
+
+      await stakingRewards.approve(zapper.address, stakedTokenId, {from: investor})
 
       const result = await zapper.zapStakeToTranchedPool(
         stakedTokenId,
@@ -567,6 +575,8 @@ describe("Zapper", async () => {
 
       const stakedPositionBefore = (await stakingRewards.positions(originalTokenId)) as any
       const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+
+      await stakingRewards.approve(zapper.address, originalTokenId, {from: investor})
 
       receipt = await zapper.zapStakeToCurve(originalTokenId, fiduToMigrate, {from: investor})
 

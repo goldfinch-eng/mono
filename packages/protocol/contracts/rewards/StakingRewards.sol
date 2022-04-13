@@ -693,7 +693,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
     /// @dev AD: Access denied
-    require(ownerOf(tokenId) == msg.sender || isZapper(), "AD");
+    require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
     /// @dev ZERO: Cannot unstake 0
     require(amount > 0, "ZERO");
 
@@ -713,7 +713,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
     position.amount = prevAmount.sub(amount);
 
-    // Slash unvested rewards
+    // Slash unvested rewards. If this method is being called by the Zapper, then unvested rewards are not slashed.
+    // This exception is made so that users who wish to move their funds across the protocol are not penalized for
+    // doing so.
+    // See https://gov.goldfinch.finance/t/gip-03-no-cost-forfeit-to-swap-fidu-into-backer-nfts/784
     if (!isZapper()) {
       uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
       position.rewards.slash(slashingPercentage);
@@ -777,14 +780,28 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     getReward(tokenId);
   }
 
+  /// @notice Add to an existing position without affecting vesting schedule
+  /// @dev This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
+  ///   function enables the Zapper to unwind "in-progress" positions initiated by `Zapper.zapStakeToTranchedPool`.
+  ///   That is, funds that were moved from this contract into a TranchedPool can be "unwound" back to their original
+  ///   staked position by the Zapper as part of `Zapper.unzapToStakingRewards`.
+  /// @param tokenId A staking position token ID
+  /// @param amount Amount of `stakingToken()` to be added to tokenId's position
   function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
     /// @dev AD: Access denied
-    require(isZapper(), "AD");
+    require(isZapper() && _isApprovedOrOwner(msg.sender, tokenId), "AD");
+    /// @dev PT: Position type is incorrect for this action
+    require(positions[tokenId].positionType == StakedPositionType.Fidu, "PT");
 
     StakedPosition storage position = positions[tokenId];
     position.amount = position.amount.add(amount);
 
-    totalStakedSupply = totalStakedSupply.add(amount);
+    uint256 effectiveAmount = toEffectiveAmount(
+      amount,
+      safeBaseTokenExchangeRate(position),
+      safeEffectiveMultiplier(position)
+    );
+    totalStakedSupply = totalStakedSupply.add(effectiveAmount);
 
     stakingToken(position.positionType).safeTransferFrom(msg.sender, address(this), amount);
   }
@@ -835,11 +852,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function setVestingSchedule(uint256 _vestingLength) external onlyAdmin updateReward(0) {
     vestingLength = _vestingLength;
     emit VestingScheduleUpdated(msg.sender, vestingLength);
-  }
-
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(_msgSender(), address(config));
   }
 
   /* ========== MODIFIERS ========== */
