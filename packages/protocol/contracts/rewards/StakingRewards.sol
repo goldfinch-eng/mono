@@ -172,12 +172,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the token being disbursed as rewards
-  function rewardsToken() public view returns (IERC20withDec) {
+  function rewardsToken() internal view returns (IERC20withDec) {
     return config.getGFI();
   }
 
   /// @notice The address of the token that is staked for a given position type
-  function stakingToken(StakedPositionType positionType) public view returns (IERC20) {
+  function stakingToken(StakedPositionType positionType) internal view returns (IERC20) {
     if (positionType == StakedPositionType.CurveLP) {
       return IERC20(config.getFiduUSDCCurveLP().token());
     }
@@ -186,7 +186,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the base token used to denominate staking rewards
-  function baseStakingToken() public view returns (IERC20withDec) {
+  function baseStakingToken() internal view returns (IERC20withDec) {
     return config.getFidu();
   }
 
@@ -675,7 +675,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
   }
 
-  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) public nonReentrant whenNotPaused {
+  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external nonReentrant whenNotPaused {
     uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
 
     emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
@@ -751,7 +751,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   multipler will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
-  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+  function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
