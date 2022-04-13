@@ -460,7 +460,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev Always use this method to get the effective multiplier to ensure proper handling of
   ///   old staked positions.
   function safeEffectiveMultiplier(StakedPosition storage position) internal view returns (uint256) {
-    return position.unsafeEffectiveMultiplier > 0 ? position.unsafeEffectiveMultiplier : MULTIPLIER_DECIMALS; // 1x
+    if (position.unsafeEffectiveMultiplier > 0) {
+      return position.unsafeEffectiveMultiplier;
+    }
+
+    return MULTIPLIER_DECIMALS; // 1x
   }
 
   /// @notice Returns the base token exchange rate for a given position. Defaults to 1 for all staked
@@ -469,13 +473,17 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   old staked positions.
   function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
     // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
-    return position.unsafeBaseTokenExchangeRate > 0 ? position.unsafeBaseTokenExchangeRate : MULTIPLIER_DECIMALS;
+    return position.unsafeBaseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : position.unsafeBaseTokenExchangeRate;
   }
 
   /// @notice The effective multiplier to use with new staked positions of the provided `positionType`,
   ///   for denominating them in terms of `baseStakingToken()`. This value is denominated in `MULTIPLIER_DECIMALS`.
   function getEffectiveMultiplierForPositionType(StakedPositionType positionType) public view returns (uint256) {
-    return effectiveMultipliers[positionType] > 0 ? effectiveMultipliers[positionType] : MULTIPLIER_DECIMALS; // 1x
+    if (effectiveMultipliers[positionType] > 0) {
+      return effectiveMultipliers[positionType];
+    }
+
+    return MULTIPLIER_DECIMALS; // 1x
   }
 
   /// @notice Calculate the exchange rate that will be used to convert the original staked token amount to the
