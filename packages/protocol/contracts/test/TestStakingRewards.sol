@@ -10,23 +10,10 @@ contract TestStakingRewards is StakingRewards {
 
   mapping(StakedPositionType => uint256) private exchangeRates;
 
-  function getBaseTokenExchangeRate(StakedPositionType positionType) public view override returns (uint256) {
-    uint256 exchangeRate = exchangeRates[positionType];
+  /// @dev Used in unit tests to mock the `unsafeEffectiveMultiplier` for a given position
+  function _setPositionUnsafeEffectiveMultiplier(uint256 tokenId, uint256 newMultiplier) external {
+    StakedPosition storage position = positions[tokenId];
 
-    if (exchangeRate > 0) {
-      return exchangeRate;
-    }
-
-    if (positionType == StakedPositionType.CurveLP) {
-      return MULTIPLIER_DECIMALS; // 1x
-    } else if (positionType == StakedPositionType.Fidu) {
-      return MULTIPLIER_DECIMALS; // 1x
-    } else {
-      revert("unsupported StakedPositionType");
-    }
-  }
-
-  function _setBaseTokenExchangeRate(StakedPositionType positionType, uint256 exchangeRate) public returns (uint256) {
-    exchangeRates[positionType] = exchangeRate;
+    position.unsafeEffectiveMultiplier = newMultiplier;
   }
 }

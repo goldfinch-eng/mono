@@ -237,11 +237,11 @@ describe("StakingRewards", function () {
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
 
-      // Reset the effective multiplier for the CurveLP to 1x
+      // Reset the effective multiplier for the Curve to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
 
-      // Reset the exchange rate to 1x
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+      // Reset the Curve LP token virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     context("for a FIDU position", async () => {
@@ -462,7 +462,8 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(2).mul(MULTIPLIER_DECIMALS))
+        // Set the Curve LP token virtual price to $2.00
+        await fiduUSDCCurveLP._set_virtual_price(new BN(2).mul(MULTIPLIER_DECIMALS))
 
         // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({
@@ -1001,6 +1002,28 @@ describe("StakingRewards", function () {
         await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
           [() => gfi.balanceOf(investor), {byCloseTo: expectedRewardsInSecondHalf}],
         ])
+      })
+    })
+
+    context("for an old position with unsafeEffectiveMultiplier = 0", async () => {
+      it("correctly updates the total staked supply", async () => {
+        // Stake
+        const tokenId = await stake({amount: fiduAmount, from: investor})
+
+        // Check total staked supply after staking
+        const prevTotalStakedSupply = await stakingRewards.totalStakedSupply()
+
+        // Fake a pre-GIP-1 position by overriding the unsafeEffectiveMultiplier to 0
+        await stakingRewards._setPositionUnsafeEffectiveMultiplier(tokenId, new BN(0))
+
+        await advanceTime({seconds: 10000})
+
+        // Unstake
+        await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
+
+        // The difference in the total staked supply should be exactly equal to fiduAmount
+        const newTotalStakedSupply = await stakingRewards.totalStakedSupply()
+        expect(prevTotalStakedSupply.sub(newTotalStakedSupply)).to.bignumber.equal(fiduAmount)
       })
     })
 
@@ -2318,7 +2341,9 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+
+      // Reset Curve LP virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("the default effective multiplier is correct", async () => {
@@ -2349,7 +2374,9 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      await stakingRewards._setBaseTokenExchangeRate(StakedPositionType.CurveLP, new BN(1).mul(MULTIPLIER_DECIMALS))
+
+      // Reset Curve LP virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("checkpoints rewards before updating the position's multiplier", async () => {
@@ -2462,6 +2489,35 @@ describe("StakingRewards", function () {
       gfiAnotherUser = await gfi.balanceOf(anotherUser)
       expectedRewards = maxRate.mul(halfYearInSeconds).div(new BN(3))
       expect(gfiAnotherUser.sub(prevGfiAnotherUserBalance)).to.bignumber.closeTo(expectedRewards, threshold)
+    })
+
+    context("for an old position with unsafeEffectiveMultiplier = 0", async () => {
+      it("does not affect the total staked supply", async () => {
+        // Investor stakes
+        const tokenId = await stake({amount: fiduAmount, positionType: StakedPositionType.Fidu, from: investor})
+
+        const _position = await stakingRewards.positions(tokenId)
+        expect(_position[5]).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+        // Fake an old position by overriding the position's unsafe effective multiplier to 0
+        await stakingRewards._setPositionUnsafeEffectiveMultiplier(tokenId, new BN(0))
+
+        const positionBefore = await stakingRewards.positions(tokenId)
+        expect(positionBefore[5]).to.bignumber.equal(new BN(0))
+
+        const totalStakedSupplyBefore = await stakingRewards.totalStakedSupply()
+        expect(totalStakedSupplyBefore).to.bignumber.equal(fiduAmount)
+
+        // Trigger updating the position's effective multiplier
+        await stakingRewards.updatePositionEffectiveMultiplier(tokenId, {from: investor})
+
+        const positionAfter = await stakingRewards.positions(tokenId)
+        expect(positionAfter[5]).to.bignumber.equal(MULTIPLIER_DECIMALS)
+
+        // The total staked supply should not be affected
+        const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
+        expect(totalStakedSupplyAfter).to.bignumber.equal(totalStakedSupplyBefore)
+      })
     })
   })
 
@@ -2820,12 +2876,19 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Reset Curve LP virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("sets multipliers", async () => {
-      expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.equal(bigVal(1))
+      expect(await stakingRewards.getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).to.bignumber.equal(
+        bigVal(1)
+      )
       await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      expect(await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).to.bignumber.equal(bigVal(2))
+      expect(await stakingRewards.getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).to.bignumber.equal(
+        bigVal(2)
+      )
     })
 
     it("checkpoints rewards", async () => {
