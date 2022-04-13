@@ -712,13 +712,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function _unstake(uint256 tokenId, uint256 amount) internal {
     /// @dev AD: Access denied
     require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
-    /// @dev ZERO: Cannot unstake 0
-    require(amount > 0, "ZERO");
 
     StakedPosition storage position = positions[tokenId];
     uint256 prevAmount = position.amount;
-    /// @dev IA: Invalid amount. Cannot unstake more than staked balance.
-    require(amount <= prevAmount, "IA");
+    /// @dev IA: Invalid amount. Cannot unstake zero, and cannot unstake more than staked balance.
+    require(amount > 0 && amount <= prevAmount, "IA");
 
     /// @dev LOCKED: Staked funds are locked.
     require(block.timestamp >= position.lockedUntil, "LOCKED");
@@ -841,10 +839,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 _minRateAtPercent,
     uint256 _maxRateAtPercent
   ) external onlyAdmin updateReward(0) {
-    /// @dev IR: Invalid rates. maxRate must be >= then minRate.
-    require(_maxRate >= _minRate, "IR");
-    /// @dev IRAP: Invalid rates at percent. maxRateAtPercent must be <= minRateAtPercent.
-    require(_maxRateAtPercent <= _minRateAtPercent, "IRAP");
+    /// @dev IP: Invalid parameters. maxRate must be >= then minRate. maxRateAtPercent must be <= minRateAtPercent.
+    require(_maxRate >= _minRate && _maxRateAtPercent <= _minRateAtPercent, "IP");
+
     targetCapacity = _targetCapacity;
     minRate = _minRate;
     maxRate = _maxRate;
