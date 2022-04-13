@@ -218,8 +218,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Returns accumulated rewards per token up to the current block timestamp
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function rewardPerToken() public view returns (uint256) {
-    uint256 additionalRewardsPerToken = _additionalRewardsPerTokenSinceLastUpdate(block.timestamp);
-    return accumulatedRewardsPerToken.add(additionalRewardsPerToken);
+    return accumulatedRewardsPerToken.add(_additionalRewardsPerTokenSinceLastUpdate(block.timestamp));
   }
 
   /// @notice Returns rewards earned by a given position token from its last checkpoint up to the
@@ -518,8 +517,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       require(curveLPVirtualPrice < MULTIPLIER_DECIMALS.mul(2), "HIGH");
 
       // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
-      uint256 fiduPrice = config.getSeniorPool().sharePrice();
-      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
+      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(config.getSeniorPool().sharePrice());
     }
 
     return MULTIPLIER_DECIMALS; // 1x
@@ -584,9 +582,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
   function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
-    StakedPositionType positionType = positions[tokenId].positionType;
     _unstake(tokenId, amount);
-    stakingToken(positionType).safeTransfer(msg.sender, amount);
+    stakingToken(positions[tokenId].positionType).safeTransfer(msg.sender, amount);
   }
 
   /// @notice Unstake multiple positions and transfer to msg.sender.
@@ -640,12 +637,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     require(canWithdraw(tokenId), "CW");
     /// @dev GL: This address has not been go-listed
     require(isGoListed(), "GL");
-    ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
 
     uint256 fiduBalanceBefore = fidu.balanceOf(address(this));
 
-    usdcAmountReceived = seniorPool.withdraw(usdcAmount);
+    usdcAmountReceived = config.getSeniorPool().withdraw(usdcAmount);
 
     fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
 
