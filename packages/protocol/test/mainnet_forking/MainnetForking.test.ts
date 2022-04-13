@@ -934,7 +934,7 @@ describe("mainnet forking tests", async function () {
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
         backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, payTx.blockNumber)
-        expect(backerStakingRewardsEarned).to.bignumber.eq(stakingRewardsEarned)
+        expect(backerStakingRewardsEarned).to.bignumber.closeTo(stakingRewardsEarned, microTolerance)
       }
 
       // we need to stake the equivalent amount drawndown
