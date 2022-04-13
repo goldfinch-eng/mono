@@ -790,13 +790,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     }
   }
 
-  /// @notice Unstake the position's full amount and claim all rewards
-  /// @param tokenId A staking position token ID
-  function exit(uint256 tokenId) external {
-    unstake(tokenId, positions[tokenId].amount);
-    getReward(tokenId);
-  }
-
   /// @notice Add to an existing position without affecting vesting schedule
   /// @dev This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
   ///   function enables the Zapper to unwind "in-progress" positions initiated by `Zapper.zapStakeToTranchedPool`.

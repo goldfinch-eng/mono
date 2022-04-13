@@ -2376,58 +2376,6 @@ describe("StakingRewards", function () {
     })
   })
 
-  describe("exit", async () => {
-    let rewardRate: BN
-
-    beforeEach(async function () {
-      rewardRate = new BN(String(2e18))
-      // Fix the reward rate to make testing easier
-      await stakingRewards.setRewardsParameters(
-        targetCapacity,
-        rewardRate,
-        rewardRate,
-        minRateAtPercent,
-        maxRateAtPercent
-      )
-
-      // Mint rewards for one year
-      const totalRewards = rewardRate.mul(yearInSeconds)
-      await mintRewards(totalRewards)
-    })
-
-    it("transfers staked tokens and rewards to sender", async () => {
-      const tokenId = await stake({amount: fiduAmount, from: investor})
-
-      await advanceTime({seconds: yearInSeconds})
-
-      await stakingRewards.exit(tokenId, {from: investor})
-
-      expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardRate.mul(yearInSeconds))
-      expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
-      expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(new BN(0))
-      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/IA/)
-    })
-
-    context("user does not own position token", async () => {
-      it("reverts", async () => {
-        const tokenId = await stake({amount: fiduAmount, from: investor})
-
-        await advanceTime({seconds: yearInSeconds})
-
-        await expect(stakingRewards.exit(tokenId, {from: anotherUser})).to.be.rejectedWith(/AD/)
-      })
-    })
-
-    context("paused", async () => {
-      it("reverts", async () => {
-        const tokenId = await stake({amount: bigVal(100), from: investor})
-        await advanceTime({seconds: 10000})
-        await stakingRewards.pause()
-        await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/paused/)
-      })
-    })
-  })
-
   describe("vesting", async () => {
     beforeEach(async function () {
       // Mint a small, fixed amount that limits reward disbursement
