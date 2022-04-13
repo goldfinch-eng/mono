@@ -471,12 +471,12 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        // Set the Curve LP token virtual price to $2.00
-        await fiduUSDCCurveLP._set_virtual_price(new BN(2).mul(MULTIPLIER_DECIMALS))
+        // Set the Curve LP token virtual price to $1.50
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(3)).div(new BN(2)))
 
-        // anotherUser stakes 2x more FIDU tokens than investor in Curve LP tokens
+        // anotherUser stakes 1.5x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({
-          amount: curveLPAmount.mul(new BN(2)),
+          amount: curveLPAmount.mul(new BN(3)).div(new BN(2)),
           from: anotherUser,
         })
         const startTime = await time.latest()
