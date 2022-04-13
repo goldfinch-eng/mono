@@ -472,8 +472,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev Always use this method to get the base token exchange rate to ensure proper handling of
   ///   old staked positions.
   function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
-    // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
-    return position.unsafeBaseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : position.unsafeBaseTokenExchangeRate;
+    if (position.unsafeBaseTokenExchangeRate > 0) {
+      return position.unsafeBaseTokenExchangeRate;
+    }
+    return MULTIPLIER_DECIMALS;
   }
 
   /// @notice The effective multiplier to use with new staked positions of the provided `positionType`,
