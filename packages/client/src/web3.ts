@@ -11,7 +11,7 @@ import {
 } from "web3-core"
 import WebsocketProvider from "web3-providers-ws"
 import HttpProvider from "web3-providers-http"
-import {JsonRpcPayload, JsonRpcResponse} from "web3-core-helpers"
+import {JsonRpcPayload, JsonRpcResponse, WebsocketProviderOptions} from "web3-core-helpers"
 import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {web3Modal, isWalletConnectProvider, WalletConnectWeb3Provider} from "./walletConnect"
 import {GFITokenImageURL} from "./utils"
@@ -37,6 +37,18 @@ function cleanSessionAndReload() {
 const networkNameByChainId: {[chainId: string]: string} = {
   "0x1": "mainnet",
   "0x4": "rinkeby",
+}
+
+const websocketOptions: WebsocketProviderOptions = {
+  // Configure the websocket connection to automatically reconnect if it drops (cf.
+  // https://ethereum.stackexchange.com/a/84194). We observed the connection to Infura
+  // being dropped after a period of inactivity.
+  reconnect: {
+    auto: true,
+    delay: 1000,
+    maxAttempts: 5,
+    onTimeout: true,
+  },
 }
 
 function subscribeProvider(provider: WebsocketProviderType | IpcProviderType | WalletConnectProvider): void {
@@ -160,7 +172,8 @@ function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
               type: "websocket",
               // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
               provider: new WebsocketProvider(
-                `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+                `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`,
+                websocketOptions
               ),
             }
       console.log(`Using custom Infura provider with ${wrapped.type} connection.`)
@@ -218,7 +231,10 @@ function getWeb3(): Web3IO<Web3> {
           ? // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
             new HttpProvider(`https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`)
           : // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-            new WebsocketProvider(`wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`)
+            new WebsocketProvider(
+              `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`,
+              websocketOptions
+            )
       const sharedWeb3 = new Web3(provider)
       return {
         readOnly: sharedWeb3,
