@@ -163,7 +163,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /* ========== VIEWS ========== */
 
   /// @notice Returns the staked balance of a given position token.
-  /// @dev The value returned in the bare amount, not the effective amount. The bare amount represents
+  /// @dev The value returned is the bare amount, not the effective amount. The bare amount represents
   ///   the number of tokens the user has staked for a given position.
   /// @param tokenId A staking position token ID
   /// @return Amount of staked tokens denominated in `stakingToken().decimals()`

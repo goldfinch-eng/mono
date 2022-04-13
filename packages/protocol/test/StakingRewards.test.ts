@@ -3026,12 +3026,12 @@ describe("StakingRewards", function () {
       })
 
       it("reverts if the Curve LP token virtual price is too low", async () => {
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.div(new BN(3)))
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.div(new BN(2)))
         await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/LOW/)
       })
 
       it("reverts if the Curve LP token virtual price is too high", async () => {
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(3)))
+        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(2)))
         await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/HIGH/)
       })
     })
