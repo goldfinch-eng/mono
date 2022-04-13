@@ -237,7 +237,7 @@ describe("StakingRewards", function () {
       // Disable vesting, to make testing base staking functionality easier
       await stakingRewards.setVestingSchedule(new BN(0))
 
-      // Reset the effective multiplier for the CurveLP to 1x
+      // Reset the effective multiplier for the Curve to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
 
       // Reset the Curve LP token virtual price to $1.00
@@ -2341,6 +2341,9 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Reset Curve LP virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("the default effective multiplier is correct", async () => {
@@ -2371,6 +2374,9 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Reset Curve LP virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("checkpoints rewards before updating the position's multiplier", async () => {
@@ -2870,6 +2876,9 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+
+      // Reset Curve LP virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("sets multipliers", async () => {

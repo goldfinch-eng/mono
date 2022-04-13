@@ -547,7 +547,10 @@ describe("Zapper", async () => {
 
   describe("zapStakeToCurve", async () => {
     beforeEach(async function () {
+      // Set the effective multiplier for the Curve to 2x
       await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
+      // Set the Curve LP token virtual price to $1.00
+      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("creates a new staked position without slashing unvested rewards", async () => {
