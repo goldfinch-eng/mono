@@ -2405,7 +2405,7 @@ describe("StakingRewards", function () {
       expect(await gfi.balanceOf(investor)).to.bignumber.equal(rewardRate.mul(yearInSeconds))
       expect(await fidu.balanceOf(investor)).to.bignumber.equal(fiduAmount)
       expect(await stakingRewards.stakedBalanceOf(tokenId)).to.bignumber.equal(new BN(0))
-      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/ZERO/)
+      await expect(stakingRewards.exit(tokenId, {from: investor})).to.be.rejectedWith(/IA/)
     })
 
     context("user does not own position token", async () => {
@@ -2919,7 +2919,7 @@ describe("StakingRewards", function () {
       const newMaxRate = bigVal(100)
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, newMinRate, newMaxRate, minRateAtPercent, maxRateAtPercent)
-      ).to.be.rejectedWith(/IR/)
+      ).to.be.rejectedWith(/IP/)
     })
 
     it("reverts if maxRateAtPercent > minRateAtPercent", async () => {
@@ -2927,7 +2927,7 @@ describe("StakingRewards", function () {
       let newMaxRateAtPercent = new BN(25).mul(new BN(String(1e18)))
       await expect(
         stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, newMinRateAtPercent, newMaxRateAtPercent)
-      ).to.be.rejectedWith(/IRAP/)
+      ).to.be.rejectedWith(/IP/)
 
       newMinRateAtPercent = new BN(25).mul(new BN(String(1e16)))
       newMaxRateAtPercent = new BN(25).mul(new BN(String(1e16)))
