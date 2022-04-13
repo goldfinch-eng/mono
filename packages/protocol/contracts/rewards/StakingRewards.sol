@@ -456,8 +456,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
-  ///   positions created prior to GIP-1 (before the `effectiveMultiplier` field was added).
-  /// @dev Always use this method to get the `effectiveMultiplier` to ensure proper handling of
+  ///   positions created prior to GIP-1 (before the `effectiveMultipliers` field was added).
+  /// @dev Always use this method to get the effective multiplier to ensure proper handling of
   ///   old staked positions.
   function safeEffectiveMultiplier(StakedPosition storage position) internal view returns (uint256) {
     return position.unsafeEffectiveMultiplier > 0 ? position.unsafeEffectiveMultiplier : MULTIPLIER_DECIMALS; // 1x
@@ -465,7 +465,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Returns the base token exchange rate for a given position. Defaults to 1 for all staked
   ///   positions created prior to GIP-1 (before the `baseTokenExchangeRate` field was added).
-  /// @dev Always use this method to get the `baseTokenExchangeRate` to ensure proper handling of
+  /// @dev Always use this method to get the base token exchange rate to ensure proper handling of
   ///   old staked positions.
   function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
     // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
