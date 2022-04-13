@@ -11,7 +11,7 @@ interface PoolCardProps {
   title?: string | null;
   subtitle?: string | null;
   apy?: number | FixedNumber | null;
-  apyWithGfi?: number | FixedNumber | null;
+  apyFromGfi?: number | FixedNumber | null;
   icon?: string | null;
   href?: string;
   /**
@@ -24,7 +24,7 @@ export function PoolCard({
   title,
   subtitle,
   apy,
-  apyWithGfi,
+  apyFromGfi,
   icon,
   href,
   isPlaceholder = false,
@@ -65,7 +65,7 @@ export function PoolCard({
           {apy ? `${formatPercent(apy)} USDC` : "\u00A0"}
         </div>
         <div className="text-purple-100">
-          {apyWithGfi ? `${formatPercent(apyWithGfi)} with GFI` : "\u00A0"}
+          {apyFromGfi ? `${formatPercent(apyFromGfi)} from GFI` : "\u00A0"}
         </div>
       </div>
     </div>
@@ -78,9 +78,9 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     name @client
     category @client
     icon @client
-    creditLine {
-      interestApr
-    }
+    estimatedJuniorApy
+    estimatedJuniorApyFromGfiRaw
+    estimatedJuniorApyFromGfi @client
   }
 `;
 
@@ -98,10 +98,8 @@ export function TranchedPoolCard({
       title={tranchedPool.name}
       subtitle={tranchedPool.category}
       icon={tranchedPool.icon}
-      apy={
-        parseFloat(tranchedPool.creditLine.interestApr.toString()) / 10 ** 18 // TODO creditLine.interestApr should really be stored as a BigDecimal in The Graph. It's just not that helpful as a BigInt
-      }
-      apyWithGfi={0.9999} // TODO just a placeholder
+      apy={tranchedPool.estimatedJuniorApy}
+      apyFromGfi={tranchedPool.estimatedJuniorApyFromGfi}
       href={href}
     />
   );

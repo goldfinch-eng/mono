@@ -28,7 +28,7 @@ gql`
         }
       }
     }
-    tranchedPools {
+    tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
       ...TranchedPoolCardFields
     }
@@ -70,7 +70,7 @@ export default function EarnPage() {
             subtitle={seniorPool.category}
             icon={seniorPool.icon}
             apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyWithGfi={seniorPool.latestPoolStatus.estimatedApyFromGfi}
+            apyFromGfi={seniorPool.latestPoolStatus.estimatedApyFromGfi}
             href="/pools/senior"
           />
         )}

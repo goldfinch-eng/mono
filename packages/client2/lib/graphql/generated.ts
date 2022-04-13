@@ -24,6 +24,78 @@ export type AppUser = {
   usdcBalance?: Maybe<Scalars['BigInt']>;
 };
 
+export type BackerRewards = {
+  __typename?: 'BackerRewards';
+  contractAddress: Scalars['String'];
+  id: Scalars['ID'];
+  maxInterestDollarsEligible: Scalars['BigInt'];
+  totalRewardPercentOfTotalGFI: Scalars['BigDecimal'];
+  totalRewards: Scalars['BigInt'];
+};
+
+export type BackerRewards_Filter = {
+  contractAddress?: InputMaybe<Scalars['String']>;
+  contractAddress_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_gt?: InputMaybe<Scalars['String']>;
+  contractAddress_gte?: InputMaybe<Scalars['String']>;
+  contractAddress_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_lt?: InputMaybe<Scalars['String']>;
+  contractAddress_lte?: InputMaybe<Scalars['String']>;
+  contractAddress_not?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_not_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  id_gt?: InputMaybe<Scalars['ID']>;
+  id_gte?: InputMaybe<Scalars['ID']>;
+  id_in?: InputMaybe<Array<Scalars['ID']>>;
+  id_lt?: InputMaybe<Scalars['ID']>;
+  id_lte?: InputMaybe<Scalars['ID']>;
+  id_not?: InputMaybe<Scalars['ID']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+  maxInterestDollarsEligible?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_gt?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_gte?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  maxInterestDollarsEligible_lt?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_lte?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_not?: InputMaybe<Scalars['BigInt']>;
+  maxInterestDollarsEligible_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalRewardPercentOfTotalGFI?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_gt?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_gte?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  totalRewardPercentOfTotalGFI_lt?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_lte?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_not?: InputMaybe<Scalars['BigDecimal']>;
+  totalRewardPercentOfTotalGFI_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  totalRewards?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_gt?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_gte?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalRewards_lt?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_lte?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_not?: InputMaybe<Scalars['BigInt']>;
+  totalRewards_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+};
+
+export enum BackerRewards_OrderBy {
+  ContractAddress = 'contractAddress',
+  Id = 'id',
+  MaxInterestDollarsEligible = 'maxInterestDollarsEligible',
+  TotalRewardPercentOfTotalGfi = 'totalRewardPercentOfTotalGFI',
+  TotalRewards = 'totalRewards'
+}
+
 /** The block at which the query should be executed. */
 export type Block_Height = {
   /** Value containing a block hash */
@@ -456,6 +528,58 @@ export enum CreditLine_OrderBy {
   Version = 'version'
 }
 
+export type GfiData = {
+  __typename?: 'GFIData';
+  contractAddress: Scalars['String'];
+  id: Scalars['ID'];
+  totalSupply: Scalars['BigInt'];
+};
+
+export type GfiData_Filter = {
+  contractAddress?: InputMaybe<Scalars['String']>;
+  contractAddress_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_gt?: InputMaybe<Scalars['String']>;
+  contractAddress_gte?: InputMaybe<Scalars['String']>;
+  contractAddress_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_lt?: InputMaybe<Scalars['String']>;
+  contractAddress_lte?: InputMaybe<Scalars['String']>;
+  contractAddress_not?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains?: InputMaybe<Scalars['String']>;
+  contractAddress_not_contains_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_ends_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_not_in?: InputMaybe<Array<Scalars['String']>>;
+  contractAddress_not_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_not_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with?: InputMaybe<Scalars['String']>;
+  contractAddress_starts_with_nocase?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  id_gt?: InputMaybe<Scalars['ID']>;
+  id_gte?: InputMaybe<Scalars['ID']>;
+  id_in?: InputMaybe<Array<Scalars['ID']>>;
+  id_lt?: InputMaybe<Scalars['ID']>;
+  id_lte?: InputMaybe<Scalars['ID']>;
+  id_not?: InputMaybe<Scalars['ID']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+  totalSupply?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_gt?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_gte?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  totalSupply_lt?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_lte?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_not?: InputMaybe<Scalars['BigInt']>;
+  totalSupply_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+};
+
+export enum GfiData_OrderBy {
+  ContractAddress = 'contractAddress',
+  Id = 'id',
+  TotalSupply = 'totalSupply'
+}
+
 export type Gfi = {
   __typename?: 'Gfi';
   lastUpdated: Scalars['Int'];
@@ -731,12 +855,15 @@ export type Query = {
   __typename?: 'Query';
   /** Access to subgraph metadata */
   _meta?: Maybe<_Meta_>;
+  backerRewards: Array<BackerRewards>;
   capitalProviderStatus?: Maybe<CapitalProviderStatus>;
   capitalProviderStatuses: Array<CapitalProviderStatus>;
   creditLine?: Maybe<CreditLine>;
   creditLines: Array<CreditLine>;
   currentUser: AppUser;
   gfi?: Maybe<Gfi>;
+  gfidata?: Maybe<GfiData>;
+  gfidatas: Array<GfiData>;
   juniorTrancheInfo?: Maybe<JuniorTrancheInfo>;
   juniorTrancheInfos: Array<JuniorTrancheInfo>;
   poolBacker?: Maybe<PoolBacker>;
@@ -763,6 +890,17 @@ export type Query = {
 
 export type Query_MetaArgs = {
   block?: InputMaybe<Block_Height>;
+};
+
+
+export type QueryBackerRewardsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<BackerRewards_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<BackerRewards_Filter>;
 };
 
 
@@ -799,6 +937,24 @@ export type QueryCreditLinesArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<CreditLine_Filter>;
+};
+
+
+export type QueryGfidataArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryGfidatasArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<GfiData_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<GfiData_Filter>;
 };
 
 
@@ -1511,10 +1667,13 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Access to subgraph metadata */
   _meta?: Maybe<_Meta_>;
+  backerRewards: Array<BackerRewards>;
   capitalProviderStatus?: Maybe<CapitalProviderStatus>;
   capitalProviderStatuses: Array<CapitalProviderStatus>;
   creditLine?: Maybe<CreditLine>;
   creditLines: Array<CreditLine>;
+  gfidata?: Maybe<GfiData>;
+  gfidatas: Array<GfiData>;
   juniorTrancheInfo?: Maybe<JuniorTrancheInfo>;
   juniorTrancheInfos: Array<JuniorTrancheInfo>;
   poolBacker?: Maybe<PoolBacker>;
@@ -1541,6 +1700,17 @@ export type Subscription = {
 
 export type Subscription_MetaArgs = {
   block?: InputMaybe<Block_Height>;
+};
+
+
+export type SubscriptionBackerRewardsArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<BackerRewards_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<BackerRewards_Filter>;
 };
 
 
@@ -1577,6 +1747,24 @@ export type SubscriptionCreditLinesArgs = {
   skip?: InputMaybe<Scalars['Int']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<CreditLine_Filter>;
+};
+
+
+export type SubscriptionGfidataArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionGfidatasArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']>;
+  orderBy?: InputMaybe<GfiData_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<GfiData_Filter>;
 };
 
 
@@ -1778,13 +1966,16 @@ export type TranchedPool = {
   deposits: Array<TranchedPoolDeposit>;
   description?: Maybe<Scalars['String']>;
   estimatedJuniorApy: Scalars['BigDecimal'];
+  /** Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedJuniorApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field. */
+  estimatedJuniorApyFromGfi: Scalars['BigDecimal'];
+  estimatedJuniorApyFromGfiRaw: Scalars['BigDecimal'];
   estimatedLeverageRatio: Scalars['BigInt'];
   estimatedSeniorPoolContribution: Scalars['BigInt'];
   estimatedTotalAssets: Scalars['BigInt'];
-  expectedRemainingInterest?: Maybe<Scalars['BigDecimal']>;
   fundableAt: Scalars['BigInt'];
   icon?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
+  interestRepayments: Array<Scalars['BigInt']>;
   isPaused: Scalars['Boolean'];
   /**
    * Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
@@ -1801,8 +1992,9 @@ export type TranchedPool = {
   poolState: PoolState;
   remainingCapacity: Scalars['BigInt'];
   remainingJuniorCapacity: Scalars['BigInt'];
-  repaymentSchedule?: Maybe<Array<Scalars['BigDecimal']>>;
   reserveFeePercent: Scalars['BigInt'];
+  rewards: Array<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar?: Maybe<Scalars['BigDecimal']>;
   seniorTranches: Array<SeniorTrancheInfo>;
   tokens: Array<TranchedPoolToken>;
   totalDeployed: Scalars['BigInt'];
@@ -2126,6 +2318,14 @@ export type TranchedPool_Filter = {
   creditLine_starts_with?: InputMaybe<Scalars['String']>;
   creditLine_starts_with_nocase?: InputMaybe<Scalars['String']>;
   estimatedJuniorApy?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_gt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_gte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  estimatedJuniorApyFromGfiRaw_lt?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_lte?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_not?: InputMaybe<Scalars['BigDecimal']>;
+  estimatedJuniorApyFromGfiRaw_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
   estimatedJuniorApy_gt?: InputMaybe<Scalars['BigDecimal']>;
   estimatedJuniorApy_gte?: InputMaybe<Scalars['BigDecimal']>;
   estimatedJuniorApy_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
@@ -2157,14 +2357,6 @@ export type TranchedPool_Filter = {
   estimatedTotalAssets_lte?: InputMaybe<Scalars['BigInt']>;
   estimatedTotalAssets_not?: InputMaybe<Scalars['BigInt']>;
   estimatedTotalAssets_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  expectedRemainingInterest?: InputMaybe<Scalars['BigDecimal']>;
-  expectedRemainingInterest_gt?: InputMaybe<Scalars['BigDecimal']>;
-  expectedRemainingInterest_gte?: InputMaybe<Scalars['BigDecimal']>;
-  expectedRemainingInterest_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
-  expectedRemainingInterest_lt?: InputMaybe<Scalars['BigDecimal']>;
-  expectedRemainingInterest_lte?: InputMaybe<Scalars['BigDecimal']>;
-  expectedRemainingInterest_not?: InputMaybe<Scalars['BigDecimal']>;
-  expectedRemainingInterest_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
   fundableAt?: InputMaybe<Scalars['BigInt']>;
   fundableAt_gt?: InputMaybe<Scalars['BigInt']>;
   fundableAt_gte?: InputMaybe<Scalars['BigInt']>;
@@ -2181,6 +2373,12 @@ export type TranchedPool_Filter = {
   id_lte?: InputMaybe<Scalars['ID']>;
   id_not?: InputMaybe<Scalars['ID']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']>>;
+  interestRepayments?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_contains?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_contains_nocase?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_not?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_not_contains?: InputMaybe<Array<Scalars['BigInt']>>;
+  interestRepayments_not_contains_nocase?: InputMaybe<Array<Scalars['BigInt']>>;
   isPaused?: InputMaybe<Scalars['Boolean']>;
   isPaused_in?: InputMaybe<Array<Scalars['Boolean']>>;
   isPaused_not?: InputMaybe<Scalars['Boolean']>;
@@ -2223,12 +2421,6 @@ export type TranchedPool_Filter = {
   remainingJuniorCapacity_lte?: InputMaybe<Scalars['BigInt']>;
   remainingJuniorCapacity_not?: InputMaybe<Scalars['BigInt']>;
   remainingJuniorCapacity_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
-  repaymentSchedule?: InputMaybe<Array<Scalars['BigDecimal']>>;
-  repaymentSchedule_contains?: InputMaybe<Array<Scalars['BigDecimal']>>;
-  repaymentSchedule_contains_nocase?: InputMaybe<Array<Scalars['BigDecimal']>>;
-  repaymentSchedule_not?: InputMaybe<Array<Scalars['BigDecimal']>>;
-  repaymentSchedule_not_contains?: InputMaybe<Array<Scalars['BigDecimal']>>;
-  repaymentSchedule_not_contains_nocase?: InputMaybe<Array<Scalars['BigDecimal']>>;
   reserveFeePercent?: InputMaybe<Scalars['BigInt']>;
   reserveFeePercent_gt?: InputMaybe<Scalars['BigInt']>;
   reserveFeePercent_gte?: InputMaybe<Scalars['BigInt']>;
@@ -2237,6 +2429,20 @@ export type TranchedPool_Filter = {
   reserveFeePercent_lte?: InputMaybe<Scalars['BigInt']>;
   reserveFeePercent_not?: InputMaybe<Scalars['BigInt']>;
   reserveFeePercent_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+  rewards?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewardsPerPrincipleDollar?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_gt?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_gte?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewardsPerPrincipleDollar_lt?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_lte?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_not?: InputMaybe<Scalars['BigDecimal']>;
+  rewardsPerPrincipleDollar_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_contains?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_contains_nocase?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_not?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_not_contains?: InputMaybe<Array<Scalars['BigDecimal']>>;
+  rewards_not_contains_nocase?: InputMaybe<Array<Scalars['BigDecimal']>>;
   seniorTranches?: InputMaybe<Array<Scalars['String']>>;
   seniorTranches_contains?: InputMaybe<Array<Scalars['String']>>;
   seniorTranches_contains_nocase?: InputMaybe<Array<Scalars['String']>>;
@@ -2276,12 +2482,13 @@ export enum TranchedPool_OrderBy {
   CreditLine = 'creditLine',
   Deposits = 'deposits',
   EstimatedJuniorApy = 'estimatedJuniorApy',
+  EstimatedJuniorApyFromGfiRaw = 'estimatedJuniorApyFromGfiRaw',
   EstimatedLeverageRatio = 'estimatedLeverageRatio',
   EstimatedSeniorPoolContribution = 'estimatedSeniorPoolContribution',
   EstimatedTotalAssets = 'estimatedTotalAssets',
-  ExpectedRemainingInterest = 'expectedRemainingInterest',
   FundableAt = 'fundableAt',
   Id = 'id',
+  InterestRepayments = 'interestRepayments',
   IsPaused = 'isPaused',
   IsV1StyleDeal = 'isV1StyleDeal',
   JuniorFeePercent = 'juniorFeePercent',
@@ -2289,8 +2496,9 @@ export enum TranchedPool_OrderBy {
   PoolState = 'poolState',
   RemainingCapacity = 'remainingCapacity',
   RemainingJuniorCapacity = 'remainingJuniorCapacity',
-  RepaymentSchedule = 'repaymentSchedule',
   ReserveFeePercent = 'reserveFeePercent',
+  Rewards = 'rewards',
+  RewardsPerPrincipleDollar = 'rewardsPerPrincipleDollar',
   SeniorTranches = 'seniorTranches',
   Tokens = 'tokens',
   TotalDeployed = 'totalDeployed',
@@ -2442,9 +2650,9 @@ export type CurrentUserWalletInfoQuery = { __typename?: 'Query', currentUser: { 
 export type ExampleQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, estimatedApyFromGfiRaw?: TheGraph_BigDecimal | null, estimatedApyFromGfi: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
+export type ExampleQuery = { __typename?: 'Query', seniorPools: Array<{ __typename?: 'SeniorPool', id: string, name: string, category: string, icon: string, latestPoolStatus: { __typename?: 'SeniorPoolStatus', id: string, estimatedApy: TheGraph_BigDecimal, estimatedApyFromGfiRaw?: TheGraph_BigDecimal | null, estimatedApyFromGfi: TheGraph_BigDecimal, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, estimatedJuniorApy: TheGraph_BigDecimal, estimatedJuniorApyFromGfiRaw: TheGraph_BigDecimal, estimatedJuniorApyFromGfi: TheGraph_BigDecimal }> } }>, tranchedPools: Array<{ __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, estimatedJuniorApy: TheGraph_BigDecimal, estimatedJuniorApyFromGfiRaw: TheGraph_BigDecimal, estimatedJuniorApyFromGfi: TheGraph_BigDecimal }>, gfi?: { __typename?: 'Gfi', price: { __typename?: 'GfiPrice', usd: number } } | null };
 
-export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, creditLine: { __typename?: 'CreditLine', interestApr: TheGraph_BigInt } };
+export type TranchedPoolCardFieldsFragment = { __typename?: 'TranchedPool', id: string, name?: string | null, category?: string | null, icon?: string | null, estimatedJuniorApy: TheGraph_BigDecimal, estimatedJuniorApyFromGfiRaw: TheGraph_BigDecimal, estimatedJuniorApyFromGfi: TheGraph_BigDecimal };
 
 export type SeniorPoolPageQueryVariables = Exact<{
   userId: Scalars['ID'];
@@ -2465,9 +2673,9 @@ export const TranchedPoolCardFieldsFragmentDoc = gql`
   name @client
   category @client
   icon @client
-  creditLine {
-    interestApr
-  }
+  estimatedJuniorApy
+  estimatedJuniorApyFromGfiRaw
+  estimatedJuniorApyFromGfi @client
 }
     `;
 export const SeniorPoolPortfolioUserFieldsFragmentDoc = gql`

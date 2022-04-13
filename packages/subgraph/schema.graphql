@@ -163,6 +163,7 @@ enum TranchedPoolCreditLineVersion {
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigDecimal!
+  estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
@@ -185,6 +186,7 @@ type TranchedPool @entity {
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
+  createdAt: BigInt!
 }
 
 type TranchedPoolToken @entity {
@@ -199,6 +201,12 @@ type TranchedPoolToken @entity {
   principalRedeemable: BigInt!
 }
 
+type GFIData @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalSupply: BigInt!
+}
+
 type StakingRewards @entity {
   id: ID! # Set to "1" because this is a singleton
   """
@@ -206,4 +214,15 @@ type StakingRewards @entity {
   """
   currentEarnRatePerToken: BigInt!
   gfiTotalSupply: BigInt!
+}
+
+type BackerRewards @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalRewards: BigInt!
+  totalRewardPercentOfTotalGFI: BigDecimal!
+  """
+  Note that this value is measured in GFI, not dollars
+  """
+  maxInterestDollarsEligible: BigInt!
 }
