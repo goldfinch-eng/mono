@@ -29,6 +29,7 @@ jobs:
       with:
         files: |
           packages\/autotasks\/.+\.ts
+          packages\/autotasks\/.+\.json
     - name: Cache node modules
       uses: actions/cache@v2
       env:
@@ -131,6 +132,7 @@ jobs:
           ${{ runner.os }}-
     - run: npx lerna bootstrap --ci
     - run: npm run build
+    - run: npx lerna run test --stream --scope @goldfinch-eng/subgraph
 
   functions:
     runs-on: ubuntu-latest

@@ -1,11 +1,12 @@
+import {AbstractProvider} from "web3-core"
 import {isPlainObject, isStringOrUndefined} from "@goldfinch-eng/utils"
 import {isNumber, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {isMainnetForking} from "./ethereum/utils"
+import {ChainInfoToAdd, isMainnetForking, SupportedChainId} from "./ethereum/utils"
 import {NetworkConfig} from "./types/network"
 import {AsyncReturnType} from "./types/util"
-import web3 from "./web3"
+import getWeb3 from "./web3"
 
 export function croppedAddress(address) {
   if (!address) {
@@ -87,6 +88,45 @@ export function displayPercent(val: BigNumber | undefined, decimals = 2, display
   return `${valDisplay}%`
 }
 
+export function displayDollarsTruncated(val: BigNumber | undefined | string | number, displayZero = true) {
+  let valFloat: number
+  let truncatedNumber = 0
+  let symbol = ""
+  let decimals = 0
+
+  const NUMBER_SYMBOLS = {
+    B: 1000000000,
+    M: 1000000,
+    k: 1000,
+    "": 1,
+  }
+
+  if (val === undefined) return "$--.--"
+
+  if (BigNumber.isBigNumber(val)) {
+    valFloat = parseFloat(val.toString(10))
+  } else if (isNumber(val)) {
+    valFloat = val
+  } else {
+    valFloat = parseFloat(val)
+  }
+
+  if (valFloat === 0) return displayDollars(0, 0, displayZero)
+
+  for (let key of Object.keys(NUMBER_SYMBOLS)) {
+    if (Math.abs(valFloat) >= NUMBER_SYMBOLS[key]) {
+      truncatedNumber = valFloat / NUMBER_SYMBOLS[key]
+      symbol = key
+      break
+    }
+  }
+
+  // if not an integer, set to show 2 decimal places
+  if (truncatedNumber % 1 !== 0) decimals = 2
+
+  return `${displayDollars(truncatedNumber, decimals, displayZero)}${symbol}`
+}
+
 export function roundUpPenny(val) {
   return Math.ceil(val * 100) / 100
 }
@@ -148,6 +188,7 @@ export function assertBigNumber(val: unknown): asserts val is BigNumber {
 }
 
 export async function getCurrentBlock() {
+  const web3 = getWeb3()
   return await web3.readOnly.eth.getBlock("latest")
 }
 
@@ -186,9 +227,102 @@ export function shouldUseWeb3(): boolean {
   return process.env.REACT_APP_TOGGLE_THE_GRAPH !== "true"
 }
 
+export function getInjectedProvider(): any {
+  if ((window as any).ethereum.overrideIsMetaMask) {
+    const _provider = (window as any).ethereum.providers.find(
+      (p) => p.hasOwnProperty("isMetaMask") && (p as {isMetaMask: boolean}).isMetaMask
+    )
+    if (_provider) {
+      // When the user has multiple extensions installed on the browser, calling `window.ethereum.request`
+      // results in pop-ups from all wallets at the same time. To support the default connection with metamask
+      // one needs to select the metamask provider and call it to establish a connection
+      return _provider
+    }
+  }
+  return (window as any).ethereum
+}
+
 export function isProductionAndPrivateNetwork(network: NetworkConfig | undefined) {
   // Undetected networks are marked as private by the provider. On our config any private
   // network is marked as localhost, check `mapNetworkToID`, this function is useful to
   // check for scenarios when users are on undetected networks
   return network && network.name === "localhost" && process.env.NODE_ENV === "production"
+}
+
+export async function switchToNetwork(
+  currentProvider: AbstractProvider,
+  chainId: SupportedChainId
+): Promise<null | void> {
+  assertNonNullable(currentProvider.request)
+  const chainIdHex = `0x${chainId.toString(16)}`
+
+  try {
+    await currentProvider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{chainId: chainIdHex}],
+    })
+  } catch (err: unknown) {
+    // This error code indicates the chain has not yet been added to Metamask.
+    // In that case, prompt the user to add a new chain.
+    // https://docs.metamask.io/guide/rpc-api.html#usage-with-wallet-switchethereumchain
+    if (isCodedErrorLike(err) && err.code === 4902) {
+      const info = ChainInfoToAdd[chainId]
+      if (!info) {
+        return
+      }
+
+      await currentProvider.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: chainIdHex,
+            chainName: info.label,
+            rpcUrls: [info.rpcUrl],
+          },
+        ],
+      })
+
+      // metamask (only known implementer) automatically switches after a network is added
+      // the second call is done here because that behavior is not a part of the spec and cannot be relied upon in the future
+      // metamask's behavior when switching to the current network is just to return null (a no-op)
+      try {
+        await currentProvider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{chainId: chainIdHex}],
+        })
+      } catch (error) {
+        console.log("Added network but could not switch chains", error)
+      }
+    }
+  }
+}
+
+export async function switchNetworkIfRequired(networkConfig: NetworkConfig): Promise<void> {
+  const web3 = getWeb3()
+  const currentNetwork: SupportedChainId = SupportedChainId[networkConfig.name]
+  let idealNetworkId: SupportedChainId = SupportedChainId.MAINNET
+
+  if (isProductionAndPrivateNetwork(networkConfig)) {
+    idealNetworkId = SupportedChainId.MAINNET
+  } else if (process.env.NODE_ENV === "production") {
+    idealNetworkId = !networkConfig.supported ? SupportedChainId.MAINNET : currentNetwork
+  } else if (process.env.REACT_APP_MURMURATION === "yes" || process.env.NODE_ENV === "development") {
+    idealNetworkId = SupportedChainId.LOCAL
+  }
+
+  if (idealNetworkId && currentNetwork !== idealNetworkId) {
+    await switchToNetwork(web3.userWallet.currentProvider as AbstractProvider, idealNetworkId)
+  }
+}
+
+export function GFITokenImageURL(): string {
+  if (process.env.NODE_ENV === "development") {
+    if (process.env.REACT_APP_MURMURATION === "yes") {
+      return "https://murmuration.goldfinch.finance/gfi-token.svg"
+    } else {
+      return "http://localhost:3000/gfi-token.svg"
+    }
+  } else {
+    return "https://app.goldfinch.finance/gfi-token.svg"
+  }
 }

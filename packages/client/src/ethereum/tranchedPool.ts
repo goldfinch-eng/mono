@@ -1,3 +1,4 @@
+import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
@@ -17,7 +18,7 @@ import {ScheduledRepayment} from "../types/tranchedPool"
 import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
@@ -75,16 +76,22 @@ export interface TranchedPoolMetadata {
   name: string
   category: string
   icon: string
-  description: string
+  description?: string
   detailsUrl?: string
   disabled?: boolean
   backerLimit?: string
   agreement?: string
+  dataroom?: string
   v1StyleDeal?: boolean
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
   launchTime?: number
+  poolDescription?: string
+  poolHighlights?: Array<string>
+  borrowerDescription?: string
+  borrowerHighlights?: Array<string>
+  allowedUIDTypes: Array<number>
 }
 
 enum PoolState {
@@ -130,6 +137,7 @@ class TranchedPool {
   reserveFeePercent!: BigNumber
   estimatedLeverageRatio!: BigNumber
   estimatedSeniorPoolContribution!: BigNumber
+  allowedUIDTypes!: number[]
 
   juniorTranche!: TrancheInfo
   seniorTranche!: TrancheInfo
@@ -152,6 +160,7 @@ class TranchedPool {
     this.creditLine = new CreditLine(this.creditLineAddress, this.goldfinchProtocol)
     await this.creditLine.initialize(currentBlock)
     this.metadata = await this.loadPoolMetadata()
+    this.allowedUIDTypes = await this.getAllowedUIDTypes(currentBlock)
 
     let juniorTranche = await this.contract.readOnly.methods
       .getTranche(TRANCHES.Junior)
@@ -278,6 +287,21 @@ class TranchedPool {
     }
   }
 
+  async getAllowedUIDTypes(currentBlock: BlockInfo): Promise<number[]> {
+    // first, check the json for legacy pools
+    if (this.metadata && this.metadata?.allowedUIDTypes) {
+      return this.metadata.allowedUIDTypes
+    } else {
+      try {
+        const result = await this.contract.readOnly.methods.getAllowedUIDTypes().call(undefined, currentBlock.number)
+        return result.map((x) => parseInt(x))
+      } catch (e) {
+        console.error("getAllowedUIDTypes function does not exist on TranchedPool")
+      }
+    }
+    return [NON_US_INDIVIDUAL_ID_TYPE_0]
+  }
+
   async recentTransactions(currentBlock: BlockInfo) {
     let oldTransactions: any[] = []
     let transactions = await this.goldfinchProtocol.queryEvents(
@@ -365,6 +389,7 @@ class TranchedPool {
   }
 
   async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
+    const web3 = getWeb3()
     const blockTimestamps = await Promise.all(
       transactions.map((tx) => {
         return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
@@ -380,16 +405,17 @@ class TranchedPool {
   async getOptimisticRepaymentSchedule(currentBlock: BlockInfo): Promise<ScheduledRepayment[]> {
     // 1. How much interest do we expect to be repaid in the remaining term of the loan?
     // The answer consists of two parts: (i) the expected interest on funds that have
-    // *already* been borrowed (i.e. the current balance of the pool); plus (ii) if the
-    // pool is currently open, interest on the additional funds that would be borrowed.
-    // How much additional funds will be borrowed? We can't know exactly; we'll optimistically
-    // assume the pool fills up to its max limit.
+    // *already* been borrowed (i.e. the current balance of the pool); plus (ii) the
+    // interest on additional funds that we can reasonably expect (based on the pool's state)
+    // will be borrowed. How much additional funds will be borrowed? We can't know exactly; we'll
+    // optimistically assume (see below) the pool fills up and/or the borrower borrows as much as
+    // they can.
     // TODO: In future, when we may have multiple pools open at the same time, we may want to
     // revise this optimistic repayment schedule calculation so that we don't assume that
     // *all* open pools will fill up. Such an assumption means that any open pool could significantly
     // impact the estimated rewards of every other pool; but such estimates seem likely
     // flawed, because in practice not every proposed pool is equally likely to fill up. One
-    // alternative way to do the calculation would be to assume the given pool for which we're
+    // alternative way to do the calculation could be to assume the given pool for which we're
     // estimating rewards will fill up, but NOT to make that assumption for all the other open pools.
 
     // (i)
@@ -417,24 +443,55 @@ class TranchedPool {
     }
 
     // (ii)
-    // NOTE: For simplicity, we don't worry here about, if we're in the possible window
-    // of time after the senior pool is locked but before the borrower has drawndown, trying
-    // to infer that the borrower *will* drawdown.
     let expectedRemainingInterestFromToBeBorrowed = new BigNumber(0)
     const secondsPerPaymentPeriod = this.creditLine.paymentPeriodInDays.multipliedBy(SECONDS_PER_DAY)
     let lastRepaymentTimeToBeBorrowed: BigNumber | undefined
     let nextRepaymentTimeToBeBorrowed: BigNumber | undefined
     let finalRepaymentTime: BigNumber
-    if (this.poolState < PoolState.SeniorLocked) {
-      const optimisticAdditionalBalance = this.creditLine.maxLimit.minus(this.totalDeployed)
+    if (this.poolState <= PoolState.SeniorLocked) {
+      // Because the pool is not in the WithdrawalsUnlocked state, there is the prospect of additional
+      // capital being borrowed. (Actually, even in the WithdrawalsUnlocked state, the borrower could
+      // drawdown additional capital that remains available in the pool (up to the pool's limit), but
+      // for the purposes here, we'll assume that once we've reached the WithdrawalsUnlocked state, the
+      // borrower isn't going to do so, as they had ample time to do so before withdrawals unlocked.)
+      // So we want to make a best-guess about what this additional balance will be.
+      //
+      // If the pool is Open, we'll optimistically assume the pool gets filled to its max
+      // limit and the borrower borrows all of this. We'll do the same if the pool is JuniorLocked;
+      // in theory, it would be more accurate to use a best-estimate of the leverage ratio, and
+      // use that to optimistically calculate how much the senior pool is going to invest, and assume
+      // the borrower borrows all of this, but I don't think this added complexity passes the cost-benefit
+      // test, given that the leverage ratio would be an estimate and therefore uncertain. If the pool is
+      // SeniorLocked, we can use the pool's current limit (because that gets updated in locking the
+      // senior tranche) and assume the borrower borrows all of it.
+      let optimisticAdditionalBalance: BigNumber
+      if (this.poolState === PoolState.Open || this.poolState === PoolState.JuniorLocked) {
+        optimisticAdditionalBalance = this.creditLine.maxLimit.minus(this.totalDeployed)
+      } else if (this.poolState === PoolState.SeniorLocked) {
+        optimisticAdditionalBalance = this.creditLine.limit.minus(this.totalDeployed)
+      } else {
+        throw new Error(`Unexpected pool state: ${this.poolState}`)
+      }
 
-      // When should we say that interest could start being earned on this additional balance?
-      // We can't be sure exactly, because there's currently no notion of a deadline for funding
-      // the pool, nor hard start time of the borrowing. So we'll make a reasonable supposition: one
-      // week after the later of the current time and the pool's `fundableAt` timestamp.
-      const _optimisticInterestAccrualStart = BigNumber.max(this.fundableAt, currentBlock.timestamp).plus(
+      // When should we say that interest will start being earned on this additional balance?
+      // We can't be sure exactly. There's currently no notion of a deadline for funding
+      // the pool, nor hard start time of the borrowing. We'll make a reasonable supposition: if the
+      // pool is Open, we'll say the borrowing starts one week after the later of the current time
+      // and the pool's `fundableAt` timestamp. If the pool is JuniorLocked or SeniorLocked, we'll also say
+      // the borrowing won't start later than the relevant locked-until time (which is consistent with
+      // our assumption that no additional funds will be borrowed once the WithdrawalsUnlocked state is reached).
+      let _optimisticInterestAccrualStart = BigNumber.max(this.fundableAt, currentBlock.timestamp).plus(
         SECONDS_PER_DAY * 7
       )
+      if (this.poolState === PoolState.Open) {
+        // pass
+      } else if (this.poolState === PoolState.JuniorLocked) {
+        _optimisticInterestAccrualStart = BigNumber.min(_optimisticInterestAccrualStart, this.juniorTranche.lockedUntil)
+      } else if (this.poolState === PoolState.SeniorLocked) {
+        _optimisticInterestAccrualStart = BigNumber.min(_optimisticInterestAccrualStart, this.seniorTranche.lockedUntil)
+      } else {
+        throw new Error(`Unexpected pool state: ${this.poolState}`)
+      }
       let interestAccrualStart: BigNumber, interestAccrualEnd: BigNumber
       if (this.creditLine.termEndTime.gt(0)) {
         interestAccrualStart = BigNumber.min(_optimisticInterestAccrualStart, this.creditLine.termEndTime)
@@ -482,8 +539,15 @@ class TranchedPool {
     // start at the first next-due-time (aligned with (i)'s schedule) that occurs *after* the optimistic
     // start of that borrowing, and then (again, aligned with (i)'s schedule), one payment every
     // `paymentPeriodInDays`, until the final payment at `termEndTime`.
+
     if (!(nextRepaymentTimeAlreadyBorrowed || nextRepaymentTimeToBeBorrowed)) {
-      throw new Error("Failed to identify next repayment time.")
+      if (this.creditLine.termEndTime.eq(0) && this.poolState === PoolState.WithdrawalsUnlocked) {
+        // The pool has reached the WithdrawalsUnlocked state without any amount being drawndown. We'll
+        // assume that no amount will be borrowed.
+        return []
+      } else {
+        throw new Error("Failed to identify next repayment time.")
+      }
     }
     const nextRepaymentTime = BigNumber.min(
       nextRepaymentTimeAlreadyBorrowed || new BigNumber(Infinity),

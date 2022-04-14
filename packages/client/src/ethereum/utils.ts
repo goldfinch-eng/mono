@@ -15,6 +15,7 @@ import {KnownEventData, PoolEventType} from "../types/events"
 import {NetworkConfig} from "../types/network"
 import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
+import {getCachedPastEvents} from "./GoldfinchProtocol"
 
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
@@ -75,6 +76,25 @@ const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,
+}
+
+enum SupportedChainId {
+  MAINNET = 1,
+  ROPSTEN = 3,
+  LOCAL = 31337,
+  MURMURATION = 31337,
+}
+
+const MURMURATION_RPC_URL = "https://murmuration.goldfinch.finance/_chain"
+
+// Defines the chain info to add in case it doesn't exist on the user's wallet,
+// since all the supported networks are default ones, the only one we need to
+// specify is the one for murmuration
+const ChainInfoToAdd: Record<number, {label: string; rpcUrl: string}> = {
+  [SupportedChainId.MURMURATION]: {
+    label: "Murmuration",
+    rpcUrl: MURMURATION_RPC_URL,
+  },
 }
 
 let config
@@ -297,7 +317,7 @@ async function getPoolEvents<T extends PoolEventType>(
           await Promise.all(
             chunks.map(
               (chunk): Promise<EventData[]> =>
-                pool.contract.readOnly.getPastEvents(eventName, {
+                getCachedPastEvents(pool.contract.readOnly, eventName, {
                   filter: address ? {capitalProvider: address} : undefined,
                   fromBlock: chunk.fromBlock,
                   toBlock: chunk.toBlock,
@@ -323,6 +343,8 @@ export {
   getMerkleDirectDistributorInfo,
   getBackerMerkleDirectDistributorInfo,
   mapNetworkToID,
+  SupportedChainId,
+  ChainInfoToAdd,
   transformedConfig,
   fetchDataFromAttributes,
   decimalPlaces,

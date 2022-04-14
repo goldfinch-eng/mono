@@ -3,17 +3,15 @@ import Notify, {API as NotifyAPI} from "bnc-notify"
 import _ from "lodash"
 import moment from "moment"
 import Web3 from "web3"
-import {AbstractProvider} from "web3-core"
 import {Subscription} from "web3-core-subscriptions"
 import {BlockHeader} from "web3-eth"
+import {ethers} from "ethers"
 import {CONFIRMATION_THRESHOLD} from "../ethereum/utils"
 import {CurrentTx, CurrentTxDataByType, FailedCurrentTx, PendingCurrentTx, TxType} from "../types/transactions"
-import {assertErrorLike, assertNonNullable, BlockInfo, ErrorLike, isCodedErrorLike} from "../utils"
+import {assertErrorLike, BlockInfo, ErrorLike, isCodedErrorLike} from "../utils"
+import walletConnect from "../walletConnect"
 
 const NOTIFY_API_KEY = "8447e1ef-75ab-4f77-b98f-f1ade3bb1982"
-const MURMURATION_CHAIN_ID = 31337
-const MURMURATION_CHAIN_ID_HEX = `0x${MURMURATION_CHAIN_ID.toString(16)}`
-const MURMURATION_RPC_URL = "https://murmuration.goldfinch.finance/_chain"
 
 type SetCurrentTxs = (fn: (currentTx: CurrentTx<TxType>[]) => CurrentTx<TxType>[]) => void
 type SetCurrentErrors = (fn: (currentErrors: any[]) => any[]) => void
@@ -40,36 +38,20 @@ class NetworkMonitor {
     this.networkId = await this.userWalletWeb3.eth.getChainId()
     this.notifySdk = Notify({dappId: NOTIFY_API_KEY, networkId: this.networkId})
     this.currentBlockNumber = currentBlock.number
-    this.blockHeaderSubscription = this.userWalletWeb3.eth.subscribe("newBlockHeaders")
-    this.blockHeaderSubscription.on("data", (blockHeader) => {
-      this.newBlockHeaderReceived(blockHeader)
-    })
-
-    if (process.env.REACT_APP_MURMURATION === "yes" && this.networkId !== MURMURATION_CHAIN_ID) {
-      const currentProvider: AbstractProvider = this.userWalletWeb3.currentProvider as AbstractProvider
-      assertNonNullable(currentProvider.request)
-      try {
-        await currentProvider.request({
-          method: "wallet_switchEthereumChain",
-          params: [{chainId: MURMURATION_CHAIN_ID_HEX}],
-        })
-      } catch (err: unknown) {
-        // This error code indicates the chain has not yet been added to Metamask.
-        // In that case, prompt the user to add a new chain.
-        // https://docs.metamask.io/guide/rpc-api.html#usage-with-wallet-switchethereumchain
-        if (isCodedErrorLike(err) && err.code === 4902) {
-          await currentProvider.request({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: MURMURATION_CHAIN_ID_HEX,
-                chainName: "Murmuration",
-                rpcUrls: [MURMURATION_RPC_URL],
-              },
-            ],
-          })
-        }
-      }
+    if (walletConnect.isWCProvider(this.userWalletWeb3.currentProvider)) {
+      walletConnect.subscribe(this.networkId, {
+        tag: "block",
+        params: ["newHeads"],
+        processFunction: (blockHeader: BlockHeader | unknown) => {
+          const formatter = new ethers.providers.Formatter()
+          this.newBlockHeaderReceived(formatter.block(blockHeader))
+        },
+      })
+    } else {
+      this.blockHeaderSubscription = this.userWalletWeb3.eth.subscribe("newBlockHeaders")
+      this.blockHeaderSubscription.on("data", (blockHeader: BlockHeader) => {
+        this.newBlockHeaderReceived(blockHeader)
+      })
     }
   }
 
@@ -118,7 +100,9 @@ class NetworkMonitor {
     txData.id = txHash
 
     if (this.isLocalNetwork) {
-      // Blocknative does not work for the local network
+      // On a local network, we expect the transaction to be included in the next block to be mined.
+      // We set this so that we can listen for the block to be mined and mark it successful in updatePendingTxs
+      this.updateTX(txData, {blockNumber: this.currentBlockNumber + 1})
       return
     }
 
@@ -172,11 +156,6 @@ class NetworkMonitor {
       onConfirm: undefined,
       errorMessage: undefined,
       ...txData,
-    }
-    if (this.isLocalNetwork) {
-      // On a local network, we expect the transaction to be included in the next block to be mined.
-      // We set this so that we can listen for the block to be mined and mark it successful in updatePendingTxs
-      tx.blockNumber = this.currentBlockNumber + 1
     }
     this.setCurrentTxs((currentTxs) => {
       const newTxs: CurrentTx<TxType>[] = currentTxs.concat([tx as CurrentTx<TxType>])

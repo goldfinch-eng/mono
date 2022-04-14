@@ -44,7 +44,7 @@ import {
   getBackerMerkleDirectDistributorAbi,
 } from "./constants"
 import isEqual from "lodash/isEqual"
-import web3 from "../../../web3"
+import getWeb3 from "../../../web3"
 import {
   MerkleDirectDistributorGrantInfo,
   MerkleDirectDistributorInfo,
@@ -174,14 +174,16 @@ export async function mockUserRelatedInitializationContractCalls(
       [],
     ])
   }
-  user._fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
+  user._fetchGoListStatus = (address: string, currentBlock: BlockInfo) => {
     return Promise.resolve({
-      legacyGolisted: true,
-      golisted: true,
-      hasUID: true,
-      hasNonUSUID: true,
-      hasUSAccreditedUID: true,
-      hasUSNonAccreditedUID: true,
+      goListed: true,
+      uidTypeToBalance: {
+        "0": true,
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+      },
     })
   }
 
@@ -786,6 +788,7 @@ export async function mockStakeFiduBannerCalls(
   allowanceAmount: string,
   notStakedFidu: string
 ) {
+  const web3 = getWeb3()
   const DEPLOYMENTS = await getDeployments()
   const balanceMock = mock({
     blockchain,

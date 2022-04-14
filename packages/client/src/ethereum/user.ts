@@ -8,7 +8,6 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
@@ -71,7 +70,7 @@ import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, Community
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {GoldfinchProtocol, getCachedPastEvents} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
 import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
@@ -900,6 +899,20 @@ export type UserBackerMerkleDirectDistributorLoaded = WithLoadedInfo<
   UserMerkleDirectDistributorLoadedInfo
 >
 
+export const NON_US_INDIVIDUAL_ID_TYPE_0 = "0"
+export const US_ACCREDITED_INDIVIDUAL_ID_TYPE_1 = "1"
+export const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = "2"
+export const US_ENTITY_ID_TYPE_3 = "3"
+export const NON_US_ENTITY_ID_TYPE_4 = "4"
+
+export type UIDType =
+  | typeof NON_US_INDIVIDUAL_ID_TYPE_0
+  | typeof US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
+  | typeof US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
+  | typeof US_ENTITY_ID_TYPE_3
+  | typeof NON_US_ENTITY_ID_TYPE_4
+export type UIDTypeToBalance = Record<UIDType, boolean>
+
 export type UserLoadedInfo = {
   currentBlock: BlockInfo
   usdcBalance: BigNumber
@@ -917,11 +930,7 @@ export type UserLoadedInfo = {
   >[]
   poolTxs: HistoricalTx<PoolEventType>[]
   goListed: boolean
-  legacyGolisted: boolean
-  hasUID: boolean
-  hasNonUSUID: boolean
-  hasUSAccreditedUID: boolean
-  hasUSNonAccreditedUID: boolean
+  uidTypeToBalance: UIDTypeToBalance
   gfiBalance: BigNumber
   usdcIsUnlocked: {
     earn: {
@@ -1021,13 +1030,7 @@ export class User {
     )
     pastTxs = await populateDates(pastTxs)
 
-    const golistStatus = await this._fetchGolistStatus(this.address, currentBlock)
-    const goListed = golistStatus.golisted
-    const legacyGolisted = golistStatus.legacyGolisted
-    const hasUID = golistStatus.hasUID
-    const hasNonUSUID = golistStatus.hasNonUSUID
-    const hasUSAccreditedUID = golistStatus.hasUSAccreditedUID
-    const hasUSNonAccreditedUID = golistStatus.hasUSNonAccreditedUID
+    const {goListed, uidTypeToBalance} = await this._fetchGoListStatus(this.address, currentBlock)
 
     const gfiBalance = new BigNumber(
       await gfi.contract.readOnly.methods.balanceOf(this.address).call(undefined, currentBlock.number)
@@ -1048,11 +1051,7 @@ export class User {
         pastTxs,
         poolTxs,
         goListed,
-        legacyGolisted,
-        hasUID,
-        hasNonUSUID,
-        hasUSAccreditedUID,
-        hasUSNonAccreditedUID,
+        uidTypeToBalance,
         gfiBalance,
         usdcIsUnlocked: {
           earn: {
@@ -1203,34 +1202,46 @@ export class User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
-    const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-    const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
-
+  async _fetchGoListStatus(
+    address: string,
+    currentBlock: BlockInfo
+  ): Promise<{
+    goListed: boolean
+    uidTypeToBalance: UIDTypeToBalance
+  }> {
     const go = this.goldfinchProtocol.getContract<Go>("Go")
-    const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const goListed = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
     // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-    const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
-    const ID_TYPE_1 = await uniqueIdentity.readOnly.methods.ID_TYPE_1().call()
-    const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
     const balances = await uniqueIdentity.readOnly.methods
-      .balanceOfBatch([address, address, address], [ID_TYPE_0, ID_TYPE_1, ID_TYPE_2])
+      .balanceOfBatch(
+        [address, address, address, address, address],
+        [
+          NON_US_INDIVIDUAL_ID_TYPE_0,
+          US_ACCREDITED_INDIVIDUAL_ID_TYPE_1,
+          US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2,
+          US_ENTITY_ID_TYPE_3,
+          NON_US_ENTITY_ID_TYPE_4,
+        ]
+      )
       .call(undefined, currentBlock.number)
 
-    const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
     const hasNonUSUID = !new BigNumber(String(balances[0])).isZero()
     const hasUSAccreditedUID = !new BigNumber(String(balances[1])).isZero()
     const hasUSNonAccreditedUID = !new BigNumber(String(balances[2])).isZero()
+    const hasUSEntityUID = !new BigNumber(String(balances[3])).isZero()
+    const hasNonUSEntityUID = !new BigNumber(String(balances[4])).isZero()
 
     return {
-      legacyGolisted,
-      golisted,
-      hasUID,
-      hasNonUSUID,
-      hasUSAccreditedUID,
-      hasUSNonAccreditedUID,
+      goListed,
+      uidTypeToBalance: {
+        [NON_US_INDIVIDUAL_ID_TYPE_0]: hasNonUSUID,
+        [US_ACCREDITED_INDIVIDUAL_ID_TYPE_1]: hasUSAccreditedUID,
+        [US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2]: hasUSNonAccreditedUID,
+        [US_ENTITY_ID_TYPE_3]: hasUSEntityUID,
+        [NON_US_ENTITY_ID_TYPE_4]: hasNonUSEntityUID,
+      },
     }
   }
 
@@ -1251,7 +1262,7 @@ async function getAndTransformUSDCEvents(
   owner: string,
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
-  let approvalEvents = await usdc.contract.readOnly.getPastEvents(APPROVAL_EVENT, {
+  let approvalEvents = await getCachedPastEvents(usdc.contract.readOnly, APPROVAL_EVENT, {
     filter: {owner, spender},
     fromBlock: "earliest",
     toBlock: currentBlock.number,
@@ -1330,13 +1341,13 @@ async function getAndTransformCreditDeskEvents(
 ): Promise<HistoricalTx<CreditDeskEventType>[]> {
   const fromBlock = getFromBlock(networkId)
   const [paymentEvents, drawdownEvents] = await Promise.all(
-    CREDIT_DESK_EVENT_TYPES.map((eventName) => {
-      return creditDesk.readOnly.getPastEvents(eventName, {
+    CREDIT_DESK_EVENT_TYPES.map((eventName) =>
+      getCachedPastEvents(creditDesk.readOnly, eventName, {
         filter: {payer: address, borrower: address},
         fromBlock,
         toBlock: currentBlock.number,
       })
-    })
+    )
   )
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
   return await mapEventsToTx<CreditDeskEventType>(creditDeskEvents, CREDIT_DESK_EVENT_TYPES, {

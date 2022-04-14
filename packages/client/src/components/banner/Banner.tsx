@@ -1,13 +1,15 @@
 import React, {ReactNode} from "react"
 
+type BannerVariant = "warning"
+
 interface BaseBannerProps {
   className?: string
   children: ReactNode
   icon?: JSX.Element
-  variant?: string
+  variant?: BannerVariant
 }
 
-function getVariantColor(variant: string | undefined): string {
+function getVariantColor(variant?: BannerVariant): string {
   switch (variant) {
     case "warning":
       return "warning-banner"
@@ -21,7 +23,7 @@ function Banner(props: BaseBannerProps) {
     <div className={`background-container ${getVariantColor(props.variant)} ${props.className}`}>
       <div className="message">
         {props.icon}
-        <p>{props.children}</p>
+        <div>{props.children}</div>
       </div>
     </div>
   )

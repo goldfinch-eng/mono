@@ -1,9 +1,10 @@
-import React from "react"
+import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import {useContext, useEffect, useState} from "react"
+import React, {useContext, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../../App"
+import {US_ACCREDITED_INDIVIDUAL_ID_TYPE_1, US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2} from "../../ethereum/user"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import useSendFromUser from "../../hooks/useSendFromUser"
@@ -12,10 +13,10 @@ import {NetworkConfig} from "../../types/network"
 import {MINT_UID_TX_TYPE} from "../../types/transactions"
 import {UserWalletWeb3Status} from "../../types/web3"
 import {assertNonNullable} from "../../utils"
+import Banner from "../banner"
 import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
-import {Action, END, US_COUNTRY_CODE} from "./constants"
-import VerificationNotice from "./VerificationNotice"
+import {Action} from "./constants"
 import ErrorCard from "./ErrorCard"
 
 const UNIQUE_IDENTITY_SIGNER_URLS = {
@@ -78,16 +79,6 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
   const sendFromUser = useSendFromUser()
   const [errored, setErrored] = useState<boolean>(false)
 
-  useEffect(() => {
-    if (disabled) {
-      return
-    }
-
-    if (user && user.info.value.hasUID) {
-      dispatch({type: END})
-    }
-  })
-
   const action = async () => {
     assertNonNullable(currentBlock)
     assertNonNullable(refreshCurrentBlock)
@@ -108,11 +99,14 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
       const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
-      let version: string = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
+      let version
       try {
         const response = await client.fetchKYCStatus(userAddress)
-        if (response.ok && response.json.countryCode === US_COUNTRY_CODE) {
-          version = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
+        if (response.ok) {
+          version = getIDType({
+            address: userAddress,
+            kycStatus: response.json,
+          })
         }
       } catch (err: unknown) {
         setErrored(true)
@@ -127,18 +121,27 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
         },
         {value: UNIQUE_IDENTITY_MINT_PRICE}
       )
-      refreshCurrentBlock()
     } catch (err: unknown) {
       setErrored(true)
       console.error(err)
     }
   }
 
-  if (user && user.info.value.hasUID) {
-    return (
-      <VerificationNotice
-        icon={iconCircleCheck}
-        notice={
+  const usNonAccreditedAdvisory = (
+    <>
+      <br />
+      <br />
+      Note: U.S individuals who have not verified as accredited investors are only eligible to participate in governance
+      activities. They may not participate in the Senior or Borrower Pools.
+    </>
+  )
+
+  if (user) {
+    const uidTypeToBalance = user.info.value.uidTypeToBalance
+    const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
+    if (hasAnyUID) {
+      return (
+        <Banner icon={iconCircleCheck} className="verify-card subtle">
           <>
             Your UID has been created. View your UID on{" "}
             <a
@@ -150,31 +153,17 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
               OpenSea
             </a>
             .
-            <br />
-            <br />
-            Note: Non-U.S. individuals are eligible to participate in Borrower Pools, the Senior Pool, and Goldfinch
-            governance. U.S. individuals are only eligible to participate in governance.
+            {uidTypeToBalance[US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2] &&
+            !uidTypeToBalance[US_ACCREDITED_INDIVIDUAL_ID_TYPE_1]
+              ? usNonAccreditedAdvisory
+              : undefined}
           </>
-        }
-      />
-    )
-  } else if (user && user.info.value.legacyGolisted) {
-    return (
-      <FormProvider {...formMethods}>
-        <div className={`verify-card background-container subtle ${disabled && "placeholder"}`}>
-          <h1 className="title">Create your UID</h1>
-          <div className="info-banner subtle">
-            <div className="message">
-              <div>
-                <p className="font-small mb-2">Your verification was approved.</p>
-              </div>
-            </div>
-            <LoadingButton disabled={disabled} action={action} text="Create UID" />
-          </div>
-        </div>
-      </FormProvider>
-    )
-  } else if (errored) {
+        </Banner>
+      )
+    }
+  }
+
+  if (errored) {
     return <ErrorCard title="Create your UID" />
   } else {
     return (
@@ -184,12 +173,9 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
           <div className="info-banner subtle">
             <div className="message">
               <p className="font-small">
-                Your UID is an NFT that represents your unique identity and grants you access to certain Goldfinch
-                community privileges.
-                <br />
-                <br />
-                Note: U.S. individuals are only eligible to participate in Goldfinch governance-related activities. They
-                may not participate in the senior pool and borrower pools.
+                Your UID is an NFT that represents your unique identity, and grants you access to important Goldfinch
+                community privileges, including supplying capital and voting.
+                {usNonAccreditedAdvisory}
               </p>
             </div>
             <LoadingButton disabled={disabled} action={action} text="Create UID" />
