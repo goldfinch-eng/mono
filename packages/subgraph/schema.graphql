@@ -150,7 +150,6 @@ type CreditLine @entity {
   collectedPaymentBalance: BigInt
   totalDueAmount: BigInt
   dueDate: String
-  isLate: Boolean!
   isEligibleForRewards: Boolean!
   name: String
 }
