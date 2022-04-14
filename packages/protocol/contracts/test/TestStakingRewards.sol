@@ -16,4 +16,12 @@ contract TestStakingRewards is StakingRewards {
 
     position.unsafeEffectiveMultiplier = newMultiplier;
   }
+
+  function _getStakingTokenMantissa() public view returns (uint256) {
+    return stakingTokenMantissa();
+  }
+
+  function _getRewardsTokenMantissa() public view returns (uint256) {
+    return rewardsTokenMantissa();
+  }
 }

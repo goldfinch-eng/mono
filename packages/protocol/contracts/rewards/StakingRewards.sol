@@ -229,7 +229,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return
       _positionToEffectiveAmount(positions[tokenId])
         .mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId]))
-        .div(stakingTokenMantissa());
+        .div(rewardsTokenMantissa());
   }
 
   function totalOptimisticClaimable(address owner) external view returns (uint256) {
@@ -330,6 +330,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function stakingTokenMantissa() internal view returns (uint256) {
     return uint256(10)**baseStakingToken().decimals();
+  }
+
+  function rewardsTokenMantissa() internal view returns (uint256) {
+    return uint256(10)**rewardsToken().decimals();
   }
 
   /// @notice The amount of rewards currently being earned per token per second. This amount takes into
@@ -879,7 +883,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     accumulatedRewardsPerToken = rewardPerToken();
     uint256 rewardsJustDistributed = totalStakedSupply
       .mul(accumulatedRewardsPerToken.sub(prevAccumulatedRewardsPerToken))
-      .div(stakingTokenMantissa());
+      .div(rewardsTokenMantissa());
     rewardsAvailable = rewardsAvailable.sub(rewardsJustDistributed);
     lastUpdateTime = block.timestamp;
 

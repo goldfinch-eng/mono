@@ -50,6 +50,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
+const FIDU_DECIMALS = new BN(String(1e18))
 const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
@@ -654,6 +655,7 @@ export {
   expect,
   decimals,
   USDC_DECIMALS,
+  FIDU_DECIMALS,
   GFI_DECIMALS,
   BN,
   MAX_UINT,
