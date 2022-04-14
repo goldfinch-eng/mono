@@ -1,4 +1,5 @@
 import "../styles/globals.css";
+import "react-toastify/dist/ReactToastify.min.css";
 
 export const parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },

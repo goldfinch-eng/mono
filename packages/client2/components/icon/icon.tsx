@@ -3,7 +3,7 @@ import clsx from "clsx";
 import ArrowDown from "./svg/arrow-down.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
-import InfoCircle from "./svg/info-circle.svg";
+import InfoCircle from "./svg/info-circle-solid.svg";
 import Menu from "./svg/menu.svg";
 import Wallet from "./svg/wallet.svg";
 import X from "./svg/x.svg";

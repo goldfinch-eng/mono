@@ -4,7 +4,6 @@
 
 @layer base {
   @import url("https://use.typekit.net/oib7cgq.css");
-  @import url("~node_modules/react-toastify/dist/ReactToastify.min.css");
   html,
   body,
   #__next {
@@ -12,5 +11,28 @@
   }
   body {
     @apply font-sans font-normal text-purple-400;
+  }
+
+  /* gets rid of that highlight when you tap buttons on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  *:focus {
+    outline: none;
+    @apply focused;
+  }
+
+  *:focus:not(:focus-visible) {
+    @apply unfocused;
+  }
+}
+
+@layer utilities {
+  .focused {
+    @apply ring-2 ring-purple-300;
+  }
+  .unfocused {
+    @apply ring-0;
   }
 }
