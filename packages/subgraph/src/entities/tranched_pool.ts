@@ -1,22 +1,38 @@
-import {Address, BigInt, log} from "@graphprotocol/graph-ts"
+import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {
   TranchedPool,
   JuniorTrancheInfo,
   SeniorTrancheInfo,
-  PoolBacker,
   TranchedPoolDeposit,
+  CreditLine,
   TranchedPoolBorrowerTransaction,
 } from "../../generated/schema"
 import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
-import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS} from "../constants"
+import {
+  CONFIG_KEYS_NUMBERS,
+  GOLDFINCH_CONFIG_ADDRESS,
+  SENIOR_POOL_ADDRESS,
+  SECONDS_PER_DAY,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
-import {getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets} from "./helpers"
-import {isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {getOrInitSeniorPoolStatus} from "./senior_pool"
+import {
+  getEstimatedLeverageRatio,
+  getTotalDeposited,
+  getEstimatedTotalAssets,
+  isV1StyleDeal,
+  estimateJuniorAPY,
+} from "./helpers"
+import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {getGfiEntity} from "./gfi"
+import {getBackerRewards} from "./backer_rewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
@@ -152,6 +168,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.isPaused = poolContract.paused()
+  tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
   tranchedPool.version = version
   tranchedPool.totalDeployed = totalDeployed
   tranchedPool.fundableAt = fundableAt
@@ -162,9 +179,21 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.creditLine = creditLine.id
     tranchedPool.backers = []
     tranchedPool.tokens = []
+    tranchedPool.createdAt = timestamp
   }
 
+  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
   tranchedPool.save()
+
+  if (isCreating) {
+    const seniorPoolStatus = getOrInitSeniorPoolStatus()
+    const tpl = seniorPoolStatus.tranchedPools
+    tpl.push(tranchedPool.id)
+    seniorPoolStatus.tranchedPools = tpl
+    seniorPoolStatus.save()
+  }
+  calculateApyFromGfiForAllPools(timestamp)
+
   return tranchedPool
 }
 
@@ -190,4 +219,191 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   borrowerTransaction.blockNumber = event.block.number
   borrowerTransaction.type = "PAYMENT_APPLIED"
   borrowerTransaction.save()
+}
+class Repayment {
+  tranchedPoolAddress: string
+  timestamp: BigInt
+  interestAmount: BigInt
+  toString(): string {
+    return `{ tranchedPoolAddress: ${
+      this.tranchedPoolAddress
+    }, timestamp: ${this.timestamp.toString()}, interestAmount: $${this.interestAmount.toString()} }`
+  }
+}
+
+class GfiRewardOnInterest {
+  tranchedPoolAddress: string
+  timestamp: BigInt
+  gfiAmount: BigDecimal
+  toString(): string {
+    return `{ tranchedPoolAddress: ${
+      this.tranchedPoolAddress
+    }, timestamp: ${this.timestamp.toString()}, gfiAmount: ${this.gfiAmount.toString()}}`
+  }
+}
+
+const tranchedPoolBlacklist = [
+  "0x6b42b1a43abe9598052bb8c21fd34c46c9fbcb8b", // Bogus tranched pool with an enormous limit that skews rewards
+  "0xa49506632ce8ec826b0190262b89a800353675ec", // Another bogus pool
+]
+
+export function calculateApyFromGfiForAllPools(now: BigInt): void {
+  const gfi = getGfiEntity()
+  const backerRewards = getBackerRewards()
+  // Bail out early if the backer rewards parameters aren't populated yet
+  if (
+    gfi.totalSupply == BigInt.zero() ||
+    backerRewards.totalRewards == BigInt.zero() ||
+    backerRewards.maxInterestDollarsEligible == BigInt.zero()
+  ) {
+    return
+  }
+  const seniorPoolStatus = getOrInitSeniorPoolStatus()
+  const tranchedPoolList = seniorPoolStatus.tranchedPools
+  let repaymentSchedules: Repayment[] = []
+  for (let i = 0; i < tranchedPoolList.length; i++) {
+    const tranchedPool = TranchedPool.load(tranchedPoolList[i])
+    if (!tranchedPool) {
+      continue
+    }
+    // There's a bogus tranched pool out in the wild that satisfies the requirements for rewards and has a ridiculous number-warping payout. It has to be excluded
+    if (tranchedPoolBlacklist.includes(tranchedPool.id)) {
+      continue
+    }
+    const creditLine = CreditLine.load(tranchedPool.creditLine)
+    if (!creditLine || !creditLine.isEligibleForRewards) {
+      continue
+    }
+    const schedule = getApproximateRepaymentSchedule(tranchedPool, now)
+    repaymentSchedules = repaymentSchedules.concat(schedule)
+  }
+  repaymentSchedules.sort(repaymentComparator)
+
+  const rewardsSchedules = estimateRewards(
+    repaymentSchedules,
+    backerRewards.totalRewards,
+    backerRewards.maxInterestDollarsEligible
+  )
+  const summedRewardsByTranchedPool = new Map<String, BigDecimal>()
+  for (let i = 0; i < rewardsSchedules.length; i++) {
+    const reward = rewardsSchedules[i]
+    const tranchedPoolAddress = reward.tranchedPoolAddress
+    if (summedRewardsByTranchedPool.has(tranchedPoolAddress)) {
+      const currentSum = summedRewardsByTranchedPool.get(tranchedPoolAddress)
+      summedRewardsByTranchedPool.set(tranchedPoolAddress, currentSum.plus(reward.gfiAmount))
+    } else {
+      summedRewardsByTranchedPool.set(tranchedPoolAddress, reward.gfiAmount)
+    }
+  }
+  const gfiPerPrincipleDollar = calculateAnnualizedGfiRewardsPerPrincipleDollar(summedRewardsByTranchedPool)
+  // @ts-ignore .keys() returns an array in AssemblyScript
+  for (let i = 0; i < gfiPerPrincipleDollar.keys().length; i++) {
+    const tranchedPoolAddress = gfiPerPrincipleDollar.keys()[i]
+    const tranchedPool = TranchedPool.load(tranchedPoolAddress)
+    if (!tranchedPool) {
+      continue
+    }
+    tranchedPool.estimatedJuniorApyFromGfiRaw = gfiPerPrincipleDollar
+      .get(tranchedPoolAddress)
+      .div(GFI_DECIMALS.toBigDecimal())
+    tranchedPool.save()
+  }
+}
+
+// TODO tiebreaking logic
+// @ts-ignore
+function repaymentComparator(a: Repayment, b: Repayment): i32 {
+  const timeDiff = a.timestamp.minus(b.timestamp)
+  return timeDiff.toI32()
+}
+
+function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt): Repayment[] {
+  const creditLine = CreditLine.load(tranchedPool.creditLine)
+  if (!creditLine) {
+    return []
+  }
+
+  let startTime: BigInt
+  let endTime: BigInt
+  if (creditLine.termStartTime != BigInt.zero() && creditLine.termEndTime != BigInt.zero()) {
+    startTime = creditLine.termStartTime
+    endTime = creditLine.termEndTime
+  } else {
+    startTime = now.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
+    endTime = startTime.plus(SECONDS_PER_DAY.times(creditLine.termInDays))
+  }
+
+  const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
+  const numRepayments = endTime.minus(startTime).div(secondsPerPaymentPeriod)
+
+  const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
+
+  const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
+  const interestAmount = expectedInterest.div(numRepayments.toBigDecimal()).times(numYears)
+  const repayments: Repayment[] = []
+  for (let i = 0; i < numRepayments.toI32(); i++) {
+    const repaymentTimestamp = startTime.plus(secondsPerPaymentPeriod.times(BigInt.fromI32(i)))
+    repayments.push({
+      tranchedPoolAddress: tranchedPool.id,
+      timestamp: repaymentTimestamp,
+      interestAmount: bigDecimalToBigInt(interestAmount),
+    })
+  }
+  return repayments
+}
+
+function estimateRewards(
+  repaymentSchedules: Repayment[],
+  totalGfiAvailableForBackerRewards: BigInt,
+  maxInterestDollarsEligible: BigInt
+): GfiRewardOnInterest[] {
+  const rewards: GfiRewardOnInterest[] = []
+  let oldTotalInterest = BigInt.zero()
+  for (let i = 0; i < repaymentSchedules.length; i++) {
+    const repayment = repaymentSchedules[i]
+    // Need to use big numbers to get decent accuracy during integer sqrt
+    const newTotalInterest = oldTotalInterest.plus(repayment.interestAmount.times(GFI_DECIMALS).div(USDC_DECIMALS))
+    const sqrtDiff = newTotalInterest.sqrt().minus(oldTotalInterest.sqrt())
+    const gfiAmount = sqrtDiff
+      .times(totalGfiAvailableForBackerRewards)
+      .divDecimal(maxInterestDollarsEligible.sqrt().toBigDecimal())
+    rewards.push({
+      tranchedPoolAddress: repayment.tranchedPoolAddress,
+      timestamp: repayment.timestamp,
+      gfiAmount: gfiAmount,
+    })
+    oldTotalInterest = newTotalInterest
+  }
+
+  return rewards
+}
+
+// ! The estimate done here is very crude. It's not as accurate as the code that lives at `ethereum/backerRewards` in the old Goldfinch client
+function calculateAnnualizedGfiRewardsPerPrincipleDollar(
+  summedRewardsByTranchedPool: Map<String, BigDecimal>
+): Map<String, BigDecimal> {
+  const rewardsPerPrincipleDollar = new Map<String, BigDecimal>()
+  // @ts-ignore
+  for (let i = 0; i < summedRewardsByTranchedPool.keys().length; i++) {
+    const tranchedPoolAddress = summedRewardsByTranchedPool.keys()[i]
+    const tranchedPool = TranchedPool.load(tranchedPoolAddress)
+    if (!tranchedPool) {
+      throw new Error("Unable to load tranchedPool from summedRewardsByTranchedPool")
+    }
+    const creditLine = CreditLine.load(tranchedPool.creditLine)
+    if (!creditLine) {
+      throw new Error("Unable to load creditLine from summedRewardsByTranchedPool")
+    }
+    const juniorPrincipleDollars = creditLine.maxLimit
+      .div(USDC_DECIMALS)
+      .div(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)))
+      .toBigDecimal()
+    const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
+    const perPrincipleDollar = reward.div(juniorPrincipleDollars)
+
+    const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
+    const annualizedPerPrincipleDollar = perPrincipleDollar.div(numYears)
+    rewardsPerPrincipleDollar.set(tranchedPoolAddress, annualizedPerPrincipleDollar)
+  }
+  return rewardsPerPrincipleDollar
 }

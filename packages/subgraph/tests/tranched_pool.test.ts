@@ -54,7 +54,6 @@ test('handleCreditLineMigrated updates or creates a new credit line record', () 
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'interestOwed', '0')
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'termEndTime', '1697995148')
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'lastFullPaymentTime', '1637515148')
-  assert.fieldEquals('CreditLine', newCreditLineAddress, 'termEndDate', '0')
   assert.fieldEquals('CreditLine', newCreditLineAddress, 'version', VERSION_BEFORE_V2_2)
 
   clearStore()

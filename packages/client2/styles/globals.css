@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  @import url("https://use.typekit.net/oib7cgq.css");
+  @import url("~node_modules/react-toastify/dist/ReactToastify.min.css");
+  html,
+  body,
+  #__next {
+    height: 100%;
+  }
+  body {
+    @apply font-sans font-normal text-purple-400;
+  }
+}

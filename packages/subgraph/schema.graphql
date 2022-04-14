@@ -12,6 +12,9 @@ type SeniorPool @entity {
 }
 
 type SeniorPoolStatus @entity {
+  """
+  This entity is a singleton, so the id is always "1"
+  """
   id: ID!
   rawBalance: BigInt!
   compoundBalance: BigInt!
@@ -19,11 +22,14 @@ type SeniorPoolStatus @entity {
   sharePrice: BigInt!
   totalShares: BigInt!
   totalPoolAssets: BigInt!
+  totalPoolAssetsUsdc: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
+  tranchedPools: [TranchedPool!]!
   cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
-  estimatedTotalInterest: BigInt! # TODO requries tranched pool data
-  estimatedApy: BigInt! # TODO requires estimatedTotalInterest
+  estimatedTotalInterest: BigDecimal!
+  estimatedApy: BigDecimal!
+  estimatedApyFromGfiRaw: BigDecimal
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
@@ -133,17 +139,18 @@ type CreditLine @entity {
   nextDueTime: BigInt!
   interestOwed: BigInt!
   termEndTime: BigInt!
+  termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
-  termEndDate: BigInt!
   version: TranchedPoolCreditLineVersion!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
   periodDueAmount: BigInt
-  interestAprDecimal: BigInt
+  interestAprDecimal: BigDecimal!
   collectedPaymentBalance: BigInt
   totalDueAmount: BigInt
   dueDate: String
+  isEligibleForRewards: Boolean!
   name: String
 }
 
@@ -168,13 +175,18 @@ enum TranchedPoolCreditLineVersion {
 
 type TranchedPool @entity {
   id: ID!
-  estimatedJuniorApy: BigInt!
+  estimatedJuniorApy: BigDecimal!
+  estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
+  """
+  Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
+  """
+  isV1StyleDeal: Boolean!
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
@@ -188,6 +200,7 @@ type TranchedPool @entity {
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
+  createdAt: BigInt!
 }
 
 type TranchedPoolToken @entity {
@@ -200,4 +213,30 @@ type TranchedPoolToken @entity {
   interestRedeemed: BigInt!
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
+}
+
+type GFIData @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalSupply: BigInt!
+}
+
+type StakingRewards @entity {
+  id: ID! # Set to "1" because this is a singleton
+  """
+  The earn rate is a measure per second
+  """
+  currentEarnRatePerToken: BigInt!
+  gfiTotalSupply: BigInt!
+}
+
+type BackerRewards @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalRewards: BigInt!
+  totalRewardPercentOfTotalGFI: BigDecimal!
+  """
+  Note that this value is measured in GFI, not dollars
+  """
+  maxInterestDollarsEligible: BigInt!
 }
