@@ -49,6 +49,8 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
     )
   }
 
+  const dataroomHref = tranchedPool.metadata?.dataroom ?? tranchedPool.metadata?.agreement
+
   return (
     <div className={`pool-overview background-container ${!tranchedPool && "placeholder"}`}>
       <div className="background-container-inner">
@@ -56,13 +58,8 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
           <h2 className="pool-overview-title">Overview</h2>
           <div className="pool-links pool-overview-links">
             {detailsLink}
-            {tranchedPool.metadata?.agreement && (
-              <a
-                href={tranchedPool.metadata?.agreement}
-                target="_blank"
-                rel="noreferrer"
-                className="pool-links pool-overview-links"
-              >
+            {dataroomHref && (
+              <a href={dataroomHref} target="_blank" rel="noreferrer" className="pool-links pool-overview-links">
                 Dataroom {iconOutArrow}
               </a>
             )}
