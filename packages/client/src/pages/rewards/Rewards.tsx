@@ -440,21 +440,23 @@ function Rewards() {
               backerRewards={backerRewards}
             />
           ))}
-          {sortedBackerRewards.map((position) => (
-            <RewardActionsContainer
-              key={`backerRewards-${position.backer.tranchedPool.address}`}
-              disabled={disabled}
-              type="backerRewards"
-              item={position}
-              user={user}
-              gfi={gfi}
-              merkleDistributor={merkleDistributor}
-              merkleDirectDistributor={merkleDirectDistributor}
-              stakingRewards={stakingRewards}
-              communityRewards={communityRewards}
-              backerRewards={backerRewards}
-            />
-          ))}
+          {process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
+            ? sortedBackerRewards.map((position) => (
+                <RewardActionsContainer
+                  key={`backerRewards-${position.backer.tranchedPool.address}`}
+                  disabled={disabled}
+                  type="backerRewards"
+                  item={position}
+                  user={user}
+                  gfi={gfi}
+                  merkleDistributor={merkleDistributor}
+                  merkleDirectDistributor={merkleDirectDistributor}
+                  stakingRewards={stakingRewards}
+                  communityRewards={communityRewards}
+                  backerRewards={backerRewards}
+                />
+              ))
+            : undefined}
           {sortedMerkleDistributorRewards.map((sorted) => {
             switch (sorted.type) {
               case "communityRewards:merkleDistributor":

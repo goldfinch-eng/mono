@@ -91,15 +91,12 @@ export class BackerRewards {
    * the conditions in `BackerRewards.withdraw()` that prevent withdrawing rewards.
    */
   juniorTranchePoolTokenRewardsAreWithdrawable(tranchedPool: TranchedPool): boolean {
-    // TODO Remove this after the v2.6 migration is deployed.
-    const tempDisabledPending26Migration = process.env.NODE_ENV === "production"
-
     assertWithLoadedInfo(this)
     return (
       !this.info.value.isPaused &&
       !tranchedPool.isPaused &&
       !tranchedPool.creditLine.isLate &&
-      !tempDisabledPending26Migration
+      process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
     )
   }
 
