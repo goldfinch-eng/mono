@@ -36,7 +36,6 @@ import {
   usdcToFidu,
   decimals,
   FIDU_DECIMALS,
-  GFI_DECIMALS,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
@@ -233,17 +232,16 @@ describe("StakingRewards", function () {
     } = await testSetup())
   })
 
-  describe("stakingTokenMantissa", () => {
+  describe("stakingAndRewardsTokenMantissa", () => {
     it("returns the expected value", async () => {
-      const mantissa = await stakingRewards._getStakingTokenMantissa()
-      expect(mantissa).to.bignumber.equal(FIDU_DECIMALS)
-    })
-  })
-
-  describe("rewardsTokenMantissa", () => {
-    it("returns the expected value", async () => {
-      const mantissa = await stakingRewards._getRewardsTokenMantissa()
-      expect(mantissa).to.bignumber.equal(GFI_DECIMALS)
+      const stakingAndRewardsTokenMantissa = await stakingRewards._getStakingAndRewardsTokenMantissa()
+      const fiduStakingTokenMantissa = await stakingRewards._getFiduStakingTokenMantissa()
+      const curveLPStakingTokenMantissa = await stakingRewards._getCurveLPStakingTokenMantissa()
+      const rewardsTokenMantissa = await stakingRewards._getRewardsTokenMantissa()
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(fiduStakingTokenMantissa)
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(curveLPStakingTokenMantissa)
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(rewardsTokenMantissa)
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(FIDU_DECIMALS)
     })
   })
 

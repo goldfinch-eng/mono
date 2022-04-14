@@ -17,11 +17,19 @@ contract TestStakingRewards is StakingRewards {
     position.unsafeEffectiveMultiplier = newMultiplier;
   }
 
-  function _getStakingTokenMantissa() public view returns (uint256) {
-    return stakingTokenMantissa();
+  function _getStakingAndRewardsTokenMantissa() public view returns (uint256) {
+    return stakingAndRewardsTokenMantissa();
+  }
+
+  function _getFiduStakingTokenMantissa() public view returns (uint256) {
+    return IERC20withDec(address(stakingToken(StakedPositionType.Fidu))).decimals();
+  }
+
+  function _getCurveLPStakingTokenMantissa() public view returns (uint256) {
+    return IERC20withDec(address(stakingToken(StakedPositionType.CurveLP))).decimals();
   }
 
   function _getRewardsTokenMantissa() public view returns (uint256) {
-    return rewardsTokenMantissa();
+    return rewardsToken().decimals();
   }
 }
