@@ -203,7 +203,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       return 0;
     }
     uint256 rewardsSinceLastUpdate = Math.min(time.sub(lastUpdateTime).mul(rewardRate()), rewardsAvailable);
-    uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingTokenMantissa()).div(totalStakedSupply);
+    uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingAndRewardsTokenMantissa()).div(
+      totalStakedSupply
+    );
     // Prevent perverse, infinite-mint scenario where totalStakedSupply is a fraction of a token.
     // Since it's used as the denominator, this could make additionalRewardPerToken larger than the total number
     // of tokens that should have been disbursed in the elapsed time. The attacker would need to find
@@ -229,7 +231,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return
       _positionToEffectiveAmount(positions[tokenId])
         .mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId]))
-        .div(stakingTokenMantissa());
+        .div(stakingAndRewardsTokenMantissa());
   }
 
   function totalOptimisticClaimable(address owner) external view returns (uint256) {
@@ -328,7 +330,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       );
   }
 
-  function stakingTokenMantissa() internal view returns (uint256) {
+  /// @dev We overload the responsibility of this function -- i.e. returning a value that can be
+  /// used for both the `stakingToken()` mantissa and the `rewardsToken()` mantissa --, rather than have
+  /// multiple distinct functions for that purpose, in order to reduce contract size. We rely on a unit
+  /// test to ensure that the tokens' mantissas are indeed equal and therefore that this approach works.
+  function stakingAndRewardsTokenMantissa() internal view returns (uint256) {
     return uint256(10)**baseStakingToken().decimals();
   }
 
@@ -348,7 +354,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   for a given position, and not as an input to the mutative calculations in this contract.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function positionCurrentEarnRate(uint256 tokenId) external view returns (uint256) {
-    return currentEarnRatePerToken().mul(_positionToEffectiveAmount(positions[tokenId])).div(stakingTokenMantissa());
+    return
+      currentEarnRatePerToken().mul(_positionToEffectiveAmount(positions[tokenId])).div(
+        stakingAndRewardsTokenMantissa()
+      );
   }
 
   /* ========== MUTATIVE FUNCTIONS ========== */
@@ -879,7 +888,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     accumulatedRewardsPerToken = rewardPerToken();
     uint256 rewardsJustDistributed = totalStakedSupply
       .mul(accumulatedRewardsPerToken.sub(prevAccumulatedRewardsPerToken))
-      .div(stakingTokenMantissa());
+      .div(stakingAndRewardsTokenMantissa());
     rewardsAvailable = rewardsAvailable.sub(rewardsJustDistributed);
     lastUpdateTime = block.timestamp;
 

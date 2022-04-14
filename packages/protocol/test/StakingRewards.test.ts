@@ -35,7 +35,7 @@ import {
   getCurrentTimestamp,
   usdcToFidu,
   decimals,
-  tolerance,
+  FIDU_DECIMALS,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
@@ -230,6 +230,19 @@ describe("StakingRewards", function () {
       goldfinchConfig,
       curveLPAmount,
     } = await testSetup())
+  })
+
+  describe("stakingAndRewardsTokenMantissa", () => {
+    it("returns the expected value", async () => {
+      const stakingAndRewardsTokenMantissa = await stakingRewards._getStakingAndRewardsTokenMantissa()
+      const fiduStakingTokenMantissa = await stakingRewards._getFiduStakingTokenMantissa()
+      const curveLPStakingTokenMantissa = await stakingRewards._getCurveLPStakingTokenMantissa()
+      const rewardsTokenMantissa = await stakingRewards._getRewardsTokenMantissa()
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(fiduStakingTokenMantissa)
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(curveLPStakingTokenMantissa)
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(rewardsTokenMantissa)
+      expect(stakingAndRewardsTokenMantissa).to.bignumber.equal(FIDU_DECIMALS)
+    })
   })
 
   describe("stake", () => {
