@@ -320,7 +320,7 @@ function Rewards() {
       !userBackerMerkleDirectDistributor.info.value.airdrops.notAccepted.length &&
       !userBackerMerkleDirectDistributor.info.value.airdrops.accepted.length &&
       !userStakingRewards.info.value.positions.length &&
-      !userBackerRewards.info.value.positions.length
+      (process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes" ? !userBackerRewards.info.value.positions.length : true)
 
     gfiBalance = user.info.value.gfiBalance
     claimable = userStakingRewards.info.value.claimable
@@ -336,7 +336,11 @@ function Rewards() {
         userBackerMerkleDistributor.info.value.notAcceptedClaimable
       )
       .plus(userBackerMerkleDirectDistributor.info.value.claimable)
-      .plus(userBackerRewards.info.value.claimable)
+      .plus(
+        process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
+          ? userBackerRewards.info.value.claimable
+          : new BigNumber(0)
+      )
     unvested = userStakingRewards.info.value.unvested
       .plus(userCommunityRewards.info.value.unvested)
       .plus(
@@ -349,7 +353,9 @@ function Rewards() {
         userBackerMerkleDistributor.info.value.notAcceptedUnvested
       )
       .plus(userBackerMerkleDirectDistributor.info.value.unvested)
-      .plus(userBackerRewards.info.value.unvested)
+      .plus(
+        process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes" ? userBackerRewards.info.value.unvested : new BigNumber(0)
+      )
 
     totalBalance = gfiBalance.plus(claimable).plus(unvested)
     totalUSD = gfiInDollars(gfiToDollarsAtomic(totalBalance, gfi.info.value.price))
@@ -360,7 +366,9 @@ function Rewards() {
       const sortedStakingRewards: StakingRewardsPosition[] =
         userStakingRewards.info.value.positions.sort(compareStakingRewards)
       const sortedBackerRewards: BackerRewardsPosition[] =
-        userBackerRewards.info.value.positions.sort(compareBackerRewards)
+        process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
+          ? userBackerRewards.info.value.positions.sort(compareBackerRewards)
+          : []
       const sortedMerkleDistributorRewards: SortableMerkleDistributorRewards[] = [
         ...userMerkleDistributor.info.value.airdrops.notAccepted.map<SortableMerkleDistributorRewards>((grantInfo) => ({
           type: "merkleDistributor",
@@ -440,23 +448,21 @@ function Rewards() {
               backerRewards={backerRewards}
             />
           ))}
-          {process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
-            ? sortedBackerRewards.map((position) => (
-                <RewardActionsContainer
-                  key={`backerRewards-${position.backer.tranchedPool.address}`}
-                  disabled={disabled}
-                  type="backerRewards"
-                  item={position}
-                  user={user}
-                  gfi={gfi}
-                  merkleDistributor={merkleDistributor}
-                  merkleDirectDistributor={merkleDirectDistributor}
-                  stakingRewards={stakingRewards}
-                  communityRewards={communityRewards}
-                  backerRewards={backerRewards}
-                />
-              ))
-            : undefined}
+          {sortedBackerRewards.map((position) => (
+            <RewardActionsContainer
+              key={`backerRewards-${position.backer.tranchedPool.address}`}
+              disabled={disabled}
+              type="backerRewards"
+              item={position}
+              user={user}
+              gfi={gfi}
+              merkleDistributor={merkleDistributor}
+              merkleDirectDistributor={merkleDirectDistributor}
+              stakingRewards={stakingRewards}
+              communityRewards={communityRewards}
+              backerRewards={backerRewards}
+            />
+          ))}
           {sortedMerkleDistributorRewards.map((sorted) => {
             switch (sorted.type) {
               case "communityRewards:merkleDistributor":
