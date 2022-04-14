@@ -23,6 +23,8 @@ import {
   CreditDeskEventType,
   CREDIT_DESK_EVENT_TYPES,
   DEPOSITED_AND_STAKED_EVENT,
+  DEPOSITED_TO_CURVE_EVENT,
+  DEPOSITED_TO_CURVE_AND_STAKED_EVENT,
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
   GRANT_ACCEPTED_EVENT,
@@ -42,6 +44,7 @@ import {
   UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   UNSTAKED_EVENT,
   WITHDRAWAL_MADE_EVENT,
+  UNSTAKED_MULTIPLE_EVENT,
 } from "../types/events"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {
@@ -53,6 +56,8 @@ import {
   ACCEPT_TX_TYPE,
   BORROW_TX_TYPE,
   CLAIM_TX_TYPE,
+  DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
+  DEPOSIT_TO_CURVE_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
   HistoricalTx,
   PAYMENT_TX_TYPE,
@@ -60,6 +65,7 @@ import {
   SUPPLY_AND_STAKE_TX_TYPE,
   SUPPLY_TX_TYPE,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  UNSTAKE_MULTIPLE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
@@ -1141,11 +1147,17 @@ export class User {
                   return STAKE_TX_TYPE
                 case DEPOSITED_AND_STAKED_EVENT:
                   return SUPPLY_AND_STAKE_TX_TYPE
+                case DEPOSITED_TO_CURVE_EVENT:
+                  return DEPOSIT_TO_CURVE_TX_TYPE
+                case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
+                  return DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE
                 case UNSTAKED_EVENT:
                   return UNSTAKE_TX_NAME
                 case UNSTAKED_AND_WITHDREW_EVENT:
                 case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
                   return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
+                case UNSTAKED_MULTIPLE_EVENT:
+                  return UNSTAKE_MULTIPLE_TX_TYPE
                 case REWARD_PAID_EVENT:
                   return CLAIM_TX_TYPE
                 default:
@@ -1164,6 +1176,13 @@ export class User {
                     amount: eventData.returnValues.depositedAmount,
                     units: "usdc",
                   }
+                case DEPOSITED_TO_CURVE_EVENT:
+                case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
+                  // TODO(@emilyhsia): Update with multiple amounts and units
+                  return {
+                    amount: eventData.returnValues.fiduAmount,
+                    units: "fidu",
+                  }
                 case UNSTAKED_EVENT:
                   return {
                     amount: eventData.returnValues.amount,
@@ -1174,6 +1193,12 @@ export class User {
                   return {
                     amount: eventData.returnValues.usdcReceivedAmount,
                     units: "usdc",
+                  }
+                case UNSTAKED_MULTIPLE_EVENT:
+                  // TODO(@emilyhsia): Update with multiple amounts and units
+                  return {
+                    amount: eventData.returnValues.amounts,
+                    units: "fidu",
                   }
                 case REWARD_PAID_EVENT:
                   return {
@@ -1411,11 +1436,21 @@ function getNonOverlappingStakingRewardsEvents(
           acc.depositedAndStaked[curr.blockNumber] = acc.depositedAndStaked[curr.blockNumber] || {}
           acc.depositedAndStaked[curr.blockNumber]![curr.transactionIndex] = true
           break
+        case DEPOSITED_TO_CURVE_EVENT:
+          break
+        case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
+          acc.depositedToCurveAndStaked[curr.blockNumber] = acc.depositedToCurveAndStaked[curr.blockNumber] || {}
+          acc.depositedToCurveAndStaked[curr.blockNumber]![curr.transactionIndex] = true
+          break
         case UNSTAKED_EVENT:
           break
         case UNSTAKED_AND_WITHDREW_EVENT:
           acc.unstakedAndWithdrew[curr.blockNumber] = acc.unstakedAndWithdrew[curr.blockNumber] || {}
           acc.unstakedAndWithdrew[curr.blockNumber]![curr.transactionIndex] = true
+          break
+        case UNSTAKED_MULTIPLE_EVENT:
+          acc.unstakedMultiple[curr.blockNumber] = acc.unstakedMultiple[curr.blockNumber] || {}
+          acc.unstakedMultiple[curr.blockNumber]![curr.transactionIndex] = true
           break
         case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
           acc.unstakedAndWithdrewMultiple[curr.blockNumber] = acc.unstakedAndWithdrewMultiple[curr.blockNumber] || {}
@@ -1430,23 +1465,32 @@ function getNonOverlappingStakingRewardsEvents(
     },
     {
       depositedAndStaked: {},
+      depositedToCurveAndStaked: {},
       unstakedAndWithdrew: {},
+      unstakedMultiple: {},
       unstakedAndWithdrewMultiple: {},
     }
   )
   return overlappingStakingRewardsEvents.filter((eventData): boolean => {
     switch (eventData.event) {
       case STAKED_EVENT:
-        return !reduced.depositedAndStaked[eventData.blockNumber]?.[eventData.transactionIndex]
+        return (
+          !reduced.depositedAndStaked[eventData.blockNumber]?.[eventData.transactionIndex] &&
+          !reduced.depositedToCurveAndStaked[eventData.blockNumber]?.[eventData.transactionIndex]
+        )
       case DEPOSITED_AND_STAKED_EVENT:
+      case DEPOSITED_TO_CURVE_EVENT:
+      case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
         return true
       case UNSTAKED_EVENT:
         return (
           !reduced.unstakedAndWithdrew[eventData.blockNumber]?.[eventData.transactionIndex] &&
-          !reduced.unstakedAndWithdrewMultiple[eventData.blockNumber]?.[eventData.transactionIndex]
+          !reduced.unstakedAndWithdrewMultiple[eventData.blockNumber]?.[eventData.transactionIndex] &&
+          !reduced.unstakedMultiple[eventData.blockNumber]?.[eventData.transactionIndex]
         )
       case UNSTAKED_AND_WITHDREW_EVENT:
       case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+      case UNSTAKED_MULTIPLE_EVENT:
       case REWARD_PAID_EVENT:
         return true
       default:
@@ -1463,7 +1507,9 @@ type CorrespondingExistsInfo = {
 
 type OverlapAccumulator = {
   depositedAndStaked: CorrespondingExistsInfo
+  depositedToCurveAndStaked: CorrespondingExistsInfo
   unstakedAndWithdrew: CorrespondingExistsInfo
+  unstakedMultiple: CorrespondingExistsInfo
   unstakedAndWithdrewMultiple: CorrespondingExistsInfo
 }
 

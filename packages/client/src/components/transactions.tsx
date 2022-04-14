@@ -44,6 +44,9 @@ import {
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   UNSTAKE_MULTIPLE_TX_TYPE,
   DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
+  FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
+  DEPOSIT_TO_CURVE_TX_TYPE,
+  ZAP_STAKE_TO_CURVE_TX_TYPE,
 } from "../types/transactions"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
@@ -191,6 +194,7 @@ function Transactions(props: TransactionsProps) {
           break
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE: {
           const txAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).amount
           let max = MAX_UINT.toString()
@@ -229,6 +233,8 @@ function Transactions(props: TransactionsProps) {
           amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
           amountSuffix = ` ${(tx.data as CurrentTx<typeof tx.name>["data"]).ticker}`
           break
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
         case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
           direction = "outflow"
           // TODO(@emilyhsia): Display both FIDU and USDC
@@ -261,6 +267,8 @@ function Transactions(props: TransactionsProps) {
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
         case SUPPLY_AND_STAKE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
           direction = "inflow"
           break
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
@@ -271,6 +279,7 @@ function Transactions(props: TransactionsProps) {
           break
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE: {
           const txAmount = tx.amount.atomic
           let max = MAX_UINT.toString()
@@ -291,6 +300,7 @@ function Transactions(props: TransactionsProps) {
         case PRINCIPAL_PAYMENT_TX_NAME:
         case INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME:
         case DRAWDOWN_TX_NAME:
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
           break
         default:
           assertUnreachable(tx)

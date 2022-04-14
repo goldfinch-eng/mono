@@ -13,11 +13,13 @@ import {
   BORROW_TX_TYPE,
   CLAIM_TX_TYPE,
   CurrentTx,
+  DEPOSIT_TO_CURVE_TX_TYPE,
   DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
   DRAWDOWN_TX_NAME,
   ERC20_APPROVAL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
   INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME,
+  FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
   INTEREST_COLLECTED_TX_NAME,
   INTEREST_PAYMENT_TX_NAME,
   MINT_UID_TX_TYPE,
@@ -35,6 +37,7 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+  ZAP_STAKE_TO_CURVE_TX_TYPE,
 } from "../types/transactions"
 import {
   ArrayItemType,
@@ -171,6 +174,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case MINT_UID_TX_TYPE:
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
         case CLAIM_TX_TYPE:
         case ACCEPT_TX_TYPE:
@@ -201,7 +205,9 @@ function NetworkWidget(props: NetworkWidgetProps) {
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} FIDU ${tx.name}`
           break
         }
-        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE: {
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+        case ZAP_STAKE_TO_CURVE_TX_TYPE: {
           // TODO(@emilyhsia): Display both FIDU and USDC
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
             tx.name
@@ -218,12 +224,16 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case MINT_UID_TX_TYPE:
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
           transactionLabel = tx.name
           break
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
         case SUPPLY_AND_STAKE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case BORROW_TX_TYPE:

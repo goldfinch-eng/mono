@@ -24,6 +24,7 @@ export const INVESTMENT_MADE_IN_JUNIOR_EVENT = "InvestmentMadeInJunior"
 export const PRINCIPAL_WRITTEN_DOWN_EVENT = "PrincipalWrittenDown"
 export const BORROWER_CREATED_EVENT = "BorrowerCreated"
 export const POOL_CREATED_EVENT = "PoolCreated"
+export const DEPOSITED_TO_CURVE_EVENT = "DepositedToCurve"
 export const DEPOSITED_TO_CURVE_AND_STAKED_EVENT = "DepositedToCurveAndStaked"
 
 export type KnownEventName =
@@ -50,6 +51,7 @@ export type KnownEventName =
   | typeof PRINCIPAL_WRITTEN_DOWN_EVENT
   | typeof BORROWER_CREATED_EVENT
   | typeof POOL_CREATED_EVENT
+  | typeof DEPOSITED_TO_CURVE_EVENT
   | typeof DEPOSITED_TO_CURVE_AND_STAKED_EVENT
 
 export function isKnownEventName(val: unknown): val is KnownEventName {
@@ -77,6 +79,7 @@ export function isKnownEventName(val: unknown): val is KnownEventName {
     val === PRINCIPAL_WRITTEN_DOWN_EVENT ||
     val === BORROWER_CREATED_EVENT ||
     val === POOL_CREATED_EVENT ||
+    val === DEPOSITED_TO_CURVE_EVENT ||
     val === DEPOSITED_TO_CURVE_AND_STAKED_EVENT
   )
 }
@@ -108,21 +111,23 @@ export const APPROVAL_EVENT_TYPES = genExhaustiveTuple<ApprovalEventType>()(APPR
 export type StakingRewardsEventType =
   | typeof STAKED_EVENT
   | typeof DEPOSITED_AND_STAKED_EVENT
+  | typeof DEPOSITED_TO_CURVE_EVENT
+  | typeof DEPOSITED_TO_CURVE_AND_STAKED_EVENT
   | typeof UNSTAKED_EVENT
   | typeof UNSTAKED_AND_WITHDREW_EVENT
   | typeof UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT
   | typeof UNSTAKED_MULTIPLE_EVENT
   | typeof REWARD_PAID_EVENT
-  | typeof DEPOSITED_TO_CURVE_AND_STAKED_EVENT
 export const STAKING_REWARDS_EVENT_TYPES = genExhaustiveTuple<StakingRewardsEventType>()(
   STAKED_EVENT,
   DEPOSITED_AND_STAKED_EVENT,
+  DEPOSITED_TO_CURVE_EVENT,
+  DEPOSITED_TO_CURVE_AND_STAKED_EVENT,
   UNSTAKED_EVENT,
   UNSTAKED_AND_WITHDREW_EVENT,
   UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   UNSTAKED_MULTIPLE_EVENT,
-  REWARD_PAID_EVENT,
-  DEPOSITED_TO_CURVE_AND_STAKED_EVENT
+  REWARD_PAID_EVENT
 )
 
 // NOTE: We don't worry about including "Granted" events here, because "Granted" from the CommunityRewards
