@@ -81,6 +81,7 @@ export interface TranchedPoolMetadata {
   disabled?: boolean
   backerLimit?: string
   agreement?: string
+  dataroom?: string
   v1StyleDeal?: boolean
   migrated?: boolean
   migratedFrom?: string
