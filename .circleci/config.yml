@@ -141,7 +141,7 @@ jobs:
           command: |
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep mainnet_forking | circleci tests split --split-by=timings)
-            HARDHAT_FORK=mainnet npm run test:unfiltered $tests
+            NODE_ENV=test HARDHAT_FORK=mainnet npm run test:unfiltered $tests
       - run:
           name: Compress hardhat-network-fork cache
           command: cd packages/protocol && tar -cvzf /tmp/hardhat-network-fork.tar.gz cache/hardhat-network-fork
