@@ -24,6 +24,10 @@ const StyledStakingPrompt = styled(StakingPrompt)`
   padding-bottom: 30px;
 `
 
+const StyledButton = styled.button<{small: boolean}>`
+  font-size: ${({small}) => (small ? "20px" : "inherit")};
+`
+
 export default function LPAndStakeCardForm({
   depositToken,
   maxAmountToDeposit,
@@ -96,9 +100,15 @@ export default function LPAndStakeCardForm({
                 </button>
               }
             />
-            <button type="button" disabled={!amountToDeposit} className="button submit-form" onClick={onSubmit}>
+            <StyledButton
+              type="button"
+              disabled={!amountToDeposit}
+              className="button submit-form"
+              onClick={onSubmit}
+              small={shouldStake}
+            >
               {submitButtonText}
-            </button>
+            </StyledButton>
           </div>
         </div>
       </FormProvider>
