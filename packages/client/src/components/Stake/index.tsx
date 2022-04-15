@@ -58,6 +58,7 @@ export default function Stake() {
         <div></div>
       </StakingHeaderGrid>
       <StakingCard
+        key="fidu"
         token={getERC20Metadata(Ticker.FIDU)}
         maxAmountToUnstake={fiduStaked}
         maxAmountToStake={fiduUnstaked}
@@ -69,6 +70,7 @@ export default function Stake() {
         migrate={(amount) => zapStakeToCurve(amount)}
       />
       <StakingCard
+        key="fidu-usdc"
         token={getERC20Metadata(Ticker.CURVE_FIDU_USDC)}
         maxAmountToUnstake={fiduUSDCCurveStaked}
         maxAmountToStake={fiduUSDCCurveUnstaked}
@@ -94,6 +96,7 @@ export default function Stake() {
         <div></div>
       </LPAndStakeHeaderGrid>
       <LPAndStakeCard
+        key="fidu"
         depositToken={getERC20Metadata(Ticker.FIDU)}
         poolToken={getERC20Metadata(Ticker.CURVE_FIDU_USDC)}
         maxAmountToDeposit={fiduUnstaked}
@@ -104,6 +107,7 @@ export default function Stake() {
         depositAndStake={(amount) => depositToCurveAndStake(amount, new BigNumber(0))}
       />
       <LPAndStakeCard
+        key="usdc"
         depositToken={getERC20Metadata(Ticker.USDC)}
         poolToken={getERC20Metadata(Ticker.CURVE_FIDU_USDC)}
         maxAmountToDeposit={usdcUnstaked}
