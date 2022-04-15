@@ -4,6 +4,7 @@ import styled from "styled-components"
 import {ERC20Metadata} from "../../ethereum/erc20"
 import StakingCardForm from "./StakingCardForm"
 import StakingCardHeader from "./StakingCardHeader"
+import {Platform} from "./StakingToken"
 
 type StakingCardProps = {
   token: ERC20Metadata
@@ -11,6 +12,7 @@ type StakingCardProps = {
   maxAmountToUnstake: BigNumber
   rewardApy: BigNumber
   rewardToken: ERC20Metadata
+  platform: Platform
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
   migrate?: (BigNumber) => Promise<any>
@@ -28,6 +30,7 @@ export default function StakingCard({
   maxAmountToUnstake,
   rewardApy,
   rewardToken,
+  platform,
   stake,
   unstake,
   migrate,
@@ -47,6 +50,7 @@ export default function StakingCard({
         maxAmountToUnstake={maxAmountToUnstake}
         rewardApy={rewardApy}
         rewardToken={rewardToken}
+        platform={platform}
         onToggle={onToggle}
       />
       {expanded && (

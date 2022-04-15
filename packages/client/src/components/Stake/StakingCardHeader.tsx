@@ -14,6 +14,7 @@ type StakingCardHeaderProps = {
   maxAmountToUnstake: BigNumber
   rewardApy: BigNumber
   rewardToken: ERC20Metadata
+  platform: Platform
   onToggle: () => any
 }
 
@@ -60,11 +61,12 @@ export default function StakingCardHeader({
   maxAmountToUnstake,
   rewardApy,
   rewardToken,
+  platform,
   onToggle,
 }: StakingCardHeaderProps) {
   return (
     <ClickableHeaderGrid className={className} onClick={onToggle}>
-      <StakingToken token={token} platform={Platform.Curve} />
+      <StakingToken token={token} platform={platform} />
       <HeaderText justifySelf="end" hideOnSmallerScreens={false}>{`${displayPercent(rewardApy)} ${
         rewardToken.ticker
       }`}</HeaderText>

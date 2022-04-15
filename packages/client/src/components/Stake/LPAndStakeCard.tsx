@@ -4,6 +4,7 @@ import styled from "styled-components"
 import {ERC20Metadata} from "../../ethereum/erc20"
 import LPAndStakeCardForm from "./LPAndStakeCardForm"
 import LPAndStakeCardHeader from "./LPAndStakeCardHeader"
+import {Platform} from "./StakingToken"
 
 type LPAndStakeCardProps = {
   depositToken: ERC20Metadata
@@ -11,6 +12,7 @@ type LPAndStakeCardProps = {
   maxAmountToDeposit: BigNumber
   rewardApy: BigNumber
   rewardToken: ERC20Metadata
+  platform: Platform
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>
 }
@@ -27,6 +29,7 @@ export default function LPAndStakeCard({
   maxAmountToDeposit,
   rewardApy,
   rewardToken,
+  platform,
   deposit,
   depositAndStake,
 }: LPAndStakeCardProps) {
@@ -45,6 +48,7 @@ export default function LPAndStakeCard({
         maxAmountToDeposit={maxAmountToDeposit}
         rewardApy={rewardApy}
         rewardToken={rewardToken}
+        platform={platform}
         onToggle={onToggle}
       />
       {expanded && (

@@ -14,6 +14,7 @@ type LPAndStakeCardHeaderProps = {
   maxAmountToDeposit: BigNumber
   rewardApy: BigNumber
   rewardToken: ERC20Metadata
+  platform: Platform
   onToggle: () => any
 }
 
@@ -58,11 +59,12 @@ export default function LPAndStakeCardHeader({
   maxAmountToDeposit,
   rewardApy,
   rewardToken,
+  platform,
   onToggle,
 }: LPAndStakeCardHeaderProps) {
   return (
     <ClickableHeaderGrid className={className} onClick={onToggle}>
-      <LPAndStakeTokens depositToken={depositToken} poolToken={poolToken} platform={Platform.Curve} />
+      <LPAndStakeTokens depositToken={depositToken} poolToken={poolToken} platform={platform} />
       <HeaderText justifySelf="end" hideOnSmallerScreens={false}>{`${displayPercent(rewardApy)} ${
         rewardToken.ticker
       }`}</HeaderText>

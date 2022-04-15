@@ -8,6 +8,7 @@ import {HeaderGrid as StakingHeaderGrid, HeaderText as StakingHeaderText} from "
 import {HeaderGrid as LPAndStakeHeaderGrid, HeaderText as LPAndStakeHeaderText} from "./LPAndStakeCardHeader"
 import LPAndStakeCard from "./LPAndStakeCard"
 import BigNumber from "bignumber.js"
+import {Platform} from "./StakingToken"
 
 const StyledStakingHeaderText = styled(StakingHeaderText)`
   font-size: 16px;
@@ -62,6 +63,7 @@ export default function Stake() {
         maxAmountToStake={fiduUnstaked}
         rewardApy={estimatedFiduStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
+        platform={Platform.Goldfinch}
         stake={(amount) => stake(amount, StakedPositionType.Fidu)}
         unstake={(amount) => unstake(amount, StakedPositionType.Fidu)}
         migrate={(amount) => zapStakeToCurve(amount)}
@@ -72,6 +74,7 @@ export default function Stake() {
         maxAmountToStake={fiduUSDCCurveUnstaked}
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
+        platform={Platform.Curve}
         stake={(amount) => stake(amount, StakedPositionType.CurveLP)}
         unstake={(amount) => unstake(amount, StakedPositionType.CurveLP)}
       />
@@ -96,6 +99,7 @@ export default function Stake() {
         maxAmountToDeposit={fiduUnstaked}
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
+        platform={Platform.Curve}
         deposit={(amount) => depositToCurve(amount, new BigNumber(0))}
         depositAndStake={(amount) => depositToCurveAndStake(amount, new BigNumber(0))}
       />
@@ -105,6 +109,7 @@ export default function Stake() {
         maxAmountToDeposit={usdcUnstaked}
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
+        platform={Platform.Curve}
         deposit={(amount) => depositToCurve(new BigNumber(0), amount)}
         depositAndStake={(amount) => depositToCurveAndStake(new BigNumber(0), amount)}
       />
