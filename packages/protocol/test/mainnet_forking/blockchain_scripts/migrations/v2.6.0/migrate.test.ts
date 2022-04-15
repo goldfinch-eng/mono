@@ -112,7 +112,7 @@ describe("v2.6.0", async function () {
 
   const setupAfterDeploy = deployments.createFixture(async () => {
     const {params, deployedContracts} = await migrate260.main()
-    const zapper = await getTruffleContract<ZapperInstance>("Zapper")
+    const zapper = await getTruffleContract<ZapperInstance>("Zapper", {at: deployedContracts.zapper.address})
     const fixedLeverageRatioStrategy = await getTruffleContract<FixedLeverageRatioStrategyInstance>(
       "FixedLeverageRatioStrategy"
     )
