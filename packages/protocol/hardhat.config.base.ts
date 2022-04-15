@@ -9,7 +9,6 @@ import {
   TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
 } from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
 import "hardhat-contract-sizer"
-import "@openzeppelin/hardhat-upgrades"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY

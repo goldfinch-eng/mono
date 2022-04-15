@@ -139,6 +139,11 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
 
   /** @notice reduce a given pool token's principalAmount and principalRedeemed by a specified amount
    *  @dev uses safemath to prevent underflow
+   *  @dev this function is only intended for use as part of the v2.6.0 upgrade
+   *    to rectify a bug that allowed users to create a PoolToken that had a
+   *    larger amount of principal than they actually made available to the
+   *    borrower.  This bug is fixed in v2.6.0 but still requires past pool tokens
+   *    to have their principal redeemed and deposited to be rectified.
    *  @param tokenId id of token to decrease
    *  @param amount amount to decrease by
    */

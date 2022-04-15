@@ -12,8 +12,18 @@
       "kind": "transparent"
     },
     {
+      "address": "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460",
+      "txHash": "0x90a8a44b3ca62d71ead3477ba61a78b4177ee9ab4284f2350bbfd58648cceb64",
+      "kind": "transparent"
+    },
+    {
       "address": "0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF",
       "txHash": "0x10f063c96096093eeb1064fad1d6f8cffffe04ecd1f5591d4372d40ee1a813d0",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x84AC02474c4656C88d4e08FCA63ff73070787C3d",
+      "txHash": "0x0d8b9df864dc4f44a881b68944b3f8022956e0571e13917fa621f8c883a5caac",
       "kind": "transparent"
     },
     {
@@ -49,16 +59,6 @@
     {
       "address": "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
       "txHash": "0x517054372b36470ea012f6b23d165e5f3d3366d26329cd57b6e83a376ffb5614",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x84AC02474c4656C88d4e08FCA63ff73070787C3d",
-      "txHash": "0x0d8b9df864dc4f44a881b68944b3f8022956e0571e13917fa621f8c883a5caac",
-      "kind": "transparent"
-    },
-    {
-      "address": "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460",
-      "txHash": "0x90a8a44b3ca62d71ead3477ba61a78b4177ee9ab4284f2350bbfd58648cceb64",
       "kind": "transparent"
     }
   ],
@@ -2487,7 +2487,7 @@
           {
             "contract": "PoolTokens",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17305",
+            "type": "t_contract(GoldfinchConfig)17356",
             "src": "contracts/protocol/core/PoolTokens.sol:20"
           },
           {
@@ -2499,12 +2499,12 @@
           {
             "contract": "PoolTokens",
             "label": "pools",
-            "type": "t_mapping(t_address,t_struct(PoolInfo)19715_storage)",
+            "type": "t_mapping(t_address,t_struct(PoolInfo)19766_storage)",
             "src": "contracts/protocol/core/PoolTokens.sol:32"
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17305": {
+          "t_contract(GoldfinchConfig)17356": {
             "label": "contract GoldfinchConfig"
           },
           "t_mapping(t_uint256,t_struct(TokenInfo)10129_storage)": {
@@ -2541,10 +2541,10 @@
           "t_address": {
             "label": "address"
           },
-          "t_mapping(t_address,t_struct(PoolInfo)19715_storage)": {
+          "t_mapping(t_address,t_struct(PoolInfo)19766_storage)": {
             "label": "mapping(address => struct PoolTokens.PoolInfo)"
           },
-          "t_struct(PoolInfo)19715_storage": {
+          "t_struct(PoolInfo)19766_storage": {
             "label": "struct PoolTokens.PoolInfo",
             "members": [
               {
@@ -2813,7 +2813,7 @@
           {
             "contract": "SeniorPool",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17305",
+            "type": "t_contract(GoldfinchConfig)17356",
             "src": "contracts/protocol/core/SeniorPool.sol:22"
           },
           {
@@ -2830,7 +2830,7 @@
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17305": {
+          "t_contract(GoldfinchConfig)17356": {
             "label": "contract GoldfinchConfig"
           },
           "t_uint256": {
@@ -3383,12 +3383,12 @@
           {
             "contract": "GoldfinchFactory",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17305",
+            "type": "t_contract(GoldfinchConfig)17356",
             "src": "contracts/protocol/core/GoldfinchFactory.sol:20"
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17305": {
+          "t_contract(GoldfinchConfig)17356": {
             "label": "contract GoldfinchConfig"
           },
           "t_array(t_uint256)50_storage": {
@@ -3545,7 +3545,7 @@
           {
             "contract": "BackerRewards",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17306",
+            "type": "t_contract(GoldfinchConfig)17356",
             "src": "contracts/rewards/BackerRewards.sol:32"
           },
           {
@@ -3575,27 +3575,27 @@
           {
             "contract": "BackerRewards",
             "label": "tokens",
-            "type": "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)28085_storage)",
+            "type": "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)28109_storage)",
             "src": "contracts/rewards/BackerRewards.sol:50"
           },
           {
             "contract": "BackerRewards",
             "label": "pools",
-            "type": "t_mapping(t_address,t_struct(BackerRewardsInfo)28080_storage)",
+            "type": "t_mapping(t_address,t_struct(BackerRewardsInfo)28104_storage)",
             "src": "contracts/rewards/BackerRewards.sol:52"
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17306": {
+          "t_contract(GoldfinchConfig)17356": {
             "label": "contract GoldfinchConfig"
           },
           "t_uint256": {
             "label": "uint256"
           },
-          "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)28085_storage)": {
+          "t_mapping(t_uint256,t_struct(BackerRewardsTokenInfo)28109_storage)": {
             "label": "mapping(uint256 => struct BackerRewards.BackerRewardsTokenInfo)"
           },
-          "t_struct(BackerRewardsTokenInfo)28085_storage": {
+          "t_struct(BackerRewardsTokenInfo)28109_storage": {
             "label": "struct BackerRewards.BackerRewardsTokenInfo",
             "members": [
               {
@@ -3608,13 +3608,13 @@
               }
             ]
           },
-          "t_mapping(t_address,t_struct(BackerRewardsInfo)28080_storage)": {
+          "t_mapping(t_address,t_struct(BackerRewardsInfo)28104_storage)": {
             "label": "mapping(address => struct BackerRewards.BackerRewardsInfo)"
           },
           "t_address": {
             "label": "address"
           },
-          "t_struct(BackerRewardsInfo)28080_storage": {
+          "t_struct(BackerRewardsInfo)28104_storage": {
             "label": "struct BackerRewards.BackerRewardsInfo",
             "members": [
               {
@@ -4790,13 +4790,13 @@
           {
             "contract": "Go",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17548",
+            "type": "t_contract(GoldfinchConfig)17564",
             "src": "contracts/protocol/core/Go.sol:20"
           },
           {
             "contract": "Go",
             "label": "legacyGoList",
-            "type": "t_contract(GoldfinchConfig)17548",
+            "type": "t_contract(GoldfinchConfig)17564",
             "src": "contracts/protocol/core/Go.sol:23"
           },
           {
@@ -4810,7 +4810,7 @@
           "t_address": {
             "label": "address"
           },
-          "t_contract(GoldfinchConfig)17548": {
+          "t_contract(GoldfinchConfig)17564": {
             "label": "contract GoldfinchConfig"
           },
           "t_array(t_uint256)11_storage": {
@@ -5030,7 +5030,7 @@
           {
             "contract": "CommunityRewards",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17548",
+            "type": "t_contract(GoldfinchConfig)17564",
             "src": "contracts/rewards/CommunityRewards.sol:33"
           },
           {
@@ -5048,21 +5048,21 @@
           {
             "contract": "CommunityRewards",
             "label": "grants",
-            "type": "t_mapping(t_uint256,t_struct(Rewards)10815_storage)",
+            "type": "t_mapping(t_uint256,t_struct(Rewards)10831_storage)",
             "src": "contracts/rewards/CommunityRewards.sol:42"
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17548": {
+          "t_contract(GoldfinchConfig)17564": {
             "label": "contract GoldfinchConfig"
           },
           "t_uint256": {
             "label": "uint256"
           },
-          "t_mapping(t_uint256,t_struct(Rewards)10815_storage)": {
+          "t_mapping(t_uint256,t_struct(Rewards)10831_storage)": {
             "label": "mapping(uint256 => struct CommunityRewardsVesting.Rewards)"
           },
-          "t_struct(Rewards)10815_storage": {
+          "t_struct(Rewards)10831_storage": {
             "label": "struct CommunityRewardsVesting.Rewards",
             "members": [
               {

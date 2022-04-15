@@ -8,6 +8,7 @@ import {
   MAINNET_CHAIN_ID,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
   OWNER_ROLE,
+  TRANCHES,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
@@ -26,11 +27,19 @@ import {
   PoolTokensInstance,
   SeniorPoolInstance,
   StakingRewardsInstance,
+  TranchedPoolInstance,
   UniqueIdentityInstance,
   ZapperInstance,
 } from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import {advanceTime, BN, expectOwnerRole, expectProxyOwner, mochaEach} from "@goldfinch-eng/protocol/test/testHelpers"
+import {
+  advanceTime,
+  BN,
+  createPoolWithCreditLine,
+  expectOwnerRole,
+  expectProxyOwner,
+  mochaEach,
+} from "@goldfinch-eng/protocol/test/testHelpers"
 import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {Contract} from "ethers/lib/ethers"
 import {Migration260Params} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.6.0/migrate"
@@ -90,10 +99,12 @@ describe("v2.6.0", async function () {
 
   let tranchedPoolImplAddressBeforeDeploy: string
   let leverageRatioStrategyAddressBeforeDeploy: string
+  let goldfinchFactory: GoldfinchFactoryInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, goldfinchConfig, poolTokens, usdc, backerRewards, seniorPool, go, stakingRewards} = await setupTest())
+    ;({gfi, goldfinchConfig, poolTokens, usdc, backerRewards, seniorPool, go, stakingRewards, goldfinchFactory} =
+      await setupTest())
 
     tranchedPoolImplAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
     leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
@@ -217,7 +228,7 @@ describe("v2.6.0", async function () {
         let ethersSeniorPool: SeniorPool
         let ethersStakingRewards: StakingRewards
         const getBackerTokenIds = async (tranchedPool: TranchedPool): Promise<string[]> => {
-          const events = await tranchedPool.queryFilter(tranchedPool.filters.DepositMade(undefined, 2))
+          const events = await tranchedPool.queryFilter(tranchedPool.filters.DepositMade(undefined, TRANCHES.Junior))
           return events.map((x) => x.args.tokenId.toString())
         }
 
@@ -264,7 +275,9 @@ describe("v2.6.0", async function () {
               throw new Error("No DrawdownMade events found!")
             }
 
-            return drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
+            const lastDrawdownBlockNumber = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
+            expect(lastDrawdownBlockNumber).to.be.gt(0)
+            return lastDrawdownBlockNumber
           }
 
           it("backers should earn equivalent staking rewards as LPs", async () => {
@@ -279,13 +292,16 @@ describe("v2.6.0", async function () {
             const rewardsPerTokenSinceDrawdown = rewardsAccAtRepayment.sub(rewardsAccAtDrawdown)
 
             const getExpectedRewards = (amount: BN) => {
+              const fiduDecimals = new BN("1000000000000000000")
+              const usdcDecimals = new BN("1000000")
+
               return amount
-                .mul(new BN("1000000000000000000"))
-                .div(new BN("1000000"))
-                .mul(new BN("1000000000000000000"))
+                .mul(fiduDecimals)
+                .div(usdcDecimals)
+                .mul(fiduDecimals)
                 .div(new BN(sharePriceAtDrawdown.toString()))
                 .mul(new BN(rewardsPerTokenSinceDrawdown.toString()))
-                .div(new BN("1000000000000000000"))
+                .div(fiduDecimals)
             }
 
             const tokenIdsWithPrincipal = await Promise.all(
@@ -335,6 +351,37 @@ describe("v2.6.0", async function () {
             await go.ID_TYPE_3(),
             await go.ID_TYPE_4(),
           ])
+        })
+      })
+    })
+
+    describe("TranchedPool", async () => {
+      let tranchedPool: TranchedPoolInstance
+      const allowedUIDTypes = [0, 1, 2, 3, 4]
+
+      const testSetup = deployments.createFixture(async () => {
+        const [, , , , , maybeBorrower] = await hre.getUnnamedAccounts()
+        const borrower = asNonNullable(maybeBorrower)
+        const usdc = await getTruffleContract<ERC20Instance>("ERC20", {at: getUSDCAddress(MAINNET_CHAIN_ID)})
+        const {tranchedPool} = await createPoolWithCreditLine({
+          people: {borrower, owner: await getProtocolOwner()},
+          usdc,
+          goldfinchFactory,
+          allowedUIDTypes,
+        })
+
+        return {tranchedPool}
+      })
+
+      beforeEach(async () => {
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;({tranchedPool} = await testSetup())
+      })
+
+      describe("getAllowedUIDTypes", async () => {
+        it("is correct", async () => {
+          const sampledUidTypes = (await tranchedPool.getAllowedUIDTypes()).map((x) => x.toNumber())
+          expect(sampledUidTypes).to.deep.eq(allowedUIDTypes)
         })
       })
     })

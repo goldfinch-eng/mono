@@ -140,7 +140,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @notice intialize the first slice of a StakingRewardsPoolInfo
   /// @dev this is _only_ meant to be called on pools that didnt qualify for the backer rewards airdrop
   ///       but were deployed before this contract.
-  function forceIntializeStakingRewardsPoolInfo(
+  function forceInitializeStakingRewardsPoolInfo(
     ITranchedPool pool,
     uint256 fiduSharePriceAtDrawdown,
     uint256 principalDeployedAtDrawdown,

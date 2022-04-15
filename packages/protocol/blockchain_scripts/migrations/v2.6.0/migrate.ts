@@ -64,16 +64,11 @@ export async function main() {
     const lockEvents = await tranchedPool.queryFilter(tranchedPool.filters.TrancheLocked(tranchedPool.address))
     const isJuniorTrancheLockEvent = (event) => event.args.trancheId.toNumber() === TRANCHES.Junior
     const juniorLockEvents = lockEvents.filter(isJuniorTrancheLockEvent)
-    if (juniorLockEvents.length === 0) {
+    if (juniorLockEvents.length !== 2) {
       throw new Error(`No junior tranche lock events found`)
     }
 
-    // sort so that the latest lock even is first
-    juniorLockEvents.sort((a, b) => b.blockNumber - a.blockNumber)
-
-    const latestLockEvent = lockEvents[0]
-    const lockBlockNumber = latestLockEvent?.blockNumber
-
+    const lockBlockNumber = juniorLockEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
     assertNonNullable(lockBlockNumber)
 
     const withdrawFilter = tranchedPool.filters.WithdrawalMade(undefined, 2)
@@ -104,7 +99,15 @@ export async function main() {
   const getRewardsParametersForPool = async (poolAddress: string): Promise<StakingRewardsInfoInitValues> => {
     const tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
     const drawdownEvents = await tranchedPool.queryFilter(tranchedPool.filters.DrawdownMade())
+    // in some cases (stratos) they did a test drawdown. If we used the first drawdown
+    // as where to take our rewards param snapshot we would have incorrect values. So we need to find
+    // the latest block that they drewdown.
+    // although I'm now realizing that because stratos may drawdown again I should probably use the
+    // when the senior tranche was locked as the reference point. TODO(PR)
     const lastDrawdownBlock = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
+    if (!lastDrawdownBlock) {
+      throw new Error("Failed to Identify last drawdown block")
+    }
     const trancheInfo = await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock})
     const principalDeposited = trancheInfo.principalDeposited
     const backerCapitalDrawndown = principalDeposited
@@ -170,7 +173,7 @@ export async function main() {
     BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
       const params = await getRewardsParametersForPool(addr)
       console.log(addr, params)
-      return backerRewards.populateTransaction.forceIntializeStakingRewardsPoolInfo(
+      return backerRewards.populateTransaction.forceInitializeStakingRewardsPoolInfo(
         addr,
         params.fiduSharePriceAtDrawdown,
         params.principalDeployedAtDrawdown,
