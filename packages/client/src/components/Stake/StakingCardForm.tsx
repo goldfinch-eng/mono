@@ -86,14 +86,14 @@ export default function StakingCardForm({
   function onSubmit(e) {
     switch (activeTab) {
       case Tab.Stake:
-        stake(amountToStake)
+        stake(new BigNumber(amountToStake).multipliedBy(new BigNumber(10).pow(token.decimals)))
         break
       case Tab.Unstake:
-        unstake(amountToUnstake)
+        unstake(new BigNumber(amountToUnstake).multipliedBy(new BigNumber(10).pow(token.decimals)))
         break
       case Tab.Migrate:
         assertNonNullable(migrate)
-        migrate(amountToMigrate)
+        migrate(new BigNumber(amountToMigrate).multipliedBy(new BigNumber(10).pow(token.decimals)))
         break
     }
   }

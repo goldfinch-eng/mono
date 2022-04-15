@@ -56,9 +56,9 @@ export default function LPAndStakeCardForm({
 
   function onSubmit(e) {
     if (shouldStake) {
-      depositAndStake(amountToDeposit)
+      depositAndStake(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals)))
     } else {
-      deposit(amountToDeposit)
+      deposit(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals)))
     }
   }
 
