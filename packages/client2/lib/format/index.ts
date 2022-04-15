@@ -8,7 +8,7 @@ const percentageFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
 });
 
-const dollarFormatter = new Intl.NumberFormat(undefined, {
+const dollarFormatter = new Intl.NumberFormat("en-us", {
   style: "currency",
   currency: "USD",
 });
@@ -23,4 +23,8 @@ export function formatPercent(n: number | FixedNumber) {
 export function formatUsdc(n: BigNumber) {
   const asFloat = parseFloat(utils.formatUnits(n, USDC_DECIMALS));
   return dollarFormatter.format(asFloat);
+}
+
+export function formatDollarAmount(n: number) {
+  return dollarFormatter.format(n);
 }

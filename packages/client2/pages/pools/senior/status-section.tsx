@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { Heading } from "@/components/typography";
+import { Heading } from "@/components/designsystem/typography";
 import { formatUsdc } from "@/lib/format";
 import { SeniorPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 

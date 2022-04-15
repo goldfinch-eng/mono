@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { Heading } from "@/components/typography";
+import { Heading } from "@/components/designsystem/typography";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 

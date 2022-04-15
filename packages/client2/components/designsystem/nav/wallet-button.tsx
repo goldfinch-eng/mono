@@ -2,7 +2,7 @@ import { Popover } from "@headlessui/react";
 import { useEffect, useState } from "react";
 import { usePopper } from "react-popper";
 
-import { Button } from "@/components/button";
+import { Button } from "@/components/designsystem/button";
 import { useUsdcContract } from "@/lib/contracts";
 import { updateCurrentUserAttributes } from "@/lib/graphql/local-state/actions";
 import { useWallet } from "@/lib/wallet";

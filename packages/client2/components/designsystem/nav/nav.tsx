@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import { useRouter } from "next/router";
 
-import { Link } from "@/components/link";
-import { GoldfinchLogo } from "@/components/logo";
+import { Link } from "@/components/designsystem/link";
+import { GoldfinchLogo } from "@/components/designsystem/logo";
 
 import { WalletButton } from "./wallet-button";
 
@@ -10,21 +10,26 @@ const navItems = [
   { label: "Earn", href: "/earn" },
   { label: "Borrow", href: "/borrow" },
   { label: "GFI", href: "/gfi" },
-  { label: "Transactions", href: "/transactions" },
 ];
 
 export function Nav() {
   return (
-    <div className="flex flex-row items-center justify-between gap-8 bg-sand-100 p-4 md:min-w-[180px] md:flex-col md:items-stretch md:justify-start">
-      <GoldfinchLogo className="h-7 w-7 self-start" />
-      <nav className="flex flex-row gap-2 text-lg md:flex-col">
+    <div className="flex flex-row bg-sand-50 px-10">
+      <div className="flex flex-1 flex-row justify-start self-center py-4">
+        <GoldfinchLogo className="h-7 w-7 " />
+      </div>
+
+      <nav className="flex flex-1 flex-row justify-center">
         {navItems.map(({ label, href }) => (
           <NavLink key={`${label}-${href}`} href={href}>
             {label}
           </NavLink>
         ))}
       </nav>
-      <WalletButton />
+
+      <div className="flex flex-1 flex-row justify-end self-center py-4">
+        <WalletButton />
+      </div>
     </div>
   );
 }
@@ -35,10 +40,10 @@ function NavLink({ children, href }: { children: string; href: string }) {
   return (
     <Link
       className={clsx(
+        "flex items-center border-b-2 px-5 text-sm font-medium !no-underline",
         isCurrentPage
-          ? "border-purple-400 font-bold md:-mr-4 md:border-r-4"
-          : "opacity-50 hover:opacity-100",
-        "p-1 !no-underline"
+          ? "border-eggplant-600 text-sand-900"
+          : "border-transparent text-sand-700 hover:border-eggplant-600"
       )}
       href={href}
     >

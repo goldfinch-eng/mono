@@ -1,7 +1,7 @@
 import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
-import { goldfinchLogoPngUrl } from "@/components/logo";
+import { goldfinchLogoPngUrl } from "@/components/designsystem/logo";
 import { POOL_METADATA } from "@/constants";
 
 import { currentUserVar, gfiVar } from "./local-state/vars";
