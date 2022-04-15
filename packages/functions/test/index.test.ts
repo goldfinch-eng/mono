@@ -96,16 +96,6 @@ describe("functions", () => {
   }
 
   describe("kycStatus", async () => {
-    const OLD_ENV = process.env
-
-    beforeEach(() => {
-      process.env = {...OLD_ENV, FIRESTORE_EMULATOR_HOST: "localhost:8080"}
-    })
-
-    afterEach(() => {
-      process.env = OLD_ENV
-    })
-
     const generateKycRequest = (
       address: string,
       signature: string,
@@ -377,7 +367,7 @@ describe("functions", () => {
           await personaCallback(req, expectResponse(200, {status: "success"}))
 
           const userDoc = await users.doc(address.toLowerCase()).get()
-          console.log({userDoc})
+
           expect(userDoc.exists).to.be.true
           expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
           expect(userDoc.data()?.persona?.status).to.eq("completed")
