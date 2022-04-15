@@ -918,7 +918,7 @@ class StakingRewards {
           .call(undefined, currentBlock.number)
           .then((exchangeRate) => new BigNumber(exchangeRate)),
         this.contract.readOnly.methods
-          .getEffectiveMultiplier(StakedPositionType.CurveLP)
+          .getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)
           .call(undefined, currentBlock.number)
           .then((multiplier) => new BigNumber(multiplier)),
         this.curvePool.readOnly.methods
