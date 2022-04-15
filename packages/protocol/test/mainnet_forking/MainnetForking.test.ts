@@ -42,6 +42,7 @@ import {
   mineInSameBlock,
   mineBlock,
   decodeAndGetFirstLog,
+  erc721Approve,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -1275,9 +1276,11 @@ describe("mainnet forking tests", async function () {
           await erc20Approve(fidu, stakingRewards.address, MAX_UINT, [goListedUser, owner])
 
           // Seed the Curve pool with funds
+          await erc20Approve(usdc, curvePool.address, MAX_UINT, [owner])
+          await erc20Approve(fidu, curvePool.address, MAX_UINT, [owner])
           await fundWithWhales(["USDC"], [owner])
           await seniorPool.deposit(usdcVal(100_000), {from: owner})
-          await stakingRewards.depositToCurveAndStake(bigVal(10_000), usdcVal(10_000), {
+          await curvePool.add_liquidity([bigVal(10_000), usdcVal(10_000)], new BN(0), false, owner, {
             from: owner,
           })
         })
@@ -1289,6 +1292,8 @@ describe("mainnet forking tests", async function () {
           const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
           const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
           const tokenId = stakedEvent.args.tokenId
+
+          await erc721Approve(stakingRewards, zapper.address, tokenId, [goListedUser])
 
           // Zap to curve
           const zapperTx = await expect(
