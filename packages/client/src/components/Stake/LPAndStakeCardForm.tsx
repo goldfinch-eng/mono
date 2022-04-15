@@ -38,12 +38,20 @@ export default function LPAndStakeCardForm({
 
   const debouncedSetAmountToDeposit = useDebounce(setAmountToDeposit, 200)
 
-  function onChange(e) {
+  function onChange() {
     debouncedSetAmountToDeposit(formMethods.getValues("amountToDeposit"))
   }
 
   function onStakingPromptToggle(e) {
     setShouldStake(!shouldStake)
+  }
+
+  function onMaxClick(maxAmountToDeposit) {
+    formMethods.setValue("amountToDeposit", new BigNumber(maxAmountToDeposit || 0).decimalPlaces(18, 1).toString(10), {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    onChange()
   }
 
   function onSubmit(e) {
@@ -82,16 +90,7 @@ export default function LPAndStakeCardForm({
                   className="enter-max-amount"
                   disabled={maxAmountToDeposit.isZero()}
                   type="button"
-                  onClick={() => {
-                    formMethods.setValue(
-                      "amountToDeposit",
-                      new BigNumber(maxAmount || 0).decimalPlaces(18, 1).toString(10),
-                      {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      }
-                    )
-                  }}
+                  onClick={() => onMaxClick(maxAmount)}
                 >
                   Max
                 </button>

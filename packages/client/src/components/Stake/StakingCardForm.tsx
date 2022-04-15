@@ -60,7 +60,7 @@ export default function StakingCardForm({
     setActiveTab(tab)
   }
 
-  function onChange(e) {
+  function onChange() {
     switch (activeTab) {
       case Tab.Stake:
         debouncedSetAmountToStake(formMethods.getValues("amountToStake"))
@@ -73,6 +73,14 @@ export default function StakingCardForm({
         debouncedSetAmountToMigrate(formMethods.getValues("amountToMigrate"))
         break
     }
+  }
+
+  function onMaxClick(maxAmount) {
+    formMethods.setValue(formInputName, new BigNumber(maxAmount || 0).decimalPlaces(18, 1).toString(10), {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    onChange()
   }
 
   function onSubmit(e) {
@@ -162,16 +170,7 @@ export default function StakingCardForm({
                   className="enter-max-amount"
                   disabled={maxAmountForActiveTab.isZero()}
                   type="button"
-                  onClick={() => {
-                    formMethods.setValue(
-                      formInputName,
-                      new BigNumber(maxAmountForActiveTab || 0).decimalPlaces(18, 1).toString(10),
-                      {
-                        shouldValidate: true,
-                        shouldDirty: true,
-                      }
-                    )
-                  }}
+                  onClick={() => onMaxClick(maxAmountForActiveTab)}
                 >
                   Max
                 </button>
