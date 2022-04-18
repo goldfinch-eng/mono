@@ -13,7 +13,7 @@ export function Stat({ label, value, tooltip }: StatProps) {
         {label}{" "}
         {tooltip && (
           <span className="ml-1 text-sand-400">
-            <Icon name="InfoCircleFilled" size="sm" />
+            <Icon name="InfoCircle" size="sm" />
           </span>
         )}
       </div>

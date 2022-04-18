@@ -11,7 +11,7 @@ export default function SupplyPanel({ apy }: SupplyPanelProps) {
       <div className="mb-3 flex flex-row items-center justify-between">
         <span className="text-sm">Est APY</span>
         <span className="opacity-60">
-          <Icon name="InfoCircleFilled" size="sm" />
+          <Icon name="InfoCircle" size="sm" />
         </span>
       </div>
 
@@ -49,7 +49,7 @@ export default function SupplyPanel({ apy }: SupplyPanelProps) {
               <div className="flex items-center justify-between">
                 <span>Est return</span>
                 <span className="opacity-60">
-                  <Icon name="InfoCircleFilled" size="sm" />
+                  <Icon name="InfoCircle" size="sm" />
                 </span>
               </div>
             </th>

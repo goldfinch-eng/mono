@@ -1,11 +1,11 @@
 import clsx from "clsx";
+import { forwardRef } from "react";
 
 import ArrowDown from "./svg/arrow-down.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
-import InfoCircleFilled from "./svg/info-circle-filled.svg";
-import InfoCircle from "./svg/info-circle.svg";
+import InfoCircle from "./svg/info-circle-solid.svg";
 import Menu from "./svg/menu.svg";
 import Wallet from "./svg/wallet.svg";
 import X from "./svg/x.svg";
@@ -16,7 +16,6 @@ export const iconManifest = {
   ArrowUp,
   Checkmark,
   InfoCircle,
-  InfoCircleFilled,
   Menu,
   Wallet,
   X,
@@ -31,11 +30,15 @@ export interface IconProps {
   className?: string;
 }
 
-export function Icon({ name, size = "text", className }: IconProps) {
+export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
+  { name, size = "text", className }: IconProps,
+  ref
+) {
   const IconComponent = iconManifest[name];
   return (
     <IconComponent
       aria-hidden="true"
+      ref={ref}
       className={clsx(
         size === "xs"
           ? "h-4 w-4"
@@ -53,4 +56,4 @@ export function Icon({ name, size = "text", className }: IconProps) {
       )}
     />
   );
-}
+});
