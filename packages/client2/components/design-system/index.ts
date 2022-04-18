@@ -7,7 +7,6 @@ export * from "./input";
 export * from "./link";
 export * from "./logo";
 export * from "./modal";
-export * from "./nav";
 export * from "./spinners";
 export * from "./stat";
 export * from "./tabs";
