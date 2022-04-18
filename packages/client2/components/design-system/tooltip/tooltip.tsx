@@ -89,8 +89,12 @@ export function Tooltip({
   ]);
 
   return (
-    <div className="relative inline-block">
-      <div className="inline-block" {...getReferenceProps({ ref: reference })}>
+    <div className="relative inline-flex">
+      <div
+        className="inline-flex"
+        tabIndex={0}
+        {...getReferenceProps({ ref: reference })}
+      >
         {children}
       </div>
       <div
