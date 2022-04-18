@@ -1,4 +1,4 @@
-import { Button } from "@/components/design-system/button";
+import { Button } from "@/components/design-system";
 import { metaMask, metaMaskHooks } from "@/lib/wallet/connectors/metamask";
 
 import MetaMaskLogo from "./metamask-logo.svg";

@@ -1,17 +1,16 @@
-import { Fragment } from "react";
-
-import { Breadcrumb } from "@/components/design-system/breadcrumb";
-import { Button } from "@/components/design-system/button";
-import { Chip } from "@/components/design-system/chip";
-import { Stat } from "@/components/design-system/stat";
 import {
+  Breadcrumb,
+  Button,
+  Chip,
+  Stat,
   TabButton,
   TabContent,
   TabGroup,
   TabList,
   TabPanels,
-} from "@/components/design-system/tabs";
-import { Heading, Paragraph } from "@/components/design-system/typography";
+  Heading,
+  Paragraph,
+} from "@/components/design-system";
 
 import FundingBar from "./funding-bar";
 import SupplyPanel from "./supply-panel";

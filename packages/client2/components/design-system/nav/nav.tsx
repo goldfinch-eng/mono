@@ -1,8 +1,7 @@
 import clsx from "clsx";
 import { useRouter } from "next/router";
 
-import { Link } from "@/components/design-system/link";
-import { GoldfinchLogo } from "@/components/design-system/logo";
+import { Link, GoldfinchLogo } from "@/components/design-system";
 
 import { WalletButton } from "./wallet-button";
 

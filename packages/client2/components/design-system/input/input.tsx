@@ -1,8 +1,7 @@
 import clsx from "clsx";
 import { forwardRef, InputHTMLAttributes } from "react";
 
-import { Icon, IconNameType } from "@/components/design-system/icon";
-import { HelperText } from "@/components/design-system/typography";
+import { Icon, IconNameType, HelperText } from "@/components/design-system";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /**

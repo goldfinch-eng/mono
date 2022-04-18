@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { Link } from "@/components/design-system/link";
+import { Link } from "@/components/design-system";
 
 interface BreadcrumbProps {
   image?: string;

@@ -1,4 +1,4 @@
-import { Icon } from "@/components/design-system/icon";
+import { Icon } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 
 interface SupplyPanelProps {

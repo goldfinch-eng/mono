@@ -2,8 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useState } from "react";
 
-import { Button } from "@/components/design-system/button";
-import { Modal } from "@/components/design-system/modal";
+import { Button, Modal } from "@/components/design-system";
 import { formatPercent, formatUsdc } from "@/lib/format";
 import {
   SeniorPoolPortfolioUserFieldsFragment,

@@ -6,7 +6,7 @@ import Head from "next/head";
 import { useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 
-import { Nav } from "@/components/design-system/nav";
+import { Nav } from "@/components/design-system";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { refreshGfiPrice } from "@/lib/graphql/local-state/actions";
 
