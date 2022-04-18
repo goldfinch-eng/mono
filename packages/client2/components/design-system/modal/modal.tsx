@@ -2,7 +2,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { ReactNode, Fragment } from "react";
 
-import { Button } from "@/components/designsystem/button";
+import { Button } from "@/components/design-system/button";
 
 export interface ModalProps {
   /**

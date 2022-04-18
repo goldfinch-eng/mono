@@ -1,12 +1,12 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
-interface TagProps {
+interface ChipProps {
   children: ReactNode;
   className?: string;
 }
 
-export function Tag({ children, className }: TagProps) {
+export function Chip({ children, className }: ChipProps) {
   return (
     <div
       className={clsx(

@@ -1,4 +1,4 @@
-import { Button } from "@/components/designsystem/button";
+import { Button } from "@/components/design-system/button";
 import {
   walletConnect,
   walletConnectHooks,

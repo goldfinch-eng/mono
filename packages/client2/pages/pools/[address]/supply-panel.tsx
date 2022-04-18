@@ -1,4 +1,4 @@
-import { Icon } from "@/components/designsystem/icon";
+import { Icon } from "@/components/design-system/icon";
 import { formatPercent } from "@/lib/format";
 
 interface SupplyPanelProps {
@@ -7,7 +7,7 @@ interface SupplyPanelProps {
 
 export default function SupplyPanel({ apy }: SupplyPanelProps) {
   return (
-    <div className="sticky top-5 rounded-xl bg-background-purple bg-gradientRed p-5 text-white">
+    <div className="sticky top-5 rounded-xl bg-[#192852] bg-gradientRed p-5 text-white">
       <div className="mb-3 flex flex-row items-center justify-between">
         <span className="text-sm">Est APY</span>
         <span className="opacity-60">
@@ -57,18 +57,14 @@ export default function SupplyPanel({ apy }: SupplyPanelProps) {
         </thead>
         <tbody>
           <tr>
-            <td className="border border-border-table p-3 text-xl">
-              17.00% APY
-            </td>
-            <td className="border border-border-table p-3 text-right text-xl">
+            <td className="border border-[#674C69] p-3 text-xl">17.00% APY</td>
+            <td className="border border-[#674C69] p-3 text-right text-xl">
               0
             </td>
           </tr>
           <tr>
-            <td className="border border-border-table p-3 text-xl">
-              21.30% APY
-            </td>
-            <td className="border border-border-table p-3 text-right text-xl">
+            <td className="border border-[#674C69] p-3 text-xl">21.30% APY</td>
+            <td className="border border-[#674C69] p-3 text-right text-xl">
               0
             </td>
           </tr>

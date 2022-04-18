@@ -63,16 +63,6 @@ module.exports = {
         800: "#1B284C",
         900: "#0F1C3C",
       },
-      graph: {
-        backer: "#954586",
-        senior: "#60B1DE",
-      },
-      background: {
-        purple: "#192852",
-      },
-      border: {
-        table: "#674C69",
-      },
       transparent: "transparent",
       current: "currentColor",
       white: colors.white,

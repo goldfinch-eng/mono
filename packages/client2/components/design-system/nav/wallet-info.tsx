@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 
-import { Button } from "@/components/designsystem/button";
-import { Shimmer } from "@/components/designsystem/spinners";
+import { Button } from "@/components/design-system/button";
+import { Shimmer } from "@/components/design-system/spinners";
 import { formatUsdc } from "@/lib/format";
 import { useCurrentUserWalletInfoQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";

@@ -1,4 +1,4 @@
-import { Icon } from "@/components/designsystem/icon";
+import { Icon } from "@/components/design-system/icon";
 
 interface StatProps {
   label: string;

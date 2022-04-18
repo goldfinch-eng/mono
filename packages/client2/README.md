@@ -29,7 +29,7 @@ components/
 ### Filenames
 
 - Name files using `kebab-casing`. This rule goes for all files. It's easy and it's one less thing to think about. React component definitions still need to be `PascalCased`, and hooks still need to be `camelCased`, but their filenames can always be `kebab-cased`.
-- Use `@/` as an alias for the root of this project. It's like having absolute paths. `import { Button } from "@/components/designsystem/button"`
+- Use `@/` as an alias for the root of this project. It's like having absolute paths. `import { Button } from "@/components/design-system/button"`
 
 ### Icons
 

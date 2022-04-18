@@ -1,19 +1,19 @@
 import { Fragment } from "react";
 
-import { Breadcrumb } from "@/components/designsystem/breadcrumb";
-import { Button } from "@/components/designsystem/button";
-import { BarGraph } from "@/components/designsystem/graph";
-import { Stat } from "@/components/designsystem/stat";
+import { Breadcrumb } from "@/components/design-system/breadcrumb";
+import { Button } from "@/components/design-system/button";
+import { Chip } from "@/components/design-system/chip";
+import { Stat } from "@/components/design-system/stat";
 import {
   TabButton,
   TabContent,
   TabGroup,
   TabList,
   TabPanels,
-} from "@/components/designsystem/tabs";
-import { Tag } from "@/components/designsystem/tag";
-import { Heading, Paragraph } from "@/components/designsystem/typography";
+} from "@/components/design-system/tabs";
+import { Heading, Paragraph } from "@/components/design-system/typography";
 
+import FundingBar from "./funding-bar";
 import SupplyPanel from "./supply-panel";
 
 // Dummy data
@@ -50,13 +50,13 @@ export default function PoolPage() {
 
           <div className="mb-12 flex flex-wrap gap-1">
             {tags.map((t) => (
-              <Tag key={`tag-${t}`}>{t}</Tag>
+              <Chip key={`tag-${t}`}>{t}</Chip>
             ))}
           </div>
 
           <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
             <div className="col-span-3 border-b border-eggplant-50 p-5">
-              <BarGraph
+              <FundingBar
                 goal={10000000}
                 backerSupply={2000000}
                 seniorSupply={5200000}

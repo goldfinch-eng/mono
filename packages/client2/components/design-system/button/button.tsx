@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import React, { forwardRef, ButtonHTMLAttributes, ReactNode } from "react";
 
-import { Icon, IconProps } from "@/components/designsystem/icon";
-import { Spinner } from "@/components/designsystem/spinners";
+import { Icon, IconProps } from "@/components/design-system/icon";
+import { Spinner } from "@/components/design-system/spinners";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**

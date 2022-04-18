@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { Heading, Paragraph } from "@/components/designsystem/typography";
+import { Heading, Paragraph } from "@/components/design-system/typography";
 import { useExampleQuery } from "@/lib/graphql/generated";
 
 import {
