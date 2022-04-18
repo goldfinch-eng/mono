@@ -1,111 +1,148 @@
-import { Popover, Transition } from "@headlessui/react";
+import {
+  Placement,
+  useFloating,
+  useInteractions,
+  useHover,
+  useFocus,
+  useRole,
+  useDismiss,
+  offset,
+  shift,
+  flip,
+  arrow,
+  safePolygon,
+  autoUpdate,
+} from "@floating-ui/react-dom-interactions";
+import { Transition } from "@headlessui/react";
 import clsx from "clsx";
-import { ReactNode, useState, useRef } from "react";
-import { usePopper } from "react-popper"; // TODO switch to @floating-ui. Popper sucks and it gets the arrow placement wrong unless it's "top" or "right"
+import { ReactNode, useState, useEffect, useRef, Fragment } from "react";
 
 import { Icon } from "../icon";
 
 interface TooltipProps {
+  /**
+   * The node that should be hovered to display this tooltip. Note that this node will be wrapped in a <div>
+   */
   children: ReactNode;
+  /**
+   * The actual content of the tooltip.
+   */
   content: ReactNode;
-  placement?: "top" | "right";
+  /**
+   * The desired placement for the tooltip. Note that this may be adjusted depending on space available for the tooltip
+   */
+  placement?: Placement;
 }
 
 export function Tooltip({
   children,
   content,
-  placement = "top",
+  placement = "bottom",
 }: TooltipProps) {
-  const [referenceElement, setReferenceElement] = useState<HTMLButtonElement>();
-  const [popperElement, setPopperElement] = useState();
-  const [arrowElement, setArrowElement] = useState();
-  const { styles, attributes, state } = usePopper(
-    referenceElement,
-    popperElement,
-    {
-      strategy: "absolute",
-      placement,
-      modifiers: [
-        { name: "offset", options: { offset: [0, 12] } },
-        { name: "preventOverflow", options: { padding: 16 } },
-        { name: "arrow", options: { element: arrowElement, padding: 10 } },
-      ],
-    }
-  );
+  const [isOpen, setIsOpen] = useState(false);
+  const arrowRef = useRef<HTMLDivElement | null>(null);
+  const {
+    x,
+    y,
+    reference,
+    floating,
+    strategy,
+    placement: actualPlacement,
+    context,
+    refs,
+    update,
+    middlewareData: { arrow: { x: arrowX, y: arrowY } = {} },
+  } = useFloating({
+    placement,
+    open: isOpen,
+    onOpenChange: setIsOpen,
+    middleware: [
+      offset(12),
+      flip(),
+      shift({ padding: 12 }),
+      arrow({ element: arrowRef, padding: 8 }),
+    ],
+  });
 
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const closeDelay = 100;
-  const handleMouseEnter = () => {
-    if (!isTooltipOpen) {
-      setIsTooltipOpen(true);
-      referenceElement?.click();
+  const arrowSide =
+    {
+      top: "bottom",
+      right: "left",
+      bottom: "top",
+      left: "right",
+    }[actualPlacement.split("-")[0]] ?? "";
+
+  useEffect(() => {
+    if (refs.reference.current && refs.floating.current && isOpen) {
+      return autoUpdate(refs.reference.current, refs.floating.current, update);
     }
-    clearTimeout(closeTimeoutRef.current as unknown as number);
-  };
-  const handleMouseLeave = () => {
-    if (isTooltipOpen) {
-      closeTimeoutRef.current = setTimeout(() => {
-        setIsTooltipOpen(false);
-        referenceElement?.click();
-      }, closeDelay);
-    }
-  };
+  }, [refs.reference, refs.floating, update, isOpen]);
+
+  const { getReferenceProps, getFloatingProps } = useInteractions([
+    useHover(context, {
+      delay: { open: 100, close: 250 },
+      handleClose: safePolygon(),
+    }),
+    useRole(context, { role: "tooltip" }),
+    useFocus(context),
+    useDismiss(context),
+  ]);
 
   return (
-    <Popover
-      className="group relative inline-block"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <Popover.Button
-        // @ts-expect-error the ref type doesn't cover callback refs, which are still valid
-        ref={setReferenceElement}
-        className="group-hover:unfocused"
-      >
+    <div className="relative inline-block">
+      <div className="inline-block" {...getReferenceProps({ ref: reference })}>
         {children}
-      </Popover.Button>
-      <Transition
-        className="absolute"
-        enter="transition duration-200 ease-out"
-        enterFrom="transform scale-95 opacity-0"
-        enterTo="transform scale-100 opacity-100"
-        leave="transition duration-200 ease-out"
-        leaveFrom="transform scale-100 opacity-100"
-        leaveTo="transform scale-95 opacity-0"
+      </div>
+      <div
+        ref={floating}
+        {...getFloatingProps({
+          ref: floating,
+          style: {
+            position: strategy,
+            top: y ?? "",
+            left: x ?? "",
+          },
+        })}
       >
-        <Popover.Panel
-          // @ts-expect-error the ref type doesn't cover callback refs, which are still valid
-          ref={setPopperElement}
-          style={styles.popper}
-          {...attributes.popper}
-          className="min-w-max rounded-md border border-sand-100 bg-white"
+        <Transition
+          as={Fragment}
+          show={isOpen}
+          unmount={false}
+          enter="transition duration-200 ease-in"
+          enterFrom="transform scale-95 opacity-0"
+          enterTo="transform scale-100 opacity-100"
+          leave="transition duration-200 ease-out"
+          leaveFrom="transform scale-100 opacity-100"
+          leaveTo="transform scale-95 opacity-0"
         >
-          <div className="p-4">{content}</div>
-          <div
-            // @ts-expect-error the ref type doesn't cover callback refs, which are still valid
-            ref={setArrowElement}
-            style={styles.arrow}
-            {...attributes.arrow}
-          >
+          <div className="relative min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
+            {content}
             <div
+              ref={arrowRef}
+              style={{
+                left: arrowX,
+                top: arrowY,
+                [arrowSide]: "-7px",
+                width: "12px",
+                height: "12px",
+              }}
               className={clsx(
-                "absolute -top-1.5 -left-1.5 h-3 w-3 origin-center rotate-45 border-sand-100 bg-white",
-                state?.placement.startsWith("top")
+                "absolute origin-center rotate-45 border-sand-100 bg-white",
+                actualPlacement.startsWith("top")
                   ? "border-r border-b"
-                  : state?.placement.startsWith("right")
+                  : actualPlacement.startsWith("right")
                   ? "border-l border-b"
-                  : state?.placement.startsWith("bottom")
+                  : actualPlacement.startsWith("bottom")
                   ? "border-l border-t"
-                  : state?.placement.startsWith("left")
+                  : actualPlacement.startsWith("left")
                   ? "border-t border-r"
                   : null
               )}
             />
           </div>
-        </Popover.Panel>
-      </Transition>
-    </Popover>
+        </Transition>
+      </div>
+    </div>
   );
 }
 
