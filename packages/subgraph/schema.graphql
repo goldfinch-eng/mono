@@ -154,6 +154,20 @@ type CreditLine @entity {
   name: String
 }
 
+enum TranchedPoolBorrowerTransactionType {
+  DRAWDOWN_MADE
+  PAYMENT_APPLIED
+}
+
+type TranchedPoolBorrowerTransaction @entity {
+  id: ID! # Set to transaction hash
+  type: TranchedPoolBorrowerTransactionType!
+  tranchedPool: TranchedPool!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
 enum TranchedPoolCreditLineVersion {
   BEFORE_V2_2
   V2_2
@@ -184,6 +198,7 @@ type TranchedPool @entity {
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
 }

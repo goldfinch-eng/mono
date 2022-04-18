@@ -126,7 +126,7 @@ export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: strin
   } else {
     mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
   }
-  const defaultValue = ethereum.Value.fromString('1')
+  const defaultValue = ethereum.Value.fromI32(1)
   const defaultPayer = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
   const defaultPool = ethereum.Value.fromAddress(Address.fromString(tranchedPoolAddress))
 
@@ -255,7 +255,7 @@ export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string,
     mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
   }
 
-  const defaultValue = ethereum.Value.fromString('1')
+  const defaultValue = ethereum.Value.fromI32(1)
   const defaultBorrower = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
 
   const drawdownMadeEvent = new DrawdownMade(

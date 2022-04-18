@@ -5,8 +5,9 @@ import {
   SeniorTrancheInfo,
   TranchedPoolDeposit,
   CreditLine,
+  TranchedPoolBorrowerTransaction,
 } from "../../generated/schema"
-import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
+import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
@@ -196,6 +197,29 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   return tranchedPool
 }
 
+export function handleDrawdownMade(event: DrawdownMade): void {
+  const borrowerTransaction = new TranchedPoolBorrowerTransaction(event.transaction.hash.toHexString())
+  const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp)
+  borrowerTransaction.tranchedPool = tranchedPool.id
+  borrowerTransaction.amount = event.params.amount
+  borrowerTransaction.timestamp = event.block.timestamp
+  borrowerTransaction.blockNumber = event.block.number
+  borrowerTransaction.type = "DRAWDOWN_MADE"
+  borrowerTransaction.save()
+}
+
+export function handlePaymentApplied(event: PaymentApplied): void {
+  const borrowerTransaction = new TranchedPoolBorrowerTransaction(event.transaction.hash.toHexString())
+  const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp)
+  borrowerTransaction.tranchedPool = tranchedPool.id
+  const interestAmount = event.params.interestAmount
+  const totalPrincipalAmount = event.params.principalAmount.plus(event.params.remainingAmount)
+  borrowerTransaction.amount = interestAmount.plus(totalPrincipalAmount)
+  borrowerTransaction.timestamp = event.block.timestamp
+  borrowerTransaction.blockNumber = event.block.number
+  borrowerTransaction.type = "PAYMENT_APPLIED"
+  borrowerTransaction.save()
+}
 class Repayment {
   tranchedPoolAddress: string
   timestamp: BigInt
