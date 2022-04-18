@@ -44,6 +44,7 @@ import {StakedPositionType} from "@goldfinch-eng/protocol/blockchain_scripts/dep
 import {Contract} from "ethers/lib/ethers"
 import {Migration260Params} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.6.0/migrate"
 import {Borrower, CreditLine, SeniorPool, StakingRewards, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import {almaPool6Info} from "../v2.5.0/migrate.test"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -117,6 +118,30 @@ describe("v2.6.0", async function () {
       "FixedLeverageRatioStrategy"
     )
     return {zapper, fixedLeverageRatioStrategy, params, deployedContracts}
+  })
+
+  describe("before deploy", async () => {
+    describe("BackerRewards", async () => {
+      describe("withdraw", () => {
+        const tokenInfo = almaPool6Info.aPoolToken
+
+        beforeEach(async () => {
+          await impersonateAccount(hre, tokenInfo.ownerAddress)
+          await fundWithWhales(["ETH"], [tokenInfo.ownerAddress])
+        })
+
+        it("rejects withdrawing non-zero amount, due to insufficient GFI", async () => {
+          const claimableBackersOnlyRewards = await backerRewards.poolTokenClaimableRewards(tokenInfo.id)
+          expect(claimableBackersOnlyRewards).to.bignumber.equal(new BN("3014668121250461200"))
+          const claimableBackerStakingRewards = backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenInfo.id)
+          expect(claimableBackerStakingRewards).to.be.rejected
+          const withdrawal = backerRewards.withdraw(tokenInfo.id, {
+            from: tokenInfo.ownerAddress,
+          })
+          await expect(withdrawal).to.be.rejectedWith(/ERC20: transfer amount exceeds balance/)
+        })
+      })
+    })
   })
 
   describe("after deploy", async () => {
@@ -324,6 +349,26 @@ describe("v2.6.0", async function () {
               expect(stakingRewardsSinceLastWithdraw).to.bignumber.eq(expectedRewards)
             }
           })
+        })
+      })
+
+      describe("withdraw", () => {
+        const tokenInfo = almaPool6Info.aPoolToken
+
+        beforeEach(async () => {
+          await impersonateAccount(hre, tokenInfo.ownerAddress)
+          await fundWithWhales(["ETH"], [tokenInfo.ownerAddress])
+        })
+
+        it("allows withdrawing non-zero amount, now that GFI have been transferred to the BackerRewards contract", async () => {
+          const claimableRewards = await backerRewards.poolTokenClaimableRewards(tokenInfo.id)
+          expect(claimableRewards).to.bignumber.equal(new BN("3014668121250461200"))
+          const claimableBackerStakingRewards = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenInfo.id)
+          expect(claimableBackerStakingRewards).to.bignumber.equal(new BN(1)) // TODO[PR]
+          const withdrawal = backerRewards.withdraw(tokenInfo.id, {
+            from: tokenInfo.ownerAddress,
+          })
+          await expect(withdrawal).to.be.fulfilled
         })
       })
     })
