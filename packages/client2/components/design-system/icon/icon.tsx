@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { forwardRef } from "react";
 
 import ArrowDown from "./svg/arrow-down.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
@@ -29,11 +30,15 @@ export interface IconProps {
   className?: string;
 }
 
-export function Icon({ name, size = "text", className }: IconProps) {
+export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
+  { name, size = "text", className }: IconProps,
+  ref
+) {
   const IconComponent = iconManifest[name];
   return (
     <IconComponent
       aria-hidden="true"
+      ref={ref}
       className={clsx(
         size === "xs"
           ? "h-4 w-4"
@@ -51,4 +56,4 @@ export function Icon({ name, size = "text", className }: IconProps) {
       )}
     />
   );
-}
+});
