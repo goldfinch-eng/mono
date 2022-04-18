@@ -15,15 +15,26 @@ import {
 } from "@floating-ui/react-dom-interactions";
 import { Transition } from "@headlessui/react";
 import clsx from "clsx";
-import { ReactNode, useState, useEffect, useRef, Fragment } from "react";
+import {
+  ReactNode,
+  useState,
+  useEffect,
+  useRef,
+  Fragment,
+  cloneElement,
+} from "react";
 
 import { Icon } from "../icon";
 
 interface TooltipProps {
   /**
-   * The node that should be hovered to display this tooltip. Note that this node will be wrapped in a <div>
+   * The element that should be hovered to display this tooltip. This element should be one that naturally accepts keyboard focus (such as a button). If it is not, also pass the `useWrapper` prop
    */
-  children: ReactNode;
+  children: JSX.Element;
+  /**
+   * When true, `children` will be wrapped in an inline div which will receive focus and hover events
+   */
+  useWrapper?: boolean;
   /**
    * The actual content of the tooltip.
    */
@@ -36,6 +47,7 @@ interface TooltipProps {
 
 export function Tooltip({
   children,
+  useWrapper = false,
   content,
   placement = "bottom",
 }: TooltipProps) {
@@ -53,6 +65,7 @@ export function Tooltip({
     update,
     middlewareData: { arrow: { x: arrowX, y: arrowY } = {} },
   } = useFloating({
+    strategy: "fixed",
     placement,
     open: isOpen,
     onOpenChange: setIsOpen,
@@ -80,7 +93,7 @@ export function Tooltip({
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
     useHover(context, {
-      delay: { open: 100, close: 250 },
+      restMs: 100,
       handleClose: safePolygon(),
     }),
     useRole(context, { role: "tooltip" }),
@@ -89,14 +102,21 @@ export function Tooltip({
   ]);
 
   return (
-    <div className="relative inline-flex">
-      <div
-        className="inline-flex"
-        tabIndex={0}
-        {...getReferenceProps({ ref: reference })}
-      >
-        {children}
-      </div>
+    <>
+      {useWrapper ? (
+        <div
+          className="inline-flex"
+          tabIndex={0}
+          {...getReferenceProps({ ref: reference })}
+        >
+          {children}
+        </div>
+      ) : (
+        cloneElement(
+          children,
+          getReferenceProps({ ref: reference, ...children.props })
+        )
+      )}
       <div
         ref={floating}
         {...getFloatingProps({
@@ -111,7 +131,6 @@ export function Tooltip({
         <Transition
           as={Fragment}
           show={isOpen}
-          unmount={false}
           enter="transition duration-200 ease-in"
           enterFrom="transform scale-95 opacity-0"
           enterTo="transform scale-100 opacity-100"
@@ -146,13 +165,15 @@ export function Tooltip({
           </div>
         </Transition>
       </div>
-    </div>
+    </>
   );
 }
 
-export function InfoIconTooltip(props: Omit<TooltipProps, "children">) {
+export function InfoIconTooltip(
+  props: Omit<TooltipProps, "children" | "useWrapper">
+) {
   return (
-    <Tooltip {...props}>
+    <Tooltip useWrapper {...props}>
       <Icon name="InfoCircle" />
     </Tooltip>
   );
