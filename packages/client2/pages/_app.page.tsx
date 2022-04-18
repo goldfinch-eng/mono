@@ -5,7 +5,7 @@ import Head from "next/head";
 import { useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 
-import { Nav } from "@/components/nav";
+import { Nav } from "@/components/design-system/nav";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { refreshGfiPrice } from "@/lib/graphql/local-state/actions";
 
@@ -19,9 +19,11 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         {/* remove this if we decide we want Google to index the app pages (unlikely) */}
         <meta name="robots" content="noindex" />
       </Head>
-      <div className="flex min-h-full flex-col md:flex-row">
-        <Nav />
-        <div className="flex-grow px-10 py-8 md:pt-20">
+
+      <Nav />
+
+      <div className="px-5">
+        <div className="mx-auto min-h-full max-w-7xl py-14">
           <Component {...pageProps} />
         </div>
       </div>

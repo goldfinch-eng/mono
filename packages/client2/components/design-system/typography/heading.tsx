@@ -11,7 +11,7 @@ const levelToFontSize = {
   4: "text-xl",
   3: "text-2xl",
   2: "text-3xl",
-  1: "text-4xl",
+  1: "text-7xl",
 };
 
 export function Heading({ level, as, className, ...rest }: HeadingProps) {

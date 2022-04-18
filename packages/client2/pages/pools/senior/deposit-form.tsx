@@ -3,9 +3,9 @@ import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
-import { Button } from "@/components/button";
-import { Input } from "@/components/input";
-import { Link } from "@/components/link";
+import { Button } from "@/components/design-system/button";
+import { Input } from "@/components/design-system/input";
+import { Link } from "@/components/design-system/link";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
 import { refreshCurrentUserUsdcBalance } from "@/lib/graphql/local-state/actions";
