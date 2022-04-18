@@ -3,7 +3,7 @@ import { FixedNumber } from "ethers";
 import Image from "next/image";
 import NextLink from "next/link";
 
-import { ShimmerLines } from "@/components/spinners";
+import { ShimmerLines } from "@/components/design-system/spinners";
 import { formatPercent } from "@/lib/format";
 import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
 

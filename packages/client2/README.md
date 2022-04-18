@@ -29,7 +29,7 @@ components/
 ### Filenames
 
 - Name files using `kebab-casing`. This rule goes for all files. It's easy and it's one less thing to think about. React component definitions still need to be `PascalCased`, and hooks still need to be `camelCased`, but their filenames can always be `kebab-cased`.
-- Use `@/` as an alias for the root of this project. It's like having absolute paths. `import { Button } from "@/components/button"`
+- Use `@/` as an alias for the root of this project. It's like having absolute paths. `import { Button } from "@/components/design-system/button"`
 
 ### Icons
 
@@ -50,6 +50,7 @@ SVGO is also available for reducing SVG file sizes. It runs automatically when y
 This project uses Apollo client for fetching data from a remote GraphQL server (our subgraph in The Graph), and also for synthesizing it with local data to form a complete global app state. To put it another way, the Apollo cache is meant to be the source of truth for global app state, and will contain data from outside The Graph. All data inside the Apollo cache is accessible via GraphQL queries. Note that the remote schema from our The Graph subgraph is combined with a client-only schema in this app (`client-only-schema.graphql`).
 
 We also use `graphql-codegen` to generate TypeScript types for our GraphQL schema and queries.
+
 ## Weird Things
 
 ### Webpack 5

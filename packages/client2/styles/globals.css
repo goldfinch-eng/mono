@@ -3,14 +3,13 @@
 @tailwind utilities;
 
 @layer base {
-  @import url("https://use.typekit.net/oib7cgq.css");
   html,
   body,
   #__next {
     height: 100%;
   }
   body {
-    @apply font-sans font-normal text-purple-400;
+    @apply font-sans font-normal text-sand-700;
   }
 
   /* gets rid of that highlight when you tap buttons on mobile */

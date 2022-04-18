@@ -11,8 +11,14 @@ import {
   DrawdownMade,
   PaymentApplied,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import { updateAllPoolBackers } from "../entities/pool_backer"
-import { handleDeposit, updatePoolCreditLine, initOrUpdateTranchedPool } from "../entities/tranched_pool"
+import {updateAllPoolBackers} from "../entities/pool_backer"
+import {
+  handleDeposit,
+  updatePoolCreditLine,
+  initOrUpdateTranchedPool,
+  handleDrawdownMade as _handleDrawdownMade,
+  handlePaymentApplied as _handlePaymentApplied,
+} from "../entities/tranched_pool"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -61,9 +67,11 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackers(event.address)
+  _handleDrawdownMade(event)
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
+  _handlePaymentApplied(event)
 }

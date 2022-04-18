@@ -129,6 +129,7 @@ dataSources:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/pool_tokens_proxy.ts
+
   - kind: ethereum/contract
     name: GFI
     network: mainnet
@@ -149,6 +150,7 @@ dataSources:
         - event: CapUpdated(indexed address,uint256)
           handler: handleCapUpdated
       file: ./src/mappings/gfi.ts
+
   - kind: ethereum/contract
     name: StakingRewardsProxy
     network: mainnet
@@ -175,6 +177,7 @@ dataSources:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/staking_rewards_proxy.ts
+
   - kind: ethereum/contract
     name: BackerRewardsProxy
     network: mainnet
@@ -313,6 +316,7 @@ templates:
         - User
         - TranchedPool
         - TranchedPoolToken
+        - TranchedPoolBorrowerTransaction
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
