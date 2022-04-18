@@ -9,6 +9,7 @@ import {
   TEST_MERKLE_DIRECT_DISTRIBUTOR_RECIPIENT_B,
 } from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
 import "hardhat-contract-sizer"
+import "@openzeppelin/hardhat-upgrades"
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
@@ -35,7 +36,7 @@ export default {
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
-      chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : 31337,
+      // chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : 31337,
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
