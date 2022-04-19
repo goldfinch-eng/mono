@@ -562,7 +562,7 @@ describe("PoolTokens", () => {
       })
 
       describe("as a wallet without OWNER_ROLE", () => {
-        it("it works", async () => {
+        it("it fails", async () => {
           await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount, {from: person2})).to.be.rejectedWith(
             /Must have admin role to perform this action/i
           )
