@@ -126,7 +126,7 @@ export default {
   },
   contractSizer: {
     runOnCompile: true,
-    strict: true,
+    strict: process.env.CI !== undefined,
     except: [":Test.*", ":MigratedTranchedPool$"],
   },
 }

@@ -1124,11 +1124,12 @@ describe("mainnet forking tests", async function () {
 
       describe("when I deposit and stake and then exit", async () => {
         it("it works", async () => {
-          const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
+          const depositAmount = usdcVal(10_000)
+          const tx = await expect(stakingRewards.depositAndStake(depositAmount, {from: goListedUser})).to.be.fulfilled
           const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
           const stakedEvent = asNonNullable(logs[0])
           const tokenId = stakedEvent?.args.tokenId
-          await expect(stakingRewards.exit(tokenId, {from: goListedUser})).to.be.fulfilled
+          await expect(stakingRewards.unstake(tokenId, depositAmount, {from: goListedUser})).to.be.fulfilled
         })
       })
 

@@ -409,7 +409,8 @@ describe("v2.6.0", async function () {
         describe("CurveLp", async () => {
           it("is correct", async () => {
             expect(params.StakingRewards.curveEffectiveMultiplier).to.eq("750000000000000000")
-            expect((await stakingRewards.getEffectiveMultiplier(StakedPositionType.CurveLP)).toString()).to.eq(
+            expect(
+              (await stakingRewards.getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)).toString(),
               params.StakingRewards.curveEffectiveMultiplier
             )
           })
