@@ -467,8 +467,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
-    // We will allow up to 25% slippage, so minMintAmount should be at least 75%
-    uint256 minMintAmount = curveLP.calc_token_amount([fiduAmount, usdcAmount]).mul(3).div(4);
+    // We will allow up to 10% slippage, so minMintAmount should be at least 90%
+    uint256 minMintAmount = curveLP.calc_token_amount([fiduAmount, usdcAmount]).mul(9).div(10);
 
     // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
     // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18

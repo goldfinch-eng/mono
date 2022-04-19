@@ -42,6 +42,8 @@ import {
   mineInSameBlock,
   mineBlock,
   decodeAndGetFirstLog,
+  erc721Approve,
+  erc20Transfer,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -1272,47 +1274,111 @@ describe("mainnet forking tests", async function () {
         beforeEach(async () => {
           await erc20Approve(usdc, seniorPool.address, MAX_UINT, [owner])
           await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [goListedUser, owner])
+          await erc20Approve(usdc, zapper.address, MAX_UINT, [goListedUser])
           await erc20Approve(fidu, stakingRewards.address, MAX_UINT, [goListedUser, owner])
 
           // Seed the Curve pool with funds
+          await erc20Approve(usdc, curvePool.address, MAX_UINT, [owner])
+          await erc20Approve(fidu, curvePool.address, MAX_UINT, [owner])
           await fundWithWhales(["USDC"], [owner])
           await seniorPool.deposit(usdcVal(100_000), {from: owner})
-          await stakingRewards.depositToCurveAndStake(bigVal(10_000), usdcVal(10_000), {
+          await curvePool.add_liquidity([bigVal(10_000), usdcVal(10_000)], new BN(0), false, owner, {
             from: owner,
           })
         })
 
-        it("it works", async () => {
-          const curveBalanceBefore = await curvePool.balances(0)
+        context("for a FIDU only migration", async () => {
+          it("it works", async () => {
+            const curveFiduBalanceBefore = await curvePool.balances(0)
+            const curveUSDCBalanceBefore = await curvePool.balances(1)
 
-          // Deposit and stake
-          const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
-          const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
-          const tokenId = stakedEvent.args.tokenId
+            // Deposit and stake
+            const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be
+              .fulfilled
+            const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+            const tokenId = stakedEvent.args.tokenId
 
-          // Zap to curve
-          const zapperTx = await expect(
-            zapper.zapStakeToCurve(tokenId, new BN(stakedEvent?.args.amount.toString(10)), {
-              from: goListedUser,
-            })
-          ).to.be.fulfilled
+            // Zap to curve
+            await erc721Approve(stakingRewards, zapper.address, tokenId, [goListedUser])
+            const zapperTx = await expect(
+              zapper.zapStakeToCurve(tokenId, new BN(stakedEvent?.args.amount.toString(10)), new BN(0), {
+                from: goListedUser,
+              })
+            ).to.be.fulfilled
 
-          const unstakedLog = await decodeAndGetFirstLog<Unstaked>(zapperTx.receipt.rawLogs, stakingRewards, "Unstaked")
-          expect(unstakedLog.args.tokenId).to.bignumber.equal(tokenId)
-          expect(unstakedLog.args.amount).to.bignumber.equal(new BN(stakedEvent.args.amount.toString(10)))
+            const unstakedLog = await decodeAndGetFirstLog<Unstaked>(
+              zapperTx.receipt.rawLogs,
+              stakingRewards,
+              "Unstaked"
+            )
+            expect(unstakedLog.args.tokenId).to.bignumber.equal(tokenId)
+            expect(unstakedLog.args.amount).to.bignumber.equal(new BN(stakedEvent.args.amount.toString(10)))
 
-          const depositedToCurveAndStakeLog = await decodeAndGetFirstLog<DepositedToCurveAndStaked>(
-            zapperTx.receipt.rawLogs,
-            stakingRewards,
-            "DepositedToCurveAndStaked"
-          )
-          expect(depositedToCurveAndStakeLog.args.fiduAmount).to.bignumber.equal(
-            new BN(stakedEvent.args.amount.toString(10))
-          )
-          expect(depositedToCurveAndStakeLog.args.usdcAmount).to.bignumber.equal(new BN(0))
+            const depositedToCurveAndStakeLog = await decodeAndGetFirstLog<DepositedToCurveAndStaked>(
+              zapperTx.receipt.rawLogs,
+              stakingRewards,
+              "DepositedToCurveAndStaked"
+            )
+            expect(depositedToCurveAndStakeLog.args.fiduAmount).to.bignumber.equal(
+              new BN(stakedEvent.args.amount.toString(10))
+            )
+            expect(depositedToCurveAndStakeLog.args.usdcAmount).to.bignumber.equal(new BN(0))
 
-          const curveBalanceAfter = await curvePool.balances(0)
-          expect(curveBalanceAfter.sub(curveBalanceBefore)).to.bignumber.equal(unstakedLog.args.amount)
+            const curveFiduBalanceAfter = await curvePool.balances(0)
+            const curveUSDCBalanceAfter = await curvePool.balances(1)
+            expect(curveFiduBalanceAfter.sub(curveFiduBalanceBefore)).to.bignumber.equal(
+              depositedToCurveAndStakeLog.args.fiduAmount
+            )
+            expect(curveUSDCBalanceAfter.sub(curveUSDCBalanceBefore)).to.bignumber.equal(new BN(0))
+          })
+        })
+
+        context("for a FIDU with USDC migration", async () => {
+          it("it works", async () => {
+            const curveFiduBalanceBefore = await curvePool.balances(0)
+            const curveUSDCBalanceBefore = await curvePool.balances(1)
+            await erc20Transfer(usdc, [goListedUser], usdcVal(1_000), owner)
+
+            // Deposit and stake
+            const tx = await expect(stakingRewards.depositAndStake(usdcVal(100), {from: goListedUser})).to.be.fulfilled
+            const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+            const tokenId = stakedEvent.args.tokenId
+
+            // Zap to curve
+            await erc721Approve(stakingRewards, zapper.address, tokenId, [goListedUser])
+            const zapperTx = await expect(
+              zapper.zapStakeToCurve(tokenId, new BN(stakedEvent?.args.amount.toString(10)), usdcVal(100), {
+                from: goListedUser,
+              })
+            ).to.be.fulfilled
+
+            const unstakedLog = await decodeAndGetFirstLog<Unstaked>(
+              zapperTx.receipt.rawLogs,
+              stakingRewards,
+              "Unstaked"
+            )
+            expect(unstakedLog.args.tokenId).to.bignumber.equal(tokenId)
+            expect(unstakedLog.args.amount).to.bignumber.equal(new BN(stakedEvent.args.amount.toString(10)))
+
+            const depositedToCurveAndStakeLog = await decodeAndGetFirstLog<DepositedToCurveAndStaked>(
+              zapperTx.receipt.rawLogs,
+              stakingRewards,
+              "DepositedToCurveAndStaked"
+            )
+            expect(depositedToCurveAndStakeLog.args.fiduAmount).to.bignumber.equal(
+              new BN(stakedEvent.args.amount.toString(10))
+            )
+            expect(depositedToCurveAndStakeLog.args.usdcAmount).to.bignumber.equal(usdcVal(100))
+
+            const curveFiduBalanceAfter = await curvePool.balances(0)
+            const curveUSDCBalanceAfter = await curvePool.balances(1)
+            expect(curveFiduBalanceAfter.sub(curveFiduBalanceBefore)).to.bignumber.equal(
+              depositedToCurveAndStakeLog.args.fiduAmount
+            )
+            expect(curveUSDCBalanceAfter.sub(curveUSDCBalanceBefore)).to.bignumber.equal(
+              depositedToCurveAndStakeLog.args.usdcAmount
+            )
+          })
         })
       })
     })
