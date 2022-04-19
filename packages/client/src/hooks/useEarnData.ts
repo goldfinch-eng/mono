@@ -31,7 +31,7 @@ function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[
         // Secondary sort: descending by user's balance
         b.balanceInDollars.comparedTo(a.balanceInDollars) ||
         // Tertiary sort: reverse-chronological by launch time.
-        (a.tranchedPool.metadata?.launchTime && b.tranchedPool.metadata.launchTime
+        (a.tranchedPool.metadata?.launchTime && b.tranchedPool.metadata?.launchTime
           ? b.tranchedPool.metadata.launchTime - a.tranchedPool.metadata.launchTime
           : // Quaternary sort: alphabetical by display name.
             a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName))
