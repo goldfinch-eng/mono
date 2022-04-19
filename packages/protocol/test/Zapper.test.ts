@@ -601,7 +601,8 @@ describe("Zapper", async () => {
           MULTIPLIER_DECIMALS
         )
 
-        // it updates the total staked supply
+        // It updates the total staked supply.
+        // The Curve multiplier is set to 2x, so check that the total staked supply is updated accordingly.
         expect(totalStakedSupplyAfter).to.bignumber.eq(totalStakedSupplyBefore.mul(new BN(3)).div(new BN(2)))
 
         // it deposits all FIDU into Curve on behalf of the user
@@ -656,7 +657,8 @@ describe("Zapper", async () => {
           MULTIPLIER_DECIMALS
         )
 
-        // It updates the total staked supply
+        // It updates the total staked supply.
+        // The Curve multiplier is set to 2x, so check that the total staked supply is updated accordingly.
         expect(totalStakedSupplyAfter).to.bignumber.eq(
           totalStakedSupplyBefore.sub(fiduToMigrate).add(curveLPAmount.mul(new BN(2)))
         )
