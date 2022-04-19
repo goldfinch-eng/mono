@@ -380,8 +380,12 @@ describe("v2.6.0", async function () {
         it("allows withdrawing non-zero amount, now that GFI have been transferred to the BackerRewards contract", async () => {
           const claimableRewards = await backerRewards.poolTokenClaimableRewards(tokenInfo.id)
           expect(claimableRewards).to.bignumber.equal(new BN("3014668121250461200"))
+          // Because the migration does not checkpoint the pool's staking rewards info, we expect the
+          // withdrawable staking rewards still to be 0, despite that info's having been initialized. The
+          // withdrawable staking rewards will become non-zero upon the pool's next repayment, when its
+          // staking rewards info will get checkpointed.
           const claimableBackerStakingRewards = await backerRewards.stakingRewardsEarnedSinceLastWithdraw(tokenInfo.id)
-          expect(claimableBackerStakingRewards).to.bignumber.equal(new BN(1)) // TODO[PR]
+          expect(claimableBackerStakingRewards).to.bignumber.equal(new BN(0))
           const withdrawal = backerRewards.withdraw(tokenInfo.id, {
             from: tokenInfo.ownerAddress,
           })
