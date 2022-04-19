@@ -65,11 +65,13 @@ export async function main() {
     const isJuniorTrancheLockEvent = (event) => event.args.trancheId.toNumber() === TRANCHES.Junior
     const juniorLockEvents = lockEvents.filter(isJuniorTrancheLockEvent)
     if (juniorLockEvents.length !== 2) {
-      throw new Error(`No junior tranche lock events found`)
+      throw new Error(`Unexpected junior tranche lock events found.`)
     }
 
-    const lockBlockNumber = juniorLockEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
-    assertNonNullable(lockBlockNumber)
+    const lockBlockNumber = juniorLockEvents.reduce<number>((acc, x) => Math.max(acc, x.blockNumber), 0)
+    if (!lockBlockNumber) {
+      throw new Error("Failed to identify lock block number.")
+    }
 
     const withdrawFilter = tranchedPool.filters.WithdrawalMade(undefined, 2)
     const withdrawalEventsBeforeLocking = await tranchedPool.queryFilter(withdrawFilter, undefined, lockBlockNumber)
