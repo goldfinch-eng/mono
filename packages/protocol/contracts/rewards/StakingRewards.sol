@@ -120,6 +120,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   uint256 public vestingLength;
 
   /// @dev Supply of staked tokens, denominated in `stakingToken().decimals()`
+  /// @dev Note that due to the use of `baseTokenExchangeRate` and `effectiveMultiplier` on
+  /// a StakedPosition, the sum of `amount` across all staked positions will not necessarily
+  /// equal this `totalStakedSupply` value; the purpose of `baseTokenExchangeRate` and
+  /// `effectiveMultiplier` is to enable calculation of an "effective amount" -- which is
+  /// what this `totalStakedSupply` represents the sum of.
   uint256 public totalStakedSupply;
 
   /// @dev UNUSED (definition kept for storage slot)
@@ -476,7 +481,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // solhint-disable-next-line max-line-length
     // https://github.com/curvefi/curve-factory/blob/ab5e7f6934c0dcc3ad06ccda4d6b35ffbbc99d42/contracts/implementations/plain-4/Plain4Basic.vy#L76
     // https://curve.readthedocs.io/factory-pools.html#StableSwap.decimals
-    return curveLP.add_liquidity([fiduAmount, usdcAmount], minMintAmount, false, lpTokensRecipient);
+    uint256 curveLPTokens = curveLP.add_liquidity([fiduAmount, usdcAmount], minMintAmount, false, lpTokensRecipient);
+
+    // Enforce `minMintAmount` on our side; don't rely on the Curve contract's enforcement.
+    require(minMintAmount > 0 && curveLPTokens >= minMintAmount, "SLIPPAGE");
+
+    return curveLPTokens;
   }
 
   /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
@@ -751,7 +761,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
-  ///   multipler will be reset to 1x.
+  ///   multiplier will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
   function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
