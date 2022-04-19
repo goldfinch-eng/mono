@@ -39,6 +39,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   uint256 internal constant GFI_MANTISSA = 10**18;
   uint256 internal constant FIDU_MANTISSA = 10**18;
   uint256 internal constant USDC_MANTISSA = 10**6;
+  uint256 internal constant NUM_TRANCHES_PER_SLICE = 2;
 
   struct BackerRewardsInfo {
     uint256 accRewardsPerPrincipalDollar; // accumulator gfi per interest dollar
@@ -103,8 +104,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     // @notice the amount of rewards accumulated the last time a token's rewards were withdrawn
     uint256 accumulatedRewardsPerTokenAtLastWithdraw;
   }
-
-  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
 
   /// @notice total amount of GFI rewards available, times 1e18
   uint256 public totalRewards;
@@ -843,11 +842,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   ) internal {
     poolInfo.accumulatedRewardsPerTokenAtLastCheckpoint = newAccumulatorValue;
     poolInfo.lastUpdateTime = block.timestamp;
-  }
-
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(_msgSender(), address(config));
   }
 
   /* ======== MODIFIERS  ======== */

@@ -291,9 +291,22 @@ describe("v2.6.0", async function () {
             })
             const rewardsPerTokenSinceDrawdown = rewardsAccAtRepayment.sub(rewardsAccAtDrawdown)
 
+            const trancheInfo = await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: drawdownBlockNum})
+            const [, principalDeposited, principalSharePrice] = trancheInfo
+
+            assertNonNullable(principalDeposited)
+            assertNonNullable(principalSharePrice)
+
+            // we need to know what proportion of the principal was drawdown
+            // to accurately calculate rewards
+            const principalDrawdownPercent = principalDeposited
+              .sub(principalSharePrice.mul(principalDeposited).div(String(1e18)))
+              .mul(String(1e6))
+              .div(principalDeposited)
+
             const getExpectedRewards = (amount: BN) => {
-              const fiduDecimals = new BN("1000000000000000000")
-              const usdcDecimals = new BN("1000000")
+              const fiduDecimals = new BN(String(1e18))
+              const usdcDecimals = new BN(String(1e6))
 
               return amount
                 .mul(fiduDecimals)
@@ -320,8 +333,12 @@ describe("v2.6.0", async function () {
             )
 
             for (const {principalAmount, stakingRewardsSinceLastWithdraw} of tokenIdsWithPrincipal) {
-              const expectedRewards = getExpectedRewards(new BN(principalAmount))
-              expect(stakingRewardsSinceLastWithdraw).to.bignumber.eq(expectedRewards)
+              // adjust principal to the amount that the borrower actually drew down
+              const adjustedPrincipal = new BN(principalAmount)
+                .mul(new BN(principalDrawdownPercent.toString()))
+                .div(new BN(String(1e6)))
+              const expectedRewards = getExpectedRewards(adjustedPrincipal)
+              expect(stakingRewardsSinceLastWithdraw).to.bignumber.closeTo(expectedRewards, String(1e11))
             }
           })
         })
