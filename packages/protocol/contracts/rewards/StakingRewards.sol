@@ -120,6 +120,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   uint256 public vestingLength;
 
   /// @dev Supply of staked tokens, denominated in `stakingToken().decimals()`
+  /// @dev Note that due to the use of `unsafeBaseTokenExchangeRate` and `unsafeEffectiveMultiplier` on
+  /// a StakedPosition, the sum of `amount` across all staked positions will not necessarily
+  /// equal this `totalStakedSupply` value; the purpose of the base token exchange rate and
+  /// the effective multiplier is to enable calculation of an "effective amount" -- which is
+  /// what this `totalStakedSupply` represents the sum of.
   uint256 public totalStakedSupply;
 
   /// @dev UNUSED (definition kept for storage slot)
@@ -470,17 +475,20 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // We will allow up to 10% slippage, so minMintAmount should be at least 90%
     uint256 minMintAmount = curveLP.calc_token_amount([fiduAmount, usdcAmount]).mul(9).div(10);
 
-    // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
-    // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18
+    // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`.
+    // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18.
     //
     // solhint-disable-next-line max-line-length
     // https://github.com/curvefi/curve-factory/blob/ab5e7f6934c0dcc3ad06ccda4d6b35ffbbc99d42/contracts/implementations/plain-4/Plain4Basic.vy#L76
     // https://curve.readthedocs.io/factory-pools.html#StableSwap.decimals
+    //
+    // It would perhaps be ideal to do our own enforcement of `minMintAmount`, but given the Curve
+    // contract is non-upgradeable and we are satisfied with its implementation, we do not.
     return curveLP.add_liquidity([fiduAmount, usdcAmount], minMintAmount, false, lpTokensRecipient);
   }
 
   /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
-  ///   positions created prior to GIP-1 (before the `effectiveMultipliers` field was added).
+  ///   positions created prior to GIP-1 (before the `unsafeEffectiveMultiplier` field was added).
   /// @dev Always use this method to get the effective multiplier to ensure proper handling of
   ///   old staked positions.
   function safeEffectiveMultiplier(StakedPosition storage position) internal view returns (uint256) {
@@ -492,7 +500,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice Returns the base token exchange rate for a given position. Defaults to 1 for all staked
-  ///   positions created prior to GIP-1 (before the `baseTokenExchangeRate` field was added).
+  ///   positions created prior to GIP-1 (before the `unsafeBaseTokenExchangeRate` field was added).
   /// @dev Always use this method to get the base token exchange rate to ensure proper handling of
   ///   old staked positions.
   function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
@@ -751,7 +759,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
-  ///   multipler will be reset to 1x.
+  ///   multiplier will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
   function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
