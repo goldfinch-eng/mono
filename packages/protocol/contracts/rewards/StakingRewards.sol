@@ -120,10 +120,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   uint256 public vestingLength;
 
   /// @dev Supply of staked tokens, denominated in `stakingToken().decimals()`
-  /// @dev Note that due to the use of `baseTokenExchangeRate` and `effectiveMultiplier` on
+  /// @dev Note that due to the use of `unsafeBaseTokenExchangeRate` and `unsafeEffectiveMultiplier` on
   /// a StakedPosition, the sum of `amount` across all staked positions will not necessarily
-  /// equal this `totalStakedSupply` value; the purpose of `baseTokenExchangeRate` and
-  /// `effectiveMultiplier` is to enable calculation of an "effective amount" -- which is
+  /// equal this `totalStakedSupply` value; the purpose of the base token exchange rate and
+  /// the effective multiplier is to enable calculation of an "effective amount" -- which is
   /// what this `totalStakedSupply` represents the sum of.
   uint256 public totalStakedSupply;
 
@@ -486,7 +486,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
-  ///   positions created prior to GIP-1 (before the `effectiveMultipliers` field was added).
+  ///   positions created prior to GIP-1 (before the `unsafeEffectiveMultiplier` field was added).
   /// @dev Always use this method to get the effective multiplier to ensure proper handling of
   ///   old staked positions.
   function safeEffectiveMultiplier(StakedPosition storage position) internal view returns (uint256) {
@@ -498,7 +498,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice Returns the base token exchange rate for a given position. Defaults to 1 for all staked
-  ///   positions created prior to GIP-1 (before the `baseTokenExchangeRate` field was added).
+  ///   positions created prior to GIP-1 (before the `unsafeBaseTokenExchangeRate` field was added).
   /// @dev Always use this method to get the base token exchange rate to ensure proper handling of
   ///   old staked positions.
   function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
