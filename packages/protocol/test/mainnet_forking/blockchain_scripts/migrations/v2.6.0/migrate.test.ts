@@ -256,6 +256,9 @@ describe("v2.6.0", async function () {
             await advanceTime({toSecond: dueTime.toString()})
             await tranchedPool.assess()
             const interestOwed = await creditLine.interestOwed()
+            if (interestOwed.isZero()) {
+              throw new Error("Expected interest owed > 0.")
+            }
             await usdc.approve(borrowerContract.address, interestOwed.toString(), {from: borrowerEoa})
             await fundWithWhales(["USDC"], [borrowerEoa])
             const tx = await borrowerContract.pay(tranchedPool.address, interestOwed)
