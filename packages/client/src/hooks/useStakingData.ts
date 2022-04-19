@@ -168,60 +168,21 @@ export default function useStakingData(): StakingData {
   }
 
   async function unstake(amount: BigNumber, positionType: StakedPositionType) {
-    assertNonNullable(stakedPositions)
     assertNonNullable(stakingRewards)
 
-    const unstakeableAmount = stakedPositions
-      .filter((position) => position.storedPosition.positionType === positionType)
-      .reduce((total, position) => total.plus(position.storedPosition.amount), new BigNumber(0))
+    const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
+    const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
+    const amounts = optimalPositionsToUnstake.map(({amount}) => amount.toString(10))
 
-    if (unstakeableAmount.isLessThan(amount)) {
-      throw new AssertionError(`Cannot unstake more than ${unstakeableAmount}.`)
-    }
-
-    const sortedUnstakeablePositions = stakedPositions
-      .filter((position) => position.storedPosition.positionType === positionType)
-      .sort((a, b) => a.unvested.comparedTo(b.unvested))
-
-    // TODO(@emilyhsia): Is there a cleaner way to do this?
-    // TODO(@emilyhsia): Add comments
-    let tokenIds: string[] = []
-    let amounts: BigNumber[] = []
-    let amountRemaining = new BigNumber(amount)
-    let currentIndex = 0
-    while (amountRemaining.isGreaterThan(new BigNumber(0))) {
-      const position = sortedUnstakeablePositions[currentIndex]
-      assertNonNullable(position)
-
-      const positionTokenId = position.tokenId
-      const positionAmount = position.storedPosition.amount
-
-      const amountFromPosition = amountRemaining.isGreaterThan(positionAmount)
-        ? positionAmount
-        : positionAmount.minus(amountRemaining)
-
-      tokenIds.push(positionTokenId)
-      amounts.push(amountFromPosition)
-      amountRemaining = amountRemaining.minus(amountFromPosition)
-    }
-
-    sendFromUser(
-      stakingRewards.contract.userWallet.methods.unstakeMultiple(
-        tokenIds,
-        amounts.map((amount) => amount.toString(10))
-      ),
-      {
-        type: UNSTAKE_MULTIPLE_TX_TYPE,
-        data: {
-          totalAmount: amount.toString(10),
-          tokens: tokenIds.map((tokenId, i) => {
-            const a = amounts[i]
-            assertNonNullable(a)
-            return {id: tokenId, amount: a.toString(10)}
-          }),
-        },
-      }
-    )
+    sendFromUser(stakingRewards.contract.userWallet.methods.unstakeMultiple(tokenIds, amounts), {
+      type: UNSTAKE_MULTIPLE_TX_TYPE,
+      data: {
+        totalAmount: amount.toString(10),
+        tokens: optimalPositionsToUnstake.map(({tokenId, amount}) => {
+          return {id: tokenId, amount: amount.toString(10)}
+        }),
+      },
+    })
   }
 
   async function depositToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber) {
@@ -269,43 +230,12 @@ export default function useStakingData(): StakingData {
     assertNonNullable(stakedPositions)
     assertNonNullable(zapper)
 
-    const stakedFiduPositions = stakedPositions.filter(
-      (position) => position.storedPosition.positionType === StakedPositionType.Fidu
-    )
+    assertNonNullable(stakingRewards)
 
-    const zappableAmount = stakedFiduPositions.reduce(
-      (total, position) => total.plus(position.storedPosition.amount),
-      new BigNumber(0)
-    )
-
-    if (zappableAmount.isLessThan(fiduAmount)) {
-      throw new AssertionError(`Cannot unstake more than ${zappableAmount.toString(10)}.`)
-    }
-
-    const sortedUnstakeablePositions = stakedFiduPositions.sort((a, b) => a.unvested.comparedTo(b.unvested))
-
-    // TODO(@emilyhsia): Is there a cleaner way to do this?
-    // TODO(@emilyhsia): Add comments
-    let tokenIdsAndAmounts: {tokenId: string; amount: BigNumber}[] = []
-    let amountRemaining = new BigNumber(fiduAmount)
-    let currentIndex = 0
-    while (amountRemaining.isGreaterThan(new BigNumber(0))) {
-      const position = sortedUnstakeablePositions[currentIndex]
-      assertNonNullable(position)
-
-      const positionTokenId = position.tokenId
-      const positionAmount = position.storedPosition.amount
-
-      const amountFromPosition = amountRemaining.isGreaterThan(positionAmount)
-        ? positionAmount
-        : positionAmount.minus(amountRemaining)
-
-      tokenIdsAndAmounts.push({tokenId: positionTokenId, amount: amountFromPosition})
-      amountRemaining = amountRemaining.minus(amountFromPosition)
-    }
+    const optimalPositionsToUnstake = getOptimalPositionsToUnstake(fiduAmount, StakedPositionType.Fidu)
 
     Promise.all(
-      tokenIdsAndAmounts.map(({tokenId, amount}) =>
+      optimalPositionsToUnstake.map(({tokenId, amount}) =>
         sendFromUser(
           zapper.contract.userWallet.methods.zapStakeToCurve(
             tokenId,
@@ -322,6 +252,47 @@ export default function useStakingData(): StakingData {
         )
       )
     )
+  }
+
+  function getOptimalPositionsToUnstake(
+    amount: BigNumber,
+    positionType: StakedPositionType
+  ): {tokenId: string; amount: BigNumber}[] {
+    assertNonNullable(stakedPositions)
+    assertNonNullable(stakingRewards)
+
+    const unstakeableAmount = stakedPositions
+      .filter((position) => position.storedPosition.positionType === positionType)
+      .reduce((total, position) => total.plus(position.storedPosition.amount), new BigNumber(0))
+
+    if (unstakeableAmount.isLessThan(amount)) {
+      throw new AssertionError(`Cannot unstake more than ${unstakeableAmount}.`)
+    }
+
+    // To be user-friendly, we exit these positions in reverse order of their vesting
+    // end time; positions whose rewards vesting schedule has not completed will be exited before positions whose
+    // rewards vesting schedule has completed, which is desirable for the user as that maximizes the rate at which
+    // they continue to earn vested (i.e. claimable) rewards. Also, note that among the (unstakeable) positions
+    // whose rewards vesting schedule has completed, there is no reason to prefer exiting one position versus
+    // another, as all such positions earn rewards at the same rate.
+    const sortedUnstakeablePositions = stakedPositions
+      .filter((position) => position.storedPosition.positionType === positionType)
+      .slice()
+      .sort((a, b) => b.storedPosition.rewards.endTime - a.storedPosition.rewards.endTime)
+
+    let amountRemaining = new BigNumber(amount)
+
+    return sortedUnstakeablePositions
+      .reduce((acc: {tokenId: string; amount: BigNumber}[], position) => {
+        const tokenId = position.tokenId
+        const positionAmount = position.storedPosition.amount
+
+        const amountToUnstake = BigNumber.min(positionAmount, amountRemaining)
+        amountRemaining = amountRemaining.minus(amountToUnstake)
+
+        return acc.concat([{tokenId, amount: amountToUnstake}])
+      }, [])
+      .filter(({amount}) => amount.isGreaterThan(new BigNumber(0)))
   }
 
   function tickerForStakedPositionType(positionType: StakedPositionType): Ticker {
