@@ -1,4 +1,4 @@
-import {FIDU_DECIMALS, StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   BackerRewards,
   GFI,
@@ -175,10 +175,37 @@ export async function main() {
     )
   )
 
-  // const expectedRewardsValues = {
-  //   [STRATOS_POOL_ADDR]: {},
-  // }
+  // validate against the manually confirmed values
+  const expectedRewardsValues: Record<string, StakingRewardsInfoInitValues> = {
+    [STRATOS_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "4000000000000",
+      fiduSharePriceAtDrawdown: "1049335199989661790",
+      accumulatedRewardsPerToken: "14764838139349853151",
+    },
+    [ALMA_6_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "2362453454437",
+      fiduSharePriceAtDrawdown: "1048979727966257806",
+      accumulatedRewardsPerToken: "14764765626591738655",
+    },
+    [ALMA_7_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "1999999998834",
+      fiduSharePriceAtDrawdown: "1055955666945103145",
+      accumulatedRewardsPerToken: "14774486589523186250",
+    },
+    [CAURIS_2_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "2000000000001",
+      fiduSharePriceAtDrawdown: "1049335199989661790",
+      accumulatedRewardsPerToken: "14765542624996072988",
+    },
+    [LEND_EAST_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "2030000000000",
+      fiduSharePriceAtDrawdown: "1052477362957198335",
+      accumulatedRewardsPerToken: "14770629091940940209",
+    },
+  }
 
+  expect(backerStakingRewardsParams).to.deep.eq(expectedRewardsValues)
+  console.log("Backer staking rewards params:")
   console.log(backerStakingRewardsParams)
 
   const backerStakingRewardsInitTxs = await Promise.all(
@@ -198,7 +225,28 @@ export async function main() {
     {},
     ...(await Promise.all(BACKER_REWARDS_PARAMS_POOL_ADDRS.map(getPoolTokensThatRedeemedBeforeLocking)))
   )
+  console.log("pool token principal reduction amounts:")
   console.log(poolTokensWithPrincipalWithdrawnBeforeLockById)
+
+  const expectedPrincipalReductionAmounts = {
+    "469": "9000000000",
+    "477": "6500000000",
+    "478": "37980320915",
+    "485": "16556876430",
+    "487": "25500000000",
+    "493": "10000000000",
+    "501": "4000000000",
+    "507": "1020000000",
+    "517": "2000000000",
+    "518": "16870422655",
+    "525": "1000000000",
+    "545": "30000810000",
+    "566": "4000000000",
+    "689": "129117730000",
+    "711": "476510000",
+  }
+
+  expect(poolTokensWithPrincipalWithdrawnBeforeLockById).to.deep.equal(expectedPrincipalReductionAmounts)
 
   const poolTokenFixupTxs = await Promise.all(
     Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {
