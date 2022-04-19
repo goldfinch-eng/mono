@@ -23,14 +23,18 @@ export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIM
 
 function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[] {
   return poolBackers.sort((a, b) =>
-    // Primary sort: by pool status
+    // Primary sort: by pool status. Open pools are sorted in reverse-chronological order
+    // of fundable-at time.
     a.tranchedPool.poolState === PoolState.Open && b.tranchedPool.poolState === PoolState.Open
       ? b.tranchedPool.fundableAt.toNumber() - a.tranchedPool.fundableAt.toNumber()
       : a.tranchedPool.poolState - b.tranchedPool.poolState ||
         // Secondary sort: descending by user's balance
         b.balanceInDollars.comparedTo(a.balanceInDollars) ||
-        // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
-        a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
+        // Tertiary sort: reverse-chronological by launch time.
+        (a.tranchedPool.metadata?.launchTime && b.tranchedPool.metadata?.launchTime
+          ? b.tranchedPool.metadata.launchTime - a.tranchedPool.metadata.launchTime
+          : // Quaternary sort: alphabetical by display name.
+            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName))
   )
 }
 

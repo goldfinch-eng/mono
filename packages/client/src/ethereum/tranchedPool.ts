@@ -86,7 +86,11 @@ export interface TranchedPoolMetadata {
   migrated?: boolean
   migratedFrom?: string
   NDAUrl?: string
-  launchTime?: number
+  // A rough timestamp in seconds of the launch of the pool. By "rough" is
+  // meant that this value is valid for ordering purposes across pools, but
+  // it should NOT be taken at face value as some definitive attestation of
+  // when something happened on-chain.
+  launchTime: number
   poolDescription?: string
   poolHighlights?: Array<string>
   borrowerDescription?: string
