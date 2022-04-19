@@ -71,7 +71,7 @@ const setupTest = deployments.createFixture(async () => {
   }
 })
 
-const almaPool6Info = {
+export const almaPool6Info = {
   address: "0x418749e294cabce5a714efccc22a8aade6f9db57",
   aPoolToken: {
     // Cf. https://etherscan.io/token/0x57686612c601cb5213b01aa8e80afeb24bbd01df?a=512
