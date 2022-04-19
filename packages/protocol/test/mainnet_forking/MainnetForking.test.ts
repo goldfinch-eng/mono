@@ -1089,9 +1089,8 @@ describe("mainnet forking tests", async function () {
       )
 
       const balance = await creditLine.balance()
-      expect(balance).to.bignumber.eq(untrackedStakedAmount.add(trackedStakedAmount).mul(new BN(2)))
+      expect(balance.toString()).to.eq(limit.mul(new BN(2)).toString())
       expect(balance.toString()).to.eq((await creditLine.limit()).toString())
-
       const secondSliceStakingRewardsTokenId = getStakingRewardTokenFromTransactionReceipt(
         asNonNullable(secondSliceStakingTx)
       )
@@ -1112,7 +1111,7 @@ describe("mainnet forking tests", async function () {
         await expectRewardsAreEqualForTokens(stakingRewardsTokenId, backerStakingTokenId, payTx.blockNumber, tolerance)
 
         expect(
-          (await getBackerStakingRewardsForToken(secondSliceStakingRewardsTokenId, payTx.blockNumber)).gt(new BN(0))
+          (await getBackerStakingRewardsForToken(secondSliceDepositTokenId.toString(), payTx.blockNumber)).gt(new BN(0))
         )
         await expectRewardsAreEqualForTokens(
           secondSliceStakingRewardsTokenId,
@@ -1152,7 +1151,7 @@ describe("mainnet forking tests", async function () {
       )
 
       const secondSliceStakingRewardsEarnedAfterFinalRepayment = await getBackerStakingRewardsForToken(
-        secondSliceStakingRewardsTokenId,
+        secondSliceDepositTokenId.toString(),
         paymentTx.blockNumber
       )
       expect(secondSliceStakingRewardsEarnedAfterFinalRepayment).to.bignumber.closeTo(
@@ -1172,7 +1171,7 @@ describe("mainnet forking tests", async function () {
       expect(firstSliceStakingRewardsEarnedMuchLater).to.bignumber.eq(firstSliceStakingRewardsEarnedAfterFinalRepayment)
 
       const secondSliceStakingRewardsEarnedMuchLater = await getBackerStakingRewardsForToken(
-        secondSliceStakingRewardsTokenId,
+        secondSliceDepositTokenId.toString(),
         muchLaterBlockNumber
       )
       expect(secondSliceStakingRewardsEarnedMuchLater).to.bignumber.eq(
@@ -1184,7 +1183,9 @@ describe("mainnet forking tests", async function () {
         getWithdrawnStakingAmountFromTransactionReceipt(firstSliceWithdrawTx)
       expect(firstSliceStakingRewardsEarnedMuchLater).to.bignumber.eq(String(firstSliceAmountOfStakingRewardsWithdrawn))
 
-      const secondSliceWithdrawTx = await (await backerRewardsEthers.withdraw(secondSliceStakingRewardsTokenId)).wait()
+      const secondSliceWithdrawTx = await (
+        await backerRewardsEthers.withdraw(secondSliceDepositTokenId.toString())
+      ).wait()
       const secondSliceAmountOfStakingRewardsWithdrawn =
         getWithdrawnStakingAmountFromTransactionReceipt(secondSliceWithdrawTx)
       expect(secondSliceStakingRewardsEarnedMuchLater).to.bignumber.eq(
