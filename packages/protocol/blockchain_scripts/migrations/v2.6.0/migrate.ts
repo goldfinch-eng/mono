@@ -45,7 +45,7 @@ export type Migration260Params = {
     totalRewards: string
   }
   StakingRewards: {
-    effectiveMultiplier: string
+    curveEffectiveMultiplier: string
   }
 }
 
@@ -102,9 +102,7 @@ export async function main() {
     // in some cases (stratos) they did a test drawdown. If we used the first drawdown
     // as where to take our rewards param snapshot we would have incorrect values. So we need to find
     // the latest block that they drewdown.
-    // although I'm now realizing that because stratos may drawdown again I should probably use the
-    // when the senior tranche was locked as the reference point. TODO(PR)
-    const lastDrawdownBlock = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
+    const lastDrawdownBlock = Math.max(...drawdownEvents.map((e) => e.blockNumber))
     if (!lastDrawdownBlock) {
       throw new Error("Failed to Identify last drawdown block")
     }
@@ -157,7 +155,7 @@ export async function main() {
       totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
     },
     StakingRewards: {
-      effectiveMultiplier: "750000000000000000",
+      curveEffectiveMultiplier: "750000000000000000",
     },
   }
 
@@ -165,16 +163,26 @@ export async function main() {
     `Transferring ${params.BackerRewards.totalRewards} GFI to BackerRewards at address ${backerRewards.address}`
   )
   console.log("Setting StakingRewards parameters:")
-  console.log(` effectiveMultipler = ${params.StakingRewards.effectiveMultiplier}`)
+  console.log(` effectiveMultipler = ${params.StakingRewards.curveEffectiveMultiplier}`)
 
   // 6. Generate rewards initialization params
   console.log("Getting pool backer staking rewards parameters")
+  const backerStakingRewardsParams = _.fromPairs(
+    await Promise.all(
+      BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (address) => [address, await getRewardsParametersForPool(address)])
+    )
+  )
+
+  // const expectedRewardsValues = {
+  //   [STRATOS_POOL_ADDR]: {},
+  // }
+
+  console.log(backerStakingRewardsParams)
+
   const backerStakingRewardsInitTxs = await Promise.all(
-    BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
-      const params = await getRewardsParametersForPool(addr)
-      console.log(addr, params)
+    Object.entries(backerStakingRewardsParams).map(async ([address, params]) => {
       return backerRewards.populateTransaction.forceInitializeStakingRewardsPoolInfo(
-        addr,
+        address,
         params.fiduSharePriceAtDrawdown,
         params.principalDeployedAtDrawdown,
         params.accumulatedRewardsPerToken
@@ -216,7 +224,7 @@ export async function main() {
 
       // initialize staking rewards parameters for CurveLP positions
       await stakingRewards.populateTransaction.setEffectiveMultiplier(
-        params.StakingRewards.effectiveMultiplier,
+        params.StakingRewards.curveEffectiveMultiplier,
         StakedPositionType.CurveLP
       ),
 
