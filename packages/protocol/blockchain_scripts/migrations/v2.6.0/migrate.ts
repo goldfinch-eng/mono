@@ -107,8 +107,10 @@ export async function main() {
       throw new Error("Failed to Identify last drawdown block")
     }
     const trancheInfo = await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock})
+    const principalSharePrice = trancheInfo.principalSharePrice
     const principalDeposited = trancheInfo.principalDeposited
-    const backerCapitalDrawndown = principalDeposited
+    const remaining = principalSharePrice.mul(principalDeposited).div(String(1e18))
+    const backerCapitalDrawndown = principalDeposited.sub(remaining)
 
     const fiduSharePriceAtDrawdown = (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString()
     const accumulatedRewardsPerToken = (
