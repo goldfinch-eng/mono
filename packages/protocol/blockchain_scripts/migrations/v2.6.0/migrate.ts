@@ -73,7 +73,7 @@ export async function main() {
       throw new Error("Failed to identify lock block number.")
     }
 
-    const withdrawFilter = tranchedPool.filters.WithdrawalMade(undefined, 2)
+    const withdrawFilter = tranchedPool.filters.WithdrawalMade(undefined, TRANCHES.Junior)
     const withdrawalEventsBeforeLocking = await tranchedPool.queryFilter(withdrawFilter, undefined, lockBlockNumber)
     const withdrawEventWithdrewPrincipal = (event) => event.args.principalWithdrawn.toString() !== "0"
     const withdrawalsOfPrincipalBeforeLocked = withdrawalEventsBeforeLocking.filter(withdrawEventWithdrewPrincipal)
