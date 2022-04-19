@@ -113,6 +113,9 @@ export async function main() {
     const principalDeposited = trancheInfo.principalDeposited
     const remaining = principalSharePrice.mul(principalDeposited).div(String(1e18))
     const backerCapitalDrawndown = principalDeposited.sub(remaining)
+    if (!backerCapitalDrawndown.eq(principalDeposited)) {
+      throw new Error(`Expected all principal to have been drawndown.`)
+    }
 
     const fiduSharePriceAtDrawdown = (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString()
     const accumulatedRewardsPerToken = (
