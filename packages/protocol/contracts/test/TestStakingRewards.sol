@@ -10,23 +10,26 @@ contract TestStakingRewards is StakingRewards {
 
   mapping(StakedPositionType => uint256) private exchangeRates;
 
-  function getBaseTokenExchangeRate(StakedPositionType positionType) public view override returns (uint256) {
-    uint256 exchangeRate = exchangeRates[positionType];
+  /// @dev Used in unit tests to mock the `unsafeEffectiveMultiplier` for a given position
+  function _setPositionUnsafeEffectiveMultiplier(uint256 tokenId, uint256 newMultiplier) external {
+    StakedPosition storage position = positions[tokenId];
 
-    if (exchangeRate > 0) {
-      return exchangeRate;
-    }
-
-    if (positionType == StakedPositionType.CurveLP) {
-      return MULTIPLIER_DECIMALS; // 1x
-    } else if (positionType == StakedPositionType.Fidu) {
-      return MULTIPLIER_DECIMALS; // 1x
-    } else {
-      revert("unsupported StakedPositionType");
-    }
+    position.unsafeEffectiveMultiplier = newMultiplier;
   }
 
-  function _setBaseTokenExchangeRate(StakedPositionType positionType, uint256 exchangeRate) public returns (uint256) {
-    exchangeRates[positionType] = exchangeRate;
+  function _getStakingAndRewardsTokenMantissa() public view returns (uint256) {
+    return stakingAndRewardsTokenMantissa();
+  }
+
+  function _getFiduStakingTokenMantissa() public view returns (uint256) {
+    return uint256(10)**IERC20withDec(address(stakingToken(StakedPositionType.Fidu))).decimals();
+  }
+
+  function _getCurveLPStakingTokenMantissa() public view returns (uint256) {
+    return uint256(10)**IERC20withDec(address(stakingToken(StakedPositionType.CurveLP))).decimals();
+  }
+
+  function _getRewardsTokenMantissa() public view returns (uint256) {
+    return uint256(10)**rewardsToken().decimals();
   }
 }

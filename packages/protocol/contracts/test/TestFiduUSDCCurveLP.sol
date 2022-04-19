@@ -17,6 +17,9 @@ contract TestFiduUSDCCurveLP is
 
   IGoldfinchConfig public config;
 
+  uint256 private virtual_price = MULTIPLIER_DECIMALS;
+  uint256 private slippage = MULTIPLIER_DECIMALS;
+
   constructor(
     uint256 initialSupply,
     uint8 decimals,
@@ -31,16 +34,25 @@ contract TestFiduUSDCCurveLP is
     return address(this);
   }
 
-  function get_virtual_price() public view override returns (uint256) {
-    return MULTIPLIER_DECIMALS;
+  // Mock slippage when adding liquidity
+  function _set_slippage(uint256 new_slippage) external {
+    slippage = new_slippage;
   }
 
-  /// @notice Mock calcTokenAmount function that returns the sum of both token amounts
+  function _set_virtual_price(uint256 new_virtual_price) external {
+    virtual_price = new_virtual_price;
+  }
+
+  function get_virtual_price() public view override returns (uint256) {
+    return virtual_price;
+  }
+
+  /// @notice Mock calc_token_amount function that returns the sum of both token amounts
   function calc_token_amount(uint256[2] memory amounts) public view override returns (uint256) {
     return amounts[0].add(amounts[1]);
   }
 
-  /// @notice Mock addLiquidity function that mints Curve LP tokens
+  /// @notice Mock add_liquidity function that mints Curve LP tokens
   function add_liquidity(
     uint256[2] memory amounts,
     uint256 min_mint_amount,
@@ -51,7 +63,9 @@ contract TestFiduUSDCCurveLP is
     getFidu().transferFrom(msg.sender, address(this), amounts[0]);
     getUSDC().transferFrom(msg.sender, address(this), amounts[1]);
 
-    uint256 amount = this.calc_token_amount(amounts);
+    uint256 amount = calc_token_amount(amounts).mul(slippage).div(MULTIPLIER_DECIMALS);
+
+    require(amount >= min_mint_amount, "Slippage too high");
 
     _mint(receiver, amount);
     return amount;
