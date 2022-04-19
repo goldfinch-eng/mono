@@ -779,6 +779,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /// @notice Returns the junior tranche of a pool given a slice index
+  /// @param pool pool to retreive tranche from
+  /// @param sliceIndex slice index
+  /// @return tranche in specified slice and pool
   function _getJuniorTrancheForTranchedPoolSlice(ITranchedPool pool, uint256 sliceIndex)
     internal
     view
