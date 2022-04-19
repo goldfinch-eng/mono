@@ -1833,32 +1833,6 @@ describe("BackerRewards", function () {
     }).timeout(LONG_TEST_TIMEOUT)
   })
 
-  describe("updateGoldfinchConfig", async () => {
-    let otherConfig: GoldfinchConfigInstance
-
-    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
-      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
-      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
-      return {goldfinchConfig}
-    })
-
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
-    })
-
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
-        const tx = await backerRewards.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: otherConfig.address,
-        })
-      })
-    })
-  })
-
   describe("Staking-rewards-related view functions", () => {
     const maxInterestDollarsEligible = 1_000_000_000
     const totalGFISupply = 100_000_000

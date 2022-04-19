@@ -19,6 +19,7 @@ import {
   getEthersContract,
   getProtocolOwner,
   fixProvider,
+  isMainnetForking,
 } from "../blockchain_scripts/deployHelpers"
 import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
@@ -130,8 +131,14 @@ async function upgradeContracts({
       UpgradedImplAddress: upgradedImplAddress,
     }
 
-    await rewriteUpgradedDeployment(contractName)
-    await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
+    // We don't want to re-write the upgrade manifest and deployments manifest
+    // when we deploy during a mainnet forking test. If we did, we would be
+    // checking if the upgrade was safe with the last thing that we deployed,
+    // not what's currently on mainnet
+    if (!isMainnetForking()) {
+      await rewriteUpgradedDeployment(contractName)
+      await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
+    }
   }
   return upgradedContracts
 }

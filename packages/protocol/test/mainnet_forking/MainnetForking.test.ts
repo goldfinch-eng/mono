@@ -14,7 +14,6 @@ import {
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
@@ -185,12 +184,9 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-
-  await migrate250.main()
   await migrate260.main()
 
-  // NOTE: Uncomment for the v2.6.0 upgrade.
-  // const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
+  const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
   return {
     poolTokens,
@@ -204,8 +200,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     go,
     stakingRewards,
     backerRewards,
-    // NOTE: Uncomment for the v2.6.0 upgrade.
-    // zapper,
+    zapper,
     gfi,
     communityRewards,
     merkleDistributor,
@@ -291,8 +286,7 @@ describe("mainnet forking tests", async function () {
       go,
       stakingRewards,
       backerRewards,
-      // NOTE: Uncomment for the v2.6.0 upgrade.
-      // zapper,
+      zapper,
       gfi,
       communityRewards,
       merkleDistributor,
@@ -700,10 +694,8 @@ describe("mainnet forking tests", async function () {
     })
   })
 
-  // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
-  //        Main should be passing after only running the v2.5.0 upgrade
-  describe.skip("BackerRewards", () => {
-    const microTolerance = "100000" // 1e5
+  describe("BackerRewards", () => {
+    const microTolerance = String(1e5)
     let stakingRewardsEthers: StakingRewards
     let backerRewardsEthers: BackerRewards
     let tranchedPoolWithBorrowerConnected: TranchedPool
@@ -714,7 +706,7 @@ describe("mainnet forking tests", async function () {
     const termInDays = new BigNumber("365")
     const trackedStakedAmount = usdcVal(2500)
     const untrackedStakedAmount = usdcVal(1000)
-    const limit = trackedStakedAmount.add(untrackedStakedAmount).mul(new BN("4"))
+    const limit = trackedStakedAmount.add(untrackedStakedAmount).mul(new BN("5"))
     const setup = deployments.createFixture(async () => {
       const result = await goldfinchFactory.createPool(
         bwr,
@@ -883,7 +875,6 @@ describe("mainnet forking tests", async function () {
       await mineBlock()
       const blockNumAtTermEnd = await ethers.provider.getBlockNumber()
       const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId, blockNumAtTermEnd)
-      expect(stakingRewardsAtTermEnd).to.bignumber.eq("204719988714582627353")
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
@@ -945,8 +936,6 @@ describe("mainnet forking tests", async function () {
         const payTx = await payOffTranchedPoolInterest(tranchedPoolWithBorrowerConnected)
         stakingRewardsEarned = await getStakingRewardsForToken(stakingRewardsTokenId, payTx.blockNumber)
         backerStakingRewardsEarned = await getBackerRewardsForToken(backerStakingTokenId, payTx.blockNumber)
-        // NOTE: there's currently a bug in the tranched pool share price calculation
-        //        thats causing imprecision here
         expect(backerStakingRewardsEarned).to.bignumber.closeTo(stakingRewardsEarned, microTolerance)
       }
 
@@ -997,8 +986,6 @@ describe("mainnet forking tests", async function () {
       await mineBlock()
       const stakingRewardsAtTermEnd = await getStakingRewardsForToken(stakingRewardsTokenId)
       const secondStakingRewardsAtTermEnd = await getStakingRewardsForToken(secondStakingTokenId)
-      expect(stakingRewardsAtTermEnd).to.bignumber.eq("102362806340720831518")
-      expect(secondStakingRewardsAtTermEnd).to.bignumber.eq("25941012414031627309")
 
       // this section tests the final repayment
       // the final repayment is different because if the payment happens after the term is over
@@ -1011,10 +998,6 @@ describe("mainnet forking tests", async function () {
         payTx.blockNumber
       )
 
-      // NOTE: we need to capture the stakingrewards amount at the final day of the repayment
-      //        and then compare that its within a tolerance. This is asserting that
-      //        the pro rating logic that we're implementing is _close_ to the value
-      //        that should have been given out
       expect(backerStakingRewardsEarnedAfterFinalRepayment).to.bignumber.closeTo(
         stakingRewardsAtTermEnd.add(secondStakingRewardsAtTermEnd),
         microTolerance
@@ -1039,133 +1022,6 @@ describe("mainnet forking tests", async function () {
         expect(String(rewardsWithdrawn)).to.bignumber.eq("0")
       })
     })
-
-    // describe("forceIntializeStakingRewardsPoolInfo", () => {
-    //   const stratosPoolAddress = "0x00c27fc71b159a346e179b4a1608a0865e8a7470"
-    //   const stratosPoolBackerTokenId = "570"
-    //   const almavest6PoolAddress = "0x418749e294cabce5a714efccc22a8aade6f9db57"
-    //   const almavest6BackerTokenId = "565"
-    //   const testCases = [
-    //     [stratosPoolAddress, stratosPoolBackerTokenId],
-    //     [almavest6PoolAddress, almavest6BackerTokenId],
-    //   ]
-    //   let seniorPoolEthers: SeniorPool
-
-    //   beforeEach(async () => {
-    //     seniorPoolEthers = await getEthersContract<SeniorPool>("SeniorPool", {at: seniorPool.address})
-    //   })
-
-    // NOTE: this test needs to fixed in the follow up v2.5 deploy script
-    //     It's failing with an updated block number because these tests assumed the pools aren't
-    //     funded.
-    //   mochaEach(testCases).it("works correctly on %s", async (address, tokenId) => {
-    //     const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {
-    //       at: address,
-    //     })
-    //     const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", {
-    //       at: await pool.creditLine(),
-    //     })
-    //     const borrower = await getTruffleContract<BorrowerInstance>("Borrower", {
-    //       at: await creditLine.borrower(),
-    //     })
-    //     const borrowerEoa = await borrower.getRoleMember(OWNER_ROLE, 0)
-    //     const borrowerEoaSigner = await ethers.getSigner(borrowerEoa)
-    //     const borrowerEthers = (
-    //       await getEthersContract<BorrowerEthers>("Borrower", {
-    //         at: borrower.address,
-    //       })
-    //     ).connect(borrowerEoaSigner)
-    //     await impersonateAccount(hre, borrowerEoa)
-
-    //     await erc20Approve(usdc, borrower.address, MAX_UINT, [borrowerEoa])
-    //     await erc20Approve(usdc, pool.address, MAX_UINT, [borrowerEoa])
-
-    //     const backerDepositAmount = (await poolTokens.getTokenInfo(tokenId)).principalAmount
-
-    //     const limit = await creditLine.maxLimit()
-    //     const juniorTrancheLimit = limit.div(new BN("4")) // junior tranches are 25%
-    //     const currentAmount = await usdc.balanceOf(pool.address)
-    //     const remaining = juniorTrancheLimit.sub(currentAmount)
-
-    //     // A generous contribution from circle
-    //     const circleEoa = "0x55fe002aeff02f77364de339a1292923a15844b8"
-    //     await legacyGoldfinchConfig.addToGoList(circleEoa, {from: await getProtocolOwner()})
-    //     await impersonateAccount(hre, circleEoa)
-    //     await erc20Approve(usdc, pool.address, MAX_UINT, [circleEoa])
-    //     await pool.deposit(TRANCHES.Junior, remaining, {from: circleEoa})
-    //     await impersonateAccount(hre, borrowerEoa)
-    //     await borrower.lockJuniorCapital(pool.address, {from: borrowerEoa})
-    //     await seniorPool.invest(pool.address)
-
-    //     const backerRewardsBeforeDrawdownAndInitialization = await getBackerRewardsForToken(tokenId)
-    //     expect(backerRewardsBeforeDrawdownAndInitialization).to.bignumber.eq("0")
-
-    //     const amountToDrawdown = limit
-    //     await erc20Approve(usdc, stakingRewards.address, backerDepositAmount, [circleEoa])
-    //     // const stakeTx = await (await stakingRewardsEthers.depositAndStake(backerDepositAmount.toString())).wait()
-    //     const juniorPortion = await pool.totalJuniorDeposits()
-    //     const [stakeTx] = await mineInSameBlock(
-    //       [
-    //         // create an equivalent staking rewards position so we can verify that the staking rewards are being accumulated
-    //         // correctly
-    //         await stakingRewardsEthers
-    //           .connect(await ethers.getSigner(circleEoa))
-    //           .populateTransaction.depositAndStake(backerDepositAmount.toString()),
-    //         await borrowerEthers.populateTransaction.drawdown(pool.address, amountToDrawdown.toString(), borrowerEoa, {
-    //           from: borrowerEoa,
-    //         }),
-    //       ],
-    //       this.timeout()
-    //     )
-    //     const drawdownBlockNumber = stakeTx?.blockNumber
-    //     const stakingTokenId = getStakingRewardTokenFromTransactionReceipt(stakeTx as ContractReceipt)
-    //     const backerRewardsAfterDrawdownBeforeInitialization = await getBackerRewardsForToken(tokenId)
-    //     expect(backerRewardsAfterDrawdownBeforeInitialization).to.bignumber.eq("0")
-
-    //     await advanceTime({days: "30"})
-    //     await pool.assess()
-
-    //     const backerRewardsAfter30DaysBeforeInitialization = await getBackerRewardsForToken(tokenId)
-    //     expect(backerRewardsAfter30DaysBeforeInitialization).to.bignumber.eq("0")
-
-    //     const interestOwed = await creditLine.interestOwed()
-    //     await borrower.pay(pool.address, interestOwed, {from: borrowerEoa})
-    //     const backerRewardsAfter30DaysAndPaymentBeforeInitialization = await getBackerRewardsForToken(tokenId)
-    //     expect(backerRewardsAfter30DaysAndPaymentBeforeInitialization).to.bignumber.eq("0")
-
-    //     const stakingRewardsAccumulatorAtDrawdown = await stakingRewardsEthers.accumulatedRewardsPerToken({
-    //       blockTag: drawdownBlockNumber,
-    //     })
-    //     const juniorPrincipalDeployedAtDrawdown = juniorPortion
-    //     const sharePriceAtDrawdown = await seniorPoolEthers.sharePrice({blockTag: drawdownBlockNumber})
-
-    //     await backerRewards.forceIntializeStakingRewardsPoolInfo(
-    //       pool.address,
-    //       sharePriceAtDrawdown.toString(),
-    //       juniorPrincipalDeployedAtDrawdown,
-    //       stakingRewardsAccumulatorAtDrawdown.toString()
-    //     )
-
-    //     await advanceTime({days: 30})
-    //     await pool.assess()
-    //     const secondInterestPayment = await creditLine.interestOwed()
-    //     const secondPaymentTx = await borrower.pay(pool.address, secondInterestPayment, {from: borrowerEoa})
-
-    //     const stakingRewardsAfterPaymentAfterInitialization = await getStakingRewardsForToken(
-    //       stakingTokenId,
-    //       secondPaymentTx.receipt.blockNumber
-    //     )
-    //     const backerRewardsAfterPaymentAfterInitialization = await getBackerRewardsForToken(
-    //       tokenId,
-    //       secondPaymentTx.receipt.blockNumber
-    //     )
-    //     expect(backerRewardsAfterPaymentAfterInitialization).to.bignumber.gt(new BN(0))
-    //     expect(stakingRewardsAfterPaymentAfterInitialization).to.bignumber.gt(new BN(0))
-    //     expect(stakingRewardsAfterPaymentAfterInitialization).to.bignumber.eq(
-    //       backerRewardsAfterPaymentAfterInitialization
-    //     )
-    //   })
-    // })
 
     describe("after drawdown but before the first payment", () => {
       beforeEach(async () => {
@@ -1268,9 +1124,18 @@ describe("mainnet forking tests", async function () {
         })
       })
 
-      // NOTE: Skipping these tests for now because they depend on the v2.6.0 upgrade.
-      //        Main should be passing after only running the v2.5.0 upgrade
-      describe.skip("when I deposit and stake, and then zap to Curve", async () => {
+      describe("when I deposit and stake and then exit", async () => {
+        it("it works", async () => {
+          const depositAmount = usdcVal(10_000)
+          const tx = await expect(stakingRewards.depositAndStake(depositAmount, {from: goListedUser})).to.be.fulfilled
+          const logs = decodeLogs<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          const stakedEvent = asNonNullable(logs[0])
+          const tokenId = stakedEvent?.args.tokenId
+          await expect(stakingRewards.unstake(tokenId, depositAmount, {from: goListedUser})).to.be.fulfilled
+        })
+      })
+
+      describe("when I deposit and stake, and then zap to Curve", async () => {
         beforeEach(async () => {
           await erc20Approve(usdc, seniorPool.address, MAX_UINT, [owner])
           await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [goListedUser, owner])
@@ -1711,10 +1576,6 @@ describe("mainnet forking tests", async function () {
         await usdc.approve(stakingRewards.address, amount, {from: owner})
 
         const receipt = await stakingRewards.depositAndStake(amount, {from: owner})
-
-        // NOTE: for the v2.5.0 deployment we need to use the existing staking
-        // rewards deployment because the code differs from what's actually
-        // deployed. If we used the contract it would use the updated signature
         const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
         const tokenId = stakedEvent.args.tokenId
         const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(

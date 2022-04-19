@@ -80,7 +80,7 @@ const almaPool6Info = {
   },
 }
 
-describe("v2.5.0", async function () {
+describe.skip("v2.5.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   let backerRewards: BackerRewardsInstance

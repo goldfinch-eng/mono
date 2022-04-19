@@ -137,6 +137,22 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
   }
 
+  /** @notice reduce a given pool token's principalAmount and principalRedeemed by a specified amount
+   *  @dev uses safemath to prevent underflow
+   *  @dev this function is only intended for use as part of the v2.6.0 upgrade
+   *    to rectify a bug that allowed users to create a PoolToken that had a
+   *    larger amount of principal than they actually made available to the
+   *    borrower.  This bug is fixed in v2.6.0 but still requires past pool tokens
+   *    to have their principal redeemed and deposited to be rectified.
+   *  @param tokenId id of token to decrease
+   *  @param amount amount to decrease by
+   */
+  function reducePrincipalAmount(uint256 tokenId, uint256 amount) external onlyAdmin {
+    TokenInfo storage tokenInfo = tokens[tokenId];
+    tokenInfo.principalAmount = tokenInfo.principalAmount.sub(amount);
+    tokenInfo.principalRedeemed = tokenInfo.principalRedeemed.sub(amount);
+  }
+
   /**
    * @notice Decrement a token's principal amount. This is different from `redeem`, which captures changes to
    *   principal and/or interest that occur when a loan is in progress.

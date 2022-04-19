@@ -36,10 +36,11 @@ export default {
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
+      chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : 31337,
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 14393421, // Mar-15-2022 08:51:50 PM +UTC
+            blockNumber: 14573711, // Apr-12-2022 11:15:59 PM +UTC
           }
         : undefined,
     },
@@ -125,7 +126,7 @@ export default {
   },
   contractSizer: {
     runOnCompile: true,
-    strict: true,
+    strict: process.env.CI !== undefined,
     except: [":Test.*", ":MigratedTranchedPool$"],
   },
 }
