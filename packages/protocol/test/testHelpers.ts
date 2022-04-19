@@ -398,19 +398,13 @@ async function deployAllContracts(
   }
 }
 
-async function erc721Approve(erc721, accountToApprove, tokenId, fromAccounts) {
-  if (typeof accountToApprove != "string") {
-    throw new Error("Account to approve must be a string!")
-  }
+async function erc721Approve(erc721: any, accountToApprove: string, tokenId: BN, fromAccounts: (string | undefined)[]) {
   for (const fromAccount of fromAccounts) {
     await erc721.approve(accountToApprove, tokenId, {from: fromAccount})
   }
 }
 
-async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
-  if (typeof accountToApprove != "string") {
-    throw new Error("Account to approve must be a string!")
-  }
+async function erc20Approve(erc20: any, accountToApprove: string, amount: BN, fromAccounts: (string | undefined)[]) {
   for (const fromAccount of fromAccounts) {
     await erc20.approve(accountToApprove, amount, {from: fromAccount})
   }
