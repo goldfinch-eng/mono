@@ -11,7 +11,7 @@ import {FIDU_DECIMALS} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {
   BUSD_ADDRESSES,
-  CURVE_FIDU_USDC_ADDRESSES,
+  CURVE_LP_TOKEN_ADDRESSES,
   decimals,
   isMainnetForking,
   USDC_ADDRESSES,
@@ -209,7 +209,7 @@ class CURVE_FIDU_USDC extends ERC20 {
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     super(goldfinchProtocol, CURVE_FIDU_USDC.metadata)
-    this.networksToAddress = CURVE_FIDU_USDC_ADDRESSES
+    this.networksToAddress = CURVE_LP_TOKEN_ADDRESSES
     this.localContractName = "TestFiduUSDCCurveLP"
   }
 }
