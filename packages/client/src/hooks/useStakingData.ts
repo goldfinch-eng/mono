@@ -156,7 +156,7 @@ export default function useStakingData(): StakingData {
 
     const ticker: Ticker = tickerForStakedPositionType(positionType)
 
-    return approve(amount, ticker, user.address).then(() =>
+    return approve(amount, ticker, stakingRewards.address).then(() =>
       sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType), {
         type: STAKE_TX_TYPE,
         data: {
@@ -306,13 +306,20 @@ export default function useStakingData(): StakingData {
 
     Promise.all(
       tokenIdsAndAmounts.map(({tokenId, amount}) =>
-        sendFromUser(zapper.contract.userWallet.methods.zapStakeToCurve(tokenId, amount.toString(10)), {
-          type: ZAP_STAKE_TO_CURVE_TX_TYPE,
-          data: {
+        sendFromUser(
+          zapper.contract.userWallet.methods.zapStakeToCurve(
             tokenId,
-            fiduAmount: amount.toString(10),
-          },
-        })
+            amount.toString(10),
+            new BigNumber(0).toString(10)
+          ),
+          {
+            type: ZAP_STAKE_TO_CURVE_TX_TYPE,
+            data: {
+              tokenId,
+              fiduAmount: amount.toString(10),
+            },
+          }
+        )
       )
     )
   }
