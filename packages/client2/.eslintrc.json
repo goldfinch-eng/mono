@@ -1,10 +1,11 @@
 {
   "root": true,
   "extends": ["next/core-web-vitals", "plugin:storybook/recommended"],
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "no-console": ["error", { "allow": ["warn", "error"] }],
     "react-hooks/exhaustive-deps": "error",
-    "no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": "error",
     "import/order": [
       "error",
       {
