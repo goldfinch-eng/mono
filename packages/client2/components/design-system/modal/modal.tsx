@@ -2,7 +2,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { ReactNode, Fragment } from "react";
 
-import { Button } from "@/components/design-system";
+import { Icon } from "../icon";
 
 export interface ModalProps {
   /**
@@ -68,7 +68,7 @@ export function Modal({
         >
           <div
             className={clsx(
-              "relative mx-2 my-4 w-full rounded-md bg-sand-100 py-6 shadow",
+              "relative mx-2 my-4 w-full rounded-xl border border-sand-100 bg-white py-6 shadow-2xl",
               size === "sm"
                 ? "max-w-screen-sm"
                 : size === "md"
@@ -78,25 +78,22 @@ export function Modal({
                 : null
             )}
           >
-            <div className="mb-4 px-6">
-              <Dialog.Title className={"text-xl font-bold"}>
-                {title}
-              </Dialog.Title>
-              {description && (
-                <Dialog.Description>{description}</Dialog.Description>
-              )}
+            <div className="mb-2 flex items-start justify-between gap-12 px-6">
+              <div>
+                <Dialog.Title className={"text-lg font-semibold"}>
+                  {title}
+                </Dialog.Title>
+                {description && (
+                  <Dialog.Description>{description}</Dialog.Description>
+                )}
+              </div>
+              <button onClick={onClose}>
+                <Icon name="X" size="md" />
+              </button>
             </div>
             <div className="max-h-[75vh] overflow-auto">
               <div className="px-6 py-1">{children}</div>
             </div>
-            <Button
-              size="sm"
-              onClick={onClose}
-              className="absolute top-4 right-4"
-              iconLeft="X"
-            >
-              {" "}
-            </Button>
           </div>
         </Transition.Child>
       </Dialog>

@@ -47,7 +47,7 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
           : size === "md"
           ? "h-6 w-6"
           : size === "lg"
-          ? "h-10 w-10"
+          ? "h-8 w-8"
           : size === "text"
           ? "h-[1em] w-[1em]"
           : null,
