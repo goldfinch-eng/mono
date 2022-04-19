@@ -852,7 +852,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /* ======== EVENTS ======== */
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event BackerRewardsClaimed(
     address indexed owner,
     uint256 indexed tokenId,
