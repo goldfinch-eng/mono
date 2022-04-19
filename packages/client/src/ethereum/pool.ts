@@ -51,6 +51,7 @@ import {
   ONE_YEAR_SECONDS,
   USDC_DECIMALS,
 } from "./utils"
+import {getCurvePoolContract} from "./curvePool"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -896,8 +897,7 @@ class StakingRewards {
       process.env.NODE_ENV !== "test"
     )
     this.address = goldfinchProtocol.getAddress("StakingRewards")
-    // TODO (@emilyhsia): Use TestFiduUSDCCurveLP if on local
-    this.curvePool = goldfinchProtocol.getContract<CurveContract>("FiduUSDCCurveLP")
+    this.curvePool = getCurvePoolContract(goldfinchProtocol)
     this.curveLPToken = goldfinchProtocol.getERC20(Ticker.CURVE_FIDU_USDC).contract
     this.info = {
       loaded: false,
