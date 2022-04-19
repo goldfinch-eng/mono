@@ -50,9 +50,13 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // @notice Type of the staked position
     StakedPositionType positionType;
     // @notice Multiplier applied to staked amount to denominate in `baseStakingToken().decimals()`
-    uint256 effectiveMultiplier;
+    // @dev This field should not be used directly; it may be 0 for staked positions created prior to GIP-1.
+    //  If you need this field, use `safeEffectiveMultiplier()`, which correctly handles old staked positions.
+    uint256 unsafeEffectiveMultiplier;
     // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
-    uint256 baseTokenExchangeRate;
+    // @dev This field should not be used directly; it may be 0 for staked positions created prior to GIP-1.
+    //  If you need this field, use `safeBaseTokenExchangeRate()`, which correctly handles old staked positions.
+    uint256 unsafeBaseTokenExchangeRate;
   }
 
   /* ========== EVENTS =================== */
@@ -158,7 +162,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /* ========== VIEWS ========== */
 
-  /// @notice Returns the staked balance of a given position token
+  /// @notice Returns the staked balance of a given position token.
+  /// @dev The value returned is the bare amount, not the effective amount. The bare amount represents
+  ///   the number of tokens the user has staked for a given position.
   /// @param tokenId A staking position token ID
   /// @return Amount of staked tokens denominated in `stakingToken().decimals()`
   function stakedBalanceOf(uint256 tokenId) external view returns (uint256) {
@@ -166,12 +172,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the token being disbursed as rewards
-  function rewardsToken() public view returns (IERC20withDec) {
+  function rewardsToken() internal view returns (IERC20withDec) {
     return config.getGFI();
   }
 
   /// @notice The address of the token that is staked for a given position type
-  function stakingToken(StakedPositionType positionType) public view returns (IERC20) {
+  function stakingToken(StakedPositionType positionType) internal view returns (IERC20) {
     if (positionType == StakedPositionType.CurveLP) {
       return IERC20(config.getFiduUSDCCurveLP().token());
     }
@@ -180,7 +186,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice The address of the base token used to denominate staking rewards
-  function baseStakingToken() public view returns (IERC20withDec) {
+  function baseStakingToken() internal view returns (IERC20withDec) {
     return config.getFidu();
   }
 
@@ -197,7 +203,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       return 0;
     }
     uint256 rewardsSinceLastUpdate = Math.min(time.sub(lastUpdateTime).mul(rewardRate()), rewardsAvailable);
-    uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingTokenMantissa()).div(totalStakedSupply);
+    uint256 additionalRewardsPerToken = rewardsSinceLastUpdate.mul(stakingAndRewardsTokenMantissa()).div(
+      totalStakedSupply
+    );
     // Prevent perverse, infinite-mint scenario where totalStakedSupply is a fraction of a token.
     // Since it's used as the denominator, this could make additionalRewardPerToken larger than the total number
     // of tokens that should have been disbursed in the elapsed time. The attacker would need to find
@@ -212,8 +220,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Returns accumulated rewards per token up to the current block timestamp
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`
   function rewardPerToken() public view returns (uint256) {
-    uint256 additionalRewardsPerToken = _additionalRewardsPerTokenSinceLastUpdate(block.timestamp);
-    return accumulatedRewardsPerToken.add(additionalRewardsPerToken);
+    return accumulatedRewardsPerToken.add(_additionalRewardsPerTokenSinceLastUpdate(block.timestamp));
   }
 
   /// @notice Returns rewards earned by a given position token from its last checkpoint up to the
@@ -224,7 +231,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return
       _positionToEffectiveAmount(positions[tokenId])
         .mul(rewardPerToken().sub(positionToAccumulatedRewardsPerToken[tokenId]))
-        .div(stakingTokenMantissa());
+        .div(stakingAndRewardsTokenMantissa());
   }
 
   function totalOptimisticClaimable(address owner) external view returns (uint256) {
@@ -300,21 +307,34 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function _positionToEffectiveAmount(StakedPosition storage position) internal view returns (uint256) {
-    return toEffectiveAmount(position.amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
+    return toEffectiveAmount(position.amount, safeBaseTokenExchangeRate(position), safeEffectiveMultiplier(position));
   }
 
+  /// @notice Calculates the effective amount given the amount, (safe) base token exchange rate,
+  ///   and (safe) effective multiplier for a position
+  /// @param amount The amount of staked tokens
+  /// @param safeBaseTokenExchangeRate The (safe) base token exchange rate. See @dev comment below.
+  /// @param safeEffectiveMultiplier The (safe) effective multiplier. See @dev comment below.
+  /// @dev Do NOT pass in the unsafeBaseTokenExchangeRate or unsafeEffectiveMultiplier in storage.
+  ///   Convert it to safe values using `safeBaseTokenExchangeRate()` and `safeEffectiveMultiplier()`
+  //    before calling this function.
   function toEffectiveAmount(
     uint256 amount,
-    uint256 baseTokenExchangeRate,
-    uint256 effectiveMultiplier
+    uint256 safeBaseTokenExchangeRate,
+    uint256 safeEffectiveMultiplier
   ) internal pure returns (uint256) {
-    // Staked positions prior to GIP-1 do not have a baseTokenExchangeRate, so default to 1.
-    uint256 exchangeRate = baseTokenExchangeRate == 0 ? MULTIPLIER_DECIMALS : baseTokenExchangeRate;
     // Both the exchange rate and the effective multiplier are denominated in MULTIPLIER_DECIMALS
-    return amount.mul(exchangeRate).mul(effectiveMultiplier).div(MULTIPLIER_DECIMALS).div(MULTIPLIER_DECIMALS);
+    return
+      amount.mul(safeBaseTokenExchangeRate).mul(safeEffectiveMultiplier).div(MULTIPLIER_DECIMALS).div(
+        MULTIPLIER_DECIMALS
+      );
   }
 
-  function stakingTokenMantissa() internal view returns (uint256) {
+  /// @dev We overload the responsibility of this function -- i.e. returning a value that can be
+  /// used for both the `stakingToken()` mantissa and the `rewardsToken()` mantissa --, rather than have
+  /// multiple distinct functions for that purpose, in order to reduce contract size. We rely on a unit
+  /// test to ensure that the tokens' mantissas are indeed equal and therefore that this approach works.
+  function stakingAndRewardsTokenMantissa() internal view returns (uint256) {
     return uint256(10)**baseStakingToken().decimals();
   }
 
@@ -334,7 +354,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   for a given position, and not as an input to the mutative calculations in this contract.
   /// @return Amount of rewards denominated in `rewardsToken().decimals()`.
   function positionCurrentEarnRate(uint256 tokenId) external view returns (uint256) {
-    return currentEarnRatePerToken().mul(_positionToEffectiveAmount(positions[tokenId])).div(stakingTokenMantissa());
+    return
+      currentEarnRatePerToken().mul(_positionToEffectiveAmount(positions[tokenId])).div(
+        stakingAndRewardsTokenMantissa()
+      );
   }
 
   /* ========== MUTATIVE FUNCTIONS ========== */
@@ -414,6 +437,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit DepositedToCurveAndStaked(msg.sender, fiduAmount, usdcAmount, tokenId, curveLPTokens);
   }
 
+  /// @notice Deposit to FIDU and USDC into the Curve LP. Returns the amount of Curve LP tokens minted,
+  ///   which is denominated in 1e18.
+  /// @param depositor The address of the depositor (i.e. the current owner of the FIDU and USDC to deposit)
+  /// @param lpTokensRecipient The receipient of the resulting LP tokens
+  /// @param fiduAmount The amount of FIDU to deposit
+  /// @param usdcAmount The amount of USDC to deposit
   function _depositToCurve(
     address depositor,
     address lpTokensRecipient,
@@ -438,13 +467,44 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       usdc.safeIncreaseAllowance(address(curveLP), usdcAmount);
     }
 
+    // We will allow up to 25% slippage, so minMintAmount should be at least 75%
+    uint256 minMintAmount = curveLP.calc_token_amount([fiduAmount, usdcAmount]).mul(3).div(4);
+
     // Add liquidity to Curve. The Curve LP tokens will be minted under the `lpTokensRecipient`
-    return curveLP.add_liquidity([fiduAmount, usdcAmount], 0, false, lpTokensRecipient);
+    // The `add_liquidity()` function returns the number of LP tokens minted, denominated in 1e18
+    //
+    // solhint-disable-next-line max-line-length
+    // https://github.com/curvefi/curve-factory/blob/ab5e7f6934c0dcc3ad06ccda4d6b35ffbbc99d42/contracts/implementations/plain-4/Plain4Basic.vy#L76
+    // https://curve.readthedocs.io/factory-pools.html#StableSwap.decimals
+    return curveLP.add_liquidity([fiduAmount, usdcAmount], minMintAmount, false, lpTokensRecipient);
   }
 
-  /// @notice The effective multiplier used to denominate a staked position type in `baseStakingToken()`.
-  ///   The multiplier is represented in `MULTIPLIER_DECIMALS`
-  function getEffectiveMultiplier(StakedPositionType positionType) public view returns (uint256) {
+  /// @notice Returns the effective multiplier for a given position. Defaults to 1 for all staked
+  ///   positions created prior to GIP-1 (before the `effectiveMultipliers` field was added).
+  /// @dev Always use this method to get the effective multiplier to ensure proper handling of
+  ///   old staked positions.
+  function safeEffectiveMultiplier(StakedPosition storage position) internal view returns (uint256) {
+    if (position.unsafeEffectiveMultiplier > 0) {
+      return position.unsafeEffectiveMultiplier;
+    }
+
+    return MULTIPLIER_DECIMALS; // 1x
+  }
+
+  /// @notice Returns the base token exchange rate for a given position. Defaults to 1 for all staked
+  ///   positions created prior to GIP-1 (before the `baseTokenExchangeRate` field was added).
+  /// @dev Always use this method to get the base token exchange rate to ensure proper handling of
+  ///   old staked positions.
+  function safeBaseTokenExchangeRate(StakedPosition storage position) internal view returns (uint256) {
+    if (position.unsafeBaseTokenExchangeRate > 0) {
+      return position.unsafeBaseTokenExchangeRate;
+    }
+    return MULTIPLIER_DECIMALS;
+  }
+
+  /// @notice The effective multiplier to use with new staked positions of the provided `positionType`,
+  ///   for denominating them in terms of `baseStakingToken()`. This value is denominated in `MULTIPLIER_DECIMALS`.
+  function getEffectiveMultiplierForPositionType(StakedPositionType positionType) public view returns (uint256) {
     if (effectiveMultipliers[positionType] > 0) {
       return effectiveMultipliers[positionType];
     }
@@ -459,9 +519,14 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     if (positionType == StakedPositionType.CurveLP) {
       // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
       uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
+
+      // @dev LOW: The Curve LP token virtual price is too low
+      require(curveLPVirtualPrice > MULTIPLIER_DECIMALS.div(2), "LOW");
+      // @dev HIGH: The Curve LP token virtual price is too high
+      require(curveLPVirtualPrice < MULTIPLIER_DECIMALS.mul(2), "HIGH");
+
       // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
-      uint256 fiduPrice = config.getSeniorPool().sharePrice();
-      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(fiduPrice);
+      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(config.getSeniorPool().sharePrice());
     }
 
     return MULTIPLIER_DECIMALS; // 1x
@@ -486,7 +551,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _updateReward(tokenId);
 
     uint256 baseTokenExchangeRate = getBaseTokenExchangeRate(positionType);
-    uint256 effectiveMultiplier = getEffectiveMultiplier(positionType);
+    uint256 effectiveMultiplier = getEffectiveMultiplierForPositionType(positionType);
 
     positions[tokenId] = StakedPosition({
       positionType: positionType,
@@ -499,8 +564,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         startTime: block.timestamp,
         endTime: block.timestamp.add(vestingLength)
       }),
-      baseTokenExchangeRate: baseTokenExchangeRate,
-      effectiveMultiplier: effectiveMultiplier,
+      unsafeBaseTokenExchangeRate: baseTokenExchangeRate,
+      unsafeEffectiveMultiplier: effectiveMultiplier,
       leverageMultiplier: 0,
       lockedUntil: 0
     });
@@ -526,9 +591,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
   function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
-    StakedPositionType positionType = positions[tokenId].positionType;
     _unstake(tokenId, amount);
-    stakingToken(positionType).safeTransfer(msg.sender, amount);
+    stakingToken(positions[tokenId].positionType).safeTransfer(msg.sender, amount);
   }
 
   /// @notice Unstake multiple positions and transfer to msg.sender.
@@ -582,12 +646,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     require(canWithdraw(tokenId), "CW");
     /// @dev GL: This address has not been go-listed
     require(isGoListed(), "GL");
-    ISeniorPool seniorPool = config.getSeniorPool();
     IFidu fidu = config.getFidu();
 
     uint256 fiduBalanceBefore = fidu.balanceOf(address(this));
 
-    usdcAmountReceived = seniorPool.withdraw(usdcAmount);
+    usdcAmountReceived = config.getSeniorPool().withdraw(usdcAmount);
 
     fiduUsed = fiduBalanceBefore.sub(fidu.balanceOf(address(this)));
 
@@ -617,7 +680,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
   }
 
-  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) public nonReentrant whenNotPaused {
+  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external nonReentrant whenNotPaused {
     uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
 
     emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
@@ -657,23 +720,28 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   function _unstake(uint256 tokenId, uint256 amount) internal {
     /// @dev AD: Access denied
-    require(ownerOf(tokenId) == msg.sender || isZapper(), "AD");
-    /// @dev ZERO: Cannot unstake 0
-    require(amount > 0, "ZERO");
+    require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
 
     StakedPosition storage position = positions[tokenId];
     uint256 prevAmount = position.amount;
-    /// @dev IA: Invalid amount. Cannot unstake more than staked balance.
-    require(amount <= prevAmount, "IA");
+    /// @dev IA: Invalid amount. Cannot unstake zero, and cannot unstake more than staked balance.
+    require(amount > 0 && amount <= prevAmount, "IA");
 
     /// @dev LOCKED: Staked funds are locked.
     require(block.timestamp >= position.lockedUntil, "LOCKED");
 
-    uint256 effectiveAmount = toEffectiveAmount(amount, position.baseTokenExchangeRate, position.effectiveMultiplier);
+    uint256 effectiveAmount = toEffectiveAmount(
+      amount,
+      safeBaseTokenExchangeRate(position),
+      safeEffectiveMultiplier(position)
+    );
     totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
     position.amount = prevAmount.sub(amount);
 
-    // Slash unvested rewards
+    // Slash unvested rewards. If this method is being called by the Zapper, then unvested rewards are not slashed.
+    // This exception is made so that users who wish to move their funds across the protocol are not penalized for
+    // doing so.
+    // See https://gov.goldfinch.finance/t/gip-03-no-cost-forfeit-to-swap-fidu-into-backer-nfts/784
     if (!isZapper()) {
       uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
       position.rewards.slash(slashingPercentage);
@@ -686,7 +754,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   multipler will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
-  function kick(uint256 tokenId) public nonReentrant whenNotPaused updateReward(tokenId) {}
+  function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
@@ -702,15 +770,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     StakedPosition storage position = positions[tokenId];
 
-    uint256 newEffectiveMultiplier = getEffectiveMultiplier(position.positionType);
+    uint256 newEffectiveMultiplier = getEffectiveMultiplierForPositionType(position.positionType);
 
-    /// Prevent a user from accidentally lowering their effective multiplier
+    /// We want to honor the original multiplier for the user's sake, so we don't want to
+    /// allow the effective multiplier for a given position to decrease.
     /// @dev LOW: Cannot update position to a lower effective multiplier
-    require(newEffectiveMultiplier >= position.effectiveMultiplier, "LOW");
+    require(newEffectiveMultiplier >= safeEffectiveMultiplier(position), "LOW");
 
     uint256 prevEffectiveAmount = _positionToEffectiveAmount(position);
 
-    position.effectiveMultiplier = newEffectiveMultiplier;
+    position.unsafeEffectiveMultiplier = newEffectiveMultiplier;
 
     uint256 newEffectiveAmount = _positionToEffectiveAmount(position);
 
@@ -730,26 +799,28 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     }
   }
 
-  /// @notice Unstake the position's full amount and claim all rewards
+  /// @notice Add to an existing position without affecting vesting schedule
+  /// @dev This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
+  ///   function enables the Zapper to unwind "in-progress" positions initiated by `Zapper.zapStakeToTranchedPool`.
+  ///   That is, funds that were moved from this contract into a TranchedPool can be "unwound" back to their original
+  ///   staked position by the Zapper as part of `Zapper.unzapToStakingRewards`.
   /// @param tokenId A staking position token ID
-  function exit(uint256 tokenId) external {
-    unstake(tokenId, positions[tokenId].amount);
-    getReward(tokenId);
-  }
-
-  function exitAndWithdraw(uint256 tokenId) external {
-    unstakeAndWithdrawInFidu(tokenId, positions[tokenId].amount);
-    getReward(tokenId);
-  }
-
+  /// @param amount Amount of `stakingToken()` to be added to tokenId's position
   function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
     /// @dev AD: Access denied
-    require(isZapper(), "AD");
+    require(isZapper() && _isApprovedOrOwner(msg.sender, tokenId), "AD");
+    /// @dev PT: Position type is incorrect for this action
+    require(positions[tokenId].positionType == StakedPositionType.Fidu, "PT");
 
     StakedPosition storage position = positions[tokenId];
     position.amount = position.amount.add(amount);
 
-    totalStakedSupply = totalStakedSupply.add(amount);
+    uint256 effectiveAmount = toEffectiveAmount(
+      amount,
+      safeBaseTokenExchangeRate(position),
+      safeEffectiveMultiplier(position)
+    );
+    totalStakedSupply = totalStakedSupply.add(effectiveAmount);
 
     stakingToken(position.positionType).safeTransferFrom(msg.sender, address(this), amount);
   }
@@ -770,10 +841,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 _minRateAtPercent,
     uint256 _maxRateAtPercent
   ) external onlyAdmin updateReward(0) {
-    /// @dev IR: Invalid rates. maxRate must be >= then minRate.
-    require(_maxRate >= _minRate, "IR");
-    /// @dev IRAP: Invalid rates at percent. maxRateAtPercent must be <= minRateAtPercent.
-    require(_maxRateAtPercent <= _minRateAtPercent, "IRAP");
+    /// @dev IP: Invalid parameters. maxRate must be >= then minRate. maxRateAtPercent must be <= minRateAtPercent.
+    require(_maxRate >= _minRate && _maxRateAtPercent <= _minRateAtPercent, "IP");
+
     targetCapacity = _targetCapacity;
     minRate = _minRate;
     maxRate = _maxRate;
@@ -793,6 +863,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     onlyAdmin
     updateReward(0)
   {
+    // @dev ZERO: Multiplier cannot be zero
+    require(multiplier > 0, "ZERO");
+
     effectiveMultipliers[positionType] = multiplier;
     emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
   }
@@ -800,11 +873,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function setVestingSchedule(uint256 _vestingLength) external onlyAdmin updateReward(0) {
     vestingLength = _vestingLength;
     emit VestingScheduleUpdated(msg.sender, vestingLength);
-  }
-
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(_msgSender(), address(config));
   }
 
   /* ========== MODIFIERS ========== */
@@ -820,7 +888,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     accumulatedRewardsPerToken = rewardPerToken();
     uint256 rewardsJustDistributed = totalStakedSupply
       .mul(accumulatedRewardsPerToken.sub(prevAccumulatedRewardsPerToken))
-      .div(stakingTokenMantissa());
+      .div(stakingAndRewardsTokenMantissa());
     rewardsAvailable = rewardsAvailable.sub(rewardsJustDistributed);
     lastUpdateTime = block.timestamp;
 

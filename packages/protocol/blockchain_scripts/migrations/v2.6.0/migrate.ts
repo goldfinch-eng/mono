@@ -1,4 +1,4 @@
-import {FIDU_DECIMALS, StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   BackerRewards,
   GFI,
@@ -45,7 +45,7 @@ export type Migration260Params = {
     totalRewards: string
   }
   StakingRewards: {
-    effectiveMultiplier: string
+    curveEffectiveMultiplier: string
   }
 }
 
@@ -102,15 +102,15 @@ export async function main() {
     // in some cases (stratos) they did a test drawdown. If we used the first drawdown
     // as where to take our rewards param snapshot we would have incorrect values. So we need to find
     // the latest block that they drewdown.
-    // although I'm now realizing that because stratos may drawdown again I should probably use the
-    // when the senior tranche was locked as the reference point. TODO(PR)
-    const lastDrawdownBlock = drawdownEvents.reduce((acc, x) => Math.max(acc, x.blockNumber), 0)
+    const lastDrawdownBlock = Math.max(...drawdownEvents.map((e) => e.blockNumber))
     if (!lastDrawdownBlock) {
       throw new Error("Failed to Identify last drawdown block")
     }
     const trancheInfo = await tranchedPool.getTranche(TRANCHES.Junior, {blockTag: lastDrawdownBlock})
+    const principalSharePrice = trancheInfo.principalSharePrice
     const principalDeposited = trancheInfo.principalDeposited
-    const backerCapitalDrawndown = principalDeposited
+    const remaining = principalSharePrice.mul(principalDeposited).div(String(1e18))
+    const backerCapitalDrawndown = principalDeposited.sub(remaining)
 
     const fiduSharePriceAtDrawdown = (await seniorPool.sharePrice({blockTag: lastDrawdownBlock})).toString()
     const accumulatedRewardsPerToken = (
@@ -157,7 +157,7 @@ export async function main() {
       totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.02").toString(),
     },
     StakingRewards: {
-      effectiveMultiplier: "750000000000000000",
+      curveEffectiveMultiplier: "750000000000000000",
     },
   }
 
@@ -165,16 +165,53 @@ export async function main() {
     `Transferring ${params.BackerRewards.totalRewards} GFI to BackerRewards at address ${backerRewards.address}`
   )
   console.log("Setting StakingRewards parameters:")
-  console.log(` effectiveMultipler = ${params.StakingRewards.effectiveMultiplier}`)
+  console.log(` effectiveMultipler = ${params.StakingRewards.curveEffectiveMultiplier}`)
 
   // 6. Generate rewards initialization params
   console.log("Getting pool backer staking rewards parameters")
+  const backerStakingRewardsParams = _.fromPairs(
+    await Promise.all(
+      BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (address) => [address, await getRewardsParametersForPool(address)])
+    )
+  )
+
+  // validate against the manually confirmed values
+  const expectedRewardsValues: Record<string, StakingRewardsInfoInitValues> = {
+    [STRATOS_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "4000000000000",
+      fiduSharePriceAtDrawdown: "1049335199989661790",
+      accumulatedRewardsPerToken: "14764838139349853151",
+    },
+    [ALMA_6_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "2362453454437",
+      fiduSharePriceAtDrawdown: "1048979727966257806",
+      accumulatedRewardsPerToken: "14764765626591738655",
+    },
+    [ALMA_7_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "1999999998834",
+      fiduSharePriceAtDrawdown: "1055955666945103145",
+      accumulatedRewardsPerToken: "14774486589523186250",
+    },
+    [CAURIS_2_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "2000000000001",
+      fiduSharePriceAtDrawdown: "1049335199989661790",
+      accumulatedRewardsPerToken: "14765542624996072988",
+    },
+    [LEND_EAST_POOL_ADDR]: {
+      principalDeployedAtDrawdown: "2030000000000",
+      fiduSharePriceAtDrawdown: "1052477362957198335",
+      accumulatedRewardsPerToken: "14770629091940940209",
+    },
+  }
+
+  expect(backerStakingRewardsParams).to.deep.eq(expectedRewardsValues)
+  console.log("Backer staking rewards params:")
+  console.log(backerStakingRewardsParams)
+
   const backerStakingRewardsInitTxs = await Promise.all(
-    BACKER_REWARDS_PARAMS_POOL_ADDRS.map(async (addr) => {
-      const params = await getRewardsParametersForPool(addr)
-      console.log(addr, params)
+    Object.entries(backerStakingRewardsParams).map(async ([address, params]) => {
       return backerRewards.populateTransaction.forceInitializeStakingRewardsPoolInfo(
-        addr,
+        address,
         params.fiduSharePriceAtDrawdown,
         params.principalDeployedAtDrawdown,
         params.accumulatedRewardsPerToken
@@ -188,7 +225,28 @@ export async function main() {
     {},
     ...(await Promise.all(BACKER_REWARDS_PARAMS_POOL_ADDRS.map(getPoolTokensThatRedeemedBeforeLocking)))
   )
+  console.log("pool token principal reduction amounts:")
   console.log(poolTokensWithPrincipalWithdrawnBeforeLockById)
+
+  const expectedPrincipalReductionAmounts = {
+    "469": "9000000000",
+    "477": "6500000000",
+    "478": "37980320915",
+    "485": "16556876430",
+    "487": "25500000000",
+    "493": "10000000000",
+    "501": "4000000000",
+    "507": "1020000000",
+    "517": "2000000000",
+    "518": "16870422655",
+    "525": "1000000000",
+    "545": "30000810000",
+    "566": "4000000000",
+    "689": "129117730000",
+    "711": "476510000",
+  }
+
+  expect(poolTokensWithPrincipalWithdrawnBeforeLockById).to.deep.equal(expectedPrincipalReductionAmounts)
 
   const poolTokenFixupTxs = await Promise.all(
     Object.entries(poolTokensWithPrincipalWithdrawnBeforeLockById).map(([id, amount]) => {
@@ -216,7 +274,7 @@ export async function main() {
 
       // initialize staking rewards parameters for CurveLP positions
       await stakingRewards.populateTransaction.setEffectiveMultiplier(
-        params.StakingRewards.effectiveMultiplier,
+        params.StakingRewards.curveEffectiveMultiplier,
         StakedPositionType.CurveLP
       ),
 
