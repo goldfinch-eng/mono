@@ -8,6 +8,7 @@ import {
   MAINNET_CHAIN_ID,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
   OWNER_ROLE,
+  PAUSER_ROLE,
   TRANCHES,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
@@ -45,6 +46,8 @@ import {Contract} from "ethers/lib/ethers"
 import {Migration260Params} from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.6.0/migrate"
 import {Borrower, CreditLine, SeniorPool, StakingRewards, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {almaPool6Info} from "../v2.5.0/migrate.test"
+
+const pauser = migrate260.EMERGENCY_PAUSER_ADDR
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -101,11 +104,24 @@ describe("v2.6.0", async function () {
   let tranchedPoolImplAddressBeforeDeploy: string
   let leverageRatioStrategyAddressBeforeDeploy: string
   let goldfinchFactory: GoldfinchFactoryInstance
+  let communityRewards: CommunityRewardsInstance
+  let uniqueIdentity: UniqueIdentityInstance
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({gfi, goldfinchConfig, poolTokens, usdc, backerRewards, seniorPool, go, stakingRewards, goldfinchFactory} =
-      await setupTest())
+    ;({
+      gfi,
+      goldfinchConfig,
+      poolTokens,
+      usdc,
+      backerRewards,
+      seniorPool,
+      go,
+      stakingRewards,
+      goldfinchFactory,
+      communityRewards,
+      uniqueIdentity,
+    } = await setupTest())
 
     tranchedPoolImplAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementation)
     leverageRatioStrategyAddressBeforeDeploy = await goldfinchConfig.getAddress(CONFIG_KEYS.LeverageRatio)
@@ -198,6 +214,16 @@ describe("v2.6.0", async function () {
     })
 
     describe("Zapper", async () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(zapper.pause({from: pauser})).to.be.fulfilled
+        expect(await zapper.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await zapper.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+
       expectProxyOwner({
         toBe: getProtocolOwner,
         forContracts: ["Zapper"],
@@ -242,6 +268,16 @@ describe("v2.6.0", async function () {
         borrowerContract = borrowerContract.connect(borrowerSigner)
 
         return {tranchedPool, creditLine, borrowerContract, ethersSeniorPool, ethersStakingRewards, borrowerEoa}
+      })
+
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(backerRewards.pause({from: pauser})).to.be.fulfilled
+        expect(await backerRewards.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await backerRewards.hasRole(PAUSER_ROLE, pauser)).to.be.true
       })
 
       mochaEach(migrate260.BACKER_REWARDS_PARAMS_POOL_ADDRS).describe("pool at '%s'", (address) => {
@@ -398,6 +434,16 @@ describe("v2.6.0", async function () {
     })
 
     context("Go", () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(go.pause({from: pauser})).to.be.fulfilled
+        expect(await go.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await go.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+
       expectProxyOwner({
         toBe: getProtocolOwner,
         forContracts: ["Go"],
@@ -465,7 +511,65 @@ describe("v2.6.0", async function () {
       })
     })
 
+    describe("PoolTokens", () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(poolTokens.pause()).to.be.fulfilled
+        expect(await poolTokens.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await poolTokens.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+    })
+
+    describe("GoldfinchFactory", () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(goldfinchFactory.pause({from: pauser})).to.be.fulfilled
+        expect(await goldfinchFactory.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await goldfinchFactory.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+    })
+
+    describe("UniqueIdentity", () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(uniqueIdentity.pause({from: pauser})).to.be.fulfilled
+        expect(await uniqueIdentity.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await uniqueIdentity.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+    })
+
+    describe("CommunityRewards", () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(communityRewards.pause({from: pauser})).to.be.fulfilled
+        expect(await communityRewards.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await communityRewards.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+    })
+
     describe("StakingRewards", async () => {
+      it(`'${pauser}' can pause`, async () => {
+        await impersonateAccount(hre, pauser)
+        await expect(stakingRewards.pause({from: pauser})).to.be.fulfilled
+        expect(await stakingRewards.paused()).to.be.true
+      })
+
+      it(`'${pauser}' has the PAUSER_ROLE`, async () => {
+        expect(await stakingRewards.hasRole(PAUSER_ROLE, pauser)).to.be.true
+      })
+
       describe("hasRole", async () => {
         describe("ZAPPER_ROLE", async () => {
           it("is true for Zapper contract", async () => {
