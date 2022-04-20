@@ -31,7 +31,7 @@ type StakingData = {
   unstake: (BigNumber, StakedPositionType) => Promise<any>
   depositToCurve: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<any>
   depositToCurveAndStake: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<any>
-  zapStakeToCurve: (BigNumber) => Promise<any>
+  zapStakeToCurve: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<any>
 }
 
 export default function useStakingData(): StakingData {
@@ -226,7 +226,7 @@ export default function useStakingData(): StakingData {
       )
   }
 
-  async function zapStakeToCurve(fiduAmount: BigNumber): Promise<void> {
+  async function zapStakeToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<void> {
     assertNonNullable(stakedPositions)
     assertNonNullable(zapper)
 
@@ -237,11 +237,8 @@ export default function useStakingData(): StakingData {
     Promise.all(
       optimalPositionsToUnstake.map(({tokenId, amount}) =>
         sendFromUser(
-          zapper.contract.userWallet.methods.zapStakeToCurve(
-            tokenId,
-            amount.toString(10),
-            new BigNumber(0).toString(10)
-          ),
+          // TODO(@emilyhsia): Calculate USDC amount to unstake
+          zapper.contract.userWallet.methods.zapStakeToCurve(tokenId, amount.toString(10), usdcAmount.toString(10)),
           {
             type: ZAP_STAKE_TO_CURVE_TX_TYPE,
             data: {

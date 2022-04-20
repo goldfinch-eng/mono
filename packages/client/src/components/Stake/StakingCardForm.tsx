@@ -1,10 +1,11 @@
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import {useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
 import {ERC20Metadata} from "../../ethereum/erc20"
 import useDebounce from "../../hooks/useDebounce"
-import {assertNonNullable, displayNumber} from "../../utils"
+import {displayNumber} from "../../utils"
 import TransactionInput from "../transactionInput"
 
 type StakingCardFormProps = {
@@ -13,7 +14,7 @@ type StakingCardFormProps = {
   maxAmountToUnstake: BigNumber
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
-  migrate?: (BigNumber) => Promise<any>
+  migrateForm?: React.ReactNode
 }
 
 enum Tab {
@@ -43,18 +44,16 @@ export default function StakingCardForm({
   maxAmountToStake,
   stake,
   unstake,
-  migrate,
+  migrateForm,
 }: StakingCardFormProps) {
   const formMethods = useForm()
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Stake)
   const [amountToStake, setAmountToStake] = useState(0)
   const [amountToUnstake, setAmountToUnstake] = useState(0)
-  const [amountToMigrate, setAmountToMigrate] = useState(0)
 
   const debouncedSetAmountToStake = useDebounce(setAmountToStake, 200)
   const debouncedSetAmountToUnstake = useDebounce(setAmountToUnstake, 200)
-  const debouncedSetAmountToMigrate = useDebounce(setAmountToMigrate, 200)
 
   function onTabClick(tab: Tab) {
     setActiveTab(tab)
@@ -68,15 +67,11 @@ export default function StakingCardForm({
       case Tab.Unstake:
         debouncedSetAmountToUnstake(formMethods.getValues("amountToUnstake"))
         break
-      case Tab.Migrate:
-        assertNonNullable(migrate)
-        debouncedSetAmountToMigrate(formMethods.getValues("amountToMigrate"))
-        break
     }
   }
 
-  function onMaxClick(maxAmount) {
-    formMethods.setValue(formInputName, new BigNumber(maxAmount || 0).decimalPlaces(18, 1).toString(10), {
+  function onMaxClick(formInputName: string, amount?: BigNumber) {
+    formMethods.setValue(formInputName, new BigNumber(amount || 0).decimalPlaces(18, 1).toString(10), {
       shouldValidate: true,
       shouldDirty: true,
     })
@@ -91,52 +86,7 @@ export default function StakingCardForm({
       case Tab.Unstake:
         unstake(new BigNumber(amountToUnstake).multipliedBy(new BigNumber(10).pow(token.decimals)))
         break
-      case Tab.Migrate:
-        assertNonNullable(migrate)
-        migrate(new BigNumber(amountToMigrate).multipliedBy(new BigNumber(10).pow(token.decimals)))
-        break
     }
-  }
-
-  let amountForActiveTab
-  switch (activeTab) {
-    case Tab.Stake:
-      amountForActiveTab = amountToStake
-      break
-    case Tab.Unstake:
-      amountForActiveTab = amountToUnstake
-      break
-    case Tab.Migrate:
-      amountForActiveTab = amountToMigrate
-      break
-  }
-
-  let maxAmountForActiveTab
-  switch (activeTab) {
-    case Tab.Stake:
-      maxAmountForActiveTab = maxAmountToStake?.div(new BigNumber(10).pow(token.decimals))
-      break
-    case Tab.Unstake:
-    case Tab.Migrate:
-      maxAmountForActiveTab = maxAmountToUnstake?.div(new BigNumber(10).pow(token.decimals))
-      break
-  }
-
-  const amountInputLabel = maxAmountForActiveTab.isZero()
-    ? "Amount"
-    : `Amount (max: ${displayNumber(maxAmountForActiveTab)} ${token.ticker})`
-
-  let formInputName
-  switch (activeTab) {
-    case Tab.Stake:
-      formInputName = "amountToStake"
-      break
-    case Tab.Unstake:
-      formInputName = "amountToUnstake"
-      break
-    case Tab.Migrate:
-      formInputName = "amountToMigrate"
-      break
   }
 
   return (
@@ -148,40 +98,66 @@ export default function StakingCardForm({
         <TabComponent active={activeTab === Tab.Unstake} onClick={() => onTabClick(Tab.Unstake)}>
           {Tab.Unstake.toString()}
         </TabComponent>
-        {!!migrate && (
+        {!!migrateForm && (
           <TabComponent active={activeTab === Tab.Migrate} onClick={() => onTabClick(Tab.Migrate)}>
             {Tab.Migrate.toString()}
           </TabComponent>
         )}
       </Container>
-      <FormProvider {...formMethods}>
-        <div>
-          <div className="form-input-label">{amountInputLabel}</div>
-          <div className="form-inputs-footer">
-            <TransactionInput
-              name={formInputName}
-              ticker={token.ticker}
-              displayTicker={false}
-              formMethods={formMethods}
-              maxAmount={maxAmountForActiveTab?.toString(10)}
-              onChange={onChange}
-              rightDecoration={
-                <button
-                  className="enter-max-amount"
-                  disabled={maxAmountForActiveTab.isZero()}
-                  type="button"
-                  onClick={() => onMaxClick(maxAmountForActiveTab)}
-                >
-                  Max
-                </button>
-              }
-            />
-            <button type="button" disabled={!amountForActiveTab} className="button submit-form" onClick={onSubmit}>
-              {activeTab.toString()}
-            </button>
-          </div>
-        </div>
-      </FormProvider>
+      {(() => {
+        switch (activeTab) {
+          case Tab.Stake:
+          case Tab.Unstake:
+            const amountForActiveTab = activeTab === Tab.Stake ? amountToStake : amountToUnstake
+            const maxAmountForActiveTab =
+              activeTab === Tab.Stake
+                ? maxAmountToStake?.div(new BigNumber(10).pow(token.decimals))
+                : maxAmountToUnstake?.div(new BigNumber(10).pow(token.decimals))
+            const amountInputLabel = maxAmountForActiveTab.isZero()
+              ? "Amount"
+              : `Amount (max: ${displayNumber(maxAmountForActiveTab)} ${token.ticker})`
+            const formInputName = activeTab === Tab.Stake ? "amountToStake" : "amountToUnstake"
+
+            return (
+              <FormProvider {...formMethods}>
+                <div>
+                  <div className="form-input-label">{amountInputLabel}</div>
+                  <div className="form-inputs-footer">
+                    <TransactionInput
+                      name={formInputName}
+                      ticker={token.ticker}
+                      displayTicker={false}
+                      formMethods={formMethods}
+                      maxAmount={maxAmountForActiveTab?.toString(10)}
+                      onChange={onChange}
+                      rightDecoration={
+                        <button
+                          className="enter-max-amount"
+                          disabled={maxAmountForActiveTab.isZero()}
+                          type="button"
+                          onClick={() => onMaxClick(formInputName, maxAmountForActiveTab)}
+                        >
+                          Max
+                        </button>
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={!amountForActiveTab}
+                      className="button submit-form"
+                      onClick={onSubmit}
+                    >
+                      {activeTab.toString()}
+                    </button>
+                  </div>
+                </div>
+              </FormProvider>
+            )
+          case Tab.Migrate:
+            assertNonNullable(migrateForm)
+            return migrateForm
+        }
+      })()}
     </div>
   )
 }

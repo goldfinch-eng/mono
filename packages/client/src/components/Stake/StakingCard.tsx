@@ -15,7 +15,7 @@ type StakingCardProps = {
   platform: Platform
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
-  migrate?: (BigNumber) => Promise<any>
+  migrateForm?: React.ReactNode
 }
 
 const StyledStakingCardHeader = styled(StakingCardHeader)<{expanded: boolean}>`
@@ -33,7 +33,7 @@ export default function StakingCard({
   platform,
   stake,
   unstake,
-  migrate,
+  migrateForm,
 }: StakingCardProps) {
   const [expanded, setExpanded] = useState<boolean>(false)
 
@@ -60,7 +60,7 @@ export default function StakingCard({
           maxAmountToUnstake={maxAmountToUnstake}
           stake={stake}
           unstake={unstake}
-          migrate={migrate}
+          migrateForm={migrateForm}
         />
       )}
     </div>

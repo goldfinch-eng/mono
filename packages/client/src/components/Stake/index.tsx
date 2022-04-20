@@ -9,6 +9,7 @@ import {HeaderGrid as LPAndStakeHeaderGrid, HeaderText as LPAndStakeHeaderText} 
 import LPAndStakeCard from "./LPAndStakeCard"
 import BigNumber from "bignumber.js"
 import {Platform} from "./StakingToken"
+import StakingCardMigrateToCurveForm from "./StakingCardMigrateToCurveForm"
 
 const StyledStakingHeaderText = styled(StakingHeaderText)`
   font-size: 16px;
@@ -67,7 +68,13 @@ export default function Stake() {
         platform={Platform.Goldfinch}
         stake={(amount) => stake(amount, StakedPositionType.Fidu)}
         unstake={(amount) => unstake(amount, StakedPositionType.Fidu)}
-        migrate={(amount) => zapStakeToCurve(amount)}
+        migrateForm={
+          <StakingCardMigrateToCurveForm
+            maxFiduAmountToMigrate={fiduStaked}
+            maxUSDCAmountToDeposit={usdcUnstaked}
+            migrate={zapStakeToCurve}
+          />
+        }
       />
       <StakingCard
         key="StakingCard-fidu-usdc"
