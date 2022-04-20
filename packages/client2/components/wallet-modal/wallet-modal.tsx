@@ -1,4 +1,7 @@
+import { useEffect } from "react";
+
 import { Modal, ModalProps, Paragraph, Link } from "@/components/design-system";
+import { useWallet } from "@/lib/wallet";
 
 import { MetaMaskButton } from "./metamask-button";
 import { WalletConnectButton } from "./walletconnect-button";
@@ -9,6 +12,12 @@ interface WalletModalProps {
 }
 
 export function WalletModal({ isOpen, onClose }: WalletModalProps) {
+  const { isActive } = useWallet();
+  useEffect(() => {
+    if (isActive) {
+      onClose();
+    }
+  }, [isActive, onClose]);
   return (
     <Modal size="xs" title="Select a wallet" isOpen={isOpen} onClose={onClose}>
       <Paragraph className="mb-8">
