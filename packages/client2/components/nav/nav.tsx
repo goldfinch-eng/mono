@@ -14,8 +14,8 @@ const navItems = [
 export function Nav() {
   return (
     <div className="flex flex-row bg-sand-50 px-10">
-      <div className="flex flex-1 flex-row justify-start self-center py-4">
-        <GoldfinchLogo className="h-7 w-7 " />
+      <div className="flex flex-1 flex-row justify-start self-center py-3">
+        <GoldfinchLogo className="h-7 w-7" />
       </div>
 
       <nav className="flex flex-1 flex-row justify-center">
