@@ -288,6 +288,7 @@ export async function main() {
       await uniqueIdentity.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
       await goldfinchFactory.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
       await zapper.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
+      await go.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
 
       ...backerStakingRewardsInitTxs,
       ...poolTokenFixupTxs,
