@@ -854,8 +854,18 @@ export type StoredPosition = {
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 export enum StakedPositionType {
-  Fidu,
-  CurveLP,
+  Fidu = 0,
+  CurveLP = 1,
+}
+
+export function getStakedPositionTypeByValue(value: number): StakedPositionType {
+  if (value == 0) {
+    return StakedPositionType.Fidu
+  } else if (value == 1) {
+    return StakedPositionType.CurveLP
+  } else {
+    throw new Error(`Unknown staked position type: ${value}`)
+  }
 }
 
 type PositionOptimisticIncrement = {

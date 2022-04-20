@@ -156,11 +156,17 @@ function Transactions(props: TransactionsProps) {
       allTxs = allTxs.reduce(
         ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
           hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
-          hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
+          hasSeenSupplyInCurrentBlock =
+            hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE || curr.name === STAKE_TX_TYPE
 
           if (
             hasSeenSupplyInCurrentBlock &&
-            [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
+            [
+              USDC_APPROVAL_TX_TYPE,
+              FIDU_APPROVAL_TX_TYPE,
+              FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
+              ERC20_APPROVAL_TX_TYPE,
+            ].includes(curr.name)
           ) {
             return {acc, previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
           } else {
@@ -262,6 +268,10 @@ function Transactions(props: TransactionsProps) {
         case "gfi":
           amount = displayNumber(tx.amount.display)
           amountSuffix = " GFI"
+          break
+        case "fidu-usdc-f":
+          amount = displayNumber(tx.amount.display)
+          amountSuffix = " FIDU-USDC-F"
           break
         default:
           assertUnreachable(tx.amount.units)

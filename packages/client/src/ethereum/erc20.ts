@@ -285,6 +285,10 @@ function toDecimal(atomicAmount: BigNumber, ticker: Ticker): BigNumber {
   return atomicAmount.div(new BigNumber(10).pow(getERC20Metadata(ticker).decimals))
 }
 
+function toDecimalString(atomicAmount: BigNumber, ticker: Ticker): string {
+  return toDecimal(atomicAmount, ticker).toString(10)
+}
+
 function toAtomic(decimalAmount: BigNumber, ticker: Ticker): string {
   let ten = new BigNumber(10)
   return new BigNumber(String(decimalAmount)).multipliedBy(ten.pow(getERC20Metadata(ticker).decimals)).toString(10)
@@ -344,6 +348,7 @@ export {
   getMultiplier,
   toAtomic,
   toDecimal,
+  toDecimalString,
   usdcFromAtomic,
   usdcToAtomic,
   usdcToFidu,

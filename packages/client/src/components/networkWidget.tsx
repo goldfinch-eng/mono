@@ -261,6 +261,9 @@ function NetworkWidget(props: NetworkWidgetProps) {
             case "gfi":
               transactionLabel = `${displayNumber(tx.amount.display)} GFI ${tx.name}`
               break
+            case "fidu-usdc-f":
+              transactionLabel = `${displayNumber(tx.amount.display)} FIDU-USDC-F ${tx.name}`
+              break
             default:
               assertUnreachable(tx.amount.units)
           }

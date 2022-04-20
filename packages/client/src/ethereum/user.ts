@@ -54,6 +54,7 @@ import {
 import {AcceptedMerkleDistributorGrant, NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
 import {
   ACCEPT_TX_TYPE,
+  AmountUnits,
   BORROW_TX_TYPE,
   CLAIM_TX_TYPE,
   DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
@@ -84,8 +85,14 @@ import {GFILoaded} from "./gfi"
 import {getCachedPastEvents, GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
-import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition} from "./pool"
 import {TranchedPoolBacker} from "./tranchedPool"
+import {
+  getStakedPositionTypeByValue,
+  SeniorPoolLoaded,
+  StakedPositionType,
+  StakingRewardsLoaded,
+  StakingRewardsPosition,
+} from "./pool"
 import {
   getBackerMerkleDirectDistributorInfo,
   getBackerMerkleDistributorInfo,
@@ -1164,12 +1171,12 @@ export class User {
                   return assertUnreachable(eventData.event)
               }
             },
-            parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
+            parseAmount: async (eventData: KnownEventData<StakingRewardsEventType>) => {
               switch (eventData.event) {
                 case STAKED_EVENT:
                   return {
                     amount: eventData.returnValues.amount,
-                    units: "fidu",
+                    units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
                   }
                 case DEPOSITED_AND_STAKED_EVENT:
                   return {
@@ -1186,7 +1193,7 @@ export class User {
                 case UNSTAKED_EVENT:
                   return {
                     amount: eventData.returnValues.amount,
-                    units: "fidu",
+                    units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
                   }
                 case UNSTAKED_AND_WITHDREW_EVENT:
                 case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
@@ -1195,10 +1202,18 @@ export class User {
                     units: "usdc",
                   }
                 case UNSTAKED_MULTIPLE_EVENT:
-                  // TODO(@emilyhsia): Update with multiple amounts and units
+                  // We can assume that all positions in an "Unstaked Multiple" event are of the same
+                  // position type, so we just check the type of the first unstaked position.
+                  const tokenId = eventData.returnValues.tokenIds[0]
+                  const position = await stakingRewards.contract.readOnly.methods
+                    .positions(tokenId)
+                    .call(undefined, "latest")
                   return {
-                    amount: eventData.returnValues.amounts,
-                    units: "fidu",
+                    amount: eventData.returnValues.amounts.reduce(
+                      (sum, amount) => new BigNumber(amount).plus(sum),
+                      new BigNumber(0)
+                    ),
+                    units: this.getUnitsForStakedPositionType(parseInt(position.positionType)),
                   }
                 case REWARD_PAID_EVENT:
                   return {
@@ -1222,6 +1237,18 @@ export class User {
 
   isUnlocked(allowance: BigNumber | undefined) {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
+  }
+
+  getUnitsForStakedPositionType(stakedPositionTypeValue: number): AmountUnits {
+    const positionType = getStakedPositionTypeByValue(stakedPositionTypeValue)
+    switch (positionType) {
+      case StakedPositionType.Fidu:
+        return "fidu"
+      case StakedPositionType.CurveLP:
+        return "fidu-usdc-f"
+      default:
+        return assertUnreachable(positionType)
+    }
   }
 
   async _fetchGoListStatus(

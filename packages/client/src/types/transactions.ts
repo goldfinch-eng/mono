@@ -176,9 +176,9 @@ export function isTxName(val: unknown): val is TxName {
   )
 }
 
-export type AmountUnits = "usdc" | "fidu" | "gfi"
+export type AmountUnits = "usdc" | "fidu" | "gfi" | "fidu-usdc-f"
 export function isAmountUnits(val: unknown): val is AmountUnits {
-  return val === "usdc" || val === "fidu" || val === "gfi"
+  return val === "usdc" || val === "fidu" || val === "gfi" || val === "fidu-usdc-f"
 }
 
 export type AmountWithUnits = {
