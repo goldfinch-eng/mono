@@ -14,9 +14,9 @@ import {
 } from "../types/transactions"
 import {gfiToDollarsAtomic} from "../ethereum/gfi"
 import {ONE_YEAR_SECONDS} from "../ethereum/utils"
-import useApprove from "./useApprove"
-import {getERC20Metadata, Ticker, toAtomic} from "../ethereum/erc20"
+import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
+import {getERC20Metadata, Ticker, toAtomic} from "../ethereum/erc20"
 
 const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
 
@@ -38,7 +38,7 @@ type StakingData = {
 
 export default function useStakingData(): StakingData {
   const sendFromUser = useSendFromUser()
-  const approve = useApprove()
+  const erc20Approve = useERC20Approve()
   const erc721Approve = useERC721Approve()
 
   const {
@@ -161,7 +161,7 @@ export default function useStakingData(): StakingData {
 
     const ticker: Ticker = tickerForStakedPositionType(positionType)
 
-    return approve(amount, ticker, stakingRewards.address).then(() =>
+    return erc20Approve(amount, ticker, stakingRewards.address).then(() =>
       sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType), {
         type: STAKE_TX_TYPE,
         data: {
@@ -193,8 +193,8 @@ export default function useStakingData(): StakingData {
   async function depositToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber) {
     assertNonNullable(stakingRewards)
 
-    return approve(fiduAmount, Ticker.FIDU, stakingRewards.address)
-      .then(() => approve(usdcAmount, Ticker.USDC, stakingRewards.address))
+    return erc20Approve(fiduAmount, Ticker.FIDU, stakingRewards.address)
+      .then(() => erc20Approve(usdcAmount, Ticker.USDC, stakingRewards.address))
       .then(() =>
         sendFromUser(
           stakingRewards.contract.userWallet.methods.depositToCurve(fiduAmount.toString(10), usdcAmount.toString(10)),
@@ -212,8 +212,8 @@ export default function useStakingData(): StakingData {
   async function depositToCurveAndStake(fiduAmount: BigNumber, usdcAmount: BigNumber) {
     assertNonNullable(stakingRewards)
 
-    return approve(fiduAmount, Ticker.FIDU, stakingRewards.address)
-      .then(() => approve(usdcAmount, Ticker.USDC, stakingRewards.address))
+    return erc20Approve(fiduAmount, Ticker.FIDU, stakingRewards.address)
+      .then(() => erc20Approve(usdcAmount, Ticker.USDC, stakingRewards.address))
       .then(() =>
         sendFromUser(
           stakingRewards.contract.userWallet.methods.depositToCurveAndStake(
@@ -240,7 +240,7 @@ export default function useStakingData(): StakingData {
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(fiduAmount, StakedPositionType.Fidu)
 
     await erc721Approve(stakingRewards, zapper.address)
-    await approve(usdcAmount, Ticker.USDC, zapper.address)
+    await erc20Approve(usdcAmount, Ticker.USDC, zapper.address)
 
     for (const position of optimalPositionsToUnstake) {
       await sendFromUser(

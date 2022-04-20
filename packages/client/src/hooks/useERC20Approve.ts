@@ -3,10 +3,11 @@ import BigNumber from "bignumber.js"
 import {useContext} from "react"
 import {AppContext} from "../App"
 import {Ticker} from "../ethereum/erc20"
+import {MAX_UINT} from "../ethereum/utils"
 import {useFromSameBlock} from "./useFromSameBlock"
 import useSendFromUser from "./useSendFromUser"
 
-export default function useApprove() {
+export default function useERC20Approve() {
   const sendFromUser = useSendFromUser()
 
   const {goldfinchProtocol, user: _user, pool: _pool, currentBlock} = useContext(AppContext)
@@ -26,12 +27,14 @@ export default function useApprove() {
     const requiresApproval = amount.gt(alreadyApprovedAmount)
 
     return requiresApproval
-      ? sendFromUser(
-          token.contract.userWallet.methods.approve(spender, amount.toString(10)),
+      ? // Since we have to ask for approval, we'll ask for the max amount, so that the user will never
+        // need to grant approval again (i.e. which saves them the gas cost of ever having to approve again).
+        sendFromUser(
+          token.contract.userWallet.methods.approve(spender, MAX_UINT),
           {
             type: token.approvalTxType,
             data: {
-              amount: token.atomicAmount(amount),
+              amount: token.atomicAmount(MAX_UINT),
             },
           },
           {rejectOnError: true}
