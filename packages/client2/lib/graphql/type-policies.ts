@@ -3,11 +3,7 @@ import { BigNumber, FixedNumber } from "ethers";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
-import {
-  currentUserVar,
-  gfiVar,
-  isWalletModalOpenVar,
-} from "@/lib/local-state/vars";
+import { currentUserVar, gfiVar, isWalletModalOpenVar } from "@/lib/state/vars";
 
 function readFieldFromMetadata(
   fieldName: string,

@@ -1,5 +1,5 @@
 import { Button, Popover } from "@/components/design-system";
-import { openWalletModal } from "@/lib/local-state/actions";
+import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 import { WalletInfo } from "./wallet-info";

@@ -7,8 +7,8 @@ import { ToastContainer } from "react-toastify";
 
 import { Nav } from "@/components/nav";
 import { apolloClient } from "@/lib/graphql/apollo";
-import { useAppInitialization } from "@/lib/local-state/app-init";
-import { AppWideModals } from "@/lib/local-state/app-wide-modals";
+import { useAppInitialization } from "@/lib/state/app-init";
+import { AppWideModals } from "@/lib/state/app-wide-modals";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   useAppInitialization();
