@@ -48,6 +48,7 @@ jobs:
       run: npx lerna run deploy --stream --scope @goldfinch-eng/autotasks
       if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
 
+
   lint:
     runs-on: ubuntu-latest
     strategy:
