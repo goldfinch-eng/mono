@@ -15,31 +15,6 @@ import { WalletModal } from "@/components/wallet-modal";
 import { closeWalletModal } from "./actions";
 import { isWalletModalOpenVar } from "./vars";
 
-// interface ModalContextInterface {
-//   openWalletModal: () => void;
-// }
-
-// const ModalContext = createContext<ModalContextInterface>(
-//   {} as ModalContextInterface
-// );
-
-// export const useModal = () => useContext(ModalContext);
-
-// export function ModalProvider({ children }: { children: ReactNode }) {
-//   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-//   const openWalletModal = useCallback(() => setIsWalletModalOpen(true), []);
-
-//   return (
-//     <ModalContext.Provider value={{ openWalletModal }}>
-//       {children}
-//       <WalletModal
-//         isOpen={isWalletModalOpen}
-//         onClose={() => setIsWalletModalOpen(false)}
-//       />
-//     </ModalContext.Provider>
-//   );
-// }
-
 export function AppWideModals() {
   const isWalletModalOpen = useReactiveVar(isWalletModalOpenVar); // too lazy to write a full graphQL query just to read this from the Apollo cache, so i useReactiveVar on it
   return (
