@@ -1,3 +1,4 @@
+import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {JsonRpcSigner} from "@goldfinch-eng/autotasks/node_modules/@ethersproject/providers/lib"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
@@ -50,6 +51,7 @@ import {
 import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
+import * as migratev25 from "../blockchain_scripts/migrations/v2.5/migrate"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -117,21 +119,34 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     // Patch USDC DOMAIN_SEPARATOR to make permit work locally
     await overrideUsdcDomainSeparator()
+
+    await migratev25.main()
   }
 
   // Grant local signer role
   await impersonateAccount(hre, protocol_owner)
-  const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
-    protocolOwnerSigner
-  )
-  const {protocol_owner: trustedSigner} = await getNamedAccounts()
-  assertNonNullable(trustedSigner)
-  const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
-  await tx.wait()
-  await uniqueIdentity.setSupportedUIDTypes(
-    [await uniqueIdentity.ID_TYPE_0(), await uniqueIdentity.ID_TYPE_1(), await uniqueIdentity.ID_TYPE_2()],
-    [true, true, true]
-  )
+
+  // setup UID supported types for local dev
+  if (!isMainnetForking()) {
+    const uniqueIdentity = (await getDeployedAsEthersContract<UniqueIdentity>(getOrNull, "UniqueIdentity")).connect(
+      protocolOwnerSigner
+    )
+    const {protocol_owner: trustedSigner} = await getNamedAccounts()
+    assertNonNullable(trustedSigner)
+    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+    await tx.wait()
+
+    await uniqueIdentity.setSupportedUIDTypes(
+      [
+        await uniqueIdentity.ID_TYPE_0(),
+        await uniqueIdentity.ID_TYPE_1(),
+        await uniqueIdentity.ID_TYPE_2(),
+        await uniqueIdentity.ID_TYPE_3(),
+        await uniqueIdentity.ID_TYPE_4(),
+      ],
+      [true, true, true, true, true]
+    )
+  }
 
   await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
@@ -160,14 +175,15 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   const protocolBorrowerCon = lastEventArgs[0]
   logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
-  const commonPool = await createPoolForBorrower({
+  const commonPool: TranchedPool = await createPoolForBorrower({
     getOrNull,
     underwriter,
     goldfinchFactory,
     borrower: protocolBorrowerCon,
     erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
   })
-  await writePoolMetadata({pool: commonPool, borrower: "GFI"})
+  await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
 
   const empty = await createPoolForBorrower({
     getOrNull,
@@ -175,8 +191,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     goldfinchFactory,
     borrower: protocolBorrowerCon,
     erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
   })
-  await writePoolMetadata({pool: empty, borrower: "Empty"})
+  await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
 
   await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
@@ -191,7 +208,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   if (!requestFromClient) {
-    await fundAddressAndDepositToCommonPool({erc20, address: borrower, commonPool, seniorPool})
+    await fundAddressAndDepositToCommonPool({erc20, depositorAddress: borrower, commonPool, seniorPool})
 
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
@@ -333,19 +350,19 @@ export async function getERC20s({hre, chainId}) {
 // Fund Address to sr Fund, Deposit funds to common pool
 async function fundAddressAndDepositToCommonPool({
   erc20,
-  address,
+  depositorAddress,
   commonPool,
   seniorPool,
 }: {
   erc20: Contract
-  address: string
-  commonPool: any
+  depositorAddress: string
+  commonPool: TranchedPool
   seniorPool: SeniorPool
 }): Promise<void> {
-  logger(`Deposit into senior fund address:${address}`)
+  logger(`Deposit into senior fund address:${depositorAddress}`)
   // fund with address into sr fund
-  await impersonateAccount(hre, address)
-  const signer = ethers.provider.getSigner(address)
+  await impersonateAccount(hre, depositorAddress)
+  const signer = ethers.provider.getSigner(depositorAddress)
   const depositAmount = new BN(10000).mul(USDCDecimals)
   await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
   await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
@@ -389,6 +406,7 @@ async function createBorrowerContractAndPools({
     borrower: bwrConAddr,
     erc20,
     depositor: protocol_owner,
+    allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
   })
 
   let filledPoolTxn = await filledPool.lockJuniorCapital()
@@ -425,6 +443,7 @@ async function createFullPool(
     goldfinchFactory,
     borrower: bwrConAddr,
     erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
   })
 
   let txn
@@ -568,6 +587,7 @@ async function createPoolForBorrower({
   borrower,
   depositor,
   erc20,
+  allowedUIDTypes,
 }: {
   getOrNull: any
   underwriter: string
@@ -575,6 +595,7 @@ async function createPoolForBorrower({
   borrower: string
   depositor?: string
   erc20: Contract
+  allowedUIDTypes: Array<number>
 }): Promise<TranchedPool> {
   const juniorFeePercent = String(new BN(20))
   const limit = String(new BN(10000).mul(USDCDecimals))
@@ -585,7 +606,6 @@ async function createPoolForBorrower({
   const principalGracePeriodInDays = String(new BN(185))
   const fundableAt = String(new BN(0))
   const underwriterSigner = ethers.provider.getSigner(underwriter)
-  const allowedUIDTypes = []
   const result = await (
     await goldfinchFactory
       .connect(underwriterSigner)

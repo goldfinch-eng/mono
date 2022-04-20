@@ -178,14 +178,16 @@ export async function mockUserRelatedInitializationContractCalls(
       [],
     ])
   }
-  user._fetchGolistStatus = (address: string, currentBlock: BlockInfo) => {
+  user._fetchGoListStatus = (address: string, currentBlock: BlockInfo) => {
     return Promise.resolve({
-      legacyGolisted: true,
-      golisted: true,
-      hasUID: true,
-      hasNonUSUID: true,
-      hasUSAccreditedUID: true,
-      hasUSNonAccreditedUID: true,
+      goListed: true,
+      uidTypeToBalance: {
+        "0": true,
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true,
+      },
     })
   }
 

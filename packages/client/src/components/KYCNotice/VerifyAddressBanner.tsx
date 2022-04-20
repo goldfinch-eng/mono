@@ -1,7 +1,7 @@
 import {useHistory} from "react-router-dom"
-import {iconInfo} from "./icons"
+import {iconInfo} from "../icons"
 import {useForm, FormProvider} from "react-hook-form"
-import LoadingButton from "./loadingButton"
+import LoadingButton from "../loadingButton"
 
 export default function VerifyAddressBanner() {
   let history = useHistory()
@@ -12,15 +12,12 @@ export default function VerifyAddressBanner() {
     return Promise.resolve()
   }
 
-  let qualifyText =
-    "This offering is only available to non-U.S. persons. To participate, you must first verify your address."
-
   return (
     <FormProvider {...formMethods}>
       <div className="info-banner background-container">
         <div className="message small">
           {iconInfo}
-          <p>{qualifyText}</p>
+          <p>This pool is disabled for unverified addresses. You must first verify your address.</p>
         </div>
         <LoadingButton action={verifyAddress} text="Verify Address" />
       </div>

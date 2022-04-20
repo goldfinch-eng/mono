@@ -1,13 +1,13 @@
 import {useContext, useState} from "react"
-import {AppContext} from "../App"
-import {CapitalProvider} from "../ethereum/pool"
-import {useFromSameBlock} from "../hooks/useFromSameBlock"
-import {eligibleForSeniorPool} from "../hooks/useKYC"
-import {assertNonNullable} from "../utils"
-import DepositForm from "./depositForm"
-import DepositStatus from "./depositStatus"
-import {iconDownArrow, iconUpArrow} from "./icons"
-import WithdrawalForm from "./WithdrawalForm"
+import {AppContext} from "../../App"
+import {CapitalProvider} from "../../ethereum/pool"
+import {useFromSameBlock} from "../../hooks/useFromSameBlock"
+import {assertNonNullable} from "../../utils"
+import DepositForm from "../depositForm"
+import DepositStatus from "./DepositStatus"
+import {iconDownArrow, iconUpArrow} from "../icons"
+import {eligibleForSeniorPool} from "./utils"
+import WithdrawalForm from "../WithdrawalForm"
 
 interface EarnActionsContainerProps {
   disabled: boolean
@@ -34,8 +34,13 @@ function EarnActionsContainer(props: EarnActionsContainerProps) {
   let readyAndEligible = false
   if (consistent) {
     const [pool, user] = consistent
+
     readyAndEligible =
-      !disabled && !!user && !!pool.info.value.poolData && !!props.capitalProvider && eligibleForSeniorPool(user)
+      !disabled &&
+      !!user &&
+      !!pool.info.value.poolData &&
+      !!props.capitalProvider &&
+      eligibleForSeniorPool(user, pool.info.value.poolData.allowedUIDTypes)
   }
 
   let placeholderClass = ""
