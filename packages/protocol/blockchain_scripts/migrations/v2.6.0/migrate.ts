@@ -1,15 +1,16 @@
-import {StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
+import {PAUSER_ROLE, StakedPositionType, TRANCHES} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
 import {
   BackerRewards,
   GFI,
   Go,
   GoldfinchConfig,
+  GoldfinchFactory,
   PoolTokens,
   SeniorPool,
   StakingRewards,
   TranchedPool,
+  UniqueIdentity,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import {assertNonNullable} from "@goldfinch-eng/utils"
 import _ from "lodash"
 import BigNumber from "bignumber.js"
 import hre from "hardhat"
@@ -27,6 +28,7 @@ import {
 } from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
+export const EMERGENCY_PAUSER_ADDR = "0x061e0b0087a01127554ffef8f9c4c6e9447ad9dd"
 const STRATOS_POOL_ADDR = "0x00c27fc71b159a346e179b4a1608a0865e8a7470"
 const ALMA_6_POOL_ADDR = "0x418749e294cabce5a714efccc22a8aade6f9db57"
 const ALMA_7_POOL_ADDR = "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3"
@@ -97,6 +99,8 @@ export async function main() {
   const seniorPool = await getEthersContract<SeniorPool>("SeniorPool")
   const go = await getEthersContract<Go>("Go")
   const poolTokens = await getEthersContract<PoolTokens>("PoolTokens")
+  const uniqueIdentity = await getEthersContract<UniqueIdentity>("UniqueIdentity")
+  const goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory")
 
   const getRewardsParametersForPool = async (poolAddress: string): Promise<StakingRewardsInfoInitValues> => {
     const tranchedPool = await getEthersContract<TranchedPool>("TranchedPool", {at: poolAddress})
@@ -279,6 +283,12 @@ export async function main() {
         params.StakingRewards.curveEffectiveMultiplier,
         StakedPositionType.CurveLP
       ),
+
+      await backerRewards.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
+      await uniqueIdentity.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
+      await goldfinchFactory.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
+      await zapper.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
+      await go.populateTransaction.grantRole(PAUSER_ROLE, EMERGENCY_PAUSER_ADDR),
 
       ...backerStakingRewardsInitTxs,
       ...poolTokenFixupTxs,
