@@ -7,6 +7,7 @@ export const USDC_APPROVAL_TX_TYPE = "USDC Approval"
 export const FIDU_APPROVAL_TX_TYPE = "FIDU Approval"
 export const FIDU_USDC_CURVE_APPROVAL_TX_TYPE = "FIDU-USDC Curve Approval"
 export const ERC20_APPROVAL_TX_TYPE = "ERC20 Approval"
+export const ERC721_APPROVAL_TX_TYPE = "ERC721 Approval"
 export const SUPPLY_AND_STAKE_TX_TYPE = "Supply and Stake"
 export const BORROW_TX_TYPE = "Borrow"
 export const PAYMENT_TX_TYPE = "Payment"
@@ -31,6 +32,7 @@ export type TxType =
   | typeof FIDU_APPROVAL_TX_TYPE
   | typeof FIDU_USDC_CURVE_APPROVAL_TX_TYPE
   | typeof ERC20_APPROVAL_TX_TYPE
+  | typeof ERC721_APPROVAL_TX_TYPE
   | typeof SUPPLY_AND_STAKE_TX_TYPE
   | typeof BORROW_TX_TYPE
   | typeof PAYMENT_TX_TYPE
@@ -52,6 +54,7 @@ export function isTxType(val: unknown): val is TxType {
     val === FIDU_APPROVAL_TX_TYPE ||
     val === FIDU_USDC_CURVE_APPROVAL_TX_TYPE ||
     val === ERC20_APPROVAL_TX_TYPE ||
+    val === ERC721_APPROVAL_TX_TYPE ||
     val === SUPPLY_AND_STAKE_TX_TYPE ||
     val === BORROW_TX_TYPE ||
     val === PAYMENT_TX_TYPE ||
@@ -81,6 +84,9 @@ export type CurrentTxDataByType = {
   [ERC20_APPROVAL_TX_TYPE]: AmountStringData & {
     amountBN: BigNumber
     erc20: ERC20
+  }
+  [ERC721_APPROVAL_TX_TYPE]: {
+    erc721: any
   }
   [SUPPLY_AND_STAKE_TX_TYPE]: AmountStringData
   [BORROW_TX_TYPE]: AmountStringData

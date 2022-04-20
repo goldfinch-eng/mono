@@ -47,6 +47,7 @@ import {
   FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
   DEPOSIT_TO_CURVE_TX_TYPE,
   ZAP_STAKE_TO_CURVE_TX_TYPE,
+  ERC721_APPROVAL_TX_TYPE,
 } from "../types/transactions"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
@@ -205,6 +206,9 @@ function Transactions(props: TransactionsProps) {
           }
           break
         }
+        case ERC721_APPROVAL_TX_TYPE:
+          amount = "Maximum"
+          break
         case SUPPLY_AND_STAKE_TX_TYPE:
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
@@ -288,6 +292,9 @@ function Transactions(props: TransactionsProps) {
           }
           break
         }
+        case ERC721_APPROVAL_TX_TYPE:
+          amount = "Maximum"
+          break
         case CLAIM_TX_TYPE:
         case ACCEPT_TX_TYPE:
         case STAKE_TX_TYPE:

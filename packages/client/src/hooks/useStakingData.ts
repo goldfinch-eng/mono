@@ -16,6 +16,7 @@ import {gfiToDollarsAtomic} from "../ethereum/gfi"
 import {ONE_YEAR_SECONDS} from "../ethereum/utils"
 import useApprove from "./useApprove"
 import {getERC20Metadata, Ticker, toAtomic} from "../ethereum/erc20"
+import useERC721Approve from "./useERC721Approve"
 
 const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
 
@@ -38,6 +39,7 @@ type StakingData = {
 export default function useStakingData(): StakingData {
   const sendFromUser = useSendFromUser()
   const approve = useApprove()
+  const erc721Approve = useERC721Approve()
 
   const {
     pool: _pool,
@@ -237,21 +239,26 @@ export default function useStakingData(): StakingData {
 
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(fiduAmount, StakedPositionType.Fidu)
 
-    Promise.all(
-      optimalPositionsToUnstake.map(({tokenId, amount}) =>
-        sendFromUser(
-          // TODO(@emilyhsia): Calculate USDC amount to unstake
-          zapper.contract.userWallet.methods.zapStakeToCurve(tokenId, amount.toString(10), usdcAmount.toString(10)),
-          {
-            type: ZAP_STAKE_TO_CURVE_TX_TYPE,
-            data: {
-              tokenId,
-              fiduAmount: amount.toString(10),
-            },
-          }
-        )
+    await erc721Approve(stakingRewards, zapper.address)
+    await approve(usdcAmount, Ticker.USDC, zapper.address)
+
+    for (const position of optimalPositionsToUnstake) {
+      await sendFromUser(
+        // TODO(@emilyhsia): Calculate USDC amount to unstake
+        zapper.contract.userWallet.methods.zapStakeToCurve(
+          position.tokenId,
+          position.amount.toString(10),
+          usdcAmount.toString(10)
+        ),
+        {
+          type: ZAP_STAKE_TO_CURVE_TX_TYPE,
+          data: {
+            tokenId: position.tokenId,
+            fiduAmount: position.amount.toString(10),
+          },
+        }
       )
-    )
+    }
   }
 
   function getOptimalPositionsToUnstake(

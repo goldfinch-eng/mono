@@ -38,6 +38,7 @@ import {
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   ZAP_STAKE_TO_CURVE_TX_TYPE,
+  ERC721_APPROVAL_TX_TYPE,
 } from "../types/transactions"
 import {
   ArrayItemType,
@@ -176,6 +177,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case FIDU_APPROVAL_TX_TYPE:
         case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
+        case ERC721_APPROVAL_TX_TYPE:
         case CLAIM_TX_TYPE:
         case ACCEPT_TX_TYPE:
           transactionLabel = tx.name
@@ -226,6 +228,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case FIDU_APPROVAL_TX_TYPE:
         case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
+        case ERC721_APPROVAL_TX_TYPE:
           transactionLabel = tx.name
           break
         case SUPPLY_TX_TYPE:
