@@ -20,7 +20,11 @@ export function WalletConnectButton() {
       onClick={handleConnection}
     >
       {`WalletConnect${isActive ? " (Connected)" : ""}`}
-      {isActivating ? <Spinner /> : <WalletConnectLogo className="h-8 w-8" />}
+      {isActivating ? (
+        <Spinner style={{ color: "#3f99fc" }} />
+      ) : (
+        <WalletConnectLogo className="h-8 w-8" />
+      )}
     </ProviderButton>
   );
 }

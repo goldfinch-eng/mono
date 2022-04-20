@@ -16,7 +16,11 @@ export function MetaMaskButton() {
       onClick={handleConnectMetaMask}
     >
       {`MetaMask${isActive ? " (Connected)" : ""}`}
-      {isActivating ? <Spinner /> : <MetaMaskLogo className="h-8 w-8" />}
+      {isActivating ? (
+        <Spinner style={{ color: "#f6851b" }} />
+      ) : (
+        <MetaMaskLogo className="h-8 w-8" />
+      )}
     </ProviderButton>
   );
 }
