@@ -210,6 +210,7 @@ describe("v2.6.0", async function () {
       describe("balanceOf", async () => {
         describe("BackerRewards", async () => {
           it("is correct", async () => {
+            expect((await gfi.balanceOf(backerRewards.address)).toString()).to.bignumber.eq("571428570000000000000000")
             expect((await gfi.balanceOf(backerRewards.address)).toString()).to.bignumber.eq(
               params.BackerRewards.totalRewards
             )
