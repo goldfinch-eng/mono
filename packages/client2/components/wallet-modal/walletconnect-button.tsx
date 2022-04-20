@@ -23,7 +23,7 @@ export function WalletConnectButton() {
       {isActivating ? (
         <Spinner style={{ color: "#3f99fc" }} />
       ) : (
-        <WalletConnectLogo className="h-8 w-8" />
+        <WalletConnectLogo className="h-10 w-10" />
       )}
     </ProviderButton>
   );

@@ -19,7 +19,7 @@ export function MetaMaskButton() {
       {isActivating ? (
         <Spinner style={{ color: "#f6851b" }} />
       ) : (
-        <MetaMaskLogo className="h-8 w-8" />
+        <MetaMaskLogo className="h-10 w-10" />
       )}
     </ProviderButton>
   );
