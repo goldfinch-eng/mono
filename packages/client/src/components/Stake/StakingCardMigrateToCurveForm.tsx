@@ -71,10 +71,9 @@ export default function StakingCardMigrateToCurveForm({
     currentSideAmount: BigNumber,
     currentSide: Ticker.FIDU | Ticker.USDC
   ): BigNumber {
-    // Calculate the exchange rate, denominated in the decimals for the other side
     const exchangeRate =
       currentSide === Ticker.FIDU
-        ? fiduSharePrice.times(getMultiplier(Ticker.USDC)).div(getMultiplier(Ticker.FIDU))
+        ? fiduSharePrice.div(getMultiplier(Ticker.FIDU))
         : getMultiplier(Ticker.FIDU).dividedBy(fiduSharePrice)
 
     return currentSideAmount.times(exchangeRate)
@@ -84,10 +83,13 @@ export default function StakingCardMigrateToCurveForm({
     return ticker === Ticker.FIDU ? "fiduAmountToMigrate" : "usdcAmountAmountToDeposit"
   }
 
-  function onSubmit(e) {
-    console.log("submit")
-    console.log(fiduAmountToMigrate)
-    console.log(usdcAmountToDeposit)
+  async function onSubmit(e) {
+    e.preventDefault()
+
+    await migrate(
+      new BigNumber(fiduAmountToMigrate).multipliedBy(new BigNumber(10).pow(FIDU.decimals)),
+      new BigNumber(usdcAmountToDeposit).multipliedBy(new BigNumber(10).pow(USDC.decimals))
+    )
   }
 
   return (
