@@ -1,9 +1,10 @@
-import { Button } from "@/components/design-system";
+import { Spinner } from "@/components/design-system";
 import {
   walletConnect,
   walletConnectHooks,
 } from "@/lib/wallet/connectors/walletconnect";
 
+import { ProviderButton } from "./provider-button";
 import WalletConnectLogo from "./walletconnect-logo.svg";
 
 export function WalletConnectButton() {
@@ -14,15 +15,12 @@ export function WalletConnectButton() {
   const isActivating = walletConnectHooks.useIsActivating();
 
   return (
-    <Button
-      className="flex items-center"
-      colorScheme="sand"
+    <ProviderButton
       disabled={isActive || isActivating}
       onClick={handleConnection}
     >
-      <WalletConnectLogo className="mr-2 h-8 w-8" />
-      WalletConnect
-      {isActive ? " (Connected)" : isActivating ? " (Connecting...)" : null}
-    </Button>
+      {`WalletConnect${isActive ? " (Connected)" : ""}`}
+      {isActivating ? <Spinner /> : <WalletConnectLogo className="h-8 w-8" />}
+    </ProviderButton>
   );
 }

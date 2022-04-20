@@ -8,32 +8,45 @@ import { useWallet } from "@/lib/wallet";
 gql`
   query CurrentUserWalletInfo {
     currentUser @client {
-      account
       usdcBalance
     }
   }
 `;
 
-export function WalletInfo() {
+interface WalletInfoProps {
+  onWalletDisconnect: () => void;
+}
+
+export function WalletInfo({ onWalletDisconnect }: WalletInfoProps) {
   const { connector } = useWallet();
   const { data } = useCurrentUserWalletInfoQuery();
-  const account = data?.currentUser.account;
   const usdcBalance = data?.currentUser.usdcBalance
     ? formatUsdc(data.currentUser.usdcBalance)
     : undefined;
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-[320px] space-y-8">
       <div>
-        <div className="font-bold">Wallet address</div>
-        <div>{account ?? <Shimmer style={{ width: "42ch" }} />}</div>
+        <div className="mb-4 text-lg font-semibold">Balances</div>
+        <div className="flex items-center justify-between">
+          <div className="font-medium">USDC</div>
+          <div>
+            <div>{usdcBalance ?? <Shimmer />}</div>
+          </div>
+        </div>
       </div>
       <div>
-        <div className="font-bold">USDC Balance</div>
-        <div>{usdcBalance ?? <Shimmer />}</div>
+        <div className="mb-4 text-lg font-semibold">Recent Transactions</div>
+        <div>TODO</div>
       </div>
-      <div className="flex justify-end">
-        <Button colorScheme="sand" onClick={() => connector.deactivate()}>
+      <div className="text-center">
+        <Button
+          size="sm"
+          onClick={() => {
+            connector.deactivate();
+            onWalletDisconnect();
+          }}
+        >
           Disconnect Wallet
         </Button>
       </div>
