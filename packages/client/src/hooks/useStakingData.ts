@@ -27,6 +27,7 @@ type StakingData = {
   usdcUnstaked: BigNumber
   estimatedFiduStakingApy: BigNumber
   estimatedCurveStakingApy: BigNumber
+  fiduSharePrice: BigNumber
   stake: (BigNumber, StakedPositionType) => Promise<any>
   unstake: (BigNumber, StakedPositionType) => Promise<any>
   depositToCurve: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<any>
@@ -61,6 +62,7 @@ export default function useStakingData(): StakingData {
   const [usdcUnstaked, setUSDCUnstaked] = useState(new BigNumber(0))
   const [estimatedCurveStakingApy, setEstimatedCurveStakingApy] = useState<BigNumber>(new BigNumber(0))
   const [estimatedFiduStakingApy, setEstimatedFiduStakingApy] = useState<BigNumber>(new BigNumber(0))
+  const [fiduSharePrice, setFiduSharePrice] = useState(new BigNumber(0))
 
   useEffect(() => {
     if (pool && user && currentBlock) {
@@ -127,6 +129,7 @@ export default function useStakingData(): StakingData {
       }, new BigNumber(0))
     )
 
+    setFiduSharePrice(new BigNumber(pool.info.value.poolData.sharePrice))
     setEstimatedFiduStakingApy(pool.info.value.poolData.estimatedApyFromGfi || new BigNumber(0))
   }
 
@@ -311,6 +314,7 @@ export default function useStakingData(): StakingData {
     usdcUnstaked,
     estimatedFiduStakingApy,
     estimatedCurveStakingApy,
+    fiduSharePrice,
     stake,
     unstake,
     depositToCurve,

@@ -329,6 +329,7 @@ type SeniorPoolData = {
   rawBalance: BigNumber
   compoundBalance: BigNumber
   balance: BigNumber
+  sharePrice: BigNumber
   totalShares: BigNumber
   totalPoolAssets: BigNumber
   totalLoansOutstanding: BigNumber
@@ -410,6 +411,7 @@ async function fetchSeniorPoolData(
     compoundBalance,
     balance,
     totalShares,
+    sharePrice,
     totalPoolAssets,
     totalLoansOutstanding,
     cumulativeWritedowns,

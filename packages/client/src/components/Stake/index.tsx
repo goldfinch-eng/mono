@@ -30,6 +30,7 @@ export default function Stake() {
     usdcUnstaked,
     estimatedFiduStakingApy,
     estimatedCurveStakingApy,
+    fiduSharePrice,
     stake,
     unstake,
     zapStakeToCurve,
@@ -72,6 +73,7 @@ export default function Stake() {
           <StakingCardMigrateToCurveForm
             maxFiduAmountToMigrate={fiduStaked}
             maxUSDCAmountToDeposit={usdcUnstaked}
+            fiduSharePrice={fiduSharePrice}
             migrate={zapStakeToCurve}
           />
         }
