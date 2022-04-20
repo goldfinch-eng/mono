@@ -1,5 +1,6 @@
+import { renderIcon } from "@download/blockies";
 import clsx from "clsx";
-import Blockies from "react-blockies";
+import { useEffect, useRef } from "react";
 
 interface IdenticonProps {
   account: string;
@@ -11,12 +12,20 @@ interface IdenticonProps {
 }
 
 export function Identicon({ account, className, scale = 3 }: IdenticonProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (canvasRef.current) {
+      renderIcon(
+        { seed: account.toLowerCase(), size: 8, scale },
+        canvasRef.current
+      );
+    }
+  }, [account, scale]);
   return (
-    <Blockies
-      seed={account}
+    <canvas
       className={clsx("rounded-full", className)}
-      size={8}
-      scale={scale}
+      ref={canvasRef}
+      aria-hidden="true"
     />
   );
 }
