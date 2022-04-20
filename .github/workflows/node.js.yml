@@ -38,10 +38,6 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-v0-${{ env.cache-name }}-
-          ${{ runner.os }}-build-v0-
-          ${{ runner.os }}-
     - run: npx lerna bootstrap --ci
     - run: npm run build
     - run: npx lerna run test --stream --scope @goldfinch-eng/autotasks
@@ -71,10 +67,6 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-v0-${{ env.cache-name }}-
-          ${{ runner.os }}-build-v0-
-          ${{ runner.os }}-
     - run: npm install
     - run: npx lerna bootstrap --ci
     - run: npm run build
@@ -99,10 +91,6 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-v0-${{ env.cache-name }}-
-          ${{ runner.os }}-build-v0-
-          ${{ runner.os }}-
     - run: npx lerna bootstrap --ci
     - run: npm run build
     - run: npx lerna run test --stream --scope @goldfinch-eng/client
@@ -126,10 +114,6 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-v0-${{ env.cache-name }}-
-          ${{ runner.os }}-build-v0-
-          ${{ runner.os }}-
     - run: npx lerna bootstrap --ci
     - run: npm run build
     - run: npx lerna run test --stream --scope @goldfinch-eng/subgraph
@@ -159,10 +143,6 @@ jobs:
           # npm cache files are stored in `~/.npm` on Linux/macOS
           path: ~/.npm
           key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-v0-${{ env.cache-name }}-
-            ${{ runner.os }}-build-v0-
-            ${{ runner.os }}-
       - name: Changed files
         id: changed-files
         uses: tj-actions/changed-files@v11.2
