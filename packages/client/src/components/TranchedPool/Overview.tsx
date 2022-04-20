@@ -41,11 +41,9 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
   let detailsLink = <></>
   if (user && user.info.value.goListed && session.status === "authenticated" && tranchedPool.metadata?.detailsUrl) {
     detailsLink = (
-      <div className="pool-links pool-overview-links">
-        <button onClick={() => handleDetails()}>
-          Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
-        </button>
-      </div>
+      <button onClick={() => handleDetails()}>
+        Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
+      </button>
     )
   }
 
