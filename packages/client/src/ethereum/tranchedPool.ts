@@ -1,27 +1,41 @@
+import BN from "bn.js"
 import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
-import {ContractEventLog} from "@goldfinch-eng/protocol/typechain/web3/types"
-import {assertNonNullable} from "@goldfinch-eng/utils/src/type"
+import {asNonNullable, assertNonNullable, assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
 import {
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
   KnownEventData,
+  KnownEventName,
   PAYMENT_APPLIED_EVENT,
   SHARE_PRICE_UPDATED_EVENT,
+  TranchedPoolEventType,
+  WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
 import {ScheduledRepayment} from "../types/tranchedPool"
-import {DRAWDOWN_TX_NAME, INTEREST_PAYMENT_TX_NAME} from "../types/transactions"
+import {
+  BORROW_TX_TYPE,
+  HistoricalTx,
+  INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME,
+  INTEREST_PAYMENT_TX_NAME,
+  PRINCIPAL_PAYMENT_TX_NAME,
+  RichAmount,
+  SUPPLY_TX_TYPE,
+  TxName,
+  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+} from "../types/transactions"
 import {Web3IO} from "../types/web3"
 import {BlockInfo, croppedAddress, roundDownPenny} from "../utils"
 import getWeb3 from "../web3"
 import {getCreditDeskReadOnly} from "./creditDesk"
 import {CreditLine} from "./creditLine"
 import {usdcFromAtomic} from "./erc20"
+import {EventParserConfig, mapEventsToTx} from "./events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
@@ -118,6 +132,24 @@ export type TrancheInfo = {
   interestSharePrice: BigNumber
   lockedUntil: number
 }
+
+export type TranchedPoolRecentTransactionData = {
+  name: TxName
+  txHash: string
+  juniorInterestDelta: BigNumber
+  juniorPrincipalDelta: BigNumber
+  amount: RichAmount
+  timestamp: number
+} & (
+  | {
+      event: typeof DRAWDOWN_MADE_EVENT
+    }
+  | {
+      event: typeof PAYMENT_APPLIED_EVENT
+      interestAmount: RichAmount
+      principalAmount: RichAmount
+    }
+)
 
 function trancheInfo(tuple: any): TrancheInfo {
   return {
@@ -306,8 +338,8 @@ class TranchedPool {
     return [NON_US_INDIVIDUAL_ID_TYPE_0]
   }
 
-  async recentTransactions(currentBlock: BlockInfo) {
-    let oldTransactions: any[] = []
+  async recentTransactions(currentBlock: BlockInfo): Promise<TranchedPoolRecentTransactionData[]> {
+    let oldTransactions: KnownEventData<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>[] = []
     let transactions = await this.goldfinchProtocol.queryEvents(
       this.contract.readOnly,
       [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
@@ -323,44 +355,59 @@ class TranchedPool {
     transactions = _.reverse(_.sortBy(transactions, ["blockNumber", "transactionIndex"])).slice(0, 3)
     let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior, currentBlock)
     let blockTimestamps = await this.timestampsByBlockNumber(transactions)
-    return transactions.map((e) => {
-      let juniorInterest = new BigNumber(0)
-      const sharePriceUpdate = sharePriceUpdates[e.transactionHash]?.[0]
-      if (sharePriceUpdate) {
-        juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
-      }
+    return mapEventsToTx(transactions, [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT], tranchedPoolEventParserConfig).map(
+      (
+        tx: HistoricalTx<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>
+      ): TranchedPoolRecentTransactionData => {
+        let juniorInterest = new BigNumber(0)
+        const sharePriceUpdate = sharePriceUpdates[tx.eventData.transactionHash]?.[0]
+        if (sharePriceUpdate) {
+          juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
+        }
 
-      let event = {
-        txHash: e.transactionHash,
-        event: e.event,
-        juniorInterestDelta: juniorInterest,
-        juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
-        timestamp: blockTimestamps[e.blockNumber],
+        const timestamp = asNonNullable(blockTimestamps[tx.eventData.blockNumber])
+        let data = {
+          name: tx.name,
+          amount: tx.amount,
+          txHash: tx.eventData.transactionHash,
+          juniorInterestDelta: juniorInterest,
+          juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
+          timestamp,
+        }
+        switch (tx.type) {
+          case DRAWDOWN_MADE_EVENT:
+            return {
+              ...data,
+              event: tx.type,
+            }
+          case PAYMENT_APPLIED_EVENT:
+            const totalPrincipalAmount = new BigNumber(tx.eventData.returnValues.principalAmount).plus(
+              new BigNumber(tx.eventData.returnValues.remainingAmount)
+            )
+            return {
+              ...data,
+              event: tx.type,
+              interestAmount: {
+                display: tx.eventData.returnValues.interestAmount,
+                atomic: new BigNumber(tx.eventData.returnValues.interestAmount),
+                units: "usdc",
+              },
+              principalAmount: {
+                display: totalPrincipalAmount.toString(10),
+                atomic: totalPrincipalAmount,
+                units: "usdc",
+              },
+            }
+          default:
+            return assertUnreachable(tx.type)
+        }
       }
-      if (e.event === DRAWDOWN_MADE_EVENT) {
-        let amount = e.returnValues.amount || e.returnValues.drawdownAmount
-
-        Object.assign(event, {
-          name: DRAWDOWN_TX_NAME,
-          amount: new BigNumber(amount),
-        })
-      } else if (e.event === PAYMENT_APPLIED_EVENT) {
-        const interestAmount = new BigNumber(e.returnValues.interestAmount)
-        const totalPrincipalAmount = new BigNumber(e.returnValues.principalAmount).plus(
-          new BigNumber(e.returnValues.remainingAmount)
-        )
-        Object.assign(event, {
-          name: INTEREST_PAYMENT_TX_NAME,
-          amount: interestAmount.plus(totalPrincipalAmount),
-          interestAmount: new BigNumber(interestAmount),
-          principalAmount: new BigNumber(totalPrincipalAmount),
-        })
-      }
-      return event
-    })
+    )
   }
 
-  async getOldTransactions(currentBlock: BlockInfo) {
+  async getOldTransactions(
+    currentBlock: BlockInfo
+  ): Promise<KnownEventData<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>[]> {
     let oldCreditlineAddress = this.metadata?.migratedFrom
     if (!oldCreditlineAddress) {
       return []
@@ -392,18 +439,19 @@ class TranchedPool {
     return _.groupBy(transactions, (e) => e.transactionHash)
   }
 
-  async timestampsByBlockNumber(transactions: ContractEventLog<any>[]) {
+  async timestampsByBlockNumber(transactions: KnownEventData<KnownEventName>[]): Promise<Record<number, number>> {
     const web3 = getWeb3()
     const blockTimestamps = await Promise.all(
-      transactions.map((tx) => {
-        return web3.readOnly.eth.getBlock(tx.blockNumber).then((block) => {
-          return {blockNumber: tx.blockNumber, timestamp: block.timestamp}
-        })
-      })
+      transactions.map((tx) =>
+        web3.readOnly.eth
+          .getBlock(tx.blockNumber)
+          .then((block): [number, number] => [
+            tx.blockNumber,
+            isString(block.timestamp) ? parseInt(block.timestamp, 10) : block.timestamp,
+          ])
+      )
     )
-    const result = {}
-    blockTimestamps.map((t) => (result[t.blockNumber] = t.timestamp))
-    return result
+    return _.fromPairs(blockTimestamps)
   }
 
   async getOptimisticRepaymentSchedule(currentBlock: BlockInfo): Promise<ScheduledRepayment[]> {
@@ -729,6 +777,83 @@ function tokenInfo(tokenId: string, tuple: any): TokenInfo {
     principalRedeemable: new BigNumber(0), // Set later
     interestRedeemable: new BigNumber(0), // Set later
   }
+}
+
+const ONE_CENT_USDC = USDC_DECIMALS.div(new BN(100)).toString(10)
+
+export const tranchedPoolEventParserConfig: EventParserConfig<TranchedPoolEventType> = {
+  parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
+    switch (eventData.event) {
+      case DEPOSIT_MADE_EVENT:
+        return SUPPLY_TX_TYPE
+      case WITHDRAWAL_MADE_EVENT:
+        return WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE
+      case PAYMENT_APPLIED_EVENT:
+        const interestAmount = new BigNumber(eventData.returnValues.interestAmount)
+        const totalPrincipalAmount = new BigNumber(eventData.returnValues.principalAmount).plus(
+          new BigNumber(eventData.returnValues.remainingAmount)
+        )
+        if (interestAmount.gt(0) && totalPrincipalAmount.gt(0)) {
+          // We observed lots of payments being almost entirely interest, but having a principal amount of less
+          // than $0.01. For UX purposes, we'll describe such payments as interest-only payments.
+          if (interestAmount.gt(totalPrincipalAmount) && totalPrincipalAmount.lt(ONE_CENT_USDC)) {
+            return INTEREST_PAYMENT_TX_NAME
+          } else {
+            return INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME
+          }
+        } else if (interestAmount.gt(0)) {
+          return INTEREST_PAYMENT_TX_NAME
+        } else if (totalPrincipalAmount.gt(0)) {
+          return PRINCIPAL_PAYMENT_TX_NAME
+        } else {
+          console.error(
+            `Expected interest or principal amount to be non-zero: ${eventData.blockNumber} ${eventData.transactionIndex}`
+          )
+          return INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME
+        }
+      case DRAWDOWN_MADE_EVENT:
+        return BORROW_TX_TYPE
+      default:
+        assertUnreachable(eventData.event)
+    }
+  },
+  parseAmount: (eventData: KnownEventData<TranchedPoolEventType>) => {
+    switch (eventData.event) {
+      case DEPOSIT_MADE_EVENT: {
+        return {
+          amount: eventData.returnValues.amount,
+          units: "usdc",
+        }
+      }
+      case WITHDRAWAL_MADE_EVENT: {
+        const sum = new BigNumber(eventData.returnValues.interestWithdrawn).plus(
+          new BigNumber(eventData.returnValues.principalWithdrawn)
+        )
+        return {
+          amount: sum.toString(10),
+          units: "usdc",
+        }
+      }
+      case PAYMENT_APPLIED_EVENT: {
+        const interestAmount = new BigNumber(eventData.returnValues.interestAmount)
+        const totalPrincipalAmount = new BigNumber(eventData.returnValues.principalAmount).plus(
+          new BigNumber(eventData.returnValues.remainingAmount)
+        )
+        return {
+          amount: interestAmount.plus(totalPrincipalAmount),
+          units: "usdc",
+        }
+      }
+      case DRAWDOWN_MADE_EVENT: {
+        return {
+          amount: eventData.returnValues.amount || eventData.returnValues.drawdownAmount,
+          units: "usdc",
+        }
+      }
+      default:
+        assertUnreachable(eventData.event)
+    }
+  },
 }
 
 export {getMetadataStore, TranchedPool, TranchedPoolBacker, PoolState, TRANCHES}
