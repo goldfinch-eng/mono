@@ -9,8 +9,8 @@ export default {
 
 export const SpinnerStory: ComponentStory<typeof Spinner> = () => (
   <div className="flex gap-4">
-    <Spinner />
-    <Spinner className="text-purple-300" />
-    <Spinner style={{ color: "orange" }} />
+    <Spinner className="h-10 w-10" />
+    <Spinner className="h-10 w-10 text-purple-300" />
+    <Spinner className="h-10 w-10" style={{ color: "orange" }} />
   </div>
 );

@@ -5,9 +5,6 @@ import SpinnerSvg from "./spinner.svg";
 
 export function Spinner({ className, ...rest }: SVGAttributes<SVGElement>) {
   return (
-    <SpinnerSvg
-      className={clsx("spinner h-8 w-8 animate-spin", className)}
-      {...rest}
-    />
+    <SpinnerSvg className={clsx("spinner animate-spin", className)} {...rest} />
   );
 }
