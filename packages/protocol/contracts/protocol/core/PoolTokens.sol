@@ -14,7 +14,6 @@ import "../../interfaces/IPoolTokens.sol";
  *  junior tranche or senior tranche shares of any of the borrower pools.
  * @author Goldfinch
  */
-
 contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   GoldfinchConfig public config;
