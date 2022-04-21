@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
-import {getERC20Metadata, getMultiplier, Ticker, toDecimal} from "../../ethereum/erc20"
+import {getERC20Metadata, getMultiplier, Ticker, toAtomicAmount, toDecimal} from "../../ethereum/erc20"
 import useDebounce from "../../hooks/useDebounce"
 import {displayNumber} from "../../utils"
 import TransactionInput from "../transactionInput"
@@ -11,8 +11,11 @@ const FIDU = getERC20Metadata(Ticker.FIDU)
 const USDC = getERC20Metadata(Ticker.USDC)
 
 type StakingCardMigrateToCurveFormProps = {
+  // Max FIDU available to migrate (in decimals)
   maxFiduAmountToMigrate: BigNumber
+  // Max USDC available to deposit (in decimals)
   maxUSDCAmountToDeposit: BigNumber
+  // FIDU share price (denominated in 1e18)
   fiduSharePrice: BigNumber
   migrate: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<any>
 }
@@ -21,6 +24,10 @@ const InputContainer = styled.div`
   :not(:last-child) {
     padding-bottom: 18px;
   }
+`
+
+const StyledButton = styled.button<{small: boolean}>`
+  font-size: ${({small}) => (small ? "20px" : "inherit")};
 `
 
 export default function StakingCardMigrateToCurveForm({
@@ -32,29 +39,31 @@ export default function StakingCardMigrateToCurveForm({
   const formMethods = useForm()
 
   const [isPending, setIsPending] = useState(false)
-  const [fiduAmountToMigrate, setFiduAmountToMigrate] = useState(0)
-  const [usdcAmountToDeposit, setUsdcAmountToDeposit] = useState(0)
+  const [fiduAmountToMigrateInDecimals, setFiduAmountToMigrateInDecimals] = useState<BigNumber>(new BigNumber(0))
+  const [usdcAmountToDepositInDecimals, setUsdcAmountToDepositInDecimals] = useState<BigNumber>(new BigNumber(0))
 
-  const debouncedSetFiduAmountToMigrate = useDebounce(setFiduAmountToMigrate, 200)
-  const debouncedSetUsdcAmountToDeposit = useDebounce(setUsdcAmountToDeposit, 200)
+  const debouncedSetFiduAmountToMigrateInDecimals = useDebounce(setFiduAmountToMigrateInDecimals, 200)
+  const debouncedSetUsdcAmountToDepositInDecimals = useDebounce(setUsdcAmountToDepositInDecimals, 200)
 
   function onChange(ticker: Ticker.FIDU | Ticker.USDC) {
     switch (ticker) {
       case Ticker.FIDU:
-        let formAmount = formMethods.getValues("fiduAmountToMigrate")
-        debouncedSetFiduAmountToMigrate(formAmount)
+        let formAmount: string = formMethods.getValues("fiduAmountToMigrate")
+        let formAmountInDecimals = !!formAmount ? new BigNumber(formAmount) : new BigNumber(0)
+        debouncedSetFiduAmountToMigrateInDecimals(formAmountInDecimals)
 
-        let otherSideAmount = getEquivalentAmountForOtherSide(new BigNumber(formAmount), ticker)
-        formMethods.setValue("usdcAmountAmountToDeposit", otherSideAmount.toFixed(0))
-        debouncedSetUsdcAmountToDeposit(otherSideAmount.toFixed(0))
+        const usdcEquivalent = getEquivalentAmountForOtherSide(formAmountInDecimals, ticker)
+        formMethods.setValue("usdcAmountAmountToDeposit", usdcEquivalent.toFixed(0))
+        debouncedSetUsdcAmountToDepositInDecimals(usdcEquivalent)
         break
       case Ticker.USDC:
         formAmount = formMethods.getValues("usdcAmountAmountToDeposit")
-        debouncedSetUsdcAmountToDeposit(formAmount)
+        formAmountInDecimals = !!formAmount ? new BigNumber(formAmount) : new BigNumber(0)
+        debouncedSetUsdcAmountToDepositInDecimals(formAmountInDecimals)
 
-        otherSideAmount = getEquivalentAmountForOtherSide(new BigNumber(formAmount), ticker)
-        formMethods.setValue("fiduAmountToMigrate", otherSideAmount.toFixed(0))
-        debouncedSetFiduAmountToMigrate(otherSideAmount.toFixed(0))
+        const fiduEquivalent = getEquivalentAmountForOtherSide(formAmountInDecimals, ticker)
+        formMethods.setValue("fiduAmountToMigrate", fiduEquivalent.toFixed(0))
+        debouncedSetFiduAmountToMigrateInDecimals(fiduEquivalent)
         break
     }
   }
@@ -89,10 +98,14 @@ export default function StakingCardMigrateToCurveForm({
 
     setIsPending(true)
     migrate(
-      new BigNumber(fiduAmountToMigrate).multipliedBy(new BigNumber(10).pow(FIDU.decimals)),
-      new BigNumber(usdcAmountToDeposit).multipliedBy(new BigNumber(10).pow(USDC.decimals))
+      toAtomicAmount(fiduAmountToMigrateInDecimals, FIDU.decimals),
+      toAtomicAmount(usdcAmountToDepositInDecimals, USDC.decimals)
     ).then(() => setIsPending(false))
   }
+
+  const hasSufficientBalance =
+    maxFiduAmountToMigrate.gte(toAtomicAmount(fiduAmountToMigrateInDecimals, FIDU.decimals)) &&
+    maxUSDCAmountToDeposit.gte(toAtomicAmount(usdcAmountToDepositInDecimals, USDC.decimals))
 
   return (
     <FormProvider {...formMethods}>
@@ -100,7 +113,7 @@ export default function StakingCardMigrateToCurveForm({
         <InputContainer>
           <div className="form-input-label">{`Amount (max: ${displayNumber(
             toDecimal(maxFiduAmountToMigrate, Ticker.FIDU)
-          )}) ${FIDU.ticker}`}</div>
+          )} ${FIDU.ticker})`}</div>
           <div className="form-inputs-footer">
             <TransactionInput
               name={getFormInputName(Ticker.FIDU)}
@@ -125,7 +138,7 @@ export default function StakingCardMigrateToCurveForm({
         <InputContainer>
           <div className="form-input-label">{`Amount (max: ${displayNumber(
             toDecimal(maxUSDCAmountToDeposit, Ticker.USDC)
-          )}) ${USDC.ticker}`}</div>
+          )} ${USDC.ticker})`}</div>
           <div className="form-inputs-footer">
             <TransactionInput
               name={getFormInputName(Ticker.USDC)}
@@ -146,14 +159,20 @@ export default function StakingCardMigrateToCurveForm({
               }
             />
 
-            <button
+            <StyledButton
               type="button"
-              disabled={!fiduAmountToMigrate || !usdcAmountToDeposit || isPending}
+              disabled={
+                !hasSufficientBalance ||
+                fiduAmountToMigrateInDecimals.isZero() ||
+                usdcAmountToDepositInDecimals.isZero() ||
+                isPending
+              }
               className="button submit-form"
               onClick={onSubmit}
+              small={!hasSufficientBalance}
             >
-              Migrate
-            </button>
+              {!hasSufficientBalance ? "Insufficient balance" : "Migrate"}
+            </StyledButton>
           </div>
         </InputContainer>
       </div>

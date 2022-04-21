@@ -3,14 +3,17 @@ import BigNumber from "bignumber.js"
 import {useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
-import {ERC20Metadata} from "../../ethereum/erc20"
+import {ERC20Metadata, toAtomicAmount} from "../../ethereum/erc20"
 import useDebounce from "../../hooks/useDebounce"
 import {displayNumber} from "../../utils"
 import TransactionInput from "../transactionInput"
 
 type StakingCardFormProps = {
+  // Token to stake
   token: ERC20Metadata
+  // Max amount available to stake (in decimals)
   maxAmountToStake: BigNumber
+  // Max amount available to unstake (in decimals)
   maxAmountToUnstake: BigNumber
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
@@ -38,6 +41,10 @@ const TabComponent = styled.div<{active: boolean}>`
   margin-bottom: 30px;
 `
 
+const StyledButton = styled.button<{small: boolean}>`
+  font-size: ${({small}) => (small ? "20px" : "inherit")};
+`
+
 export default function StakingCardForm({
   token,
   maxAmountToUnstake,
@@ -50,11 +57,11 @@ export default function StakingCardForm({
 
   const [isPending, setIsPending] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Stake)
-  const [amountToStake, setAmountToStake] = useState(0)
-  const [amountToUnstake, setAmountToUnstake] = useState(0)
+  const [amountToStakeInDecimals, setAmountToStakeInDecimals] = useState<BigNumber>(new BigNumber(0))
+  const [amountToUnstakeInDecimals, setAmountToUnstakeInDecimals] = useState<BigNumber>(new BigNumber(0))
 
-  const debouncedSetAmountToStake = useDebounce(setAmountToStake, 200)
-  const debouncedSetAmountToUnstake = useDebounce(setAmountToUnstake, 200)
+  const debouncedSetAmountToStakeInDecimals = useDebounce(setAmountToStakeInDecimals, 200)
+  const debouncedSetAmountToUnstakeInDecimals = useDebounce(setAmountToUnstakeInDecimals, 200)
 
   function onTabClick(tab: Tab) {
     setActiveTab(tab)
@@ -63,16 +70,18 @@ export default function StakingCardForm({
   function onChange() {
     switch (activeTab) {
       case Tab.Stake:
-        debouncedSetAmountToStake(formMethods.getValues("amountToStake"))
+        const amountToStake: string = formMethods.getValues("amountToStake")
+        debouncedSetAmountToStakeInDecimals(!!amountToStake ? new BigNumber(amountToStake) : new BigNumber(0))
         break
       case Tab.Unstake:
-        debouncedSetAmountToUnstake(formMethods.getValues("amountToUnstake"))
+        const amountToUnstake: string = formMethods.getValues("amountToUnstake")
+        debouncedSetAmountToUnstakeInDecimals(!!amountToUnstake ? new BigNumber(amountToUnstake) : new BigNumber(0))
         break
     }
   }
 
-  function onMaxClick(formInputName: string, amount?: BigNumber) {
-    formMethods.setValue(formInputName, new BigNumber(amount || 0).decimalPlaces(18, 1).toString(10), {
+  function onMaxClick(formInputName: string, maxAmount: BigNumber) {
+    formMethods.setValue(formInputName, maxAmount.decimalPlaces(18, 1).toString(10), {
       shouldValidate: true,
       shouldDirty: true,
     })
@@ -83,14 +92,10 @@ export default function StakingCardForm({
     setIsPending(true)
     switch (activeTab) {
       case Tab.Stake:
-        stake(new BigNumber(amountToStake).multipliedBy(new BigNumber(10).pow(token.decimals))).then(() =>
-          setIsPending(false)
-        )
+        stake(toAtomicAmount(amountToStakeInDecimals, token.decimals)).then(() => setIsPending(false))
         break
       case Tab.Unstake:
-        unstake(new BigNumber(amountToUnstake).multipliedBy(new BigNumber(10).pow(token.decimals))).then(() =>
-          setIsPending(false)
-        )
+        unstake(toAtomicAmount(amountToUnstakeInDecimals, token.decimals)).then(() => setIsPending(false))
         break
     }
   }
@@ -114,15 +119,17 @@ export default function StakingCardForm({
         switch (activeTab) {
           case Tab.Stake:
           case Tab.Unstake:
-            const amountForActiveTab = activeTab === Tab.Stake ? amountToStake : amountToUnstake
-            const maxAmountForActiveTab =
+            const amountForActiveTabInDecimals =
+              activeTab === Tab.Stake ? amountToStakeInDecimals : amountToUnstakeInDecimals
+            const maxAmountForActiveTabInDecimals =
               activeTab === Tab.Stake
-                ? maxAmountToStake?.div(new BigNumber(10).pow(token.decimals))
-                : maxAmountToUnstake?.div(new BigNumber(10).pow(token.decimals))
-            const amountInputLabel = maxAmountForActiveTab.isZero()
+                ? maxAmountToStake.div(new BigNumber(10).pow(token.decimals))
+                : maxAmountToUnstake.div(new BigNumber(10).pow(token.decimals))
+            const amountInputLabel = maxAmountForActiveTabInDecimals.isZero()
               ? "Amount"
-              : `Amount (max: ${displayNumber(maxAmountForActiveTab)} ${token.ticker})`
+              : `Amount (max: ${displayNumber(maxAmountForActiveTabInDecimals)} ${token.ticker})`
             const formInputName = activeTab === Tab.Stake ? "amountToStake" : "amountToUnstake"
+            const hasSufficientBalance = maxAmountForActiveTabInDecimals.gte(amountForActiveTabInDecimals)
 
             return (
               <FormProvider {...formMethods}>
@@ -134,27 +141,28 @@ export default function StakingCardForm({
                       ticker={token.ticker}
                       displayTicker={false}
                       formMethods={formMethods}
-                      maxAmount={maxAmountForActiveTab?.toString(10)}
+                      maxAmount={maxAmountForActiveTabInDecimals.toString(10)}
                       onChange={onChange}
                       rightDecoration={
                         <button
                           className="enter-max-amount"
-                          disabled={maxAmountForActiveTab.isZero()}
+                          disabled={maxAmountForActiveTabInDecimals.isZero()}
                           type="button"
-                          onClick={() => onMaxClick(formInputName, maxAmountForActiveTab)}
+                          onClick={() => onMaxClick(formInputName, maxAmountForActiveTabInDecimals)}
                         >
                           Max
                         </button>
                       }
                     />
-                    <button
+                    <StyledButton
                       type="button"
-                      disabled={!amountForActiveTab || isPending}
+                      disabled={amountForActiveTabInDecimals.isZero() || isPending || !hasSufficientBalance}
                       className="button submit-form"
                       onClick={onSubmit}
+                      small={!hasSufficientBalance}
                     >
-                      {activeTab.toString()}
-                    </button>
+                      {hasSufficientBalance ? activeTab.toString() : "Insufficient balance"}
+                    </StyledButton>
                   </div>
                 </div>
               </FormProvider>

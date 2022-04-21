@@ -2,14 +2,16 @@ import BigNumber from "bignumber.js"
 import {useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
-import {ERC20Metadata} from "../../ethereum/erc20"
+import {ERC20Metadata, toAtomicAmount} from "../../ethereum/erc20"
 import useDebounce from "../../hooks/useDebounce"
 import {displayNumber} from "../../utils"
 import StakingPrompt from "../StakingPrompt"
 import TransactionInput from "../transactionInput"
 
 type LPAndStakeCardFormProps = {
+  // Token to deposit
   depositToken: ERC20Metadata
+  // Max amount available to deposit (in decimals)
   maxAmountToDeposit: BigNumber
   stakingApy: BigNumber
   deposit: (BigNumber) => Promise<any>
@@ -58,27 +60,28 @@ export default function LPAndStakeCardForm({
 
   const [isPending, setIsPending] = useState(false)
   const [shouldStake, setShouldStake] = useState<boolean>(true)
-  const [amountToDeposit, setAmountToDeposit] = useState(0)
+  const [amountToDepositInDecimals, setAmountToDepositInDecimals] = useState<BigNumber>(new BigNumber(0))
   const [estimatedSlippage, setEstimatedSlippage] = useState<BigNumber>(new BigNumber(0))
 
-  const debouncedSetAmountToDeposit = useDebounce(setAmountToDeposit, 200)
+  const debouncedSetAmountToDepositInDecimals = useDebounce(setAmountToDepositInDecimals, 200)
 
   useEffect(() => {
-    estimateSlippage(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(
-      (slippage) => setEstimatedSlippage(slippage)
+    estimateSlippage(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then((slippage) =>
+      setEstimatedSlippage(slippage)
     )
-  }, [amountToDeposit])
+  }, [amountToDepositInDecimals])
 
   function onChange() {
-    debouncedSetAmountToDeposit(formMethods.getValues("amountToDeposit"))
+    const amountToDeposit: string = formMethods.getValues("amountToDeposit")
+    debouncedSetAmountToDepositInDecimals(!!amountToDeposit ? new BigNumber(amountToDeposit) : new BigNumber(0))
   }
 
   function onStakingPromptToggle(e) {
     setShouldStake(!shouldStake)
   }
 
-  function onMaxClick(maxAmountToDeposit) {
-    formMethods.setValue("amountToDeposit", new BigNumber(maxAmountToDeposit || 0).decimalPlaces(18, 1).toString(10), {
+  function onMaxClick(maxAmount: BigNumber) {
+    formMethods.setValue("amountToDeposit", maxAmount.decimalPlaces(18, 1).toString(10), {
       shouldValidate: true,
       shouldDirty: true,
     })
@@ -88,23 +91,22 @@ export default function LPAndStakeCardForm({
   function onSubmit(e) {
     setIsPending(true)
     if (shouldStake) {
-      depositAndStake(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(
-        () => setIsPending(false)
-      )
+      depositAndStake(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(() => setIsPending(false))
     } else {
-      deposit(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(() =>
-        setIsPending(false)
-      )
+      deposit(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(() => setIsPending(false))
     }
   }
 
-  const maxAmount = maxAmountToDeposit?.div(new BigNumber(10).pow(depositToken.decimals))
-
+  const maxAmountInDecimals = maxAmountToDeposit.div(new BigNumber(10).pow(depositToken.decimals))
   const amountInputLabel = maxAmountToDeposit.isZero()
     ? "Amount"
-    : `Amount (max: ${displayNumber(maxAmount)} ${depositToken.ticker})`
-
-  const submitButtonText = shouldStake ? "Deposit and stake" : "Deposit"
+    : `Amount (max: ${displayNumber(maxAmountInDecimals)} ${depositToken.ticker})`
+  const hasSufficientBalance = maxAmountToDeposit.gte(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals))
+  const submitButtonText = hasSufficientBalance
+    ? shouldStake
+      ? "Deposit and stake"
+      : "Deposit"
+    : "Insufficient balance"
 
   // Based off of Curve's slippage thresholds
   // https://github.com/curvefi/crv.finance/blob/main/src/components/slippageInfo/slippageInfo.jsx#L21-L22
@@ -124,7 +126,7 @@ export default function LPAndStakeCardForm({
               ticker={depositToken.ticker}
               displayTicker={false}
               formMethods={formMethods}
-              maxAmount={maxAmount?.toString(10)}
+              maxAmount={maxAmountInDecimals.toString(10)}
               onChange={onChange}
               error={isVeryHighSlippage}
               warning={isHighSlippage}
@@ -133,7 +135,7 @@ export default function LPAndStakeCardForm({
                   className="enter-max-amount"
                   disabled={maxAmountToDeposit.isZero()}
                   type="button"
-                  onClick={() => onMaxClick(maxAmount)}
+                  onClick={() => onMaxClick(maxAmountInDecimals)}
                 >
                   Max
                 </button>
@@ -141,7 +143,7 @@ export default function LPAndStakeCardForm({
             />
             <StyledButton
               type="button"
-              disabled={!amountToDeposit || isPending || isVeryHighSlippage}
+              disabled={amountToDepositInDecimals.isZero() || isPending || isVeryHighSlippage || !hasSufficientBalance}
               className="button submit-form"
               onClick={onSubmit}
               small={shouldStake}
