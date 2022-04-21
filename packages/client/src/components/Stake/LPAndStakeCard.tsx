@@ -15,6 +15,7 @@ type LPAndStakeCardProps = {
   platform: Platform
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>
+  estimateSlippage: (BigNumber) => Promise<BigNumber>
 }
 
 const StyledLPAndStakeCardHeader = styled(LPAndStakeCardHeader)<{expanded: boolean}>`
@@ -32,6 +33,7 @@ export default function LPAndStakeCard({
   platform,
   deposit,
   depositAndStake,
+  estimateSlippage,
 }: LPAndStakeCardProps) {
   const [expanded, setExpanded] = useState<boolean>(false)
 
@@ -58,6 +60,7 @@ export default function LPAndStakeCard({
           stakingApy={rewardApy}
           deposit={deposit}
           depositAndStake={depositAndStake}
+          estimateSlippage={estimateSlippage}
         />
       )}
     </div>

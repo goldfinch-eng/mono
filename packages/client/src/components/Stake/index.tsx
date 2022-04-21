@@ -10,6 +10,7 @@ import LPAndStakeCard from "./LPAndStakeCard"
 import BigNumber from "bignumber.js"
 import {Platform} from "./StakingToken"
 import StakingCardMigrateToCurveForm from "./StakingCardMigrateToCurveForm"
+import useCurvePool from "../../hooks/useCurvePool"
 
 const StyledStakingHeaderText = styled(StakingHeaderText)`
   font-size: 16px;
@@ -37,6 +38,8 @@ export default function Stake() {
     depositToCurve,
     depositToCurveAndStake,
   } = useStakingData()
+
+  const {estimateSlippage} = useCurvePool()
 
   return (
     <div className="content-section">
@@ -114,6 +117,7 @@ export default function Stake() {
         platform={Platform.Curve}
         deposit={(amount) => depositToCurve(amount, new BigNumber(0))}
         depositAndStake={(amount) => depositToCurveAndStake(amount, new BigNumber(0))}
+        estimateSlippage={(fiduAmount) => estimateSlippage(fiduAmount, new BigNumber(0))}
       />
       <LPAndStakeCard
         key="LPAndStakeCard-usdc"
@@ -125,6 +129,7 @@ export default function Stake() {
         platform={Platform.Curve}
         deposit={(amount) => depositToCurve(new BigNumber(0), amount)}
         depositAndStake={(amount) => depositToCurveAndStake(new BigNumber(0), amount)}
+        estimateSlippage={(usdcAmount) => estimateSlippage(new BigNumber(0), usdcAmount)}
       />
     </div>
   )

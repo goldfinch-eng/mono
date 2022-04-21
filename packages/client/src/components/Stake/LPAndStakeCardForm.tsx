@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js"
-import {useState} from "react"
+import {useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
 import {ERC20Metadata} from "../../ethereum/erc20"
@@ -14,6 +14,7 @@ type LPAndStakeCardFormProps = {
   stakingApy: BigNumber
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>
+  estimateSlippage: (BigNumber) => Promise<BigNumber>
 }
 
 const Container = styled.div`
@@ -34,6 +35,7 @@ export default function LPAndStakeCardForm({
   stakingApy,
   deposit,
   depositAndStake,
+  estimateSlippage,
 }: LPAndStakeCardFormProps) {
   const formMethods = useForm()
 
@@ -42,6 +44,12 @@ export default function LPAndStakeCardForm({
   const [amountToDeposit, setAmountToDeposit] = useState(0)
 
   const debouncedSetAmountToDeposit = useDebounce(setAmountToDeposit, 200)
+
+  useEffect(() => {
+    estimateSlippage(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(
+      (slippage) => console.log(slippage.toString(10))
+    )
+  }, [amountToDeposit])
 
   function onChange() {
     debouncedSetAmountToDeposit(formMethods.getValues("amountToDeposit"))
