@@ -20,7 +20,7 @@ export interface ModalProps {
   /**
    * The max width of the modal.
    */
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   /**
    * Heading that appears at the top of the modal
    */
@@ -69,7 +69,9 @@ export function Modal({
           <div
             className={clsx(
               "relative mx-2 my-4 w-full rounded-xl border border-sand-100 bg-white py-6 shadow-2xl",
-              size === "sm"
+              size === "xs"
+                ? "max-w-screen-xs"
+                : size === "sm"
                 ? "max-w-screen-sm"
                 : size === "md"
                 ? "max-w-screen-md"

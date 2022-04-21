@@ -1,4 +1,5 @@
 const colors = require("tailwindcss/colors");
+const defaultTheme = require('tailwindcss/defaultTheme')
 
 module.exports = {
   content: [
@@ -72,6 +73,10 @@ module.exports = {
     fontFamily: {
       sans: ['"Inter"', "sans-serif"],
       serif: ['"Newsreader"', "serif"],
+    },
+    screens: {
+      xs: "400px",
+      ...defaultTheme.screens
     },
     extend: {
       keyframes: {

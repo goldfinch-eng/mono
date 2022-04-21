@@ -42,4 +42,5 @@ type GfiPrice {
 extend type Query {
   currentUser: AppUser!
   gfi: Gfi
+  isWalletModalOpen: Boolean!
 }

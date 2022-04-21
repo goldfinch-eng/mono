@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { Button, Input, Link } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
-import { refreshCurrentUserUsdcBalance } from "@/lib/graphql/local-state/actions";
+import { refreshCurrentUserUsdcBalance } from "@/lib/state/actions";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 

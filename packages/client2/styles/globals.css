@@ -27,6 +27,15 @@
   }
 }
 
+@layer components {
+  .spinner .spinner-gradient {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-image: conic-gradient(rgba(0, 0, 0, 0), currentColor);
+  }
+}
+
 @layer utilities {
   .focused {
     @apply ring-2 ring-purple-300;
