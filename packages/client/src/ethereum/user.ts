@@ -70,10 +70,10 @@ import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, Community
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
-import {GoldfinchProtocol, getCachedPastEvents} from "./GoldfinchProtocol"
+import {getCachedPastEvents, GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
-import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
+import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition} from "./pool"
 import {
   getBackerMerkleDirectDistributorInfo,
   getBackerMerkleDistributorInfo,
@@ -169,18 +169,14 @@ class UserStakingRewards {
           tokenIds,
           Promise.all(
             tokenIds.map((tokenId) =>
-              stakingRewards.contract.readOnly.methods
-                .positions(tokenId)
-                .call(undefined, currentBlock.number)
-                .then(async (rawPosition) => {
-                  const storedPosition = UserStakingRewards.parseStoredPosition(rawPosition)
-                  const optimisticIncrement = await stakingRewards.calculatePositionOptimisticIncrement(
-                    tokenId,
-                    storedPosition.rewards,
-                    currentBlock
-                  )
-                  return {storedPosition, optimisticIncrement}
-                })
+              stakingRewards.getStoredPosition(tokenId, currentBlock).then(async (storedPosition) => {
+                const optimisticIncrement = await stakingRewards.calculatePositionOptimisticIncrement(
+                  tokenId,
+                  storedPosition.rewards,
+                  currentBlock
+                )
+                return {storedPosition, optimisticIncrement}
+              })
             )
           ),
           Promise.all(
@@ -272,33 +268,6 @@ class UserStakingRewards {
 
   static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
     return defaultSum(positions.map((position) => position.granted))
-  }
-
-  static parseStoredPosition(tuple: {
-    0: string
-    1: [string, string, string, string, string, string]
-    2: string
-    3: string
-    4: string
-    5: string
-    6: string
-  }): StoredPosition {
-    return {
-      amount: new BigNumber(tuple[0]),
-      rewards: {
-        totalUnvested: new BigNumber(tuple[1][0]),
-        totalVested: new BigNumber(tuple[1][1]),
-        totalPreviouslyVested: new BigNumber(tuple[1][2]),
-        totalClaimed: new BigNumber(tuple[1][3]),
-        startTime: parseInt(tuple[1][4], 10),
-        endTime: parseInt(tuple[1][5], 10),
-      },
-      leverageMultiplier: new BigNumber(tuple[2]),
-      lockedUntil: parseInt(tuple[3], 10),
-      positionType: parseInt(tuple[4]),
-      unsafeEffectiveMultiplier: new BigNumber(tuple[5]),
-      unsafeBaseTokenExchangeRate: new BigNumber(tuple[6]),
-    }
   }
 }
 
