@@ -29,6 +29,23 @@ const StyledButton = styled.button<{small: boolean}>`
   font-size: ${({small}) => (small ? "20px" : "inherit")};
 `
 
+const Message = styled.div`
+  font-size: ${({theme}) => theme.typography.fontSize.sansSizeS};
+  font-weight: normal;
+  text-align: center;
+  padding: 24px;
+  border-radius: 6px;
+  margin-top: 30px;
+`
+
+const MessageError = styled(Message)`
+  background-color: ${({theme}) => theme.colors.redXLight};
+`
+
+const MessageWarning = styled(Message)`
+  background-color: ${({theme}) => theme.colors.yellow};
+`
+
 export default function LPAndStakeCardForm({
   depositToken,
   maxAmountToDeposit,
@@ -132,6 +149,12 @@ export default function LPAndStakeCardForm({
               {submitButtonText}
             </StyledButton>
           </div>
+          {isVeryHighSlippage && (
+            <MessageError>Error: Price impact is too high. Reduce the amount you're depositing.</MessageError>
+          )}
+          {!isVeryHighSlippage && isHighSlippage && (
+            <MessageWarning>Warning: High price impact. Consider reducing the amount you're depositing.</MessageWarning>
+          )}
         </div>
       </FormProvider>
     </div>
