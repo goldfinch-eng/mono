@@ -480,6 +480,7 @@ describe("BackerRewards", () => {
             icon: "foo.png",
             description: "asdf",
             launchTime: currentBlock.timestamp,
+            allowedUIDTypes: [0],
           }
 
           callBackerRewardsPoolsMock1 = mock({
@@ -523,6 +524,7 @@ describe("BackerRewards", () => {
             icon: "foo.png",
             description: "asdf",
             launchTime: currentBlock.timestamp + 1,
+            allowedUIDTypes: [0],
           }
 
           callBackerRewardsPoolsMock2 = mock({
@@ -566,6 +568,7 @@ describe("BackerRewards", () => {
             icon: "foo.png",
             description: "asdf",
             launchTime: currentBlock.timestamp + 2,
+            allowedUIDTypes: [0],
           }
 
           callBackerRewardsPoolsMock3 = mock({

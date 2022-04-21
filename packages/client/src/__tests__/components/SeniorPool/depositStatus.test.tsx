@@ -4,10 +4,10 @@ import {BigNumber} from "bignumber.js"
 import {mock} from "@depay/web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
-import {AppContext} from "../../App"
-import DepositStatus from "../../components/depositStatus"
-import {GFILoaded} from "../../ethereum/gfi"
-import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {AppContext} from "../../../App"
+import DepositStatus from "../../../components/SeniorPool/DepositStatus"
+import {GFILoaded} from "../../../ethereum/gfi"
+import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {
   CapitalProvider,
   fetchCapitalProviderData,
@@ -16,22 +16,22 @@ import {
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
-} from "../../ethereum/pool"
-import {UserLoaded} from "../../ethereum/user"
-import * as utils from "../../ethereum/utils"
-import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
-import {BlockInfo} from "../../utils"
-import getWeb3 from "../../web3"
-import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
-import {toDisplayPercent} from "../rewards/__utils__/display"
-import {mockCapitalProviderCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
+} from "../../../ethereum/pool"
+import {UserLoaded} from "../../../ethereum/user"
+import * as utils from "../../../ethereum/utils"
+import {assertWithLoadedInfo, Loaded} from "../../../types/loadable"
+import {BlockInfo} from "../../../utils"
+import getWeb3 from "../../../web3"
+import {defaultCurrentBlock, getDeployments, network} from "../../rewards/__utils__/constants"
+import {toDisplayPercent} from "../../rewards/__utils__/display"
+import {mockCapitalProviderCalls, resetAirdropMocks} from "../../rewards/__utils__/mocks"
 import {
   prepareBaseDeps,
   prepareUserRelatedDeps,
   setupClaimableStakingReward,
   setupNewStakingReward,
   setupPartiallyClaimedStakingReward,
-} from "../rewards/__utils__/scenarios"
+} from "../../rewards/__utils__/scenarios"
 
 mock({
   blockchain: "ethereum",

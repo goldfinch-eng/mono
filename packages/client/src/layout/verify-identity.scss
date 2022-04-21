@@ -12,7 +12,7 @@
   .title {
     font-size: $sans-size-m;
     font-weight: 500;
-    margin-bottom: 1em;
+    margin-bottom: 40px;
   }
 
   .message {
@@ -20,10 +20,19 @@
   }
 }
 
-.verify-types {
-  display: grid;
-  gap: 15px;
-  grid-template-columns: 1fr;
+.link {
+  text-decoration: underline;
+  color: $blue-dark;
+}
+
+.group-label {
+  font-size: $sans-size-m;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+button {
+  width: 33%;
 }
 
 .verify-step-label .icon {
@@ -32,24 +41,13 @@
   width: 24px;
 }
 
-.link {
-  text-decoration: underline;
-  color: $blue-dark;
-}
-
-@media only screen and (min-width: 750px) {
-  .verify-types {
-    grid-template-columns: 1fr 1fr;
-  }
+.value-option {
+  margin-bottom: 15px;
 }
 
 @media only screen and (min-width: $screen-l) {
   .verify-step-label .icon {
     height: 26px;
     width: 26px;
-  }
-
-  .verify-types {
-    grid-template-columns: 1fr 1fr 1fr;
   }
 }

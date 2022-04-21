@@ -62,11 +62,15 @@ export function ActionsContainer({
     currentTimestamp && tranchedPool && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
 
   if (tranchedPool && tranchedPool.creditLine.termEndTime.isZero() && isCurrentTimeBeforePoolFundableAt) {
-    depositAction = (e) => {
+    depositAction = () => {
       setAction("")
     }
     depositDisabled = true
   }
+
+  // Check if user has any of the tranchedPool required UID's
+  const uidTypeToBalance = user?.info.value.uidTypeToBalance || {}
+  const hasRequiredUIDType: boolean = !!tranchedPool?.allowedUIDTypes.some((uidType) => !!uidTypeToBalance[uidType])
 
   let withdrawAction
   let withdrawDisabled = true
@@ -76,7 +80,7 @@ export function ActionsContainer({
     !tranchedPool?.isPaused &&
     !backer.availableToWithdrawInDollars.isZero() &&
     !tranchedPool?.metadata?.disabled &&
-    user?.info.value.goListed
+    (user?.info.value.goListed || hasRequiredUIDType)
   ) {
     withdrawAction = (e) => {
       setAction("withdraw")
