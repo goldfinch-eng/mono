@@ -1225,7 +1225,7 @@ export class User {
                       (sum, amount) => new BigNumber(amount).plus(sum),
                       new BigNumber(0)
                     ),
-                    units: this.getUnitsForStakedPositionType(parseInt(position.positionType)),
+                    units: this.getUnitsForStakedPositionType(position.positionType),
                   }
                 case REWARD_PAID_EVENT:
                   return {
@@ -1251,7 +1251,7 @@ export class User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  getUnitsForStakedPositionType(stakedPositionTypeValue: number): AmountUnits {
+  getUnitsForStakedPositionType(stakedPositionTypeValue: string): AmountUnits {
     const positionType = getStakedPositionTypeByValue(stakedPositionTypeValue)
     switch (positionType) {
       case StakedPositionType.Fidu:
