@@ -11,6 +11,50 @@ import BigNumber from "bignumber.js"
 import {Platform} from "./StakingToken"
 import StakingCardMigrateToCurveForm from "./StakingCardMigrateToCurveForm"
 import useCurvePool from "../../hooks/useCurvePool"
+import {iconOutArrow} from "../icons"
+
+const SectionHeader = styled.div`
+  margin-bottom: 0;
+  padding-bottom: 12px;
+`
+
+const SectionHeaderWithLink = styled(SectionHeader)`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  div {
+    a {
+      font-size: 15px;
+      text-decoration: underline;
+      color: ${({theme}) => theme.colors.purpDark};
+      font-weight: normal;
+    }
+
+    .icon {
+      display: inline-block;
+      margin: 0 0 0 3px;
+      vertical-align: top;
+      width: 15px;
+
+      path {
+        fill: ${({theme}) => theme.colors.purpDark};
+      }
+    }
+  }
+`
+
+const SectionSubtitle = styled.div`
+  font-size: 14px;
+  font-weight: normal;
+  color: ${({theme}) => theme.colors.purpLight};
+  padding-bottom: 36px;
+
+  > a {
+    color: ${({theme}) => theme.colors.purpLight};
+    text-decoration: underline;
+  }
+`
 
 const StyledStakingHeaderText = styled(StakingHeaderText)`
   font-size: 16px;
@@ -43,9 +87,19 @@ export default function Stake() {
 
   return (
     <div className="content-section">
-      <div className="page-header">
+      <SectionHeader className="page-header">
         <div>Stake</div>
-      </div>
+      </SectionHeader>
+      <SectionSubtitle>
+        Stake FIDU and/or Curve FIDU-USDC-F tokens to earn additional APY.{" "}
+        <a
+          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn more
+        </a>
+      </SectionSubtitle>
       <ConnectionNotice requireUnlock={false} />
       <StakingHeaderGrid>
         <StyledStakingHeaderText justifySelf="start" hideOnSmallerScreens={false}>
@@ -92,9 +146,24 @@ export default function Stake() {
         stake={(amount) => stake(amount, StakedPositionType.CurveLP)}
         unstake={(amount) => unstake(amount, StakedPositionType.CurveLP)}
       />
-      <div className="page-header">
+      <SectionHeaderWithLink className="page-header">
         <div>LP on Curve</div>
-      </div>
+        <div className="link">
+          <a href="https://curve.fi/factory-crypto/23" target="_blank" rel="noopener noreferrer">
+            View on Curve<span className="outbound-link">{iconOutArrow}</span>
+          </a>
+        </div>
+      </SectionHeaderWithLink>
+      <SectionSubtitle>
+        Deposit unstaked FIDU and/or USDC to the FIDU-USDC Curve liquidity pool.{" "}
+        <a
+          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn more
+        </a>
+      </SectionSubtitle>
       <LPAndStakeHeaderGrid>
         <StyledLPAndStakeHeaderText justifySelf="start" hideOnSmallerScreens={false}>
           Token exchange
