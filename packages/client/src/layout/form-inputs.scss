@@ -143,6 +143,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   flex-shrink: 0;
+  width: auto;
 
   &:hover {
     border: 1px solid $purp-dark;
