@@ -157,8 +157,10 @@ function Transactions(props: TransactionsProps) {
         ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
           hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
           hasSeenSupplyInCurrentBlock =
-            hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE || curr.name === STAKE_TX_TYPE
-
+            hasSeenSupplyInCurrentBlock ||
+            [SUPPLY_TX_TYPE, STAKE_TX_TYPE, DEPOSIT_TO_CURVE_TX_TYPE, DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE].includes(
+              curr.name
+            )
           if (
             hasSeenSupplyInCurrentBlock &&
             [
@@ -244,8 +246,22 @@ function Transactions(props: TransactionsProps) {
           amountSuffix = ` ${(tx.data as CurrentTx<typeof tx.name>["data"]).ticker}`
           break
         case DEPOSIT_TO_CURVE_TX_TYPE:
-        case ZAP_STAKE_TO_CURVE_TX_TYPE:
         case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+          const fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          const usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
+            // USDC-only deposit
+            amount = displayDollars(usdcAmount)
+            amountSuffix = " USDC"
+          } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
+            // FIDU-only deposit
+            amount = displayNumber(fiduAmount)
+            amountSuffix = " FIDU"
+          } else {
+            throw new Error("Cannot deposit both FIDU and USDC")
+          }
+          break
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
           direction = "outflow"
           // TODO(@emilyhsia): Display both FIDU and USDC
           amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)

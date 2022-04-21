@@ -1185,10 +1185,22 @@ export class User {
                   }
                 case DEPOSITED_TO_CURVE_EVENT:
                 case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
-                  // TODO(@emilyhsia): Update with multiple amounts and units
-                  return {
-                    amount: eventData.returnValues.fiduAmount,
-                    units: "fidu",
+                  const fiduAmount = eventData.returnValues.fiduAmount
+                  const usdcAmount = eventData.returnValues.usdcAmount
+                  if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
+                    // USDC-only deposit
+                    return {
+                      amount: usdcAmount,
+                      units: "usdc",
+                    }
+                  } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
+                    // FIDU-only deposit
+                    return {
+                      amount: fiduAmount,
+                      units: "fidu",
+                    }
+                  } else {
+                    throw new Error("Cannot deposit both FIDU and USDC")
                   }
                 case UNSTAKED_EVENT:
                   return {
