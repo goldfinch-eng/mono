@@ -16,7 +16,7 @@ import {gfiToDollarsAtomic} from "../ethereum/gfi"
 import {ONE_YEAR_SECONDS} from "../ethereum/utils"
 import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
-import {getERC20Metadata, Ticker, toDecimalString} from "../ethereum/erc20"
+import {getERC20Metadata, getMultiplier, Ticker, toDecimalString} from "../ethereum/erc20"
 
 const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
 
@@ -242,18 +242,22 @@ export default function useStakingData(): StakingData {
     await erc20Approve(usdcAmount, Ticker.USDC, zapper.address)
 
     for (const position of optimalPositionsToUnstake) {
+      const usdcEquivalent = position.amount
+        .times(fiduSharePrice)
+        .div(getMultiplier(Ticker.FIDU))
+        .div(getMultiplier(Ticker.FIDU))
+        .times(getMultiplier(Ticker.USDC))
       await sendFromUser(
-        // TODO(@emilyhsia): Calculate USDC amount to unstake
         zapper.contract.userWallet.methods.zapStakeToCurve(
           position.tokenId,
           position.amount.toString(10),
-          usdcAmount.toString(10)
+          usdcEquivalent.toFixed(0)
         ),
         {
           type: ZAP_STAKE_TO_CURVE_TX_TYPE,
           data: {
             fiduAmount: toDecimalString(position.amount, Ticker.FIDU),
-            usdcAmount: toDecimalString(usdcAmount, Ticker.USDC),
+            usdcAmount: toDecimalString(usdcEquivalent, Ticker.USDC),
           },
         }
       )

@@ -199,7 +199,6 @@ function NetworkWidget(props: NetworkWidgetProps) {
           break
         }
         case UNSTAKE_MULTIPLE_TX_TYPE: {
-          // TODO(@emilyhsia): Should we display this differently?
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)} ${
             (tx.data as CurrentTx<typeof tx.name>["data"]).ticker
           } ${tx.name}`

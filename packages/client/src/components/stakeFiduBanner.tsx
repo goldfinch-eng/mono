@@ -56,7 +56,6 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
           type: STAKE_TX_TYPE,
           data: {
             amount: fiduFromAtomic(amount),
-            // TODO(@emilyhsia): Update with dynamic
             ticker: "FIDU",
           },
         })
