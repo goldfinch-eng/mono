@@ -64,7 +64,11 @@ export default function StakingCardForm({
   const debouncedSetAmountToUnstakeInDecimals = useDebounce(setAmountToUnstakeInDecimals, 200)
 
   function onTabClick(tab: Tab) {
-    setActiveTab(tab)
+    if (tab !== activeTab) {
+      setActiveTab(tab)
+      debouncedSetAmountToUnstakeInDecimals(new BigNumber(0))
+      debouncedSetAmountToStakeInDecimals(new BigNumber(0))
+    }
   }
 
   function onChange() {
@@ -139,7 +143,8 @@ export default function StakingCardForm({
                     <TransactionInput
                       name={formInputName}
                       ticker={token.ticker}
-                      displayTicker={false}
+                      displayTicker={true}
+                      displayUSDCTicker={true}
                       formMethods={formMethods}
                       maxAmount={maxAmountForActiveTabInDecimals.toString(10)}
                       onChange={onChange}

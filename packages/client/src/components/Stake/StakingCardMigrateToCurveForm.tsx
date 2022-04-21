@@ -118,7 +118,7 @@ export default function StakingCardMigrateToCurveForm({
             <TransactionInput
               name={getFormInputName(Ticker.FIDU)}
               ticker={FIDU.ticker}
-              displayTicker={false}
+              displayTicker={true}
               formMethods={formMethods}
               maxAmount={toDecimal(maxFiduAmountToMigrate, Ticker.FIDU).toString(10)}
               onChange={() => onChange(Ticker.FIDU)}
@@ -143,7 +143,8 @@ export default function StakingCardMigrateToCurveForm({
             <TransactionInput
               name={getFormInputName(Ticker.USDC)}
               ticker={USDC.ticker}
-              displayTicker={false}
+              displayTicker={true}
+              displayUSDCTicker={true}
               formMethods={formMethods}
               maxAmount={toDecimal(maxUSDCAmountToDeposit, Ticker.USDC).toString(10)}
               onChange={() => onChange(Ticker.USDC)}

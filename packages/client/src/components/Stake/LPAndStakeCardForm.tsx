@@ -124,7 +124,8 @@ export default function LPAndStakeCardForm({
             <TransactionInput
               name="amountToDeposit"
               ticker={depositToken.ticker}
-              displayTicker={false}
+              displayTicker={true}
+              displayUSDCTicker={true}
               formMethods={formMethods}
               maxAmount={maxAmountInDecimals.toString(10)}
               onChange={onChange}

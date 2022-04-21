@@ -14,6 +14,7 @@ type TransactionInputProps = {
   inputClass?: string
   ticker?: string
   displayTicker?: boolean
+  displayUSDCTicker?: boolean
   notes?: Array<{
     key: string
     content: React.ReactNode
@@ -72,7 +73,9 @@ function TransactionInput(props: TransactionInputProps) {
     <div className="form-field">
       <div className={`form-input-container ${inputClass}`}>
         <div className={`transaction-input ${!!props.error ? "error" : !!props.warning ? "warning" : ""}`}>
-          {ticker === Ticker.USDC && displayTicker && <div className="ticker before">$</div>}
+          {ticker === Ticker.USDC && displayTicker && !props.displayUSDCTicker && (
+            <div className="ticker before">$</div>
+          )}
           <Controller
             control={props.formMethods.control}
             name={name}
@@ -110,7 +113,9 @@ function TransactionInput(props: TransactionInputProps) {
               )
             }}
           />
-          {ticker !== Ticker.USDC && displayTicker && <div className="ticker after">{ticker}</div>}
+          {(ticker !== Ticker.USDC || !!props.displayUSDCTicker) && displayTicker && (
+            <div className="ticker after">{ticker}</div>
+          )}
           {props.rightDecoration}
         </div>
         {noteEls}
