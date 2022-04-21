@@ -24,6 +24,8 @@ type TransactionInputProps = {
     [name: string]: (val: string) => boolean | string
   }
   rightDecoration?: React.ReactNode
+  error?: boolean
+  warning?: boolean
 }
 
 function TransactionInput(props: TransactionInputProps) {
@@ -69,7 +71,7 @@ function TransactionInput(props: TransactionInputProps) {
   return (
     <div className="form-field">
       <div className={`form-input-container ${inputClass}`}>
-        <div className="transaction-input">
+        <div className={`transaction-input ${!!props.error ? "error" : !!props.warning ? "warning" : ""}`}>
           {ticker === Ticker.USDC && displayTicker && <div className="ticker before">$</div>}
           <Controller
             control={props.formMethods.control}

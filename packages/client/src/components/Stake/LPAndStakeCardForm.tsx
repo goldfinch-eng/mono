@@ -42,12 +42,13 @@ export default function LPAndStakeCardForm({
   const [isPending, setIsPending] = useState(false)
   const [shouldStake, setShouldStake] = useState<boolean>(true)
   const [amountToDeposit, setAmountToDeposit] = useState(0)
+  const [estimatedSlippage, setEstimatedSlippage] = useState<BigNumber>(new BigNumber(0))
 
   const debouncedSetAmountToDeposit = useDebounce(setAmountToDeposit, 200)
 
   useEffect(() => {
     estimateSlippage(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(
-      (slippage) => console.log(slippage.toString(10))
+      (slippage) => setEstimatedSlippage(slippage)
     )
   }, [amountToDeposit])
 
@@ -88,6 +89,11 @@ export default function LPAndStakeCardForm({
 
   const submitButtonText = shouldStake ? "Deposit and stake" : "Deposit"
 
+  // Based off of Curve's slippage thresholds
+  // https://github.com/curvefi/crv.finance/blob/main/src/components/slippageInfo/slippageInfo.jsx#L21-L22
+  const isHighSlippage = estimatedSlippage.isLessThan(new BigNumber(-0.5))
+  const isVeryHighSlippage = estimatedSlippage.isLessThan(new BigNumber(-10))
+
   return (
     <div>
       <Container></Container>
@@ -103,6 +109,8 @@ export default function LPAndStakeCardForm({
               formMethods={formMethods}
               maxAmount={maxAmount?.toString(10)}
               onChange={onChange}
+              error={isVeryHighSlippage}
+              warning={isHighSlippage}
               rightDecoration={
                 <button
                   className="enter-max-amount"
@@ -116,7 +124,7 @@ export default function LPAndStakeCardForm({
             />
             <StyledButton
               type="button"
-              disabled={!amountToDeposit || isPending}
+              disabled={!amountToDeposit || isPending || isVeryHighSlippage}
               className="button submit-form"
               onClick={onSubmit}
               small={shouldStake}
