@@ -51,7 +51,6 @@ import {
 import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
-import * as migratev25 from "../blockchain_scripts/migrations/v2.5/migrate"
 
 dotenv.config({path: findEnvLocal()})
 
@@ -119,8 +118,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     // Patch USDC DOMAIN_SEPARATOR to make permit work locally
     await overrideUsdcDomainSeparator()
-
-    await migratev25.main()
   }
 
   // Grant local signer role
