@@ -200,8 +200,8 @@ export default function useStakingData(): StakingData {
           {
             type: DEPOSIT_TO_CURVE_TX_TYPE,
             data: {
-              fiduAmount: toAtomic(fiduAmount, Ticker.FIDU),
-              usdcAmount: toAtomic(usdcAmount, Ticker.USDC),
+              fiduAmount: toDecimalString(fiduAmount, Ticker.FIDU),
+              usdcAmount: toDecimalString(usdcAmount, Ticker.USDC),
             },
           }
         )
@@ -222,8 +222,8 @@ export default function useStakingData(): StakingData {
           {
             type: DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
             data: {
-              fiduAmount: toAtomic(fiduAmount, Ticker.FIDU),
-              usdcAmount: toAtomic(usdcAmount, Ticker.USDC),
+              fiduAmount: toDecimalString(fiduAmount, Ticker.FIDU),
+              usdcAmount: toDecimalString(usdcAmount, Ticker.USDC),
             },
           }
         )

@@ -60,6 +60,7 @@ import NetworkErrors from "./networkErrors"
 import metaMaskLogo from "../images/metamask-logo.svg"
 import walletConnectLogo from "../images/walletconnect-logo.svg"
 import {isWalletConnectProvider} from "../walletConnect"
+import BigNumber from "bignumber.js"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -212,6 +213,19 @@ function NetworkWidget(props: NetworkWidgetProps) {
         }
         case DEPOSIT_TO_CURVE_TX_TYPE:
         case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+          const fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          const usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
+            // USDC-only deposit
+            transactionLabel = `${displayNumber(usdcAmount)} USDC ${tx.name}`
+          } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
+            // FIDU-only deposit
+            transactionLabel = `${displayNumber(fiduAmount)} FIDU ${tx.name}`
+          } else {
+            // FIDU and USDC deposit
+            transactionLabel = `${displayNumber(fiduAmount)} FIDU, ${displayNumber(usdcAmount)} USDC ${tx.name}`
+          }
+          break
         case ZAP_STAKE_TO_CURVE_TX_TYPE: {
           // TODO(@emilyhsia): Display both FIDU and USDC
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
