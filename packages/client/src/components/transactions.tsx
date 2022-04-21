@@ -1,5 +1,6 @@
 import {assertIsString} from "@goldfinch-eng/utils"
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
+import BigNumber from "bignumber.js"
 import _ from "lodash"
 import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
@@ -120,7 +121,7 @@ function Transactions(props: TransactionsProps) {
         ),
       ])
     )
-    let poolTxs: HistoricalTx<KnownEventName>[] = mapEventsToTx(
+    let poolTxs: HistoricalTx<KnownEventName>[] = await mapEventsToTx(
       combinedEvents,
       TRANCHED_POOL_EVENT_TYPES,
       tranchedPoolEventParserConfig

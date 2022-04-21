@@ -17,12 +17,12 @@ import {Ticker, toDecimalString} from "./erc20"
 import {RichAmount, AmountWithUnits, HistoricalTx, TxName} from "../types/transactions"
 import {CombinedRepaymentTx} from "./pool"
 
-function mapEventsToTx<T extends KnownEventName>(
+async function mapEventsToTx<T extends KnownEventName>(
   events: EventData[],
   known: T[],
   config: EventParserConfig<T>
-): HistoricalTx<T>[] {
-  const txs = _.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config))
+): Promise<HistoricalTx<T>[]> {
+  const txs = await Promise.all(_.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config)))
   return _.reverse(_.sortBy(_.compact(txs), ["blockNumber", "transactionIndex"]))
 }
 
@@ -69,11 +69,11 @@ async function populateDates<T extends KnownEventName, U extends HistoricalTx<T>
   )
 }
 
-function mapEventToTx<T extends KnownEventName>(
+async function mapEventToTx<T extends KnownEventName>(
   eventData: EventData,
   known: T[],
   config: EventParserConfig<T>
-): HistoricalTx<T> | undefined {
+): Promise<HistoricalTx<T> | undefined> {
   if (isKnownEventData<T>(eventData, known)) {
     const parsedName = config.parseName(eventData)
     const parsedAmount = await config.parseAmount(eventData)

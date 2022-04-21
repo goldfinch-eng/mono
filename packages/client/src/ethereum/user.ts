@@ -1093,7 +1093,7 @@ export class User {
       getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
         return {
           poolEvents,
-          poolTxs: mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
+          poolTxs: await mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<PoolEventType>) => {
               switch (eventData.event) {
                 case DEPOSIT_MADE_EVENT:
@@ -1134,7 +1134,7 @@ export class User {
         currentBlock
       ),
 
-      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then((overlappingStakingRewardsEvents) => {
+      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
         const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
         const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
           (
@@ -1147,7 +1147,7 @@ export class User {
             currentBlock: overlappingStakingRewardsEvents.currentBlock,
             value: stakedEvents,
           },
-          stakingRewardsTxs: mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
               switch (eventData.event) {
                 case STAKED_EVENT:
