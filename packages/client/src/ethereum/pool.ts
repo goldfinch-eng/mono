@@ -4,11 +4,10 @@ import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
-import {isNumber, isUndefined} from "@goldfinch-eng/utils"
+import {isUndefined} from "@goldfinch-eng/utils"
 import {assertUnreachable, genExhaustiveTuple} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {BlockNumber} from "web3-core"
 import {Contract, EventData, Filter} from "web3-eth-contract"
 import {
   DRAWDOWN_MADE_EVENT,
