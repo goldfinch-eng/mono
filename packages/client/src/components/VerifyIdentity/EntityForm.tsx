@@ -1,3 +1,4 @@
+import {iconOutArrow} from "../icons"
 import TransactionForm from "../transactionForm"
 
 export default function EntityForm({onClose}) {
@@ -6,24 +7,32 @@ export default function EntityForm({onClose}) {
       headerMessage="Entity"
       render={() => {
         return (
-          <>
-            <div className="form-message paragraph">
-              Goldfinch is open to non-U.S. entities, and there may be opportunities soon for U.S. entities that qualify
-              as accredited investors.
+          <div className="info-banner subtle">
+            <div className="message">
+              <p className="font-small">
+                We use Parallel Markets to complete verification for entities. After you have completed verification, we
+                will reach out within 24-72 hours. If you encounter any issues, please reach out to{" "}
+                <a
+                  className="link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="mailto:institutional@goldfinch.finance"
+                >
+                  institutional@goldfinch.finance
+                </a>
+                .
+              </p>
             </div>
-            <div className="form-message paragraph">
-              To verify or pre-verify, please fill out{" "}
-              <a
-                className="link"
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://bridge.parallelmarkets.com/goldfinch"
-              >
-                this form
-              </a>
-              . Then we will reach out with next steps.
-            </div>
-          </>
+            <button
+              className="button submit-form"
+              onClick={(e) => {
+                e.preventDefault()
+                window.open("https://bridge.parallelmarkets.com/goldfinch", "_blank")
+              }}
+            >
+              Get Verified {iconOutArrow}
+            </button>
+          </div>
         )
       }}
       closeForm={onClose}

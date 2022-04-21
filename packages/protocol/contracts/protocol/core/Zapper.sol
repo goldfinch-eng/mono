@@ -68,6 +68,14 @@ contract Zapper is BaseUpgradeablePausable {
     uint256 poolTokenId = tranchedPool.deposit(tranche, usdcAmount);
 
     tranchedPoolZaps[poolTokenId] = Zap(msg.sender, tokenId);
+
+    // Require that the tranched pool's allowance for USDC is reset to zero
+    // at the end of the transaction. `safeApprove` will fail on subsequent invocations
+    // if any "dust" is left behind.
+    require(
+      config.getUSDC().allowance(address(this), address(tranchedPool)) == 0,
+      "Entire allowance of USDC has not been used."
+    );
   }
 
   /// @notice Claim the underlying PoolToken for a zap initiated with `zapStakeToTranchePool`.
@@ -116,6 +124,18 @@ contract Zapper is BaseUpgradeablePausable {
     IStakingRewards stakingRewards = config.getStakingRewards();
     SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), fiduAmount);
     stakingRewards.addToStake(zap.stakingPositionId, fiduAmount);
+
+    // Require that the allowances for both FIDU and USDC are reset to zero
+    // at the end of the transaction. `safeApprove` will fail on subsequent invocations
+    // if any "dust" is left behind.
+    require(
+      config.getUSDC().allowance(address(this), address(seniorPool)) == 0,
+      "Entire allowance of USDC has not been used."
+    );
+    require(
+      config.getFidu().allowance(address(this), address(stakingRewards)) == 0,
+      "Entire allowance of FIDU has not been used."
+    );
   }
 
   /// @notice Zap staked FIDU into staked Curve LP tokens without losing unvested rewards
@@ -141,10 +161,22 @@ contract Zapper is BaseUpgradeablePausable {
 
     if (usdcAmount > 0) {
       SafeERC20.safeTransferFrom(config.getUSDC(), msg.sender, address(this), usdcAmount);
-      SafeERC20.safeApprove(config.getUSDC(), address(stakingRewards), fiduAmount);
+      SafeERC20.safeApprove(config.getUSDC(), address(stakingRewards), usdcAmount);
     }
 
     stakingRewards.depositToCurveAndStakeFrom(msg.sender, fiduAmount, usdcAmount);
+
+    // Require that the allowances for both FIDU and USDC are reset to zero after
+    // at the end of the transaction. `safeApprove` will fail on subsequent invocations
+    // if any "dust" is left behind.
+    require(
+      config.getFidu().allowance(address(this), address(stakingRewards)) == 0,
+      "Entire allowance of FIDU has not been used."
+    );
+    require(
+      config.getUSDC().allowance(address(this), address(stakingRewards)) == 0,
+      "Entire allowance of USDC has not been used."
+    );
   }
 
   function _hasAllowedUID(ITranchedPool pool) internal view returns (bool) {

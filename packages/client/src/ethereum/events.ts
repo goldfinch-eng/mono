@@ -19,16 +19,16 @@ import {gfiFromAtomic} from "./gfi"
 import {RichAmount, AmountWithUnits, HistoricalTx, TxName} from "../types/transactions"
 import {CombinedRepaymentTx} from "./pool"
 
-async function mapEventsToTx<T extends KnownEventName>(
+function mapEventsToTx<T extends KnownEventName>(
   events: EventData[],
   known: T[],
   config: EventParserConfig<T>
-): Promise<HistoricalTx<T>[]> {
-  const txs = await Promise.all(_.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config)))
+): HistoricalTx<T>[] {
+  const txs = _.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config))
   return _.reverse(_.sortBy(_.compact(txs), ["blockNumber", "transactionIndex"]))
 }
 
-type EventParserConfig<T extends KnownEventName> = {
+export type EventParserConfig<T extends KnownEventName> = {
   parseName: (eventData: KnownEventData<T>) => TxName
   parseAmount: (eventData: KnownEventData<T>) => AmountWithUnits
 }
@@ -68,11 +68,11 @@ async function populateDates<T extends KnownEventName, U extends HistoricalTx<T>
   )
 }
 
-async function mapEventToTx<T extends KnownEventName>(
+function mapEventToTx<T extends KnownEventName>(
   eventData: EventData,
   known: T[],
   config: EventParserConfig<T>
-): Promise<HistoricalTx<T> | undefined> {
+): HistoricalTx<T> | undefined {
   if (isKnownEventData<T>(eventData, known)) {
     const parsedName = config.parseName(eventData)
     const parsedAmount = config.parseAmount(eventData)
@@ -88,6 +88,7 @@ async function mapEventToTx<T extends KnownEventName>(
       status: "successful",
       eventId: (eventData as any).id,
       erc20: (eventData as any).erc20,
+      eventData,
     }
   } else {
     console.error(`Unexpected event type: ${eventData.event}. Expected: ${known}`)
