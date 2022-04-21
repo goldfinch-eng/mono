@@ -27,6 +27,7 @@ import {
   expect,
   fiduToUSDC,
   getFirstLog,
+  getTruffleContractAtAddress,
   SECONDS_PER_YEAR,
   usdcVal,
   USDC_DECIMALS,
@@ -776,6 +777,141 @@ describe("BackerRewards", function () {
           const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
           expect(poolTokenClaimableRewards).to.bignumber.equal(new BN(0))
         })
+      })
+    })
+
+    describe("perverse scenario where backer withdraws early", async () => {
+      const previousInterestReceived = 0
+      const totalGFISupply = 100_000_000
+      const maxInterestDollarsEligible = 100_000
+      const totalRewards = 3_000_000
+
+      let tranchedPool: TranchedPoolInstance
+
+      beforeEach(async () => {
+        await setupBackerRewardsContract({
+          totalGFISupply,
+          maxInterestDollarsEligible,
+          totalRewards,
+          previousInterestReceived,
+        })
+        const created = await createPoolWithCreditLine({
+          people: {owner, borrower},
+          goldfinchFactory,
+          juniorFeePercent: new BN(20),
+          limit: usdcVal(100_000),
+          interestApr: interestAprAsBN("100.00"),
+          paymentPeriodInDays: new BN(30),
+          termInDays: new BN(365),
+          lateFeeApr: new BN(0),
+          usdc,
+        })
+        tranchedPool = created.tranchedPool
+      })
+
+      context("backer withdraws before pool is locked", () => {
+        it("should not give them rewards", async () => {
+          const juniorTranchePrincipal = usdcVal(10000)
+
+          // Deposit
+          const response = await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+          const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+          const firstLog = getFirstLog(logs)
+          const tokenId = firstLog.args.tokenId
+
+          // Withdraw before pool is locked
+          await tranchedPool.withdrawMax(tokenId)
+
+          // Some other deposit happens that funds the pool
+          await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+
+          // Borrower draws down and pays back
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await tranchedPool.lockPool({from: borrower})
+          await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
+          await advanceTime({days: new BN(365).toNumber()})
+          const payAmount = juniorTranchePrincipal
+          await erc20Approve(usdc, tranchedPool.address, payAmount, [borrower])
+          await tranchedPool.pay(payAmount, {from: borrower})
+
+          const poolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
+          expect(poolTokenClaimableRewards).to.bignumber.eq(new BN(0))
+        })
+      })
+    })
+
+    describe("perverse scenario in which borrower would drawdown interest they'd previously repaid, to get duplicative rewards from their next repayment", () => {
+      // Currently the tranched pool contract does not behave exactly like one would expect for a term loan,
+      // in that it allows a borrower to drawdown again principal they've previously repaid. (For a term loan, unlike a
+      // revolving loan, one would expect principal not to be able to be borrowed again once repaid.)
+      // This behavior does not pose a problem for the earning of backer rewards; however much interest the
+      // tranched pool calculates the borrower owes, based on whatever drawdown -> repay -> drawdown -> ...
+      // sequence the borrower does, will earn backer rewards.
+      //
+      // What we do want to want to double-check here, though, is that it's not possible for a borrower
+      // to drawdown *interest* they've already repaid. If they could, that *would* be a problem, because it
+      // would enable them to earn duplicative rewards on their interest payments, because the BackerRewards
+      // contract maintains no understanding of how much interest in total it should give rewards for, for a
+      // given pool, so the contract would have no means to "de-duplicate" such payments in its allocation
+      // of rewards.
+
+      let tranchedPool: TranchedPoolInstance
+      const paymentPeriodInDays = new BN(30)
+
+      beforeEach(async () => {
+        const created = await createPoolWithCreditLine({
+          people: {owner, borrower},
+          goldfinchFactory,
+          juniorFeePercent: new BN(20),
+          limit: usdcVal(100_000),
+          interestApr: interestAprAsBN("100.00"),
+          paymentPeriodInDays,
+          termInDays: new BN(365),
+          lateFeeApr: new BN(0),
+          usdc,
+        })
+        tranchedPool = created.tranchedPool
+      })
+
+      it("should be impossible", async () => {
+        // Establish that it is impossible for the borrower to drawdown interest they'd previously repaid.
+        const juniorTranchePrincipal = usdcVal(10000)
+        await tranchedPool.deposit(TRANCHES.Junior, juniorTranchePrincipal)
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await tranchedPool.lockPool({from: borrower})
+
+        const creditLine = await getTruffleContractAtAddress<CreditLineInstance>(
+          "CreditLine",
+          await tranchedPool.creditLine()
+        )
+        const limit = await creditLine.limit()
+        expect(limit).to.bignumber.equal(juniorTranchePrincipal)
+
+        await tranchedPool.drawdown(juniorTranchePrincipal, {from: borrower})
+
+        const balance1 = await creditLine.balance()
+        expect(balance1).to.bignumber.equal(juniorTranchePrincipal)
+        const interestOwed1 = await creditLine.interestOwed()
+        expect(interestOwed1).to.bignumber.equal(new BN(0))
+
+        await advanceTime({days: paymentPeriodInDays.toNumber()})
+
+        const interestPaymentAmount = new BN(821917808)
+        const interestOwed2 = await creditLine.interestOwed()
+        expect(interestOwed2).to.bignumber.equal(new BN(0))
+
+        await tranchedPool.assess()
+
+        const interestOwed3 = await creditLine.interestOwed()
+        expect(interestOwed3).to.bignumber.equal(interestPaymentAmount)
+        await erc20Approve(usdc, tranchedPool.address, interestPaymentAmount, [borrower])
+        await tranchedPool.pay(interestPaymentAmount, {from: borrower})
+
+        const interestOwed4 = await creditLine.interestOwed()
+        expect(interestOwed4).to.bignumber.equal(new BN(0))
+
+        const interestDrawdown = tranchedPool.drawdown(new BN(1), {from: borrower})
+        await expect(interestDrawdown).to.be.rejectedWith(/Insufficient funds in slice/)
       })
     })
   })
@@ -1695,32 +1831,6 @@ describe("BackerRewards", function () {
       expectedPoolTokenClaimableRewards = await backerRewards.poolTokenClaimableRewards(tokenId)
       expect(expectedPoolTokenClaimableRewards).to.bignumber.equal(newTestPoolTokenClaimableRewards)
     }).timeout(LONG_TEST_TIMEOUT)
-  })
-
-  describe("updateGoldfinchConfig", async () => {
-    let otherConfig: GoldfinchConfigInstance
-
-    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
-      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
-      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
-      return {goldfinchConfig}
-    })
-
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
-    })
-
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
-        const tx = await backerRewards.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: otherConfig.address,
-        })
-      })
-    })
   })
 
   describe("Staking-rewards-related view functions", () => {

@@ -39,6 +39,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   uint256 internal constant GFI_MANTISSA = 10**18;
   uint256 internal constant FIDU_MANTISSA = 10**18;
   uint256 internal constant USDC_MANTISSA = 10**6;
+  uint256 internal constant NUM_TRANCHES_PER_SLICE = 2;
 
   struct BackerRewardsInfo {
     uint256 accRewardsPerPrincipalDollar; // accumulator gfi per interest dollar
@@ -104,8 +105,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     uint256 accumulatedRewardsPerTokenAtLastWithdraw;
   }
 
-  uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
-
   /// @notice total amount of GFI rewards available, times 1e18
   uint256 public totalRewards;
 
@@ -140,7 +139,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   /// @notice intialize the first slice of a StakingRewardsPoolInfo
   /// @dev this is _only_ meant to be called on pools that didnt qualify for the backer rewards airdrop
   ///       but were deployed before this contract.
-  function forceIntializeStakingRewardsPoolInfo(
+  function forceInitializeStakingRewardsPoolInfo(
     ITranchedPool pool,
     uint256 fiduSharePriceAtDrawdown,
     uint256 principalDeployedAtDrawdown,
@@ -780,6 +779,9 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /// @notice Returns the junior tranche of a pool given a slice index
+  /// @param pool pool to retreive tranche from
+  /// @param sliceIndex slice index
+  /// @return tranche in specified slice and pool
   function _getJuniorTrancheForTranchedPoolSlice(ITranchedPool pool, uint256 sliceIndex)
     internal
     view
@@ -845,11 +847,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     poolInfo.lastUpdateTime = block.timestamp;
   }
 
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(_msgSender(), address(config));
-  }
-
   /* ======== MODIFIERS  ======== */
 
   modifier onlyPool() {
@@ -858,7 +855,6 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
   }
 
   /* ======== EVENTS ======== */
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event BackerRewardsClaimed(
     address indexed owner,
     uint256 indexed tokenId,

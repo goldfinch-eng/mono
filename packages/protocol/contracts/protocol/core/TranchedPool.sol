@@ -546,15 +546,23 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(amount <= netRedeemable, "Invalid redeem amount");
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
 
+    uint256 interestToRedeem = 0;
+    uint256 principalToRedeem = 0;
+
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
+
+      principalToRedeem = amount;
+
+      config.getPoolTokens().withdrawPrincipal(tokenId, principalToRedeem);
+    } else {
+      interestToRedeem = Math.min(interestRedeemable, amount);
+      principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
+
+      config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
     }
 
-    uint256 interestToRedeem = Math.min(interestRedeemable, amount);
-    uint256 principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
-
-    config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
     safeERC20TransferFrom(config.getUSDC(), address(this), msg.sender, principalToRedeem.add(interestToRedeem));
 
     emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);

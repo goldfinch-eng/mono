@@ -122,18 +122,29 @@ contract Zapper is BaseUpgradeablePausable {
   ///  or paying a withdrawal fee.
   /// @param tokenId A staking position token ID
   /// @param fiduAmount The amount in FIDU from the staked position to zap
-  function zapStakeToCurve(uint256 tokenId, uint256 fiduAmount) public whenNotPaused nonReentrant {
+  /// @param usdcAmount The amount of USDC to deposit into Curve
+  function zapStakeToCurve(
+    uint256 tokenId,
+    uint256 fiduAmount,
+    uint256 usdcAmount
+  ) public whenNotPaused nonReentrant {
     IStakingRewards stakingRewards = config.getStakingRewards();
     require(IERC721(address(stakingRewards)).ownerOf(tokenId) == msg.sender, "Not token owner");
 
     uint256 stakedBalance = stakingRewards.stakedBalanceOf(tokenId);
+    require(fiduAmount > 0, "Cannot zap 0 FIDU");
     require(fiduAmount <= stakedBalance, "cannot unstake more than staked balance");
 
     stakingRewards.unstake(tokenId, fiduAmount);
 
     SafeERC20.safeApprove(config.getFidu(), address(stakingRewards), fiduAmount);
 
-    stakingRewards.depositToCurveAndStakeFrom(msg.sender, fiduAmount, 0);
+    if (usdcAmount > 0) {
+      SafeERC20.safeTransferFrom(config.getUSDC(), msg.sender, address(this), usdcAmount);
+      SafeERC20.safeApprove(config.getUSDC(), address(stakingRewards), fiduAmount);
+    }
+
+    stakingRewards.depositToCurveAndStakeFrom(msg.sender, fiduAmount, usdcAmount);
   }
 
   function _hasAllowedUID(ITranchedPool pool) internal view returns (bool) {
