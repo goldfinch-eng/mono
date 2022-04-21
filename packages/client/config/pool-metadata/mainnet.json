@@ -20,7 +20,8 @@
       "After receiving debt from Addem Capital, all of their portfolio companies have secured Series A equity rounds with renowned investors such as Accel, Monashees, Y Combinator, Mouro Capital (Santander and SV LATAM).",
       "Addem's three-entity approach enables them to fully service. It monitors ongoing facilities without reducing efforts on scouting new opportunities to consolidate their pipeline and avoiding the reliance on third-party services to properly assess the quality of the asset originators' underwriting process and the asset itself.",
       "In Addem's first year of existence, it was recognized by Catalyst Fund and Brighter as one of the top 100 fintech investors across emerging markets."
-    ]
+    ],
+    "allowedUIDTypes": [0, 1, 3, 4]
   },
   "0xb26b42dd5771689d0a7faeea32825ff9710b9c11": {
     "name": "Lend East #1: Emerging Asia Fintech Pool",
