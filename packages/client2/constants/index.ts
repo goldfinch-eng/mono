@@ -8,3 +8,4 @@ export const POOL_METADATA =
     : localhostMetadata;
 
 export const USDC_DECIMALS = 6;
+export const GFI_DECIMALS = 18;

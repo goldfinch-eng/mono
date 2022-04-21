@@ -2,7 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { Erc20 } from "./Erc20";
+export type { Gfi } from "./Gfi";
 export type { SeniorPool } from "./SeniorPool";
 
 export { Erc20__factory } from "./factories/Erc20__factory";
+export { Gfi__factory } from "./factories/Gfi__factory";
 export { SeniorPool__factory } from "./factories/SeniorPool__factory";

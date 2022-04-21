@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useUsdcContract } from "../contracts";
+import { useGfiContract, useUsdcContract } from "../contracts";
 import { useWallet } from "../wallet";
 import { refreshGfiPrice, updateCurrentUserAttributes } from "./actions";
 
@@ -24,4 +24,15 @@ export function useAppInitialization() {
       );
     }
   }, [usdcContract, account]);
+
+  const { gfiContract } = useGfiContract();
+  useEffect(() => {
+    if (account && gfiContract) {
+      gfiContract
+        .balanceOf(account)
+        .then((value) =>
+          updateCurrentUserAttributes({ account: account, gfiBalance: value })
+        );
+    }
+  }, [gfiContract, account]);
 }

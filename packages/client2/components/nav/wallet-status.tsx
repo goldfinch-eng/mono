@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 
-import { Button, Shimmer } from "@/components/design-system";
-import { formatUsdc } from "@/lib/format";
+import { Button, Spinner } from "@/components/design-system";
+import { formatGfi, formatUsdc } from "@/lib/format";
 import { useCurrentUserWalletInfoQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -9,6 +9,7 @@ gql`
   query CurrentUserWalletInfo {
     currentUser @client {
       usdcBalance
+      gfiBalance
     }
   }
 `;
@@ -23,6 +24,9 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const usdcBalance = data?.currentUser.usdcBalance
     ? formatUsdc(data.currentUser.usdcBalance)
     : undefined;
+  const gfiBalance = data?.currentUser.gfiBalance
+    ? formatGfi(data.currentUser.gfiBalance)
+    : undefined;
 
   return (
     <div className="min-w-[320px] space-y-8">
@@ -31,7 +35,13 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         <div className="flex items-center justify-between">
           <div className="font-medium">USDC</div>
           <div>
-            <div>{usdcBalance ?? <Shimmer />}</div>
+            <div>{usdcBalance ?? <Spinner />}</div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="font-medium">GFI</div>
+          <div>
+            <div>{gfiBalance ?? <Spinner />}</div>
           </div>
         </div>
       </div>
