@@ -14,7 +14,6 @@ import "../../interfaces/IPoolTokens.sol";
  *  junior tranche or senior tranche shares of any of the borrower pools.
  * @author Goldfinch
  */
-
 contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
   GoldfinchConfig public config;
@@ -45,6 +44,14 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     uint256 indexed tokenId,
     uint256 principalRedeemed,
     uint256 interestRedeemed,
+    uint256 tranche
+  );
+
+  event TokenPrincipalWithdrawn(
+    address indexed owner,
+    address indexed pool,
+    uint256 indexed tokenId,
+    uint256 principalWithdrawn,
     uint256 tranche
   );
 
@@ -127,6 +134,50 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     token.interestRedeemed = token.interestRedeemed.add(interestRedeemed);
 
     emit TokenRedeemed(ownerOf(tokenId), poolAddr, tokenId, principalRedeemed, interestRedeemed, token.tranche);
+  }
+
+  /** @notice reduce a given pool token's principalAmount and principalRedeemed by a specified amount
+   *  @dev uses safemath to prevent underflow
+   *  @dev this function is only intended for use as part of the v2.6.0 upgrade
+   *    to rectify a bug that allowed users to create a PoolToken that had a
+   *    larger amount of principal than they actually made available to the
+   *    borrower.  This bug is fixed in v2.6.0 but still requires past pool tokens
+   *    to have their principal redeemed and deposited to be rectified.
+   *  @param tokenId id of token to decrease
+   *  @param amount amount to decrease by
+   */
+  function reducePrincipalAmount(uint256 tokenId, uint256 amount) external onlyAdmin {
+    TokenInfo storage tokenInfo = tokens[tokenId];
+    tokenInfo.principalAmount = tokenInfo.principalAmount.sub(amount);
+    tokenInfo.principalRedeemed = tokenInfo.principalRedeemed.sub(amount);
+  }
+
+  /**
+   * @notice Decrement a token's principal amount. This is different from `redeem`, which captures changes to
+   *   principal and/or interest that occur when a loan is in progress.
+   * @param tokenId The token id to update (must be owned by the pool calling this function)
+   * @param principalAmount The incremental amount of principal redeemed (cannot be more than principal deposited)
+   */
+  function withdrawPrincipal(uint256 tokenId, uint256 principalAmount)
+    external
+    virtual
+    override
+    onlyPool
+    whenNotPaused
+  {
+    TokenInfo storage token = tokens[tokenId];
+    address poolAddr = token.pool;
+    require(_msgSender() == poolAddr, "Invalid sender");
+    require(token.principalRedeemed == 0, "Token redeemed");
+    require(token.principalAmount >= principalAmount, "Insufficient principal");
+
+    PoolInfo storage pool = pools[poolAddr];
+    pool.totalMinted = pool.totalMinted.sub(principalAmount);
+    require(pool.totalPrincipalRedeemed <= pool.totalMinted, "Cannot withdraw more than redeemed");
+
+    token.principalAmount = token.principalAmount.sub(principalAmount);
+
+    emit TokenPrincipalWithdrawn(ownerOf(tokenId), poolAddr, tokenId, principalAmount, token.tranche);
   }
 
   /**

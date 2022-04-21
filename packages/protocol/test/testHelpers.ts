@@ -50,6 +50,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
+const FIDU_DECIMALS = new BN(String(1e18))
 const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
@@ -397,10 +398,13 @@ async function deployAllContracts(
   }
 }
 
-async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
-  if (typeof accountToApprove != "string") {
-    throw new Error("Account to approve must be a string!")
+async function erc721Approve(erc721: any, accountToApprove: string, tokenId: BN, fromAccounts: (string | undefined)[]) {
+  for (const fromAccount of fromAccounts) {
+    await erc721.approve(accountToApprove, tokenId, {from: fromAccount})
   }
+}
+
+async function erc20Approve(erc20: any, accountToApprove: string, amount: BN, fromAccounts: (string | undefined)[]) {
   for (const fromAccount of fromAccounts) {
     await erc20.approve(accountToApprove, amount, {from: fromAccount})
   }
@@ -654,6 +658,7 @@ export {
   expect,
   decimals,
   USDC_DECIMALS,
+  FIDU_DECIMALS,
   GFI_DECIMALS,
   BN,
   MAX_UINT,
@@ -676,6 +681,7 @@ export {
   usdcToFidu,
   expectAction,
   deployAllContracts,
+  erc721Approve,
   erc20Approve,
   erc20Transfer,
   getCurrentTimestamp,

@@ -776,7 +776,7 @@ describe("TranchedPool", () => {
         const otherTokenId = firstLog.args.tokenId
 
         await expect(tranchedPool.withdraw(otherTokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
-          /Only the token's pool can redeem/
+          /Invalid sender/
         )
       })
       it("does not allow you to withdraw if no amount is available", async () => {
@@ -816,8 +816,9 @@ describe("TranchedPool", () => {
         expect(await usdc.balanceOf(tranchedPool.address)).to.bignumber.eq("0")
 
         const tokenInfo = await poolTokens.getTokenInfo(tokenId)
-        expect(tokenInfo.principalAmount).to.bignumber.eq(usdcVal(10))
-        expect(tokenInfo.principalRedeemed).to.bignumber.eq(usdcVal(10))
+        // Before lock, principalAmount is decremented on withdraw (rather than incrementing principalRedeemed)
+        expect(tokenInfo.principalAmount).to.bignumber.eq(usdcVal(0))
+        expect(tokenInfo.principalRedeemed).to.bignumber.eq(usdcVal(0))
         expect(tokenInfo.interestRedeemed).to.bignumber.eq("0")
       })
     })
@@ -867,6 +868,12 @@ describe("TranchedPool", () => {
         await expectAction(async () => tranchedPool.withdraw(tokenId, usdcVal(52250).div(new BN(100)))).toChange([
           [async () => await getBalance(owner, usdc), {by: usdcVal(52250).div(new BN(100))}],
         ])
+        const tokenInfo = await poolTokens.getTokenInfo(tokenId)
+        expect(tokenInfo.principalAmount).to.bignumber.eq(usdcVal(500))
+        // After lock, principalRedeemed is incremented on withdraw
+        expect(tokenInfo.principalRedeemed).to.bignumber.eq(usdcVal(500))
+        expect(tokenInfo.interestRedeemed).to.bignumber.eq(usdcVal(225).div(new BN(10)))
+
         // After withdrawing the max, the junior investor should not be able to withdraw more
         await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Invalid redeem amount/)
       })

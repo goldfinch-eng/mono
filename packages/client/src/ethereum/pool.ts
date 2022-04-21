@@ -825,8 +825,8 @@ export type StoredPosition = {
   leverageMultiplier: BigNumber
   lockedUntil: number
   positionType: StakedPositionType
-  effectiveMultiplier: BigNumber
-  baseTokenExchangeRate: BigNumber
+  unsafeEffectiveMultiplier: BigNumber
+  unsafeBaseTokenExchangeRate: BigNumber
 }
 
 // Typechain doesn't generate types for solidity enums, so redefining here

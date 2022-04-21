@@ -307,8 +307,8 @@ class UserStakingRewards {
       leverageMultiplier: new BigNumber(tuple[2]),
       lockedUntil: parseInt(tuple[3], 10),
       positionType: parseInt(tuple[4]),
-      effectiveMultiplier: new BigNumber(tuple[5]),
-      baseTokenExchangeRate: new BigNumber(tuple[6]),
+      unsafeEffectiveMultiplier: new BigNumber(tuple[5]),
+      unsafeBaseTokenExchangeRate: new BigNumber(tuple[6]),
     }
   }
 }
