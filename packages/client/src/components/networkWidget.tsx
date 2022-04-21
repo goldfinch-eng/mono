@@ -213,8 +213,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
         }
         case DEPOSIT_TO_CURVE_TX_TYPE:
         case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
-          const fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
-          const usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          let fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          let usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
           if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
             // USDC-only deposit
             transactionLabel = `${displayNumber(usdcAmount)} USDC ${tx.name}`
@@ -227,10 +227,9 @@ function NetworkWidget(props: NetworkWidgetProps) {
           }
           break
         case ZAP_STAKE_TO_CURVE_TX_TYPE: {
-          // TODO(@emilyhsia): Display both FIDU and USDC
-          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
-            tx.name
-          }`
+          fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          transactionLabel = `${displayNumber(fiduAmount)} FIDU, ${displayNumber(usdcAmount)} USDC ${tx.name}`
           break
         }
         default:

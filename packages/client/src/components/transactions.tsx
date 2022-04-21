@@ -247,12 +247,11 @@ function Transactions(props: TransactionsProps) {
           break
         case DEPOSIT_TO_CURVE_TX_TYPE:
         case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
-          const fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
-          const usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          let fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          let usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
           if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
             // USDC-only deposit
             amount = displayDollars(usdcAmount)
-            amountSuffix = " USDC"
           } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
             // FIDU-only deposit
             amount = displayNumber(fiduAmount)
@@ -262,9 +261,9 @@ function Transactions(props: TransactionsProps) {
           }
           break
         case ZAP_STAKE_TO_CURVE_TX_TYPE:
-          direction = "outflow"
-          // TODO(@emilyhsia): Display both FIDU and USDC
-          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)
+          fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          amount = `${displayNumber(fiduAmount)} FIDU, ${displayDollars(usdcAmount)}`
           break
         default:
           assertUnreachable(tx)

@@ -16,7 +16,7 @@ import {gfiToDollarsAtomic} from "../ethereum/gfi"
 import {ONE_YEAR_SECONDS} from "../ethereum/utils"
 import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
-import {getERC20Metadata, Ticker, toAtomic, toDecimalString} from "../ethereum/erc20"
+import {getERC20Metadata, Ticker, toDecimalString} from "../ethereum/erc20"
 
 const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
 
@@ -252,8 +252,8 @@ export default function useStakingData(): StakingData {
         {
           type: ZAP_STAKE_TO_CURVE_TX_TYPE,
           data: {
-            tokenId: position.tokenId,
-            fiduAmount: position.amount.toString(10),
+            fiduAmount: toDecimalString(position.amount, Ticker.FIDU),
+            usdcAmount: toDecimalString(usdcAmount, Ticker.USDC),
           },
         }
       )

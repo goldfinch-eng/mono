@@ -22,7 +22,7 @@ export const UNSTAKE_MULTIPLE_TX_TYPE = "Unstake"
 export const SUPPLY_TX_TYPE = "Supply"
 export const DEPOSIT_TO_CURVE_TX_TYPE = "Deposit to Curve"
 export const DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE = "Deposit to Curve and Stake"
-export const ZAP_STAKE_TO_CURVE_TX_TYPE = "Zap Stake to Curve"
+export const ZAP_STAKE_TO_CURVE_TX_TYPE = "Migrate to Curve"
 
 /**
  * This type defines the set of transactions that this application supports sending.
@@ -99,10 +99,6 @@ export type CurrentTxDataByType = {
     amount: string
     ticker: string
   }
-  [ZAP_STAKE_TO_CURVE_TX_TYPE]: {
-    tokenId: string
-    fiduAmount: string
-  }
   [MINT_UID_TX_TYPE]: {}
   [WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE]: AmountStringData
   [WITHDRAW_FROM_SENIOR_POOL_TX_TYPE]: {
@@ -127,6 +123,10 @@ export type CurrentTxDataByType = {
     usdcAmount: string
   }
   [DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE]: {
+    fiduAmount: string
+    usdcAmount: string
+  }
+  [ZAP_STAKE_TO_CURVE_TX_TYPE]: {
     fiduAmount: string
     usdcAmount: string
   }
