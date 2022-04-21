@@ -79,7 +79,7 @@ export default function LPAndStakeCardForm({
       <Container></Container>
       <FormProvider {...formMethods}>
         <div>
-          <StyledStakingPrompt stakingApy={stakingApy} onToggle={onStakingPromptToggle} />
+          <StyledStakingPrompt formVal={depositToken.name} stakingApy={stakingApy} onToggle={onStakingPromptToggle} />
           <div className="form-input-label">{amountInputLabel}</div>
           <div className="form-inputs-footer">
             <TransactionInput
