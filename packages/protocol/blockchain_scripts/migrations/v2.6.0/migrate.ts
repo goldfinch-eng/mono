@@ -160,7 +160,7 @@ export async function main() {
 
   const params: Migration260Params = {
     BackerRewards: {
-      totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.005").toString(),
+      totalRewards: new BigNumber((await gfi.totalSupply()).toString()).multipliedBy("0.005").toFixed(),
     },
     StakingRewards: {
       curveEffectiveMultiplier: "750000000000000000",
