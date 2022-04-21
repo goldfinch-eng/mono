@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 
 import { Heading } from "@/components/design-system";
-import { formatUsdc } from "@/lib/format";
+import { formatUsdcAsDollars } from "@/lib/format";
 import { SeniorPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 
 export const SENIOR_POOL_STATUS_FIELDS = gql`
@@ -27,7 +27,9 @@ export function StatusSection({ seniorPool }: StatusSectionProps) {
         <div>
           <div className="text-2xl">
             {seniorPool
-              ? formatUsdc(seniorPool.latestPoolStatus.totalPoolAssetsUsdc)
+              ? formatUsdcAsDollars(
+                  seniorPool.latestPoolStatus.totalPoolAssetsUsdc
+                )
               : "-.--"}
           </div>
           <div className="text-lg text-purple-200">Total pool balance</div>
