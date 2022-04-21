@@ -57,7 +57,7 @@ describe("functions", () => {
         }
       },
     })
-    mockGetBlockchain(mock)
+    mockGetBlockchain(mock as any)
   })
 
   beforeEach(() => {
@@ -286,6 +286,16 @@ describe("functions", () => {
                   {
                     type: "verification/government-id",
                     id: crypto.randomBytes(20).toString("hex"),
+                    attributes: {
+                      status: "failed",
+                      attributes: {
+                        "country-code": null,
+                      },
+                    },
+                  },
+                  {
+                    type: "verification/government-id",
+                    id: crypto.randomBytes(20).toString("hex"),
                     attributes: verificationAttributes,
                   },
                 ],
@@ -347,10 +357,17 @@ describe("functions", () => {
             address: address,
             persona: {status: "created"},
           })
-          const req = generatePersonaCallbackRequest(address, "completed", {}, {countryCode: ""}, {countryCode: "US"})
+          const req = generatePersonaCallbackRequest(
+            address,
+            "completed",
+            {},
+            {countryCode: ""},
+            {countryCode: "US", status: "passed"},
+          )
           await personaCallback(req, expectResponse(200, {status: "success"}))
 
           const userDoc = await users.doc(address.toLowerCase()).get()
+
           expect(userDoc.exists).to.be.true
           expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
           expect(userDoc.data()?.persona?.status).to.eq("completed")

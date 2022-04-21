@@ -376,8 +376,10 @@ function RewardsListItem(props: RewardsListItemProps) {
               <div className={`table-cell col20 numeric ${claimableGFIZeroDisabled}`} data-testid="detail-claimable">
                 {displayNumber(gfiFromAtomic(props.claimableGFI), 2)}
               </div>
-              {actionButtonComponent}
-              <OpenDetails open={open} />
+              <div className="action-button-container">{actionButtonComponent}</div>
+              <div>
+                <OpenDetails open={open} />
+              </div>
             </div>
           </div>
           {open && detailsComponent}

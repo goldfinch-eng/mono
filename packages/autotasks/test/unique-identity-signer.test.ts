@@ -15,6 +15,9 @@ import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
 import {FetchKYCFunction, KYC, UniqueIdentityAbi} from "../unique-identity-signer"
 import * as utils from "../unique-identity-signer/utils"
+import USAccreditedIndividualsList from "../unique-identity-signer/USAccreditedIndividuals.json"
+import USAccreditedEntitiesList from "../unique-identity-signer/USAccreditedEntities.json"
+import NonUSEntitiesList from "../unique-identity-signer/NonUSEntities.json"
 
 const TEST_TIMEOUT = 30000
 
@@ -302,6 +305,19 @@ describe("unique-identity-signer", () => {
           expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
         }).timeout(TEST_TIMEOUT)
       })
+    })
+  })
+
+  describe("eligible json files", () => {
+    it("checks for duplicates", () => {
+      const data = [USAccreditedIndividualsList, USAccreditedEntitiesList, NonUSEntitiesList]
+      data.reduce((acc, curr) => {
+        if (acc.some((x) => curr.includes(x))) {
+          throw new Error("Array intersection")
+        }
+        return [...acc, ...curr]
+      })
+      return true
     })
   })
 })

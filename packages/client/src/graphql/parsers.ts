@@ -75,7 +75,9 @@ async function parseTranchedPool(
     tranchedPool.address === "0xd09a57127bc40d680be7cb061c2a6629fe71abef" ||
     tranchedPool.address === "0x00c27fc71b159a346e179b4a1608a0865e8a7470" ||
     tranchedPool.address === "0x418749e294cabce5a714efccc22a8aade6f9db57" ||
-    tranchedPool.address === "0xb26b42dd5771689d0a7faeea32825ff9710b9c11"
+    tranchedPool.address === "0xb26b42dd5771689d0a7faeea32825ff9710b9c11" ||
+    tranchedPool.address === "0x89d7c618a4eef3065da8ad684859a547548e6169" ||
+    tranchedPool.address === "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3"
   ) {
     tranchedPool.estimatedLeverageRatio = new BigNumber(4)
   }
