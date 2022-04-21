@@ -17,7 +17,7 @@ interface WalletInfoProps {
   onWalletDisconnect: () => void;
 }
 
-export function WalletInfo({ onWalletDisconnect }: WalletInfoProps) {
+export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const { connector } = useWallet();
   const { data } = useCurrentUserWalletInfoQuery();
   const usdcBalance = data?.currentUser.usdcBalance
