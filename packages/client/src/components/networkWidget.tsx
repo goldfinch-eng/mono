@@ -199,12 +199,15 @@ function NetworkWidget(props: NetworkWidgetProps) {
         }
         case UNSTAKE_MULTIPLE_TX_TYPE: {
           // TODO(@emilyhsia): Should we display this differently?
-          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)} ${tx.name}`
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)} ${
+            (tx.data as CurrentTx<typeof tx.name>["data"]).ticker
+          } ${tx.name}`
           break
         }
         case STAKE_TX_TYPE: {
-          // TODO(@emilyhsia): Update with dynamic ticker
-          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} FIDU ${tx.name}`
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} ${
+            (tx.data as CurrentTx<typeof tx.name>["data"]).ticker
+          } ${tx.name}`
           break
         }
         case DEPOSIT_TO_CURVE_TX_TYPE:

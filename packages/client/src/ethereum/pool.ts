@@ -858,10 +858,10 @@ export enum StakedPositionType {
   CurveLP = 1,
 }
 
-export function getStakedPositionTypeByValue(value: number): StakedPositionType {
-  if (value == 0) {
+export function getStakedPositionTypeByValue(value: string): StakedPositionType {
+  if (parseInt(value) === 0) {
     return StakedPositionType.Fidu
-  } else if (value == 1) {
+  } else if (parseInt(value) === 1) {
     return StakedPositionType.CurveLP
   } else {
     throw new Error(`Unknown staked position type: ${value}`)

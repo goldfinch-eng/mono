@@ -119,10 +119,7 @@ export type CurrentTxDataByType = {
   }
   [UNSTAKE_MULTIPLE_TX_TYPE]: {
     totalAmount: string
-    tokens: Array<{
-      id: string
-      amount: string
-    }>
+    ticker: string
   }
   [SUPPLY_TX_TYPE]: AmountStringData
   [DEPOSIT_TO_CURVE_TX_TYPE]: {

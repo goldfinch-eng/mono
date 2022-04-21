@@ -16,7 +16,7 @@ import {gfiToDollarsAtomic} from "../ethereum/gfi"
 import {ONE_YEAR_SECONDS} from "../ethereum/utils"
 import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
-import {getERC20Metadata, Ticker, toAtomic} from "../ethereum/erc20"
+import {getERC20Metadata, Ticker, toAtomic, toDecimalString} from "../ethereum/erc20"
 
 const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
 
@@ -165,7 +165,7 @@ export default function useStakingData(): StakingData {
       sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType), {
         type: STAKE_TX_TYPE,
         data: {
-          amount: toAtomic(amount, ticker),
+          amount: toDecimalString(amount, ticker),
           ticker: getERC20Metadata(ticker).ticker.toString(),
         },
       })
@@ -175,6 +175,7 @@ export default function useStakingData(): StakingData {
   async function unstake(amount: BigNumber, positionType: StakedPositionType) {
     assertNonNullable(stakingRewards)
 
+    const ticker = tickerForStakedPositionType(positionType)
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
     const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
     const amounts = optimalPositionsToUnstake.map(({amount}) => amount.toString(10))
@@ -182,10 +183,8 @@ export default function useStakingData(): StakingData {
     sendFromUser(stakingRewards.contract.userWallet.methods.unstakeMultiple(tokenIds, amounts), {
       type: UNSTAKE_MULTIPLE_TX_TYPE,
       data: {
-        totalAmount: amount.toString(10),
-        tokens: optimalPositionsToUnstake.map(({tokenId, amount}) => {
-          return {id: tokenId, amount: amount.toString(10)}
-        }),
+        totalAmount: toDecimalString(amount, ticker),
+        ticker: ticker.toString(),
       },
     })
   }
