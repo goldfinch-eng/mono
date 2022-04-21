@@ -31,6 +31,7 @@ export default function StakingCardMigrateToCurveForm({
 }: StakingCardMigrateToCurveFormProps) {
   const formMethods = useForm()
 
+  const [isPending, setIsPending] = useState(false)
   const [fiduAmountToMigrate, setFiduAmountToMigrate] = useState(0)
   const [usdcAmountToDeposit, setUsdcAmountToDeposit] = useState(0)
 
@@ -86,10 +87,11 @@ export default function StakingCardMigrateToCurveForm({
   async function onSubmit(e) {
     e.preventDefault()
 
-    await migrate(
+    setIsPending(true)
+    migrate(
       new BigNumber(fiduAmountToMigrate).multipliedBy(new BigNumber(10).pow(FIDU.decimals)),
       new BigNumber(usdcAmountToDeposit).multipliedBy(new BigNumber(10).pow(USDC.decimals))
-    )
+    ).then(() => setIsPending(false))
   }
 
   return (
@@ -144,7 +146,12 @@ export default function StakingCardMigrateToCurveForm({
               }
             />
 
-            <button type="button" disabled={false} className="button submit-form" onClick={onSubmit}>
+            <button
+              type="button"
+              disabled={!fiduAmountToMigrate || !usdcAmountToDeposit || isPending}
+              className="button submit-form"
+              onClick={onSubmit}
+            >
               Migrate
             </button>
           </div>

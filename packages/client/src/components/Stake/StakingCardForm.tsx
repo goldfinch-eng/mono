@@ -48,6 +48,7 @@ export default function StakingCardForm({
 }: StakingCardFormProps) {
   const formMethods = useForm()
 
+  const [isPending, setIsPending] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Stake)
   const [amountToStake, setAmountToStake] = useState(0)
   const [amountToUnstake, setAmountToUnstake] = useState(0)
@@ -79,12 +80,17 @@ export default function StakingCardForm({
   }
 
   function onSubmit(e) {
+    setIsPending(true)
     switch (activeTab) {
       case Tab.Stake:
-        stake(new BigNumber(amountToStake).multipliedBy(new BigNumber(10).pow(token.decimals)))
+        stake(new BigNumber(amountToStake).multipliedBy(new BigNumber(10).pow(token.decimals))).then(() =>
+          setIsPending(false)
+        )
         break
       case Tab.Unstake:
-        unstake(new BigNumber(amountToUnstake).multipliedBy(new BigNumber(10).pow(token.decimals)))
+        unstake(new BigNumber(amountToUnstake).multipliedBy(new BigNumber(10).pow(token.decimals))).then(() =>
+          setIsPending(false)
+        )
         break
     }
   }
@@ -143,7 +149,7 @@ export default function StakingCardForm({
                     />
                     <button
                       type="button"
-                      disabled={!amountForActiveTab}
+                      disabled={!amountForActiveTab || isPending}
                       className="button submit-form"
                       onClick={onSubmit}
                     >

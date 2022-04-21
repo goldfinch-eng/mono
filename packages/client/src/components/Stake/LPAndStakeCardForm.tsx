@@ -37,6 +37,7 @@ export default function LPAndStakeCardForm({
 }: LPAndStakeCardFormProps) {
   const formMethods = useForm()
 
+  const [isPending, setIsPending] = useState(false)
   const [shouldStake, setShouldStake] = useState<boolean>(true)
   const [amountToDeposit, setAmountToDeposit] = useState(0)
 
@@ -59,10 +60,15 @@ export default function LPAndStakeCardForm({
   }
 
   function onSubmit(e) {
+    setIsPending(true)
     if (shouldStake) {
-      depositAndStake(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals)))
+      depositAndStake(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(
+        () => setIsPending(false)
+      )
     } else {
-      deposit(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals)))
+      deposit(new BigNumber(amountToDeposit).multipliedBy(new BigNumber(10).pow(depositToken.decimals))).then(() =>
+        setIsPending(false)
+      )
     }
   }
 
@@ -102,7 +108,7 @@ export default function LPAndStakeCardForm({
             />
             <StyledButton
               type="button"
-              disabled={!amountToDeposit}
+              disabled={!amountToDeposit || isPending}
               className="button submit-form"
               onClick={onSubmit}
               small={shouldStake}
