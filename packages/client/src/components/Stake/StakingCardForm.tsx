@@ -96,12 +96,21 @@ export default function StakingCardForm({
     setIsPending(true)
     switch (activeTab) {
       case Tab.Stake:
-        stake(toAtomicAmount(amountToStakeInDecimals, token.decimals)).then(() => setIsPending(false))
+        stake(toAtomicAmount(amountToStakeInDecimals, token.decimals)).then(onSubmitComplete)
         break
       case Tab.Unstake:
-        unstake(toAtomicAmount(amountToUnstakeInDecimals, token.decimals)).then(() => setIsPending(false))
+        unstake(toAtomicAmount(amountToUnstakeInDecimals, token.decimals)).then(onSubmitComplete)
         break
     }
+  }
+
+  function onSubmitComplete() {
+    setIsPending(false)
+
+    // Clear form fields
+    formMethods.reset()
+    setAmountToStakeInDecimals(new BigNumber(0))
+    setAmountToUnstakeInDecimals(new BigNumber(0))
   }
 
   return (

@@ -91,10 +91,18 @@ export default function LPAndStakeCardForm({
   function onSubmit(e) {
     setIsPending(true)
     if (shouldStake) {
-      depositAndStake(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(() => setIsPending(false))
+      depositAndStake(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(onSubmitComplete)
     } else {
-      deposit(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(() => setIsPending(false))
+      deposit(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(onSubmitComplete)
     }
+  }
+
+  function onSubmitComplete() {
+    setIsPending(false)
+
+    // Clear form fields
+    formMethods.reset()
+    setAmountToDepositInDecimals(new BigNumber(0))
   }
 
   const maxAmountInDecimals = maxAmountToDeposit.div(new BigNumber(10).pow(depositToken.decimals))

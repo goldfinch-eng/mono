@@ -100,7 +100,16 @@ export default function StakingCardMigrateToCurveForm({
     migrate(
       toAtomicAmount(fiduAmountToMigrateInDecimals, FIDU.decimals),
       toAtomicAmount(usdcAmountToDepositInDecimals, USDC.decimals)
-    ).then(() => setIsPending(false))
+    ).then(onSubmitComplete)
+  }
+
+  function onSubmitComplete() {
+    setIsPending(false)
+
+    // Clear form fields
+    formMethods.reset()
+    setFiduAmountToMigrateInDecimals(new BigNumber(0))
+    setUsdcAmountToDepositInDecimals(new BigNumber(0))
   }
 
   const hasSufficientBalance =

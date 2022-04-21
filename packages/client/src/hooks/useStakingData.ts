@@ -155,7 +155,7 @@ export default function useStakingData(): StakingData {
     setUSDCUnstaked(unstakedUSDC)
   }
 
-  async function stake(amount: BigNumber, positionType: StakedPositionType) {
+  async function stake(amount: BigNumber, positionType: StakedPositionType): Promise<void> {
     assertNonNullable(stakingRewards)
     assertNonNullable(user)
 
@@ -172,7 +172,7 @@ export default function useStakingData(): StakingData {
     )
   }
 
-  async function unstake(amount: BigNumber, positionType: StakedPositionType) {
+  async function unstake(amount: BigNumber, positionType: StakedPositionType): Promise<void> {
     assertNonNullable(stakingRewards)
 
     const ticker = tickerForStakedPositionType(positionType)
@@ -180,7 +180,7 @@ export default function useStakingData(): StakingData {
     const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
     const amounts = optimalPositionsToUnstake.map(({amount}) => amount.toString(10))
 
-    sendFromUser(stakingRewards.contract.userWallet.methods.unstakeMultiple(tokenIds, amounts), {
+    return sendFromUser(stakingRewards.contract.userWallet.methods.unstakeMultiple(tokenIds, amounts), {
       type: UNSTAKE_MULTIPLE_TX_TYPE,
       data: {
         totalAmount: toDecimalString(amount, ticker),
@@ -189,7 +189,7 @@ export default function useStakingData(): StakingData {
     })
   }
 
-  async function depositToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber) {
+  async function depositToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<void> {
     assertNonNullable(stakingRewards)
 
     return erc20Approve(fiduAmount, Ticker.FIDU, stakingRewards.address)
@@ -208,7 +208,7 @@ export default function useStakingData(): StakingData {
       )
   }
 
-  async function depositToCurveAndStake(fiduAmount: BigNumber, usdcAmount: BigNumber) {
+  async function depositToCurveAndStake(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<void> {
     assertNonNullable(stakingRewards)
 
     return erc20Approve(fiduAmount, Ticker.FIDU, stakingRewards.address)
