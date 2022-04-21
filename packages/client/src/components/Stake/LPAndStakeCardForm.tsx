@@ -147,7 +147,7 @@ export default function LPAndStakeCardForm({
               disabled={amountToDepositInDecimals.isZero() || isPending || isVeryHighSlippage || !hasSufficientBalance}
               className="button submit-form"
               onClick={onSubmit}
-              small={shouldStake}
+              small={shouldStake || !hasSufficientBalance}
             >
               {submitButtonText}
             </StyledButton>
