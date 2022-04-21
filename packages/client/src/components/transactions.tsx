@@ -1,19 +1,20 @@
+import {assertIsString} from "@goldfinch-eng/utils"
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
 import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
+import {mapEventsToTx, populateDates} from "../ethereum/events"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {tranchedPoolEventParserConfig} from "../ethereum/tranchedPool"
+import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
+import {useCurrentRoute} from "../hooks/useCurrentRoute"
 import {
-  DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
-  KnownEventData,
   KnownEventName,
   PAYMENT_APPLIED_EVENT,
-  TranchedPoolEventType,
-  TRANCHED_POOL_EVENT_TYPES,
-  WITHDRAWAL_MADE_EVENT,
   POOL_CREATED_EVENT,
+  TRANCHED_POOL_EVENT_TYPES,
 } from "../types/events"
-import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {
   ACCEPT_TX_TYPE,
   BORROW_TX_TYPE,
@@ -22,32 +23,29 @@ import {
   DRAWDOWN_TX_NAME,
   ERC20_APPROVAL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
+  HistoricalTx,
+  INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME,
   INTEREST_COLLECTED_TX_NAME,
   INTEREST_PAYMENT_TX_NAME,
   MINT_UID_TX_TYPE,
   PAYMENT_TX_TYPE,
   PRINCIPAL_COLLECTED_TX_NAME,
+  PRINCIPAL_PAYMENT_TX_NAME,
   RESERVE_FUNDS_COLLECTED_TX_NAME,
   STAKE_TX_TYPE,
   SUPPLY_AND_STAKE_TX_TYPE,
   SUPPLY_TX_TYPE,
   Tx,
   TxType,
-  HistoricalTx,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
-  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
 } from "../types/transactions"
-import {getEtherscanSubdomain, MAX_UINT} from "../ethereum/utils"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
 import {iconCircleCheckLg, iconCircleDownLg, iconCircleUpLg, iconOutArrow} from "./icons"
-import {mapEventsToTx, populateDates} from "../ethereum/events"
-import BigNumber from "bignumber.js"
-import {useCurrentRoute} from "../hooks/useCurrentRoute"
-import {assertIsString} from "@goldfinch-eng/utils"
 
 type TransactionsProps = {
   currentTxs: CurrentTx<TxType>[]
@@ -116,55 +114,11 @@ function Transactions(props: TransactionsProps) {
         ),
       ])
     )
-    let poolTxs: HistoricalTx<KnownEventName>[] = await mapEventsToTx(combinedEvents, TRANCHED_POOL_EVENT_TYPES, {
-      parseName: (eventData: KnownEventData<TranchedPoolEventType>) => {
-        switch (eventData.event) {
-          case DEPOSIT_MADE_EVENT:
-            return SUPPLY_TX_TYPE
-          case WITHDRAWAL_MADE_EVENT:
-            return WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE
-          case PAYMENT_APPLIED_EVENT:
-            return INTEREST_PAYMENT_TX_NAME
-          case DRAWDOWN_MADE_EVENT:
-            return BORROW_TX_TYPE
-          default:
-            assertUnreachable(eventData.event)
-        }
-      },
-      parseAmount: (eventData: KnownEventData<TranchedPoolEventType>) => {
-        switch (eventData.event) {
-          case DEPOSIT_MADE_EVENT: {
-            return {
-              amount: eventData.returnValues.amount,
-              units: "usdc",
-            }
-          }
-          case WITHDRAWAL_MADE_EVENT: {
-            const sum = new BigNumber(eventData.returnValues.interestWithdrawn).plus(
-              new BigNumber(eventData.returnValues.principalWithdrawn)
-            )
-            return {
-              amount: sum.toString(10),
-              units: "usdc",
-            }
-          }
-          case PAYMENT_APPLIED_EVENT: {
-            return {
-              amount: eventData.returnValues.interestAmount,
-              units: "usdc",
-            }
-          }
-          case DRAWDOWN_MADE_EVENT: {
-            return {
-              amount: eventData.returnValues.amount,
-              units: "usdc",
-            }
-          }
-          default:
-            assertUnreachable(eventData.event)
-        }
-      },
-    })
+    let poolTxs: HistoricalTx<KnownEventName>[] = mapEventsToTx(
+      combinedEvents,
+      TRANCHED_POOL_EVENT_TYPES,
+      tranchedPoolEventParserConfig
+    )
     setLeafCurrentBlock(currentRoute, currentBlock)
     return await populateDates(poolTxs)
   }
@@ -321,6 +275,8 @@ function Transactions(props: TransactionsProps) {
         case PRINCIPAL_COLLECTED_TX_NAME:
         case RESERVE_FUNDS_COLLECTED_TX_NAME:
         case INTEREST_PAYMENT_TX_NAME:
+        case PRINCIPAL_PAYMENT_TX_NAME:
+        case INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME:
         case DRAWDOWN_TX_NAME:
           break
         default:

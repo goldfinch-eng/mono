@@ -35,6 +35,7 @@ import {
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
+  SENIOR_POOL_AGREEMENT_US_ROUTE,
   SENIOR_POOL_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
   TRANCHED_POOL_ROUTE,
@@ -994,6 +995,7 @@ describe("Rewards list and detail", () => {
       [TERMS_OF_SERVICE_ROUTE]: undefined,
       [PRIVACY_POLICY_ROUTE]: undefined,
       [SENIOR_POOL_AGREEMENT_NON_US_ROUTE]: undefined,
+      [SENIOR_POOL_AGREEMENT_US_ROUTE]: undefined,
     })
 
     expect(await screen.findByText("Staked 50K FIDU")).toBeVisible()

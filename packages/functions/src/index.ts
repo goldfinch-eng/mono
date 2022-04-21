@@ -113,7 +113,9 @@ const verifyRequest = (req: Request) => {
 
 const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   const account = eventPayload.included.find((i: any) => i.type === "account")
-  const verification = eventPayload.included.find((i: any) => i.type === "verification/government-id")
+  const verification = eventPayload.included.find(
+    (i: any) => i.type === "verification/government-id" && i.attributes.status === "passed",
+  )
   // If not countryCode is found, use an explicit null, firestore does not like "undefined"
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
