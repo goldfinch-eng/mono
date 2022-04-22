@@ -23,9 +23,13 @@ const getWebSocketURL = (networkId: SupportedChainId): string => {
   }
 }
 
-const getProviderOptions = (): {infuraId?: string; rpc?: {[chainId: number]: string}} => {
+const getProviderOptions = (networkName: string): {infuraId?: string; rpc?: {[chainId: number]: string}} => {
   if (process.env.REACT_APP_INFURA_PROJECT_ID) {
     return {infuraId: process.env.REACT_APP_INFURA_PROJECT_ID}
+  } else if (process.env.REACT_APP_ALCHEMY_API_KEY) {
+    return {
+      rpc: {1: `https://eth-mainnet.alchemyapi.io/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`},
+    }
   }
 
   // To test on your local network, disable the infuraID to activate this rpc
