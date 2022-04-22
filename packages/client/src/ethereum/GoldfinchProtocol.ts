@@ -31,7 +31,7 @@ function getCachedPastEvents(
   const queryParams = {eventName, options}
   const cacheKey = JSON.stringify({contractAddress: contract["_address"], ...queryParams})
   if (!isNumber(options.toBlock)) {
-    throw new Error("The toblock parameter needs to be a number to keep the cache constant.")
+    throw new Error("The toBlock parameter must be a number so that the result can be safely cached as constant.")
   }
   if (!pastEventsTempCache[cacheKey]) {
     pastEventsTempCache[cacheKey] = contract.getPastEvents(queryParams.eventName, queryParams.options)

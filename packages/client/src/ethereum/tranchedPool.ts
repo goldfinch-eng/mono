@@ -1,7 +1,7 @@
 import BN from "bn.js"
 import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
-import {IPoolTokens} from "@goldfinch-eng/protocol/typechain/web3/IPoolTokens"
+import {PoolTokens as PoolTokensContract} from "@goldfinch-eng/protocol/typechain/web3/PoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {asNonNullable, assertNonNullable, assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
@@ -173,6 +173,7 @@ class TranchedPool {
   reserveFeePercent!: BigNumber
   estimatedLeverageRatio!: BigNumber
   estimatedSeniorPoolContribution!: BigNumber
+  numTranchesPerSlice!: BigNumber
   allowedUIDTypes!: number[]
 
   juniorTranche!: TrancheInfo
@@ -228,17 +229,24 @@ class TranchedPool {
 
     this.poolState = this.getPoolState(currentBlock)
 
-    const [totalDeployed, fundableAt] = await Promise.all(
+    const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
       this.isMultipleDrawdownsCompatible
         ? [
             this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number),
             this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number),
+            this.contract.readOnly.methods.NUM_TRANCHES_PER_SLICE().call(undefined, currentBlock.number),
           ]
-        : ["0", "0"]
+        : ["0", "0", "2"]
     )
 
     this.totalDeployed = new BigNumber(totalDeployed)
     this.fundableAt = new BigNumber(fundableAt)
+    this.numTranchesPerSlice = new BigNumber(numTranchesPerSlice)
+  }
+
+  isSeniorTrancheId(trancheId: BigNumber): boolean {
+    assertNonNullable(this.numTranchesPerSlice)
+    return trancheId.mod(this.numTranchesPerSlice).eq(new BigNumber(1))
   }
 
   getPoolState(currentBlock: BlockInfo): PoolState {
@@ -259,7 +267,7 @@ class TranchedPool {
   }
 
   get isRepaid(): boolean {
-    return this.creditLine.balance.isZero() && this.seniorTranche.lockedUntil !== 0
+    return this.creditLine.balance.isZero() && this.creditLine.termEndTime.gt(0)
   }
 
   get isMultipleDrawdownsCompatible(): boolean {
@@ -681,7 +689,7 @@ class TranchedPool {
 }
 
 class TranchedPoolBacker {
-  address: string
+  address: string | undefined
   tranchedPool: TranchedPool
   goldfinchProtocol: GoldfinchProtocol
 
@@ -697,36 +705,53 @@ class TranchedPoolBacker {
   availableToWithdrawInDollars!: BigNumber
   unrealizedGainsInDollars!: BigNumber
   tokenInfos!: TokenInfo[]
+  firstDepositBlockNumber: number | undefined
 
-  constructor(address: string, tranchedPool: TranchedPool, goldfinchProtocol: GoldfinchProtocol) {
+  constructor(address: string | undefined, tranchedPool: TranchedPool, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
     this.tranchedPool = tranchedPool
     this.goldfinchProtocol = goldfinchProtocol
   }
 
   async initialize(currentBlock: BlockInfo) {
-    let events: KnownEventData<typeof DEPOSIT_MADE_EVENT>[] = []
-    if (this.address) {
-      events = await this.goldfinchProtocol.queryEvents(
-        this.tranchedPool.contract.readOnly,
-        [DEPOSIT_MADE_EVENT],
-        {
-          owner: this.address,
-        },
-        currentBlock.number
-      )
-    }
+    const poolTokensContract = this.goldfinchProtocol.getContract<PoolTokensContract>("PoolTokens")
 
-    let tokenIds = events.map((e) => e.returnValues.tokenId)
-    let poolTokens = this.goldfinchProtocol.getContract<IPoolTokens>("PoolTokens")
-    this.tokenInfos = await Promise.all(
-      tokenIds.map((tokenId) => {
-        return poolTokens.readOnly.methods
-          .getTokenInfo(tokenId)
+    const address = this.address
+    this.tokenInfos = address
+      ? await poolTokensContract.readOnly.methods
+          .balanceOf(address)
           .call(undefined, currentBlock.number)
-          .then((res) => tokenInfo(tokenId, res))
-      })
-    )
+          .then((balance: string) => {
+            const numTokens = parseInt(balance, 10)
+            return numTokens
+          })
+          .then((numTokens: number) =>
+            Promise.all(
+              Array(numTokens)
+                .fill("")
+                .map((val, i) =>
+                  poolTokensContract.readOnly.methods
+                    .tokenOfOwnerByIndex(address, i)
+                    .call(undefined, currentBlock.number)
+                )
+            )
+          )
+          .then((tokenIds: string[]) =>
+            Promise.all(
+              tokenIds.map((tokenId) =>
+                poolTokensContract.readOnly.methods
+                  .getTokenInfo(tokenId)
+                  .call(undefined, currentBlock.number)
+                  .then((res) => tokenInfo(tokenId, res))
+              )
+            )
+          )
+          .then((tokenInfos: TokenInfo[]) =>
+            // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
+            // the instantiation-by-pool of TranchedPoolBacker instances.
+            tokenInfos.filter((tokenInfo) => tokenInfo.pool === this.tranchedPool.address)
+          )
+      : []
 
     let zero = new BigNumber(0)
     this.principalAmount = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalAmount).concat(zero))
@@ -734,8 +759,10 @@ class TranchedPoolBacker {
     this.interestRedeemed = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemed).concat(zero))
 
     let availableToWithdrawAmounts = await Promise.all(
-      tokenIds.map((tokenId) =>
-        this.tranchedPool.contract.readOnly.methods.availableToWithdraw(tokenId).call(undefined, currentBlock.number)
+      this.tokenInfos.map((tokenInfo) =>
+        this.tranchedPool.contract.readOnly.methods
+          .availableToWithdraw(tokenInfo.id)
+          .call(undefined, currentBlock.number)
       )
     )
     this.tokenInfos.forEach((tokenInfo, i) => {
@@ -752,6 +779,21 @@ class TranchedPoolBacker {
     this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
     this.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(this.availableToWithdraw))
     this.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.interestRedeemable)))
+
+    const events = await Promise.all(
+      this.tokenInfos.map(
+        (tokenInfo): Promise<KnownEventData<typeof DEPOSIT_MADE_EVENT>[]> =>
+          this.goldfinchProtocol.queryEvents(
+            this.tranchedPool.contract.readOnly,
+            [DEPOSIT_MADE_EVENT],
+            {tokenId: tokenInfo.id},
+            currentBlock.number
+          )
+      )
+    )
+    this.firstDepositBlockNumber = events
+      .flat()
+      .reduce<number | undefined>((acc, curr) => (acc ? Math.min(acc, curr.blockNumber) : curr.blockNumber), undefined)
   }
 }
 

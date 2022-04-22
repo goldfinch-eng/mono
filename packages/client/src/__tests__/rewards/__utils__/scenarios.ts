@@ -1,7 +1,8 @@
+import mapValues from "lodash/mapValues"
 import "@testing-library/jest-dom"
 import {MerkleDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CommunityRewards, CommunityRewardsLoaded} from "../../../ethereum/communityRewards"
-import {GFI, GFILoaded} from "../../../ethereum/gfi"
+import {GFI, GFILoaded, GFI_DECIMALS} from "../../../ethereum/gfi"
 import {
   User,
   UserBackerMerkleDirectDistributor,
@@ -27,6 +28,8 @@ import {
   mockBackerMerkleDistributorContractCalls,
   mockBackerMerkleDirectDistributorContractCalls,
   MerkleDistributorConfigMock,
+  mockBackerRewardsContractCalls,
+  mockCommunityRewardsContractCalls,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
@@ -42,6 +45,7 @@ import {
   BackerMerkleDirectDistributor,
 } from "../../../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded, BackerMerkleDistributor} from "../../../ethereum/backerMerkleDistributor"
+import {BackerRewards, BackerRewardsLoaded} from "../../../ethereum/backerRewards"
 
 export async function prepareUserRelatedDeps(
   deps: {
@@ -54,6 +58,7 @@ export async function prepareUserRelatedDeps(
     backerMerkleDistributor: BackerMerkleDistributorLoaded
     merkleDirectDistributor: MerkleDirectDistributorLoaded
     backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded
+    backerRewards: BackerRewardsLoaded
   },
   rewardsMock: RewardsMockData
 ) {
@@ -78,6 +83,7 @@ export async function prepareUserRelatedDeps(
     deps.merkleDirectDistributor,
     deps.backerMerkleDistributor,
     deps.backerMerkleDirectDistributor,
+    deps.backerRewards,
     rewardsMock
   )
   await user.initialize(
@@ -87,6 +93,8 @@ export async function prepareUserRelatedDeps(
     deps.communityRewards,
     deps.merkleDistributor,
     deps.merkleDirectDistributor,
+    deps.backerMerkleDistributor,
+    deps.backerMerkleDirectDistributor,
     rewardsMock.currentBlock
   )
   assertWithLoadedInfo(user)
@@ -117,7 +125,7 @@ export async function prepareUserRelatedDeps(
   )
   assertWithLoadedInfo(userCommunityRewards)
 
-  assertAllMocksAreCalled(mocks)
+  assertAllMocksAreCalled(mapValues(mocks, (val) => (val.expectCalledBeforeRender ? val.mock : undefined)))
 
   return {
     user,
@@ -461,6 +469,41 @@ export async function setupPartiallyClaimedCommunityReward(
   return {...baseDeps, ...userRelatedDeps}
 }
 
+export async function setupClaimableBackerReward(
+  goldfinchProtocol: GoldfinchProtocol,
+  seniorPool: SeniorPoolLoaded,
+  poolTokenInfos: Array<{
+    poolTokenId: string
+    claimableBackersOnly: BigNumber
+    claimableSeniorPoolMatching: BigNumber
+    claimedBackersOnly: BigNumber
+    claimedSeniorPoolMatching: BigNumber
+  }>,
+  currentBlock: BlockInfo
+) {
+  const baseDeps = await prepareBaseDeps(goldfinchProtocol, currentBlock)
+  const userRelated = await prepareUserRelatedDeps(
+    {goldfinchProtocol, seniorPool, ...baseDeps},
+    {
+      backer: {
+        poolTokenInfos: poolTokenInfos.map((info) => ({
+          id: info.poolTokenId,
+          poolTokenClaimableRewards: info.claimableBackersOnly.toString(10),
+          stakingRewardsEarnedSinceLastWithdraw: info.claimableSeniorPoolMatching.toString(10),
+          backerRewardsTokenInfo: [
+            info.claimedBackersOnly.toString(10),
+            new BigNumber(0).multipliedBy(GFI_DECIMALS).toString(10),
+          ],
+          stakingRewardsClaimed: info.claimedSeniorPoolMatching.toString(10),
+        })),
+      },
+      currentBlock,
+    }
+  )
+
+  return {...baseDeps, ...userRelated}
+}
+
 export async function setupCommunityRewardAndStakingReward(
   goldfinchProtocol: GoldfinchProtocol,
   seniorPool: SeniorPoolLoaded,
@@ -705,6 +748,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.merkleDirectDistributor,
     baseDeps.backerMerkleDistributor,
     baseDeps.backerMerkleDirectDistributor,
+    baseDeps.backerRewards,
     {
       currentBlock,
       staking: mockedStaking1,
@@ -719,6 +763,7 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.merkleDirectDistributor,
     baseDeps.backerMerkleDistributor,
     baseDeps.backerMerkleDirectDistributor,
+    baseDeps.backerRewards,
     {
       currentBlock,
       staking: mockedStaking2,
@@ -732,6 +777,8 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
     baseDeps.communityRewards,
     baseDeps.merkleDistributor,
     baseDeps.merkleDirectDistributor,
+    baseDeps.backerMerkleDistributor,
+    baseDeps.backerMerkleDirectDistributor,
     currentBlock
   )
 
@@ -770,20 +817,27 @@ export async function setupMultiplePartiallyClaimedStakingRewards(
   assertWithLoadedInfo(userCommunityRewards)
 
   assertAllMocksAreCalled(
-    omit(mocks1, [
-      "callGFIBalanceMock",
-      "callUSDCBalanceMock",
-      "callUSDCAllowanceMock",
-      "callStakingRewardsBalanceMock",
-      "callCommunityRewardsTokenLaunchTimeInSecondsMock",
-      "callCommunityRewardsBalanceMock",
-      "callCommunityRewardsTokenOfOwnerMock",
-      "callGrantsMock",
-      "callClaimableRewardsMock",
-      "callCommunityRewardsTotalVestedAt",
-    ])
+    omit(
+      mapValues(mocks1, (val) => (val.expectCalledBeforeRender ? val.mock : undefined)),
+      [
+        "callGFIBalanceMock",
+        "callUSDCBalanceMock",
+        "callUSDCAllowanceMock",
+        "callStakingRewardsBalanceMock",
+        "callCommunityRewardsTokenLaunchTimeInSecondsMock",
+        "callCommunityRewardsBalanceMock",
+        "callCommunityRewardsTokenOfOwnerMock",
+        "callGrantsMock",
+        "callClaimableRewardsMock",
+        "callCommunityRewardsTotalVestedAt",
+        "callBackerRewardsPoolTokenClaimableRewards",
+        "callBackerRewardsStakingRewardsEarnedSinceLastWithdraw",
+        "callBackerRewardsTokens",
+        "callBackerRewardsStakingRewardsClaimed",
+      ]
+    )
   )
-  assertAllMocksAreCalled(mocks2)
+  assertAllMocksAreCalled(mapValues(mocks2, (val) => (val.expectCalledBeforeRender ? val.mock : undefined)))
 
   return {
     ...baseDeps,
@@ -806,6 +860,7 @@ export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, curr
   await stakingRewards.initialize(currentBlock)
 
   const communityRewards = new CommunityRewards(goldfinchProtocol)
+  await mockCommunityRewardsContractCalls(communityRewards)
   await communityRewards.initialize(currentBlock)
 
   const merkleDistributor = new MerkleDistributor(goldfinchProtocol)
@@ -824,6 +879,10 @@ export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, curr
   await mockBackerMerkleDistributorContractCalls(backerMerkleDistributor)
   await backerMerkleDistributor.initialize(currentBlock)
 
+  const backerRewards = new BackerRewards(goldfinchProtocol)
+  await mockBackerRewardsContractCalls(backerRewards)
+  await backerRewards.initialize(currentBlock)
+
   assertWithLoadedInfo(gfi)
   assertWithLoadedInfo(stakingRewards)
   assertWithLoadedInfo(communityRewards)
@@ -831,6 +890,7 @@ export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, curr
   assertWithLoadedInfo(backerMerkleDistributor)
   assertWithLoadedInfo(merkleDirectDistributor)
   assertWithLoadedInfo(backerMerkleDirectDistributor)
+  assertWithLoadedInfo(backerRewards)
 
   return {
     gfi,
@@ -840,6 +900,7 @@ export async function prepareBaseDeps(goldfinchProtocol: GoldfinchProtocol, curr
     backerMerkleDistributor,
     backerMerkleDirectDistributor,
     merkleDirectDistributor,
+    backerRewards,
   }
 }
 

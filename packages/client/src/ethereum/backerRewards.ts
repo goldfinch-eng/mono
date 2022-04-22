@@ -15,18 +15,22 @@ import {
   ScheduledRepaymentEstimatedReward,
 } from "../types/tranchedPool"
 import {Web3IO} from "../types/web3"
-import {assertNonNullable, BlockInfo, sameBlock} from "../utils"
-import {GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {assertNonNullable, BlockInfo, defaultSum, displayDollars, displayNumber, sameBlock} from "../utils"
+import {usdcFromAtomic} from "./erc20"
+import {gfiFromAtomic, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded} from "./pool"
-import {PoolState, TranchedPool} from "./tranchedPool"
-import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
+import {PoolState, TranchedPool, TranchedPoolBacker} from "./tranchedPool"
+import {DAYS_PER_YEAR, MAINNET, USDC_DECIMALS} from "./utils"
 
 type BackerRewardsLoadedInfo = {
   currentBlock: BlockInfo
   isPaused: boolean
   maxInterestDollarsEligible: BigNumber
   totalRewardPercentOfTotalGFI: BigNumber
+  // The block from which tranched pools created henceforth are able to earn GFI through
+  // the BackerRewards contract.
+  startBlock: BlockInfo
 }
 
 export type BackerRewardsLoaded = WithLoadedInfo<BackerRewards, BackerRewardsLoadedInfo>
@@ -36,12 +40,6 @@ export class BackerRewards {
   contract: Web3IO<BackerRewardsContract>
   address: string
   info: Loadable<BackerRewardsLoadedInfo>
-  // The block from which tranched pools created henceforth are able to earn GFI through
-  // the BackerRewards contract.
-  startBlock: BlockInfo = {
-    number: 14142864,
-    timestamp: 1644021439,
-  }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -54,14 +52,12 @@ export class BackerRewards {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
+    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
+
     const [isPaused, maxInterestDollarsEligible, totalRewardPercentOfTotalGFI] = await Promise.all([
       this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
-      // TEMP: Hard-code this value until the correct value has been set on the contract.
-      // this.contract.readOnly.methods.maxInterestDollarsEligible().call(undefined, currentBlock.number),
-      new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
-      // TEMP: Hard-code this value until the correct value has been set on the contract.
-      // this.contract.readOnly.methods.totalRewardPercentOfTotalGFI().call(undefined, currentBlock.number),
-      new BigNumber(2).multipliedBy(new BigNumber(1e18)),
+      this.contract.readOnly.methods.maxInterestDollarsEligible().call(undefined, currentBlock.number),
+      this.contract.readOnly.methods.totalRewardPercentOfTotalGFI().call(undefined, currentBlock.number),
     ])
 
     this.info = {
@@ -71,21 +67,57 @@ export class BackerRewards {
         isPaused,
         maxInterestDollarsEligible: new BigNumber(maxInterestDollarsEligible),
         totalRewardPercentOfTotalGFI: new BigNumber(totalRewardPercentOfTotalGFI),
+        startBlock: networkIsMainnet
+          ? {
+              number: 14142864,
+              timestamp: 1644021439,
+            }
+          : // If we're not on mainnet -- e.g. we're on the local network -- we'll define the
+            // start block such that effectively all tranched pools are eligible for backer rewards.
+            // If you want to test the scenario where only some tranched pools are eligible for
+            // backer rewards, you can overwrite this to be a value that is meaningful for the network
+            // you're testing on.
+            {
+              number: 1,
+              timestamp: 1,
+            },
       },
     }
   }
 
-  filterRewardableTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
+  /**
+   * Whether we'd expect calling `BackerRewards.withdraw()` for a junior-tranche pool token
+   * belonging to `tranchedPool` to succeed. Thus the definition here should correspond to
+   * the conditions in `BackerRewards.withdraw()` that prevent withdrawing rewards.
+   */
+  juniorTranchePoolTokenRewardsAreWithdrawable(tranchedPool: TranchedPool): boolean {
+    assertWithLoadedInfo(this)
+    return (
+      !this.info.value.isPaused &&
+      !tranchedPool.isPaused &&
+      !tranchedPool.creditLine.isLate &&
+      process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
+    )
+  }
+
+  filterRewardsEligibleTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
+    assertWithLoadedInfo(this)
+    const loadedInfo = this.info.value
     return tranchedPools.filter((tranchedPool: TranchedPool): boolean => {
       const eligible =
         tranchedPool.creditLine.termStartTime.isZero() ||
-        tranchedPool.creditLine.termStartTime.toNumber() >= this.startBlock.timestamp
+        tranchedPool.creditLine.termStartTime.toNumber() >= loadedInfo.startBlock.timestamp
+      return eligible
+    })
+  }
+  filterRewardableTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
+    return this.filterRewardsEligibleTranchedPools(tranchedPools).filter((tranchedPool: TranchedPool): boolean => {
       // If a borrower is late on their payment, the rewards earned by their backers are not claimable. And
       // we don't know whether those rewards will ever become claimable again (because we don't know whether the
       // borrower will become current again). So the UX we must serve is not to represent the tranched pool
       // as earning rewards.
       const current = !tranchedPool.creditLine.isLate
-      return eligible && current
+      return current
     })
   }
 
@@ -458,5 +490,103 @@ export class BackerRewards {
       ...defaultEstimatedApyFromGfi,
       ...rewardableEstimatedApyFromGfi,
     }
+  }
+}
+
+export type BackerRewardsPoolTokenPosition = {
+  tokenId: string
+  claimed: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+  claimable: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+  unvested: {
+    backersOnly: BigNumber
+    seniorPoolMatching: BigNumber
+  }
+}
+
+/**
+ * Models a user's position in terms of backer rewards, as the backer of a tranched pool.
+ */
+export class BackerRewardsPosition {
+  backer: TranchedPoolBacker
+  firstDepositTime: number
+  rewardsAreWithdrawable: boolean
+  tokenPositions: BackerRewardsPoolTokenPosition[]
+
+  constructor(
+    backer: TranchedPoolBacker,
+    firstDepositTime: number,
+    rewardsAreWithdrawable: boolean,
+    tokenPositions: BackerRewardsPoolTokenPosition[]
+  ) {
+    this.backer = backer
+    this.firstDepositTime = firstDepositTime
+    this.rewardsAreWithdrawable = rewardsAreWithdrawable
+    this.tokenPositions = tokenPositions
+  }
+
+  get title(): string {
+    return `Backer of ${this.backer.tranchedPool.metadata?.name || `Pool ${this.backer.tranchedPool.address}`}`
+  }
+
+  get description(): string {
+    const transactionDate = new Date(this.firstDepositTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    const principalDepositedAmount = usdcFromAtomic(this.backer.principalAmount)
+    const principalRemainingAmount = usdcFromAtomic(this.backer.principalAtRisk)
+    return `Supplied ${displayDollars(principalDepositedAmount, 2)} USDC beginning on ${transactionDate}${
+      principalDepositedAmount === principalRemainingAmount
+        ? ""
+        : ` (${displayDollars(principalRemainingAmount, 2)} USDC remaining)`
+    }`
+  }
+
+  get shortDescription(): string {
+    const transactionDate = new Date(this.firstDepositTime * 1000).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    return `${displayNumber(gfiFromAtomic(this.granted))} GFI • ${transactionDate}`
+  }
+
+  get granted(): BigNumber {
+    return this.vested.plus(this.unvested)
+  }
+
+  get vested(): BigNumber {
+    return this.claimed.plus(this.claimable)
+  }
+
+  get unvested(): BigNumber {
+    return defaultSum(
+      this.tokenPositions.map((tokenPosition) =>
+        tokenPosition.unvested.backersOnly.plus(tokenPosition.unvested.seniorPoolMatching)
+      )
+    )
+  }
+
+  get claimed(): BigNumber {
+    return defaultSum(
+      this.tokenPositions.map((tokenPosition) =>
+        tokenPosition.claimed.backersOnly.plus(tokenPosition.claimed.seniorPoolMatching)
+      )
+    )
+  }
+
+  get claimable(): BigNumber {
+    return defaultSum(
+      this.tokenPositions.map((tokenPosition) =>
+        tokenPosition.claimable.backersOnly.plus(tokenPosition.claimable.seniorPoolMatching)
+      )
+    )
   }
 }
