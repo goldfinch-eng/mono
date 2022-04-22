@@ -95,16 +95,20 @@ async function parseTranchedPool(
   tranchedPool.poolState = tranchedPool.getPoolState(_currentBlock)
 
   // TODO Add these values to the subgraph, and then use them, and remove these web3 calls.
-  const [totalDeployed, fundableAt] = await Promise.all(
+  const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
     tranchedPool.isMultipleDrawdownsCompatible
       ? [
           tranchedPool.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock?.number || "latest"),
           tranchedPool.contract.readOnly.methods.fundableAt().call(undefined, currentBlock?.number || "latest"),
+          tranchedPool.contract.readOnly.methods
+            .NUM_TRANCHES_PER_SLICE()
+            .call(undefined, currentBlock?.number || "latest"),
         ]
-      : ["0", "0"]
+      : ["0", "0", "2"]
   )
   tranchedPool.totalDeployed = new BigNumber(totalDeployed)
   tranchedPool.fundableAt = new BigNumber(fundableAt)
+  tranchedPool.numTranchesPerSlice = new BigNumber(numTranchesPerSlice)
 
   return tranchedPool
 }
