@@ -178,7 +178,10 @@ export async function parseBackers(
         backer.availableToWithdraw = new BigNumber(backerData?.availableToWithdraw || 0)
         backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
         backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
-        backer.tokenInfos = tokenInfo(backerData?.user.tokens || [])
+        const filteredTokens = (backerData?.user.tokens || []).filter(
+          (token) => token.tranchedPool.id === tranchedPool.address
+        )
+        backer.tokenInfos = tokenInfo(filteredTokens)
         const events = await Promise.all(
           backer.tokenInfos.map(
             (tokenInfo): Promise<KnownEventData<typeof DEPOSIT_MADE_EVENT>[]> =>
