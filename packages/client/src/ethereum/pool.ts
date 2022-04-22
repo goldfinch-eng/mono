@@ -1017,7 +1017,7 @@ class StakingRewards {
               eventNames,
               filters,
               toBlock,
-              this.v26MigrationInfo.blockNumber
+              this.v26MigrationInfo.blockNumber + 1
             ),
       ])
       return legacyEvents.concat(events)
