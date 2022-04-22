@@ -1,22 +1,22 @@
 import {assertNonNullable, assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import {MetaMaskInpageProvider} from "@metamask/providers"
 import {RequestArguments} from "@metamask/providers/dist/BaseProvider"
-import Web3 from "web3"
 import WalletConnectProvider from "@walletconnect/web3-provider"
+import {isString} from "lodash"
+import Web3 from "web3"
 import {
+  HttpProvider as HttpProviderType,
   IpcProvider as IpcProviderType,
   provider as ProviderType,
   WebsocketProvider as WebsocketProviderType,
-  HttpProvider as HttpProviderType,
 } from "web3-core"
-import WebsocketProvider from "web3-providers-ws"
-import HttpProvider from "web3-providers-http"
 import {JsonRpcPayload, JsonRpcResponse} from "web3-core-helpers"
-import {Web3IO, UserWalletWeb3Status} from "./types/web3"
-import {web3Modal, isWalletConnectProvider, WalletConnectWeb3Provider} from "./walletConnect"
+import HttpProvider from "web3-providers-http"
+import WebsocketProvider from "web3-providers-ws"
+import {MAINNET} from "./ethereum/utils"
+import {UserWalletWeb3Status, Web3IO} from "./types/web3"
 import {GFITokenImageURL} from "./utils"
-import {isString} from "lodash"
-import {MAINNET, SupportedChainId} from "./ethereum/utils"
+import {isWalletConnectProvider, WalletConnectWeb3Provider, web3Modal} from "./walletConnect"
 
 let web3: Web3
 let web3IO: Web3IO<Web3>
