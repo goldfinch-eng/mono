@@ -1,7 +1,7 @@
 import WalletConnectProvider from "@walletconnect/web3-provider"
+import {ethers} from "ethers"
 import {JsonRpcPayload, JsonRpcResponse} from "web3-core-helpers"
 import {AbstractProvider} from "web3-core/types"
-import {ethers} from "ethers"
 import Web3Modal from "web3modal"
 import {chainIdToNetworkID, SupportedChainId} from "./ethereum/utils"
 
@@ -15,6 +15,8 @@ const getWebSocketURL = (networkId: SupportedChainId): string => {
   } else {
     if (process.env.REACT_APP_INFURA_PROJECT_ID) {
       return `wss://${chainIdToNetworkID[networkId]}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
+    } else if (process.env.REACT_APP_ALCHEMY_API_KEY && networkId === SupportedChainId.MAINNET) {
+      return `wss://eth-mainnet.alchemyapi.io/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`
     } else {
       throw new Error("Websocket for non-local chain requires Infura project id.")
     }
