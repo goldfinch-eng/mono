@@ -16,6 +16,7 @@ import {CreditLine} from "../ethereum/creditLine"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {NetworkConfig} from "../types/network"
 import {FIDU_DECIMALS} from "../ethereum/fidu"
+import {DEPOSIT_MADE_EVENT, KnownEventData} from "../types/events"
 
 export function parseSeniorPoolStatus(data: QueryResultSeniorPoolStatus) {
   const seniorPool = data.seniorPool
@@ -178,6 +179,23 @@ export async function parseBackers(
         backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
         backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
         backer.tokenInfos = tokenInfo(backerData?.user.tokens || [])
+        const events = await Promise.all(
+          backer.tokenInfos.map(
+            (tokenInfo): Promise<KnownEventData<typeof DEPOSIT_MADE_EVENT>[]> =>
+              _goldfinchProtocol.queryEvents(
+                tranchedPool.contract.readOnly,
+                [DEPOSIT_MADE_EVENT],
+                {tokenId: tokenInfo.id},
+                currentBlock.number
+              )
+          )
+        )
+        backer.firstDepositBlockNumber = events
+          .flat()
+          .reduce<number | undefined>(
+            (acc, curr) => (acc ? Math.min(acc, curr.blockNumber) : curr.blockNumber),
+            undefined
+          )
         return backer
       } else {
         // HACK: In the absence of a user address, use the tranched pool's address, so that we can still
@@ -195,6 +213,7 @@ export async function parseBackers(
         backer.availableToWithdrawInDollars = new BigNumber("")
         backer.unrealizedGainsInDollars = new BigNumber("")
         backer.tokenInfos = tokenInfo([])
+        backer.firstDepositBlockNumber = undefined
         return backer
       }
     })
@@ -206,12 +225,12 @@ function tokenInfo(tokens: TokenInfoGQL[]): TokenInfo[] {
     return {
       id: t.id,
       pool: t.tranchedPool.id,
-      tranche: t.tranche,
-      principalAmount: t.principalAmount,
-      principalRedeemed: t.principalRedeemed,
-      interestRedeemed: t.interestRedeemed,
-      principalRedeemable: t.principalRedeemable,
-      interestRedeemable: t.interestRedeemable,
+      tranche: new BigNumber(t.tranche),
+      principalAmount: new BigNumber(t.principalAmount),
+      principalRedeemed: new BigNumber(t.principalRedeemed),
+      interestRedeemed: new BigNumber(t.interestRedeemed),
+      principalRedeemable: new BigNumber(t.principalRedeemable),
+      interestRedeemable: new BigNumber(t.interestRedeemable),
     }
   })
 }

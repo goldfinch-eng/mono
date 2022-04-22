@@ -1666,9 +1666,11 @@ export class UserBackerRewards {
           const firstDepositTime = firstDepositBlock.timestamp
           assertNumber(firstDepositTime)
 
-          const rewardsAreWithdrawable = backerRewards.juniorTranchePoolTokenRewardsAreWithdrawable(backer.tranchedPool)
+          const rewardsNotWithdrawableReason = backerRewards.juniorTranchePoolTokenRewardsAreNotWithdrawableReason(
+            backer.tranchedPool
+          )
 
-          return new BackerRewardsPosition(backer, firstDepositTime, rewardsAreWithdrawable, tokenPositions)
+          return new BackerRewardsPosition(backer, firstDepositTime, rewardsNotWithdrawableReason, tokenPositions)
         })
     )
 

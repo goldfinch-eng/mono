@@ -90,9 +90,17 @@ export class BackerRewards {
    * belonging to `tranchedPool` to succeed. Thus the definition here should correspond to
    * the conditions in `BackerRewards.withdraw()` that prevent withdrawing rewards.
    */
-  juniorTranchePoolTokenRewardsAreWithdrawable(tranchedPool: TranchedPool): boolean {
+  juniorTranchePoolTokenRewardsAreNotWithdrawableReason(
+    tranchedPool: TranchedPool
+  ): BackerRewardsNotWithdrawableReason {
     assertWithLoadedInfo(this)
-    return !this.info.value.isPaused && !tranchedPool.isPaused && !tranchedPool.creditLine.isLate
+    return this.info.value.isPaused
+      ? "backerRewardsPaused"
+      : tranchedPool.isPaused
+      ? "poolPaused"
+      : tranchedPool.creditLine.isLate
+      ? "late"
+      : undefined
   }
 
   filterRewardsEligibleTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {
@@ -504,24 +512,26 @@ export type BackerRewardsPoolTokenPosition = {
   }
 }
 
+export type BackerRewardsNotWithdrawableReason = "backerRewardsPaused" | "poolPaused" | "late" | undefined
+
 /**
  * Models a user's position in terms of backer rewards, as the backer of a tranched pool.
  */
 export class BackerRewardsPosition {
   backer: TranchedPoolBacker
   firstDepositTime: number
-  rewardsAreWithdrawable: boolean
+  rewardsNotWithdrawableReason: BackerRewardsNotWithdrawableReason
   tokenPositions: BackerRewardsPoolTokenPosition[]
 
   constructor(
     backer: TranchedPoolBacker,
     firstDepositTime: number,
-    rewardsAreWithdrawable: boolean,
+    rewardsNotWithdrawableReason: BackerRewardsNotWithdrawableReason,
     tokenPositions: BackerRewardsPoolTokenPosition[]
   ) {
     this.backer = backer
     this.firstDepositTime = firstDepositTime
-    this.rewardsAreWithdrawable = rewardsAreWithdrawable
+    this.rewardsNotWithdrawableReason = rewardsNotWithdrawableReason
     this.tokenPositions = tokenPositions
   }
 
