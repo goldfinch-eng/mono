@@ -23,7 +23,7 @@ const getWebSocketURL = (networkId: SupportedChainId): string => {
   }
 }
 
-const getProviderOptions = (networkName: string): {infuraId?: string; rpc?: {[chainId: number]: string}} => {
+const getProviderOptions = (): {infuraId?: string; rpc?: {[chainId: number]: string}} => {
   if (process.env.REACT_APP_INFURA_PROJECT_ID) {
     return {infuraId: process.env.REACT_APP_INFURA_PROJECT_ID}
   } else if (process.env.REACT_APP_ALCHEMY_API_KEY) {
