@@ -34,6 +34,7 @@ const CONFIG_KEYS_BY_TYPE = {
     Go: 19,
     BackerRewards: 20,
     StakingRewards: 21,
+    FiduUSDCCurveLP: 22,
   },
 }
 

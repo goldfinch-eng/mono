@@ -14,11 +14,14 @@ import {
   fiduToUSDC,
   advanceTime,
   Numberish,
+  bigVal,
 } from "./testHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
-import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals} from "../blockchain_scripts/deployHelpers"
+import {TRANCHES, interestAprAsBN, INTEREST_DECIMALS, ETHDecimals, MAX_UINT} from "../blockchain_scripts/deployHelpers"
 import {time} from "@openzeppelin/test-helpers"
 import {deployBaseFixture} from "./util/fixtures"
+import {GFIInstance, StakingRewardsInstance} from "../typechain/truffle"
+import {STAKING_REWARDS_PARAMS} from "../blockchain_scripts/migrations/v2.2/deploy"
 const TranchedPool = artifacts.require("TranchedPool")
 const CreditLine = artifacts.require("CreditLine")
 
@@ -45,7 +48,7 @@ describe("Goldfinch", async function () {
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens} =
+    const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi} =
       await deployBaseFixture()
 
     // Approve transfers for our test accounts
@@ -55,10 +58,25 @@ describe("Goldfinch", async function () {
     // Add all web3 accounts to the GoList
     await goldfinchConfig.bulkAddToGoList(accounts)
 
+    const gfiToLoadIntoStakingRewards = bigVal(1_000_000)
+    await gfi.mint(owner, gfiToLoadIntoStakingRewards)
+    await erc20Approve(gfi, stakingRewards.address, MAX_UINT, [owner])
+    await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [owner])
+    await stakingRewards.loadRewards(gfiToLoadIntoStakingRewards)
+    await stakingRewards.setRewardsParameters(
+      STAKING_REWARDS_PARAMS.targetCapacity.toString(),
+      STAKING_REWARDS_PARAMS.minRate.toString(),
+      STAKING_REWARDS_PARAMS.maxRate.toString(),
+      STAKING_REWARDS_PARAMS.minRateAtPercent.toString(),
+      STAKING_REWARDS_PARAMS.maxRateAtPercent.toString()
+    )
+    await stakingRewards.depositAndStake(usdcVal(5000), {from: owner})
+    await stakingRewards.kick(0)
+
     await seniorPool.deposit(String(usdcVal(10000)), {from: underwriter})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
-    return {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens}
+    return {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi}
   })
 
   beforeEach(async () => {

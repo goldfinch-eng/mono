@@ -1,4 +1,4 @@
-declare module "depay-web3-mock" {
+declare module "@depay/web3-mock" {
   export function mock(config: {
     blockchain: "ethereum"
     call?: {
@@ -33,4 +33,6 @@ declare module "depay-web3-mock" {
   }): (...args: unknown[]) => unknown
 
   export function resetMocks(): void
+
+  export function setBlockData(blockNum: number, data: unknown): void
 }

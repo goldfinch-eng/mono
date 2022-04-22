@@ -9,7 +9,7 @@ import {Signer} from "ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
-import * as migrate25 from "../../blockchain_scripts/migrations/v2.5/migrate"
+import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 import {MAINNET_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 const {deployments, web3} = hre
 
@@ -66,7 +66,7 @@ describe("UID", () => {
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: await getProtocolOwner()})
 
-    await migrate25.main()
+    await migrate250.main()
   })
 
   describe("KYC is elligible", () => {
@@ -199,7 +199,7 @@ describe("UID", () => {
       })
 
       it("returns a signature that can be used to mint", async () => {
-        const address = "0x948D99554dC5b90ac3DD00daeCF76100d3219B02"
+        const address = "0x368031e04c52cf15a01c6309aC251397d7b60fEb"
         await impersonateAccount(hre, address)
         await fundWithWhales(["ETH"], [address])
 
@@ -263,7 +263,7 @@ describe("UID", () => {
       })
 
       it("returns a signature that can be used to mint", async () => {
-        const address = "0x11Cb600E4740C052855B942dC13648d7dF1503E5"
+        const address = "0x7Fb2EdA1a56BAEC8a5f1764948D3B1de03059950"
         await impersonateAccount(hre, address)
         await fundWithWhales(["ETH"], [address])
         const nonUSIdType = await uniqueIdentity.ID_TYPE_0()

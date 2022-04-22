@@ -6,7 +6,7 @@ import BN from "bn.js"
 import {getDeployEffects} from "packages/protocol/blockchain_scripts/migrations/deployEffects"
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 
-describe("v2.0.1", () => {
+xdescribe("v2.0.1", () => {
   beforeEach(async () => {
     const {gf_deployer} = await getNamedAccounts()
     assertIsString(gf_deployer)

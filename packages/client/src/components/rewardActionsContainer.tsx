@@ -35,8 +35,10 @@ import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {BackerMerkleDirectDistributorLoaded} from "../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "../ethereum/backerMerkleDistributor"
+import {BackerRewardsLoaded, BackerRewardsPosition} from "../ethereum/backerRewards"
 import {requestUserAddGfiTokenToWallet} from "../web3"
 
+const IMMEDIATE_VESTING_SCHEDULE = "Immediate"
 const ONE_WEEK_SECONDS = new BigNumber(60 * 60 * 24 * 7)
 const TOKEN_LAUNCH_TIME_IN_SECONDS = 1641920400 // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00
 
@@ -144,14 +146,31 @@ type LimitedItemDetails<T> = BaseItemDetails & {
   currentEarnRate: undefined
 }
 type StakingRewardsDetails = FullItemDetails<StakingRewardsRewardType>
+type BackerRewardsDetails = LimitedItemDetails<BackerRewardsRewardType>
 type CommunityRewardsDetails = LimitedItemDetails<CommunityRewardsRewardType>
 type MerkleDistributorGrantDetails = LimitedItemDetails<MerkleDistributorRewardType>
 type MerkleDirectDistributorGrantDetails = LimitedItemDetails<MerkleDirectDistributorRewardType>
+
 type ItemDetails =
   | MerkleDistributorGrantDetails
   | MerkleDirectDistributorGrantDetails
   | CommunityRewardsDetails
   | StakingRewardsDetails
+  | BackerRewardsDetails
+
+type ClaimableItemWithDetails =
+  | {
+      item: StakingRewardsPosition
+      details: StakingRewardsDetails
+    }
+  | {
+      item: BackerRewardsPosition
+      details: BackerRewardsDetails
+    }
+  | {
+      item: CommunityRewardsGrant
+      details: CommunityRewardsDetails
+    }
 
 type DetailsProps = {
   open: boolean
@@ -410,11 +429,11 @@ function getGrantVestingSchedule(
       displayInterval || displayCliff ? "," : ""
     } until 100%${displayEnd}`
   } else {
-    return "Immediate"
+    return IMMEDIATE_VESTING_SCHEDULE
   }
 }
 function getDirectGrantVestingSchedule(): string {
-  return "Immediate"
+  return IMMEDIATE_VESTING_SCHEDULE
 }
 function getStakingRewardsVestingSchedule(endTime: number) {
   const vestingEndDate = new Date(endTime * 1000).toLocaleDateString(undefined, {
@@ -486,46 +505,10 @@ function getMerkleDirectDistributorGrantDetails(
     etherscanAddress: item.acceptEvent?.transactionHash,
   }
 }
-function getStakingOrCommunityRewardsDetails(
-  item: StakingRewardsPosition | CommunityRewardsGrant,
-  gfi: GFILoaded
-): StakingRewardsDetails | CommunityRewardsDetails {
-  if (item instanceof StakingRewardsPosition) {
-    return {
-      type: "stakingRewards",
-      shortTransactionDetails: item.shortDescription,
-      transactionDetails: item.description,
-      vestingSchedule: getStakingRewardsVestingSchedule(item.storedPosition.rewards.endTime),
-      claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
-      currentEarnRate: getCurrentEarnRate(item.currentEarnRate),
-      vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: item.stakedEvent.transactionHash,
-    }
-  } else {
-    return {
-      type: "communityRewards",
-      shortTransactionDetails: item.shortDescription,
-      transactionDetails: item.description,
-      vestingSchedule: getGrantVestingSchedule(
-        item.rewards.cliffLength,
-        item.rewards.vestingInterval,
-        item.rewards.endTime > item.rewards.startTime
-          ? {
-              absolute: true,
-              value: item.rewards.endTime,
-            }
-          : null
-      ),
-      claimStatus: getClaimStatus(item.claimed, item.vested, gfi.info.value.price),
-      currentEarnRate: undefined,
-      vestingStatus: getVestingStatus(item.vested, item.granted),
-      etherscanAddress: item.acceptanceContext?.event.transactionHash,
-    }
-  }
-}
 
 type CommunityRewardsRewardType = "communityRewards"
 type StakingRewardsRewardType = "stakingRewards"
+type BackerRewardsRewardType = "backerRewards"
 type MerkleDistributorRewardType = "merkleDistributor"
 type MerkleDirectDistributorRewardType = "merkleDirectDistributor"
 
@@ -537,6 +520,7 @@ type RewardActionsContainerProps = {
   merkleDirectDistributor: MerkleDirectDistributorLoaded | BackerMerkleDirectDistributorLoaded
   stakingRewards: StakingRewardsLoaded
   communityRewards: CommunityRewardsLoaded
+  backerRewards: BackerRewardsLoaded
 } & (
   | {
       type: CommunityRewardsRewardType
@@ -545,6 +529,10 @@ type RewardActionsContainerProps = {
   | {
       type: StakingRewardsRewardType
       item: StakingRewardsPosition
+    }
+  | {
+      type: BackerRewardsRewardType
+      item: BackerRewardsPosition
     }
   | {
       type: MerkleDistributorRewardType
@@ -564,7 +552,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     setShowAction(false)
   }
 
-  async function handleAddGfiTokenToWallet(previousGfiBalance: BigNumber, address: string): Promise<void> {
+  async function handleAddGfiTokenToWallet(previousGfiBalance: BigNumber): Promise<void> {
     if (previousGfiBalance.eq(0)) {
       await requestUserAddGfiTokenToWallet(props.gfi.address)
     } else {
@@ -582,8 +570,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     }
   }
 
-  async function handleClaim(rewards: CommunityRewardsLoaded | StakingRewardsLoaded, tokenId: string) {
-    assertNonNullable(rewards)
+  async function handleClaimViaGetReward(rewards: StakingRewardsLoaded | CommunityRewardsLoaded, tokenId: string) {
     const previousGfiBalance = props.user.info.value.gfiBalance
     await sendFromUser(
       rewards.contract.userWallet.methods.getReward(tokenId),
@@ -593,7 +580,24 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
-    await handleAddGfiTokenToWallet(previousGfiBalance, props.gfi.address)
+    await handleAddGfiTokenToWallet(previousGfiBalance)
+  }
+
+  async function handleClaimViaWithdraw(rewards: BackerRewardsLoaded, tokenIds: string[]) {
+    const previousGfiBalance = props.user.info.value.gfiBalance
+    const tokenId = tokenIds[0]
+    assertNonNullable(tokenId)
+    await sendFromUser(
+      tokenIds.length === 1
+        ? rewards.contract.userWallet.methods.withdraw(tokenId)
+        : rewards.contract.userWallet.methods.withdrawMultiple(tokenIds),
+      {
+        type: CLAIM_TX_TYPE,
+        data: {},
+      },
+      {rejectOnError: true}
+    )
+    await handleAddGfiTokenToWallet(previousGfiBalance)
   }
 
   function handleAcceptMerkleDistributorGrant(info: MerkleDistributorGrantInfo): Promise<void> {
@@ -615,7 +619,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       },
       {rejectOnError: true}
     )
-    // NOTE: We do not call `requestUserAddGfiTokenToWallet()` here because accepting a MerkleDistributor
+    // NOTE: We do not call `handleAddGfiTokenToWallet()` here because accepting a MerkleDistributor
     // grant does not transfer GFI to the user. For MerkleDistributor grants, it's most relevant to ask the user to
     // add GFI to their wallet only as part of `handleClaim()`.
   }
@@ -635,72 +639,132 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     )
     // For MerkleDirectDistributor grants (unlike MerkleDistributor grants), accepting the grant does transfer GFI
     // to them, so it is relevant to ask the user here to add GFI to their wallet.
-    await handleAddGfiTokenToWallet(previousGfiBalance, props.gfi.address)
+    await handleAddGfiTokenToWallet(previousGfiBalance)
   }
 
-  if (props.type === "communityRewards" || props.type === "stakingRewards") {
-    const item = props.item
-    const title = item.title
-    const details = getStakingOrCommunityRewardsDetails(item, props.gfi)
-
+  function renderRewardsItemWithForm<T extends ClaimableItemWithDetails>(
+    itemWithDetails: T,
+    getAllClaimedStatus: (item: T["item"]) => RewardStatus.TemporarilyAllClaimed | RewardStatus.PermanentlyAllClaimed,
+    disabled: boolean,
+    handleClaim: () => Promise<void>
+  ) {
+    const {item, details} = itemWithDetails
     if (item.claimable.eq(0)) {
-      let status: RewardStatus
-      if (item instanceof CommunityRewardsGrant) {
-        if (item.claimed.lt(item.granted)) {
-          if (item.revoked) {
-            status = RewardStatus.PermanentlyAllClaimed
-          } else {
-            status = RewardStatus.TemporarilyAllClaimed
-          }
-        } else {
-          status = RewardStatus.PermanentlyAllClaimed
-        }
-      } else {
-        if (item.storedPosition.amount.eq(0)) {
-          status = RewardStatus.PermanentlyAllClaimed
-        } else {
-          status = RewardStatus.TemporarilyAllClaimed
-        }
-      }
+      const status = getAllClaimedStatus(item)
       return (
         <RewardsListItem
           status={status}
-          title={title}
+          title={item.title}
           subtitle={details.shortTransactionDetails}
           unvestedGFI={item.unvested}
           claimableGFI={item.claimable}
           handleOnClick={() => Promise.resolve()}
           details={details}
-          disabled={props.disabled}
+          disabled={disabled}
         />
       )
     } else if (!showAction) {
       return (
         <RewardsListItem
           status={RewardStatus.Claimable}
-          title={title}
+          title={item.title}
           subtitle={details.shortTransactionDetails}
           unvestedGFI={item.unvested}
           claimableGFI={item.claimable}
           handleOnClick={async () => setShowAction(true)}
           details={details}
-          disabled={props.disabled}
+          disabled={disabled}
         />
       )
     }
 
-    const reward = item instanceof StakingRewardsPosition ? props.stakingRewards : props.communityRewards
     return (
       <ClaimForm
         action={async (): Promise<void> => {
-          await handleClaim(reward, item.tokenId)
+          await handleClaim()
           onCloseForm()
         }}
-        disabled={item.claimable.eq(0)}
+        disabled={disabled}
         claimable={item.claimable}
         totalUSD={gfiInDollars(gfiToDollarsAtomic(item.claimable, props.gfi.info.value.price))}
         onCloseForm={onCloseForm}
       />
+    )
+  }
+
+  if (props.type === "stakingRewards") {
+    const item = props.item
+    const details: StakingRewardsDetails = {
+      type: "stakingRewards",
+      shortTransactionDetails: item.shortDescription,
+      transactionDetails: item.description,
+      vestingSchedule: getStakingRewardsVestingSchedule(item.storedPosition.rewards.endTime),
+      claimStatus: getClaimStatus(item.claimed, item.vested, props.gfi.info.value.price),
+      currentEarnRate: getCurrentEarnRate(item.currentEarnRate),
+      vestingStatus: getVestingStatus(item.vested, item.granted),
+      etherscanAddress: item.stakedEvent.transactionHash,
+    }
+    return renderRewardsItemWithForm(
+      {item, details},
+      (item: StakingRewardsPosition) =>
+        item.storedPosition.amount.eq(0) ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
+      props.disabled || props.stakingRewards.info.value.isPaused,
+      () => handleClaimViaGetReward(props.stakingRewards, item.tokenId)
+    )
+  } else if (props.type === "backerRewards") {
+    const item = props.item
+    const details: BackerRewardsDetails = {
+      type: "backerRewards",
+      shortTransactionDetails: item.shortDescription,
+      transactionDetails: item.description,
+      vestingSchedule: IMMEDIATE_VESTING_SCHEDULE,
+      claimStatus: getClaimStatus(item.claimed, item.vested, props.gfi.info.value.price),
+      currentEarnRate: undefined,
+      vestingStatus: getVestingStatus(item.vested, item.granted),
+      etherscanAddress: undefined,
+    }
+    return renderRewardsItemWithForm(
+      {item, details},
+      (item: BackerRewardsPosition) =>
+        item.backer.tranchedPool.isRepaid ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
+      props.disabled || !item.rewardsAreWithdrawable,
+      () =>
+        handleClaimViaWithdraw(
+          props.backerRewards,
+          item.tokenPositions.map((tokenPosition) => tokenPosition.tokenId)
+        )
+    )
+  } else if (props.type === "communityRewards") {
+    const item = props.item
+    const details: CommunityRewardsDetails = {
+      type: "communityRewards",
+      shortTransactionDetails: item.shortDescription,
+      transactionDetails: item.description,
+      vestingSchedule: getGrantVestingSchedule(
+        item.rewards.cliffLength,
+        item.rewards.vestingInterval,
+        item.rewards.endTime > item.rewards.startTime
+          ? {
+              absolute: true,
+              value: item.rewards.endTime,
+            }
+          : null
+      ),
+      claimStatus: getClaimStatus(item.claimed, item.vested, props.gfi.info.value.price),
+      currentEarnRate: undefined,
+      vestingStatus: getVestingStatus(item.vested, item.granted),
+      etherscanAddress: item.acceptanceContext?.event.transactionHash,
+    }
+    return renderRewardsItemWithForm(
+      {item, details},
+      (item: CommunityRewardsGrant) =>
+        item.claimed.lt(item.granted)
+          ? item.revoked
+            ? RewardStatus.PermanentlyAllClaimed
+            : RewardStatus.TemporarilyAllClaimed
+          : RewardStatus.PermanentlyAllClaimed,
+      props.disabled || props.communityRewards.info.value.isPaused,
+      () => handleClaimViaGetReward(props.communityRewards, item.tokenId)
     )
   } else if (props.type === "merkleDistributor") {
     const item = props.item
@@ -714,7 +778,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
-        disabled={props.disabled}
+        disabled={props.disabled || props.communityRewards.info.value.isPaused}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
@@ -729,7 +793,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         claimableGFI={item.claimable}
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
-        disabled={props.disabled}
+        disabled={props.disabled || props.merkleDirectDistributor.info.value.isPaused}
       />
     )
   } else {

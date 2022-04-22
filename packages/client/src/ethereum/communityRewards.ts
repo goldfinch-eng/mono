@@ -101,6 +101,7 @@ export class CommunityRewardsGrant {
 
 type CommunityRewardsLoadedInfo = {
   currentBlock: BlockInfo
+  isPaused: boolean
 }
 
 export type CommunityRewardsLoaded = WithLoadedInfo<CommunityRewards, CommunityRewardsLoadedInfo>
@@ -122,10 +123,12 @@ export class CommunityRewards {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
+    const isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.info = {
       loaded: true,
       value: {
         currentBlock,
+        isPaused,
       },
     }
   }
