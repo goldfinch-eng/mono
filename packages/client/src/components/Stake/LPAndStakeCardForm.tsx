@@ -4,7 +4,7 @@ import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
 import {ERC20Metadata, toAtomicAmount} from "../../ethereum/erc20"
 import useDebounce from "../../hooks/useDebounce"
-import {displayNumber} from "../../utils"
+import {displayNumber, displayPercent} from "../../utils"
 import StakingPrompt from "../StakingPrompt"
 import TransactionInput from "../transactionInput"
 
@@ -121,6 +121,12 @@ export default function LPAndStakeCardForm({
   const isHighSlippage = estimatedSlippage.isLessThan(new BigNumber(-0.5))
   const isVeryHighSlippage = estimatedSlippage.isLessThan(new BigNumber(-10))
 
+  const priceImpactToDisplay = displayPercent(
+    (estimatedSlippage.isNegative() ? estimatedSlippage.times(new BigNumber(-1)) : estimatedSlippage).div(
+      new BigNumber(100)
+    )
+  )
+
   return (
     <div>
       <Container></Container>
@@ -161,10 +167,10 @@ export default function LPAndStakeCardForm({
             </StyledButton>
           </div>
           {isVeryHighSlippage && (
-            <MessageError>Error: Price impact is too high. Reduce the amount you're depositing.</MessageError>
+            <MessageError>{`Price impact is too high: ${priceImpactToDisplay}. Reduce the amount you're depositing.`}</MessageError>
           )}
           {!isVeryHighSlippage && isHighSlippage && (
-            <MessageWarning>Warning: High price impact. Consider reducing the amount you're depositing.</MessageWarning>
+            <MessageWarning>{`High price impact: ${priceImpactToDisplay}. Consider reducing the amount you're depositing.`}</MessageWarning>
           )}
         </div>
       </FormProvider>
