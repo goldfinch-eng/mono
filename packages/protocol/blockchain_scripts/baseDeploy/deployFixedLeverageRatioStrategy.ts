@@ -22,7 +22,7 @@ export async function deployFixedLeverageRatioStrategy(
   // an already deployed and initialized contract if the current bytecode
   // matches whats been deployed. We are adding an exception here JUST
   // for the v2.6.0 migration so that tests past.
-  if (strategy.address === "0x71cfF40A44051C6e6311413A728EE7633dDC901a") {
+  if (strategy.address !== "0x71cfF40A44051C6e6311413A728EE7633dDC901a") {
     const receipt = await strategy.initialize(protocol_owner, config.address)
     await receipt.wait()
   }
