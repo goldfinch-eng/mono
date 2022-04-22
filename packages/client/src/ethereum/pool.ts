@@ -882,7 +882,12 @@ class StakingRewards {
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
-    this.legacyContract = goldfinchProtocol.getContract<Contract>("StakingRewards", undefined, true)
+    this.legacyContract = goldfinchProtocol.getContract<Contract>(
+      "StakingRewards",
+      undefined,
+      // Disable this legacy contract behavior in the test environment, where it's not needed.
+      process.env.NODE_ENV !== "test"
+    )
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this.info = {
       loaded: false,
