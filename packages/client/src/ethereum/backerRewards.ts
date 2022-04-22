@@ -92,12 +92,7 @@ export class BackerRewards {
    */
   juniorTranchePoolTokenRewardsAreWithdrawable(tranchedPool: TranchedPool): boolean {
     assertWithLoadedInfo(this)
-    return (
-      !this.info.value.isPaused &&
-      !tranchedPool.isPaused &&
-      !tranchedPool.creditLine.isLate &&
-      process.env.REACT_APP_TOGGLE_BACKER_REWARDS === "yes"
-    )
+    return !this.info.value.isPaused && !tranchedPool.isPaused && !tranchedPool.creditLine.isLate
   }
 
   filterRewardsEligibleTranchedPools(tranchedPools: TranchedPool[]): TranchedPool[] {

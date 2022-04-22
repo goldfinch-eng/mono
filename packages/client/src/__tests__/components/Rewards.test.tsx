@@ -257,9 +257,6 @@ describe("Rewards summary", () => {
 
     resetAirdropMocks(goldfinchProtocol)
 
-    // Toggle backer rewards visibility on.
-    process.env.REACT_APP_TOGGLE_BACKER_REWARDS = "yes"
-
     // Mock instance of SeniorPool class.
     await goldfinchProtocol.initialize()
     const _seniorPoolLoaded = new SeniorPool(goldfinchProtocol)
@@ -873,9 +870,6 @@ describe("Rewards list and detail", () => {
     jest.spyOn(utils, "getDeployments").mockImplementation(() => {
       return getDeployments()
     })
-
-    // Toggle backer rewards visibility on.
-    process.env.REACT_APP_TOGGLE_BACKER_REWARDS = "yes"
 
     // Mock GFI price request.
     process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
