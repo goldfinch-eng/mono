@@ -91,7 +91,8 @@ class GoldfinchProtocol {
     contract: string | Contract | BaseContract,
     eventNames: T[],
     filter: Filter | undefined,
-    toBlock: BlockNumber
+    toBlock: BlockNumber,
+    fromBlock?: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     let contractObj: Web3IO<Contract>
     if (typeof contract == "string") {
@@ -103,7 +104,7 @@ class GoldfinchProtocol {
       eventNames.map((eventName) =>
         getCachedPastEvents(contractObj.readOnly, eventName, {
           filter,
-          fromBlock: getFromBlock(this.networkId),
+          fromBlock: fromBlock || getFromBlock(this.networkId),
           toBlock,
         })
       )

@@ -996,31 +996,34 @@ class StakingRewards {
     filter: Filter | undefined,
     toBlock: number
   ): Promise<KnownEventData<T>[]> {
-    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
+    const filters = {
+      ...(filter || {}),
+      user: address,
+    }
 
-    const [legacyEvents, events] = await Promise.all([
-      networkIsMainnet
-        ? this.goldfinchProtocol.queryEvents(
-            this.legacyContract.readOnly,
-            eventNames,
-            {
-              ...(filter || {}),
-              user: address,
-            },
-            Math.min(toBlock, this.v26MigrationInfo.blockNumber)
-          )
-        : Promise.resolve([]),
-      this.goldfinchProtocol.queryEvents(
-        this.contract.readOnly,
-        eventNames,
-        {
-          ...(filter || {}),
-          user: address,
-        },
-        toBlock
-      ),
-    ])
-    return legacyEvents.concat(events)
+    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
+    if (networkIsMainnet) {
+      const [legacyEvents, events] = await Promise.all([
+        this.goldfinchProtocol.queryEvents(
+          this.legacyContract.readOnly,
+          eventNames,
+          filters,
+          Math.min(toBlock, this.v26MigrationInfo.blockNumber)
+        ),
+        toBlock <= this.v26MigrationInfo.blockNumber
+          ? Promise.resolve([])
+          : this.goldfinchProtocol.queryEvents(
+              this.contract.readOnly,
+              eventNames,
+              filters,
+              toBlock,
+              this.v26MigrationInfo.blockNumber + 1
+            ),
+      ])
+      return legacyEvents.concat(events)
+    } else {
+      return this.goldfinchProtocol.queryEvents(this.contract.readOnly, eventNames, filters, toBlock)
+    }
   }
 }
 
