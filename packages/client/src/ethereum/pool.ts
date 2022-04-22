@@ -876,7 +876,7 @@ class StakingRewards {
   info: Loadable<StakingRewardsLoadedInfo>
   v26MigrationInfo = {
     // The block number in which the v2.6 migration was executed.
-    blockNumber: 14630855, // TODO[PR] Update this value when the proposal actually executes.
+    blockNumber: 14635526,
   }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
