@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom"
 import {render, screen} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
-import {mock} from "depay-web3-mock"
+import {mock} from "@depay/web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../../App"

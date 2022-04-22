@@ -52,7 +52,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    *  by a TranchedPool during it's creation process.
    */
   function createCreditLine() external returns (address) {
-    address creditLine = deployMinimal(config.creditLineImplementationAddress());
+    address creditLine = _deployMinimal(config.creditLineImplementationAddress());
     emit CreditLineCreated(creditLine);
     return creditLine;
   }
@@ -62,7 +62,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
    * @param owner The address that will own the new Borrower instance
    */
   function createBorrower(address owner) external returns (address) {
-    address _borrower = deployMinimal(config.borrowerImplementationAddress());
+    address _borrower = _deployMinimal(config.borrowerImplementationAddress());
     IBorrower borrower = IBorrower(_borrower);
     borrower.initialize(owner, address(config));
     emit BorrowerCreated(address(borrower), owner);
@@ -101,7 +101,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256[] calldata _allowedUIDTypes
   ) external onlyAdminOrBorrower returns (address pool) {
     address tranchedPoolImplAddress = config.tranchedPoolAddress();
-    pool = deployMinimal(tranchedPoolImplAddress);
+    pool = _deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
       address(config),
       _borrower,
@@ -133,7 +133,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256[] calldata _allowedUIDTypes
   ) external onlyCreditDesk returns (address pool) {
     address tranchedPoolImplAddress = config.migratedTranchedPoolAddress();
-    pool = deployMinimal(tranchedPoolImplAddress);
+    pool = _deployMinimal(tranchedPoolImplAddress);
     ITranchedPool(pool).initialize(
       address(config),
       _borrower,
@@ -159,7 +159,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   // Stolen from:
   // https://github.com/OpenZeppelin/openzeppelin-sdk/blob/master/packages/lib/contracts/upgradeability/ProxyFactory.sol
-  function deployMinimal(address _logic) internal returns (address proxy) {
+  function _deployMinimal(address _logic) internal returns (address proxy) {
     bytes20 targetBytes = bytes20(_logic);
     // solhint-disable-next-line no-inline-assembly
     assembly {

@@ -142,6 +142,12 @@ jobs:
             cd packages/protocol
             tests=$(circleci tests glob "test/**/*.test.ts"| grep mainnet_forking | circleci tests split --split-by=timings)
             HARDHAT_FORK=mainnet npm run test:unfiltered $tests
+      - run:
+          name: Compress hardhat-network-fork cache
+          command: cd packages/protocol && tar -cvzf /tmp/hardhat-network-fork.tar.gz cache/hardhat-network-fork
+      - store_artifacts:
+          path: /tmp/hardhat-network-fork.tar.gz
+          destination: hardhat-network-fork.tar.gz
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows

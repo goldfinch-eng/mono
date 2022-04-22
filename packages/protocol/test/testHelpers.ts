@@ -15,7 +15,9 @@ import {
   getContract,
   TRUFFLE_CONTRACT_PROVIDER,
   OWNER_ROLE,
+  getTruffleContract,
 } from "../blockchain_scripts/deployHelpers"
+
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
   CreditDeskInstance,
@@ -32,13 +34,15 @@ import {
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
   GFIInstance,
-  StakingRewardsInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
   GoInstance,
   TestUniqueIdentityInstance,
   MerkleDirectDistributorInstance,
   BackerRewardsInstance,
+  ZapperInstance,
+  TestFiduUSDCCurveLPInstance,
+  TestStakingRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -46,12 +50,13 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
 const USDC_DECIMALS = new BN(String(1e6))
+const FIDU_DECIMALS = new BN(String(1e18))
 const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
 import ChaiBN from "chai-bn"
-import {BaseContract} from "ethers"
+import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
 chai.use(ChaiBN(BN))
 
@@ -99,10 +104,13 @@ const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
     deployment = await deployments.get(contractName)
   }
   assertNonNullable(deployment)
-  return getTruffleContract<T>(contractName, deployment.address)
+  return getTruffleContractAtAddress<T>(contractName, deployment.address)
 }
 
-async function getTruffleContract<T extends Truffle.ContractInstance>(name: string, address: string): Promise<T> {
+async function getTruffleContractAtAddress<T extends Truffle.ContractInstance>(
+  name: string,
+  address: string
+): Promise<T> {
   return (await artifacts.require(name).at(address)) as T
 }
 
@@ -199,22 +207,24 @@ type DecodedLog<T extends Truffle.AnyEvent> = {
 function decodeLogs<T extends Truffle.AnyEvent>(logs, emitter, eventName): DecodedLog<T>[] {
   const abi = emitter.abi
   const address = emitter.address
-  let eventABI = abi.filter((x) => x.type === "event" && x.name === eventName)
-  if (eventABI.length === 0) {
+  const eventAbis = abi.filter((x) => x.type === "event" && x.name === eventName)
+  if (eventAbis.length === 0) {
     throw new Error(`No ABI entry for event '${eventName}'`)
-  } else if (eventABI.length > 1) {
+  } else if (eventAbis.length > 1) {
     throw new Error(`Multiple ABI entries for event '${eventName}', only uniquely named events are supported`)
   }
 
-  eventABI = eventABI[0]
+  const eventAbi = eventAbis[0]
 
   // The first topic will equal the hash of the event signature
-  const eventTopic = eventABI.signature
+  // If the signature isn't present (for example if a deployments file was passed)
+  // generate it.
+  const eventTopic = eventAbi.signature || web3.eth.abi.encodeEventSignature(eventAbi)
 
   // Only decode events of type 'EventName'
   return logs
     .filter((log) => log.topics.length > 0 && log.topics[0] === eventTopic && (!address || log.address === address))
-    .map((log) => web3.eth.abi.decodeLog(eventABI.inputs, log.data, log.topics.slice(1)))
+    .map((log) => web3.eth.abi.decodeLog(eventAbi.inputs, log.data, log.topics.slice(1)))
     .map((decoded) => ({event: eventName, args: decoded}))
 }
 
@@ -227,6 +237,7 @@ function getFirstLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): Decoded
   assertNonNullable(firstLog)
   return firstLog
 }
+
 function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedLog<T> {
   expect(logs.length).to.equal(1)
   return getFirstLog(logs)
@@ -257,6 +268,7 @@ async function deployAllContracts(
   usdc: ERC20Instance
   creditDesk: CreditDeskInstance
   fidu: FiduInstance
+  fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
   goldfinchFactory: GoldfinchFactoryInstance
   forwarder: TestForwarderInstance | null
@@ -264,13 +276,14 @@ async function deployAllContracts(
   tranchedPool: TranchedPoolInstance
   transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
-  stakingRewards: StakingRewardsInstance
+  stakingRewards: TestStakingRewardsInstance
   backerRewards: TestBackerRewardsInstance
   communityRewards: CommunityRewardsInstance
   merkleDistributor: MerkleDistributorInstance | null
   merkleDirectDistributor: MerkleDirectDistributorInstance | null
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
+  zapper: ZapperInstance
 }> {
   await deployments.fixture("base_deploy")
   const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
@@ -286,6 +299,10 @@ async function deployAllContracts(
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
   const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
+  const fiduUSDCCurveLP = await getDeployedAsTruffleContract<TestFiduUSDCCurveLPInstance>(
+    deployments,
+    "FiduUSDCCurveLP"
+  )
   const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
@@ -302,7 +319,7 @@ async function deployAllContracts(
     "TransferRestrictedVault"
   )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
-  const stakingRewards = await getDeployedAsTruffleContract<StakingRewardsInstance>(deployments, "StakingRewards")
+  const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
   const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
@@ -352,6 +369,8 @@ async function deployAllContracts(
   )
   const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
 
+  const zapper = await getTruffleContract<ZapperInstance>("Zapper")
+
   return {
     pool,
     seniorPool,
@@ -360,6 +379,7 @@ async function deployAllContracts(
     usdc,
     creditDesk,
     fidu,
+    fiduUSDCCurveLP,
     goldfinchConfig,
     goldfinchFactory,
     forwarder,
@@ -374,13 +394,17 @@ async function deployAllContracts(
     uniqueIdentity,
     go,
     backerRewards,
+    zapper,
   }
 }
 
-async function erc20Approve(erc20, accountToApprove, amount, fromAccounts) {
-  if (typeof accountToApprove != "string") {
-    throw new Error("Account to approve must be a string!")
+async function erc721Approve(erc721: any, accountToApprove: string, tokenId: BN, fromAccounts: (string | undefined)[]) {
+  for (const fromAccount of fromAccounts) {
+    await erc721.approve(accountToApprove, tokenId, {from: fromAccount})
   }
+}
+
+async function erc20Approve(erc20: any, accountToApprove: string, amount: BN, fromAccounts: (string | undefined)[]) {
   for (const fromAccount of fromAccounts) {
     await erc20.approve(accountToApprove, amount, {from: fromAccount})
   }
@@ -484,8 +508,8 @@ const createPoolWithCreditLine = async ({
   )
 
   const event = result.logs[result.logs.length - 1] as $TSFixMe
-  const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", event.args.pool)
-  const creditLine = await getTruffleContract<CreditLineInstance>("CreditLine", await pool.creditLine())
+  const pool = await getTruffleContractAtAddress<TranchedPoolInstance>("TranchedPool", event.args.pool)
+  const creditLine = await getTruffleContractAtAddress<CreditLineInstance>("CreditLine", await pool.creditLine())
 
   await erc20Approve(usdc, pool.address, usdcVal(100000), [thisOwner])
 
@@ -494,7 +518,7 @@ const createPoolWithCreditLine = async ({
     await erc20Approve(usdc, pool.address, usdcVal(100000), [thisBorrower])
   }
 
-  const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TestTranchedPool", pool.address)
+  const tranchedPool = await getTruffleContractAtAddress<TranchedPoolInstance>("TestTranchedPool", pool.address)
   return {tranchedPool, creditLine}
 }
 
@@ -564,12 +588,77 @@ export function expectOwnerRole({toBe, forContracts}: {toBe: () => Promise<strin
   expectRoles(expectations)
 }
 
+/**
+ * Mine multiple transactions in the same block, returning the receipts
+ *
+ * NOTE (READ!!!): if your transactions are timing out, and you're passing many
+ *                  the reason is that most likely there isn't enough block space
+ *                  given the transactions you're trying to mine. In the current
+ *                  state of the code this will happen if there are more than 15
+ *                  because we hardcode the gas limit.
+ *
+ * @param txs populated transactions to mine
+ * @param timeout time(ms) to wait before throwing an error
+ * @returns transactions receipts
+ */
+export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_000): Promise<ContractReceipt[]> {
+  const numberOfTransactionsThatCanFitWithHardcodedGasLimit = 15
+  if (txs.length > numberOfTransactionsThatCanFitWithHardcodedGasLimit) {
+    throw new Error(
+      `too many transcations! limit = ${numberOfTransactionsThatCanFitWithHardcodedGasLimit}, found = ${txs.length}`
+    )
+  }
+
+  let handle
+
+  const error = new Error(
+    `Failed to mine transactions under ${timeout} ms. Is your tx using too much gas for one block?`
+  )
+  const rejectAfterTimeout = new Promise((_resolve, reject) => {
+    handle = setTimeout(() => reject(error), timeout)
+  })
+
+  try {
+    // disable automine so that the transactions all enter the mempool
+    await ethers.provider.send("evm_setAutomine", [false])
+    const receipts: ContractTransaction[] = []
+    for (let tx of txs) {
+      const signer = await ethers.getSigner(tx.from as string)
+
+      // Ethers gas estimation is horrible, and calling ethers.provider.estimateGas is
+      // _insanely_ slow. So instead we're giving each transaction a very comfortable gas
+      // limit
+      tx = {
+        ...tx,
+        gasLimit: BigNumber.from("2000000"),
+      }
+
+      const receipt = await signer.sendTransaction(tx)
+      receipts.push(receipt)
+    }
+    await ethers.provider.send("evm_mine", [])
+    const values = await Promise.race([Promise.all(receipts.map((tx) => tx.wait())), rejectAfterTimeout])
+    clearTimeout(handle)
+    return values as ContractReceipt[]
+  } finally {
+    // we need to make sure we turn auto mining back on in case of a failure
+    // otherwise it'll make every transaction globally timeout
+    await ethers.provider.send("evm_setAutomine", [true])
+  }
+}
+
+export function dbg<T>(x: T): T {
+  console.trace(x)
+  return x
+}
+
 export {
   hardhat,
   chai,
   expect,
   decimals,
   USDC_DECIMALS,
+  FIDU_DECIMALS,
   GFI_DECIMALS,
   BN,
   MAX_UINT,
@@ -587,11 +676,12 @@ export {
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,
-  getTruffleContract,
+  getTruffleContractAtAddress,
   fiduToUSDC,
   usdcToFidu,
   expectAction,
   deployAllContracts,
+  erc721Approve,
   erc20Approve,
   erc20Transfer,
   getCurrentTimestamp,

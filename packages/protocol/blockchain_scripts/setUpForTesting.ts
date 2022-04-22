@@ -31,7 +31,7 @@ import {
   USDCDecimals,
 } from "../blockchain_scripts/deployHelpers"
 import {Logger} from "../blockchain_scripts/types"
-import {advanceTime, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
+import {advanceTime, getCurrentTimestamp, GFI_DECIMALS, toEthers, usdcVal} from "../test/testHelpers"
 import {
   BackerRewards,
   Borrower,
@@ -51,9 +51,13 @@ import {
 import {fundWithWhales} from "./helpers/fundWithWhales"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
-import * as migratev25 from "../blockchain_scripts/migrations/v2.5/migrate"
 
 dotenv.config({path: findEnvLocal()})
+
+export const BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE = new BigNumber(100_000_000)
+  .multipliedBy(new BigNumber(1e18))
+  .toString(10)
+export const BACKER_REWARDS_PERCENT_OF_TOTAL_GFI = 2
 
 /*
 This deployment deposits some funds to the pool, and creates an underwriter, and a credit line.
@@ -119,8 +123,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     // Patch USDC DOMAIN_SEPARATOR to make permit work locally
     await overrideUsdcDomainSeparator()
-
-    await migratev25.main()
   }
 
   // Grant local signer role
@@ -165,35 +167,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   config = config.connect(protocolOwnerSigner)
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
-
-  await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
-
   await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
-
-  const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
-  const lastEventArgs = getLastEventArgs(result)
-  const protocolBorrowerCon = lastEventArgs[0]
-  logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
-
-  const commonPool: TranchedPool = await createPoolForBorrower({
-    getOrNull,
-    underwriter,
-    goldfinchFactory,
-    borrower: protocolBorrowerCon,
-    erc20,
-    allowedUIDTypes: [...NON_US_UID_TYPES],
-  })
-  await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
-
-  const empty = await createPoolForBorrower({
-    getOrNull,
-    underwriter,
-    goldfinchFactory,
-    borrower: protocolBorrowerCon,
-    erc20,
-    allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
-  })
-  await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
 
   await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
@@ -204,10 +178,44 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       getOrNull,
       seniorPool,
       goldfinchFactory,
+      // NOTE: We make the borrower a depositor in their own pool here, for the sake of convenience
+      // in manual testing: this enables the test user to use the borrow page UI to drawdown and repay
+      // the loan, and then, because they're a depositor (i.e. backer) in that pool, they can also use the
+      // GFI page UI to receive backer rewards for the pool upon repayments.
+      depositor: borrower,
     })
-  }
+  } else {
+    await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
-  if (!requestFromClient) {
+    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+      await setUpRewards(erc20, getOrNull, protocol_owner)
+    }
+
+    const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
+    const lastEventArgs = getLastEventArgs(result)
+    const protocolBorrowerCon = lastEventArgs[0]
+    logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
+
+    const commonPool = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES],
+    })
+    await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
+
+    const empty = await createPoolForBorrower({
+      getOrNull,
+      underwriter,
+      goldfinchFactory,
+      borrower: protocolBorrowerCon,
+      erc20,
+      allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
+    })
+    await writePoolMetadata({pool: empty, borrower: "US Pool Empty"})
+
     await fundAddressAndDepositToCommonPool({erc20, depositorAddress: borrower, commonPool, seniorPool})
 
     // Have the senior fund invest
@@ -244,10 +252,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await bwrCon.pay(commonPool.address, payAmount.toString())
 
     await seniorPool.redeem(tokenId)
-
-    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-      await setUpRewards(erc20, getOrNull, protocol_owner)
-    }
   }
 }
 
@@ -314,13 +318,9 @@ async function setUpRewards(
   }
 
   // Configure BackerRewards
-  const backerRewardsPercentOfTotalGfi = 2
-  const backerRewardsGfiAmount = amount.mul(new BN(backerRewardsPercentOfTotalGfi)).div(new BN(100))
+  const backerRewardsGfiAmount = amount.mul(new BN(BACKER_REWARDS_PERCENT_OF_TOTAL_GFI)).div(new BN(100))
   await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
-  await backerRewards.setMaxInterestDollarsEligible(
-    new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10),
-    {from: protocolOwner}
-  )
+  await backerRewards.setMaxInterestDollarsEligible(BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE, {from: protocolOwner})
   await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
 }
 
@@ -382,12 +382,14 @@ async function createBorrowerContractAndPools({
   getOrNull,
   seniorPool,
   goldfinchFactory,
+  depositor,
 }: {
   erc20: Contract
   address: string
   getOrNull: any
   seniorPool: SeniorPool
   goldfinchFactory: GoldfinchFactory
+  depositor: string | undefined
 }): Promise<void> {
   const protocol_owner = await getProtocolOwner()
   const underwriter = await getProtocolOwner()
@@ -405,7 +407,7 @@ async function createBorrowerContractAndPools({
     goldfinchFactory,
     borrower: bwrConAddr,
     erc20,
-    depositor: protocol_owner,
+    depositor: depositor || protocol_owner,
     allowedUIDTypes: [...NON_US_UID_TYPES, ...US_UID_TYPES],
   })
 
@@ -498,6 +500,8 @@ async function writePoolMetadata({
     metadata = {}
   }
   const name = `${borrower.slice(0, 6)}: ${_.sample(names)}`
+  const launchTime = await getCurrentTimestamp()
+
   logger(`Write metadata for ${pool.address}:${name}`)
   metadata[pool.address.toLowerCase()] = {
     name,
@@ -508,6 +512,7 @@ async function writePoolMetadata({
     NDAUrl,
     backerLimit,
     disabled: _.sample(status),
+    launchTime,
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
