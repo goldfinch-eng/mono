@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { useState } from "react";
 
 import { Button, Modal } from "@/components/design-system";
-import { formatPercent, formatUsdc } from "@/lib/format";
+import { formatPercent, formatUsdcAsDollars } from "@/lib/format";
 import {
   SeniorPoolPortfolioUserFieldsFragment,
   SeniorPoolPortfolioPoolFieldsFragment,
@@ -47,7 +47,7 @@ export function PortfolioSection({ user, seniorPool }: PortfolioSectionProps) {
         <div className="flex flex-col items-center">
           <div>Portfolio Balance</div>
           <div className="text-4xl tabular-nums">
-            {portfolioBalance ? formatUsdc(portfolioBalance) : "$0.00"}
+            {portfolioBalance ? formatUsdcAsDollars(portfolioBalance) : "$0.00"}
           </div>
         </div>
         <div className="flex flex-col items-center">

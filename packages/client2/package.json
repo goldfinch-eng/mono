@@ -3,15 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx typechain --target=ethers-v5 \"abis/*.json\" && npm run codegen",
+    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npm run gen-contract-types && npm run codegen",
     "dev": "next dev",
-    "prebuild": "npx typechain --target=ethers-v5 \"abis/*.json\" && npm run codegen",
+    "prebuild": "npm run gen-contract-types && npm run codegen",
     "build": "next build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build",
     "lint": "next lint",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
+    "gen-contract-types": "typechain --target=ethers-v5 \"abis/*.json\"",
     "codegen": "graphql-codegen",
     "typecheck": "npx tsc --noEmit"
   },

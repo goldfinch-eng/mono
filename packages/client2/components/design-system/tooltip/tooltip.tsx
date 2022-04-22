@@ -12,6 +12,7 @@ import {
   arrow,
   safePolygon,
   autoUpdate,
+  FloatingPortal,
 } from "@floating-ui/react-dom-interactions";
 import { Transition } from "@headlessui/react";
 import clsx from "clsx";
@@ -117,54 +118,56 @@ export function Tooltip({
           getReferenceProps({ ref: reference, ...children.props })
         )
       )}
-      <div
-        ref={floating}
-        {...getFloatingProps({
-          ref: floating,
-          style: {
-            position: strategy,
-            top: y ?? "",
-            left: x ?? "",
-          },
-        })}
-      >
-        <Transition
-          as={Fragment}
-          show={isOpen}
-          enter="transition duration-200 ease-in"
-          enterFrom="transform scale-95 opacity-0"
-          enterTo="transform scale-100 opacity-100"
-          leave="transition duration-200 ease-out"
-          leaveFrom="transform scale-100 opacity-100"
-          leaveTo="transform scale-95 opacity-0"
+      <FloatingPortal>
+        <div
+          ref={floating}
+          {...getFloatingProps({
+            ref: floating,
+            style: {
+              position: strategy,
+              top: y ?? "",
+              left: x ?? "",
+            },
+          })}
         >
-          <div className="relative min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
-            {content}
-            <div
-              ref={arrowRef}
-              style={{
-                left: arrowX,
-                top: arrowY,
-                [arrowSide]: "-7px",
-                width: "12px",
-                height: "12px",
-              }}
-              className={clsx(
-                "absolute origin-center rotate-45 border-sand-100 bg-white",
-                actualPlacement.startsWith("top")
-                  ? "border-r border-b"
-                  : actualPlacement.startsWith("right")
-                  ? "border-l border-b"
-                  : actualPlacement.startsWith("bottom")
-                  ? "border-l border-t"
-                  : actualPlacement.startsWith("left")
-                  ? "border-t border-r"
-                  : null
-              )}
-            />
-          </div>
-        </Transition>
-      </div>
+          <Transition
+            as={Fragment}
+            show={isOpen}
+            enter="transition duration-200 ease-in"
+            enterFrom="transform scale-95 opacity-0"
+            enterTo="transform scale-100 opacity-100"
+            leave="transition duration-200 ease-out"
+            leaveFrom="transform scale-100 opacity-100"
+            leaveTo="transform scale-95 opacity-0"
+          >
+            <div className="relative min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
+              {content}
+              <div
+                ref={arrowRef}
+                style={{
+                  left: arrowX,
+                  top: arrowY,
+                  [arrowSide]: "-7px",
+                  width: "12px",
+                  height: "12px",
+                }}
+                className={clsx(
+                  "absolute origin-center rotate-45 border-sand-100 bg-white",
+                  actualPlacement.startsWith("top")
+                    ? "border-r border-b"
+                    : actualPlacement.startsWith("right")
+                    ? "border-l border-b"
+                    : actualPlacement.startsWith("bottom")
+                    ? "border-l border-t"
+                    : actualPlacement.startsWith("left")
+                    ? "border-t border-r"
+                    : null
+                )}
+              />
+            </div>
+          </Transition>
+        </div>
+      </FloatingPortal>
     </>
   );
 }

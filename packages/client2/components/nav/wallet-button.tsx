@@ -3,7 +3,7 @@ import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 import { Identicon } from "../identicon";
-import { WalletInfo } from "./wallet-info";
+import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
   const { account } = useWallet();
@@ -11,7 +11,7 @@ export function WalletButton() {
   return account ? (
     <Popover
       placement="bottom-end"
-      content={({ close }) => <WalletInfo onWalletDisconnect={close} />}
+      content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
     >
       <Button className="inline-flex items-center gap-3">
         <span>

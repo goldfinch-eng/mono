@@ -10,6 +10,7 @@ import {
   autoUpdate,
   Placement,
   FloatingFocusManager,
+  FloatingPortal,
 } from "@floating-ui/react-dom-interactions";
 import { Transition } from "@headlessui/react";
 import { useState, useEffect, Fragment, ReactNode, cloneElement } from "react";
@@ -53,36 +54,38 @@ export function Popover({
         children,
         getReferenceProps({ ref: reference, ...children.props })
       )}
-      <div
-        ref={floating}
-        {...getFloatingProps({
-          ref: floating,
-          style: {
-            position: strategy,
-            top: y ?? "",
-            left: x ?? "",
-          },
-        })}
-      >
-        <Transition
-          as={Fragment}
-          show={isOpen}
-          enter="transition duration-200 ease-in"
-          enterFrom="transform scale-95 opacity-0"
-          enterTo="transform scale-100 opacity-100"
-          leave="transition duration-200 ease-out"
-          leaveFrom="transform scale-100 opacity-100"
-          leaveTo="transform scale-95 opacity-0"
+      <FloatingPortal>
+        <div
+          ref={floating}
+          {...getFloatingProps({
+            ref: floating,
+            style: {
+              position: strategy,
+              top: y ?? "",
+              left: x ?? "",
+            },
+          })}
         >
-          <div className="min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
-            <FloatingFocusManager context={context} modal={false}>
-              {typeof content === "function"
-                ? content({ close: () => setIsOpen(false) })
-                : content}
-            </FloatingFocusManager>
-          </div>
-        </Transition>
-      </div>
+          <Transition
+            as={Fragment}
+            show={isOpen}
+            enter="transition duration-200 ease-in"
+            enterFrom="transform scale-95 opacity-0"
+            enterTo="transform scale-100 opacity-100"
+            leave="transition duration-200 ease-out"
+            leaveFrom="transform scale-100 opacity-100"
+            leaveTo="transform scale-95 opacity-0"
+          >
+            <div className="min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
+              <FloatingFocusManager context={context} modal={false}>
+                {typeof content === "function"
+                  ? content({ close: () => setIsOpen(false) })
+                  : content}
+              </FloatingFocusManager>
+            </div>
+          </Transition>
+        </div>
+      </FloatingPortal>
     </>
   );
 }

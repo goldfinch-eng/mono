@@ -25,6 +25,7 @@ extend type TranchedPool {
 type AppUser {
   account: String
   usdcBalance: BigInt
+  gfiBalance: BigInt
 }
 
 type Gfi {
