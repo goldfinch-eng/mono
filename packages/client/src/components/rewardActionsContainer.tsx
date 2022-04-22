@@ -35,7 +35,7 @@ import TransactionForm from "./transactionForm"
 import useNonNullContext from "../hooks/useNonNullContext"
 import {BackerMerkleDirectDistributorLoaded} from "../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributorLoaded} from "../ethereum/backerMerkleDistributor"
-import {BackerRewardsLoaded, BackerRewardsPosition} from "../ethereum/backerRewards"
+import {BackerRewardsLoaded, BackerRewardsNotWithdrawableReason, BackerRewardsPosition} from "../ethereum/backerRewards"
 import {requestUserAddGfiTokenToWallet} from "../web3"
 
 const IMMEDIATE_VESTING_SCHEDULE = "Immediate"
@@ -318,6 +318,7 @@ interface RewardsListItemProps {
   details: ItemDetails
   disabled: boolean
   handleOnClick: () => Promise<void>
+  noteMessage: string | undefined
 }
 
 function RewardsListItem(props: RewardsListItemProps) {
@@ -358,6 +359,11 @@ function RewardsListItem(props: RewardsListItemProps) {
                 </div>
               </div>
               {actionButtonComponent}
+              {props.noteMessage ? (
+                <div className="form-input-note">
+                  <p>{props.noteMessage}</p>
+                </div>
+              ) : undefined}
             </div>
           </div>
           {open && detailsComponent}
@@ -369,6 +375,11 @@ function RewardsListItem(props: RewardsListItemProps) {
               <div className="table-cell col32">
                 {props.title}
                 <div className="subtitle">{props.subtitle}</div>
+                {props.noteMessage ? (
+                  <div className="form-input-note">
+                    <p>{props.noteMessage}</p>
+                  </div>
+                ) : undefined}
               </div>
               <div className={`table-cell col20 numeric ${unvestedGFIZeroDisabled}`} data-testid="detail-unvested">
                 {displayNumber(gfiFromAtomic(props.unvestedGFI), 2)}
@@ -544,6 +555,23 @@ type RewardActionsContainerProps = {
     }
 )
 
+const mapBackerRewardsNotWithdrawableReasonToMessage = (
+  reason: BackerRewardsNotWithdrawableReason
+): string | undefined => {
+  switch (reason) {
+    case "backerRewardsPaused":
+      return "Claiming is disabled because the contract is paused."
+    case "poolPaused":
+      return "Claiming is disabled because the pool is paused."
+    case "late":
+      return "Claiming is disabled because a repayment is due."
+    case undefined:
+      return undefined
+    default:
+      assertUnreachable(reason)
+  }
+}
+
 function RewardActionsContainer(props: RewardActionsContainerProps) {
   const sendFromUser = useSendFromUser()
   const [showAction, setShowAction] = useState<boolean>(false)
@@ -646,7 +674,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
     itemWithDetails: T,
     getAllClaimedStatus: (item: T["item"]) => RewardStatus.TemporarilyAllClaimed | RewardStatus.PermanentlyAllClaimed,
     disabled: boolean,
-    handleClaim: () => Promise<void>
+    handleClaim: () => Promise<void>,
+    noteMessage: string | undefined
   ) {
     const {item, details} = itemWithDetails
     if (item.claimable.eq(0)) {
@@ -661,6 +690,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           handleOnClick={() => Promise.resolve()}
           details={details}
           disabled={disabled}
+          noteMessage={noteMessage}
         />
       )
     } else if (!showAction) {
@@ -674,6 +704,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
           handleOnClick={async () => setShowAction(true)}
           details={details}
           disabled={disabled}
+          noteMessage={noteMessage}
         />
       )
     }
@@ -709,7 +740,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       (item: StakingRewardsPosition) =>
         item.storedPosition.amount.eq(0) ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
       props.disabled || props.stakingRewards.info.value.isPaused,
-      () => handleClaimViaGetReward(props.stakingRewards, item.tokenId)
+      () => handleClaimViaGetReward(props.stakingRewards, item.tokenId),
+      undefined
     )
   } else if (props.type === "backerRewards") {
     const item = props.item
@@ -727,12 +759,13 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
       {item, details},
       (item: BackerRewardsPosition) =>
         item.backer.tranchedPool.isRepaid ? RewardStatus.PermanentlyAllClaimed : RewardStatus.TemporarilyAllClaimed,
-      props.disabled || !item.rewardsAreWithdrawable,
+      props.disabled || !!item.rewardsNotWithdrawableReason,
       () =>
         handleClaimViaWithdraw(
           props.backerRewards,
           item.tokenPositions.map((tokenPosition) => tokenPosition.tokenId)
-        )
+        ),
+      mapBackerRewardsNotWithdrawableReasonToMessage(item.rewardsNotWithdrawableReason)
     )
   } else if (props.type === "communityRewards") {
     const item = props.item
@@ -764,7 +797,8 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
             : RewardStatus.TemporarilyAllClaimed
           : RewardStatus.PermanentlyAllClaimed,
       props.disabled || props.communityRewards.info.value.isPaused,
-      () => handleClaimViaGetReward(props.communityRewards, item.tokenId)
+      () => handleClaimViaGetReward(props.communityRewards, item.tokenId),
+      undefined
     )
   } else if (props.type === "merkleDistributor") {
     const item = props.item
@@ -779,6 +813,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         handleOnClick={() => handleAcceptMerkleDistributorGrant(item.grantInfo)}
         details={details}
         disabled={props.disabled || props.communityRewards.info.value.isPaused}
+        noteMessage={undefined}
       />
     )
   } else if (props.type === "merkleDirectDistributor") {
@@ -794,6 +829,7 @@ function RewardActionsContainer(props: RewardActionsContainerProps) {
         handleOnClick={() => handleAcceptMerkleDirectDistributorGrant(item.grantInfo)}
         details={details}
         disabled={props.disabled || props.merkleDirectDistributor.info.value.isPaused}
+        noteMessage={undefined}
       />
     )
   } else {
