@@ -22,5 +22,12 @@ module.exports = {
         },
       },
     },
+    "lib/graphql/schema.json": {
+      plugins: ["introspection"],
+      config: {
+        minify: true,
+        descriptions: false,
+      },
+    },
   },
 };

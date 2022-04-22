@@ -1,5 +1,5 @@
 import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { FixedNumber } from "ethers";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
@@ -21,29 +21,6 @@ function readFieldFromMetadata(
   };
 }
 
-function readAsBigNumber(n?: string) {
-  if (!n) {
-    return null;
-  }
-  return BigNumber.from(n);
-}
-
-function readAsFixedNumber(n?: string | FixedNumber) {
-  const decimalWidth = 32; // This number was chosen arbitrarily. It seems precise enough for any math the frontend would have to do for displaying data to users, while not being limitless
-  if (!n) {
-    return null;
-  } else if (n instanceof FixedNumber) {
-    return n;
-  } else if (!n.includes(".")) {
-    return FixedNumber.fromString(n, decimalWidth);
-  }
-  const [wholeNumber, decimals] = n.split(".");
-  return FixedNumber.fromString(
-    `${wholeNumber}.${decimals.substring(0, decimalWidth)}`,
-    decimalWidth
-  );
-}
-
 export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
@@ -61,10 +38,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   },
   SeniorPoolStatus: {
     fields: {
-      totalPoolAssets: { read: readAsBigNumber },
-      totalPoolAssetsUsdc: { read: readAsBigNumber },
-      estimatedApy: { read: readAsFixedNumber },
-      estimatedApyFromGfiRaw: { read: readAsFixedNumber },
       estimatedApyFromGfi: {
         read: (_, { readField }) => {
           const gfiPrice = gfiVar()?.price.usd;
@@ -75,9 +48,9 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
             );
             return null;
           }
-          const gfiPriceAsFixedNumber = readAsFixedNumber(
+          const gfiPriceAsFixedNumber = FixedNumber.fromString(
             gfiPrice.toString()
-          ) as FixedNumber;
+          );
           const estimatedApyFromGfiRaw = readField({
             fieldName: "estimatedApyFromGfiRaw",
           });
@@ -92,12 +65,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
           );
         },
       },
-      earnRatePerTokenPerYear: { read: readAsBigNumber },
-    },
-  },
-  SeniorPoolDeposit: {
-    fields: {
-      amount: { read: readAsBigNumber },
     },
   },
   TranchedPool: {
@@ -106,8 +73,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       description: { read: readFieldFromMetadata("description") },
       category: { read: readFieldFromMetadata("category") },
       icon: { read: readFieldFromMetadata("icon") },
-      estimatedJuniorApy: { read: readAsFixedNumber },
-      estimatedJuniorApyFromGfiRaw: { read: readAsFixedNumber },
       estimatedJuniorApyFromGfi: {
         read: (_, { readField }) => {
           // Implementation here is really similar to estimatedApyFromGfi on SeniorPoolStatus
@@ -120,9 +85,9 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
             );
             return null;
           }
-          const gfiPriceAsFixedNumber = readAsFixedNumber(
+          const gfiPriceAsFixedNumber = FixedNumber.fromString(
             gfiPrice.toString()
-          ) as FixedNumber;
+          );
           const estimatedJuniorApyFromGfiRaw = readField({
             fieldName: "estimatedJuniorApyFromGfiRaw",
           });
