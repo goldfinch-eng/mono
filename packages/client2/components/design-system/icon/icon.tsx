@@ -5,6 +5,7 @@ import ArrowDown from "./svg/arrow-down.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
+import ChevronDown from "./svg/chevron-down.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
 import Menu from "./svg/menu.svg";
 import Wallet from "./svg/wallet.svg";
@@ -15,6 +16,7 @@ export const iconManifest = {
   ArrowTopRight,
   ArrowUp,
   Checkmark,
+  ChevronDown,
   InfoCircle,
   Menu,
   Wallet,
