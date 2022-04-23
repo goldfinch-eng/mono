@@ -215,7 +215,7 @@ type TranchedPoolToken @entity {
   principalRedeemable: BigInt!
 }
 
-type StakingRewards @entity {
+type StakingRewardsData @entity {
   id: ID! # Set to "1" because this is a singleton
   """
   The earn rate is a measure per second

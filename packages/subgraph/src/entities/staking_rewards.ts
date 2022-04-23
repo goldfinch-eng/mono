@@ -1,16 +1,16 @@
 import {Address} from "@graphprotocol/graph-ts"
 
-import {StakingRewards} from "../../generated/schema"
+import {StakingRewardsData} from "../../generated/schema"
 import {StakingRewards_Implementation as StakingRewardsContract} from "../../generated/templates/StakingRewards/StakingRewards_Implementation"
 
 import {updateEstimatedApyFromGfiRaw} from "./senior_pool"
 
 const STAKING_REWARDS_ID = "1"
 
-export function getStakingRewards(): StakingRewards {
-  let stakingRewards = StakingRewards.load(STAKING_REWARDS_ID)
+export function getStakingRewards(): StakingRewardsData {
+  let stakingRewards = StakingRewardsData.load(STAKING_REWARDS_ID)
   if (!stakingRewards) {
-    stakingRewards = new StakingRewards(STAKING_REWARDS_ID)
+    stakingRewards = new StakingRewardsData(STAKING_REWARDS_ID)
   }
   return stakingRewards
 }
