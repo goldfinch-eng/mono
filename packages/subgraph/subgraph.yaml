@@ -131,27 +131,6 @@ dataSources:
       file: ./src/mappings/pool_tokens_proxy.ts
 
   - kind: ethereum/contract
-    name: GFI
-    network: mainnet
-    source:
-      address: "0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b"
-      abi: GFI
-      startBlock: 13464840
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - GFIData
-      abis:
-        - name: GFI
-          file: ./abis/GFI.json
-      eventHandlers:
-        - event: CapUpdated(indexed address,uint256)
-          handler: handleCapUpdated
-      file: ./src/mappings/gfi.ts
-
-  - kind: ethereum/contract
     name: StakingRewardsProxy
     network: mainnet
     source:
@@ -171,8 +150,6 @@ dataSources:
           file: ./abis/StakingRewards_Implementation.json
         - name: StakingRewards_Proxy
           file: ./abis/StakingRewards_Proxy.json
-        - name: GFI
-          file: ./abis/GFI.json
       eventHandlers:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
@@ -432,14 +409,12 @@ templates:
           file: ./abis/StakingRewards_Implementation.json
         - name: StakingRewards_Proxy
           file: ./abis/StakingRewards_Proxy.json
-        - name: GFI
-          file: ./abis/GFI.json
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
-        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
+        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
           handler: handleStaked
-        - event: Unstaked(indexed address,indexed uint256,uint256)
+        - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
           handler: handleUnstaked
 
   - name: BackerRewards

@@ -1,4 +1,4 @@
-import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
+import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/SeniorPool/SeniorPool"
 import {Fidu_Implementation as FiduContract} from "../../generated/templates/SeniorPool/Fidu_Implementation"
@@ -48,13 +48,16 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
 export function updateEstimatedApyFromGfiRaw(): void {
   const stakingRewards = getStakingRewards()
   const seniorPoolStatus = getOrInitSeniorPoolStatus()
-  seniorPoolStatus.estimatedApyFromGfiRaw = stakingRewards.currentEarnRatePerToken
-    .times(SECONDS_PER_YEAR)
-    .toBigDecimal()
-    .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
-    .div(seniorPoolStatus.sharePrice.toBigDecimal())
-    .div(GFI_DECIMALS.toBigDecimal())
-  seniorPoolStatus.save()
+
+  if (seniorPoolStatus.sharePrice != BigInt.zero()) {
+    seniorPoolStatus.estimatedApyFromGfiRaw = stakingRewards.currentEarnRatePerToken
+      .times(SECONDS_PER_YEAR)
+      .toBigDecimal()
+      .times(FIDU_DECIMALS.toBigDecimal()) // This might be better thought of as the share-price mantissa, which happens to be the same as `FIDU_DECIMALS`.
+      .div(seniorPoolStatus.sharePrice.toBigDecimal())
+      .div(GFI_DECIMALS.toBigDecimal())
+    seniorPoolStatus.save()
+  }
 }
 
 export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddress: Address): void {

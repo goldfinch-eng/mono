@@ -31,7 +31,6 @@ import {
   estimateJuniorAPY,
 } from "./helpers"
 import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
-import {getGfiEntity} from "./gfi"
 import {getBackerRewards} from "./backer_rewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -248,14 +247,9 @@ const tranchedPoolBlacklist = [
 ]
 
 export function calculateApyFromGfiForAllPools(now: BigInt): void {
-  const gfi = getGfiEntity()
   const backerRewards = getBackerRewards()
   // Bail out early if the backer rewards parameters aren't populated yet
-  if (
-    gfi.totalSupply == BigInt.zero() ||
-    backerRewards.totalRewards == BigInt.zero() ||
-    backerRewards.maxInterestDollarsEligible == BigInt.zero()
-  ) {
+  if (backerRewards.totalRewards == BigInt.zero() || backerRewards.maxInterestDollarsEligible == BigInt.zero()) {
     return
   }
   const seniorPoolStatus = getOrInitSeniorPoolStatus()

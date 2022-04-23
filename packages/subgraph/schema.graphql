@@ -215,19 +215,12 @@ type TranchedPoolToken @entity {
   principalRedeemable: BigInt!
 }
 
-type GFIData @entity {
-  id: ID! # Set to "1" because this is a singleton
-  contractAddress: String!
-  totalSupply: BigInt!
-}
-
 type StakingRewards @entity {
   id: ID! # Set to "1" because this is a singleton
   """
   The earn rate is a measure per second
   """
   currentEarnRatePerToken: BigInt!
-  gfiTotalSupply: BigInt!
 }
 
 type BackerRewards @entity {

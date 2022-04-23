@@ -4,7 +4,6 @@ import {StakingRewards} from "../../generated/schema"
 import {StakingRewards_Implementation as StakingRewardsContract} from "../../generated/templates/StakingRewards/StakingRewards_Implementation"
 
 import {updateEstimatedApyFromGfiRaw} from "./senior_pool"
-import {updateGfiData} from "./gfi"
 
 const STAKING_REWARDS_ID = "1"
 
@@ -22,9 +21,6 @@ export function updateCurrentEarnRate(contractAddress: Address): void {
   if (!callResult.reverted) {
     const stakingRewards = getStakingRewards()
     stakingRewards.currentEarnRatePerToken = callResult.value
-
-    // ! This is a weird place to update GFI data, but as it turns out it's really hard to place a call to gfi.totalSupply() because that has to be done after minting and Call Handlers aren't supported by hardhat
-    updateGfiData(contract.rewardsToken())
 
     stakingRewards.save()
     updateEstimatedApyFromGfiRaw()
