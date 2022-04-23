@@ -7,10 +7,10 @@ export interface HeadingProps extends HTMLAttributes<HTMLHeadingElement> {
 }
 
 const levelToFontSize = {
-  5: "text-lg",
-  4: "text-xl",
-  3: "text-2xl",
-  2: "text-3xl",
+  5: "text-3xl",
+  4: "text-4xl",
+  3: "text-5xl",
+  2: "text-6xl",
   1: "text-7xl",
 };
 
@@ -22,7 +22,7 @@ export function Heading({ level, as, className, ...rest }: HeadingProps) {
   return (
     <Component
       className={clsx(
-        Component === "h1" ? "font-bold" : null,
+        "font-serif font-bold tracking-[0.02rem]",
         fontSizeClass,
         className
       )}

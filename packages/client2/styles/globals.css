@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  @font-face {
+    font-family: "Newsreader Display";
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url(./NewsreaderDisplay.woff2) format("woff2");
+  }
+
   html,
   body,
   #__next {
