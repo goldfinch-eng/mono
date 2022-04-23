@@ -1,15 +1,15 @@
 import {Address, BigDecimal} from "@graphprotocol/graph-ts"
 
-import {BackerRewards} from "../../generated/schema"
+import {BackerRewardsData} from "../../generated/schema"
 import {BackerRewards_Implementation as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards_Implementation"
-import {GFI_DECIMALS, USDC_DECIMALS} from "../constants"
+import {GFI_DECIMALS} from "../constants"
 
 const BACKER_REWARDS_ID = "1"
 
-export function getBackerRewards(): BackerRewards {
-  let backerRewards = BackerRewards.load(BACKER_REWARDS_ID)
+export function getBackerRewards(): BackerRewardsData {
+  let backerRewards = BackerRewardsData.load(BACKER_REWARDS_ID)
   if (!backerRewards) {
-    backerRewards = new BackerRewards(BACKER_REWARDS_ID)
+    backerRewards = new BackerRewardsData(BACKER_REWARDS_ID)
   }
   return backerRewards
 }

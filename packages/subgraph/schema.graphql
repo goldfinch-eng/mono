@@ -223,7 +223,7 @@ type StakingRewardsData @entity {
   currentEarnRatePerToken: BigInt!
 }
 
-type BackerRewards @entity {
+type BackerRewardsData @entity {
   id: ID! # Set to "1" because this is a singleton
   contractAddress: String!
   totalRewards: BigInt!
