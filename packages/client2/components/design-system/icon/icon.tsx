@@ -32,6 +32,20 @@ export interface IconProps {
   className?: string;
 }
 
+export function sizeToClassName(size: IconProps["size"]) {
+  return size === "xs"
+    ? "h-4 w-4"
+    : size === "sm"
+    ? "h-5 w-5"
+    : size === "md"
+    ? "h-6 w-6"
+    : size === "lg"
+    ? "h-8 w-8"
+    : size === "text"
+    ? "h-[1em] w-[1em]"
+    : undefined;
+}
+
 export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
   { name, size = "text", className }: IconProps,
   ref
@@ -41,21 +55,7 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
     <IconComponent
       aria-hidden="true"
       ref={ref}
-      className={clsx(
-        size === "xs"
-          ? "h-4 w-4"
-          : size === "sm"
-          ? "h-5 w-5"
-          : size === "md"
-          ? "h-6 w-6"
-          : size === "lg"
-          ? "h-8 w-8"
-          : size === "text"
-          ? "h-[1em] w-[1em]"
-          : null,
-        "inline",
-        className
-      )}
+      className={clsx(sizeToClassName(size), "inline", className)}
     />
   );
 });
