@@ -7,7 +7,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Content within the button
    */
-  children: ReactNode;
+  children?: ReactNode;
   /**
    * Determines the size of the button via padding and font size
    */
@@ -70,17 +70,64 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...rest}
       >
         {isLoading ? (
-          <Spinner className="-ml-1 h-5 w-5" />
+          <Spinner
+            size="sm"
+            className={clsx(children ? "-my-2 -ml-1" : null)}
+          />
         ) : iconLeft ? (
-          <Icon name={iconLeft} size="sm" className="-ml-1" />
+          <Icon
+            name={iconLeft}
+            size="sm"
+            className={clsx(children ? "-my-2 -ml-1" : null)}
+          />
         ) : null}
         {children}
         {isLoading && iconRight && !iconLeft ? (
-          <Spinner className="-mr-1 h-5 w-5" />
+          <Spinner
+            size="sm"
+            className={clsx(children ? "-my-2 -mr-1" : null)}
+          />
         ) : iconRight ? (
-          <Icon name={iconRight} size="sm" className="-mr-1" />
+          <Icon
+            name={iconRight}
+            size="sm"
+            className={clsx(children ? "-my-2 -mr-1" : null)}
+          />
         ) : null}
       </button>
+    );
+  }
+);
+
+interface IconButtonProps
+  extends Omit<ButtonProps, "children" | "iconLeft" | "iconRight"> {
+  icon: IconProps["name"];
+  /**
+   * Accessibility label. Must be provided since this form of button has no visible label.
+   */
+  label: string;
+}
+
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
+  function IconButton({ icon, size = "md", className, ...rest }, ref) {
+    return (
+      <Button
+        iconRight={icon}
+        className={clsx(
+          size === "sm"
+            ? "!p-0.5"
+            : size === "md"
+            ? "!p-1.5"
+            : size === "lg"
+            ? "!p-2.5"
+            : size === "xl"
+            ? "!p-[1.125rem]"
+            : null,
+          className
+        )}
+        {...rest}
+        ref={ref}
+      />
     );
   }
 );
