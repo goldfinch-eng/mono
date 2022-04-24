@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { forwardRef } from "react";
 
 import ArrowDown from "./svg/arrow-down.svg";
+import ArrowSmRight from "./svg/arrow-sm-right.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
@@ -12,6 +13,7 @@ import X from "./svg/x.svg";
 
 export const iconManifest = {
   ArrowDown,
+  ArrowSmRight,
   ArrowTopRight,
   ArrowUp,
   Checkmark,
