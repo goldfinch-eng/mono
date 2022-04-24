@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    */
   size?: "sm" | "md" | "lg" | "xl";
   /**
-   * Determines the overall look of the button. Take advantage of this when you have to present the user with multiple choices on a screen.
+   * Determines the shape of the button.
    */
   variant?: "standard" | "rounded";
   /**
