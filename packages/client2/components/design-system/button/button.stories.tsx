@@ -24,7 +24,7 @@ export const ButtonStory: ComponentStory<typeof Button> = (args) => (
 ButtonStory.args = {
   children: "Hello World",
   size: "md",
-  variant: "solid",
-  colorScheme: "sand",
+  variant: "standard",
+  colorScheme: "primary",
   disabled: false,
 };

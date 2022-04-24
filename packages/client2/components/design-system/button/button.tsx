@@ -15,11 +15,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Determines the overall look of the button. Take advantage of this when you have to present the user with multiple choices on a screen.
    */
-  variant?: "solid";
+  variant?: "standard" | "rounded";
   /**
    * Determines the coloration of the button, independent from variant
    */
-  colorScheme?: "sky" | "eggplant" | "sand";
+  colorScheme?: "primary" | "secondary";
   disabled?: boolean;
   iconLeft?: IconProps["name"];
   iconRight?: IconProps["name"];
@@ -31,8 +31,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     {
       children,
       size = "md",
-      variant = "solid",
-      colorScheme = "sand",
+      variant = "standard",
+      colorScheme = "primary",
       iconLeft,
       iconRight,
       isLoading = false,
@@ -45,37 +45,40 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={clsx(
-          "inline-flex items-center justify-center gap-2 rounded-full font-medium outline-none ring-offset-0 transition-colors focus:ring-1 disabled:pointer-events-none",
+          "inline-flex items-center justify-center font-medium outline-none transition-colors disabled:pointer-events-none",
           size === "sm"
-            ? "py-2.5 px-4 text-xs"
+            ? "gap-2 py-1 px-3 text-xs"
             : size === "md"
-            ? "py-3 px-5 text-sm"
+            ? "gap-3 py-2 px-4 text-xs"
             : size === "lg"
-            ? "py-3.5 px-6 text-lg"
-            : "py-5 px-8 text-xl",
-          variant === "solid"
-            ? colorScheme === "sky"
-              ? "bg-blue-100 text-purple-400 ring-blue-200 hover:bg-blue-200 active:bg-blue-300 disabled:bg-blue-50 disabled:text-opacity-50"
-              : colorScheme === "eggplant"
-              ? "bg-purple-200 text-white ring-purple-300 hover:bg-purple-300 active:bg-purple-400 disabled:bg-purple-50 disabled:text-purple-200"
-              : colorScheme === "sand"
-              ? "bg-sand-100 text-purple-400 ring-sand-500 hover:bg-sand-300 active:bg-sand-400 disabled:bg-sand-100 disabled:text-sand-600"
-              : null
+            ? "gap-4 py-2.5 px-5 text-sm"
+            : size === "xl"
+            ? "gap-4 py-4 px-6"
+            : null,
+          variant === "standard"
+            ? "rounded"
+            : variant === "rounded"
+            ? "rounded-full"
+            : null,
+          colorScheme === "primary"
+            ? "bg-sand-700 text-white hover:bg-sand-800 active:bg-sand-900 disabled:bg-sand-100 disabled:text-sand-400"
+            : colorScheme === "secondary"
+            ? "bg-sand-100 text-sand-700 hover:bg-sand-200 hover:text-sand-900 active:bg-sand-300 active:text-sand-900 disabled:bg-sand-100 disabled:text-sand-400"
             : null,
           className
         )}
         {...rest}
       >
         {isLoading ? (
-          <Spinner className="!h-[1em] !w-[1em]" />
+          <Spinner className="-ml-1 h-5 w-5" />
         ) : iconLeft ? (
-          <Icon name={iconLeft} size="sm" />
+          <Icon name={iconLeft} size="sm" className="-ml-1" />
         ) : null}
         {children}
         {isLoading && iconRight && !iconLeft ? (
-          <Spinner className="!h-[1em] !w-[1em]" />
+          <Spinner className="-mr-1 h-5 w-5" />
         ) : iconRight ? (
-          <Icon name={iconRight} size="sm" />
+          <Icon name={iconRight} size="sm" className="-mr-1" />
         ) : null}
       </button>
     );
