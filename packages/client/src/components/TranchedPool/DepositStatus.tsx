@@ -91,14 +91,13 @@ export function DepositStatus({
             value: displayPercent(estimatedUSDCApy),
           },
           {
-            text: "Backer liquidity mining GFI APY*",
+            text: "Backer liquidity mining GFI APY",
             value: estimatedBackersOnlyApy
               ? `~${displayPercent(estimatedBackersOnlyApy)}`
               : displayPercent(estimatedBackersOnlyApy),
           },
           {
-            text: "LP rewards match GFI APY*",
-            subtext: "(expected to launch in March)",
+            text: "LP rewards match GFI APY",
             value: estimatedLpSeniorPoolMatchingApy
               ? `~${displayPercent(estimatedLpSeniorPoolMatchingApy)}`
               : displayPercent(estimatedLpSeniorPoolMatchingApy),
@@ -111,29 +110,6 @@ export function DepositStatus({
               ? `~${displayPercent(estimatedApy)}`
               : displayPercent(estimatedApy),
         }}
-        footer={
-          <>
-            <p>
-              *Learn more in the proposals for{" "}
-              <a
-                href="https://snapshot.org/#/goldfinch.eth/proposal/0xb716c18c38eb1828044aca84a1466ac08221a37a96ce73b04e9caa847e13e0da"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Backer liquidity mining
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://snapshot.org/#/goldfinch.eth/proposal/0x10a390307e3834af5153dc58af0e20cbb0e08d38543be884b622b55bfcd5818d"
-                target="_blank"
-                rel="noreferrer"
-              >
-                staking distributions
-              </a>
-              .
-            </p>
-          </>
-        }
       />
     </div>
   )
