@@ -21,13 +21,21 @@ import {getERC20Metadata, getMultiplier, Ticker, toDecimalString} from "../ether
 const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
 
 type StakingData = {
+  // Amount of FIDU the user has staked (denominated in FIDU decimals - 1e18)
   fiduStaked: BigNumber
+  // Amount of FIDU the user has unstaked (denominated in FIDU decimals - 1e18)
   fiduUnstaked: BigNumber
+  // Amount of FIDU-USDC-F the user has staked (denominated in FIDU-USDC-F decimals - 1e18)
   fiduUSDCCurveStaked: BigNumber
+  // Amount of FIDU-USDC-F the user has unstaked (denominated in FIDU-USDC-F decimals - 1e18)
   fiduUSDCCurveUnstaked: BigNumber
+  // Amount of USDC in the user's wallet (denominated in USDC decimals - 1e6)
   usdcUnstaked: BigNumber
+  // Estimated APY when staking FIDU
   estimatedFiduStakingApy: BigNumber
+  // Estimated APY when staking Curve
   estimatedCurveStakingApy: BigNumber
+  // FIDU share price (denominated in FIDU decimals - 1e18)
   fiduSharePrice: BigNumber
   stake: (BigNumber, StakedPositionType) => Promise<any>
   unstake: (BigNumber, StakedPositionType) => Promise<any>
@@ -155,6 +163,14 @@ export default function useStakingData(): StakingData {
     setUSDCUnstaked(unstakedUSDC)
   }
 
+  /**
+   * Create a new staked position. Handles token approvals if necessary.
+   *
+   * Calls the StakingRewards#stake function.
+   *
+   * @param amount Amount to stake (denominated in the decimals for the staked position type)
+   * @param positionType The type of staking position (FIDU/FIDU-USDC-F/etc)
+   */
   async function stake(amount: BigNumber, positionType: StakedPositionType): Promise<void> {
     assertNonNullable(stakingRewards)
     assertNonNullable(user)
@@ -172,6 +188,14 @@ export default function useStakingData(): StakingData {
     )
   }
 
+  /**
+   * Unstake a staked position. Handles unstaking amounts across multiple staked positions.
+   *
+   * Calls the StakingRewards#unstakeMultiple function.
+   *
+   * @param amount Amount to stake (denominated in the decimals for the staked position type)
+   * @param positionType The type of staking position (FIDU/FIDU-USDC-F/etc)
+   */
   async function unstake(amount: BigNumber, positionType: StakedPositionType): Promise<void> {
     assertNonNullable(stakingRewards)
 
@@ -189,6 +213,14 @@ export default function useStakingData(): StakingData {
     })
   }
 
+  /**
+   * Deposits FIDU and/or USDC to Curve. Handles token approvals if necessary.
+   *
+   * Calls the StakingRewards#depositToCurve function.
+   *
+   * @param fiduAmount Amount of FIDU to deposit (denominated in FIDU decimals - 1e18)
+   * @param usdcAmount Amount of USDC to deposit (denominated in USDC decimals - 1e6)
+   */
   async function depositToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<void> {
     assertNonNullable(stakingRewards)
 
@@ -208,6 +240,14 @@ export default function useStakingData(): StakingData {
       )
   }
 
+  /**
+   * Deposits FIDU and/or USDC to Curve and stakes the resulting Curve LP tokens. Handles token approvals if necessary.
+   *
+   * Calls the StakingRewards#depositToCurveAndStake function.
+   *
+   * @param fiduAmount Amount of FIDU to deposit (denominated in FIDU decimals - 1e18)
+   * @param usdcAmount Amount of USDC to deposit (denominated in USDC decimals - 1e6)
+   */
   async function depositToCurveAndStake(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<void> {
     assertNonNullable(stakingRewards)
 
@@ -230,6 +270,15 @@ export default function useStakingData(): StakingData {
       )
   }
 
+  /**
+   * Migrates staked FIDU and deposits USDC to Curve, and stakes the resulting Curve LP tokens.
+   * Handles token approvals if necessary.
+   *
+   * Calls the Zapper#zapStakeToCurve function.
+   *
+   * @param fiduAmount Amount of FIDU to migrate (denominated in FIDU decimals - 1e18)
+   * @param usdcAmount Amount of USDC to deposit (denominated in USDC decimals - 1e6)
+   */
   async function zapStakeToCurve(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<void> {
     assertNonNullable(stakedPositions)
     assertNonNullable(zapper)
@@ -264,6 +313,12 @@ export default function useStakingData(): StakingData {
     }
   }
 
+  /**
+   * Given a total amount to unstake, calculates the optimal positions to unstake from.
+   *
+   * @param amount Total amount to unstake (denominated in the decimals for the staked position type)
+   * @param positionType The type of staking position (FIDU/FIDU-USDC-F/etc)
+   */
   function getOptimalPositionsToUnstake(
     amount: BigNumber,
     positionType: StakedPositionType
