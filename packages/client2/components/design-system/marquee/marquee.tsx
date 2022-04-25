@@ -1,10 +1,13 @@
 import clsx from "clsx";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, Children } from "react";
 
 interface MarqueeProps {
   className?: string;
-  children: string;
-  colorScheme: "blue" | "purple" | "yellow";
+  /**
+   * Supply children as an array of strings if you wish to have multiple segments equally spaced apart. Otherwise, just use a plain string.
+   */
+  children: string | string[];
+  colorScheme?: "blue" | "purple" | "yellow";
 }
 
 export function Marquee({
@@ -15,6 +18,10 @@ export function Marquee({
   const bgRef = useRef<HTMLDivElement | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const [numCopies, setNumCopies] = useState(1);
+
+  const wrappedChildren = Children.map(children, (child) => (
+    <div className="mx-7">{child}</div>
+  ));
 
   // Note that this currently does not recalculate on resize
   useEffect(() => {
@@ -27,17 +34,16 @@ export function Marquee({
     setNumCopies(numCopiesToFill);
   }, []);
 
-  const repeatedChildren = new Array(numCopies).fill(0).map((_, index) => (
-    <div className="mx-7" key={index}>
-      {children}
-    </div>
-  ));
+  const repeatedChildren = new Array(numCopies)
+    .fill(0)
+    .map(() => wrappedChildren);
 
   return (
     <div
       ref={bgRef}
+      aria-hidden="true" // hidden because this element is decorative and very noisy to screen readers
       className={clsx(
-        "flex w-full overflow-hidden whitespace-nowrap bg-gradient-to-t py-3 text-xs font-medium",
+        "flex w-full overflow-hidden whitespace-nowrap bg-gradient-to-t py-3 text-xs font-medium uppercase",
         colorScheme === "blue"
           ? "from-[#D2C2F2] to-sky-300 text-white"
           : colorScheme === "purple"
@@ -51,7 +57,7 @@ export function Marquee({
       <div className="flex animate-marquee">{repeatedChildren}</div>
       <div className="flex animate-marquee">{repeatedChildren}</div>
       <div className="invisible absolute" ref={ghostRef}>
-        {children}
+        {wrappedChildren}
       </div>
     </div>
   );
