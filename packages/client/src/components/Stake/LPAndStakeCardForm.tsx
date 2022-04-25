@@ -11,8 +11,9 @@ import TransactionInput from "../transactionInput"
 type LPAndStakeCardFormProps = {
   // Token to deposit
   depositToken: ERC20Metadata
-  // Max amount available to deposit (in decimals)
+  // Max amount available to deposit (denominated in depositToken decimals)
   maxAmountToDeposit: BigNumber
+  // Staking reward APY
   stakingApy: BigNumber
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>

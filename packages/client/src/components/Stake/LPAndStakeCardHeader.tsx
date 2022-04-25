@@ -8,13 +8,19 @@ import LPAndStakeTokens, {Platform} from "./LPAndStakeTokens"
 
 type LPAndStakeCardHeaderProps = {
   className?: string
-  expanded?: boolean
+  // Token to deposit
   depositToken: ERC20Metadata
+  // LP token received in exchange
   poolToken: ERC20Metadata
+  // Max amount available to deposit (denominated in depositToken decimals)
   maxAmountToDeposit: BigNumber
+  // Reward APY when LP token is staked
   rewardApy: BigNumber
+  // Reward token received when LP token is staked
   rewardToken: ERC20Metadata
+  // Platform of the liquidity pool
   platform: Platform
+  expanded?: boolean
   onToggle: () => any
 }
 

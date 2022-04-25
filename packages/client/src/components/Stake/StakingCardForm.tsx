@@ -11,14 +11,14 @@ import TransactionInput from "../transactionInput"
 type StakingCardFormProps = {
   // Token to stake
   token: ERC20Metadata
-  // Max amount available to stake (in decimals)
+  // Max amount available to stake (denominated in `token` decimals)
   maxAmountToStake: BigNumber
-  // Max amount available to unstake (in decimals)
+  // Max amount available to unstake (denominated in `token` decimals)
   maxAmountToUnstake: BigNumber
-  stake: (BigNumber) => Promise<any>
-  unstake: (BigNumber) => Promise<any>
   // Optional migrate form. The "Migrate" tab will be displayed if this props exists.
   migrateForm?: React.ReactNode
+  stake: (BigNumber) => Promise<any>
+  unstake: (BigNumber) => Promise<any>
 }
 
 enum Tab {

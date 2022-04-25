@@ -7,8 +7,11 @@ export enum Platform {
 }
 
 type LPAndStakeTokensProps = {
+  // Token to deposit
   depositToken: ERC20Metadata
+  // LP token received in exchange
   poolToken: ERC20Metadata
+  // Platform of the liquidity pool
   platform: Platform
 }
 

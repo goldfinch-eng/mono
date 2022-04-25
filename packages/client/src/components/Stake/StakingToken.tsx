@@ -7,7 +7,9 @@ export enum Platform {
 }
 
 type StakingTokenProps = {
+  // Token to stake
   token: ERC20Metadata
+  // Platform of the staking token
   platform: Platform
 }
 

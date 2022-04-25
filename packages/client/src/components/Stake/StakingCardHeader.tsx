@@ -8,13 +8,19 @@ import {ERC20Metadata} from "../../ethereum/erc20"
 
 type StakingCardHeaderProps = {
   className?: string
-  expanded?: boolean
+  // Token to stake
   token: ERC20Metadata
+  // Max amount available to stake (denominated in `token` decimals)
   maxAmountToStake: BigNumber
+  // Max amount available to unstake (denominated in `token` decimals)
   maxAmountToUnstake: BigNumber
+  // Staking reward APY
   rewardApy: BigNumber
+  // Reward token recieved for staking
   rewardToken: ERC20Metadata
+  // Platform of the staking token
   platform: Platform
+  expanded?: boolean
   onToggle: () => any
 }
 

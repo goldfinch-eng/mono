@@ -11,9 +11,9 @@ const FIDU = getERC20Metadata(Ticker.FIDU)
 const USDC = getERC20Metadata(Ticker.USDC)
 
 type StakingCardMigrateToCurveFormProps = {
-  // Max FIDU available to migrate (in decimals)
+  // Max FIDU available to migrate (denominated in FIDU decimals - 1e18)
   maxFiduAmountToMigrate: BigNumber
-  // Max USDC available to deposit (in decimals)
+  // Max USDC available to deposit (denominated in USDC decimals - 1e6)
   maxUSDCAmountToDeposit: BigNumber
   // FIDU share price (denominated in 1e18)
   fiduSharePrice: BigNumber

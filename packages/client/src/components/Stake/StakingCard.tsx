@@ -7,15 +7,22 @@ import StakingCardHeader from "./StakingCardHeader"
 import {Platform} from "./StakingToken"
 
 type StakingCardProps = {
+  // Token to stake
   token: ERC20Metadata
+  // Max amount available to stake (denominated in `token` decimals)
   maxAmountToStake: BigNumber
+  // Max amount available to unstake (denominated in `token` decimals)
   maxAmountToUnstake: BigNumber
+  // Staking reward APY
   rewardApy: BigNumber
+  // Reward token recieved for staking
   rewardToken: ERC20Metadata
+  // Platform of the staking token
   platform: Platform
+  // Optional migrate form. The "Migrate" tab will be displayed if this props exists.
+  migrateForm?: React.ReactNode
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
-  migrateForm?: React.ReactNode
 }
 
 const StyledStakingCardHeader = styled(StakingCardHeader)<{expanded: boolean}>`
