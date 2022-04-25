@@ -18,7 +18,6 @@ import InvestorNotice from "../KYCNotice/InvestorNotice"
 import NdaPrompt from "../ndaPrompt"
 import {ActionsContainer} from "./ActionsContainer"
 import {CreditStatus} from "./CreditStatus"
-import {EstimatedSeniorPoolMatchingGFILaunchBanner} from "./EstimatedSeniorPoolMatchingGFILaunchBanner"
 import {Overview} from "./Overview"
 import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
@@ -135,9 +134,6 @@ function TranchedPoolView() {
       <ConnectionNotice requireUnlock={false} requireGolist={true} isPaused={!!tranchedPool?.isPaused} />
       {maxCapacityNotice}
       <InvestorNotice user={user} allowedUIDTypes={tranchedPool?.allowedUIDTypes || []} />
-      {tranchedPool && tranchedPoolsEstimatedApyFromGfi.value?.estimatedApyFromGfi[tranchedPool.address] ? (
-        <EstimatedSeniorPoolMatchingGFILaunchBanner />
-      ) : undefined}
       <ActionsContainer
         tranchedPool={tranchedPool}
         backer={backer}
