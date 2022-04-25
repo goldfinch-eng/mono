@@ -194,6 +194,7 @@ type TranchedPool @entity {
   fundableAt: BigInt!
   estimatedSeniorPoolContribution: BigInt!
   backers: [PoolBacker!]!
+  numBackers: Int!
   tokens: [TranchedPoolToken!]!
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")

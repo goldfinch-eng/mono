@@ -63,6 +63,7 @@ export function handleDeposit(event: DepositMade): void {
   let addresses = tranchedPool.backers
   addresses.push(backer.id)
   tranchedPool.backers = addresses
+  tranchedPool.numBackers = addresses.length
   tranchedPool.save()
 
   updatePoolCreditLine(event.address, event.block.timestamp)
