@@ -17,7 +17,7 @@ export function Marquee({
 }: MarqueeProps) {
   const bgRef = useRef<HTMLDivElement | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
-  const [numCopies, setNumCopies] = useState(1);
+  const [numCopies, setNumCopies] = useState(0);
 
   const wrappedChildren = Children.map(children, (child) => (
     <div className="mx-7">{child}</div>
@@ -54,8 +54,13 @@ export function Marquee({
         className
       )}
     >
-      <div className="flex animate-marquee">{repeatedChildren}</div>
-      <div className="flex animate-marquee">{repeatedChildren}</div>
+      <div className={clsx("flex", numCopies !== 0 ? "animate-marquee" : null)}>
+        {repeatedChildren}
+      </div>
+      <div className={clsx("flex", numCopies !== 0 ? "animate-marquee" : null)}>
+        {repeatedChildren}
+      </div>
+      &nbsp;
       <div className="invisible absolute" ref={ghostRef}>
         {wrappedChildren}
       </div>
