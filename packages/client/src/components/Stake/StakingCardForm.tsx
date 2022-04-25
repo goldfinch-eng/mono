@@ -17,6 +17,7 @@ type StakingCardFormProps = {
   maxAmountToUnstake: BigNumber
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
+  // Optional migrate form. The "Migrate" tab will be displayed if this props exists.
   migrateForm?: React.ReactNode
 }
 
