@@ -10,25 +10,18 @@ import {
 import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
-import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
-import {
-  CONFIG_KEYS_NUMBERS,
-  GOLDFINCH_CONFIG_ADDRESS,
-  SENIOR_POOL_ADDRESS,
-  SECONDS_PER_DAY,
-  GFI_DECIMALS,
-  USDC_DECIMALS,
-} from "../constants"
+import {SENIOR_POOL_ADDRESS, SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
-  getEstimatedLeverageRatio,
+  getLeverageRatio,
   getTotalDeposited,
   getEstimatedTotalAssets,
   isV1StyleDeal,
   estimateJuniorAPY,
+  getReserveFeePercent,
 } from "./helpers"
 import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
@@ -86,7 +79,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
 
   const poolContract = TranchedPoolContract.bind(address)
   const seniorPoolContract = SeniorPoolContract.bind(Address.fromString(SENIOR_POOL_ADDRESS))
-  const configContract = GoldfinchConfigContract.bind(Address.fromString(GOLDFINCH_CONFIG_ADDRESS))
 
   let version: string = VERSION_BEFORE_V2_2
   let numSlices = BigInt.fromI32(1)
@@ -160,11 +152,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
-  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
-    configContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
-  )
+  tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
   tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
-  tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches)
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.isPaused = poolContract.paused()
@@ -180,6 +169,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.backers = []
     tranchedPool.tokens = []
     tranchedPool.createdAt = timestamp
+    tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
   }
 
   tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
@@ -401,4 +391,13 @@ function calculateAnnualizedGfiRewardsPerPrincipleDollar(
     rewardsPerPrincipleDollar.set(tranchedPoolAddress, annualizedPerPrincipleDollar)
   }
   return rewardsPerPrincipleDollar
+}
+
+export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, timestamp: BigInt): void {
+  const tranchedPool = TranchedPool.load(tranchedPoolAddress.toHexString())
+  if (!tranchedPool) {
+    return
+  }
+  tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
+  tranchedPool.save()
 }

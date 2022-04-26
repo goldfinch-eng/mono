@@ -18,6 +18,7 @@ import {
   initOrUpdateTranchedPool,
   handleDrawdownMade as _handleDrawdownMade,
   handlePaymentApplied as _handlePaymentApplied,
+  updateTranchedPoolLeverageRatio,
 } from "../entities/tranched_pool"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
@@ -45,6 +46,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
 export function handleTrancheLocked(event: TrancheLocked): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
+  updateTranchedPoolLeverageRatio(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 }
 

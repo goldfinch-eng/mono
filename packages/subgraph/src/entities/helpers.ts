@@ -2,7 +2,12 @@ import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
-import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS} from "../constants"
+import {
+  CONFIG_KEYS_NUMBERS,
+  GOLDFINCH_CONFIG_ADDRESS,
+  GOLDFINCH_LEGACY_CONFIG_ADDRESS,
+  SENIOR_POOL_ADDRESS,
+} from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 
 const FIDU_DECIMAL_PLACES = 18
@@ -49,27 +54,23 @@ export function getEstimatedTotalAssets(
   return totalAssets
 }
 
-export function getEstimatedLeverageRatio(
-  address: Address,
-  juniorTranches: JuniorTrancheInfo[],
-  seniorTranches: SeniorTrancheInfo[]
-): BigInt {
-  let juniorContribution = new BigInt(0)
+function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
+  const configAddress = timestamp.lt(BigInt.fromU64(1641349586))
+    ? GOLDFINCH_LEGACY_CONFIG_ADDRESS
+    : GOLDFINCH_CONFIG_ADDRESS
+  return GoldfinchConfigContract.bind(Address.fromString(configAddress))
+}
 
-  for (let i = 0, k = juniorTranches.length; i < k; ++i) {
-    let tranche = assert(juniorTranches[i])
-    juniorContribution = juniorContribution.plus(tranche.principalDeposited)
-  }
+export function getLeverageRatio(timestamp: BigInt): BigInt {
+  const goldfinchConfigContract = getGoldfinchConfig(timestamp)
+  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
+}
 
-  if (juniorContribution.isZero()) {
-    const configContract = GoldfinchConfigContract.bind(Address.fromString(GOLDFINCH_CONFIG_ADDRESS))
-    const rawLeverageRatio = configContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
-    return fiduFromAtomic(rawLeverageRatio)
-  }
-
-  const totalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
-  const estimatedLeverageRatio = totalAssets.minus(juniorContribution).div(juniorContribution)
-  return estimatedLeverageRatio
+export function getReserveFeePercent(timestamp: BigInt): BigInt {
+  const goldfinchConfigContract = getGoldfinchConfig(timestamp)
+  return BigInt.fromI32(100).div(
+    goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
+  )
 }
 
 /**
