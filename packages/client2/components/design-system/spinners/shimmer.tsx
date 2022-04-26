@@ -3,7 +3,7 @@ import { CSSProperties } from "react";
 
 export interface ShimmerLinesProps {
   lines: number;
-  truncateFirstLine: boolean;
+  truncateFirstLine?: boolean;
   className?: string;
 }
 

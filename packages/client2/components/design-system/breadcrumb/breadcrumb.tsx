@@ -2,6 +2,8 @@ import Image from "next/image";
 
 import { Link } from "@/components/design-system";
 
+import { Shimmer } from "../spinners";
+
 interface BreadcrumbProps {
   image?: string | null;
   label?: string | null;
@@ -9,28 +11,27 @@ interface BreadcrumbProps {
 }
 
 export function Breadcrumb({ image, label, link }: BreadcrumbProps) {
-  const child =
-    link && label ? (
-      <Link href={link} className="!no-underline">
-        {label}
-      </Link>
-    ) : (
-      label
-    );
-
   return (
     <div className="flex flex-row items-center justify-center text-sm font-medium">
-      {image && (
-        <div className="relative h-8 w-12 overflow-hidden rounded-full bg-white">
+      <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full bg-sand-200">
+        {image && (
           <Image
             src={image}
             alt={label || ""}
             className="mr-3 block h-full w-full object-contain object-center"
             layout="fill"
           />
-        </div>
+        )}
+      </div>
+      {link && label ? (
+        <Link href={link} className="!no-underline">
+          {label}
+        </Link>
+      ) : label ? (
+        <span>{label}</span>
+      ) : (
+        <Shimmer style={{ width: "24ch" }} />
       )}
-      {child}
     </div>
   );
 }
