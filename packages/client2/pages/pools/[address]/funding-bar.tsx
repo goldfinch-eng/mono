@@ -24,8 +24,10 @@ export default function FundingBar({
     utils.formatUnits(seniorSupply, USDC_DECIMALS)
   );
 
-  const backerWidth = (backerSupplyFloat / goalFloat) * 100;
-  const seniorWidth = (seniorSupplyFloat / goalFloat) * 100;
+  const backerWidth =
+    goalFloat === 0 ? 0 : (backerSupplyFloat / goalFloat) * 100;
+  const seniorWidth =
+    goalFloat === 0 ? 0 : (seniorSupplyFloat / goalFloat) * 100;
 
   return (
     <div className="relative">
@@ -42,16 +44,16 @@ export default function FundingBar({
       </div>
       <div className="relative mb-3 h-8 overflow-hidden rounded bg-sand-200 bg-diagonals bg-repeat">
         <div
-          className="absolute left-0 top-0 bottom-0 bg-[#D17673]"
+          className="absolute left-0 top-0 bottom-0 w-full bg-[#D17673] transition-[max-width] duration-500"
           style={{
-            width: `${backerWidth}%`,
+            maxWidth: `${backerWidth}%`,
           }}
         ></div>
         <div
-          className="absolute top-0 bottom-0 bg-[#3F4A7E]"
+          className="absolute top-0 bottom-0 w-full bg-[#3F4A7E] transition-[max-width] delay-500 duration-500"
           style={{
             left: `${backerWidth}%`,
-            width: `${seniorWidth}%`,
+            maxWidth: `${seniorWidth}%`,
           }}
         ></div>
       </div>
