@@ -139,7 +139,7 @@ function getConfig(functions: any): FirebaseConfig {
   if (isFirebaseConfig(result)) {
     return result
   } else {
-    throw new Error("Firebase config failed type guard.")
+    throw new Error(`Firebase config failed type guard. result:${result}`)
   }
 }
 
