@@ -42,7 +42,7 @@ const networkNameByChainId: {[chainId: string]: string} = {
 
 const websocketOptions: WebsocketProviderOptions = {
   // Configure the websocket connection to automatically reconnect if it drops (cf.
-  // https://ethereum.stackexchange.com/a/84194). We observed the connection to Infura
+  // https://ethereum.stackexchange.com/a/84194). We observed Websocket connections to Infura
   // being dropped after a period of inactivity.
   reconnect: {
     auto: true,
