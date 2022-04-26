@@ -1,21 +1,22 @@
 import {assertNonNullable, assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import {MetaMaskInpageProvider} from "@metamask/providers"
 import {RequestArguments} from "@metamask/providers/dist/BaseProvider"
-import Web3 from "web3"
 import WalletConnectProvider from "@walletconnect/web3-provider"
+import {isString} from "lodash"
+import Web3 from "web3"
 import {
+  HttpProvider as HttpProviderType,
   IpcProvider as IpcProviderType,
   provider as ProviderType,
   WebsocketProvider as WebsocketProviderType,
-  HttpProvider as HttpProviderType,
 } from "web3-core"
-import WebsocketProvider from "web3-providers-ws"
-import HttpProvider from "web3-providers-http"
 import {JsonRpcPayload, JsonRpcResponse} from "web3-core-helpers"
-import {Web3IO, UserWalletWeb3Status} from "./types/web3"
-import {web3Modal, isWalletConnectProvider, WalletConnectWeb3Provider} from "./walletConnect"
+import HttpProvider from "web3-providers-http"
+import WebsocketProvider from "web3-providers-ws"
+import {MAINNET} from "./ethereum/utils"
+import {UserWalletWeb3Status, Web3IO} from "./types/web3"
 import {GFITokenImageURL} from "./utils"
-import {isString} from "lodash"
+import {isWalletConnectProvider, WalletConnectWeb3Provider, web3Modal} from "./walletConnect"
 
 let web3: Web3
 let web3IO: Web3IO<Web3>
@@ -35,7 +36,7 @@ function cleanSessionAndReload() {
 }
 
 const networkNameByChainId: {[chainId: string]: string} = {
-  "0x1": "mainnet",
+  "0x1": MAINNET,
   "0x4": "rinkeby",
 }
 
@@ -140,33 +141,51 @@ async function getUserWalletWeb3Status(): Promise<UserWalletWeb3Status> {
   return {type: "has_web3", networkName, address: undefined}
 }
 
+type Web3ProviderConfig = {
+  websocketUrl: string
+  httpUrl: string
+  name: "Infura" | "Alchemy"
+}
+
+const getWeb3ProviderConfig = (networkName: string): Web3ProviderConfig | undefined =>
+  process.env.REACT_APP_INFURA_PROJECT_ID
+    ? {
+        websocketUrl: `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`,
+        httpUrl: `https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`,
+        name: "Infura",
+      }
+    : process.env.REACT_APP_ALCHEMY_API_KEY && networkName === MAINNET
+    ? {
+        websocketUrl: `wss://eth-mainnet.alchemyapi.io/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`,
+        httpUrl: `https://eth-mainnet.alchemyapi.io/v2/${process.env.REACT_APP_ALCHEMY_API_KEY}`,
+        name: "Alchemy",
+      }
+    : undefined
+
 function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
   const chainId = metamaskProvider.chainId
   let wrapped: WrappedProvider = {type: "metamask", provider: metamaskProvider}
-  if (process.env.REACT_APP_INFURA_PROJECT_ID) {
-    if (chainId && chainId in networkNameByChainId) {
-      const networkName = networkNameByChainId[chainId]
-      assertNonNullable(networkName)
+  if (chainId && chainId in networkNameByChainId) {
+    const networkName = networkNameByChainId[chainId]
+    assertNonNullable(networkName)
+    const providerConfig = getWeb3ProviderConfig(networkName)
+    if (providerConfig) {
       wrapped =
-        process.env.REACT_APP_INFURA_HTTP === "yes"
+        process.env.REACT_APP_WEB3_HTTP === "yes"
           ? {
               type: "http",
               // @ts-expect-error
-              provider: new HttpProvider(
-                `https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
-              ),
+              provider: new HttpProvider(providerConfig.httpUrl),
             }
           : {
               type: "websocket",
               // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-              provider: new WebsocketProvider(
-                `wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`
-              ),
+              provider: new WebsocketProvider(providerConfig.websocketUrl),
             }
-      console.log(`Using custom Infura provider with ${wrapped.type} connection.`)
-    } else {
-      console.warn(`Unexpected chain id: ${chainId}. Falling back to Metamask's default provider.`)
+      console.log(`Using custom ${providerConfig.name} provider with ${wrapped.type} connection.`)
     }
+  } else {
+    console.warn(`Unexpected chain id: ${chainId}. Falling back to Metamask's default provider.`)
   }
   const provider =
     process.env.REACT_APP_TRACE_WEB3 === "yes" ? withTracing("readOnly", wrapped).provider : wrapped.provider
@@ -213,16 +232,21 @@ function getWeb3(): Web3IO<Web3> {
   } else {
     if (process.env.NODE_ENV === "production") {
       const networkName = "mainnet"
-      const provider =
-        process.env.REACT_APP_INFURA_HTTP === "yes"
-          ? // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-            new HttpProvider(`https://${networkName}.infura.io/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`)
-          : // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-            new WebsocketProvider(`wss://${networkName}.infura.io/ws/v3/${process.env.REACT_APP_INFURA_PROJECT_ID}`)
-      const sharedWeb3 = new Web3(provider)
-      return {
-        readOnly: sharedWeb3,
-        userWallet: sharedWeb3,
+      const providerConfig = getWeb3ProviderConfig(networkName)
+      if (providerConfig) {
+        const provider =
+          process.env.REACT_APP_WEB3_HTTP === "yes"
+            ? // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
+              new HttpProvider(providerConfig.httpUrl)
+            : // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
+              new WebsocketProvider(providerConfig.websocketUrl)
+        const sharedWeb3 = new Web3(provider)
+        return {
+          readOnly: sharedWeb3,
+          userWallet: sharedWeb3,
+        }
+      } else {
+        console.error("Failed to define web3 provider urls.")
       }
     }
     // For local network testing.

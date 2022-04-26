@@ -1,4 +1,4 @@
-import {mock, resetMocks} from "depay-web3-mock"
+import {mock, resetMocks} from "@depay/web3-mock"
 import {BackerRewards, BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {PoolState, TranchedPool, TrancheInfo} from "../../ethereum/tranchedPool"
 import {SeniorPool, SeniorPoolData, SeniorPoolLoaded} from "../../ethereum/pool"
@@ -78,7 +78,6 @@ describe("BackerRewards", () => {
       gfi = _gfiLoaded
 
       const _backerRewardsLoaded = new BackerRewards(goldfinchProtocol)
-      _backerRewardsLoaded.startBlock = currentBlock
       _backerRewardsLoaded.info = {
         loaded: true,
         value: {
@@ -86,6 +85,7 @@ describe("BackerRewards", () => {
           maxInterestDollarsEligible: new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
           totalRewardPercentOfTotalGFI: new BigNumber(2).multipliedBy(new BigNumber(1e18)),
           isPaused: false,
+          startBlock: currentBlock,
         },
       }
       assertWithLoadedInfo(_backerRewardsLoaded)

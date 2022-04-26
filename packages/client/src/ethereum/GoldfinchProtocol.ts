@@ -10,7 +10,7 @@ import {BlockInfo} from "../utils"
 import getWeb3 from "../web3"
 import {ERC20, getERC20, Ticker} from "./erc20"
 import {reduceToKnown} from "./events"
-import {getDeployments, getFromBlock} from "./utils"
+import {getDeployments, getFromBlock, getLegacyDeployments} from "./utils"
 import {EventData} from "web3-eth-contract"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {NetworkConfig} from "../types/network"
@@ -31,7 +31,7 @@ function getCachedPastEvents(
   const queryParams = {eventName, options}
   const cacheKey = JSON.stringify({contractAddress: contract["_address"], ...queryParams})
   if (!isNumber(options.toBlock)) {
-    throw new Error("The toblock parameter needs to be a number to keep the cache constant.")
+    throw new Error("The toBlock parameter must be a number so that the result can be safely cached as constant.")
   }
   if (!pastEventsTempCache[cacheKey]) {
     pastEventsTempCache[cacheKey] = contract.getPastEvents(queryParams.eventName, queryParams.options)
@@ -44,6 +44,7 @@ function getCachedPastEvents(
 class GoldfinchProtocol {
   networkId: string
   deployments: any
+  legacyDeployments: any
 
   constructor(networkConfig: NetworkConfig) {
     this.networkId = networkConfig.name
@@ -51,15 +52,17 @@ class GoldfinchProtocol {
 
   async initialize() {
     this.deployments = await getDeployments(this.networkId)
+    this.legacyDeployments = await getLegacyDeployments(this.networkId)
   }
 
   getERC20(ticker: Ticker): ERC20 {
     return getERC20(ticker, this)
   }
 
-  getContract<T = Contract>(contractOrAbi: string | any, address?: string): Web3IO<T> {
+  getContract<T = Contract>(contractOrAbi: string | any, address?: string, legacy?: boolean): Web3IO<T> {
     const web3 = getWeb3()
-    let abi = this.deployments.contracts[contractOrAbi]?.abi
+    const deployments = legacy ? this.legacyDeployments : this.deployments
+    let abi = deployments.contracts[contractOrAbi]?.abi
     if (abi) {
       address = address || this.getAddress(contractOrAbi)
     } else {
@@ -88,7 +91,8 @@ class GoldfinchProtocol {
     contract: string | Contract | BaseContract,
     eventNames: T[],
     filter: Filter | undefined,
-    toBlock: BlockNumber
+    toBlock: BlockNumber,
+    fromBlock?: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     let contractObj: Web3IO<Contract>
     if (typeof contract == "string") {
@@ -100,7 +104,7 @@ class GoldfinchProtocol {
       eventNames.map((eventName) =>
         getCachedPastEvents(contractObj.readOnly, eventName, {
           filter,
-          fromBlock: getFromBlock(this.networkId),
+          fromBlock: fromBlock || getFromBlock(this.networkId),
           toBlock,
         })
       )

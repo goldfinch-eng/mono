@@ -396,6 +396,29 @@ describe("Go", () => {
         expect(await goldfinchConfig.hasRole(GO_LISTER_ROLE, owner)).to.equal(true)
         expect(await go.goSeniorPool(anotherUser)).to.equal(false)
       })
+
+      it("returns true if account has ZAPPER_ROLE", async () => {
+        await go.initZapperRole()
+        expect(await go.goSeniorPool(anotherUser)).to.eq(false)
+        await go.grantRole(await go.ZAPPER_ROLE(), anotherUser)
+        expect(await go.goSeniorPool(anotherUser)).to.eq(true)
+      })
+    })
+
+    context("initZapperRole", async () => {
+      it("is only callable by admin", async () => {
+        await expect(go.initZapperRole({from: anotherUser})).to.be.rejectedWith(/Must have admin role/)
+        await expect(go.initZapperRole({from: owner})).to.be.fulfilled
+      })
+
+      it("initializes ZAPPER_ROLE", async () => {
+        await expect(go.grantRole(await go.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be.rejectedWith(
+          /sender must be an admin to grant/
+        )
+        await go.initZapperRole({from: owner})
+        // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
+        await expect(go.grantRole(await go.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be.fulfilled
+      })
     })
 
     context("paused", () => {

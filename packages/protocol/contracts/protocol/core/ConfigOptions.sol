@@ -46,6 +46,7 @@ library ConfigOptions {
     GFI,
     Go,
     BackerRewards,
-    StakingRewards
+    StakingRewards,
+    FiduUSDCCurveLP
   }
 }

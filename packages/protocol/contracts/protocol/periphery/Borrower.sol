@@ -47,10 +47,10 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     IERC20withDec usdc = config.getUSDC();
     usdc.approve(oneInch, uint256(-1));
     bytes memory data = abi.encodeWithSignature("approve(address,uint256)", oneInch, uint256(-1));
-    invoke(USDT_ADDRESS, data);
-    invoke(BUSD_ADDRESS, data);
-    invoke(GUSD_ADDRESS, data);
-    invoke(DAI_ADDRESS, data);
+    _invoke(USDT_ADDRESS, data);
+    _invoke(BUSD_ADDRESS, data);
+    _invoke(GUSD_ADDRESS, data);
+    _invoke(DAI_ADDRESS, data);
   }
 
   function lockJuniorCapital(address poolAddress) external onlyAdmin {
@@ -104,7 +104,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
 
     // Fulfill the send to
     bytes memory _data = abi.encodeWithSignature("balanceOf(address)", address(this));
-    uint256 receivedAmount = toUint256(invoke(toToken, _data));
+    uint256 receivedAmount = _toUint256(_invoke(toToken, _data));
     transferERC20(toToken, addressToSendTo, receivedAmount);
   }
 
@@ -114,7 +114,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256 amount
   ) public onlyAdmin {
     bytes memory _data = abi.encodeWithSignature("transfer(address,uint256)", to, amount);
-    invoke(token, _data);
+    _invoke(token, _data);
   }
 
   /**
@@ -218,9 +218,9 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
     uint256 amount
   ) internal {
     bytes memory _data;
-    // Do a low-level invoke on this transfer, since Tether fails if we use the normal IERC20 interface
+    // Do a low-level _invoke on this transfer, since Tether fails if we use the normal IERC20 interface
     _data = abi.encodeWithSignature("transferFrom(address,address,uint256)", sender, recipient, amount);
-    invoke(address(erc20), _data);
+    _invoke(address(erc20), _data);
   }
 
   function swapOnOneInch(
@@ -239,7 +239,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
       exchangeDistribution,
       0
     );
-    invoke(config.oneInchAddress(), _data);
+    _invoke(config.oneInchAddress(), _data);
   }
 
   /**
@@ -249,7 +249,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
    * Mostly copied from Argent:
    * https://github.com/argentlabs/argent-contracts/blob/develop/contracts/wallet/BaseWallet.sol#L111
    */
-  function invoke(address _target, bytes memory _data) internal returns (bytes memory) {
+  function _invoke(address _target, bytes memory _data) internal returns (bytes memory) {
     // External contracts can be compiled with different Solidity versions
     // which can cause "revert without reason" when called through,
     // for example, a standard IERC20 ABI compiled on the latest version.
@@ -266,12 +266,12 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
         revert(0, returndatasize())
       }
     } else if (!success) {
-      revert("VM: wallet invoke reverted");
+      revert("VM: wallet _invoke reverted");
     }
     return _res;
   }
 
-  function toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
+  function _toUint256(bytes memory _bytes) internal pure returns (uint256 value) {
     assembly {
       value := mload(add(_bytes, 0x20))
     }
