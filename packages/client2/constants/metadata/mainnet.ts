@@ -1,3 +1,4 @@
+import addemLogo from "./icons/addem.png";
 import almavestLogo from "./icons/almavest.png";
 import aspireLogo from "./icons/aspire.png";
 import caurisLogo from "./icons/cauris.png";
@@ -9,6 +10,55 @@ import stratosLogo from "./icons/stratos.jpeg";
 import tugendeLogo from "./icons/tugende.png";
 
 export const mainnetMetadata: Record<string, Record<string, any>> = {
+  "0xd43a4f3041069c6178b99d55295b00d0db955bb5": {
+    name: "Cauris Fund #3: Africa Innovation Pool",
+    category: "Africa multi-sector loans",
+    icon: caurisLogo.src,
+    dataroom:
+      "https://www.notion.so/goldfinchfinance/Cauris-Borrower-Pool-3-Overview-2a127e4075a5406abe3c9c5a6868b08d",
+    agreement: "https://docsend.com/view/428qxv8dq7uhgj8j/d/ej5z3qnrdb59wzaz",
+    launchTime: 1651590000,
+    poolDescription:
+      "Proceeds will be used to provide additional backing to African fintechs in their quest to provide access to financial services to millions of traditionally underbanked customers. Our investments will include senior secured loans with covenants for additional downside protection. All loans will be secured by all-asset debentures, including our borrowers’ lending receivables.",
+    poolHighlights: [
+      "Cauris uses data-driven approaches to underwriting and portfolio management efforts and a combination of strong asset-level underwriting, structural and legal protections and advanced analytics to secure our debt investments in all fintech partners.",
+      "Cauris only invests in Fintechs characterized by management teams with deep, relevant experience in their companies’ sectors; well-performing loan books to use as collateral; and support by marquee VC, PE and strategic investors.",
+      "Pool investments will target companies providing consumer and SME lending products as well as trade and equipment financing.",
+    ],
+    borrowerDescription:
+      "Cauris is a mission-driven investment firm that provides private credit to financial technology companies in emerging markets. Working across the Global South — with financings in Africa, Asia and Latin America — Cauris partners with fintechs that are making financial inclusion a reality for tens of millions of consumers and small businesses.\n\nThrough debt investments, Cauris enables its partners to scale efforts that provide the traditionally underbanked access to financial services that improve their lives and livelihoods.  Leveraging Decentralized Finance (DeFi), Cauris aims to facilitate efforts that extend financial services to 100M people in line with its mission to empower individuals and small businesses through access to credit; to enable economic growth in emerging markets; and to accelerate the growth of the global middle class.",
+    borrowerHighlights: [
+      "Cauris has never had a late payment, missed payment, or default.",
+      "Strong performance track record with $15M borrowed on Goldfinch to date, generating high risk-adjusted yields for investors.",
+    ],
+  },
+  "0x89d7c618a4eef3065da8ad684859a547548e6169": {
+    name: "Asset-Backed Pool via Addem Capital",
+    category: "LATAM asset-backed multi-sector loans",
+    icon: addemLogo.src,
+    dataroom:
+      "https://www.notion.so/goldfinchfinance/Addem-Capital-Borrower-Pool-Overview-4530f7c83ddb4fb39d6f8b44ddcead64",
+    agreement:
+      "https://addemcapital.docsend.com/view/rwchikv6dxnpa5wa/d/fcbpk9yde3a73pnb",
+    launchTime: 1650466800,
+    poolDescription:
+      "Proceeds will be used to leverage Addem Capital's existing fund Utopia I, which holds positions on different structures with borrowers, all of them being asset-backed debt lines in one of the five verticals of the fund's thesis: fintech, real estate, energy, agro/sustainable foods, and healthcare. All current and future Utopia I facilities are for LATAM-based companies with solid management and which are actively contributing to the strengthening of the entrepreneur ecosystem in the region.",
+    poolHighlights: [
+      "These companies must have a strong technological component and proven track record of originating consistent cash flow-generating assets.",
+      "The debt facilities Addem Capital structure will be used to fund self-liquidating assets where Addem has complete traceability and control of all the cash flows pledged as the source of payment, which positions them at the best risk-to-return ratio in Mexico and LATAM.",
+      "Addem fund these structures' senior and mezzanine tranches with an interest rate ranging between 18 - 22% in MXN for unsubordinated lines and 24 - 35 % for subordinated ones.",
+    ],
+    borrowerDescription:
+      "Addem Capital has developed a three-entity approach (Fund, Boutique Consulting Firm, Master Servicer) to increase liquidity in the LATAM capital markets, acting as scouts, funders, and monitoring agents within five verticals: fintech, real estate, energy, agriculture/sustainable foods, and healthcare.\n\nAddem Capital aims to become LATAM's most relevant liquidity provider by eliminating unnecessary debt intermediaries while reaching excellence in its underwriting and servicing processes.\n\nAll the monitoring and revisions on the collateral of the credit facilities are done by Addem's Master Servicer. Through its Internal Control Desk, it guarantees that all the performing assets satisfy the eligibility criteria for each facility. This enables Addem to hold more decision-making power on the line and be ahead of relevant risks.",
+    borrowerHighlights: [
+      "Addem's fund and consulting firm (Latus) have invested and worked in more than five countries, including Mexico, Colombia, Chile, Brazil, and US-based entrepreneurs working in LATAM.",
+      "Addem has evaluated and assessed +200 companies seeking financing and originated more than ten regional deals.",
+      "Addem's internal control desk has audited +15,000 individual credits underwritten by their portfolio companies and pledged as collateral and source of payment for their debt facilities.",
+      "After receiving debt from Addem Capital, all of their portfolio companies have secured Series A equity rounds with renowned investors such as Accel, Monashees, Y Combinator, Mouro Capital (Santander and SV LATAM).",
+      "Addem's three-entity approach enables them to fully service. It monitors ongoing facilities without reducing efforts on scouting new opportunities to consolidate their pipeline and avoiding the reliance on third-party services to properly assess the quality of the asset originators' underwriting process and the asset itself.",
+      "In Addem's first year of existence, it was recognized by Catalyst Fund and Brighter as one of the top 100 fintech investors across emerging markets.",
+    ],
+  },
   "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": {
     name: "Almavest Basket #7: Fintech and Carbon Reduction Basket",
     category: "Global multi-sector loans",
