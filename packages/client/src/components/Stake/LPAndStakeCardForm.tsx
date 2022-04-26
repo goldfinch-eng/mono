@@ -20,10 +20,6 @@ type LPAndStakeCardFormProps = {
   estimateSlippage: (BigNumber) => Promise<BigNumber>
 }
 
-const Container = styled.div`
-  display: flex;
-`
-
 const StyledStakingPrompt = styled(StakingPrompt)`
   padding-bottom: 30px;
 `
@@ -70,6 +66,7 @@ export default function LPAndStakeCardForm({
     estimateSlippage(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then((slippage) =>
       setEstimatedSlippage(slippage)
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amountToDepositInDecimals])
 
   function onChange() {

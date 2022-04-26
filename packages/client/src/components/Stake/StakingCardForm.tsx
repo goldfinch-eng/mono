@@ -74,6 +74,7 @@ export default function StakingCardForm({
     if (!!migrateForm && !maxAmountToUnstake.isZero()) {
       setShouldDisplayMigrateForm(true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [migrateForm])
 
   function onTabClick(tab: Tab) {
