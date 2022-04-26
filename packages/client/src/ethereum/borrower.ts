@@ -77,6 +77,11 @@ class BorrowerInterface {
     return pool.address
   }
 
+  getPoolPaused(clAddress: string): boolean {
+    const pool = this.getPoolFromCL(clAddress)
+    return pool.isPaused
+  }
+
   getPoolDrawdownsPaused(clAddress: string): boolean {
     const pool = this.getPoolFromCL(clAddress)
     return pool.drawdownsPaused
@@ -88,7 +93,11 @@ class BorrowerInterface {
   }
 
   getPoolDrawdownDisabled(clAddress: string): boolean {
-    return this.getPoolState(clAddress) < PoolState.JuniorLocked || this.getPoolDrawdownsPaused(clAddress)
+    return (
+      this.getPoolState(clAddress) < PoolState.JuniorLocked ||
+      this.getPoolPaused(clAddress) ||
+      this.getPoolDrawdownsPaused(clAddress)
+    )
   }
 
   getPoolAmountAvailableForDrawdownInDollars(clAddress: string): BigNumber {
