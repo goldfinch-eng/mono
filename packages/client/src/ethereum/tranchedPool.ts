@@ -3,6 +3,7 @@ import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-ident
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {PoolTokens as PoolTokensContract} from "@goldfinch-eng/protocol/typechain/web3/PoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
+import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {asNonNullable, assertNonNullable, assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
@@ -39,6 +40,7 @@ import {EventParserConfig, mapEventsToTx} from "./events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
+import EtherscanLink from "../components/etherscanLink"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
@@ -218,9 +220,23 @@ class TranchedPool {
       await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator, currentBlock)
     )
     let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
-    this.estimatedSeniorPoolContribution = new BigNumber(
-      await pool.readOnly.methods.estimateInvestment(this.address).call(undefined, currentBlock.number)
-    )
+    if (this.isMultipleDrawdownsCompatible) {
+      const estimateInvestment = await pool.readOnly.methods
+        .estimateInvestment(this.address)
+        .call(undefined, currentBlock.number)
+      this.estimatedSeniorPoolContribution = new BigNumber(estimateInvestment)
+    } else {
+      const oldFixedLeverageRatioAddress = "0x9b2ACD3fd9aa6c60B26CF748bfFF682f27893320"
+      const oldFixedLeverageRatioContract = this.goldfinchProtocol.getContract<FixedLeverageRatioStrategyContract>(
+        "FixedLeverageRatioStrategy",
+        oldFixedLeverageRatioAddress
+      )
+      this.estimatedSeniorPoolContribution = new BigNumber(
+        await oldFixedLeverageRatioContract.readOnly.methods
+          .estimateInvestment(pool.readOnly.options.address, this.address)
+          .call(undefined, currentBlock.number)
+      )
+    }
     this.estimatedLeverageRatio = await this.estimateLeverageRatio(currentBlock)
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
