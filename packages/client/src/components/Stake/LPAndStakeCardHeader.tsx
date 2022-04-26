@@ -5,6 +5,7 @@ import {mediaPoint} from "../../styles/mediaPoint"
 import {displayNumber, displayPercent} from "../../utils"
 import {iconCarrotDown, iconCarrotUp} from "../icons"
 import LPAndStakeTokens, {Platform} from "./LPAndStakeTokens"
+import {HeaderText} from "./StakingCardHeader"
 
 type LPAndStakeCardHeaderProps = {
   className?: string
@@ -38,17 +39,6 @@ export const HeaderGrid = styled.div`
 
 const ClickableHeaderGrid = styled(HeaderGrid)`
   cursor: pointer;
-`
-
-export const HeaderText = styled.div<{light?: boolean; justifySelf: string; hideOnSmallerScreens: boolean}>`
-  font-size: 18px;
-  font-weight: normal;
-  justify-self: ${({justifySelf}) => justifySelf};
-  color: ${({light}) => (!!light ? "#C3BEB7" : "inherit")};
-
-  ${({theme}) => mediaPoint(theme).screenL} {
-    display: ${({hideOnSmallerScreens}) => (hideOnSmallerScreens ? "none" : "block")};
-  }
 `
 
 const Carrot = styled.button`

@@ -4,8 +4,8 @@ import {StakedPositionType} from "../../ethereum/pool"
 import useStakingData from "../../hooks/useStakingData"
 import ConnectionNotice from "../connectionNotice"
 import StakingCard from "./StakingCard"
-import {HeaderGrid as StakingHeaderGrid, HeaderText as StakingHeaderText} from "./StakingCardHeader"
-import {HeaderGrid as LPAndStakeHeaderGrid, HeaderText as LPAndStakeHeaderText} from "./LPAndStakeCardHeader"
+import {HeaderGrid as StakingHeaderGrid, HeaderText} from "./StakingCardHeader"
+import {HeaderGrid as LPAndStakeHeaderGrid} from "./LPAndStakeCardHeader"
 import LPAndStakeCard from "./LPAndStakeCard"
 import BigNumber from "bignumber.js"
 import {Platform} from "./StakingToken"
@@ -56,12 +56,7 @@ const SectionSubtitle = styled.div`
   }
 `
 
-const StyledStakingHeaderText = styled(StakingHeaderText)`
-  font-size: 16px;
-  color: #b4ada7;
-`
-
-const StyledLPAndStakeHeaderText = styled(LPAndStakeHeaderText)`
+const StyledHeaderText = styled(HeaderText)`
   font-size: 16px;
   color: #b4ada7;
 `
@@ -102,18 +97,18 @@ export default function Stake() {
       </SectionSubtitle>
       <ConnectionNotice requireUnlock={false} />
       <StakingHeaderGrid>
-        <StyledStakingHeaderText justifySelf="start" hideOnSmallerScreens={false}>
+        <StyledHeaderText justifySelf="start" hideOnSmallerScreens={false}>
           Token to stake
-        </StyledStakingHeaderText>
-        <StyledStakingHeaderText justifySelf="end" hideOnSmallerScreens={false}>
+        </StyledHeaderText>
+        <StyledHeaderText justifySelf="end" hideOnSmallerScreens={false}>
           Rewards APY
-        </StyledStakingHeaderText>
-        <StyledStakingHeaderText justifySelf="end" hideOnSmallerScreens>
+        </StyledHeaderText>
+        <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
           Available to stake
-        </StyledStakingHeaderText>
-        <StyledStakingHeaderText justifySelf="end" hideOnSmallerScreens>
+        </StyledHeaderText>
+        <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
           Staked
-        </StyledStakingHeaderText>
+        </StyledHeaderText>
         <div></div>
       </StakingHeaderGrid>
       <StakingCard
@@ -167,15 +162,15 @@ export default function Stake() {
         </a>
       </SectionSubtitle>
       <LPAndStakeHeaderGrid>
-        <StyledLPAndStakeHeaderText justifySelf="start" hideOnSmallerScreens={false}>
+        <StyledHeaderText justifySelf="start" hideOnSmallerScreens={false}>
           Token exchange
-        </StyledLPAndStakeHeaderText>
-        <StyledLPAndStakeHeaderText justifySelf="end" hideOnSmallerScreens={false}>
+        </StyledHeaderText>
+        <StyledHeaderText justifySelf="end" hideOnSmallerScreens={false}>
           Staking APY
-        </StyledLPAndStakeHeaderText>
-        <StyledLPAndStakeHeaderText justifySelf="end" hideOnSmallerScreens>
+        </StyledHeaderText>
+        <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
           Available to LP
-        </StyledLPAndStakeHeaderText>
+        </StyledHeaderText>
         <div></div>
       </LPAndStakeHeaderGrid>
       <LPAndStakeCard
