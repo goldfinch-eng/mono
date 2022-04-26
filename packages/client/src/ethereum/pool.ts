@@ -907,8 +907,8 @@ class StakingRewards {
     this.legacyContract = goldfinchProtocol.getContract<Contract>(
       "StakingRewards",
       undefined,
-      // Disable this legacy contract behavior in the test and development environments, where it's not needed.
-      process.env.NODE_ENV !== "test" && process.env.NODE_ENV !== "development"
+      // Disable this legacy contract behavior in the test/development/murmuration environments, where it's not needed.
+      process.env.NODE_ENV === "production"
     )
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this.curvePool = getCurvePoolContract(goldfinchProtocol)
