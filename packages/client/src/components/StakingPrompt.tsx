@@ -18,7 +18,15 @@ export default function StakingPrompt({className, stakingApy, onToggle, formVal:
 
   return (
     <div className={`checkbox-container form-input-label ${className}`}>
-      <input className="checkbox" type="checkbox" name={formVal} id={formVal} defaultChecked onChange={onChange} />
+      <input
+        className="checkbox"
+        type="checkbox"
+        data-testid="staking"
+        name={formVal}
+        id={formVal}
+        defaultChecked
+        onChange={onChange}
+      />
       <label className="checkbox-label with-note" htmlFor={formVal}>
         <div>
           <div className="checkbox-label-primary">
