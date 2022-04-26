@@ -73,6 +73,14 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       description: { read: readFieldFromMetadata("description") },
       category: { read: readFieldFromMetadata("category") },
       icon: { read: readFieldFromMetadata("icon") },
+      agreement: { read: readFieldFromMetadata("agreement") },
+      dataroom: { read: readFieldFromMetadata("dataroom") },
+      poolDescription: { read: readFieldFromMetadata("poolDescription") },
+      poolHighlights: { read: readFieldFromMetadata("poolHighlights") },
+      borrowerDescription: {
+        read: readFieldFromMetadata("borrowerDescription"),
+      },
+      borrowerHighlights: { read: readFieldFromMetadata("borrowerHighlights") },
       estimatedJuniorApyFromGfi: {
         read: (_, { readField }) => {
           // Implementation here is really similar to estimatedApyFromGfi on SeniorPoolStatus

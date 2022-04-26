@@ -16,6 +16,12 @@ extend type TranchedPool {
   category: String
   description: String
   icon: String
+  agreement: String
+  dataroom: String
+  poolDescription: String
+  poolHighlights: [String]
+  borrowerDescription: String
+  borrowerHighlights: [String]
   """
   Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedJuniorApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field.
   """
