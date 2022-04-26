@@ -90,6 +90,9 @@ async function parseTranchedPool(
   tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
   tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
   tranchedPool.isPaused = pool.isPaused
+  tranchedPool.drawdownsPaused = await tranchedPool.contract.readOnly.methods
+    .drawdownsPaused()
+    .call(undefined, currentBlock?.number || "latest")
 
   // This code addresses the case when the user doesn't have a web3 provider
   // since we need the current block timestamp to define the pool status.

@@ -186,6 +186,7 @@ class TranchedPool {
   isV1StyleDeal!: boolean
   isMigrated!: boolean
   isPaused!: boolean
+  drawdownsPaused!: boolean
 
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -241,6 +242,7 @@ class TranchedPool {
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
+    this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
 
     this.poolState = this.getPoolState(currentBlock)
 
@@ -700,6 +702,18 @@ class TranchedPool {
    */
   get displayName(): string {
     return this.metadata?.name ?? croppedAddress(this.address)
+  }
+
+  get amountAvailableForDrawdown(): BigNumber {
+    // NOTE: This calculation is intended to replicate the logic in `TranchedPool.drawdown()`
+    // that determines the maximum amount that is available for drawdown.
+    return this.sharePriceToUSDC(this.juniorTranche.principalSharePrice, this.juniorTranche.principalDeposited).plus(
+      this.sharePriceToUSDC(this.seniorTranche.principalSharePrice, this.seniorTranche.principalDeposited)
+    )
+  }
+
+  get amountAvailableForDrawdownInDollars(): BigNumber {
+    return new BigNumber(usdcFromAtomic(this.amountAvailableForDrawdown))
   }
 }
 

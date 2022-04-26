@@ -1,10 +1,19 @@
-import React, {useState, useContext} from "react"
-import PaymentForm from "./PaymentForm"
-import {iconUpArrow} from "../icons"
+import React, {useContext, useState} from "react"
 import {AppContext} from "../../App"
+import {BorrowerInterface} from "../../ethereum/borrower"
+import {CreditLine} from "../../ethereum/creditLine"
 import {displayDollars} from "../../utils"
+import {iconUpArrow} from "../icons"
+import PaymentForm from "./PaymentForm"
 
-function CreditActionsMultipleContainer(props) {
+type CreditActionsMultipleContainerProps = {
+  creditLine: CreditLine
+  actionComplete: () => Promise<void>
+  disabled: boolean
+  borrower: BorrowerInterface
+}
+
+function CreditActionsMultipleContainer(props: CreditActionsMultipleContainerProps) {
   const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState(null)
 
@@ -30,7 +39,13 @@ function CreditActionsMultipleContainer(props) {
 
   let payAction
   let payClass = "disabled"
-  if (props.creditLine.remainingTotalDueAmount.gt(0) && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked) {
+  if (
+    props.creditLine.remainingTotalDueAmount.gt(0) &&
+    user &&
+    user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
+    user.borrower &&
+    !props.disabled
+  ) {
     payAction = (e) => {
       openAction(e, "payment")
     }
@@ -78,7 +93,11 @@ function CreditActionsMultipleContainer(props) {
           </div>
         </div>
         <div>
-          <button className={`button dark ${payClass}`} onClick={payAction}>
+          <button
+            className={`button dark ${payClass}`}
+            onClick={payAction}
+            disabled={props.creditLine.remainingPeriodDueAmount.eq(0) || props.disabled}
+          >
             {iconUpArrow} Pay All
           </button>
         </div>
