@@ -87,9 +87,14 @@ module.exports = {
           "75%": { "background-position": "50% 50%" },
           "100%": { "background-position": "0 50%" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
       },
       animation: {
         "background-oscillate-slow": "background-oscillate 4s ease-in infinite",
+        marquee: "marquee 20s linear infinite",
       },
       backgroundImage: {
         diagonals: "url('/ui/bg-diagonals.png')",
