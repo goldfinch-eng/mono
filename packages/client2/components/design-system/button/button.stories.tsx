@@ -1,6 +1,6 @@
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 
-import { Button } from ".";
+import { Button, IconButton } from ".";
 
 export default {
   title: "Components/Button",
@@ -17,14 +17,25 @@ export default {
   },
 } as ComponentMeta<typeof Button>;
 
+// Putting <Button /> and <IconButton /> beside each other to prove their sizing is consistent
 export const ButtonStory: ComponentStory<typeof Button> = (args) => (
-  <Button {...args} />
+  <div>
+    <Button {...args} />{" "}
+    <IconButton
+      icon="ArrowSmRight"
+      label="Placeholder"
+      size={args.size}
+      colorScheme={args.colorScheme}
+      variant={args.variant}
+      disabled={args.disabled}
+    />
+  </div>
 );
 
 ButtonStory.args = {
   children: "Hello World",
   size: "md",
-  variant: "solid",
-  colorScheme: "sand",
+  variant: "standard",
+  colorScheme: "primary",
   disabled: false,
 };

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { forwardRef } from "react";
 
 import ArrowDown from "./svg/arrow-down.svg";
+import ArrowSmRight from "./svg/arrow-sm-right.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
@@ -13,6 +14,7 @@ import X from "./svg/x.svg";
 
 export const iconManifest = {
   ArrowDown,
+  ArrowSmRight,
   ArrowTopRight,
   ArrowUp,
   Checkmark,
@@ -32,6 +34,20 @@ export interface IconProps {
   className?: string;
 }
 
+export function sizeToClassName(size: IconProps["size"]) {
+  return size === "xs"
+    ? "h-4 w-4"
+    : size === "sm"
+    ? "h-5 w-5"
+    : size === "md"
+    ? "h-6 w-6"
+    : size === "lg"
+    ? "h-8 w-8"
+    : size === "text"
+    ? "h-[1em] w-[1em]"
+    : undefined;
+}
+
 export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
   { name, size = "text", className }: IconProps,
   ref
@@ -41,21 +57,7 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
     <IconComponent
       aria-hidden="true"
       ref={ref}
-      className={clsx(
-        size === "xs"
-          ? "h-4 w-4"
-          : size === "sm"
-          ? "h-5 w-5"
-          : size === "md"
-          ? "h-6 w-6"
-          : size === "lg"
-          ? "h-8 w-8"
-          : size === "text"
-          ? "h-[1em] w-[1em]"
-          : null,
-        "inline",
-        className
-      )}
+      className={clsx(sizeToClassName(size), "inline", className)}
     />
   );
 });
