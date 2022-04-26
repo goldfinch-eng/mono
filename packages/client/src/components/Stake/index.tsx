@@ -122,14 +122,12 @@ export default function Stake() {
         stake={(amount) => stake(amount, StakedPositionType.Fidu)}
         unstake={(amount) => unstake(amount, StakedPositionType.Fidu)}
         migrateForm={
-          !fiduStaked.isZero() && (
-            <StakingCardMigrateToCurveForm
-              maxFiduAmountToMigrate={fiduStaked}
-              maxUSDCAmountToDeposit={usdcUnstaked}
-              fiduSharePrice={fiduSharePrice}
-              migrate={zapStakeToCurve}
-            />
-          )
+          <StakingCardMigrateToCurveForm
+            maxFiduAmountToMigrate={fiduStaked}
+            maxUSDCAmountToDeposit={usdcUnstaked}
+            fiduSharePrice={fiduSharePrice}
+            migrate={zapStakeToCurve}
+          />
         }
       />
       <StakingCard

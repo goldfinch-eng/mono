@@ -1,6 +1,6 @@
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
-import {useState} from "react"
+import {useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
 import {ERC20Metadata, toAtomicAmount} from "../../ethereum/erc20"
@@ -60,9 +60,21 @@ export default function StakingCardForm({
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Stake)
   const [amountToStakeInDecimals, setAmountToStakeInDecimals] = useState<BigNumber>(new BigNumber(0))
   const [amountToUnstakeInDecimals, setAmountToUnstakeInDecimals] = useState<BigNumber>(new BigNumber(0))
+  const [shouldDisplayMigrateForm, setShouldDisplayMigrateForm] = useState(false)
 
   const debouncedSetAmountToStakeInDecimals = useDebounce(setAmountToStakeInDecimals, 200)
   const debouncedSetAmountToUnstakeInDecimals = useDebounce(setAmountToUnstakeInDecimals, 200)
+
+  useEffect(() => {
+    // Display the migrate form only if the user has staked position(s) to migrate
+    //
+    // Note: Once the user has seen the migrate form in their current session, continue to display the migrate
+    // tab even if they no longer have staked position(s) to migrate to avoid a confusing experience with
+    // changing UI.
+    if (!!migrateForm && !maxAmountToUnstake.isZero()) {
+      setShouldDisplayMigrateForm(true)
+    }
+  }, [migrateForm])
 
   function onTabClick(tab: Tab) {
     if (tab !== activeTab) {
@@ -123,7 +135,7 @@ export default function StakingCardForm({
         <TabComponent active={activeTab === Tab.Unstake} onClick={() => onTabClick(Tab.Unstake)}>
           {Tab.Unstake.toString()}
         </TabComponent>
-        {!!migrateForm && (
+        {shouldDisplayMigrateForm && (
           <TabComponent active={activeTab === Tab.Migrate} onClick={() => onTabClick(Tab.Migrate)}>
             {Tab.Migrate.toString()}
           </TabComponent>
