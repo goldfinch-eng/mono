@@ -31,13 +31,13 @@ const Container = styled.div`
   display: flex;
 `
 
-const TabComponent = styled.div<{active: boolean}>`
+const TabComponent = styled.button<{active: boolean}>`
+  width: auto;
   font-weight: 500;
   font-size: 21px;
   padding-bottom: 8px;
   border-bottom: ${(props) => (props.active ? "2px solid #483e5e" : "none")};
   color: ${(props) => (props.active ? "inherit" : "#ABA39D")}
-  cursor: pointer;
   margin-right: 40px;
   margin-bottom: 30px;
 `
