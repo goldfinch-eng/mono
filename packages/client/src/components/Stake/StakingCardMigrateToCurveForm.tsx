@@ -70,7 +70,7 @@ export default function StakingCardMigrateToCurveForm({
 
   function onMaxClick(ticker: Ticker.FIDU | Ticker.USDC) {
     const maxAmount = (ticker === Ticker.FIDU ? maxFiduAmountToMigrate : maxUSDCAmountToDeposit) || new BigNumber(0)
-    formMethods.setValue(getFormInputName(ticker), toDecimal(maxAmount, ticker).decimalPlaces(18, 1).toString(10), {
+    formMethods.setValue(getFormInputName(ticker), toDecimal(maxAmount, ticker).decimalPlaces(6, 1).toString(10), {
       shouldValidate: true,
       shouldDirty: true,
     })

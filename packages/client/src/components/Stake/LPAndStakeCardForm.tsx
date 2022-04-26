@@ -79,7 +79,7 @@ export default function LPAndStakeCardForm({
   }
 
   function onMaxClick(maxAmount: BigNumber) {
-    formMethods.setValue("amountToDeposit", maxAmount.decimalPlaces(18, 1).toString(10), {
+    formMethods.setValue("amountToDeposit", maxAmount.decimalPlaces(6, 1).toString(10), {
       shouldValidate: true,
       shouldDirty: true,
     })

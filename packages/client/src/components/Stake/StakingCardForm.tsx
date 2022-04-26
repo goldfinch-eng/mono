@@ -99,7 +99,7 @@ export default function StakingCardForm({
   }
 
   function onMaxClick(formInputName: string, maxAmount: BigNumber) {
-    formMethods.setValue(formInputName, maxAmount.decimalPlaces(18, 1).toString(10), {
+    formMethods.setValue(formInputName, maxAmount.decimalPlaces(6, 1).toString(10), {
       shouldValidate: true,
       shouldDirty: true,
     })
