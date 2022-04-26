@@ -40,7 +40,6 @@ import {EventParserConfig, mapEventsToTx} from "./events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
-import EtherscanLink from "../components/etherscanLink"
 
 const ZERO = new BigNumber(0)
 const ONE = new BigNumber(1)
