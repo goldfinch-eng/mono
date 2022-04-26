@@ -80,6 +80,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       </div>
       <div className="text-center">
         <Button
+          colorScheme="secondary"
           size="sm"
           onClick={() => {
             connector.deactivate();

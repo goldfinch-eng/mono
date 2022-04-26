@@ -13,7 +13,11 @@ export function WalletButton() {
       placement="bottom-end"
       content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
     >
-      <Button className="inline-flex items-center gap-3">
+      <Button
+        className="inline-flex h-10 items-center gap-3"
+        variant="rounded"
+        colorScheme="secondary"
+      >
         <span>
           {account.substring(0, 6)}...{account.substring(account.length - 4)}
         </span>
@@ -21,6 +25,13 @@ export function WalletButton() {
       </Button>
     </Popover>
   ) : (
-    <Button onClick={openWalletModal}>Connect Wallet</Button>
+    <Button
+      className="h-10"
+      variant="rounded"
+      colorScheme="primary"
+      onClick={openWalletModal}
+    >
+      Connect Wallet
+    </Button>
   );
 }

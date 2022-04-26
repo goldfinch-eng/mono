@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import NextLink from "next/link";
 import { useRouter } from "next/router";
 
 import { Link, GoldfinchLogo } from "@/components/design-system";
@@ -14,8 +15,12 @@ const navItems = [
 export function Nav() {
   return (
     <div className="flex flex-row bg-sand-50 px-10">
-      <div className="flex flex-1 flex-row justify-start self-center py-3">
-        <GoldfinchLogo className="h-7 w-7" />
+      <div className="flex flex-1">
+        <NextLink href="/" passHref>
+          <a className="flex items-center justify-center p-3">
+            <GoldfinchLogo className="h-7 w-7" />
+          </a>
+        </NextLink>
       </div>
 
       <nav className="flex flex-1 flex-row justify-center">
