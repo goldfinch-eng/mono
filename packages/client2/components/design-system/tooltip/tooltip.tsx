@@ -25,7 +25,7 @@ import {
   cloneElement,
 } from "react";
 
-import { Icon } from "../icon";
+import { Icon, IconSizeType } from "../icon";
 
 interface TooltipProps {
   /**
@@ -44,6 +44,13 @@ interface TooltipProps {
    * The desired placement for the tooltip. Note that this may be adjusted depending on space available for the tooltip
    */
   placement?: Placement;
+}
+
+interface InfoIconTooltipProps extends TooltipProps {
+  /**
+   * The size of the icon: "xs" | "sm" | "md" | "lg" | "text"
+   */
+  size?: IconSizeType;
 }
 
 export function Tooltip({
@@ -172,12 +179,13 @@ export function Tooltip({
   );
 }
 
-export function InfoIconTooltip(
-  props: Omit<TooltipProps, "children" | "useWrapper">
-) {
+export function InfoIconTooltip({
+  size = "text",
+  ...props
+}: Omit<InfoIconTooltipProps, "children" | "useWrapper">) {
   return (
     <Tooltip useWrapper {...props}>
-      <Icon name="InfoCircle" />
+      <Icon name="InfoCircle" size={size} />
     </Tooltip>
   );
 }

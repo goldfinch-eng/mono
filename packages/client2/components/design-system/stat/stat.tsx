@@ -1,9 +1,11 @@
-import { Icon } from "@/components/design-system";
+import { ReactNode } from "react";
+
+import { InfoIconTooltip } from "@/components/design-system";
 
 interface StatProps {
   label: string;
-  value: string;
-  tooltip?: string;
+  value?: string;
+  tooltip?: ReactNode;
 }
 
 export function Stat({ label, value, tooltip }: StatProps) {
@@ -12,9 +14,10 @@ export function Stat({ label, value, tooltip }: StatProps) {
       <div className="items-middle mb-3 flex text-sm text-sand-600">
         {label}{" "}
         {tooltip && (
-          <span className="ml-1 text-sand-400">
-            <Icon name="InfoCircle" size="sm" />
-          </span>
+          <InfoIconTooltip
+            size="sm"
+            content={<div className="max-w-xs">{tooltip}</div>}
+          />
         )}
       </div>
       <div className="text-2xl font-medium text-sand-700">{value}</div>
