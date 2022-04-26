@@ -339,24 +339,6 @@ async function requestUserAddGfiTokenToWallet(address: string): Promise<boolean>
     .catch(console.error)
 }
 
-/**   async function handleAddGfiTokenToWallet(previousGfiBalance: BigNumber, address: string): Promise<void> {
-    if (previousGfiBalance.eq(0)) {
-      await requestUserAddGfiTokenToWallet(props.gfi.address)
-    } else {
-      // Don't ask the user to add the GFI asset to their wallet, as for Metamask this was
-      // observed to prompt the user with another dialog even if GFI was already an asset in
-      // their wallet -- in which case Metamask includes this warning in the dialog:
-      // "This action will edit tokens that are already listed in your wallet, which can
-      // be used to phish you. Only approve if you are certain that you mean to change
-      // what these tokens represent." Seems better to optimize for not triggering this UX,
-      // which will possibly concern the user (even though it need not; a better-designed
-      // Metamask would detect that the GFI contract address in the request is equal to the
-      // address of the asset already in the wallet, and not show such a warning, or not
-      // show the dialog at all...), than to be aggressive about getting the user to add
-      // the asset to their wallet.
-    }
-  } */
-
 async function requestUserAddERC20TokenToWallet(
   ticker: Ticker,
   goldfinchProtocol: GoldfinchProtocol
