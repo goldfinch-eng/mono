@@ -77,6 +77,9 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.GoldfinchConfig)).to.equal(
         "0x0000000000000000000000000000000000000008"
       )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.FiduUSDCCurveLP)).to.equal(
+        "0x55A8a39bc9694714E2874c1ce77aa1E599461E18"
+      )
     })
   })
 

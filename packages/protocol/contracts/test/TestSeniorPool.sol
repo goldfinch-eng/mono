@@ -10,16 +10,16 @@ contract TestSeniorPool is SeniorPool {
     return getNumShares(amount);
   }
 
-  function _usdcMantissa() public pure returns (uint256) {
-    return usdcMantissa();
+  function usdcMantissa() public pure returns (uint256) {
+    return _usdcMantissa();
   }
 
-  function _fiduMantissa() public pure returns (uint256) {
-    return fiduMantissa();
+  function fiduMantissa() public pure returns (uint256) {
+    return _fiduMantissa();
   }
 
-  function _usdcToFidu(uint256 amount) public pure returns (uint256) {
-    return usdcToFidu(amount);
+  function usdcToFidu(uint256 amount) public pure returns (uint256) {
+    return _usdcToFidu(amount);
   }
 
   function _setSharePrice(uint256 newSharePrice) public returns (uint256) {

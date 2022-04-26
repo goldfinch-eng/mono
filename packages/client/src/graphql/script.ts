@@ -568,7 +568,11 @@ function validateBacker(backer: TranchedPoolBacker, graphBacker: TranchedPoolBac
   validateTokenInfo(backer.address, backer.tokenInfos, graphBacker.tokenInfos)
 }
 
-function validateTokenInfo(address: string, tokenInfoWeb3: TokenInfo[], graphTokenInfo: TokenInfo[]) {
+function validateTokenInfo(address: string | undefined, tokenInfoWeb3: TokenInfo[], graphTokenInfo: TokenInfo[]) {
+  if (!address) {
+    console.error("Web3 undefined address")
+    return
+  }
   if (!tokenInfoWeb3) {
     console.error("Web3 undefined tokenInfo for ", address)
     return
