@@ -38,7 +38,7 @@ contract TestForwarder {
 
   constructor() public {
     string memory requestType = string(abi.encodePacked("ForwardRequest(", GENERIC_PARAMS, ")"));
-    registerRequestTypeInternal(requestType);
+    _registerRequestTypeInternal(requestType);
   }
 
   function verify(
@@ -91,7 +91,7 @@ contract TestForwarder {
     }
 
     string memory requestType = string(abi.encodePacked(typeName, "(", GENERIC_PARAMS, ",", typeSuffix));
-    registerRequestTypeInternal(requestType);
+    _registerRequestTypeInternal(requestType);
   }
 
   function registerDomainSeparator(string calldata name, string calldata version) external {
@@ -115,7 +115,7 @@ contract TestForwarder {
     emit DomainRegistered(domainHash, domainValue);
   }
 
-  function registerRequestTypeInternal(string memory requestType) internal {
+  function _registerRequestTypeInternal(string memory requestType) internal {
     bytes32 requestTypehash = keccak256(bytes(requestType));
     typeHashes[requestTypehash] = true;
     emit RequestTypeRegistered(requestTypehash, requestType);

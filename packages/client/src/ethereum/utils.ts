@@ -128,6 +128,19 @@ async function getDeployments(networkId) {
     .catch(console.error)
 }
 
+let legacyConfig
+async function getLegacyDeployments(networkId) {
+  if (legacyConfig) {
+    return Promise.resolve(legacyConfig[networkId])
+  }
+  return import("@goldfinch-eng/protocol/deployments/legacy-all.json")
+    .then((result) => {
+      legacyConfig = transformedConfig(result)
+      return legacyConfig[networkId]
+    })
+    .catch(console.error)
+}
+
 export function isMainnetForking(): boolean {
   return process.env.REACT_APP_HARDHAT_FORK === MAINNET
 }
@@ -338,6 +351,7 @@ const ONE_YEAR_SECONDS = new BigNumber(60 * 60 * 24 * 365)
 
 export {
   getDeployments,
+  getLegacyDeployments,
   getMerkleDistributorInfo,
   getBackerMerkleDistributorInfo,
   getMerkleDirectDistributorInfo,

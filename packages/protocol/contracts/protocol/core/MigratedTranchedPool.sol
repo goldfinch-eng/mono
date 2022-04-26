@@ -45,7 +45,7 @@ contract MigratedTranchedPool is TranchedPool, IMigratedTranchedPool {
     // Hardcode to always get the JuniorTranche, since the migration case is when
     // the senior pool took the entire investment. Which we're expressing as the junior tranche
     uint256 tranche = uint256(ITranchedPool.Tranches.Junior);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche has been locked");
     trancheInfo.principalDeposited = clToMigrate.limit();
     IPoolTokens.MintParams memory params = IPoolTokens.MintParams({

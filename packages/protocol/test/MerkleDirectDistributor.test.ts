@@ -13,7 +13,7 @@ import {
   fundWithEthFromLocalWhale,
   genDifferentHexString,
   getOnlyLog,
-  getTruffleContract,
+  getTruffleContractAtAddress,
 } from "./testHelpers"
 import {deployBaseFixture} from "./util/fixtures"
 import {getDeployedContract, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
@@ -48,7 +48,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     from: owner,
     gasLimit: 4000000,
   })
-  const uninitializedMerkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>(
+  const uninitializedMerkleDirectDistributor = await getTruffleContractAtAddress<MerkleDirectDistributorInstance>(
     "MerkleDirectDistributor",
     uninitializedMerkleDirectDistributorDeployResult.address
   )

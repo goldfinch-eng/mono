@@ -20,7 +20,7 @@ const STAKING_REWARDS_MULTIPLIER_DECIMALS = new BN(String(1e18))
 const ETHDecimals = new BN(String(1e18))
 const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
-const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY || "A2UgCPgn8jQbkSVuSCxEMhFmivdV9C6d"
+const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
 import {AdminClient} from "defender-admin-client"
 import PROTOCOL_CONFIG from "../../protocol_config.json"
@@ -48,6 +48,7 @@ const MAINNET_USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 const MAINNET_ONE_SPLIT_ADDRESS = "0xC586BeF4a0992C495Cf22e1aeEE4E446CECDee0E"
 const MAINNET_CUSDC_ADDRESS = "0x39aa39c021dfbae8fac545936693ac917d5e7563"
 const MAINNET_COMP_ADDRESS = "0xc00e94cb662c3520282e6f5717214004a7f26888"
+const MAINNET_FIDU_USDC_CURVE_LP_ADDRESS = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
 const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
@@ -138,6 +139,7 @@ const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
   4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
 }
 
+export const ZAPPER_ROLE = web3.utils.keccak256("ZAPPER_ROLE")
 export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
 export const PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
 export const GO_LISTER_ROLE = web3.utils.keccak256("GO_LISTER_ROLE")
@@ -146,6 +148,11 @@ export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_S
 export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
 export const SIGNER_ROLE = web3.utils.keccak256("SIGNER_ROLE")
+
+export enum StakedPositionType {
+  Fidu,
+  CurveLP,
+}
 
 const TRANCHES = {
   Senior: 1,
@@ -343,9 +350,8 @@ function toAtomic(amount: BN, decimals = USDCDecimals): string {
 }
 
 function getDefenderClient() {
-  if (DEFENDER_API_SECRET == null) {
-    throw new Error("DEFENDER_API_SECRET is null. It must be set as an envvar")
-  }
+  assertNonNullable(DEFENDER_API_KEY, "DEFENDER_API_KEY is null. It must be set as an envvar")
+  assertNonNullable(DEFENDER_API_SECRET, "DEFENDER_API_SECRET is null. It must be set as an envvar")
   return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 
@@ -481,6 +487,7 @@ export {
   MAINNET_ONE_SPLIT_ADDRESS,
   MAINNET_CUSDC_ADDRESS,
   MAINNET_COMP_ADDRESS,
+  MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
   LOCAL,
   MAINNET,
   USDCDecimals,

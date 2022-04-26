@@ -32,8 +32,6 @@
     "bignumber.js": "^9.0.0",
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
-    "depay-web3-blockchains": "^2.6.0",
-    "depay-web3-mock": "git+https://github.com/goldfinch-eng/depay-web3-mock.git#4e7f7c42683e59bc596b724073f2ce246995bd5c",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "focus-within-polyfill": "^5.1.0",
@@ -86,6 +84,8 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "@depay/web3-blockchains": "^4.2.0",
+    "@depay/web3-mock": "git+https://github.com/goldfinch-eng/depay-web3-mock.git#972fed7622737aa25cfeb4e3dd1f4197e1770233",
     "@hookform/devtools": "^2.2.1",
     "@nomiclabs/buidler": "^1.4.4",
     "@testing-library/jest-dom": "^5.14.1",

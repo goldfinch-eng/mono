@@ -73,7 +73,7 @@ contract TransferRestrictedVault is
     require(config.getGo().go(msg.sender), "This address has not been go-listed");
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
-    approveSpender(address(tranchedPool), amount);
+    _approveSpender(address(tranchedPool), amount);
     uint256 poolTokenId = tranchedPool.deposit(uint256(ITranchedPool.Tranches.Junior), amount);
 
     uint256 transferRestrictionPeriodInSeconds = SECONDS_PER_DAY.mul(config.getTransferRestrictionPeriodInDays());
@@ -103,7 +103,7 @@ contract TransferRestrictedVault is
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(this), amount);
 
     ISeniorPool seniorPool = config.getSeniorPool();
-    approveSpender(address(seniorPool), amount);
+    _approveSpender(address(seniorPool), amount);
     uint256 depositShares = seniorPool.deposit(amount);
 
     uint256 transferRestrictionPeriodInSeconds = SECONDS_PER_DAY.mul(config.getTransferRestrictionPeriodInDays());
@@ -201,7 +201,7 @@ contract TransferRestrictedVault is
         "Underlying position cannot be transferred until lockedUntil"
       );
 
-      transferFiduPosition(fiduPosition, to);
+      _transferFiduPosition(fiduPosition, to);
       delete fiduPositions[tokenId];
     }
 
@@ -212,24 +212,24 @@ contract TransferRestrictedVault is
         "Underlying position cannot be transferred until lockedUntil"
       );
 
-      transferPoolTokenPosition(poolTokenPosition, to);
+      _transferPoolTokenPosition(poolTokenPosition, to);
       delete poolTokenPositions[tokenId];
     }
 
     _burn(tokenId);
   }
 
-  function transferPoolTokenPosition(PoolTokenPosition storage position, address to) internal {
+  function _transferPoolTokenPosition(PoolTokenPosition storage position, address to) internal {
     IPoolTokens poolTokens = config.getPoolTokens();
     poolTokens.safeTransferFrom(address(this), to, position.tokenId);
   }
 
-  function transferFiduPosition(FiduPosition storage position, address to) internal {
+  function _transferFiduPosition(FiduPosition storage position, address to) internal {
     IFidu fidu = config.getFidu();
     safeERC20Transfer(fidu, to, position.amount);
   }
 
-  function approveSpender(address spender, uint256 allowance) internal {
+  function _approveSpender(address spender, uint256 allowance) internal {
     IERC20withDec usdc = config.getUSDC();
     safeERC20Approve(usdc, spender, allowance);
   }
