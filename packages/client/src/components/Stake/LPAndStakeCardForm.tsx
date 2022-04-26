@@ -130,7 +130,6 @@ export default function LPAndStakeCardForm({
 
   return (
     <div>
-      <Container></Container>
       <FormProvider {...formMethods}>
         <div>
           <StyledStakingPrompt formVal={depositToken.name} stakingApy={stakingApy} onToggle={onStakingPromptToggle} />
