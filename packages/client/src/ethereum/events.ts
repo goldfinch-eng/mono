@@ -13,22 +13,24 @@ import {
 } from "../types/events"
 import {assertNumber, defaultSum} from "../utils"
 import getWeb3 from "../web3"
-import {Ticker, toDecimalString} from "./erc20"
+import {usdcFromAtomic} from "./erc20"
+import {fiduFromAtomic} from "./fidu"
+import {gfiFromAtomic} from "./gfi"
 import {RichAmount, AmountWithUnits, HistoricalTx, TxName} from "../types/transactions"
 import {CombinedRepaymentTx} from "./pool"
 
-async function mapEventsToTx<T extends KnownEventName>(
+function mapEventsToTx<T extends KnownEventName>(
   events: EventData[],
   known: T[],
   config: EventParserConfig<T>
-): Promise<HistoricalTx<T>[]> {
-  const txs = await Promise.all(_.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config)))
+): HistoricalTx<T>[] {
+  const txs = _.compact(events).map((event: EventData) => mapEventToTx<T>(event, known, config))
   return _.reverse(_.sortBy(_.compact(txs), ["blockNumber", "transactionIndex"]))
 }
 
 export type EventParserConfig<T extends KnownEventName> = {
   parseName: (eventData: KnownEventData<T>) => TxName
-  parseAmount: (eventData: KnownEventData<T>) => AmountWithUnits | Promise<AmountWithUnits>
+  parseAmount: (eventData: KnownEventData<T>) => AmountWithUnits
 }
 
 function getRichAmount(amount: AmountWithUnits): RichAmount {
@@ -39,16 +41,13 @@ function getRichAmount(amount: AmountWithUnits): RichAmount {
   let display: string
   switch (amount.units) {
     case "usdc":
-      display = toDecimalString(atomic, Ticker.USDC)
+      display = usdcFromAtomic(atomic)
       break
     case "fidu":
-      display = toDecimalString(atomic, Ticker.FIDU)
+      display = fiduFromAtomic(atomic)
       break
     case "gfi":
-      display = toDecimalString(atomic, Ticker.GFI)
-      break
-    case "fidu-usdc-f":
-      display = toDecimalString(atomic, Ticker.CURVE_FIDU_USDC)
+      display = gfiFromAtomic(atomic)
       break
     default:
       assertUnreachable(amount.units)
@@ -69,14 +68,14 @@ async function populateDates<T extends KnownEventName, U extends HistoricalTx<T>
   )
 }
 
-async function mapEventToTx<T extends KnownEventName>(
+function mapEventToTx<T extends KnownEventName>(
   eventData: EventData,
   known: T[],
   config: EventParserConfig<T>
-): Promise<HistoricalTx<T> | undefined> {
+): HistoricalTx<T> | undefined {
   if (isKnownEventData<T>(eventData, known)) {
     const parsedName = config.parseName(eventData)
-    const parsedAmount = await config.parseAmount(eventData)
+    const parsedAmount = config.parseAmount(eventData)
 
     return {
       current: false,

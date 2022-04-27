@@ -16,6 +16,5 @@ export const defaultTheme: DefaultTheme = {
   },
   heights: {
     widgetButtonHeight: "40px",
-    iconHeight: "45px",
   },
 }
