@@ -327,7 +327,6 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
 
   const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
   const numRepayments = endTime.minus(startTime).div(secondsPerPaymentPeriod).plus(BigInt.fromI32(1)) // Add one to compensate for integer truncation here
-  BigDecimal.fromString("365.1").
 
   const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
 
@@ -355,7 +354,10 @@ function estimateRewards(
   for (let i = 0; i < repaymentSchedules.length; i++) {
     const repayment = repaymentSchedules[i]
     // Need to use big numbers to get decent accuracy during integer sqrt
-    const newTotalInterest = oldTotalInterest.plus(repayment.interestAmount.times(GFI_DECIMALS).div(USDC_DECIMALS))
+    let newTotalInterest = oldTotalInterest.plus(repayment.interestAmount.times(GFI_DECIMALS).div(USDC_DECIMALS))
+    if (newTotalInterest.gt(maxInterestDollarsEligible)) {
+      newTotalInterest = maxInterestDollarsEligible
+    }
     const sqrtDiff = newTotalInterest.sqrt().minus(oldTotalInterest.sqrt())
     const gfiAmount = sqrtDiff
       .times(totalGfiAvailableForBackerRewards)
