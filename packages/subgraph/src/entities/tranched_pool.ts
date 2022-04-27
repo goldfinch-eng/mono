@@ -313,13 +313,16 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
   if (creditLine.termStartTime != BigInt.zero() && creditLine.termEndTime != BigInt.zero()) {
     startTime = creditLine.termStartTime
     endTime = creditLine.termEndTime
+  } else if (tranchedPool.fundableAt != BigInt.zero()) {
+    startTime = tranchedPool.fundableAt.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
+    endTime = startTime.plus(SECONDS_PER_DAY.times(creditLine.termInDays))
   } else {
-    startTime = now.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
+    startTime = tranchedPool.createdAt.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
     endTime = startTime.plus(SECONDS_PER_DAY.times(creditLine.termInDays))
   }
 
   const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
-  const numRepayments = endTime.minus(startTime).div(secondsPerPaymentPeriod)
+  const numRepayments = endTime.minus(startTime).div(secondsPerPaymentPeriod).plus(BigInt.fromI32(1)) // Add one to compensate for integer truncation here
 
   const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
 
@@ -380,9 +383,8 @@ function calculateAnnualizedGfiRewardsPerPrincipleDollar(
       throw new Error("Unable to load creditLine from summedRewardsByTranchedPool")
     }
     const juniorPrincipleDollars = creditLine.maxLimit
-      .div(USDC_DECIMALS)
-      .div(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)))
-      .toBigDecimal()
+      .divDecimal(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)).toBigDecimal())
+      .div(USDC_DECIMALS.toBigDecimal())
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
     const perPrincipleDollar = reward.div(juniorPrincipleDollars)
 
