@@ -23,8 +23,6 @@ import {
   CreditDeskEventType,
   CREDIT_DESK_EVENT_TYPES,
   DEPOSITED_AND_STAKED_EVENT,
-  DEPOSITED_TO_CURVE_EVENT,
-  DEPOSITED_TO_CURVE_AND_STAKED_EVENT,
   DEPOSIT_MADE_EVENT,
   DRAWDOWN_MADE_EVENT,
   GRANT_ACCEPTED_EVENT,
@@ -44,7 +42,6 @@ import {
   UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   UNSTAKED_EVENT,
   WITHDRAWAL_MADE_EVENT,
-  UNSTAKED_MULTIPLE_EVENT,
 } from "../types/events"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../types/loadable"
 import {
@@ -54,11 +51,8 @@ import {
 import {AcceptedMerkleDistributorGrant, NotAcceptedMerkleDistributorGrant} from "../types/merkleDistributor"
 import {
   ACCEPT_TX_TYPE,
-  AmountUnits,
   BORROW_TX_TYPE,
   CLAIM_TX_TYPE,
-  DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
-  DEPOSIT_TO_CURVE_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
   HistoricalTx,
   PAYMENT_TX_TYPE,
@@ -66,7 +60,6 @@ import {
   SUPPLY_AND_STAKE_TX_TYPE,
   SUPPLY_TX_TYPE,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-  UNSTAKE_MULTIPLE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
@@ -79,20 +72,14 @@ import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
 import {BackerRewardsLoaded, BackerRewardsPoolTokenPosition, BackerRewardsPosition} from "./backerRewards"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
 import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
-import {ERC20, Ticker, USDC, usdcFromAtomic} from "./erc20"
+import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
 import {getCachedPastEvents, GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
+import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition} from "./pool"
 import {TranchedPoolBacker} from "./tranchedPool"
-import {
-  getStakedPositionTypeByValue,
-  SeniorPoolLoaded,
-  StakedPositionType,
-  StakingRewardsLoaded,
-  StakingRewardsPosition,
-} from "./pool"
 import {
   getBackerMerkleDirectDistributorInfo,
   getBackerMerkleDistributorInfo,
@@ -987,7 +974,7 @@ export class User {
     backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
-    const usdc = this.goldfinchProtocol.getERC20(Ticker.USDC)
+    const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
 
     const usdcBalance = await usdc.getBalance(this.address, currentBlock)
     const usdcBalanceInDollars = new BigNumber(usdcFromAtomic(usdcBalance))
@@ -1093,7 +1080,7 @@ export class User {
       getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
         return {
           poolEvents,
-          poolTxs: await mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
+          poolTxs: mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<PoolEventType>) => {
               switch (eventData.event) {
                 case DEPOSIT_MADE_EVENT:
@@ -1134,7 +1121,7 @@ export class User {
         currentBlock
       ),
 
-      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
+      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then((overlappingStakingRewardsEvents) => {
         const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
         const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
           (
@@ -1147,85 +1134,46 @@ export class User {
             currentBlock: overlappingStakingRewardsEvents.currentBlock,
             value: stakedEvents,
           },
-          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+          stakingRewardsTxs: mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
               switch (eventData.event) {
                 case STAKED_EVENT:
                   return STAKE_TX_TYPE
                 case DEPOSITED_AND_STAKED_EVENT:
                   return SUPPLY_AND_STAKE_TX_TYPE
-                case DEPOSITED_TO_CURVE_EVENT:
-                  return DEPOSIT_TO_CURVE_TX_TYPE
-                case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
-                  return DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE
                 case UNSTAKED_EVENT:
                   return UNSTAKE_TX_NAME
                 case UNSTAKED_AND_WITHDREW_EVENT:
                 case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
                   return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
-                case UNSTAKED_MULTIPLE_EVENT:
-                  return UNSTAKE_MULTIPLE_TX_TYPE
                 case REWARD_PAID_EVENT:
                   return CLAIM_TX_TYPE
                 default:
                   return assertUnreachable(eventData.event)
               }
             },
-            parseAmount: async (eventData: KnownEventData<StakingRewardsEventType>) => {
+            parseAmount: (eventData: KnownEventData<StakingRewardsEventType>) => {
               switch (eventData.event) {
                 case STAKED_EVENT:
                   return {
                     amount: eventData.returnValues.amount,
-                    units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
+                    units: "fidu",
                   }
                 case DEPOSITED_AND_STAKED_EVENT:
                   return {
                     amount: eventData.returnValues.depositedAmount,
                     units: "usdc",
                   }
-                case DEPOSITED_TO_CURVE_EVENT:
-                case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
-                  const fiduAmount = eventData.returnValues.fiduAmount
-                  const usdcAmount = eventData.returnValues.usdcAmount
-                  if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
-                    // USDC-only deposit
-                    return {
-                      amount: usdcAmount,
-                      units: "usdc",
-                    }
-                  } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
-                    // FIDU-only deposit
-                    return {
-                      amount: fiduAmount,
-                      units: "fidu",
-                    }
-                  } else {
-                    throw new Error("Cannot deposit both FIDU and USDC")
-                  }
                 case UNSTAKED_EVENT:
                   return {
                     amount: eventData.returnValues.amount,
-                    units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
+                    units: "fidu",
                   }
                 case UNSTAKED_AND_WITHDREW_EVENT:
                 case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
                   return {
                     amount: eventData.returnValues.usdcReceivedAmount,
                     units: "usdc",
-                  }
-                case UNSTAKED_MULTIPLE_EVENT:
-                  // We can assume that all positions in an "Unstaked Multiple" event are of the same
-                  // position type, so we just check the type of the first unstaked position.
-                  const tokenId = eventData.returnValues.tokenIds[0]
-                  const position = await stakingRewards.contract.readOnly.methods
-                    .positions(tokenId)
-                    .call(undefined, "latest")
-                  return {
-                    amount: eventData.returnValues.amounts.reduce(
-                      (sum, amount) => new BigNumber(amount).plus(sum),
-                      new BigNumber(0)
-                    ),
-                    units: this.getUnitsForStakedPositionType(position.positionType),
                   }
                 case REWARD_PAID_EVENT:
                   return {
@@ -1249,18 +1197,6 @@ export class User {
 
   isUnlocked(allowance: BigNumber | undefined) {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
-  }
-
-  getUnitsForStakedPositionType(stakedPositionTypeValue: string): AmountUnits {
-    const positionType = getStakedPositionTypeByValue(stakedPositionTypeValue)
-    switch (positionType) {
-      case StakedPositionType.Fidu:
-        return "fidu"
-      case StakedPositionType.CurveLP:
-        return "fidu-usdc-f"
-      default:
-        return assertUnreachable(positionType)
-    }
   }
 
   async _fetchGoListStatus(
@@ -1475,21 +1411,11 @@ function getNonOverlappingStakingRewardsEvents(
           acc.depositedAndStaked[curr.blockNumber] = acc.depositedAndStaked[curr.blockNumber] || {}
           acc.depositedAndStaked[curr.blockNumber]![curr.transactionIndex] = true
           break
-        case DEPOSITED_TO_CURVE_EVENT:
-          break
-        case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
-          acc.depositedToCurveAndStaked[curr.blockNumber] = acc.depositedToCurveAndStaked[curr.blockNumber] || {}
-          acc.depositedToCurveAndStaked[curr.blockNumber]![curr.transactionIndex] = true
-          break
         case UNSTAKED_EVENT:
           break
         case UNSTAKED_AND_WITHDREW_EVENT:
           acc.unstakedAndWithdrew[curr.blockNumber] = acc.unstakedAndWithdrew[curr.blockNumber] || {}
           acc.unstakedAndWithdrew[curr.blockNumber]![curr.transactionIndex] = true
-          break
-        case UNSTAKED_MULTIPLE_EVENT:
-          acc.unstakedMultiple[curr.blockNumber] = acc.unstakedMultiple[curr.blockNumber] || {}
-          acc.unstakedMultiple[curr.blockNumber]![curr.transactionIndex] = true
           break
         case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
           acc.unstakedAndWithdrewMultiple[curr.blockNumber] = acc.unstakedAndWithdrewMultiple[curr.blockNumber] || {}
@@ -1504,32 +1430,23 @@ function getNonOverlappingStakingRewardsEvents(
     },
     {
       depositedAndStaked: {},
-      depositedToCurveAndStaked: {},
       unstakedAndWithdrew: {},
-      unstakedMultiple: {},
       unstakedAndWithdrewMultiple: {},
     }
   )
   return overlappingStakingRewardsEvents.filter((eventData): boolean => {
     switch (eventData.event) {
       case STAKED_EVENT:
-        return (
-          !reduced.depositedAndStaked[eventData.blockNumber]?.[eventData.transactionIndex] &&
-          !reduced.depositedToCurveAndStaked[eventData.blockNumber]?.[eventData.transactionIndex]
-        )
+        return !reduced.depositedAndStaked[eventData.blockNumber]?.[eventData.transactionIndex]
       case DEPOSITED_AND_STAKED_EVENT:
-      case DEPOSITED_TO_CURVE_EVENT:
-      case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
         return true
       case UNSTAKED_EVENT:
         return (
           !reduced.unstakedAndWithdrew[eventData.blockNumber]?.[eventData.transactionIndex] &&
-          !reduced.unstakedAndWithdrewMultiple[eventData.blockNumber]?.[eventData.transactionIndex] &&
-          !reduced.unstakedMultiple[eventData.blockNumber]?.[eventData.transactionIndex]
+          !reduced.unstakedAndWithdrewMultiple[eventData.blockNumber]?.[eventData.transactionIndex]
         )
       case UNSTAKED_AND_WITHDREW_EVENT:
       case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-      case UNSTAKED_MULTIPLE_EVENT:
       case REWARD_PAID_EVENT:
         return true
       default:
@@ -1546,9 +1463,7 @@ type CorrespondingExistsInfo = {
 
 type OverlapAccumulator = {
   depositedAndStaked: CorrespondingExistsInfo
-  depositedToCurveAndStaked: CorrespondingExistsInfo
   unstakedAndWithdrew: CorrespondingExistsInfo
-  unstakedMultiple: CorrespondingExistsInfo
   unstakedAndWithdrewMultiple: CorrespondingExistsInfo
 }
 

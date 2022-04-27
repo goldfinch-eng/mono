@@ -1,10 +1,10 @@
 import React from "react"
 import {ErrorMessage} from "@hookform/error-message"
 import {Controller} from "react-hook-form"
-import {displayDollars, displayNumber} from "../utils"
+import {displayDollars} from "../utils"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {Ticker} from "../ethereum/erc20"
+import {Tickers} from "../ethereum/erc20"
 import NumberFormat from "react-number-format"
 
 type TransactionInputProps = {
@@ -13,20 +13,16 @@ type TransactionInputProps = {
   onChange?: (val: unknown) => void
   inputClass?: string
   ticker?: string
-  displayTicker?: boolean
-  displayUSDCTicker?: boolean
   notes?: Array<{
     key: string
     content: React.ReactNode
   }>
   formMethods: any
-  maxAmount?: string
+  maxAmountInDollars?: string
   validations?: {
     [name: string]: (val: string) => boolean | string
   }
   rightDecoration?: React.ReactNode
-  error?: boolean
-  warning?: boolean
 }
 
 function TransactionInput(props: TransactionInputProps) {
@@ -38,8 +34,7 @@ function TransactionInput(props: TransactionInputProps) {
   let propsOnChange = props.onChange || ((val: unknown) => {})
   let validations = props.validations || {}
   let notes = _.compact(props.notes || [])
-  let ticker = props.ticker || Ticker.USDC
-  let displayTicker = _.isUndefined(props.displayTicker) ? true : props.displayTicker
+  let ticker = props.ticker || Tickers.USDC
 
   let noteEls = notes.map(({key, content}) => (
     <div key={key} className="form-input-note">
@@ -62,20 +57,11 @@ function TransactionInput(props: TransactionInputProps) {
     })
   }
 
-  let maxAmountErrorMessage
-  if (ticker === Ticker.USDC) {
-    maxAmountErrorMessage = `Amount is above the max allowed (${displayDollars(props.maxAmount)}). `
-  } else {
-    maxAmountErrorMessage = `Amount is above the max allowed (${displayNumber(props.maxAmount)} ${ticker}). `
-  }
-
   return (
     <div className="form-field">
       <div className={`form-input-container ${inputClass}`}>
-        <div className={`transaction-input ${!!props.error ? "error" : !!props.warning ? "warning" : ""}`}>
-          {ticker === Ticker.USDC && displayTicker && !props.displayUSDCTicker && (
-            <div className="ticker before">$</div>
-          )}
+        <div className="transaction-input">
+          {ticker === Tickers.USDC && <div className="ticker before">$</div>}
           <Controller
             control={props.formMethods.control}
             name={name}
@@ -83,10 +69,10 @@ function TransactionInput(props: TransactionInputProps) {
             rules={{
               required: "Amount is required",
               min: {value: 0.0000001, message: "Must be greater than 0"},
-              max: props.maxAmount
+              max: props.maxAmountInDollars
                 ? {
-                    value: props.maxAmount,
-                    message: maxAmountErrorMessage,
+                    value: props.maxAmountInDollars,
+                    message: `Amount is above the max allowed (${displayDollars(props.maxAmountInDollars)}). `,
                   }
                 : undefined,
               validate: {
@@ -113,9 +99,7 @@ function TransactionInput(props: TransactionInputProps) {
               )
             }}
           />
-          {(ticker !== Ticker.USDC || !!props.displayUSDCTicker) && displayTicker && (
-            <div className="ticker after">{ticker}</div>
-          )}
+          {ticker !== Tickers.USDC && <div className="ticker after">{ticker}</div>}
           {props.rightDecoration}
         </div>
         {noteEls}

@@ -115,7 +115,7 @@ export function TranchedPoolDepositForm({
           <TransactionInput
             formMethods={formMethods}
             disabled={disabled}
-            maxAmount={maxTxAmountInDollars}
+            maxAmountInDollars={maxTxAmountInDollars}
             rightDecoration={
               <button
                 className="enter-max-amount"

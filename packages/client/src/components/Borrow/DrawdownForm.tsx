@@ -130,7 +130,7 @@ function DrawdownForm(props: DrawdownFormProps) {
             <div className="form-inputs-footer">
               <TransactionInput
                 formMethods={formMethods}
-                maxAmount={maxAmountInDollars}
+                maxAmountInDollars={maxAmountInDollars}
                 disabled={disabled}
                 onChange={(e) => {
                   debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
