@@ -177,11 +177,15 @@ export class BackerRewards {
 
   private async reduceScheduledRepaymentsToEstimatedRewards(
     scheduledRepayments: ForTranchedPool<ScheduledRepayment>[],
-    gfiSupply: BigNumber
+    gfiSupply: BigNumber,
+    currentBlock: BlockInfo
   ): Promise<ForTranchedPool<ScheduledRepaymentEstimatedReward>[]> {
     assertWithLoadedInfo(this)
     const maxInterestDollarsEligible = this.info.value.maxInterestDollarsEligible
     const totalRewardPercentOfTotalGFI = this.info.value.totalRewardPercentOfTotalGFI
+    const totalInterestReceived = new BigNumber(
+      await this.contract.readOnly.methods.totalInterestReceived().call(undefined, currentBlock.number)
+    )
 
     const reduced = scheduledRepayments.reduce<{
       interestSumCapped: BigNumber
@@ -219,7 +223,10 @@ export class BackerRewards {
         }
       },
       {
-        interestSumCapped: new BigNumber(0),
+        // Initialize the working interest sum using the total amount of interest dollars for which the BackerRewards
+        // contract has already granted rewards. This is critical so that the scheduled repayments are considered
+        // in the correct relation to repayments that have already occurred.
+        interestSumCapped: totalInterestReceived.multipliedBy(GFI_DECIMALS).dividedBy(USDC_DECIMALS.toString()),
         estimatedRewards: [],
       }
     )
@@ -263,7 +270,8 @@ export class BackerRewards {
     const scheduledRepayments = this.sortScheduledRepayments(repaymentSchedulesByTranchedPool)
     const scheduledRepaymentsEstimatedRewards = await this.reduceScheduledRepaymentsToEstimatedRewards(
       scheduledRepayments,
-      gfiSupply
+      gfiSupply,
+      currentBlock
     )
     const estimatedRewards = this.sumScheduledRepaymentsEstimatedRewards(scheduledRepaymentsEstimatedRewards)
     return estimatedRewards
