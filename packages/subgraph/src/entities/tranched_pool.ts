@@ -8,7 +8,7 @@ import { CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS } fr
 import { getOrInitUser } from './user'
 import { getOrInitCreditLine, initOrUpdateCreditLine } from './credit_line'
 import { getOrInitPoolBacker } from './pool_backer'
-import { getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets } from './helpers'
+import { getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, getEstimatedSeniorPoolInvestment } from './helpers'
 import { isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2 } from '../utils'
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -142,7 +142,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
       BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator)
     )
   )
-  tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
+  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address)
   tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches)
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)

@@ -130,7 +130,6 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/pool_tokens_proxy.ts
 
-
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -269,6 +268,8 @@ templates:
           file: ./abis/SeniorPool_Proxy.json
         - name: SeniorPool
           file: ./abis/SeniorPool.json
+        - name: FixedLeverageRatioStrategy
+          file: ./abis/FixedLeverageRatioStrategy.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
