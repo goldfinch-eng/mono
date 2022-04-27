@@ -1,5 +1,5 @@
 {
-  "name": "technical-docs",
+  "name": "@goldfinch-eng/technical-docs",
   "version": "0.0.0",
   "private": true,
   "scripts": {
