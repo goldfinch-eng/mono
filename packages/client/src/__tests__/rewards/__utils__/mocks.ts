@@ -715,6 +715,8 @@ export async function mockStakingRewardsContractCalls(
     currentEarnRatePerToken = "10000000000000000000"
   }
 
+  const DEPLOYMENTS = await getDeployments()
+
   let callPausedMock = mock({
     blockchain,
     call: {
@@ -733,8 +735,43 @@ export async function mockStakingRewardsContractCalls(
       return: currentEarnRatePerToken,
     },
   })
+  let callGetBaseTokenExchangeRate = mock({
+    blockchain,
+    call: {
+      to: stakingRewards.address,
+      api: await getStakingRewardsAbi(),
+      method: "getBaseTokenExchangeRate",
+      params: [StakedPositionType.CurveLP],
+      return: new BigNumber(1e18).toString(10),
+    },
+  })
+  let callGetEffectiveMultiplierForPositionType = mock({
+    blockchain,
+    call: {
+      to: stakingRewards.address,
+      api: await getStakingRewardsAbi(),
+      method: "getEffectiveMultiplierForPositionType",
+      params: [StakedPositionType.CurveLP],
+      return: new BigNumber(1e18).toString(10),
+    },
+  })
+  const callCurvePoolGetVirtualPrice = mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.address,
+      api: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.abi,
+      method: "get_virtual_price",
+      return: new BigNumber(1e18).toString(10),
+    },
+  })
 
-  return {callPausedMock, callCurrentEarnRatePerToken}
+  return {
+    callPausedMock,
+    callCurrentEarnRatePerToken,
+    callGetBaseTokenExchangeRate,
+    callGetEffectiveMultiplierForPositionType,
+    callCurvePoolGetVirtualPrice,
+  }
 }
 
 export async function mockCommunityRewardsContractCalls(communityRewards: CommunityRewards) {

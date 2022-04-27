@@ -42,6 +42,7 @@ import {
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
   SENIOR_POOL_AGREEMENT_US_ROUTE,
   SENIOR_POOL_ROUTE,
+  STAKE_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
   TRANCHED_POOL_ROUTE,
   TRANSACTIONS_ROUTE,
@@ -935,6 +936,7 @@ describe("Rewards list and detail", () => {
     renderRewards(goldfinchProtocol, deps, currentBlock, undefined, undefined, undefined, {
       [INDEX_ROUTE]: undefined,
       [EARN_ROUTE]: undefined,
+      [STAKE_ROUTE]: undefined,
       [ABOUT_ROUTE]: undefined,
       [GFI_ROUTE]: {number: currentBlock.number - 1, timestamp: currentBlock.timestamp - 1},
       [BORROW_ROUTE]: undefined,

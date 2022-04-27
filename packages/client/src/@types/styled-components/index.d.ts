@@ -26,6 +26,8 @@ declare module "styled-components" {
       redXLight: string
       red: string
       redDark: string
+
+      yellow: string
     }
     typography: {
       fontSize: {
@@ -51,6 +53,7 @@ declare module "styled-components" {
     }
     heights: {
       widgetButtonHeight: string
+      iconHeight: string
     }
   }
 }

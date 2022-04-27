@@ -1,7 +1,7 @@
 import getWeb3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
-import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
+import {Ticker, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
 import {BlockInfo, croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -113,7 +113,7 @@ class CreditLine extends BaseCreditLine {
     this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.creditLine = goldfinchProtocol.getContract<CreditlineContract>("CreditLine", address)
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC).contract
     this.isLate = false
     this.loaded = false
     this.creditLines = [this]
@@ -226,7 +226,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.isLate = false
     this.loaded = false
     this.name = "All"
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC).contract
   }
 
   async initialize(currentBlock: BlockInfo) {

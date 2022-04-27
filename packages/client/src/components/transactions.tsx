@@ -1,5 +1,6 @@
 import {assertIsString} from "@goldfinch-eng/utils"
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
+import BigNumber from "bignumber.js"
 import _ from "lodash"
 import React, {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
@@ -42,6 +43,12 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+  UNSTAKE_MULTIPLE_TX_TYPE,
+  DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
+  FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
+  DEPOSIT_TO_CURVE_TX_TYPE,
+  ZAP_STAKE_TO_CURVE_TX_TYPE,
+  ERC721_APPROVAL_TX_TYPE,
 } from "../types/transactions"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
@@ -114,7 +121,7 @@ function Transactions(props: TransactionsProps) {
         ),
       ])
     )
-    let poolTxs: HistoricalTx<KnownEventName>[] = mapEventsToTx(
+    let poolTxs: HistoricalTx<KnownEventName>[] = await mapEventsToTx(
       combinedEvents,
       TRANCHED_POOL_EVENT_TYPES,
       tranchedPoolEventParserConfig
@@ -150,11 +157,19 @@ function Transactions(props: TransactionsProps) {
       allTxs = allTxs.reduce(
         ({acc, hasSeenSupplyInCurrentBlock, previousBlock}, curr) => {
           hasSeenSupplyInCurrentBlock = curr.blockNumber === previousBlock && hasSeenSupplyInCurrentBlock
-          hasSeenSupplyInCurrentBlock = hasSeenSupplyInCurrentBlock || curr.name === SUPPLY_TX_TYPE
-
+          hasSeenSupplyInCurrentBlock =
+            hasSeenSupplyInCurrentBlock ||
+            [SUPPLY_TX_TYPE, STAKE_TX_TYPE, DEPOSIT_TO_CURVE_TX_TYPE, DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE].includes(
+              curr.name
+            )
           if (
             hasSeenSupplyInCurrentBlock &&
-            [USDC_APPROVAL_TX_TYPE, FIDU_APPROVAL_TX_TYPE, ERC20_APPROVAL_TX_TYPE].includes(curr.name)
+            [
+              USDC_APPROVAL_TX_TYPE,
+              FIDU_APPROVAL_TX_TYPE,
+              FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
+              ERC20_APPROVAL_TX_TYPE,
+            ].includes(curr.name)
           ) {
             return {acc, previousBlock: curr.blockNumber as number, hasSeenSupplyInCurrentBlock}
           } else {
@@ -189,6 +204,7 @@ function Transactions(props: TransactionsProps) {
           break
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE: {
           const txAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).amount
           let max = MAX_UINT.toString()
@@ -199,6 +215,9 @@ function Transactions(props: TransactionsProps) {
           }
           break
         }
+        case ERC721_APPROVAL_TX_TYPE:
+          amount = "Maximum"
+          break
         case SUPPLY_AND_STAKE_TX_TYPE:
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
@@ -217,9 +236,35 @@ function Transactions(props: TransactionsProps) {
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)
           break
         }
+        case UNSTAKE_MULTIPLE_TX_TYPE: {
+          direction = "outflow"
+          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)
+          break
+        }
         case STAKE_TX_TYPE:
-          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)
-          amountSuffix = " FIDU"
+          direction = "outflow"
+          amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)
+          amountSuffix = ` ${(tx.data as CurrentTx<typeof tx.name>["data"]).ticker}`
+          break
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+          let fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          let usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
+            // USDC-only deposit
+            amount = displayDollars(usdcAmount)
+          } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
+            // FIDU-only deposit
+            amount = displayNumber(fiduAmount)
+            amountSuffix = " FIDU"
+          } else {
+            throw new Error("Cannot deposit both FIDU and USDC")
+          }
+          break
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
+          fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          amount = `${displayNumber(fiduAmount)} FIDU, ${displayDollars(usdcAmount)}`
           break
         default:
           assertUnreachable(tx)
@@ -240,6 +285,10 @@ function Transactions(props: TransactionsProps) {
           amount = displayNumber(tx.amount.display)
           amountSuffix = " GFI"
           break
+        case "fidu-usdc-f":
+          amount = displayNumber(tx.amount.display)
+          amountSuffix = " FIDU-USDC-F"
+          break
         default:
           assertUnreachable(tx.amount.units)
       }
@@ -248,6 +297,8 @@ function Transactions(props: TransactionsProps) {
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
         case SUPPLY_AND_STAKE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
           direction = "inflow"
           break
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
@@ -258,6 +309,7 @@ function Transactions(props: TransactionsProps) {
           break
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE: {
           const txAmount = tx.amount.atomic
           let max = MAX_UINT.toString()
@@ -266,6 +318,9 @@ function Transactions(props: TransactionsProps) {
           }
           break
         }
+        case ERC721_APPROVAL_TX_TYPE:
+          amount = "Maximum"
+          break
         case CLAIM_TX_TYPE:
         case ACCEPT_TX_TYPE:
         case STAKE_TX_TYPE:
@@ -278,6 +333,7 @@ function Transactions(props: TransactionsProps) {
         case PRINCIPAL_PAYMENT_TX_NAME:
         case INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME:
         case DRAWDOWN_TX_NAME:
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
           break
         default:
           assertUnreachable(tx)
