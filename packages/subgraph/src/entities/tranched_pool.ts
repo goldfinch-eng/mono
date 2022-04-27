@@ -307,6 +307,11 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
     return []
   }
 
+  // When should we say that interest will start being earned on this additional balance?
+  // We can't be sure exactly. There's currently no notion of a deadline for funding
+  // the pool, nor hard start time of the borrowing. We'll make a reasonable supposition:
+  // if the creditLine has a start time defined, use that. If it doesn't, assume the interest starts
+  // 7 days after the pool became fundable (and if that value isn't populated, use the pool's creation date)
   let startTime: BigInt
   let endTime: BigInt
   if (creditLine.termStartTime != BigInt.zero() && creditLine.termEndTime != BigInt.zero()) {
@@ -322,6 +327,7 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
 
   const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
   const numRepayments = endTime.minus(startTime).div(secondsPerPaymentPeriod).plus(BigInt.fromI32(1)) // Add one to compensate for integer truncation here
+  BigDecimal.fromString("365.1").
 
   const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
 
