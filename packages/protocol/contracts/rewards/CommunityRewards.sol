@@ -144,13 +144,14 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
 
   /// @notice Grant rewards to a recipient. The recipient address receives an
   ///   an NFT representing their rewards grant. They can present the NFT to `getReward()`
-  ///   to claim their rewards. Rewards vest over a schedule.
+  ///   to claim their rewards. Rewards vest over a schedule. If the given `vestingInterval`
+  ///   is 0, then `vestingInterval` will be equal to `vestingLength`.
   /// @param recipient The recipient of the grant.
   /// @param amount The amount of `rewardsToken()` to grant.
   /// @param vestingLength The duration (in seconds) over which the grant vests.
   /// @param cliffLength The duration (in seconds) from the start of the grant, before which has elapsed
   /// the vested amount remains 0.
-  /// @param vestingInterval The interval (in seconds) at which vesting occurs. Must be a factor of `vestingLength`.
+  /// @param vestingInterval The interval (in seconds) at which vesting occurs.
   function grant(
     address recipient,
     uint256 amount,
@@ -171,6 +172,7 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     require(amount > 0, "Cannot grant 0 amount");
     require(cliffLength <= vestingLength, "Cliff length cannot exceed vesting length");
     require(amount <= rewardsAvailable, "Cannot grant amount due to insufficient funds");
+    require(vestingInterval <= vestingLength, "Invalid vestingInterval");
 
     if (vestingInterval == 0) {
       vestingInterval = vestingLength;
@@ -208,6 +210,23 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
       rewardsToken().safeTransfer(msg.sender, reward);
       emit RewardPaid(msg.sender, tokenId, reward);
     }
+  }
+
+  function totalUnclaimed(address owner) external view returns (uint256) {
+    uint256 result = 0;
+    for (uint256 i = 0; i < balanceOf(owner); i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(owner, i);
+      result = result.add(_unclaimed(tokenId));
+    }
+    return result;
+  }
+
+  function unclaimed(uint256 tokenId) external view returns (uint256) {
+    return _unclaimed(tokenId);
+  }
+
+  function _unclaimed(uint256 tokenId) internal view returns (uint256) {
+    return grants[tokenId].totalGranted - grants[tokenId].totalClaimed;
   }
 
   /* ========== MODIFIERS ========== */

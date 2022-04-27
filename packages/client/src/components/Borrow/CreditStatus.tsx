@@ -1,12 +1,22 @@
 import React from "react"
+import {BorrowerInterface} from "../../ethereum/borrower"
+import {CreditLine} from "../../ethereum/creditLine"
 import {usdcFromAtomic} from "../../ethereum/erc20"
+import {UserLoaded} from "../../ethereum/user"
 import {displayDollars, displayNumber} from "../../utils"
 import CreditBarViz from "../creditBarViz"
 import EtherscanLink from "../etherscanLink"
 import {iconClock, iconOutArrow} from "../icons"
 import InfoSection from "../infoSection"
 
-function CreditStatus(props) {
+type CreditStatusProps = {
+  user: UserLoaded
+  borrower: BorrowerInterface
+  creditLine: CreditLine
+  disabled: boolean
+}
+
+function CreditStatus(props: CreditStatusProps) {
   let placeholderClass = ""
   if (
     !props.user ||
@@ -48,10 +58,10 @@ function CreditStatus(props) {
     )
   }
   let remainingTotalDue = props.creditLine.remainingTotalDueAmountInDollars
-  let availableToDrawdown = props.creditLine.availableCreditInDollars
+  let availableToDrawdown = props.borrower.getAvailableToBorrowInDollarsForCreditLine(props.creditLine)
 
   const creditLineAddress = props.creditLine.address
-  const tranchedPoolAddress = props.user?.borrower?.tranchedPoolByCreditLine[creditLineAddress]?.address
+  const tranchedPoolAddress = props.borrower.getPoolAddress(creditLineAddress)
 
   return (
     <div className={`credit-status background-container ${placeholderClass}`}>
@@ -59,6 +69,7 @@ function CreditStatus(props) {
         <h2>Credit Status</h2>
         <EtherscanLink
           address={tranchedPoolAddress}
+          txHash={undefined}
           classNames={`pool-link ${placeholderClass !== "" && "disabled-link"}`}
         >
           {iconOutArrow}

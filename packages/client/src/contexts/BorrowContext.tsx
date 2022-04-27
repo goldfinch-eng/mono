@@ -1,8 +1,8 @@
 import React, {useState} from "react"
-import {CreditLine, defaultCreditLine} from "../ethereum/creditLine"
+import {CreditLine} from "../ethereum/creditLine"
 
 interface BorrowStoreType {
-  creditLine: CreditLine
+  creditLine: CreditLine | undefined
 }
 
 interface BorrowProviderProps {
@@ -18,7 +18,7 @@ const BorrowContext = React.createContext<BorrowContextType | undefined>(undefin
 
 function BorrowProvider({children}: BorrowProviderProps) {
   const [borrowStore, setBorrowStore] = useState<BorrowStoreType>({
-    creditLine: defaultCreditLine as unknown as CreditLine,
+    creditLine: undefined,
   })
 
   const value = {borrowStore, setBorrowStore}

@@ -41,11 +41,9 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
   let detailsLink = <></>
   if (user && user.info.value.goListed && session.status === "authenticated" && tranchedPool.metadata?.detailsUrl) {
     detailsLink = (
-      <div className="pool-links pool-overview-links">
-        <button onClick={() => handleDetails()}>
-          Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
-        </button>
-      </div>
+      <button onClick={() => handleDetails()}>
+        Details & Discussion <span className="outbound-link">{iconOutArrow}</span>
+      </button>
     )
   }
 
@@ -63,7 +61,7 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
                 Dataroom {iconOutArrow}
               </a>
             )}
-            <EtherscanLink address={tranchedPool.address!}>
+            <EtherscanLink address={tranchedPool.address!} txHash={undefined}>
               Pool<span className="outbound-link">{iconOutArrow}</span>
             </EtherscanLink>
           </div>

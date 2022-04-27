@@ -25,9 +25,16 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @return The amount of money to invest into the tranched pool's senior tranche, from the senior pool
    */
   function invest(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
-
+    uint256 nSlices = pool.numSlices();
+    // If the pool has no slices, we cant invest
+    if (nSlices == 0) {
+      return 0;
+    }
+    uint256 sliceIndex = nSlices.sub(1);
+    (
+      ITranchedPool.TrancheInfo memory juniorTranche,
+      ITranchedPool.TrancheInfo memory seniorTranche
+    ) = _getTranchesInSlice(pool, sliceIndex);
     // If junior capital is not yet invested, or pool already locked, then don't invest anything.
     if (juniorTranche.lockedUntil == 0 || seniorTranche.lockedUntil > 0) {
       return 0;
@@ -45,8 +52,16 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
    * @return The amount of money to invest into the tranched pool's senior tranche, from the senior pool
    */
   function estimateInvestment(ISeniorPool seniorPool, ITranchedPool pool) public view override returns (uint256) {
-    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Junior));
-    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(uint256(ITranchedPool.Tranches.Senior));
+    uint256 nSlices = pool.numSlices();
+    // If the pool has no slices, we cant invest
+    if (nSlices == 0) {
+      return 0;
+    }
+    uint256 sliceIndex = nSlices.sub(1);
+    (
+      ITranchedPool.TrancheInfo memory juniorTranche,
+      ITranchedPool.TrancheInfo memory seniorTranche
+    ) = _getTranchesInSlice(pool, sliceIndex);
 
     return _invest(pool, juniorTranche, seniorTranche);
   }
@@ -59,11 +74,44 @@ abstract contract LeverageRatioStrategy is BaseUpgradeablePausable, ISeniorPoolS
     uint256 juniorCapital = juniorTranche.principalDeposited;
     uint256 existingSeniorCapital = seniorTranche.principalDeposited;
     uint256 seniorTarget = juniorCapital.mul(getLeverageRatio(pool)).div(LEVERAGE_RATIO_DECIMALS);
-
     if (existingSeniorCapital >= seniorTarget) {
       return 0;
     }
 
     return seniorTarget.sub(existingSeniorCapital);
+  }
+
+  /// @notice Return the junior and senior tranches from a given pool in a specified slice
+  /// @param pool pool to fetch tranches from
+  /// @param sliceIndex slice index to fetch tranches from
+  /// @return (juniorTranche, seniorTranche)
+  function _getTranchesInSlice(ITranchedPool pool, uint256 sliceIndex)
+    internal
+    view
+    returns (
+      ITranchedPool.TrancheInfo memory, // junior tranche
+      ITranchedPool.TrancheInfo memory // senior tranche
+    )
+  {
+    uint256 juniorTrancheId = _sliceIndexToJuniorTrancheId(sliceIndex);
+    uint256 seniorTrancheId = _sliceIndexToSeniorTrancheId(sliceIndex);
+
+    ITranchedPool.TrancheInfo memory juniorTranche = pool.getTranche(juniorTrancheId);
+    ITranchedPool.TrancheInfo memory seniorTranche = pool.getTranche(seniorTrancheId);
+    return (juniorTranche, seniorTranche);
+  }
+
+  /// @notice Returns the junior tranche id for the given slice index
+  /// @param index slice index
+  /// @return junior tranche id of given slice index
+  function _sliceIndexToJuniorTrancheId(uint256 index) internal pure returns (uint256) {
+    return index.mul(2).add(2);
+  }
+
+  /// @notice Returns the senion tranche id for the given slice index
+  /// @param index slice index
+  /// @return senior tranche id of given slice index
+  function _sliceIndexToSeniorTrancheId(uint256 index) internal pure returns (uint256) {
+    return index.mul(2).add(1);
   }
 }

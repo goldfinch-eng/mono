@@ -5,7 +5,7 @@ import {AppContext} from "../App"
 import DepositForm from "./depositForm"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {usdcToAtomic} from "../ethereum/erc20"
-import {mock} from "depay-web3-mock"
+import {mock} from "@depay/web3-mock"
 import {
   blockchain,
   defaultCurrentBlock,

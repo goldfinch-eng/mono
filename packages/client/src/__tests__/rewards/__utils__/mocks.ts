@@ -8,7 +8,7 @@ import {MerkleDirectDistributor as MerkleDirectDistributorContract} from "@goldf
 import {BackerMerkleDistributor as BackerMerkleDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDistributor"
 import {BackerMerkleDirectDistributor as BackerMerkleDirectDistributorContract} from "@goldfinch-eng/protocol/typechain/web3/BackerMerkleDirectDistributor"
 import "@testing-library/jest-dom"
-import {mock} from "depay-web3-mock"
+import {mock} from "@depay/web3-mock"
 import {BlockNumber} from "web3-core"
 import {Filter} from "web3-eth-contract"
 import {BigNumber} from "bignumber.js"
@@ -17,6 +17,7 @@ import {GFI, GFI_DECIMALS} from "../../../ethereum/gfi"
 import {
   mockGetWeightedAverageSharePrice,
   SeniorPoolLoaded,
+  StakedPositionType,
   StakingRewards,
   StakingRewardsLoaded,
 } from "../../../ethereum/pool"
@@ -42,6 +43,7 @@ import {
   getStakingRewardsAbi,
   getMerkleDirectDistributorAbi,
   getBackerMerkleDirectDistributorAbi,
+  getBackerRewardsAbi,
 } from "./constants"
 import isEqual from "lodash/isEqual"
 import getWeb3 from "../../../web3"
@@ -54,6 +56,7 @@ import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "../../../e
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {BackerMerkleDirectDistributor} from "../../../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributor} from "../../../ethereum/backerMerkleDistributor"
+import {BackerRewards} from "../../../ethereum/backerRewards"
 
 class ImproperlyConfiguredMockError extends Error {}
 
@@ -91,6 +94,9 @@ export interface RewardsMockData {
       1: [string, string, string, string, string, string]
       2: string
       3: string
+      4: string
+      5: string
+      6: string
     }
     stakingRewardsBalance?: number
     stakingRewardsTokenId?: string
@@ -127,9 +133,18 @@ export interface RewardsMockData {
   gfi?: {
     gfiBalance?: string
   }
+  backer?: {
+    poolTokenInfos: Array<{
+      id: string
+      poolTokenClaimableRewards: string
+      stakingRewardsEarnedSinceLastWithdraw: string
+      backerRewardsTokenInfo: [string, string]
+      stakingRewardsClaimed: string
+    }>
+  }
 }
 
-type ContractCallsMocks = {
+type ContractCallMocks = {
   callGFIBalanceMock: ReturnType<typeof mock>
   callUSDCBalanceMock: ReturnType<typeof mock>
   callUSDCAllowanceMock: ReturnType<typeof mock>
@@ -145,6 +160,17 @@ type ContractCallsMocks = {
   callGrantsMock: ReturnType<typeof mock> | undefined
   callClaimableRewardsMock: ReturnType<typeof mock> | undefined
   callCommunityRewardsTotalVestedAt: ReturnType<typeof mock> | undefined
+  callBackerRewardsPoolTokenClaimableRewards: ReturnType<typeof mock>[] | undefined
+  callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: ReturnType<typeof mock>[] | undefined
+  callBackerRewardsTokens: ReturnType<typeof mock>[] | undefined
+  callBackerRewardsStakingRewardsClaimed: ReturnType<typeof mock>[] | undefined
+}
+
+type ContractCallMocksPlusExpectations = {
+  [K in keyof ContractCallMocks]: {
+    mock: ContractCallMocks[K]
+    expectCalledBeforeRender: boolean
+  }
 }
 
 const defaultStakingRewardsStartTime = String(defaultCurrentBlock.timestamp)
@@ -160,8 +186,9 @@ export async function mockUserRelatedInitializationContractCalls(
   merkleDirectDistributor: MerkleDirectDistributor,
   backerMerkleDistributor: BackerMerkleDistributor,
   backerMerkleDirectDistributor: BackerMerkleDirectDistributor,
+  backerRewards: BackerRewards,
   rewardsMock: RewardsMockData
-): Promise<ContractCallsMocks> {
+): Promise<ContractCallMocksPlusExpectations> {
   user._fetchTxs = (usdc, pool, currentBlock) => {
     return Promise.resolve([
       [],
@@ -169,6 +196,8 @@ export async function mockUserRelatedInitializationContractCalls(
       {poolEvents: [], poolTxs: []},
       [],
       {stakedEvents: {currentBlock: rewardsMock.currentBlock, value: []}, stakingRewardsTxs: []},
+      [],
+      [],
       [],
       [],
       [],
@@ -248,6 +277,9 @@ export async function mockUserRelatedInitializationContractCalls(
       ["0", "0", "0", "0", defaultStakingRewardsStartTime, defaultStakingRewardsEndTime],
       "1000000000000000000",
       "0",
+      StakedPositionType.Fidu.toString(),
+      "1000000000000000000",
+      "1000000000000000000",
     ]
     if (rewardsMock.currentBlock.timestamp < parseInt(positionsRes[1][4], 10)) {
       throw new ImproperlyConfiguredMockError("Expected current timestamp not to be less than position start time.")
@@ -316,6 +348,8 @@ export async function mockUserRelatedInitializationContractCalls(
         {poolEvents: [], poolTxs: []},
         [],
         {stakedEvents: {currentBlock: rewardsMock.currentBlock, value: stakedEvents}, stakingRewardsTxs: []},
+        [],
+        [],
         [],
         [],
         [],
@@ -516,22 +550,146 @@ export async function mockUserRelatedInitializationContractCalls(
     })
   }
 
+  let callBackerRewardsPoolTokenClaimableRewards: ReturnType<typeof mock>[] | undefined
+  let callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: ReturnType<typeof mock>[] | undefined
+  let callBackerRewardsTokens: ReturnType<typeof mock>[] | undefined
+  let callBackerRewardsStakingRewardsClaimed: ReturnType<typeof mock>[] | undefined
+  if (rewardsMock.backer) {
+    callBackerRewardsPoolTokenClaimableRewards = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "poolTokenClaimableRewards",
+            params: [info.id],
+            return: info.poolTokenClaimableRewards,
+          },
+        })
+      )
+    )
+    callBackerRewardsStakingRewardsEarnedSinceLastWithdraw = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "stakingRewardsEarnedSinceLastWithdraw",
+            params: [info.id],
+            return: info.stakingRewardsEarnedSinceLastWithdraw,
+          },
+        })
+      )
+    )
+    callBackerRewardsTokens = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "tokens",
+            params: [info.id],
+            return: info.backerRewardsTokenInfo,
+          },
+        })
+      )
+    )
+    callBackerRewardsStakingRewardsClaimed = await Promise.all(
+      rewardsMock.backer.poolTokenInfos.map(async (info) =>
+        mock({
+          blockchain,
+          call: {
+            to: backerRewards.address,
+            api: await getBackerRewardsAbi(),
+            method: "stakingRewardsClaimed",
+            params: [info.id],
+            return: info.stakingRewardsClaimed,
+          },
+        })
+      )
+    )
+  }
+
   return {
-    callGFIBalanceMock,
-    callUSDCBalanceMock,
-    callUSDCAllowanceMock,
-    callStakingRewardsBalanceMock,
-    callCommunityRewardsTokenLaunchTimeInSecondsMock,
-    callCommunityRewardsBalanceMock,
-    callTokenOfOwnerByIndexMock,
-    callPositionsMock,
-    callEarnedSinceLastCheckpointMock,
-    callStakingRewardsTotalVestedAt,
-    callPositionCurrentEarnRate,
-    callCommunityRewardsTokenOfOwnerMock,
-    callGrantsMock,
-    callClaimableRewardsMock,
-    callCommunityRewardsTotalVestedAt,
+    callGFIBalanceMock: {
+      mock: callGFIBalanceMock,
+      expectCalledBeforeRender: true,
+    },
+    callUSDCBalanceMock: {
+      mock: callUSDCBalanceMock,
+      expectCalledBeforeRender: true,
+    },
+    callUSDCAllowanceMock: {
+      mock: callUSDCAllowanceMock,
+      expectCalledBeforeRender: true,
+    },
+    callStakingRewardsBalanceMock: {
+      mock: callStakingRewardsBalanceMock,
+      expectCalledBeforeRender: true,
+    },
+    callCommunityRewardsTokenLaunchTimeInSecondsMock: {
+      mock: callCommunityRewardsTokenLaunchTimeInSecondsMock,
+      expectCalledBeforeRender: true,
+    },
+    callCommunityRewardsBalanceMock: {
+      mock: callCommunityRewardsBalanceMock,
+      expectCalledBeforeRender: true,
+    },
+    callTokenOfOwnerByIndexMock: {
+      mock: callTokenOfOwnerByIndexMock,
+      expectCalledBeforeRender: true,
+    },
+    callPositionsMock: {
+      mock: callPositionsMock,
+      expectCalledBeforeRender: true,
+    },
+    callEarnedSinceLastCheckpointMock: {
+      mock: callEarnedSinceLastCheckpointMock,
+      expectCalledBeforeRender: true,
+    },
+    callStakingRewardsTotalVestedAt: {
+      mock: callStakingRewardsTotalVestedAt,
+      expectCalledBeforeRender: true,
+    },
+    callPositionCurrentEarnRate: {
+      mock: callPositionCurrentEarnRate,
+      expectCalledBeforeRender: true,
+    },
+    callCommunityRewardsTokenOfOwnerMock: {
+      mock: callCommunityRewardsTokenOfOwnerMock,
+      expectCalledBeforeRender: true,
+    },
+    callGrantsMock: {
+      mock: callGrantsMock,
+      expectCalledBeforeRender: true,
+    },
+    callClaimableRewardsMock: {
+      mock: callClaimableRewardsMock,
+      expectCalledBeforeRender: true,
+    },
+    callCommunityRewardsTotalVestedAt: {
+      mock: callCommunityRewardsTotalVestedAt,
+      expectCalledBeforeRender: true,
+    },
+    callBackerRewardsPoolTokenClaimableRewards: {
+      mock: callBackerRewardsPoolTokenClaimableRewards,
+      expectCalledBeforeRender: false,
+    },
+    callBackerRewardsStakingRewardsEarnedSinceLastWithdraw: {
+      mock: callBackerRewardsStakingRewardsEarnedSinceLastWithdraw,
+      expectCalledBeforeRender: false,
+    },
+    callBackerRewardsTokens: {
+      mock: callBackerRewardsTokens,
+      expectCalledBeforeRender: false,
+    },
+    callBackerRewardsStakingRewardsClaimed: {
+      mock: callBackerRewardsStakingRewardsClaimed,
+      expectCalledBeforeRender: false,
+    },
   }
 }
 
@@ -579,6 +737,19 @@ export async function mockStakingRewardsContractCalls(
   return {callPausedMock, callCurrentEarnRatePerToken}
 }
 
+export async function mockCommunityRewardsContractCalls(communityRewards: CommunityRewards) {
+  let callCommunityRewardsPausedMock = mock({
+    blockchain,
+    call: {
+      to: communityRewards.address,
+      api: await getCommunityRewardsAbi(),
+      method: "paused",
+      return: false,
+    },
+  })
+  return {callCommunityRewardsPausedMock}
+}
+
 export async function mockMerkleDistributorContractCalls(
   merkle: MerkleDistributor,
   communityRewardsAddress: string = "0x0000000000000000000000000000000000000008"
@@ -624,7 +795,16 @@ export async function mockMerkleDirectDistributorContractCalls(
       return: gfiAddress,
     },
   })
-  return {callGfiMock}
+  let callPausedMock = mock({
+    blockchain,
+    call: {
+      to: merkle.address,
+      api: await getMerkleDirectDistributorAbi(),
+      method: "paused",
+      return: false,
+    },
+  })
+  return {callGfiMock, callPausedMock}
 }
 
 export async function mockBackerMerkleDirectDistributorContractCalls(
@@ -640,7 +820,49 @@ export async function mockBackerMerkleDirectDistributorContractCalls(
       return: gfiAddress,
     },
   })
-  return {callGfiMock}
+  let callPausedMock = mock({
+    blockchain,
+    call: {
+      to: merkle.address,
+      api: await getBackerMerkleDirectDistributorAbi(),
+      method: "paused",
+      return: false,
+    },
+  })
+  return {callGfiMock, callPausedMock}
+}
+
+export async function mockBackerRewardsContractCalls(backerRewards: BackerRewards) {
+  const maxInterestDollarsEligible = new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10)
+  const percentOfTotalGfi = new BigNumber(2).multipliedBy(utils.INTEREST_DECIMALS.toString(10)).toString(10)
+  let callMaxInterestDollarsEligibleMock = mock({
+    blockchain,
+    call: {
+      to: backerRewards.address,
+      api: await getBackerRewardsAbi(),
+      method: "maxInterestDollarsEligible",
+      return: maxInterestDollarsEligible,
+    },
+  })
+  let callTotalRewardPercentOfTotalGFIMock = mock({
+    blockchain,
+    call: {
+      to: backerRewards.address,
+      api: await getBackerRewardsAbi(),
+      method: "totalRewardPercentOfTotalGFI",
+      return: percentOfTotalGfi,
+    },
+  })
+  let callPausedMock = mock({
+    blockchain,
+    call: {
+      to: backerRewards.address,
+      api: await getBackerRewardsAbi(),
+      method: "paused",
+      return: false,
+    },
+  })
+  return {callMaxInterestDollarsEligibleMock, callTotalRewardPercentOfTotalGFIMock, callPausedMock}
 }
 
 export function setupMocksForMerkleDistributorAirdrop(merkleConfig: MerkleDistributorConfigMock) {
@@ -774,11 +996,19 @@ export function resetAirdropMocks(goldfinchProtocol: GoldfinchProtocol): void {
   })
 }
 
-export function assertAllMocksAreCalled(mocks: Record<string, ReturnType<typeof mock> | undefined>) {
+export function assertAllMocksAreCalled(
+  mocks: Record<string, ReturnType<typeof mock> | ReturnType<typeof mock>[] | undefined>
+) {
   Object.keys(mocks).forEach((key: string) => {
     const mock = mocks[key as keyof typeof mocks]
     if (mock) {
-      expect(mock).toHaveBeenCalled()
+      if (Array.isArray(mock)) {
+        mock.forEach((eachMock) => {
+          expect(eachMock).toHaveBeenCalled()
+        })
+      } else {
+        expect(mock).toHaveBeenCalled()
+      }
     }
   })
 }

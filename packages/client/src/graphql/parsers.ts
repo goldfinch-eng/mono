@@ -16,6 +16,7 @@ import {CreditLine} from "../ethereum/creditLine"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {NetworkConfig} from "../types/network"
 import {FIDU_DECIMALS} from "../ethereum/fidu"
+import {DEPOSIT_MADE_EVENT, KnownEventData} from "../types/events"
 
 export function parseSeniorPoolStatus(data: QueryResultSeniorPoolStatus) {
   const seniorPool = data.seniorPool
@@ -46,6 +47,17 @@ function trancheInfo(tranche: JuniorTrancheGQL | SeniorTrancheGQL): TrancheInfo 
   }
 }
 
+// Pools which should have a 4x rather than 3x leverage ratio
+const LEVERAGE_RATIO_EXCEPTIONS = [
+  "0xd09a57127bc40d680be7cb061c2a6629fe71abef",
+  "0x00c27fc71b159a346e179b4a1608a0865e8a7470",
+  "0x418749e294cabce5a714efccc22a8aade6f9db57",
+  "0xb26b42dd5771689d0a7faeea32825ff9710b9c11",
+  "0x89d7c618a4eef3065da8ad684859a547548e6169",
+  "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3",
+  "0xd43a4f3041069c6178b99d55295b00d0db955bb5",
+].map((a) => a.toLowerCase())
+
 async function parseTranchedPool(
   pool: TranchedPoolGQL,
   goldfinchProtocol: GoldfinchProtocol,
@@ -71,19 +83,16 @@ async function parseTranchedPool(
   tranchedPool.reserveFeePercent = new BigNumber(pool.reserveFeePercent)
   tranchedPool.estimatedSeniorPoolContribution = new BigNumber(pool.estimatedSeniorPoolContribution)
   tranchedPool.estimatedLeverageRatio = new BigNumber(pool.estimatedLeverageRatio)
-  if (
-    tranchedPool.address === "0xd09a57127bc40d680be7cb061c2a6629fe71abef" ||
-    tranchedPool.address === "0x00c27fc71b159a346e179b4a1608a0865e8a7470" ||
-    tranchedPool.address === "0x418749e294cabce5a714efccc22a8aade6f9db57" ||
-    tranchedPool.address === "0xb26b42dd5771689d0a7faeea32825ff9710b9c11" ||
-    tranchedPool.address === "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3"
-  ) {
+  if (LEVERAGE_RATIO_EXCEPTIONS.includes(tranchedPool.address.toLowerCase())) {
     tranchedPool.estimatedLeverageRatio = new BigNumber(4)
   }
 
   tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
   tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
   tranchedPool.isPaused = pool.isPaused
+  tranchedPool.drawdownsPaused = await tranchedPool.contract.readOnly.methods
+    .drawdownsPaused()
+    .call(undefined, currentBlock?.number || "latest")
 
   // This code addresses the case when the user doesn't have a web3 provider
   // since we need the current block timestamp to define the pool status.
@@ -94,16 +103,20 @@ async function parseTranchedPool(
   tranchedPool.poolState = tranchedPool.getPoolState(_currentBlock)
 
   // TODO Add these values to the subgraph, and then use them, and remove these web3 calls.
-  const [totalDeployed, fundableAt] = await Promise.all(
+  const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
     tranchedPool.isMultipleDrawdownsCompatible
       ? [
           tranchedPool.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock?.number || "latest"),
           tranchedPool.contract.readOnly.methods.fundableAt().call(undefined, currentBlock?.number || "latest"),
+          tranchedPool.contract.readOnly.methods
+            .NUM_TRANCHES_PER_SLICE()
+            .call(undefined, currentBlock?.number || "latest"),
         ]
-      : ["0", "0"]
+      : ["0", "0", "2"]
   )
   tranchedPool.totalDeployed = new BigNumber(totalDeployed)
   tranchedPool.fundableAt = new BigNumber(fundableAt)
+  tranchedPool.numTranchesPerSlice = new BigNumber(numTranchesPerSlice)
 
   return tranchedPool
 }
@@ -172,7 +185,27 @@ export async function parseBackers(
         backer.availableToWithdraw = new BigNumber(backerData?.availableToWithdraw || 0)
         backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
         backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
-        backer.tokenInfos = tokenInfo(backerData?.user.tokens || [])
+        const filteredTokens = (backerData?.user.tokens || []).filter(
+          (token) => token.tranchedPool.id === tranchedPool.address
+        )
+        backer.tokenInfos = tokenInfo(filteredTokens)
+        const events = await Promise.all(
+          backer.tokenInfos.map(
+            (tokenInfo): Promise<KnownEventData<typeof DEPOSIT_MADE_EVENT>[]> =>
+              _goldfinchProtocol.queryEvents(
+                tranchedPool.contract.readOnly,
+                [DEPOSIT_MADE_EVENT],
+                {tokenId: tokenInfo.id},
+                currentBlock.number
+              )
+          )
+        )
+        backer.firstDepositBlockNumber = events
+          .flat()
+          .reduce<number | undefined>(
+            (acc, curr) => (acc ? Math.min(acc, curr.blockNumber) : curr.blockNumber),
+            undefined
+          )
         return backer
       } else {
         // HACK: In the absence of a user address, use the tranched pool's address, so that we can still
@@ -190,6 +223,7 @@ export async function parseBackers(
         backer.availableToWithdrawInDollars = new BigNumber("")
         backer.unrealizedGainsInDollars = new BigNumber("")
         backer.tokenInfos = tokenInfo([])
+        backer.firstDepositBlockNumber = undefined
         return backer
       }
     })
@@ -201,12 +235,12 @@ function tokenInfo(tokens: TokenInfoGQL[]): TokenInfo[] {
     return {
       id: t.id,
       pool: t.tranchedPool.id,
-      tranche: t.tranche,
-      principalAmount: t.principalAmount,
-      principalRedeemed: t.principalRedeemed,
-      interestRedeemed: t.interestRedeemed,
-      principalRedeemable: t.principalRedeemable,
-      interestRedeemable: t.interestRedeemable,
+      tranche: new BigNumber(t.tranche),
+      principalAmount: new BigNumber(t.principalAmount),
+      principalRedeemed: new BigNumber(t.principalRedeemed),
+      interestRedeemed: new BigNumber(t.interestRedeemed),
+      principalRedeemable: new BigNumber(t.principalRedeemable),
+      interestRedeemable: new BigNumber(t.interestRedeemable),
     }
   })
 }

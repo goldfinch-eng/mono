@@ -4,15 +4,17 @@
   "private": true,
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "jest": {
-    "testPathIgnorePatterns": ["/__utils__/"]
+    "testPathIgnorePatterns": [
+      "/__utils__/"
+    ]
   },
   "dependencies": {
     "@apollo/client": "^3.4.16",
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
-    "@goldfinch-eng/protocol": "^0.1.0",
     "@goldfinch-eng/autotasks": "^0.0.1",
+    "@goldfinch-eng/protocol": "^0.1.0",
     "@goldfinch-eng/utils": "^0.0.1",
     "@hookform/error-message": "0.0.4",
     "@metamask/providers": "^8.1.1",
@@ -30,8 +32,6 @@
     "bignumber.js": "^9.0.0",
     "bnc-notify": "^1.5.1",
     "classnames": "^2.2.6",
-    "depay-web3-blockchains": "^2.6.0",
-    "depay-web3-mock": "git+https://github.com/goldfinch-eng/depay-web3-mock.git#4e7f7c42683e59bc596b724073f2ce246995bd5c",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "focus-within-polyfill": "^5.1.0",
@@ -55,7 +55,7 @@
     "rimble-ui": "^0.9.7",
     "styled-components": "^4.4.1",
     "typescript": "^4.4.3",
-    "web3": "^1.2.1",
+    "web3": "^1.7.3",
     "web3modal": "^1.9.5"
   },
   "scripts": {
@@ -72,10 +72,20 @@
     "gen-graphql-types": "npx apollo client:codegen ./src/graphql/types.ts --endpoint=https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch --target=typescript --outputFlat --tagName=gql --includes=./src/graphql/*.ts"
   },
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --fix"]
+    "*.(js(x)?|ts(x)?)": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
-  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"],
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
   "devDependencies": {
+    "@depay/web3-blockchains": "^4.2.0",
+    "@depay/web3-mock": "git+https://github.com/goldfinch-eng/depay-web3-mock.git#972fed7622737aa25cfeb4e3dd1f4197e1770233",
     "@hookform/devtools": "^2.2.1",
     "@nomiclabs/buidler": "^1.4.4",
     "@testing-library/jest-dom": "^5.14.1",

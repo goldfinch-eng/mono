@@ -1,4 +1,4 @@
-import {mock, resetMocks} from "depay-web3-mock"
+import {mock, resetMocks} from "@depay/web3-mock"
 import {BackerRewards, BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {PoolState, TranchedPool, TrancheInfo} from "../../ethereum/tranchedPool"
 import {SeniorPool, SeniorPoolData, SeniorPoolLoaded} from "../../ethereum/pool"
@@ -78,7 +78,6 @@ describe("BackerRewards", () => {
       gfi = _gfiLoaded
 
       const _backerRewardsLoaded = new BackerRewards(goldfinchProtocol)
-      _backerRewardsLoaded.startBlock = currentBlock
       _backerRewardsLoaded.info = {
         loaded: true,
         value: {
@@ -86,6 +85,7 @@ describe("BackerRewards", () => {
           maxInterestDollarsEligible: new BigNumber(1e8).multipliedBy(new BigNumber(1e18)),
           totalRewardPercentOfTotalGFI: new BigNumber(2).multipliedBy(new BigNumber(1e18)),
           isPaused: false,
+          startBlock: currentBlock,
         },
       }
       assertWithLoadedInfo(_backerRewardsLoaded)
@@ -255,6 +255,7 @@ describe("BackerRewards", () => {
 
       const creditLineAddress = "0x0000000000000000000000000000000000000098"
 
+      let callBackerRewardsTotalInterestReceivedMock: () => void
       let callBackerRewardsPoolsMock: () => void
       let callCreditLineMock: () => void
 
@@ -287,6 +288,17 @@ describe("BackerRewards", () => {
             principalDeposited: seniorPrincipalDeposited,
           } as TrancheInfo
           tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
+
+          callBackerRewardsTotalInterestReceivedMock = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "totalInterestReceived",
+              params: [],
+              return: "0",
+            },
+          })
 
           callBackerRewardsPoolsMock = mock({
             blockchain,
@@ -334,7 +346,7 @@ describe("BackerRewards", () => {
           expect(tranchedPoolResult.backersOnly?.toString()).toEqual(tranchedPoolExpectedBackersOnlyApy)
           expect(tranchedPoolResult.seniorPoolMatching?.toString()).toEqual(tranchedPoolExpectedSeniorPoolMatchingApy)
 
-          assertAllMocksAreCalled({callBackerRewardsPoolsMock})
+          assertAllMocksAreCalled({callBackerRewardsTotalInterestReceivedMock, callBackerRewardsPoolsMock})
         })
       })
 
@@ -368,6 +380,17 @@ describe("BackerRewards", () => {
             lockedUntil: currentBlock.timestamp + 2 * utils.SECONDS_PER_DAY,
           } as TrancheInfo
           tranchedPool.totalDeposited = juniorPrincipalDeposited.plus(seniorPrincipalDeposited)
+
+          callBackerRewardsTotalInterestReceivedMock = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "totalInterestReceived",
+              params: [],
+              return: "0",
+            },
+          })
 
           callBackerRewardsPoolsMock = mock({
             blockchain,
@@ -429,7 +452,11 @@ describe("BackerRewards", () => {
           expect(tranchedPoolResult.backersOnly?.toString()).toEqual(tranchedPoolExpectedBackersOnlyApy)
           expect(tranchedPoolResult.seniorPoolMatching?.toString()).toEqual(tranchedPoolExpectedSeniorPoolMatchingApy)
 
-          assertAllMocksAreCalled({callBackerRewardsPoolsMock, callCreditLineMock})
+          assertAllMocksAreCalled({
+            callBackerRewardsTotalInterestReceivedMock,
+            callBackerRewardsPoolsMock,
+            callCreditLineMock,
+          })
         })
       })
     })
@@ -445,6 +472,7 @@ describe("BackerRewards", () => {
         const tranchedPool3Address = "0x0000000000000000000000000000000000000095"
         let tranchedPool3: TranchedPool
 
+        let callBackerRewardsTotalInterestReceivedMock: () => void
         let callBackerRewardsPoolsMock1: () => void
         let callBackerRewardsPoolsMock2: () => void
         let callBackerRewardsPoolsMock3: () => void
@@ -482,6 +510,17 @@ describe("BackerRewards", () => {
             launchTime: currentBlock.timestamp,
             allowedUIDTypes: [0],
           }
+
+          callBackerRewardsTotalInterestReceivedMock = mock({
+            blockchain,
+            call: {
+              to: backerRewards.address,
+              api: await getBackerRewardsAbi(),
+              method: "totalInterestReceived",
+              params: [],
+              return: "0",
+            },
+          })
 
           callBackerRewardsPoolsMock1 = mock({
             blockchain,
@@ -1144,6 +1183,7 @@ describe("BackerRewards", () => {
           expect(tranchedPool3Result.seniorPoolMatching?.toString()).toEqual("0.37")
 
           assertAllMocksAreCalled({
+            callBackerRewardsTotalInterestReceivedMock,
             callBackerRewardsPoolsMock1,
             callBackerRewardsPoolsMock2,
             callBackerRewardsPoolsMock3,

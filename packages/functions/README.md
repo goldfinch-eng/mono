@@ -9,6 +9,9 @@ For a given cloud function, one way to see what is the config setting’s value 
 
 For <projects> use `goldfinch-frontends-prod` or `goldfinch-frontends-dev`
 
+Docs: https://cloud.google.com/deployment-manager/runtime-configurator
+SDK Docs: https://cloud.google.com/sdk/gcloud/reference/beta/runtime-config/configs
+
 `gcloud help`
 
 `gcloud auth login`
@@ -20,6 +23,6 @@ For <projects> use `goldfinch-frontends-prod` or `goldfinch-frontends-dev`
 Example get variables
 `gcloud beta runtime-config configs variables get-value allowed_origins --config-name kyc --project <projects>`
 
-Example set variable
-`gcloud beta runtime-config configs variables set allowed_origins \ "http://localhost:3000,https://app.goldfinch.finance,https://deploy-preview-*--goldfinchfi.netlify.app" --config-name kyc --project <projects>`
+Example set variable `--is-text` is a needed param
+`gcloud beta runtime-config configs variables set allowed_origins \ "http://localhost:3000,https://app.goldfinch.finance,https://deploy-preview-*--goldfinchfi.netlify.app" --config-name kyc --project <projects> --is-text`
 

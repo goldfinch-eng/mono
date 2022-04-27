@@ -45,6 +45,8 @@ interface IPoolTokens is IERC721 {
     uint256 interestRedeemed
   ) external;
 
+  function withdrawPrincipal(uint256 tokenId, uint256 principalAmount) external;
+
   function burn(uint256 tokenId) external;
 
   function onPoolCreated(address newPool) external;
