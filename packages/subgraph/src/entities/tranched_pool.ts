@@ -1,14 +1,13 @@
 import { Address, BigInt, log } from '@graphprotocol/graph-ts'
 import { TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, PoolBacker, TranchedPoolDeposit } from "../../generated/schema"
 import { DepositMade } from "../../generated/templates/TranchedPool/TranchedPool"
-import { SeniorPool as SeniorPoolContract } from '../../generated/templates/GoldfinchFactory/SeniorPool'
 import { TranchedPool as TranchedPoolContract } from '../../generated/templates/GoldfinchFactory/TranchedPool'
 import { GoldfinchConfig as GoldfinchConfigContract } from '../../generated/templates/GoldfinchFactory/GoldfinchConfig'
 import { CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, SENIOR_POOL_ADDRESS } from '../constants'
 import { getOrInitUser } from './user'
 import { getOrInitCreditLine, initOrUpdateCreditLine } from './credit_line'
 import { getOrInitPoolBacker } from './pool_backer'
-import { getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets } from './helpers'
+import { getEstimatedLeverageRatio, getTotalDeposited, getEstimatedTotalAssets, getEstimatedSeniorPoolInvestment } from './helpers'
 import { isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2 } from '../utils'
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -62,7 +61,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   const poolContract = TranchedPoolContract.bind(address)
-  const seniorPoolContract = SeniorPoolContract.bind(Address.fromString(SENIOR_POOL_ADDRESS))
   const configContract = GoldfinchConfigContract.bind(Address.fromString(GOLDFINCH_CONFIG_ADDRESS))
 
   let version: string = VERSION_BEFORE_V2_2
@@ -142,9 +140,9 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
       BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator)
     )
   )
-  tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
-  tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches)
-  tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
+  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
+  tranchedPool.estimatedLeverageRatio = getEstimatedLeverageRatio(address, juniorTranches, seniorTranches, version)
+  tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches, version)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.isPaused = poolContract.paused()
   tranchedPool.version = version
