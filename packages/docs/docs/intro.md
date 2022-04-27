@@ -1,3 +1,9 @@
+---
+sidebar_position: 1
+---
+
+# What is Goldfinch?
+
 "Goldfinch" encompasses a few different things, which we should distinguish:
 - The Goldfinch Protocol
   - A set of smart contracts on the Ethereum blockchain, which together comprise a decentralized credit protocol for undercollateralized financing of off-chain economic activity.
@@ -7,3 +13,4 @@
   - A governance system for governing the Goldfinch Protocol, built around the GFI token and the discussion forum served at https://gov.goldfinch.finance.
 - Warbler Labs
   - The company which initially developed the Goldfinch Protocol and the Goldfinch Interface.
+
