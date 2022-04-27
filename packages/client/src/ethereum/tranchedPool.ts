@@ -3,6 +3,7 @@ import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-ident
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {PoolTokens as PoolTokensContract} from "@goldfinch-eng/protocol/typechain/web3/PoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
+import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {asNonNullable, assertNonNullable, assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
@@ -185,6 +186,7 @@ class TranchedPool {
   isV1StyleDeal!: boolean
   isMigrated!: boolean
   isPaused!: boolean
+  drawdownsPaused!: boolean
 
   constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
     this.address = address
@@ -218,14 +220,29 @@ class TranchedPool {
       await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator, currentBlock)
     )
     let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
-    this.estimatedSeniorPoolContribution = new BigNumber(
-      await pool.readOnly.methods.estimateInvestment(this.address).call(undefined, currentBlock.number)
-    )
+    if (this.isMultipleDrawdownsCompatible) {
+      const estimateInvestment = await pool.readOnly.methods
+        .estimateInvestment(this.address)
+        .call(undefined, currentBlock.number)
+      this.estimatedSeniorPoolContribution = new BigNumber(estimateInvestment)
+    } else {
+      const oldFixedLeverageRatioAddress = "0x9b2ACD3fd9aa6c60B26CF748bfFF682f27893320"
+      const oldFixedLeverageRatioContract = this.goldfinchProtocol.getContract<FixedLeverageRatioStrategyContract>(
+        "FixedLeverageRatioStrategy",
+        oldFixedLeverageRatioAddress
+      )
+      this.estimatedSeniorPoolContribution = new BigNumber(
+        await oldFixedLeverageRatioContract.readOnly.methods
+          .estimateInvestment(pool.readOnly.options.address, this.address)
+          .call(undefined, currentBlock.number)
+      )
+    }
     this.estimatedLeverageRatio = await this.estimateLeverageRatio(currentBlock)
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
+    this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
 
     this.poolState = this.getPoolState(currentBlock)
 
@@ -685,6 +702,18 @@ class TranchedPool {
    */
   get displayName(): string {
     return this.metadata?.name ?? croppedAddress(this.address)
+  }
+
+  get amountAvailableForDrawdown(): BigNumber {
+    // NOTE: This calculation is intended to replicate the logic in `TranchedPool.drawdown()`
+    // that determines the maximum amount that is available for drawdown.
+    return this.sharePriceToUSDC(this.juniorTranche.principalSharePrice, this.juniorTranche.principalDeposited).plus(
+      this.sharePriceToUSDC(this.seniorTranche.principalSharePrice, this.seniorTranche.principalDeposited)
+    )
+  }
+
+  get amountAvailableForDrawdownInDollars(): BigNumber {
+    return new BigNumber(usdcFromAtomic(this.amountAvailableForDrawdown))
   }
 }
 

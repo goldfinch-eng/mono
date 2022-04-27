@@ -2,6 +2,10 @@
   .background-container {
     margin-bottom: 1em;
   }
+
+  button {
+    width: 33%;
+  }
 }
 
 .verify-card {
@@ -29,10 +33,6 @@
   font-size: $sans-size-m;
   display: inline-block;
   margin-bottom: 10px;
-}
-
-button {
-  width: 33%;
 }
 
 .verify-step-label .icon {

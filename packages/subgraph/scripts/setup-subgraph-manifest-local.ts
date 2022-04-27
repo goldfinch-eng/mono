@@ -20,6 +20,7 @@ const deployedFiduAddress = localhostContracts.Fidu.address
 const deployedGfiAddress = localhostContracts.GFI.address
 const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Proxy.address
 const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
+const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
@@ -62,6 +63,7 @@ export const LOCALHOST_FIDU_ADDRESS = "${deployedFiduAddress}"
 export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolProxyAddress}"
 export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensProxyAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
+export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
 `
 
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))

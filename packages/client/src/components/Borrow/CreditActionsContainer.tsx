@@ -1,15 +1,22 @@
-import React, {useState, useContext} from "react"
-import PaymentForm from "./PaymentForm"
-import DrawdownForm from "./DrawdownForm"
-import {iconCircleCheck, iconUpArrow, iconDownArrow} from "../icons"
+import React, {useContext, useState} from "react"
 import {AppContext} from "../../App"
+import {BorrowerInterface} from "../../ethereum/borrower"
+import {CreditLine, displayDueDate} from "../../ethereum/creditLine"
 import {displayDollars} from "../../utils"
-import {displayDueDate} from "../../ethereum/creditLine"
+import {iconCircleCheck, iconDownArrow, iconUpArrow} from "../icons"
+import DrawdownForm from "./DrawdownForm"
+import PaymentForm from "./PaymentForm"
 
-function CreditActionsContainer(props) {
+type CreditActionsContainerProps = {
+  creditLine: CreditLine
+  actionComplete: () => Promise<void>
+  disabled: boolean
+  borrower: BorrowerInterface
+}
+
+function CreditActionsContainer(props: CreditActionsContainerProps) {
   const {user} = useContext(AppContext)
   const [showAction, setShowAction] = useState(null)
-  const availableCredit = props.creditLine.availableCredit
 
   function openAction(e, action) {
     e.preventDefault()
@@ -33,21 +40,37 @@ function CreditActionsContainer(props) {
 
   let drawdownAction
   let drawdownClass = "disabled"
-
-  if (availableCredit.gt(0) && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked && !props.disabled) {
+  let drawdownDisabled = true
+  if (
+    user &&
+    user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
+    props.borrower &&
+    !props.borrower.getPoolDrawdownDisabled(props.creditLine.address) &&
+    props.borrower.getAvailableToBorrowInDollarsForCreditLine(props.creditLine).gt(0) &&
+    !props.disabled
+  ) {
     drawdownAction = (e) => {
       openAction(e, "drawdown")
     }
     drawdownClass = ""
+    drawdownDisabled = false
   }
 
   let payAction
   let payClass = "disabled"
-  if (props.creditLine.isActive && user && user.info.value.usdcIsUnlocked.borrow.isUnlocked) {
+  let payDisabled = true
+  if (
+    props.creditLine.isActive &&
+    user &&
+    user.info.value.usdcIsUnlocked.borrow.isUnlocked &&
+    props.borrower &&
+    !props.disabled
+  ) {
     payAction = (e) => {
       openAction(e, "payment")
     }
     payClass = ""
+    payDisabled = false
   }
 
   let nextDueDisplay = "No payment due"
@@ -84,8 +107,10 @@ function CreditActionsContainer(props) {
       <div className={`form-start split background-container ${placeholderClass}`}>
         <div className="form-start-section">
           <div className="form-start-label">Available to borrow</div>
-          <div className="form-start-value">{displayDollars(props.creditLine.availableCreditInDollars)}</div>
-          <button className={`button ${drawdownClass}`} onClick={drawdownAction}>
+          <div className="form-start-value">
+            {displayDollars(props.borrower.getAvailableToBorrowInDollarsForCreditLine(props.creditLine))}
+          </div>
+          <button className={`button ${drawdownClass}`} onClick={drawdownAction} disabled={drawdownDisabled}>
             {iconDownArrow} Borrow
           </button>
         </div>
@@ -95,7 +120,7 @@ function CreditActionsContainer(props) {
             {nextDueIcon}
             {nextDueDisplay}
           </div>
-          <button className={`button dark ${payClass}`} onClick={payAction}>
+          <button className={`button dark ${payClass}`} onClick={payAction} disabled={payDisabled}>
             {iconUpArrow} Pay
           </button>
         </div>

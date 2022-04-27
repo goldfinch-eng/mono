@@ -8,7 +8,6 @@ import {
   TranchedPoolBorrowerTransaction,
 } from "../../generated/schema"
 import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
-import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
 import {SENIOR_POOL_ADDRESS, SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS} from "../constants"
 import {getOrInitUser} from "./user"
@@ -22,6 +21,7 @@ import {
   isV1StyleDeal,
   estimateJuniorAPY,
   getReserveFeePercent,
+  getEstimatedSeniorPoolInvestment,
 } from "./helpers"
 import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
@@ -78,7 +78,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   const poolContract = TranchedPoolContract.bind(address)
-  const seniorPoolContract = SeniorPoolContract.bind(Address.fromString(SENIOR_POOL_ADDRESS))
 
   let version: string = VERSION_BEFORE_V2_2
   let numSlices = BigInt.fromI32(1)
@@ -153,8 +152,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
   tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
-  tranchedPool.estimatedSeniorPoolContribution = seniorPoolContract.estimateInvestment(address)
-  tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches)
+  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
+  tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches, version)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.isPaused = poolContract.paused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)

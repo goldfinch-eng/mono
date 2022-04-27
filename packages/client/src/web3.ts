@@ -10,11 +10,11 @@ import {
   provider as ProviderType,
   WebsocketProvider as WebsocketProviderType,
 } from "web3-core"
-import {JsonRpcPayload, JsonRpcResponse} from "web3-core-helpers"
-import HttpProvider from "web3-providers-http"
 import WebsocketProvider from "web3-providers-ws"
+import HttpProvider from "web3-providers-http"
+import {JsonRpcPayload, JsonRpcResponse, WebsocketProviderOptions} from "web3-core-helpers"
+import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {MAINNET} from "./ethereum/utils"
-import {UserWalletWeb3Status, Web3IO} from "./types/web3"
 import {GFITokenImageURL} from "./utils"
 import {isWalletConnectProvider, WalletConnectWeb3Provider, web3Modal} from "./walletConnect"
 
@@ -38,6 +38,18 @@ function cleanSessionAndReload() {
 const networkNameByChainId: {[chainId: string]: string} = {
   "0x1": MAINNET,
   "0x4": "rinkeby",
+}
+
+const websocketOptions: WebsocketProviderOptions = {
+  // Configure the websocket connection to automatically reconnect if it drops (cf.
+  // https://ethereum.stackexchange.com/a/84194). We observed Websocket connections to Infura
+  // being dropped after a period of inactivity.
+  reconnect: {
+    auto: true,
+    delay: 1000,
+    maxAttempts: 5,
+    onTimeout: true,
+  },
 }
 
 function subscribeProvider(provider: WebsocketProviderType | IpcProviderType | WalletConnectProvider): void {
@@ -180,7 +192,7 @@ function genReadOnlyWeb3(metamaskProvider: MetaMaskInpageProvider): Web3 {
           : {
               type: "websocket",
               // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-              provider: new WebsocketProvider(providerConfig.websocketUrl),
+              provider: new WebsocketProvider(providerConfig.websocketUrl, websocketOptions),
             }
       console.log(`Using custom ${providerConfig.name} provider with ${wrapped.type} connection.`)
     }
@@ -239,7 +251,7 @@ function getWeb3(): Web3IO<Web3> {
             ? // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
               new HttpProvider(providerConfig.httpUrl)
             : // @ts-expect-error cf. https://ethereum.stackexchange.com/a/96436
-              new WebsocketProvider(providerConfig.websocketUrl)
+              new WebsocketProvider(providerConfig.websocketUrl, websocketOptions)
         const sharedWeb3 = new Web3(provider)
         return {
           readOnly: sharedWeb3,

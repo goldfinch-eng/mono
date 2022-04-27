@@ -1,9 +1,16 @@
 import React from "react"
+import {CreditLine} from "../../ethereum/creditLine"
+import {usdcFromAtomic} from "../../ethereum/erc20"
 import {displayDollars, displayPercent} from "../../utils"
 import {iconCircleCheck} from "../icons"
-import {usdcFromAtomic} from "../../ethereum/erc20"
 
-function CreditLinesList(props) {
+type CreditLinesListProps = {
+  creditLine: CreditLine
+  disabled: boolean
+  changeCreditLine: (clAddress: string) => void
+}
+
+function CreditLinesList(props: CreditLinesListProps) {
   function creditLineRow(cl) {
     let icon
 
@@ -29,7 +36,7 @@ function CreditLinesList(props) {
           {icon}
           {nextPaymentDate}
         </div>
-        <div className="table-cell col16">
+        <div className="table-cell col22">
           <button className="view" onClick={() => props.changeCreditLine(cl.address)}>
             View
           </button>
