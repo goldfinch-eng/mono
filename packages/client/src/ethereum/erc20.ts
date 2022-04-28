@@ -215,15 +215,7 @@ class CURVE_FIDU_USDC extends ERC20 {
 }
 
 function buildTokenIconURL(path: string): string {
-  if (process.env.NODE_ENV === "development") {
-    if (process.env.REACT_APP_MURMURATION === "yes") {
-      return `https://murmuration.goldfinch.finance/icons/${path}`
-    } else {
-      return `http://localhost:3000/icons/${path}`
-    }
-  } else {
-    return `https://app.goldfinch.finance/icons/${path}`
-  }
+  return `${process.env.PUBLIC_URL}/icons/${path}`
 }
 
 function getERC20Metadata(ticker: Ticker): ERC20Metadata {
