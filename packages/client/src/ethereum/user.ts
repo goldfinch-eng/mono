@@ -1252,7 +1252,7 @@ export class User {
   }
 
   getUnitsForStakedPositionType(stakedPositionTypeValue: string): AmountUnits {
-    const positionType = getStakedPositionTypeByValue(stakedPositionTypeValue)
+    const positionType = getStakedPositionTypeByValue(stakedPositionTypeValue, true)
     switch (positionType) {
       case StakedPositionType.Fidu:
         return "fidu"
