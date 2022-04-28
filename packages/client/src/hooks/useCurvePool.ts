@@ -6,7 +6,17 @@ import {getMultiplier, Ticker} from "../ethereum/erc20"
 import {useFromSameBlock} from "./useFromSameBlock"
 
 type CurvePoolData = {
-  estimateSlippage: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<BigNumber>
+  estimateSlippage: (fiduAmount: BigNumber, usdcAmount: BigNumber) => Promise<Slippage>
+}
+
+export type Slippage = {
+  // Slippage percentage (denominated as a fraction - i.e. 10% would be represented as "10")
+  slippage: BigNumber
+  // True if there was an error in Curve when calculating slippage.
+  //
+  // We've observed execution failures when invoking the #calc_token_amount function
+  // with very large input values. If this happens, ensure that the error is handled properly.
+  error: boolean
 }
 
 export default function useCurvePool(): CurvePoolData {
@@ -15,9 +25,9 @@ export default function useCurvePool(): CurvePoolData {
   const pool = consistent?.[0]
   const stakingRewards = consistent?.[1]
 
-  async function estimateSlippage(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<BigNumber> {
+  async function estimateSlippage(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<Slippage> {
     if (fiduAmount.isZero() && usdcAmount.isZero()) {
-      return new BigNumber(0)
+      return {slippage: new BigNumber(0), error: false}
     }
 
     assertNonNullable(stakingRewards)
@@ -25,13 +35,22 @@ export default function useCurvePool(): CurvePoolData {
 
     const fiduSharePrice = new BigNumber(pool.info.value.poolData.sharePrice)
     const virtualPrice = stakingRewards.info.value.curveLPTokenPrice
-    const estimatedTokensReceived = await stakingRewards.curvePool.readOnly.methods
-      .calc_token_amount([fiduAmount.toString(10), usdcAmount.toString(10)])
-      .call(undefined, "latest")
-      .catch((error) => {
-        console.error("Unable to calculate token amount for Curve deposit", error)
-        throw error
-      })
+    let estimatedTokensReceived
+    try {
+      estimatedTokensReceived = await stakingRewards.curvePool.readOnly.methods
+        .calc_token_amount([fiduAmount.toString(10), usdcAmount.toString(10)])
+        .call(undefined, "latest")
+        .catch((error) => {
+          console.error("Unable to calculate token amount for Curve deposit", error)
+
+          return new BigNumber(0)
+        })
+    } catch (error) {
+      // We've observed execution failures when invoking the #calc_token_amount function
+      // with very large input values. If this happens, return an error response for
+      // the caller(s) of this function to handle properly
+      return {slippage: new BigNumber(0), error: true}
+    }
 
     const virtualValue = new BigNumber(estimatedTokensReceived)
       .times(new BigNumber(virtualPrice))
@@ -42,7 +61,7 @@ export default function useCurvePool(): CurvePoolData {
       .div(getMultiplier(Ticker.FIDU))
       .plus(usdcAmount.times(getMultiplier(Ticker.FIDU)).div(getMultiplier(Ticker.USDC)))
 
-    return virtualValue.div(realValue).minus(new BigNumber(1))
+    return {slippage: virtualValue.div(realValue).minus(new BigNumber(1)), error: false}
   }
 
   return {estimateSlippage}
