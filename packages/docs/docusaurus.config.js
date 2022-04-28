@@ -43,9 +43,9 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'My Site',
+        title: 'Goldfinch Docs',
         logo: {
-          alt: 'My Site Logo',
+          alt: 'Goldfinch Logo',
           src: 'img/logo.svg',
         },
         items: [
@@ -53,7 +53,7 @@ const config = {
             type: 'doc',
             docId: 'intro',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Documentation',
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
@@ -70,7 +70,7 @@ const config = {
             title: 'Docs',
             items: [
               {
-                label: 'Tutorial',
+                label: 'Documentation',
                 to: '/docs/intro',
               },
             ],
