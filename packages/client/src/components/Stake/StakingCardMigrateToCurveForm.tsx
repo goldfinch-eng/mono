@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js"
 import {useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
-import {getERC20Metadata, getMultiplier, Ticker, toAtomicAmount, toDecimal} from "../../ethereum/erc20"
+import {getERC20Metadata, getMultiplierDecimals, Ticker, toAtomicAmount, toDecimal} from "../../ethereum/erc20"
 import useDebounce from "../../hooks/useDebounce"
 import {displayNumber} from "../../utils"
 import TransactionInput from "../transactionInput"
@@ -89,8 +89,8 @@ export default function StakingCardMigrateToCurveForm({
   ): BigNumber {
     const exchangeRate =
       currentSide === Ticker.FIDU
-        ? fiduSharePrice.div(getMultiplier(Ticker.FIDU))
-        : getMultiplier(Ticker.FIDU).dividedBy(fiduSharePrice)
+        ? fiduSharePrice.div(getMultiplierDecimals(Ticker.FIDU))
+        : getMultiplierDecimals(Ticker.FIDU).dividedBy(fiduSharePrice)
 
     return currentSideAmount.times(exchangeRate)
   }

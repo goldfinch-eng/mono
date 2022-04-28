@@ -269,7 +269,7 @@ let getERC20 = memoize(
   (...args) => JSON.stringify(args)
 )
 
-function getMultiplier(ticker: Ticker): BigNumber {
+function getMultiplierDecimals(ticker: Ticker): BigNumber {
   return new BigNumber(10).pow(getERC20Metadata(ticker).decimals)
 }
 
@@ -340,7 +340,7 @@ export {
   getERC20,
   getERC20Metadata,
   decimals,
-  getMultiplier,
+  getMultiplierDecimals,
   toAtomic,
   toAtomicAmount,
   toDecimal,

@@ -16,10 +16,12 @@ import {gfiToDollarsAtomic} from "../ethereum/gfi"
 import {ONE_YEAR_SECONDS} from "../ethereum/utils"
 import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
-import {getERC20Metadata, getMultiplier, Ticker, toDecimalString} from "../ethereum/erc20"
+import {getERC20Metadata, getMultiplierDecimals, Ticker, toDecimalString} from "../ethereum/erc20"
 import {requestUserAddERC20TokenToWallet} from "../web3"
 
-const CURVE_FIDU_USDC_DECIMALS = new BigNumber(String(10 ** getERC20Metadata(Ticker.CURVE_FIDU_USDC).decimals))
+const APY_DECIMALS = new BigNumber(1e18)
+const CURVE_FIDU_USDC_DECIMALS = getMultiplierDecimals(Ticker.CURVE_FIDU_USDC)
+const GFI_DECIMALS = getMultiplierDecimals(Ticker.GFI)
 
 type StakingData = {
   // Amount of FIDU the user has staked (denominated in FIDU decimals - 1e18)
@@ -93,24 +95,28 @@ export default function useStakingData(): StakingData {
   }, [currentBlock, pool, stakingRewards, gfi, user])
 
   useEffect(() => {
-    if (stakingRewards) {
+    if (stakingRewards && gfi) {
+      // The virtual price of a Curve LP token (denominated in 1e18)
       const curveLPTokenPrice = stakingRewards.info.value.curveLPTokenPrice
+      // The amount of GFI earned in a year per FIDU staked (denominated in 1e18)
       const currentEarnRatePerYearPerFidu = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
+      // The amount of GFI earned in a year per Curve LP token staked (denominated in 1e18)
       const currentEarnRatePerYearPerCurveToken = currentEarnRatePerYearPerFidu
+        // Convert the FIDU earn rate to the Curve LP token earn rate by dividing by the Curve LP token multiplier.
+        // The Curve LP token multiplier is denominated in 1e18, so we can simply divide here.
         .div(stakingRewards.info.value.curveLPTokenMultiplier)
-        .multipliedBy(curveLPTokenPrice)
+        // Denominate the Curve earn rate in 1e18
+        .multipliedBy(APY_DECIMALS)
 
-      const estimatedApyFromGfi = gfiToDollarsAtomic(currentEarnRatePerYearPerCurveToken, curveLPTokenPrice)
-        ?.multipliedBy(
-          // This might be better thought of as the share-price mantissa, which happens to be the
-          // same as `CURVE_FIDU_USDC_DECIMALS`.
-          CURVE_FIDU_USDC_DECIMALS
-        )
-        .dividedBy(curveLPTokenPrice)
-        .dividedBy(CURVE_FIDU_USDC_DECIMALS)
+      const estimatedApyFromGfi =
+        // Convert the amount of GFI earned in a year per Curve LP token staked to a dollar amount using the current GFI price
+        gfiToDollarsAtomic(currentEarnRatePerYearPerCurveToken, gfi.info.value.price)
+          ?.dividedBy(GFI_DECIMALS)
+          .multipliedBy(CURVE_FIDU_USDC_DECIMALS)
+          .dividedBy(curveLPTokenPrice)
       setEstimatedCurveStakingApy(estimatedApyFromGfi || new BigNumber(0))
     }
-  }, [currentBlock, stakingRewards])
+  }, [currentBlock, stakingRewards, gfi])
 
   async function setStakedData() {
     assertNonNullable(pool)
@@ -296,9 +302,9 @@ export default function useStakingData(): StakingData {
     for (const position of optimalPositionsToUnstake) {
       const usdcEquivalent = position.amount
         .times(fiduSharePrice)
-        .div(getMultiplier(Ticker.FIDU))
-        .div(getMultiplier(Ticker.FIDU))
-        .times(getMultiplier(Ticker.USDC))
+        .div(getMultiplierDecimals(Ticker.FIDU))
+        .div(getMultiplierDecimals(Ticker.FIDU))
+        .times(getMultiplierDecimals(Ticker.USDC))
       await sendFromUser(
         zapper.contract.userWallet.methods.zapStakeToCurve(
           position.tokenId,

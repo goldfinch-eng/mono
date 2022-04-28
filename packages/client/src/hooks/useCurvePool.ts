@@ -2,7 +2,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import {useContext} from "react"
 import {AppContext} from "../App"
-import {getMultiplier, Ticker} from "../ethereum/erc20"
+import {getMultiplierDecimals, Ticker} from "../ethereum/erc20"
 import {useFromSameBlock} from "./useFromSameBlock"
 
 type CurvePoolData = {
@@ -35,12 +35,12 @@ export default function useCurvePool(): CurvePoolData {
 
     const virtualValue = new BigNumber(estimatedTokensReceived)
       .times(new BigNumber(virtualPrice))
-      .div(getMultiplier(Ticker.FIDU))
+      .div(getMultiplierDecimals(Ticker.FIDU))
 
     const realValue = fiduAmount
       .times(fiduSharePrice)
-      .div(getMultiplier(Ticker.FIDU))
-      .plus(usdcAmount.times(getMultiplier(Ticker.FIDU)).div(getMultiplier(Ticker.USDC)))
+      .div(getMultiplierDecimals(Ticker.FIDU))
+      .plus(usdcAmount.times(getMultiplierDecimals(Ticker.FIDU)).div(getMultiplierDecimals(Ticker.USDC)))
 
     return virtualValue.div(realValue).minus(new BigNumber(1))
   }
