@@ -108,26 +108,33 @@ export const TRANCHED_POOL_EVENT_TYPES = genExhaustiveTuple<TranchedPoolEventTyp
 export type ApprovalEventType = typeof APPROVAL_EVENT
 export const APPROVAL_EVENT_TYPES = genExhaustiveTuple<ApprovalEventType>()(APPROVAL_EVENT)
 
-export type StakingRewardsEventType =
+export type LegacyStakingRewardsEventType =
   | typeof STAKED_EVENT
   | typeof DEPOSITED_AND_STAKED_EVENT
-  | typeof DEPOSITED_TO_CURVE_EVENT
-  | typeof DEPOSITED_TO_CURVE_AND_STAKED_EVENT
   | typeof UNSTAKED_EVENT
   | typeof UNSTAKED_AND_WITHDREW_EVENT
   | typeof UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT
   | typeof UNSTAKED_MULTIPLE_EVENT
   | typeof REWARD_PAID_EVENT
-export const STAKING_REWARDS_EVENT_TYPES = genExhaustiveTuple<StakingRewardsEventType>()(
+export type StakingRewardsEventType =
+  | LegacyStakingRewardsEventType
+  | typeof DEPOSITED_TO_CURVE_EVENT
+  | typeof DEPOSITED_TO_CURVE_AND_STAKED_EVENT
+// Legacy events that existed in StakingRewards before the v2.6.0 migration.
+export const STAKING_REWARDS_LEGACY_EVENT_TYPES = genExhaustiveTuple<LegacyStakingRewardsEventType>()(
   STAKED_EVENT,
   DEPOSITED_AND_STAKED_EVENT,
-  DEPOSITED_TO_CURVE_EVENT,
-  DEPOSITED_TO_CURVE_AND_STAKED_EVENT,
   UNSTAKED_EVENT,
   UNSTAKED_AND_WITHDREW_EVENT,
   UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
   UNSTAKED_MULTIPLE_EVENT,
   REWARD_PAID_EVENT
+)
+// All events that in the current version of StakingRewards.
+export const STAKING_REWARDS_EVENT_TYPES = genExhaustiveTuple<StakingRewardsEventType>()(
+  ...STAKING_REWARDS_LEGACY_EVENT_TYPES,
+  DEPOSITED_TO_CURVE_EVENT,
+  DEPOSITED_TO_CURVE_AND_STAKED_EVENT
 )
 
 // NOTE: We don't worry about including "Granted" events here, because "Granted" from the CommunityRewards
