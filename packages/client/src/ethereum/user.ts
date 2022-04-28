@@ -1259,7 +1259,8 @@ export class User {
       case StakedPositionType.CurveLP:
         return "fidu-usdc-f"
       default:
-        return assertUnreachable(positionType)
+        // Fallback to FIDU for legacy staked positions (pre GIP-01) that do not have a position type
+        return "fidu"
     }
   }
 
