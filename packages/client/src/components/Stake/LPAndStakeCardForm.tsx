@@ -59,6 +59,7 @@ export default function LPAndStakeCardForm({
   const [shouldStake, setShouldStake] = useState<boolean>(true)
   const [amountToDepositInDecimals, setAmountToDepositInDecimals] = useState<BigNumber>(new BigNumber(0))
   const [estimatedSlippage, setEstimatedSlippage] = useState<BigNumber>(new BigNumber(0))
+  const [shouldUseMaxAmount, setShouldUseMaxAmount] = useState(false)
 
   const debouncedSetAmountToDepositInDecimals = useDebounce(setAmountToDepositInDecimals, 200)
 
@@ -69,9 +70,10 @@ export default function LPAndStakeCardForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amountToDepositInDecimals])
 
-  function onChange() {
+  function onChange({isMaxClick = false}: {isMaxClick?: boolean}) {
     const amountToDeposit: string = formMethods.getValues("amountToDeposit")
     debouncedSetAmountToDepositInDecimals(!!amountToDeposit ? new BigNumber(amountToDeposit) : new BigNumber(0))
+    setShouldUseMaxAmount(isMaxClick)
   }
 
   function onStakingPromptToggle(e) {
@@ -83,15 +85,22 @@ export default function LPAndStakeCardForm({
       shouldValidate: true,
       shouldDirty: true,
     })
-    onChange()
+    onChange({isMaxClick: true})
   }
 
   function onSubmit(e) {
     setIsPending(true)
+
+    // If the most recent value was set using the "Max" button, use the precise value of `maxAmountToDeposit`,
+    // instead of the imprecise `amountToDepositInDecimals` to avoid any "dust" left behind.
+    const atomicAmountToSubmit = shouldUseMaxAmount
+      ? maxAmountToDeposit
+      : toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)
+
     if (shouldStake) {
-      depositAndStake(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(onSubmitComplete)
+      depositAndStake(atomicAmountToSubmit).then(onSubmitComplete)
     } else {
-      deposit(toAtomicAmount(amountToDepositInDecimals, depositToken.decimals)).then(onSubmitComplete)
+      deposit(atomicAmountToSubmit).then(onSubmitComplete)
     }
   }
 
@@ -139,7 +148,7 @@ export default function LPAndStakeCardForm({
               displayUSDCTicker={true}
               formMethods={formMethods}
               maxAmount={maxAmountInDecimals.toString(10)}
-              onChange={onChange}
+              onChange={() => onChange({isMaxClick: false})}
               error={isVeryHighSlippage}
               warning={isHighSlippage}
               rightDecoration={

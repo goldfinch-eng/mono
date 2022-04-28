@@ -41,11 +41,13 @@ export default function StakingCardMigrateToCurveForm({
   const [isPending, setIsPending] = useState(false)
   const [fiduAmountToMigrateInDecimals, setFiduAmountToMigrateInDecimals] = useState<BigNumber>(new BigNumber(0))
   const [usdcAmountToDepositInDecimals, setUsdcAmountToDepositInDecimals] = useState<BigNumber>(new BigNumber(0))
+  const [shouldUseMaxFiduAmount, setShouldUseMaxFiduAmount] = useState(false)
+  const [shouldUseMaxUSDCAmount, setShouldUseMaxUSDCAmount] = useState(false)
 
   const debouncedSetFiduAmountToMigrateInDecimals = useDebounce(setFiduAmountToMigrateInDecimals, 200)
   const debouncedSetUsdcAmountToDepositInDecimals = useDebounce(setUsdcAmountToDepositInDecimals, 200)
 
-  function onChange(ticker: Ticker.FIDU | Ticker.USDC) {
+  function onChange({ticker, isMaxClick = false}: {ticker: Ticker.FIDU | Ticker.USDC; isMaxClick?: boolean}) {
     switch (ticker) {
       case Ticker.FIDU:
         let formAmount: string = formMethods.getValues("fiduAmountToMigrate")
@@ -55,6 +57,8 @@ export default function StakingCardMigrateToCurveForm({
         const usdcEquivalent = getEquivalentAmountForOtherSide(formAmountInDecimals, ticker)
         formMethods.setValue("usdcAmountAmountToDeposit", usdcEquivalent.toFixed(0))
         debouncedSetUsdcAmountToDepositInDecimals(usdcEquivalent)
+
+        if (isMaxClick) setShouldUseMaxFiduAmount(true)
         break
       case Ticker.USDC:
         formAmount = formMethods.getValues("usdcAmountAmountToDeposit")
@@ -64,6 +68,8 @@ export default function StakingCardMigrateToCurveForm({
         const fiduEquivalent = getEquivalentAmountForOtherSide(formAmountInDecimals, ticker)
         formMethods.setValue("fiduAmountToMigrate", fiduEquivalent.toFixed(0))
         debouncedSetFiduAmountToMigrateInDecimals(fiduEquivalent)
+
+        if (isMaxClick) setShouldUseMaxUSDCAmount(true)
         break
     }
   }
@@ -74,7 +80,7 @@ export default function StakingCardMigrateToCurveForm({
       shouldValidate: true,
       shouldDirty: true,
     })
-    onChange(ticker)
+    onChange({ticker, isMaxClick: true})
   }
 
   function getEquivalentAmountForOtherSide(
@@ -98,8 +104,10 @@ export default function StakingCardMigrateToCurveForm({
 
     setIsPending(true)
     migrate(
-      toAtomicAmount(fiduAmountToMigrateInDecimals, FIDU.decimals),
-      toAtomicAmount(usdcAmountToDepositInDecimals, USDC.decimals)
+      // If the most recent value was set using the "Max" button, use the precise value of `maxFiduAmountToMigrate` or
+      // `maxUSDCAmountToDeposit`, instead of the imprecise decimal values to avoid any "dust" left behind.
+      shouldUseMaxFiduAmount ? maxFiduAmountToMigrate : toAtomicAmount(fiduAmountToMigrateInDecimals, FIDU.decimals),
+      shouldUseMaxUSDCAmount ? maxUSDCAmountToDeposit : toAtomicAmount(usdcAmountToDepositInDecimals, USDC.decimals)
     ).then(onSubmitComplete)
   }
 
@@ -130,7 +138,7 @@ export default function StakingCardMigrateToCurveForm({
               displayTicker={true}
               formMethods={formMethods}
               maxAmount={toDecimal(maxFiduAmountToMigrate, Ticker.FIDU).toString(10)}
-              onChange={() => onChange(Ticker.FIDU)}
+              onChange={() => onChange({ticker: Ticker.FIDU})}
               rightDecoration={
                 <button
                   className="enter-max-amount"
@@ -156,7 +164,7 @@ export default function StakingCardMigrateToCurveForm({
               displayUSDCTicker={true}
               formMethods={formMethods}
               maxAmount={toDecimal(maxUSDCAmountToDeposit, Ticker.USDC).toString(10)}
-              onChange={() => onChange(Ticker.USDC)}
+              onChange={() => onChange({ticker: Ticker.USDC})}
               rightDecoration={
                 <button
                   className="enter-max-amount"

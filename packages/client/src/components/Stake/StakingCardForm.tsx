@@ -61,6 +61,7 @@ export default function StakingCardForm({
   const [amountToStakeInDecimals, setAmountToStakeInDecimals] = useState<BigNumber>(new BigNumber(0))
   const [amountToUnstakeInDecimals, setAmountToUnstakeInDecimals] = useState<BigNumber>(new BigNumber(0))
   const [shouldDisplayMigrateForm, setShouldDisplayMigrateForm] = useState(false)
+  const [shouldUseMaxAmount, setShouldUseMaxAmount] = useState(false)
 
   const debouncedSetAmountToStakeInDecimals = useDebounce(setAmountToStakeInDecimals, 200)
   const debouncedSetAmountToUnstakeInDecimals = useDebounce(setAmountToUnstakeInDecimals, 200)
@@ -85,7 +86,7 @@ export default function StakingCardForm({
     }
   }
 
-  function onChange() {
+  function onChange({isMaxClick = false}: {isMaxClick?: boolean}) {
     switch (activeTab) {
       case Tab.Stake:
         const amountToStake: string = formMethods.getValues("amountToStake")
@@ -96,6 +97,8 @@ export default function StakingCardForm({
         debouncedSetAmountToUnstakeInDecimals(!!amountToUnstake ? new BigNumber(amountToUnstake) : new BigNumber(0))
         break
     }
+
+    setShouldUseMaxAmount(isMaxClick)
   }
 
   function onMaxClick(formInputName: string, maxAmount: BigNumber) {
@@ -103,17 +106,28 @@ export default function StakingCardForm({
       shouldValidate: true,
       shouldDirty: true,
     })
-    onChange()
+    onChange({isMaxClick: true})
   }
 
   function onSubmit(e) {
     setIsPending(true)
+
     switch (activeTab) {
       case Tab.Stake:
-        stake(toAtomicAmount(amountToStakeInDecimals, token.decimals)).then(onSubmitComplete)
+        // If the most recent value was set using the "Max" button, use the precise value of `maxAmountToStake`,
+        // instead of the imprecise `amountToStakeInDecimals` to avoid any "dust" left behind.
+        const atomicAmountToStake = shouldUseMaxAmount
+          ? maxAmountToStake
+          : toAtomicAmount(amountToStakeInDecimals, token.decimals)
+        stake(atomicAmountToStake).then(onSubmitComplete)
         break
       case Tab.Unstake:
-        unstake(toAtomicAmount(amountToUnstakeInDecimals, token.decimals)).then(onSubmitComplete)
+        // If the most recent value was set using the "Max" button, use the precise value of `maxAmountToUnstake`,
+        // instead of the imprecise `amountToUnstakeInDecimals` to avoid any "dust" left behind.
+        const atomicAmountToUnstake = shouldUseMaxAmount
+          ? maxAmountToUnstake
+          : toAtomicAmount(amountToUnstakeInDecimals, token.decimals)
+        unstake(atomicAmountToUnstake).then(onSubmitComplete)
         break
     }
   }
@@ -170,7 +184,7 @@ export default function StakingCardForm({
                       displayUSDCTicker={true}
                       formMethods={formMethods}
                       maxAmount={maxAmountForActiveTabInDecimals.toString(10)}
-                      onChange={onChange}
+                      onChange={() => onChange({isMaxClick: false})}
                       rightDecoration={
                         <button
                           className="enter-max-amount"
