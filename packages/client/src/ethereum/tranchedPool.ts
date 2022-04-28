@@ -1,12 +1,12 @@
-import BN from "bn.js"
 import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
+import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {PoolTokens as PoolTokensContract} from "@goldfinch-eng/protocol/typechain/web3/PoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
-import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {asNonNullable, assertNonNullable, assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
+import BN from "bn.js"
 import _ from "lodash"
 import {
   DEPOSIT_MADE_EVENT,
@@ -778,7 +778,7 @@ class TranchedPoolBacker {
           .then((tokenInfos: TokenInfo[]) =>
             // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
             // the instantiation-by-pool of TranchedPoolBacker instances.
-            tokenInfos.filter((tokenInfo) => tokenInfo.pool === this.tranchedPool.address)
+            tokenInfos.filter((tokenInfo) => tokenInfo.pool.toLowerCase() === this.tranchedPool.address.toLowerCase())
           )
       : []
 
