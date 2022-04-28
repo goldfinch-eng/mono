@@ -255,7 +255,7 @@ class TranchedPool {
           ]
         : ["0", "0", "2"]
     ).catch((error) => {
-      console.error("MultipleDrawdownsCompatible error fetching")
+      console.error("MultipleDrawdownsCompatible error fetching", error)
       throw error
     })
 
@@ -360,7 +360,7 @@ class TranchedPool {
         const result = await this.contract.readOnly.methods.getAllowedUIDTypes().call(undefined, currentBlock.number)
         return result.map((x) => parseInt(x))
       } catch (e) {
-        console.error("getAllowedUIDTypes function does not exist on TranchedPool")
+        console.error("getAllowedUIDTypes function does not exist on TranchedPool", e)
       }
     }
     return [NON_US_INDIVIDUAL_ID_TYPE_0]
@@ -767,7 +767,7 @@ class TranchedPoolBacker {
                     .call(undefined, currentBlock.number)
                 )
             ).catch((error) => {
-              console.error("Error fetching tokenOfOwnerByIndex")
+              console.error("Error fetching tokenOfOwnerByIndex", error)
               throw error
             })
           )
@@ -780,7 +780,7 @@ class TranchedPoolBacker {
                   .then((res) => tokenInfo(tokenId, res))
               )
             ).catch((error) => {
-              console.error("Error fetching tokenInfo for poolToken")
+              console.error("Error fetching tokenInfo for poolToken", error)
               throw error
             })
           )
@@ -829,7 +829,7 @@ class TranchedPoolBacker {
           )
       )
     ).catch((error) => {
-      console.error("TokenInfos error on reading deposit_made_event")
+      console.error("TokenInfos error on reading deposit_made_event", error)
       throw error
     })
 
