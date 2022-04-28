@@ -16,6 +16,10 @@ export default function useCurvePool(): CurvePoolData {
   const stakingRewards = consistent?.[1]
 
   async function estimateSlippage(fiduAmount: BigNumber, usdcAmount: BigNumber): Promise<BigNumber> {
+    if (fiduAmount.isZero() && usdcAmount.isZero()) {
+      return new BigNumber(0)
+    }
+
     assertNonNullable(stakingRewards)
     assertNonNullable(pool)
 
@@ -24,6 +28,10 @@ export default function useCurvePool(): CurvePoolData {
     const estimatedTokensReceived = await stakingRewards.curvePool.readOnly.methods
       .calc_token_amount([fiduAmount.toString(10), usdcAmount.toString(10)])
       .call(undefined, "latest")
+      .catch((error) => {
+        console.error("Unable to calculate token amount for Curve deposit", error)
+        throw error
+      })
 
     const virtualValue = new BigNumber(estimatedTokensReceived)
       .times(new BigNumber(virtualPrice))
