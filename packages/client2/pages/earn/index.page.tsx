@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { Heading, Paragraph } from "@/components/design-system";
+import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { useExampleQuery } from "@/lib/graphql/generated";
 
 import {
@@ -53,6 +53,12 @@ export default function EarnPage() {
         Pools
       </Heading>
       <Paragraph className="mb-2">Lorem ipsum</Paragraph>
+      {error ? (
+        <HelperText isError className="mb-2">
+          There was a problem fetching data on pools. Shown data may be
+          outdated.
+        </HelperText>
+      ) : null}
       <Paragraph className="mb-12">
         Price of GFI: ${data?.gfi?.price.usd ?? ""}
       </Paragraph>
@@ -60,9 +66,7 @@ export default function EarnPage() {
         Senior Pool
       </Heading>
       <div className="mb-12">
-        {error ? (
-          "Unable to load senior pool"
-        ) : !seniorPool ? (
+        {!seniorPool ? (
           <PoolCard isPlaceholder />
         ) : (
           <PoolCard
@@ -83,27 +87,23 @@ export default function EarnPage() {
         vetting borrowers and supplying first-loss capital directly to
         individual pools.
       </Paragraph>
-      {error ? (
-        "Unable to load borrower pools"
-      ) : (
-        <div className="flex flex-col space-y-4">
-          {!tranchedPools ? (
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
-              <PoolCard key={nonce} isPlaceholder />
-            ))
-          ) : (
-            <div className="flex flex-col space-y-4">
-              {tranchedPools?.map((tranchedPool) => (
-                <TranchedPoolCard
-                  key={tranchedPool.id}
-                  tranchedPool={tranchedPool}
-                  href={`/pools/${tranchedPool.id}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="flex flex-col space-y-4">
+        {!tranchedPools ? (
+          [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
+            <PoolCard key={nonce} isPlaceholder />
+          ))
+        ) : (
+          <div className="flex flex-col space-y-4">
+            {tranchedPools?.map((tranchedPool) => (
+              <TranchedPoolCard
+                key={tranchedPool.id}
+                tranchedPool={tranchedPool}
+                href={`/pools/${tranchedPool.id}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
