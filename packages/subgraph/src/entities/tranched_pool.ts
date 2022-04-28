@@ -279,15 +279,15 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
       summedRewardsByTranchedPool.set(tranchedPoolAddress, reward.gfiAmount)
     }
   }
-  const gfiPerPrincipleDollar = calculateAnnualizedGfiRewardsPerPrincipleDollar(summedRewardsByTranchedPool)
+  const gfiPerPrincipalDollar = calculateAnnualizedGfiRewardsPerPrincipalDollar(summedRewardsByTranchedPool)
   // @ts-ignore .keys() returns an array in AssemblyScript
-  for (let i = 0; i < gfiPerPrincipleDollar.keys().length; i++) {
-    const tranchedPoolAddress = gfiPerPrincipleDollar.keys()[i]
+  for (let i = 0; i < gfiPerPrincipalDollar.keys().length; i++) {
+    const tranchedPoolAddress = gfiPerPrincipalDollar.keys()[i]
     const tranchedPool = TranchedPool.load(tranchedPoolAddress)
     if (!tranchedPool) {
       continue
     }
-    tranchedPool.estimatedJuniorApyFromGfiRaw = gfiPerPrincipleDollar
+    tranchedPool.estimatedJuniorApyFromGfiRaw = gfiPerPrincipalDollar
       .get(tranchedPoolAddress)
       .div(GFI_DECIMALS.toBigDecimal())
     tranchedPool.save()
@@ -374,10 +374,10 @@ function estimateRewards(
 }
 
 // ! The estimate done here is very crude. It's not as accurate as the code that lives at `ethereum/backerRewards` in the old Goldfinch client
-function calculateAnnualizedGfiRewardsPerPrincipleDollar(
+function calculateAnnualizedGfiRewardsPerPrincipalDollar(
   summedRewardsByTranchedPool: Map<String, BigDecimal>
 ): Map<String, BigDecimal> {
-  const rewardsPerPrincipleDollar = new Map<String, BigDecimal>()
+  const rewardsPerPrincipalDollar = new Map<String, BigDecimal>()
   // @ts-ignore
   for (let i = 0; i < summedRewardsByTranchedPool.keys().length; i++) {
     const tranchedPoolAddress = summedRewardsByTranchedPool.keys()[i]
@@ -389,17 +389,17 @@ function calculateAnnualizedGfiRewardsPerPrincipleDollar(
     if (!creditLine) {
       throw new Error("Unable to load creditLine from summedRewardsByTranchedPool")
     }
-    const juniorPrincipleDollars = creditLine.maxLimit
+    const juniorPrincipalDollars = creditLine.maxLimit
       .divDecimal(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)).toBigDecimal())
       .div(USDC_DECIMALS.toBigDecimal())
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
-    const perPrincipleDollar = reward.div(juniorPrincipleDollars)
+    const perPrincipalDollar = reward.div(juniorPrincipalDollars)
 
     const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
-    const annualizedPerPrincipleDollar = perPrincipleDollar.div(numYears)
-    rewardsPerPrincipleDollar.set(tranchedPoolAddress, annualizedPerPrincipleDollar)
+    const annualizedPerPrincipalDollar = perPrincipalDollar.div(numYears)
+    rewardsPerPrincipalDollar.set(tranchedPoolAddress, annualizedPerPrincipalDollar)
   }
-  return rewardsPerPrincipleDollar
+  return rewardsPerPrincipalDollar
 }
 
 export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, timestamp: BigInt): void {
