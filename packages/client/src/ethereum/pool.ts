@@ -940,7 +940,10 @@ class StakingRewards {
           .get_virtual_price()
           .call(undefined, currentBlock.number)
           .then((price) => new BigNumber(price)),
-      ])
+      ]).catch((error) => {
+        console.error("Error initializing StakingRewards", error)
+        throw error
+      })
 
     this.info = {
       loaded: true,
