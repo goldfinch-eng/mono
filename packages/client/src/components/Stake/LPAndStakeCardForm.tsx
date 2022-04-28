@@ -3,6 +3,7 @@ import {useEffect, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"
 import styled from "styled-components"
 import {ERC20Metadata, toAtomicAmount} from "../../ethereum/erc20"
+import {Slippage} from "../../hooks/useCurvePool"
 import useDebounce from "../../hooks/useDebounce"
 import {displayNumber, displayPercent} from "../../utils"
 import StakingPrompt from "../StakingPrompt"
@@ -17,7 +18,7 @@ type LPAndStakeCardFormProps = {
   stakingApy: BigNumber
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>
-  estimateSlippage: (BigNumber) => Promise<BigNumber>
+  estimateSlippage: (BigNumber) => Promise<Slippage>
 }
 
 const StyledStakingPrompt = styled(StakingPrompt)`
@@ -58,7 +59,7 @@ export default function LPAndStakeCardForm({
   const [isPending, setIsPending] = useState(false)
   const [shouldStake, setShouldStake] = useState<boolean>(true)
   const [amountToDepositInDecimals, setAmountToDepositInDecimals] = useState<BigNumber>(new BigNumber(0))
-  const [estimatedSlippage, setEstimatedSlippage] = useState<BigNumber>(new BigNumber(0))
+  const [estimatedSlippage, setEstimatedSlippage] = useState<Slippage>({slippage: new BigNumber(0), error: false})
   const [shouldUseMaxAmount, setShouldUseMaxAmount] = useState(false)
 
   const debouncedSetAmountToDepositInDecimals = useDebounce(setAmountToDepositInDecimals, 200)
@@ -125,13 +126,15 @@ export default function LPAndStakeCardForm({
 
   // Based off of Curve's slippage thresholds
   // https://github.com/curvefi/crv.finance/blob/main/src/components/slippageInfo/slippageInfo.jsx#L21-L22
-  const isHighSlippage = estimatedSlippage.isLessThan(new BigNumber(-0.5))
-  const isVeryHighSlippage = estimatedSlippage.isLessThan(new BigNumber(-10))
+  const isHighSlippage = estimatedSlippage.slippage.isLessThan(new BigNumber(-0.5))
+  const isVeryHighSlippage = estimatedSlippage.slippage.isLessThan(new BigNumber(-10))
 
+  const slippageError = estimatedSlippage.error
   const priceImpactToDisplay = displayPercent(
-    (estimatedSlippage.isNegative() ? estimatedSlippage.times(new BigNumber(-1)) : estimatedSlippage).div(
-      new BigNumber(100)
-    )
+    (estimatedSlippage.slippage.isNegative()
+      ? estimatedSlippage.slippage.times(new BigNumber(-1))
+      : estimatedSlippage.slippage
+    ).div(new BigNumber(100))
   )
 
   return (
@@ -149,7 +152,7 @@ export default function LPAndStakeCardForm({
               formMethods={formMethods}
               maxAmount={maxAmountInDecimals.toString(10)}
               onChange={() => onChange({isMaxClick: false})}
-              error={isVeryHighSlippage}
+              error={isVeryHighSlippage || slippageError}
               warning={isHighSlippage}
               rightDecoration={
                 <button
@@ -164,7 +167,13 @@ export default function LPAndStakeCardForm({
             />
             <StyledButton
               type="button"
-              disabled={amountToDepositInDecimals.isZero() || isPending || isVeryHighSlippage || !hasSufficientBalance}
+              disabled={
+                amountToDepositInDecimals.isZero() ||
+                isPending ||
+                isVeryHighSlippage ||
+                slippageError ||
+                !hasSufficientBalance
+              }
               className="button submit-form"
               onClick={onSubmit}
               small={shouldStake || !hasSufficientBalance}
@@ -172,10 +181,15 @@ export default function LPAndStakeCardForm({
               {submitButtonText}
             </StyledButton>
           </div>
-          {isVeryHighSlippage && (
+          {/* The Curve contract function call to calculate slippage will fail with very large deposit values. 
+              If we got a error from Curve, display the error message without the price impact. */}
+          {slippageError && (
+            <MessageError>{"Price impact is too high. Reduce the amount you're depositing."}</MessageError>
+          )}
+          {isVeryHighSlippage && !slippageError && (
             <MessageError>{`Price impact is too high: ${priceImpactToDisplay}. Reduce the amount you're depositing.`}</MessageError>
           )}
-          {!isVeryHighSlippage && isHighSlippage && (
+          {!isVeryHighSlippage && !slippageError && isHighSlippage && (
             <MessageWarning>{`High price impact: ${priceImpactToDisplay}. Consider reducing the amount you're depositing.`}</MessageWarning>
           )}
         </div>

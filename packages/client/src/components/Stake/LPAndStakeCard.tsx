@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js"
 import {useState} from "react"
 import styled from "styled-components"
 import {ERC20Metadata} from "../../ethereum/erc20"
+import {Slippage} from "../../hooks/useCurvePool"
 import LPAndStakeCardForm from "./LPAndStakeCardForm"
 import LPAndStakeCardHeader from "./LPAndStakeCardHeader"
 import {Platform} from "./StakingToken"
@@ -21,7 +22,7 @@ type LPAndStakeCardProps = {
   platform: Platform
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>
-  estimateSlippage: (BigNumber) => Promise<BigNumber>
+  estimateSlippage: (BigNumber) => Promise<Slippage>
 }
 
 const StyledLPAndStakeCardHeader = styled(LPAndStakeCardHeader)<{expanded: boolean}>`
