@@ -15,7 +15,7 @@
     "gen-contract-types": "typechain --target=ethers-v5 \"abis/*.json\"",
     "codegen": "graphql-codegen",
     "precodegen": "npm run codegen-introspection",
-    "codegen-introspection": "graphql-codegen --config introspection-codegen.js",
+    "codegen-introspection": "graphql-codegen --config codegen-introspection.js",
     "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {
