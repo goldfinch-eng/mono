@@ -334,7 +334,7 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
   const interestAmount = expectedInterest.div(numRepayments.toBigDecimal()).times(numYears)
   const repayments: Repayment[] = []
   for (let i = 0; i < numRepayments.toI32(); i++) {
-    const repaymentTimestamp = startTime.plus(secondsPerPaymentPeriod.times(BigInt.fromI32(i)))
+    const repaymentTimestamp = startTime.plus(secondsPerPaymentPeriod.times(BigInt.fromI32(i + 1)))
     repayments.push({
       tranchedPoolAddress: tranchedPool.id,
       timestamp: repaymentTimestamp,
