@@ -53,6 +53,16 @@ We also use `graphql-codegen` to generate TypeScript types for our GraphQL schem
 
 ## Weird Things
 
+### Emergencies with The Graph
+
+There is one catastrophic emergency scenario that we all fear: our subgraph ingests a block that causes an indexing error, and the subgraph enters a failure state **with no code changes to the subgraph itself**. On The Graph, this means that the subgraph will stop syncing, and will give an error response to all further queries. This would mean our app experiences a total outage because our subgraph can no longer be queried. To make matters even worse, introspection queries result in an error as well, which makes building the app impossible because an introspection query is part of our prebuild process (it's the `codegen-introspection` script in package.json).
+
+It seems like our only option in such a scenario is to debug our subgraph and re-index it to resolve the root error, all the while our app experiences painful downtime. **However**, we have taken steps to mitigate this by taking advantage of a feature called [Non-Fatal Errors](https://thegraph.com/docs/en/developer/create-subgraph-hosted/#non-fatal-errors).
+
+1. The introspection result `lib/graphql/schema.json` has been committed to the repo, so we always have a backup of it. If we need to deploy the app in this catastrophic scenario, we can disable the introspection step by (temporarily) removing the `precodegen` step in our package.json scripts. This will cause the build system to just use the committed schema instead of trying to fetch a fresh one from The Graph.
+2. (and more importantly), we have made our queries tolerant to this scenario on The Graph by using the Non-Fatal Errors feature. We accomplished this by writing a custom Apollo Link that always adds the `subgraphError: allow` argument to our queries so that they will be able to get information from The Graph even if it enters a failure state (although the data will be stale). Developers do not have to be conscious of this argument when writing queries, it is added automatically.
+
+#2 has one important impact on how you should handle data from queries: by default, the `errorPolicy` in Apollo is set to `"all"`, meaning that you can have `data` and `error` populated at the same time, so please plan around this. `error` being populated does not mean that `data` will be undefined (unless of course you override the errorPolicy for your particular query, which is perfectly fine).
 ### Webpack 5
 
 Next.js has long-adopted Webpack5 as their default, but unfortunately Storybook is lagging behind. There would be some nasty conflicts if we had Storybook operating with Webpack 4 while the rest of the project was written with Webpack 5 in mind. The first and most obvious one would be some Webpack loaders being unusable in Storybook if they're written for Webpack 5 (like SVGR). Fortunately, Storybook has experimental support for Webpack 5 but it turned out to be a little buggy. It was implemented following this note: https://github.com/storybookjs/storybook/blob/next/MIGRATION.md#webpack-5. It didn't work right away and we ended up having to add `webpack@5` as a dev dependency to this project to ensure Storybook hoisted it correctly. It works now, but we have this silly-looking `webpack@5` devDependency in the project. It's harmless, but just be aware of it. Hopefully Storybook will fully move on from Webpack 4 and this issue will resolve itself.
@@ -63,8 +73,6 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -74,18 +82,3 @@ You can start editing the page by modifying `pages/index.tsx`. The page auto-upd
 [API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
 
 The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
