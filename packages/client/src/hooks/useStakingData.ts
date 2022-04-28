@@ -102,11 +102,11 @@ export default function useStakingData(): StakingData {
       const currentEarnRatePerYearPerFidu = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
       // The amount of GFI earned in a year per Curve LP token staked (denominated in 1e18)
       const currentEarnRatePerYearPerCurveToken = currentEarnRatePerYearPerFidu
+        // Denominate the Curve earn rate in 1e18
+        .multipliedBy(APY_DECIMALS)
         // Convert the FIDU earn rate to the Curve LP token earn rate by dividing by the Curve LP token multiplier.
         // The Curve LP token multiplier is denominated in 1e18, so we can simply divide here.
         .div(stakingRewards.info.value.curveLPTokenMultiplier)
-        // Denominate the Curve earn rate in 1e18
-        .multipliedBy(APY_DECIMALS)
 
       const estimatedApyFromGfi =
         // Convert the amount of GFI earned in a year per Curve LP token staked to a dollar amount using the current GFI price
