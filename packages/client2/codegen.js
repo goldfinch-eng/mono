@@ -1,9 +1,6 @@
-const nextEnv = require("@next/env");
-const env = nextEnv.loadEnvConfig(".");
-
 module.exports = {
   schema: [
-    env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL,
+    "./lib/graphql/schema.json",
     "./lib/graphql/client-only-schema.graphql",
   ],
   documents: ["./pages/**/*.tsx", "./components/**/*.tsx"],
@@ -20,13 +17,6 @@ module.exports = {
           BigInt: "TheGraph_BigInt",
           BigDecimal: "TheGraph_BigDecimal",
         },
-      },
-    },
-    "lib/graphql/schema.json": {
-      plugins: ["introspection"],
-      config: {
-        minify: true,
-        descriptions: false,
       },
     },
   },
