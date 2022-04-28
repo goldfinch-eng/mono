@@ -380,7 +380,7 @@ export default function Form(props: FormProps) {
               max: false,
             })
           }}
-          maxAmountInDollars={availableToWithdrawInDollars}
+          maxAmount={availableToWithdrawInDollars}
           rightDecoration={
             <button className="enter-max-amount" type="button" onClick={handleMaxButtonClick}>
               Max

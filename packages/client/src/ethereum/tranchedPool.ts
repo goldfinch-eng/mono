@@ -383,53 +383,59 @@ class TranchedPool {
     transactions = _.reverse(_.sortBy(transactions, ["blockNumber", "transactionIndex"])).slice(0, 3)
     let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior, currentBlock)
     let blockTimestamps = await this.timestampsByBlockNumber(transactions)
-    return mapEventsToTx(transactions, [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT], tranchedPoolEventParserConfig).map(
-      (
-        tx: HistoricalTx<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>
-      ): TranchedPoolRecentTransactionData => {
-        let juniorInterest = new BigNumber(0)
-        const sharePriceUpdate = sharePriceUpdates[tx.eventData.transactionHash]?.[0]
-        if (sharePriceUpdate) {
-          juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
-        }
+    return mapEventsToTx(
+      transactions,
+      [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
+      tranchedPoolEventParserConfig
+    ).then((events) =>
+      events.map(
+        (
+          tx: HistoricalTx<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>
+        ): TranchedPoolRecentTransactionData => {
+          let juniorInterest = new BigNumber(0)
+          const sharePriceUpdate = sharePriceUpdates[tx.eventData.transactionHash]?.[0]
+          if (sharePriceUpdate) {
+            juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
+          }
 
-        const timestamp = asNonNullable(blockTimestamps[tx.eventData.blockNumber])
-        let data = {
-          name: tx.name,
-          amount: tx.amount,
-          txHash: tx.eventData.transactionHash,
-          juniorInterestDelta: juniorInterest,
-          juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
-          timestamp,
+          const timestamp = asNonNullable(blockTimestamps[tx.eventData.blockNumber])
+          let data = {
+            name: tx.name,
+            amount: tx.amount,
+            txHash: tx.eventData.transactionHash,
+            juniorInterestDelta: juniorInterest,
+            juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
+            timestamp,
+          }
+          switch (tx.type) {
+            case DRAWDOWN_MADE_EVENT:
+              return {
+                ...data,
+                event: tx.type,
+              }
+            case PAYMENT_APPLIED_EVENT:
+              const totalPrincipalAmount = new BigNumber(tx.eventData.returnValues.principalAmount).plus(
+                new BigNumber(tx.eventData.returnValues.remainingAmount)
+              )
+              return {
+                ...data,
+                event: tx.type,
+                interestAmount: {
+                  display: tx.eventData.returnValues.interestAmount,
+                  atomic: new BigNumber(tx.eventData.returnValues.interestAmount),
+                  units: "usdc",
+                },
+                principalAmount: {
+                  display: totalPrincipalAmount.toString(10),
+                  atomic: totalPrincipalAmount,
+                  units: "usdc",
+                },
+              }
+            default:
+              return assertUnreachable(tx.type)
+          }
         }
-        switch (tx.type) {
-          case DRAWDOWN_MADE_EVENT:
-            return {
-              ...data,
-              event: tx.type,
-            }
-          case PAYMENT_APPLIED_EVENT:
-            const totalPrincipalAmount = new BigNumber(tx.eventData.returnValues.principalAmount).plus(
-              new BigNumber(tx.eventData.returnValues.remainingAmount)
-            )
-            return {
-              ...data,
-              event: tx.type,
-              interestAmount: {
-                display: tx.eventData.returnValues.interestAmount,
-                atomic: new BigNumber(tx.eventData.returnValues.interestAmount),
-                units: "usdc",
-              },
-              principalAmount: {
-                display: totalPrincipalAmount.toString(10),
-                atomic: totalPrincipalAmount,
-                units: "usdc",
-              },
-            }
-          default:
-            return assertUnreachable(tx.type)
-        }
-      }
+      )
     )
   }
 

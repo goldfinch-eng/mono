@@ -13,10 +13,13 @@ import {
   BORROW_TX_TYPE,
   CLAIM_TX_TYPE,
   CurrentTx,
+  DEPOSIT_TO_CURVE_TX_TYPE,
+  DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
   DRAWDOWN_TX_NAME,
   ERC20_APPROVAL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
   INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME,
+  FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
   INTEREST_COLLECTED_TX_NAME,
   INTEREST_PAYMENT_TX_NAME,
   MINT_UID_TX_TYPE,
@@ -29,10 +32,13 @@ import {
   SUPPLY_TX_TYPE,
   TxType,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
+  UNSTAKE_MULTIPLE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
+  ZAP_STAKE_TO_CURVE_TX_TYPE,
+  ERC721_APPROVAL_TX_TYPE,
 } from "../types/transactions"
 import {
   ArrayItemType,
@@ -54,6 +60,7 @@ import NetworkErrors from "./networkErrors"
 import metaMaskLogo from "../images/metamask-logo.svg"
 import walletConnectLogo from "../images/walletconnect-logo.svg"
 import {isWalletConnectProvider} from "../walletConnect"
+import BigNumber from "bignumber.js"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -169,7 +176,9 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case MINT_UID_TX_TYPE:
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
+        case ERC721_APPROVAL_TX_TYPE:
         case CLAIM_TX_TYPE:
         case ACCEPT_TX_TYPE:
           transactionLabel = tx.name
@@ -189,10 +198,37 @@ function NetworkWidget(props: NetworkWidgetProps) {
           )} ${tx.name}`
           break
         }
+        case UNSTAKE_MULTIPLE_TX_TYPE: {
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)} ${
+            (tx.data as CurrentTx<typeof tx.name>["data"]).ticker
+          } ${tx.name}`
+          break
+        }
         case STAKE_TX_TYPE: {
-          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount)} FIDU ${
-            tx.name
-          }`
+          transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).amount)} ${
+            (tx.data as CurrentTx<typeof tx.name>["data"]).ticker
+          } ${tx.name}`
+          break
+        }
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+          let fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          let usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
+            // USDC-only deposit
+            transactionLabel = `${displayNumber(usdcAmount)} USDC ${tx.name}`
+          } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
+            // FIDU-only deposit
+            transactionLabel = `${displayNumber(fiduAmount)} FIDU ${tx.name}`
+          } else {
+            // FIDU and USDC deposit
+            transactionLabel = `${displayNumber(fiduAmount)} FIDU, ${displayNumber(usdcAmount)} USDC ${tx.name}`
+          }
+          break
+        case ZAP_STAKE_TO_CURVE_TX_TYPE: {
+          fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
+          usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          transactionLabel = `${displayNumber(fiduAmount)} FIDU, ${displayNumber(usdcAmount)} USDC ${tx.name}`
           break
         }
         default:
@@ -205,16 +241,22 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case MINT_UID_TX_TYPE:
         case USDC_APPROVAL_TX_TYPE:
         case FIDU_APPROVAL_TX_TYPE:
+        case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
+        case ERC721_APPROVAL_TX_TYPE:
           transactionLabel = tx.name
           break
         case SUPPLY_TX_TYPE:
         case PAYMENT_TX_TYPE:
         case SUPPLY_AND_STAKE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_TX_TYPE:
+        case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+        case ZAP_STAKE_TO_CURVE_TX_TYPE:
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case BORROW_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
+        case UNSTAKE_MULTIPLE_TX_TYPE:
         case STAKE_TX_TYPE:
         case INTEREST_COLLECTED_TX_NAME:
         case PRINCIPAL_COLLECTED_TX_NAME:
@@ -233,6 +275,9 @@ function NetworkWidget(props: NetworkWidgetProps) {
               break
             case "gfi":
               transactionLabel = `${displayNumber(tx.amount.display)} GFI ${tx.name}`
+              break
+            case "fidu-usdc-f":
+              transactionLabel = `${displayNumber(tx.amount.display)} FIDU-USDC-F ${tx.name}`
               break
             default:
               assertUnreachable(tx.amount.units)
