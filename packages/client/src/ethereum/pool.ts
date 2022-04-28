@@ -18,6 +18,7 @@ import {Ticker, usdcFromAtomic} from "./erc20"
 import {
   DRAWDOWN_MADE_EVENT,
   INTEREST_COLLECTED_EVENT,
+  isLegacyStakingRewardsEventType,
   KnownEventData,
   KnownEventName,
   PoolEventType,
@@ -26,7 +27,6 @@ import {
   PRINCIPAL_WRITTEN_DOWN_EVENT,
   RESERVE_FUNDS_COLLECTED_EVENT,
   StakingRewardsEventType,
-  STAKING_REWARDS_LEGACY_EVENT_TYPES,
   WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
 import {
@@ -1051,7 +1051,7 @@ class StakingRewards {
         this.goldfinchProtocol.queryEvents(
           this.legacyContract.readOnly,
           // Filter out any StakingRewards events that were not created before the v2.6.0 migration.
-          eventNames.filter((eventName) => STAKING_REWARDS_LEGACY_EVENT_TYPES.includes(eventName)),
+          eventNames.filter((eventName) => isLegacyStakingRewardsEventType(eventName)),
           filters,
           Math.min(toBlock, this.v26MigrationInfo.blockNumber)
         ),

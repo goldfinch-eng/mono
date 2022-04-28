@@ -116,6 +116,19 @@ export type LegacyStakingRewardsEventType =
   | typeof UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT
   | typeof UNSTAKED_MULTIPLE_EVENT
   | typeof REWARD_PAID_EVENT
+
+export function isLegacyStakingRewardsEventType(val: unknown): boolean {
+  return (
+    val === STAKED_EVENT ||
+    val === DEPOSITED_AND_STAKED_EVENT ||
+    val === UNSTAKED_EVENT ||
+    val === UNSTAKED_AND_WITHDREW_EVENT ||
+    val === UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT ||
+    val === UNSTAKED_MULTIPLE_EVENT ||
+    val === REWARD_PAID_EVENT
+  )
+}
+
 export type StakingRewardsEventType =
   | LegacyStakingRewardsEventType
   | typeof DEPOSITED_TO_CURVE_EVENT
