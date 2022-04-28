@@ -1,2 +1,3 @@
 *.dev.json
 *.client_test.json
+solidity-docgen-docs/

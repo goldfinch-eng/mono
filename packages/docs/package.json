@@ -1,18 +1,19 @@
 {
-  "name": "@goldfinch-eng/technical-docs",
+  "name": "@goldfinch-eng/docs",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "build": "docusaurus build",
+    "build-solidity-docs": "cd ../protocol && npm run docs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "tsc": "tsc"
   },
   "dependencies": {
     "@docusaurus/core": "2.0.0-beta.18",
