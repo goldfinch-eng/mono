@@ -11,8 +11,8 @@
     "predeploy-local": "ts-node ./scripts/setup-subgraph-manifest-local.ts"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.25.1",
-    "@graphprotocol/graph-ts": "^0.24.1"
+    "@graphprotocol/graph-cli": "^0.29.0",
+    "@graphprotocol/graph-ts": "^0.26.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^3.12.7",
