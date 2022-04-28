@@ -254,7 +254,10 @@ class TranchedPool {
             this.contract.readOnly.methods.NUM_TRANCHES_PER_SLICE().call(undefined, currentBlock.number),
           ]
         : ["0", "0", "2"]
-    )
+    ).catch((error) => {
+      console.error("MultipleDrawdownsCompatible error fetching", error)
+      throw error
+    })
 
     this.totalDeployed = new BigNumber(totalDeployed)
     this.fundableAt = new BigNumber(fundableAt)
@@ -357,7 +360,7 @@ class TranchedPool {
         const result = await this.contract.readOnly.methods.getAllowedUIDTypes().call(undefined, currentBlock.number)
         return result.map((x) => parseInt(x))
       } catch (e) {
-        console.error("getAllowedUIDTypes function does not exist on TranchedPool")
+        console.error("getAllowedUIDTypes function does not exist on TranchedPool", e)
       }
     }
     return [NON_US_INDIVIDUAL_ID_TYPE_0]
@@ -763,7 +766,10 @@ class TranchedPoolBacker {
                     .tokenOfOwnerByIndex(address, i)
                     .call(undefined, currentBlock.number)
                 )
-            )
+            ).catch((error) => {
+              console.error("Error fetching tokenOfOwnerByIndex", error)
+              throw error
+            })
           )
           .then((tokenIds: string[]) =>
             Promise.all(
@@ -773,7 +779,10 @@ class TranchedPoolBacker {
                   .call(undefined, currentBlock.number)
                   .then((res) => tokenInfo(tokenId, res))
               )
-            )
+            ).catch((error) => {
+              console.error("Error fetching tokenInfo for poolToken", error)
+              throw error
+            })
           )
           .then((tokenInfos: TokenInfo[]) =>
             // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
@@ -819,7 +828,11 @@ class TranchedPoolBacker {
             currentBlock.number
           )
       )
-    )
+    ).catch((error) => {
+      console.error("TokenInfos error on reading deposit_made_event", error)
+      throw error
+    })
+
     this.firstDepositBlockNumber = events
       .flat()
       .reduce<number | undefined>((acc, curr) => (acc ? Math.min(acc, curr.blockNumber) : curr.blockNumber), undefined)

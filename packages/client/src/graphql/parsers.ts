@@ -199,7 +199,11 @@ export async function parseBackers(
                 currentBlock.number
               )
           )
-        )
+        ).catch((error) => {
+          console.error("Error fetching deposit_made events for backer tokenInfo", error)
+          throw error
+        })
+
         backer.firstDepositBlockNumber = events
           .flat()
           .reduce<number | undefined>(
