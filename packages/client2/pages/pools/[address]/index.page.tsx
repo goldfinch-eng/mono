@@ -15,6 +15,7 @@ import {
   Heading,
   Paragraph,
   ShimmerLines,
+  HelperText,
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { usdcFromAtomic } from "@/lib/format";
@@ -169,6 +170,13 @@ export default function PoolPage() {
               <Chip key={`tag-${t}`}>{t}</Chip>
             ))}
           </div>
+
+          {error ? (
+            <HelperText isError className="mb-2">
+              There was a problem fetching data on this pool. Shown data may be
+              outdated.
+            </HelperText>
+          ) : null}
 
           <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
             <div className="col-span-3 border-b border-eggplant-50 p-5">

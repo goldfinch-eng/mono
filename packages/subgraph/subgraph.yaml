@@ -1,4 +1,6 @@
-specVersion: 0.0.2
+specVersion: 0.0.4
+features:
+  - nonFatalErrors
 schema:
   file: ./schema.graphql
 dataSources:

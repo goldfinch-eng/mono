@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { Heading } from "@/components/design-system";
+import { Heading, HelperText } from "@/components/design-system";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -31,7 +31,7 @@ gql`
 
 export default function SeniorPoolPage() {
   const { account } = useWallet();
-  const { data } = useSeniorPoolPageQuery({
+  const { data, error } = useSeniorPoolPageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
@@ -40,6 +40,12 @@ export default function SeniorPoolPage() {
   return (
     <div className="space-y-6">
       <Heading level={1}>Senior Pool</Heading>
+      {error ? (
+        <HelperText isError>
+          There was a problem fetching data on the senior pool. Shown data may
+          be outdated.
+        </HelperText>
+      ) : null}
       <PortfolioSection user={data?.user} seniorPool={seniorPool} />
       <StatusSection seniorPool={seniorPool} />
     </div>
