@@ -114,7 +114,6 @@ export type LegacyStakingRewardsEventType =
   | typeof UNSTAKED_EVENT
   | typeof UNSTAKED_AND_WITHDREW_EVENT
   | typeof UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT
-  | typeof UNSTAKED_MULTIPLE_EVENT
   | typeof REWARD_PAID_EVENT
 
 export function isLegacyStakingRewardsEventType(val: unknown): boolean {
@@ -124,13 +123,13 @@ export function isLegacyStakingRewardsEventType(val: unknown): boolean {
     val === UNSTAKED_EVENT ||
     val === UNSTAKED_AND_WITHDREW_EVENT ||
     val === UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT ||
-    val === UNSTAKED_MULTIPLE_EVENT ||
     val === REWARD_PAID_EVENT
   )
 }
 
 export type StakingRewardsEventType =
   | LegacyStakingRewardsEventType
+  | typeof UNSTAKED_MULTIPLE_EVENT
   | typeof DEPOSITED_TO_CURVE_EVENT
   | typeof DEPOSITED_TO_CURVE_AND_STAKED_EVENT
 // Legacy events that existed in StakingRewards before the v2.6.0 migration.
@@ -140,12 +139,12 @@ export const STAKING_REWARDS_LEGACY_EVENT_TYPES = genExhaustiveTuple<LegacyStaki
   UNSTAKED_EVENT,
   UNSTAKED_AND_WITHDREW_EVENT,
   UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT,
-  UNSTAKED_MULTIPLE_EVENT,
   REWARD_PAID_EVENT
 )
 // All events that in the current version of StakingRewards.
 export const STAKING_REWARDS_EVENT_TYPES = genExhaustiveTuple<StakingRewardsEventType>()(
   ...STAKING_REWARDS_LEGACY_EVENT_TYPES,
+  UNSTAKED_MULTIPLE_EVENT,
   DEPOSITED_TO_CURVE_EVENT,
   DEPOSITED_TO_CURVE_AND_STAKED_EVENT
 )
