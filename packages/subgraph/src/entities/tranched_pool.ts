@@ -23,7 +23,7 @@ import {
   getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
 } from "./helpers"
-import {bigDecimalToBigInt, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {bigDecimalToBigInt, ciel, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -326,7 +326,7 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
   }
 
   const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
-  const numRepayments = endTime.minus(startTime).div(secondsPerPaymentPeriod).plus(BigInt.fromI32(1)) // Add one to compensate for integer truncation here
+  const numRepayments = ciel(endTime.minus(startTime).divDecimal(secondsPerPaymentPeriod.toBigDecimal()))
 
   const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
 

@@ -43,3 +43,10 @@ export function bigDecimalMax(a: BigDecimal, b: BigDecimal): BigDecimal {
 export function bigDecimalToBigInt(n: BigDecimal): BigInt {
   return BigInt.fromString(n.toString().split(".")[0])
 }
+
+// Very silly and roundabout way to round up a BigDecimal into a BigInt. But hey, it works. This will be obsolete when/if The Graph ever implements a BigDecimal.round()
+export function ciel(n: BigDecimal): BigInt {
+  const float = parseFloat(n.toString())
+  const cieling = Math.ceil(float)
+  return BigInt.fromString(cieling.toString().split(".")[0])
+}
