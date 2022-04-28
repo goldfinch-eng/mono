@@ -17,23 +17,32 @@ const MIN_BLOCK_CHECK = gql`
   }
 `;
 
-export async function waitForSubgraphBlock(minBlock: number) {
+export async function waitForSubgraphBlock(
+  minBlock: number,
+  maxPollingAttempts = 30
+) {
   let isSubgraphUpdated = false;
-  while (!isSubgraphUpdated) {
+  let currentAttempt = 1;
+  while (!isSubgraphUpdated && currentAttempt <= maxPollingAttempts) {
     try {
       await apolloClient.query({
         query: MIN_BLOCK_CHECK,
         variables: { minBlock },
+        errorPolicy: "none",
       });
       isSubgraphUpdated = true;
     } catch (e) {
       if (
         (e as Error).message.includes("has only indexed up to block number")
       ) {
+        currentAttempt += 1;
         await wait(1000);
       } else {
         throw e;
       }
     }
+  }
+  if (currentAttempt >= maxPollingAttempts) {
+    throw new Error("MAX_POLLING_ATTEMPTS");
   }
 }
