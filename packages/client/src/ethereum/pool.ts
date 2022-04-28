@@ -861,12 +861,17 @@ export enum StakedPositionType {
   CurveLP = 1,
 }
 
-export function getStakedPositionTypeByValue(value: string): StakedPositionType {
+export function getStakedPositionTypeByValue(value: string, legacyFallback = false): StakedPositionType {
   if (parseInt(value) === 0) {
     return StakedPositionType.Fidu
   } else if (parseInt(value) === 1) {
     return StakedPositionType.CurveLP
   } else {
+    if (legacyFallback) {
+      // Fallback to FIDU for legacy staked positions (pre GIP-01) that do not have a position type
+      return StakedPositionType.Fidu
+    }
+
     throw new Error(`Unknown staked position type: ${value}`)
   }
 }
