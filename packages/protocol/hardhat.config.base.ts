@@ -135,5 +135,6 @@ export default {
     // Cf. https://github.com/OpenZeppelin/solidity-docgen/blob/master/src/config.ts
     outputDir: "solidity-docgen-docs",
     pages: "files",
+    templates: "docs-templates",
   },
 }
