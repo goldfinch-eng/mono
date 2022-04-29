@@ -102,7 +102,6 @@ export const GET_TRANCHED_POOLS_DATA = gql`
         interestOwed
         termEndTime
         lastFullPaymentTime
-        termEndDate
         periodDueAmount
         interestAprDecimal
         collectedPaymentBalance

@@ -1,0 +1,11 @@
+<svg viewBox="0 0 20 20">
+  <defs>
+    <mask id="mask">
+      <circle cx="10" cy="10" r="10" fill="none" stroke="#fff" stroke-width="10" />
+    </mask>
+  </defs>
+  <foreignObject width="16" height="16" x="2" y="2" mask="url(#mask)">
+    <!-- since there is no native SVG way to utilize conic gradient, we combine some CSS to make it work. reference: https://css-tricks.com/my-struggle-to-use-and-animate-a-conic-gradient-in-svg/ -->
+    <div class="spinner-gradient" xmlns="http://www.w3.org/1999/xhtml"/>
+  </foreignObject>
+</svg>

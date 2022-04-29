@@ -1,4 +1,6 @@
-specVersion: 0.0.2
+specVersion: 0.0.4
+features:
+  - nonFatalErrors
 schema:
   file: ./schema.graphql
 dataSources:
@@ -130,6 +132,56 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/pool_tokens_proxy.ts
 
+  - kind: ethereum/contract
+    name: StakingRewardsProxy
+    network: mainnet
+    source:
+      address: "0xFD6FF39DA508d281C2d255e9bBBfAb34B6be60c3"
+      abi: StakingRewards_Proxy
+      startBlock: 13941096
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - StakingRewards
+      abis:
+        - name: StakingRewards
+          file: ./abis/StakingRewards.json
+        - name: StakingRewards_Implementation
+          file: ./abis/StakingRewards_Implementation.json
+        - name: StakingRewards_Proxy
+          file: ./abis/StakingRewards_Proxy.json
+      eventHandlers:
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/staking_rewards_proxy.ts
+
+  - kind: ethereum/contract
+    name: BackerRewardsProxy
+    network: mainnet
+    source:
+      address: "0x384860F14B39CcD9C89A73519c70cD5f5394D0a6"
+      abi: BackerRewards_Proxy
+      startBlock: 13942222
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - BackerRewards
+      abis:
+        - name: BackerRewards
+          file: ./abis/BackerRewards.json
+        - name: BackerRewards_Implementation
+          file: ./abis/BackerRewards_Implementation.json
+        - name: BackerRewards_Proxy
+          file: ./abis/BackerRewards_Proxy.json
+      eventHandlers:
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/backer_rewards_proxy.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -245,6 +297,7 @@ templates:
         - User
         - TranchedPool
         - TranchedPoolToken
+        - TranchedPoolBorrowerTransaction
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -342,3 +395,55 @@ templates:
           handler: handleTokenRedeemed
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
+
+  - name: StakingRewards
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: StakingRewards
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/staking_rewards.ts
+      entities:
+        - StakingRewards
+      abis:
+        - name: StakingRewards
+          file: ./abis/StakingRewards.json
+        - name: StakingRewards_Implementation
+          file: ./abis/StakingRewards_Implementation.json
+        - name: StakingRewards_Proxy
+          file: ./abis/StakingRewards_Proxy.json
+      eventHandlers:
+        - event: RewardAdded(uint256)
+          handler: handleRewardAdded
+        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
+          handler: handleStaked
+        - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
+          handler: handleUnstaked
+
+  - name: BackerRewards
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: BackerRewards
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/backer_rewards.ts
+      entities:
+        - BackerRewards
+      abis:
+        - name: BackerRewards
+          file: ./abis/BackerRewards.json
+        - name: BackerRewards_Implementation
+          file: ./abis/BackerRewards_Implementation.json
+        - name: BackerRewards_Proxy
+          file: ./abis/BackerRewards_Proxy.json
+      eventHandlers:
+        - event: BackerRewardsSetTotalRewards(indexed address,uint256,uint256)
+          handler: handleSetTotalRewards
+        - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
+          handler: handleSetMaxInterestDollarsEligible
