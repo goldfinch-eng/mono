@@ -1,0 +1,51 @@
+## ConfigOptions
+
+A central place for enumerating the configurable options of our GoldfinchConfig contract
+
+### Numbers
+
+```solidity
+enum Numbers {
+  TransactionLimit,
+  TotalFundsLimit,
+  MaxUnderwriterLimit,
+  ReserveDenominator,
+  WithdrawFeeDenominator,
+  LatenessGracePeriodInDays,
+  LatenessMaxDays,
+  DrawdownPeriodInSeconds,
+  TransferRestrictionPeriodInDays,
+  LeverageRatio
+}
+```
+
+### Addresses
+
+```solidity
+enum Addresses {
+  Pool,
+  CreditLineImplementation,
+  GoldfinchFactory,
+  CreditDesk,
+  Fidu,
+  USDC,
+  TreasuryReserve,
+  ProtocolAdmin,
+  OneInch,
+  TrustedForwarder,
+  CUSDCContract,
+  GoldfinchConfig,
+  PoolTokens,
+  TranchedPoolImplementation,
+  SeniorPool,
+  SeniorPoolStrategy,
+  MigratedTranchedPoolImplementation,
+  BorrowerImplementation,
+  GFI,
+  Go,
+  BackerRewards,
+  StakingRewards,
+  FiduUSDCCurveLP
+}
+```
+
