@@ -9,7 +9,7 @@ import {
 } from "../../generated/schema"
 import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
-import {SENIOR_POOL_ADDRESS, SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS} from "../constants"
+import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
@@ -23,7 +23,7 @@ import {
   getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
 } from "./helpers"
-import {bigDecimalToBigInt, ciel, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {bigDecimalToBigInt, bigIntMin, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
@@ -326,20 +326,21 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
   }
 
   const secondsPerPaymentPeriod = creditLine.paymentPeriodInDays.times(SECONDS_PER_DAY)
-  const numRepayments = ciel(endTime.minus(startTime).divDecimal(secondsPerPaymentPeriod.toBigDecimal()))
-
-  const expectedInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
-
-  const numYears = creditLine.termInDays.divDecimal(BigDecimal.fromString("365"))
-  const interestAmount = expectedInterest.div(numRepayments.toBigDecimal()).times(numYears)
+  const expectedAnnualInterest = creditLine.maxLimit.toBigDecimal().times(creditLine.interestAprDecimal)
   const repayments: Repayment[] = []
-  for (let i = 0; i < numRepayments.toI32(); i++) {
-    const repaymentTimestamp = startTime.plus(secondsPerPaymentPeriod.times(BigInt.fromI32(i + 1)))
+  let periodStartTime = startTime
+  while (periodStartTime < endTime) {
+    const periodEndTime = bigIntMin(periodStartTime.plus(secondsPerPaymentPeriod), endTime)
+    const periodDuration = periodEndTime.minus(periodStartTime)
+    const interestAmount = expectedAnnualInterest
+      .times(periodDuration.toBigDecimal())
+      .div(SECONDS_PER_YEAR.toBigDecimal())
     repayments.push({
       tranchedPoolAddress: tranchedPool.id,
-      timestamp: repaymentTimestamp,
+      timestamp: periodEndTime,
       interestAmount: bigDecimalToBigInt(interestAmount),
     })
+    periodStartTime = periodEndTime
   }
   return repayments
 }
