@@ -5,8 +5,19 @@ import { Link } from "@/components/design-system";
 import { Shimmer } from "../spinners";
 
 interface BreadcrumbProps {
+  /**
+   * Optional image to show beside the breadcrumb: URL, PNG string, or Static import
+   */
   image?: string | null;
+
+  /**
+   * The title of the breadcrumb
+   */
   label?: string | null;
+
+  /**
+   * Optional link of the breadcrumb
+   */
   link?: string | null;
 }
 
