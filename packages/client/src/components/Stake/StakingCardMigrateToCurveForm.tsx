@@ -30,6 +30,12 @@ const StyledButton = styled.button<{small: boolean}>`
   font-size: ${({small}) => (small ? "20px" : "inherit")};
 `
 
+const Description = styled.div`
+  color: ${({theme}) => theme.colors.purpLight};
+  font-size: ${({theme}) => theme.typography.fontSize.sansSizeXs};
+  padding-bottom: 20px;
+`
+
 export default function StakingCardMigrateToCurveForm({
   maxFiduAmountToMigrate,
   maxUSDCAmountToDeposit,
@@ -126,6 +132,10 @@ export default function StakingCardMigrateToCurveForm({
 
   return (
     <FormProvider {...formMethods}>
+      <Description>
+        Migrate your staked FIDU to deposit it in the Curve FIDU-USDC liquidity pool, without needing to unstake it on
+        Goldfinch.
+      </Description>
       <div>
         <InputContainer>
           <div className="form-input-label">{`Amount (max: ${displayNumber(

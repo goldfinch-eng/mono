@@ -18,6 +18,7 @@ import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
 import {getERC20Metadata, getMultiplierDecimals, Ticker, toDecimalString} from "../ethereum/erc20"
 import {requestUserAddERC20TokenToWallet} from "../web3"
+import {positionTypeToTicker} from "../components/Stake/utils"
 
 const APY_DECIMALS = new BigNumber(1e18)
 const CURVE_FIDU_USDC_DECIMALS = getMultiplierDecimals(Ticker.CURVE_FIDU_USDC)
@@ -183,7 +184,7 @@ export default function useStakingData(): StakingData {
     assertNonNullable(stakingRewards)
     assertNonNullable(user)
 
-    const ticker: Ticker = tickerForStakedPositionType(positionType)
+    const ticker: Ticker = positionTypeToTicker(positionType)
 
     return erc20Approve(amount, ticker, stakingRewards.address).then(() =>
       sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType), {
@@ -207,7 +208,7 @@ export default function useStakingData(): StakingData {
   async function unstake(amount: BigNumber, positionType: StakedPositionType): Promise<void> {
     assertNonNullable(stakingRewards)
 
-    const ticker = tickerForStakedPositionType(positionType)
+    const ticker = positionTypeToTicker(positionType)
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
     const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
     const amounts = optimalPositionsToUnstake.map(({amount}) => amount.toString(10))
@@ -390,17 +391,6 @@ export default function useStakingData(): StakingData {
         return acc.concat([{tokenId, amount: amountToUnstake}])
       }, [])
       .filter(({amount}) => amount.isGreaterThan(new BigNumber(0)))
-  }
-
-  function tickerForStakedPositionType(positionType: StakedPositionType): Ticker {
-    switch (positionType) {
-      case StakedPositionType.Fidu:
-        return Ticker.FIDU
-      case StakedPositionType.CurveLP:
-        return Ticker.CURVE_FIDU_USDC
-      default:
-        throw new Error(`Unexpected positionType: ${positionType}`)
-    }
   }
 
   return {

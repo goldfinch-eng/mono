@@ -63,6 +63,7 @@ export default function LPAndStakeCard({
       {expanded && (
         <LPAndStakeCardForm
           depositToken={depositToken}
+          poolToken={poolToken}
           maxAmountToDeposit={maxAmountToDeposit}
           stakingApy={rewardApy}
           deposit={deposit}
