@@ -22,10 +22,13 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       </Head>
 
       <Nav />
+      <div className="relative">
+        <div id="#subnav" className="sticky top-0 z-10"></div>
 
-      <div className="px-5">
-        <div className="mx-auto min-h-full max-w-7xl py-14">
-          <Component {...pageProps} />
+        <div className="px-5">
+          <div className="mx-auto min-h-full max-w-7xl py-14">
+            <Component {...pageProps} />
+          </div>
         </div>
       </div>
       <AppWideModals />
