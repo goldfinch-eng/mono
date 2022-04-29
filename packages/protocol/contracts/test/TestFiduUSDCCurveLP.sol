@@ -14,6 +14,7 @@ contract TestFiduUSDCCurveLP is
   ICurveLP
 {
   uint256 private constant MULTIPLIER_DECIMALS = 1e18;
+  uint256 private constant USDC_DECIMALS = 1e6;
 
   IGoldfinchConfig public config;
 
@@ -49,7 +50,7 @@ contract TestFiduUSDCCurveLP is
 
   /// @notice Mock calc_token_amount function that returns the sum of both token amounts
   function calc_token_amount(uint256[2] memory amounts) public view override returns (uint256) {
-    return amounts[0].add(amounts[1]);
+    return amounts[0].add(amounts[1].mul(MULTIPLIER_DECIMALS).div(USDC_DECIMALS));
   }
 
   /// @notice Mock add_liquidity function that mints Curve LP tokens

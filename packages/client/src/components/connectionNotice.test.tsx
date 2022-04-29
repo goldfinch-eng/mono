@@ -5,7 +5,7 @@ import React from "react"
 import {MemoryRouter} from "react-router-dom"
 import {AppContext, GlobalState} from "../App"
 import {BorrowerInterface} from "../ethereum/borrower"
-import {getERC20, Tickers} from "../ethereum/erc20"
+import {getERC20, Ticker} from "../ethereum/erc20"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
@@ -179,7 +179,7 @@ describe("ConnectionNotice", () => {
     await goldfinchProtocol.initialize()
     store = {
       user: undefined,
-      usdc: getERC20(Tickers.USDC, goldfinchProtocol),
+      usdc: getERC20(Ticker.USDC, goldfinchProtocol),
       network,
     }
     context = {
