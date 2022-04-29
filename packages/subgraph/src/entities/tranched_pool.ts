@@ -347,7 +347,7 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
 
 function estimateRewards(
   repaymentSchedules: Repayment[],
-  totalGfiAvailableForBackerRewards: BigInt,
+  totalGfiAvailableForBackerRewards: BigInt, // TODO instead of relying on BackerRewards.totalRewards(), manually calculate that amount using GFI total suppy and totalRewardPercentOfTotalGFI
   maxInterestDollarsEligible: BigInt
 ): GfiRewardOnInterest[] {
   const rewards: GfiRewardOnInterest[] = []
