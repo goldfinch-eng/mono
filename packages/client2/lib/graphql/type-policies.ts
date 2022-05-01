@@ -50,7 +50,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       borrowerHighlights: { read: readFieldFromMetadata("borrowerHighlights") },
     },
   },
-  GfiPrice2: {
+  GfiPrice: {
     keyFields: ["price", ["symbol"]],
   },
 };

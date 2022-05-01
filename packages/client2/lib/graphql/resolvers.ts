@@ -1,6 +1,6 @@
 import { Resolvers } from "@apollo/client";
 
-import { GfiPrice2, SupportedFiat } from "./generated";
+import { GfiPrice, SupportedFiat } from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toLowerCase();
@@ -47,11 +47,11 @@ async function fetchGfiPrice(fiat: SupportedFiat): Promise<number> {
 
 export const resolvers: Resolvers = {
   Query: {
-    async gfiPrice(_, args: { fiat: SupportedFiat }): Promise<GfiPrice2> {
+    async gfiPrice(_, args: { fiat: SupportedFiat }): Promise<GfiPrice> {
       const fiat = args ? args.fiat : SupportedFiat.Usd;
       const amount = await fetchGfiPrice(fiat);
       return {
-        __typename: "GfiPrice2", // returning typename is very important, since this is meant to be a whole type and not just a scalar. Without this, it won't enter the cache properly as a normalized entry
+        __typename: "GfiPrice", // returning typename is very important, since this is meant to be a whole type and not just a scalar. Without this, it won't enter the cache properly as a normalized entry
         lastUpdated: Date.now(),
         price: { symbol: fiat, amount },
       };

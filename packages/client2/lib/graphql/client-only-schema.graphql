@@ -23,18 +23,6 @@ type AppUser {
   gfiBalance: BigInt
 }
 
-type Gfi {
-  price: GfiPrice!
-  lastUpdated: Int!
-}
-
-"""
-Leaves some room to add other fiat currencies in the future
-"""
-type GfiPrice {
-  usd: Float!
-}
-
 enum SupportedFiat {
   USD
 }
@@ -44,7 +32,7 @@ type FiatAmount {
   amount: Float!
 }
 
-type GfiPrice2 {
+type GfiPrice {
   """
   Note that the cache ID for this type is price.symbol. Remember to always select it to avoid cache problems
   """
@@ -55,5 +43,5 @@ type GfiPrice2 {
 extend type Query {
   currentUser: AppUser!
   isWalletModalOpen: Boolean!
-  gfiPrice(fiat: SupportedFiat = USD): GfiPrice2!
+  gfiPrice(fiat: SupportedFiat = USD): GfiPrice!
 }
