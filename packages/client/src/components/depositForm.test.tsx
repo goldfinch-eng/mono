@@ -5,7 +5,7 @@ import {AppContext} from "../App"
 import DepositForm from "./depositForm"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {usdcToAtomic} from "../ethereum/erc20"
-import {mock} from "depay-web3-mock"
+import {mock} from "@depay/web3-mock"
 import {
   blockchain,
   defaultCurrentBlock,
@@ -14,12 +14,12 @@ import {
   getStakingRewardsAbi,
   network,
 } from "../__tests__/rewards/__utils__/constants"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {setupPartiallyClaimedStakingReward} from "../__tests__/rewards/__utils__/scenarios"
 import {resetAirdropMocks} from "../__tests__/rewards/__utils__/mocks"
 import {
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -35,6 +35,7 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
@@ -218,7 +219,7 @@ describe("deposit transactions", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }

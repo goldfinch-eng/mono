@@ -1,17 +1,14 @@
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
+import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
+import {isUndefined} from "@goldfinch-eng/utils"
 import {assertUnreachable, genExhaustiveTuple} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {BlockNumber} from "web3-core"
 import {Contract, EventData, Filter} from "web3-eth-contract"
-import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
-import {assertBigNumber, BlockInfo, defaultSum, displayNumber, roundDownPenny} from "../utils"
-import {buildCreditLineReadOnly} from "./creditLine"
-import {Tickers, usdcFromAtomic} from "./erc20"
 import {
   DRAWDOWN_MADE_EVENT,
   INTEREST_COLLECTED_EVENT,
@@ -25,22 +22,33 @@ import {
   StakingRewardsEventType,
   WITHDRAWAL_MADE_EVENT,
 } from "../types/events"
-import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
-import {gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS, gfiFromAtomic} from "./gfi"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getMetadataStore} from "./tranchedPool"
+import {Loadable, Loaded, WithLoadedInfo} from "../types/loadable"
 import {
   AmountWithUnits,
+  HistoricalTx,
   INTEREST_COLLECTED_TX_NAME,
   PRINCIPAL_COLLECTED_TX_NAME,
   RESERVE_FUNDS_COLLECTED_TX_NAME,
-  HistoricalTx,
   TxName,
 } from "../types/transactions"
-import {UserLoaded, UserStakingRewardsLoaded} from "./user"
-import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
-import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {Web3IO} from "../types/web3"
+import {assertBigNumber, BlockInfo, defaultSum, displayNumber, roundDownPenny} from "../utils"
+import {buildCreditLineReadOnly} from "./creditLine"
+import {Tickers, usdcFromAtomic} from "./erc20"
+import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
+import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
+import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
+import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {getMetadataStore} from "./tranchedPool"
+import {UserLoaded, UserStakingRewardsLoaded} from "./user"
+import {
+  fetchDataFromAttributes,
+  getPoolEvents,
+  INTEREST_DECIMALS,
+  MAINNET,
+  ONE_YEAR_SECONDS,
+  USDC_DECIMALS,
+} from "./utils"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -58,7 +66,7 @@ class Pool {
 
 type SeniorPoolLoadedInfo = {
   currentBlock: BlockInfo
-  poolData: PoolData
+  poolData: SeniorPoolData
   isPaused: boolean
 }
 
@@ -87,7 +95,7 @@ class SeniorPool {
   }
 
   async initialize(stakingRewards: StakingRewardsLoaded, gfi: GFILoaded, currentBlock: BlockInfo): Promise<void> {
-    const poolData = await fetchPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
+    const poolData = await fetchSeniorPoolData(this, this.usdc, stakingRewards, gfi, currentBlock)
     const isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.info = {
       loaded: true,
@@ -314,7 +322,7 @@ async function fetchCapitalProviderData(
   }
 }
 
-type PoolData = {
+type SeniorPoolData = {
   rawBalance: BigNumber
   compoundBalance: BigNumber
   balance: BigNumber
@@ -331,15 +339,16 @@ type PoolData = {
   assetsAsOf: typeof assetsAsOf
   getRepaymentEvents: typeof getRepaymentEvents
   remainingCapacity: typeof remainingCapacity
+  allowedUIDTypes: number[]
 }
 
-async function fetchPoolData(
+async function fetchSeniorPoolData(
   pool: SeniorPool,
   erc20: Web3IO<Contract>,
   stakingRewards: StakingRewardsLoaded,
   gfi: GFILoaded,
   currentBlock: BlockInfo
-): Promise<PoolData> {
+): Promise<SeniorPoolData> {
   const attributes = [{method: "sharePrice"}, {method: "compoundBalance"}]
   let {sharePrice, compoundBalance: _compoundBalance} = await fetchDataFromAttributes(
     pool.contract.readOnly,
@@ -366,10 +375,11 @@ async function fetchPoolData(
   let totalLoansOutstanding = new BigNumber(
     await pool.contract.readOnly.methods.totalLoansOutstanding().call(undefined, currentBlock.number)
   )
+  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   let cumulativeWritedowns = await getCumulativeWritedowns(pool, currentBlock)
-  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock)
+  let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock, tranchedPoolAddresses)
   let poolEvents = await getAllPoolEvents(pool, currentBlock)
-  let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock)
+  let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock, tranchedPoolAddresses)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   const currentEarnRatePerYear = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
   const estimatedApyFromGfi = gfiToDollarsAtomic(currentEarnRatePerYear, gfi.info.value.price)
@@ -378,13 +388,19 @@ async function fetchPoolData(
       // same as `FIDU_DECIMALS`.
       FIDU_DECIMALS
     )
-    .dividedBy(
-      // This might be better thought of as the GFI-price mantissa, which happens to be the
-      // same as `GFI_DECIMALS`.
-      GFI_DECIMALS
-    )
     .dividedBy(sharePrice)
+    .dividedBy(GFI_DECIMALS)
   let defaultRate = cumulativeWritedowns.dividedBy(cumulativeDrawdowns)
+
+  const go = pool.goldfinchProtocol.getContract<Go>("Go")
+  let getSeniorPoolIdTypes
+  try {
+    getSeniorPoolIdTypes = await go.readOnly.methods.getSeniorPoolIdTypes().call(undefined, currentBlock.number)
+  } catch (e) {
+    // @TODO gregegan hardcoded until v2.6 gets deployed, then we can remove this
+    getSeniorPoolIdTypes = [0, 1, 3, 4]
+  }
+  const allowedUIDTypes = getSeniorPoolIdTypes.map((x) => parseInt(x))
 
   return {
     rawBalance,
@@ -403,6 +419,7 @@ async function fetchPoolData(
     estimatedApy,
     estimatedApyFromGfi,
     defaultRate,
+    allowedUIDTypes,
   }
 }
 
@@ -506,9 +523,8 @@ async function getCumulativeWritedowns(pool: SeniorPool, currentBlock: BlockInfo
   return sum.negated()
 }
 
-async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo) {
+async function getCumulativeDrawdowns(pool: SeniorPool, currentBlock: BlockInfo, tranchedPoolAddresses: string[]) {
   const protocol = pool.goldfinchProtocol
-  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
@@ -598,16 +614,14 @@ async function getRepaymentEvents(
     currentBlock.number
   )
   const oldEvents = await goldfinchProtocol.queryEvents("Pool", REPAYMENT_EVENT_TYPES, undefined, currentBlock.number)
-  const [eventTxs, oldEventTxs] = await Promise.all([
-    mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
-      parseName: parseRepaymentEventName,
-      parseAmount: parsePoolRepaymentEventAmount,
-    }),
-    mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
-      parseName: parseRepaymentEventName,
-      parseAmount: parseOldPoolRepaymentEventAmount,
-    }),
-  ])
+  const eventTxs = mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
+    parseName: parseRepaymentEventName,
+    parseAmount: parsePoolRepaymentEventAmount,
+  })
+  const oldEventTxs = mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
+    parseName: parseRepaymentEventName,
+    parseAmount: parseOldPoolRepaymentEventAmount,
+  })
   const combined = _.map(_.groupBy(eventTxs.concat(oldEventTxs), "id"), (val): CombinedRepaymentTx | null => {
     const interestPayment = _.find(val, (event) => event.type === "InterestCollected")
     const principalPayment = _.find(val, (event) => event.type === "PrincipalCollected")
@@ -640,7 +654,7 @@ async function getAllPoolEvents(pool: SeniorPool, currentBlock: BlockInfo): Prom
   return poolEvents
 }
 
-function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
+function assetsAsOf(this: SeniorPoolData, blockNumExclusive: number): BigNumber {
   return getBalanceAsOf(this.poolEvents, blockNumExclusive, WITHDRAWAL_MADE_EVENT, getPoolEventAmount)
 }
 
@@ -651,7 +665,7 @@ function assetsAsOf(this: PoolData, blockNumExclusive: number): BigNumber {
  * @param maxPoolCapacity - Maximum capacity of the pool
  * @returns Remaining capacity of pool in atomic units
  */
-export function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): BigNumber {
+export function remainingCapacity(this: SeniorPoolData, maxPoolCapacity: BigNumber): BigNumber {
   let cappedBalance = BigNumber.min(this.totalPoolAssets, maxPoolCapacity)
   return new BigNumber(maxPoolCapacity).minus(cappedBalance)
 }
@@ -659,9 +673,12 @@ export function remainingCapacity(this: PoolData, maxPoolCapacity: BigNumber): B
 /**
  * Returns the amount of interest that the senior pool will accrue from tranched pools
  */
-async function getEstimatedTotalInterest(pool: SeniorPool, currentBlock: BlockInfo): Promise<BigNumber> {
+async function getEstimatedTotalInterest(
+  pool: SeniorPool,
+  currentBlock: BlockInfo,
+  tranchedPoolAddresses: string[]
+): Promise<BigNumber> {
   const protocol = pool.goldfinchProtocol
-  const tranchedPoolAddresses = await getTranchedPoolAddressesForSeniorPoolCalc(pool, currentBlock)
   const tranchedPools = tranchedPoolAddresses.map((address) =>
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
@@ -825,6 +842,15 @@ export type StoredPosition = {
   rewards: StakingRewardsVesting
   leverageMultiplier: BigNumber
   lockedUntil: number
+  positionType: StakedPositionType
+  unsafeEffectiveMultiplier: BigNumber
+  unsafeBaseTokenExchangeRate: BigNumber
+}
+
+// Typechain doesn't generate types for solidity enums, so redefining here
+export enum StakedPositionType {
+  Fidu,
+  CurveLP,
 }
 
 type PositionOptimisticIncrement = {
@@ -843,12 +869,25 @@ export type StakingRewardsLoaded = WithLoadedInfo<StakingRewards, StakingRewards
 class StakingRewards {
   goldfinchProtocol: GoldfinchProtocol
   contract: Web3IO<StakingRewardsContract>
+  // This contract interface uses the StakingRewards contract's ABI prior to the v2.6 deploy. For the purpose of
+  // parsing events and staked position structs from before that deploy.
+  legacyContract: Web3IO<Contract>
   address: string
   info: Loadable<StakingRewardsLoadedInfo>
+  v26MigrationInfo = {
+    // The block number in which the v2.6 migration was executed.
+    blockNumber: 14635526,
+  }
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<StakingRewardsContract>("StakingRewards")
+    this.legacyContract = goldfinchProtocol.getContract<Contract>(
+      "StakingRewards",
+      undefined,
+      // Disable this legacy contract behavior in the test environment, where it's not needed.
+      process.env.NODE_ENV !== "test"
+    )
     this.address = goldfinchProtocol.getAddress("StakingRewards")
     this.info = {
       loaded: false,
@@ -900,22 +939,91 @@ class StakingRewards {
     }
   }
 
+  static parseStoredPosition(raw: unknown): StoredPosition {
+    const tuple: any = raw
+    return {
+      amount: new BigNumber(tuple[0]),
+      rewards: {
+        totalUnvested: new BigNumber(tuple[1][0]),
+        totalVested: new BigNumber(tuple[1][1]),
+        totalPreviouslyVested: new BigNumber(tuple[1][2]),
+        totalClaimed: new BigNumber(tuple[1][3]),
+        startTime: parseInt(tuple[1][4], 10),
+        endTime: parseInt(tuple[1][5], 10),
+      },
+      leverageMultiplier: new BigNumber(tuple[2]),
+      lockedUntil: parseInt(tuple[3], 10),
+      ...(isUndefined(tuple[6])
+        ? {
+            positionType: StakedPositionType.Fidu,
+            unsafeEffectiveMultiplier: new BigNumber(0),
+            unsafeBaseTokenExchangeRate: new BigNumber(0),
+          }
+        : {
+            positionType: parseInt(tuple[4]),
+            unsafeEffectiveMultiplier: new BigNumber(tuple[5]),
+            unsafeBaseTokenExchangeRate: new BigNumber(tuple[6]),
+          }),
+    }
+  }
+
+  async getStoredPosition(tokenId: string, currentBlock: BlockInfo): Promise<StoredPosition> {
+    // We use a try-catch approach here, rather than an approach of handling all tokens below a certain
+    // id threshold using `this.legacyContract`, because it would not necessarily be correct to parse
+    // such an older position using `this.legacyContract`, because newer fields on the position could
+    // have had their values backfilled, and we want to parse such values correctly.
+    //
+    // TODO I'm not sure whether this conditional handling will actually be necessary after the v2.6
+    // migration proposal has executed; it might be the case that `raw` for older positions will include
+    // the newer fields. We can follow-up to see if we can remove this. It is definitely necessary now though.
+    let raw: unknown
+    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
+    if (networkIsMainnet) {
+      try {
+        raw = await this.contract.readOnly.methods.positions(tokenId).call(undefined, currentBlock.number)
+      } catch {
+        raw = await this.legacyContract.readOnly.methods.positions(tokenId).call(undefined, currentBlock.number)
+      }
+    } else {
+      raw = await this.contract.readOnly.methods.positions(tokenId).call(undefined, currentBlock.number)
+    }
+    return StakingRewards.parseStoredPosition(raw)
+  }
+
   async getEvents<T extends StakingRewardsEventType>(
     address: string,
     eventNames: T[],
     filter: Filter | undefined,
-    toBlock: BlockNumber
+    toBlock: number
   ): Promise<KnownEventData<T>[]> {
-    const events = await this.goldfinchProtocol.queryEvents(
-      this.contract.readOnly,
-      eventNames,
-      {
-        ...(filter || {}),
-        user: address,
-      },
-      toBlock
-    )
-    return events
+    const filters = {
+      ...(filter || {}),
+      user: address,
+    }
+
+    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
+    if (networkIsMainnet) {
+      const [legacyEvents, events] = await Promise.all([
+        this.goldfinchProtocol.queryEvents(
+          this.legacyContract.readOnly,
+          eventNames,
+          filters,
+          Math.min(toBlock, this.v26MigrationInfo.blockNumber)
+        ),
+        toBlock <= this.v26MigrationInfo.blockNumber
+          ? Promise.resolve([])
+          : this.goldfinchProtocol.queryEvents(
+              this.contract.readOnly,
+              eventNames,
+              filters,
+              toBlock,
+              this.v26MigrationInfo.blockNumber + 1
+            ),
+      ])
+      return legacyEvents.concat(events)
+    } else {
+      return this.goldfinchProtocol.queryEvents(this.contract.readOnly, eventNames, filters, toBlock)
+    }
   }
 }
 
@@ -923,5 +1031,5 @@ export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverage
   getWeightedAverageSharePrice = mock || _getWeightedAverageSharePrice
 }
 
-export {fetchCapitalProviderData, fetchPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}
-export type {PoolData, CapitalProvider}
+export {fetchCapitalProviderData, fetchSeniorPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}
+export type {SeniorPoolData, CapitalProvider}

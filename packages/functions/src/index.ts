@@ -10,6 +10,7 @@ import {getAgreements, getConfig, getDb, getNDAs, getUsers} from "./db"
 import {genRequestHandler} from "./helpers"
 import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
+import {circulatingSupply} from "./handlers/circulatingSupply"
 dotenv.config({path: findEnvLocal()})
 
 const _config = getConfig(functions)
@@ -112,7 +113,9 @@ const verifyRequest = (req: Request) => {
 
 const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   const account = eventPayload.included.find((i: any) => i.type === "account")
-  const verification = eventPayload.included.find((i: any) => i.type === "verification/government-id")
+  const verification = eventPayload.included.find(
+    (i: any) => i.type === "verification/government-id" && i.attributes.status === "passed",
+  )
   // If not countryCode is found, use an explicit null, firestore does not like "undefined"
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
@@ -259,4 +262,4 @@ const personaCallback = genRequestHandler({
   },
 })
 
-export {kycStatus, personaCallback, signAgreement, signNDA, fetchNDA}
+export {kycStatus, personaCallback, signAgreement, signNDA, fetchNDA, circulatingSupply}

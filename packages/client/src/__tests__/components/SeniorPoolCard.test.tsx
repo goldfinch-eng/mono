@@ -5,10 +5,15 @@ import SeniorPoolCard from "../../components/Earn/SeniorPoolCard"
 import BigNumber from "bignumber.js"
 
 function renderSeniorPoolCard(remainingCapacity: BigNumber | undefined) {
+  const estimatedApyFromSupplying = new BigNumber("10")
+  const estimatedApyFromGfi = new BigNumber("20")
+  const estimatedApy = estimatedApyFromSupplying.plus(estimatedApyFromGfi)
   const props = {
     balance: "100",
     userBalance: "200",
-    apy: "10",
+    estimatedApyFromSupplying,
+    estimatedApyFromGfi,
+    estimatedApy,
     limit: "300",
     remainingCapacity: remainingCapacity,
     disabled: false,

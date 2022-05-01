@@ -88,6 +88,7 @@ button.open-details {
   background: none;
   margin-left: 18px;
   display: flex;
+  justify-content: flex-end;
 
   & svg {
     height: 24px;
@@ -145,6 +146,14 @@ button.open-details {
       color: $purp-light;
       font-size: $sans-size-xs;
       margin-top: 6px;
+    }
+
+    .action-button-container {
+      flex: 1;
+    }
+
+    .form-input-note {
+      margin-top: 10px;
     }
   }
 

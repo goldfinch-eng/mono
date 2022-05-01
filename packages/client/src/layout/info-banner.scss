@@ -17,8 +17,17 @@
   @include space-x(0em);
   @include space-y(1em);
 
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
   &.subtle {
     background-color: $sand-light;
+  }
+
+  .bold {
+    font-weight: 500;
   }
 
   .hidden-message {
@@ -80,6 +89,10 @@
     .message {
       &.small {
         font-size: $sans-size-s;
+      }
+
+      &.extra-small {
+        font-size: $sans-size-xs;
       }
 
       .icon {

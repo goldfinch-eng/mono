@@ -8,6 +8,7 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
+import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
@@ -98,31 +99,32 @@ export async function main({
 }) {
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
+  const userAddress = auth["x-goldfinch-address"]
 
-  let kycStatus
-  try {
-    kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
-  } catch (e) {
-    console.error("fetchKYCStatus failed", e)
-    throw new Error("fetchKYCStatus failed")
-  }
+  // accredited individuals + entities do not go through persona
+  let kycStatus: KYC | undefined = undefined
 
-  if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
-    throw new Error("Does not meet mint requirements")
+  if (!isUSAccreditedEntity(userAddress) && !isUSAccreditedIndividual(userAddress) && !isNonUSEntity(userAddress)) {
+    try {
+      kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
+    } catch (e) {
+      console.error("fetchKYCStatus failed", e)
+      throw new Error("fetchKYCStatus failed")
+    }
+
+    if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
+      throw new Error("Does not meet mint requirements")
+    }
   }
 
   const currentBlock = await signer.provider.getBlock("latest")
   const expiresAt = currentBlock.timestamp + SIGNATURE_EXPIRY_IN_SECONDS
-  const userAddress = auth["x-goldfinch-address"]
   const nonce = await uniqueIdentity.nonces(userAddress)
-  let idVersion
-  if (kycStatus.countryCode === "US") {
-    // US non accredited
-    idVersion = await uniqueIdentity.ID_TYPE_2()
-  } else {
-    // non US
-    idVersion = await uniqueIdentity.ID_TYPE_0()
-  }
+  const idVersion = getIDType({
+    address: userAddress,
+    kycStatus,
+  })
+
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
   const encoded = pack(signTypes, signParams)

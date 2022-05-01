@@ -1,35 +1,68 @@
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {BaseContract} from "@goldfinch-eng/protocol/typechain/web3/types"
 import BigNumber from "bignumber.js"
-import _ from "lodash"
+import _, {isNumber} from "lodash"
 import {BlockNumber} from "web3-core"
-import {Contract, Filter} from "web3-eth-contract"
+import {Contract, Filter, PastEventOptions} from "web3-eth-contract"
 import {KnownEventData, KnownEventName} from "../types/events"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
-import web3 from "../web3"
+import getWeb3 from "../web3"
 import {ERC20, getERC20, Ticker} from "./erc20"
 import {reduceToKnown} from "./events"
-import {getDeployments, getFromBlock} from "./utils"
+import {getDeployments, getFromBlock, getLegacyDeployments} from "./utils"
+import {EventData} from "web3-eth-contract"
+import {assertNonNullable} from "@goldfinch-eng/utils"
+import {NetworkConfig} from "../types/network"
+
+const pastEventsTempCache: {[key: string]: Promise<EventData[]>} = {}
+
+// Some requests using the walletConnect provider that were made twice in a
+// short amount of time were having structure problems when decoding, so we
+// decided to use a simple cache for the requests.
+// We can safely cache these requests because the results for a given query
+// should be constant over time as long as the query is pinned to a particular
+// block number.
+function getCachedPastEvents(
+  contract: Contract | BaseContract,
+  eventName: KnownEventName,
+  options: PastEventOptions
+): Promise<EventData[]> {
+  const queryParams = {eventName, options}
+  const cacheKey = JSON.stringify({contractAddress: contract["_address"], ...queryParams})
+  if (!isNumber(options.toBlock)) {
+    throw new Error("The toBlock parameter must be a number so that the result can be safely cached as constant.")
+  }
+  if (!pastEventsTempCache[cacheKey]) {
+    pastEventsTempCache[cacheKey] = contract.getPastEvents(queryParams.eventName, queryParams.options)
+  }
+  const result = pastEventsTempCache[cacheKey]
+  assertNonNullable(result)
+  return result
+}
 
 class GoldfinchProtocol {
   networkId: string
   deployments: any
+  legacyDeployments: any
 
-  constructor(networkConfig) {
+  constructor(networkConfig: NetworkConfig) {
     this.networkId = networkConfig.name
   }
 
   async initialize() {
     this.deployments = await getDeployments(this.networkId)
+    this.legacyDeployments = await getLegacyDeployments(this.networkId)
   }
 
   getERC20(ticker: Ticker): ERC20 {
     return getERC20(ticker, this)
   }
 
-  getContract<T = Contract>(contractOrAbi: string | any, address?: string): Web3IO<T> {
-    let abi = this.deployments.contracts[contractOrAbi]?.abi
+  getContract<T = Contract>(contractOrAbi: string | any, address?: string, legacy?: boolean): Web3IO<T> {
+    const web3 = getWeb3()
+    const deployments = legacy ? this.legacyDeployments : this.deployments
+    let abi = deployments.contracts[contractOrAbi]?.abi
     if (abi) {
       address = address || this.getAddress(contractOrAbi)
     } else {
@@ -58,7 +91,8 @@ class GoldfinchProtocol {
     contract: string | Contract | BaseContract,
     eventNames: T[],
     filter: Filter | undefined,
-    toBlock: BlockNumber
+    toBlock: BlockNumber,
+    fromBlock?: BlockNumber
   ): Promise<KnownEventData<T>[]> {
     let contractObj: Web3IO<Contract>
     if (typeof contract == "string") {
@@ -67,17 +101,17 @@ class GoldfinchProtocol {
       contractObj = {readOnly: contract as Contract, userWallet: contract as Contract}
     }
     const eventArrays = await Promise.all(
-      eventNames.map((eventName) => {
-        return contractObj.readOnly.getPastEvents(eventName, {
-          filter: filter,
-          fromBlock: getFromBlock(this.networkId),
+      eventNames.map((eventName) =>
+        getCachedPastEvents(contractObj.readOnly, eventName, {
+          filter,
+          fromBlock: fromBlock || getFromBlock(this.networkId),
           toBlock,
         })
-      })
+      )
     )
     const compacted = _.compact(_.concat(_.flatten(eventArrays)))
     return reduceToKnown(compacted, eventNames)
   }
 }
 
-export {GoldfinchProtocol}
+export {GoldfinchProtocol, getCachedPastEvents}

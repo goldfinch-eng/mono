@@ -28,13 +28,19 @@ export default {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
+      mining: {
+        mempool: {
+          order: "fifo",
+        },
+      },
       allowUnlimitedContractSize: true,
       timeout: 1800000,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
+      chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : 31337,
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 14070449, // Jan-24-2022 08:25:52 PM +UTC
+            blockNumber: 14629773, // Apr-21-2022 06:03:24 PM +UTC
           }
         : undefined,
     },
@@ -113,10 +119,6 @@ export default {
     currency: "USD",
     src: "contracts/protocol",
   },
-  typechain: {
-    outDir: "typechain/truffle",
-    target: "truffle-v5",
-  },
   tenderly: {
     project: "goldfinch-protocol",
     username: "goldfinch",
@@ -124,5 +126,7 @@ export default {
   },
   contractSizer: {
     runOnCompile: true,
+    strict: process.env.CI !== undefined,
+    except: [":Test.*", ":MigratedTranchedPool$"],
   },
 }

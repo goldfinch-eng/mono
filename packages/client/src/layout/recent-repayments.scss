@@ -10,7 +10,14 @@
 
   .table {
     td {
-      padding: 12px 0;
+      padding: 12px 2px;
+    }
+
+    th {
+      padding-right: 4px;
+    }
+    .transaction-type {
+      min-width: 86px;
     }
 
     .transaction-link-label {
@@ -26,7 +33,12 @@
     }
 
     .transaction-date {
-      width: 125px;
+      min-width: 41px;
+    }
+
+    .transaction-portion {
+      min-width: 57px;
+      white-space: normal;
     }
 
     .transaction-portion.zero {
@@ -41,8 +53,17 @@
       opacity: 1;
     }
 
+    .transaction-type {
+      min-width: auto;
+    }
+    
     .transaction-date {
       width: auto;
+    }
+
+    .transaction-portion {
+      min-width: auto;
+      white-space: nowrap;
     }
 
     .transaction-link {

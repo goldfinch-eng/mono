@@ -26,6 +26,8 @@ import {deployCreditDesk} from "./baseDeploy/deployCreditDesk"
 import {deployConfig} from "./baseDeploy/deployConfig"
 import {deployGo} from "./baseDeploy/deployGo"
 import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
+import {deployZapper} from "./baseDeploy/deployZapper"
+import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 
 const logger: Logger = console.log
 
@@ -54,6 +56,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   logger("Chain id is:", chainId)
   const config = await deployConfig(deployer)
   await getOrDeployUSDC(deployer, config)
+  await getOrDeployFiduUSDCCurveLP(deployer, config)
   const fidu = await deployFidu(deployer, config)
   await deployPoolTokens(deployer, {config})
   await deployTransferRestrictedVault(deployer, {config})
@@ -74,6 +77,18 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
   await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
   await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
+  await deployMerkleDistributor(deployer, {
+    communityRewards,
+    deployEffects,
+    contractName: "BackerMerkleDistributor",
+    merkleDistributorInfoPath: process.env.BACKER_MERKLE_DISTRIBUTOR_INFO_PATH,
+  })
+  await deployMerkleDirectDistributor(deployer, {
+    gfi,
+    deployEffects,
+    contractName: "BackerMerkleDirectDistributor",
+    merkleDirectDistributorInfoPath: process.env.BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH,
+  })
 
   const {protocol_owner: trustedSigner} = await deployer.getNamedAccounts()
   assertNonNullable(trustedSigner)
@@ -81,6 +96,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
   await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
+
+  await deployZapper(deployer, {config, deployEffects})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)

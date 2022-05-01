@@ -1,11 +1,11 @@
 import "@testing-library/jest-dom"
 import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import {BigNumber} from "bignumber.js"
-import {mock} from "depay-web3-mock"
+import {mock} from "@depay/web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../App"
-import WithdrawalForm from "../../components/withdrawalForm"
+import WithdrawalForm from "../../components/WithdrawalForm"
 import {usdcToAtomic} from "../../ethereum/erc20"
 import {COINGECKO_API_GFI_PRICE_URL, GFILoaded} from "../../ethereum/gfi"
 import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
@@ -15,7 +15,7 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -24,7 +24,7 @@ import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo, Loaded} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {
   blockchain,
   defaultCurrentBlock,
@@ -45,11 +45,12 @@ mock({
   blockchain: "ethereum",
 })
 
+const web3 = getWeb3()
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
 
 function renderWithdrawalForm(
-  poolData: Partial<PoolData>,
+  poolData: Partial<SeniorPoolData>,
   capitalProvider: Loaded<CapitalProvider>,
   stakingRewards: StakingRewardsLoaded | undefined,
   pool: SeniorPoolLoaded | undefined,
@@ -74,7 +75,7 @@ function renderWithdrawalForm(
     <AppContext.Provider value={store}>
       <Router>
         <WithdrawalForm
-          poolData={poolData as PoolData}
+          poolData={poolData as SeniorPoolData}
           capitalProvider={capitalProvider.value}
           actionComplete={() => {}}
           closeForm={() => {}}
@@ -131,7 +132,7 @@ describe("withdrawal form", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {} as PoolData,
+        poolData: {} as SeniorPoolData,
         isPaused: false,
       },
     }

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 import "../../interfaces/ITranchedPool.sol";
+import "../../interfaces/IRequiresUID.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/IV2CreditLine.sol";
 import "../../interfaces/IPoolTokens.sol";
@@ -17,7 +18,7 @@ import "./ConfigHelper.sol";
 import "../../library/SafeERC20Transfer.sol";
 import "./TranchingLogic.sol";
 
-contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer {
+contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer, IRequiresUID {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using TranchingLogic for PoolSlice;
@@ -46,7 +47,6 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 principalWithdrawn
   );
 
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
   event TranchedPoolAssessed(address indexed pool);
   event PaymentApplied(
     address indexed payer,
@@ -135,6 +135,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     allowedUIDTypes = ids;
   }
 
+  function getAllowedUIDTypes() public view returns (uint256[] memory) {
+    return allowedUIDTypes;
+  }
+
   /**
    * @notice Deposit a USDC amount into the pool for a tranche. Mints an NFT to the caller representing the position
    * @param tranche The number representing the tranche to deposit into
@@ -148,10 +152,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     whenNotPaused
     returns (uint256 tokenId)
   {
-    TrancheInfo storage trancheInfo = getTrancheInfo(tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tranche);
     require(trancheInfo.lockedUntil == 0, "Tranche locked");
     require(amount > 0, "Must deposit > zero");
-    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "Address not go-listed");
+    require(hasAllowedUID(msg.sender), "Address not go-listed");
     require(block.timestamp > fundableAt, "Not open for funding");
     // senior tranche ids are always odd numbered
     if (_isSeniorTrancheId(trancheInfo.id)) {
@@ -193,7 +197,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
     return _withdraw(trancheInfo, tokenInfo, tokenId, amount);
   }
@@ -225,7 +229,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestWithdrawn, uint256 principalWithdrawn)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
 
@@ -275,6 +279,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     totalDeployed = totalDeployed.add(amount);
 
     address borrower = creditLine.borrower();
+    IBackerRewards backerRewards = IBackerRewards(config.backerRewardsAddress());
+    uint256 sliceIndex = poolSlices.length.sub(1);
+    backerRewards.onTranchedPoolDrawdown(sliceIndex);
     safeERC20TransferFrom(config.getUSDC(), address(this), borrower, amount);
     emit DrawdownMade(borrower, amount);
     emit SharePriceUpdated(
@@ -336,17 +343,8 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
    */
   function pay(uint256 amount) external override whenNotPaused {
     require(amount > 0, "Must pay more than zero");
-    collectPayment(amount);
+    _collectPayment(amount);
     _assess();
-  }
-
-  /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    creditLine.updateGoldfinchConfig();
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**
@@ -470,10 +468,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function getTranche(uint256 tranche) public view override returns (TrancheInfo memory) {
-    return getTrancheInfo(tranche);
+    return _getTrancheInfo(tranche);
   }
 
-  function numSlices() public view returns (uint256) {
+  function numSlices() public view override returns (uint256) {
     return poolSlices.length;
   }
 
@@ -522,7 +520,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     returns (uint256 interestRedeemable, uint256 principalRedeemable)
   {
     IPoolTokens.TokenInfo memory tokenInfo = config.getPoolTokens().getTokenInfo(tokenId);
-    TrancheInfo storage trancheInfo = getTrancheInfo(tokenInfo.tranche);
+    TrancheInfo storage trancheInfo = _getTrancheInfo(tokenInfo.tranche);
 
     if (currentTime() > trancheInfo.lockedUntil) {
       return redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
@@ -540,7 +538,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     uint256 amount
   ) internal returns (uint256 interestWithdrawn, uint256 principalWithdrawn) {
     require(config.getPoolTokens().isApprovedOrOwner(msg.sender, tokenId), "Not token owner");
-    require(config.getGo().goOnlyIdTypes(msg.sender, allowedUIDTypes), "Address not go-listed");
+    require(hasAllowedUID(msg.sender), "Address not go-listed");
     require(amount > 0, "Must withdraw more than zero");
     (uint256 interestRedeemable, uint256 principalRedeemable) = redeemableInterestAndPrincipal(trancheInfo, tokenInfo);
     uint256 netRedeemable = interestRedeemable.add(principalRedeemable);
@@ -548,15 +546,23 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     require(amount <= netRedeemable, "Invalid redeem amount");
     require(currentTime() > trancheInfo.lockedUntil, "Tranche is locked");
 
+    uint256 interestToRedeem = 0;
+    uint256 principalToRedeem = 0;
+
     // If the tranche has not been locked, ensure the deposited amount is correct
     if (trancheInfo.lockedUntil == 0) {
       trancheInfo.principalDeposited = trancheInfo.principalDeposited.sub(amount);
+
+      principalToRedeem = amount;
+
+      config.getPoolTokens().withdrawPrincipal(tokenId, principalToRedeem);
+    } else {
+      interestToRedeem = Math.min(interestRedeemable, amount);
+      principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
+
+      config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
     }
 
-    uint256 interestToRedeem = Math.min(interestRedeemable, amount);
-    uint256 principalToRedeem = Math.min(principalRedeemable, amount.sub(interestToRedeem));
-
-    config.getPoolTokens().redeem(tokenId, principalToRedeem, interestToRedeem);
     safeERC20TransferFrom(config.getUSDC(), address(this), msg.sender, principalToRedeem.add(interestToRedeem));
 
     emit WithdrawalMade(msg.sender, tokenInfo.tranche, tokenId, interestToRedeem, principalToRedeem);
@@ -627,19 +633,19 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   }
 
   function _initializeNextSlice(uint256 newFundableAt) internal {
-    uint256 numSlices = poolSlices.length;
-    require(numSlices < 5, "Cannot exceed 5 slices");
+    uint256 _numSlices = poolSlices.length;
+    require(_numSlices < 5, "Cannot exceed 5 slices");
     poolSlices.push(
       PoolSlice({
         seniorTranche: TrancheInfo({
-          id: numSlices.mul(NUM_TRANCHES_PER_SLICE).add(1),
+          id: _numSlices.mul(NUM_TRANCHES_PER_SLICE).add(1),
           principalSharePrice: usdcToSharePrice(1, 1),
           interestSharePrice: 0,
           principalDeposited: 0,
           lockedUntil: 0
         }),
         juniorTranche: TrancheInfo({
-          id: numSlices.mul(NUM_TRANCHES_PER_SLICE).add(2),
+          id: _numSlices.mul(NUM_TRANCHES_PER_SLICE).add(2),
           principalSharePrice: usdcToSharePrice(1, 1),
           interestSharePrice: 0,
           principalDeposited: 0,
@@ -681,7 +687,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       )
     );
 
-    sendToReserve(totalReserveAmount);
+    _sendToReserve(totalReserveAmount);
     return totalReserveAmount;
   }
 
@@ -715,7 +721,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
-  function getTrancheInfo(uint256 trancheId) internal view returns (TrancheInfo storage) {
+  function _getTrancheInfo(uint256 trancheId) internal view returns (TrancheInfo storage) {
     require(trancheId > 0 && trancheId <= poolSlices.length.mul(NUM_TRANCHES_PER_SLICE), "Unsupported tranche");
     uint256 sliceId = ((trancheId.add(trancheId.mod(NUM_TRANCHES_PER_SLICE))).div(NUM_TRANCHES_PER_SLICE)).sub(1);
     PoolSlice storage slice = poolSlices[sliceId];
@@ -729,7 +735,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     return block.timestamp;
   }
 
-  function sendToReserve(uint256 amount) internal {
+  function _sendToReserve(uint256 amount) internal {
     emit ReserveFundsCollected(address(this), amount);
     safeERC20TransferFrom(
       config.getUSDC(),
@@ -740,7 +746,7 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
     );
   }
 
-  function collectPayment(uint256 amount) internal {
+  function _collectPayment(uint256 amount) internal {
     safeERC20TransferFrom(config.getUSDC(), msg.sender, address(creditLine), amount, "Failed to collect payment");
   }
 
@@ -796,6 +802,10 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
       );
     }
     emit TranchedPoolAssessed(address(this));
+  }
+
+  function hasAllowedUID(address sender) public view override returns (bool) {
+    return config.getGo().goOnlyIdTypes(sender, allowedUIDTypes);
   }
 
   modifier onlyLocker() {

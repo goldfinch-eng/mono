@@ -54,12 +54,16 @@ const allowOutsideImports = () => (config) => {
     path.resolve(__dirname, "../../packages/client/abi/ERC20Permit.json"),
     path.resolve(__dirname, "../../packages/client/abi/OneSplit.json"),
     path.resolve(__dirname, "../../packages/client/config/pool-metadata/mainnet.json"),
+    path.resolve(__dirname, "../../packages/autotasks/unique-identity-signer/USAccreditedIndividuals.json"),
+    path.resolve(__dirname, "../../packages/autotasks/unique-identity-signer/USAccreditedEntities.json"),
+    path.resolve(__dirname, "../../packages/autotasks/unique-identity-signer/NonUSEntities.json"),
   ]
   const tsPaths = [
     path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/configKeys"),
     path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkle/merkleDistributor/types.ts"),
     path.resolve(__dirname, "../../packages/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types.ts"),
     path.resolve(__dirname, "../../packages/utils/src/type.ts"),
+    path.resolve(__dirname, "../../packages/autotasks/unique-identity-signer/utils.ts"),
   ]
   const paths = jsonPaths.concat(tsPaths)
 

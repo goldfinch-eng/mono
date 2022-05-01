@@ -4,8 +4,9 @@ import difference from "lodash/difference"
 import {useCallback, useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
 import {SESSION_DATA_VERSION} from "../types/session"
-import {assertCodedError, assertNonNullable} from "../utils"
-import web3, {getUserWalletWeb3Status} from "../web3"
+import {isCodedErrorLike, assertNonNullable, getBlockInfo, getCurrentBlock} from "../utils"
+import getWeb3, {getUserWalletWeb3Status} from "../web3"
+import walletConnect from "../walletConnect"
 
 export type UnknownSession = {status: "unknown"}
 export type KnownSession = {status: "known"}
@@ -64,31 +65,42 @@ export function useSignIn(): [status: Session, signIn: () => Promise<Session>] {
   const signIn = useCallback(
     async function () {
       const userWalletWeb3Status = await getUserWalletWeb3Status()
+      const _currentBlock = currentBlock ?? getBlockInfo(await getCurrentBlock())
       assertNonNullable(userWalletWeb3Status)
       assertNonNullable(setSessionData)
-      assertNonNullable(currentBlock)
+      assertNonNullable(_currentBlock)
       const userAddress = userWalletWeb3Status.address
       if (!userAddress) {
         setSessionData(undefined)
         return getSession(undefined)
       }
+      const web3 = getWeb3()
       const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider as any)
       const signer = provider.getSigner(userAddress)
 
-      const signatureBlockNum = currentBlock.number
-      const signatureBlockNumTimestamp = currentBlock.timestamp
+      const signatureBlockNum = _currentBlock.number
+      const signatureBlockNumTimestamp = _currentBlock.timestamp
       const version = SESSION_DATA_VERSION
       let signature: string | undefined
-      try {
-        signature = await signer.signMessage(`Sign in to Goldfinch: ${signatureBlockNum}`)
-      } catch (err: unknown) {
-        assertCodedError(err)
-        if (err.code === 4001) {
-          // The user denied the request.
-        } else {
-          throw err
+
+      const genSignMessage = (blockNumber: number): string => `Sign in to Goldfinch: ${blockNumber}`
+
+      if (walletConnect.isWCProvider(web3.userWallet.currentProvider)) {
+        // WalletConnect needs to call the lower level connector
+        // or call personal_sign directly
+        signature = await walletConnect.signMessage(provider, userAddress, genSignMessage(signatureBlockNum))
+      } else {
+        try {
+          signature = await signer.signMessage(genSignMessage(signatureBlockNum))
+        } catch (err: unknown) {
+          if (isCodedErrorLike(err) && err.code === 4001) {
+            // The user denied the request.
+          } else {
+            throw err
+          }
         }
       }
+
       if (signature) {
         setSessionData({signature, signatureBlockNum, signatureBlockNumTimestamp, version})
         return getSession({address: userAddress, signature, signatureBlockNum, signatureBlockNumTimestamp, version})

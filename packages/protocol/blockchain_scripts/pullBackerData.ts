@@ -12,6 +12,7 @@ import admin from "firebase-admin"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {BigNumber} from "bignumber.js"
 import {BigNumberish} from "ethers"
+import _ from "lodash"
 const PERSONA_BASE_URL = "https://withpersona.com/api/v1"
 const PERSONA_API_KEY = process.env.PERSONA_API_KEY
 if (!PERSONA_API_KEY) {
@@ -34,6 +35,10 @@ function usdcFromAtomic(amount: BigNumberish) {
 async function main() {
   assertNonNullable(process.env.FIREBASE_ACCOUNT_KEYS_FILE, "FIREBASE_ACCOUNT_KEYS_FILE envvar is required")
   assertNonNullable(process.env.POOL, "POOL envvar is required")
+  assertNonNullable(process.env.ALCHEMY_API_KEY, "ALCHEMY_API_KEY is required")
+
+  // Use AlchemyProvider directly to bypass hardhat's global timeout on provider
+  const provider = new ethers.providers.AlchemyProvider("mainnet", process.env.ALCHEMY_API_KEY)
 
   const poolAddress = process.env.POOL
 
@@ -45,22 +50,49 @@ async function main() {
 
   const tranchedPool = ((await getDeployedContract(deployments, "TranchedPool")) as TranchedPool).attach(poolAddress)
 
-  const filter = tranchedPool.filters.DepositMade(null, TRANCHES.Junior)
-  const events = await tranchedPool.queryFilter(filter)
+  const depositFilter = tranchedPool.filters.DepositMade(null, TRANCHES.Junior)
+  const withdrawFilter = tranchedPool.filters.WithdrawalMade(null, TRANCHES.Junior)
+  const depositEvents = await tranchedPool.queryFilter(depositFilter)
+  const withdrawEvents = await tranchedPool.queryFilter(withdrawFilter)
+
+  type genericEvent = {
+    blockNumber: number
+    args: {owner: string; amount?: BigNumber; interestWithdrawn?: BigNumber; principalWithdrawn?: BigNumber}
+  }
+  const events = _.concat(depositEvents as unknown, withdrawEvents as unknown) as genericEvent[]
+
+  const combined = _.map(
+    _.groupBy(events, (e) => e.args.owner),
+    (grouped) => {
+      assertNonNullable(grouped[0])
+      const result: genericEvent = {blockNumber: 0, args: {owner: grouped[0].args.owner, amount: new BigNumber(0)}}
+      grouped.forEach((e) => {
+        assertNonNullable(result.args.amount)
+        if (e.args.amount) {
+          result.args.amount = result.args.amount.plus(String(e.args.amount))
+          result.blockNumber = e.blockNumber
+        } else if (e.args.principalWithdrawn) {
+          result.args.amount = result.args.amount.minus(String(e.args.principalWithdrawn))
+        }
+      })
+      return result
+    }
+  ).filter((e) => e.args.amount?.gt(new BigNumber(0)))
 
   const blocks: {[blockNumber: number]: Block} = {}
 
   console.log(`Processing ${events.length} backers`)
   const backerInfo = await Promise.all(
-    events.map(async (e) => {
+    combined.map(async (e) => {
       const addr = e.args.owner
       const amount = e.args.amount
+      assertNonNullable(amount)
 
       console.log("Processing backer", addr)
 
       let block = blocks[e.blockNumber]
       if (!block) {
-        block = await ethers.provider.getBlock(e.blockNumber)
+        block = await provider.getBlock(e.blockNumber)
         blocks[block.number] = block
       }
 

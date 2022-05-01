@@ -1,6 +1,6 @@
 import {CreditLine} from "../ethereum/creditLine"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
-import {PoolBacker, TokenInfo, TranchedPool, TrancheInfo} from "../ethereum/tranchedPool"
+import {TranchedPoolBacker, TokenInfo, TranchedPool, TrancheInfo} from "../ethereum/tranchedPool"
 import {parseBackers} from "./parsers"
 import {BlockInfo} from "../utils"
 
@@ -529,7 +529,7 @@ function validateTranche(tranche: TrancheInfo, graphTranche: TrancheInfo) {
   })
 }
 
-function validateBacker(backer: PoolBacker, graphBacker: PoolBacker, i: number) {
+function validateBacker(backer: TranchedPoolBacker, graphBacker: TranchedPoolBacker, i: number) {
   console.log(
     "[STARTING] Index: ",
     i,
@@ -568,7 +568,11 @@ function validateBacker(backer: PoolBacker, graphBacker: PoolBacker, i: number) 
   validateTokenInfo(backer.address, backer.tokenInfos, graphBacker.tokenInfos)
 }
 
-function validateTokenInfo(address: string, tokenInfoWeb3: TokenInfo[], graphTokenInfo: TokenInfo[]) {
+function validateTokenInfo(address: string | undefined, tokenInfoWeb3: TokenInfo[], graphTokenInfo: TokenInfo[]) {
+  if (!address) {
+    console.error("Web3 undefined address")
+    return
+  }
   if (!tokenInfoWeb3) {
     console.error("Web3 undefined tokenInfo for ", address)
     return
@@ -678,14 +682,17 @@ export async function generalBackerValidation(
   PROD_BACKERS_ADDRESS.forEach(async (address, i) => {
     const backersSubgraph = await parseBackers(subgraphData.tranchedPools, goldfinchProtocol, currentBlock, address)
     backersSubgraph.map(async (backer) => {
-      const originalBacker = new PoolBacker(backer.address, backer.tranchedPool, goldfinchProtocol)
+      const originalBacker = new TranchedPoolBacker(backer.address, backer.tranchedPool, goldfinchProtocol)
       await originalBacker.initialize(currentBlock)
       validateBacker(originalBacker, backer, i)
     })
   })
 }
 
-export function generalTranchedPoolsValidationByBackers(backersWeb3: PoolBacker[], backersSubgraph: PoolBacker[]) {
+export function generalTranchedPoolsValidationByBackers(
+  backersWeb3: TranchedPoolBacker[],
+  backersSubgraph: TranchedPoolBacker[]
+) {
   backersWeb3.forEach((b) => {
     const graphBacker = backersSubgraph.find(
       (s) => s.tranchedPool.address.toLowerCase() === b.tranchedPool.address.toLowerCase()

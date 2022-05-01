@@ -8,16 +8,16 @@ import {
 } from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDistributor/types"
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
-import {assertUnreachable} from "@goldfinch-eng/utils/src/type"
+import {asNonNullable, assertUnreachable} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
 import _ from "lodash"
-import {EventData} from "web3-eth-contract"
 import {
   ApprovalEventType,
   APPROVAL_EVENT,
   APPROVAL_EVENT_TYPES,
+  BackerMerkleDirectDistributorEventType,
+  BackerMerkleDistributorEventType,
   CommunityRewardsEventType,
   COMMUNITY_REWARDS_EVENT_TYPES,
   CreditDeskEventType,
@@ -65,17 +65,28 @@ import {
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
 } from "../types/transactions"
 import {Web3IO} from "../types/web3"
-import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
+import {assertNonNullable, assertNumber, BlockInfo, defaultSum, WithCurrentBlock} from "../utils"
+import getWeb3 from "../web3"
+import {BackerMerkleDirectDistributorLoaded} from "./backerMerkleDirectDistributor"
+import {BackerMerkleDistributorLoaded} from "./backerMerkleDistributor"
+import {BackerRewardsLoaded, BackerRewardsPoolTokenPosition, BackerRewardsPosition} from "./backerRewards"
 import {BorrowerInterface, getBorrowerContract} from "./borrower"
-import {CommunityRewardsGrant, CommunityRewardsLoaded} from "./communityRewards"
+import {CommunityRewardsGrant, CommunityRewardsGrantAcceptanceContext, CommunityRewardsLoaded} from "./communityRewards"
 import {ERC20, Tickers, USDC, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx, populateDates} from "./events"
 import {GFILoaded} from "./gfi"
-import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {getCachedPastEvents, GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDirectDistributorLoaded} from "./merkleDirectDistributor"
 import {MerkleDistributorLoaded} from "./merkleDistributor"
-import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "./pool"
-import {getFromBlock, getMerkleDirectDistributorInfo, getMerkleDistributorInfo} from "./utils"
+import {SeniorPoolLoaded, StakingRewardsLoaded, StakingRewardsPosition} from "./pool"
+import {TranchedPoolBacker} from "./tranchedPool"
+import {
+  getBackerMerkleDirectDistributorInfo,
+  getBackerMerkleDistributorInfo,
+  getFromBlock,
+  getMerkleDirectDistributorInfo,
+  getMerkleDistributorInfo,
+} from "./utils"
 
 export const UNLOCK_THRESHOLD = new BigNumber(10000)
 
@@ -90,6 +101,8 @@ export async function getUserData(
   communityRewards: CommunityRewardsLoaded,
   merkleDistributor: MerkleDistributorLoaded,
   merkleDirectDistributor: MerkleDirectDistributorLoaded,
+  backerMerkleDistributor: BackerMerkleDistributorLoaded,
+  backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded,
   currentBlock: BlockInfo
 ): Promise<UserLoaded> {
   const borrower = await getBorrowerContract(address, goldfinchProtocol, currentBlock)
@@ -102,6 +115,8 @@ export async function getUserData(
     communityRewards,
     merkleDistributor,
     merkleDirectDistributor,
+    backerMerkleDistributor,
+    backerMerkleDirectDistributor,
     currentBlock
   )
   assertWithLoadedInfo(user)
@@ -164,18 +179,14 @@ class UserStakingRewards {
           tokenIds,
           Promise.all(
             tokenIds.map((tokenId) =>
-              stakingRewards.contract.readOnly.methods
-                .positions(tokenId)
-                .call(undefined, currentBlock.number)
-                .then(async (rawPosition) => {
-                  const storedPosition = UserStakingRewards.parseStoredPosition(rawPosition)
-                  const optimisticIncrement = await stakingRewards.calculatePositionOptimisticIncrement(
-                    tokenId,
-                    storedPosition.rewards,
-                    currentBlock
-                  )
-                  return {storedPosition, optimisticIncrement}
-                })
+              stakingRewards.getStoredPosition(tokenId, currentBlock).then(async (storedPosition) => {
+                const optimisticIncrement = await stakingRewards.calculatePositionOptimisticIncrement(
+                  tokenId,
+                  storedPosition.rewards,
+                  currentBlock
+                )
+                return {storedPosition, optimisticIncrement}
+              })
             )
           ),
           Promise.all(
@@ -268,27 +279,6 @@ class UserStakingRewards {
   static calculateGrantedRewards(positions: StakingRewardsPosition[]): BigNumber {
     return defaultSum(positions.map((position) => position.granted))
   }
-
-  static parseStoredPosition(tuple: {
-    0: string
-    1: [string, string, string, string, string, string]
-    2: string
-    3: string
-  }): StoredPosition {
-    return {
-      amount: new BigNumber(tuple[0]),
-      rewards: {
-        totalUnvested: new BigNumber(tuple[1][0]),
-        totalVested: new BigNumber(tuple[1][1]),
-        totalPreviouslyVested: new BigNumber(tuple[1][2]),
-        totalClaimed: new BigNumber(tuple[1][3]),
-        startTime: parseInt(tuple[1][4], 10),
-        endTime: parseInt(tuple[1][5], 10),
-      },
-      leverageMultiplier: new BigNumber(tuple[2]),
-      lockedUntil: parseInt(tuple[3], 10),
-    }
-  }
 }
 
 export type UserStakingRewardsLoaded = WithLoadedInfo<UserStakingRewards, UserStakingRewardsLoadedInfo>
@@ -321,7 +311,9 @@ export class UserCommunityRewards {
   async initialize(
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
+    backerMerkleDistributor: BackerMerkleDistributorLoaded,
     userMerkleDistributor: UserMerkleDistributorLoaded,
+    userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
     // NOTE: In defining `grants`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex`
@@ -357,23 +349,27 @@ export class UserCommunityRewards {
             )
           ),
           Promise.all(
-            tokenIds.map(async (tokenId) => {
-              const events = await this.goldfinchProtocol.queryEvents(
-                merkleDistributor.contract.readOnly,
-                [GRANT_ACCEPTED_EVENT],
-                {tokenId},
-                currentBlock.number
+            tokenIds.map(async (tokenId): Promise<CommunityRewardsGrantAcceptanceContext | undefined> => {
+              const {events, source, userDistributor} = await this.getAcceptedEventsForMerkleDistributorScenarios(
+                merkleDistributor,
+                backerMerkleDistributor,
+                tokenId,
+                currentBlock,
+                userMerkleDistributor,
+                userBackerMerkleDistributor
               )
+
               if (events.length === 1) {
                 const acceptanceEvent = events[0]
                 assertNonNullable(acceptanceEvent)
-                const airdrop = userMerkleDistributor.info.value.airdrops.accepted.find(
+                const airdrop = userDistributor.info.value.airdrops.accepted.find(
                   (airdrop) => parseInt(acceptanceEvent.returnValues.index, 10) === airdrop.grantInfo.index
                 )
                 if (airdrop) {
                   return {
+                    grantInfo: airdrop.grantInfo,
                     event: acceptanceEvent,
-                    airdropGrantInfo: airdrop.grantInfo,
+                    source,
                   }
                 } else {
                   throw new Error(
@@ -397,21 +393,18 @@ export class UserCommunityRewards {
           ),
         ])
       )
-      .then(([tokenIds, rawGrants, claimables, acceptEventInfos]) =>
+      .then(([tokenIds, rawGrants, claimables, acceptanceContexts]) =>
         tokenIds.map((tokenId, i): CommunityRewardsGrant => {
           const rawGrant = rawGrants[i]
           assertNonNullable(rawGrant)
           const claimable = claimables[i]
           assertNonNullable(claimable)
-          const grantInfo = acceptEventInfos[i]?.airdropGrantInfo
-          const acceptEvent = acceptEventInfos[i]?.event
-          assertNonNullable(acceptEvent)
+          const acceptanceContext = acceptanceContexts[i]
           return UserCommunityRewards.parseCommunityRewardsGrant(
             tokenId,
             new BigNumber(claimable),
             rawGrant,
-            grantInfo,
-            acceptEvent
+            acceptanceContext
           )
         })
       )
@@ -429,6 +422,48 @@ export class UserCommunityRewards {
         unvested,
         granted,
       },
+    }
+  }
+
+  async getAcceptedEventsForMerkleDistributorScenarios(
+    merkleDistributor: MerkleDistributorLoaded,
+    backerMerkleDistributor: BackerMerkleDistributorLoaded,
+    tokenId: string,
+    currentBlock: BlockInfo,
+    userMerkleDistributor: UserMerkleDistributorLoaded,
+    userBackerMerkleDistributor: UserBackerMerkleDistributorLoaded
+  ): Promise<
+    | {
+        events: KnownEventData<typeof GRANT_ACCEPTED_EVENT>[]
+        source: "merkleDistributor"
+        userDistributor: UserMerkleDistributorLoaded
+      }
+    | {
+        events: KnownEventData<typeof GRANT_ACCEPTED_EVENT>[]
+        source: "backerMerkleDistributor"
+        userDistributor: UserBackerMerkleDistributorLoaded
+      }
+  > {
+    const merkleDistributorEvents = await this.goldfinchProtocol.queryEvents(
+      merkleDistributor.contract.readOnly,
+      [GRANT_ACCEPTED_EVENT],
+      {tokenId, account: this.address},
+      currentBlock.number
+    )
+    if (merkleDistributorEvents.length === 0) {
+      const backerMerkleDistributorEvents = await this.goldfinchProtocol.queryEvents(
+        backerMerkleDistributor.contract.readOnly,
+        [GRANT_ACCEPTED_EVENT],
+        {tokenId, account: this.address},
+        currentBlock.number
+      )
+      return {
+        events: backerMerkleDistributorEvents,
+        source: "backerMerkleDistributor",
+        userDistributor: userBackerMerkleDistributor,
+      }
+    } else {
+      return {events: merkleDistributorEvents, source: "merkleDistributor", userDistributor: userMerkleDistributor}
     }
   }
 
@@ -456,8 +491,7 @@ export class UserCommunityRewards {
       5: string
       6: string
     },
-    grantInfo: MerkleDistributorGrantInfo | undefined,
-    acceptEvent: EventData
+    acceptanceContext: CommunityRewardsGrantAcceptanceContext | undefined
   ): CommunityRewardsGrant {
     return new CommunityRewardsGrant(
       tokenId,
@@ -471,8 +505,7 @@ export class UserCommunityRewards {
         vestingInterval: new BigNumber(tuple[5]),
         revokedAt: parseInt(tuple[6], 10),
       },
-      grantInfo,
-      acceptEvent
+      acceptanceContext
     )
   }
 }
@@ -507,12 +540,24 @@ export class UserMerkleDistributor {
     }
   }
 
+  async getMerkleInfo(): Promise<MerkleDistributorInfo | undefined> {
+    return getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock)
+  }
+
   async initialize(
     merkleDistributor: MerkleDistributorLoaded,
     communityRewards: CommunityRewardsLoaded,
     currentBlock: BlockInfo
   ): Promise<void> {
-    const merkleDistributorInfo = await getMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+    const merkleDistributorInfo = await this.getMerkleInfo()
     if (!merkleDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDistributor info.")
     }
@@ -522,7 +567,7 @@ export class UserMerkleDistributor {
       this.address
     )
     const [withAcceptance, _tokenLaunchTime] = await Promise.all([
-      UserMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
+      this._getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock),
       communityRewards.contract.readOnly.methods.tokenLaunchTimeInSeconds().call(undefined, currentBlock.number),
     ])
     const tokenLaunchTime = new BigNumber(_tokenLaunchTime)
@@ -620,7 +665,26 @@ export class UserMerkleDistributor {
   }
 }
 
+export class UserBackerMerkleDistributor extends UserMerkleDistributor {
+  async getMerkleInfo(): Promise<MerkleDistributorInfo | undefined> {
+    return getBackerMerkleDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDistributorGrantInfo[],
+    merkleDistributor: MerkleDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return UserBackerMerkleDistributor.getAirdropsWithAcceptance(airdropsForRecipient, merkleDistributor, currentBlock)
+  }
+}
+
 export type UserMerkleDistributorLoaded = WithLoadedInfo<UserMerkleDistributor, UserMerkleDistributorLoadedInfo>
+
+export type UserBackerMerkleDistributorLoaded = WithLoadedInfo<
+  UserBackerMerkleDistributor,
+  UserMerkleDistributorLoadedInfo
+>
 
 type UserMerkleDirectDistributorLoadedInfo = {
   currentBlock: BlockInfo
@@ -650,8 +714,24 @@ export class UserMerkleDirectDistributor {
     }
   }
 
+  async getMerkleInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+    return getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return UserMerkleDirectDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDirectDistributor,
+      currentBlock
+    )
+  }
+
   async initialize(merkleDirectDistributor: MerkleDirectDistributorLoaded, currentBlock: BlockInfo): Promise<void> {
-    const merkleDirectDistributorInfo = await getMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+    const merkleDirectDistributorInfo = await this.getMerkleInfo()
     if (!merkleDirectDistributorInfo) {
       throw new Error("Failed to retrieve MerkleDirectDistributor info.")
     }
@@ -660,7 +740,7 @@ export class UserMerkleDirectDistributor {
       merkleDirectDistributorInfo.grants,
       this.address
     )
-    const withAcceptance = await UserMerkleDirectDistributor.getAirdropsWithAcceptance(
+    const withAcceptance = await this._getAirdropsWithAcceptance(
       airdropsForRecipient,
       merkleDirectDistributor,
       currentBlock
@@ -776,10 +856,47 @@ export class UserMerkleDirectDistributor {
   }
 }
 
+export class UserBackerMerkleDirectDistributor extends UserMerkleDirectDistributor {
+  async getMerkleInfo(): Promise<MerkleDirectDistributorInfo | undefined> {
+    return getBackerMerkleDirectDistributorInfo(this.goldfinchProtocol.networkId)
+  }
+
+  async _getAirdropsWithAcceptance(
+    airdropsForRecipient: MerkleDirectDistributorGrantInfo[],
+    merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    currentBlock: BlockInfo
+  ) {
+    return await UserBackerMerkleDirectDistributor.getAirdropsWithAcceptance(
+      airdropsForRecipient,
+      merkleDirectDistributor,
+      currentBlock
+    )
+  }
+}
+
 export type UserMerkleDirectDistributorLoaded = WithLoadedInfo<
   UserMerkleDirectDistributor,
   UserMerkleDirectDistributorLoadedInfo
 >
+
+export type UserBackerMerkleDirectDistributorLoaded = WithLoadedInfo<
+  UserBackerMerkleDirectDistributor,
+  UserMerkleDirectDistributorLoadedInfo
+>
+
+export const NON_US_INDIVIDUAL_ID_TYPE_0 = "0"
+export const US_ACCREDITED_INDIVIDUAL_ID_TYPE_1 = "1"
+export const US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2 = "2"
+export const US_ENTITY_ID_TYPE_3 = "3"
+export const NON_US_ENTITY_ID_TYPE_4 = "4"
+
+export type UIDType =
+  | typeof NON_US_INDIVIDUAL_ID_TYPE_0
+  | typeof US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
+  | typeof US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2
+  | typeof US_ENTITY_ID_TYPE_3
+  | typeof NON_US_ENTITY_ID_TYPE_4
+export type UIDTypeToBalance = Record<UIDType, boolean>
 
 export type UserLoadedInfo = {
   currentBlock: BlockInfo
@@ -798,8 +915,7 @@ export type UserLoadedInfo = {
   >[]
   poolTxs: HistoricalTx<PoolEventType>[]
   goListed: boolean
-  legacyGolisted: boolean
-  hasUID: boolean
+  uidTypeToBalance: UIDTypeToBalance
   gfiBalance: BigNumber
   usdcIsUnlocked: {
     earn: {
@@ -854,6 +970,8 @@ export class User {
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    backerMerkleDistributor: BackerMerkleDistributorLoaded,
+    backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
     const usdc = this.goldfinchProtocol.getERC20(Tickers.USDC)
@@ -871,6 +989,8 @@ export class User {
       communityRewardsTxs,
       merkleDistributorTxs,
       merkleDirectDistributorTxs,
+      backerMerkleDistributorTxs,
+      backerMerkleDirectDistributorTxs,
     ] = await this._fetchTxs(
       usdc,
       pool,
@@ -878,6 +998,8 @@ export class User {
       communityRewards,
       merkleDistributor,
       merkleDirectDistributor,
+      backerMerkleDistributor,
+      backerMerkleDirectDistributor,
       currentBlock
     )
     const {poolEvents, poolTxs} = poolEventsAndTxs
@@ -893,16 +1015,15 @@ export class User {
           ...communityRewardsTxs,
           ...merkleDistributorTxs,
           ...merkleDirectDistributorTxs,
+          ...backerMerkleDistributorTxs,
+          ...backerMerkleDirectDistributorTxs,
         ],
         ["blockNumber", "transactionIndex"]
       )
     )
     pastTxs = await populateDates(pastTxs)
 
-    const golistStatus = await this._fetchGolistStatus(this.address, currentBlock)
-    const goListed = golistStatus.golisted
-    const legacyGolisted = golistStatus.legacyGolisted
-    const hasUID = golistStatus.hasUID
+    const {goListed, uidTypeToBalance} = await this._fetchGoListStatus(this.address, currentBlock)
 
     const gfiBalance = new BigNumber(
       await gfi.contract.readOnly.methods.balanceOf(this.address).call(undefined, currentBlock.number)
@@ -923,8 +1044,7 @@ export class User {
         pastTxs,
         poolTxs,
         goListed,
-        legacyGolisted,
-        hasUID,
+        uidTypeToBalance,
         gfiBalance,
         usdcIsUnlocked: {
           earn: {
@@ -948,6 +1068,8 @@ export class User {
     communityRewards: CommunityRewardsLoaded,
     merkleDistributor: MerkleDistributorLoaded,
     merkleDirectDistributor: MerkleDirectDistributorLoaded,
+    backerMerkleDistributor: BackerMerkleDistributorLoaded,
+    backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded,
     currentBlock: BlockInfo
   ) {
     return Promise.all([
@@ -958,7 +1080,7 @@ export class User {
       getPoolEvents(pool, this.address, currentBlock).then(async (poolEvents) => {
         return {
           poolEvents,
-          poolTxs: await mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
+          poolTxs: mapEventsToTx(poolEvents, POOL_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<PoolEventType>) => {
               switch (eventData.event) {
                 case DEPOSIT_MADE_EVENT:
@@ -999,7 +1121,7 @@ export class User {
         currentBlock
       ),
 
-      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
+      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then((overlappingStakingRewardsEvents) => {
         const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
         const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
           (
@@ -1012,7 +1134,7 @@ export class User {
             currentBlock: overlappingStakingRewardsEvents.currentBlock,
             value: stakedEvents,
           },
-          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+          stakingRewardsTxs: mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
             parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
               switch (eventData.event) {
                 case STAKED_EVENT:
@@ -1068,6 +1190,8 @@ export class User {
       getAndTransformCommunityRewardsEvents(this.address, communityRewards),
       getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
       getAndTransformMerkleDirectDistributorEvents(this.address, merkleDirectDistributor),
+      getAndTransformBackerMerkleDistributorEvents(this.address, backerMerkleDistributor),
+      getAndTransformBackerMerkleDirectDistributorEvents(this.address, backerMerkleDirectDistributor),
     ])
   }
 
@@ -1075,26 +1199,46 @@ export class User {
     return !allowance || allowance.gte(UNLOCK_THRESHOLD)
   }
 
-  async _fetchGolistStatus(address: string, currentBlock: BlockInfo) {
-    const config = this.goldfinchProtocol.getContract<GoldfinchConfig>("GoldfinchConfig")
-    const legacyGolisted = await config.readOnly.methods.goList(address).call(undefined, currentBlock.number)
-
+  async _fetchGoListStatus(
+    address: string,
+    currentBlock: BlockInfo
+  ): Promise<{
+    goListed: boolean
+    uidTypeToBalance: UIDTypeToBalance
+  }> {
     const go = this.goldfinchProtocol.getContract<Go>("Go")
-    const golisted = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
+    const goListed = await go.readOnly.methods.go(address).call(undefined, currentBlock.number)
 
     // check if user has non-US or US non-accredited UID
     const uniqueIdentity = this.goldfinchProtocol.getContract<UniqueIdentity>("UniqueIdentity")
-    const ID_TYPE_0 = await uniqueIdentity.readOnly.methods.ID_TYPE_0().call()
-    const ID_TYPE_2 = await uniqueIdentity.readOnly.methods.ID_TYPE_2().call()
     const balances = await uniqueIdentity.readOnly.methods
-      .balanceOfBatch([address, address], [ID_TYPE_0, ID_TYPE_2])
+      .balanceOfBatch(
+        [address, address, address, address, address],
+        [
+          NON_US_INDIVIDUAL_ID_TYPE_0,
+          US_ACCREDITED_INDIVIDUAL_ID_TYPE_1,
+          US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2,
+          US_ENTITY_ID_TYPE_3,
+          NON_US_ENTITY_ID_TYPE_4,
+        ]
+      )
       .call(undefined, currentBlock.number)
-    const hasUID = balances.some((balance) => !new BigNumber(balance).isZero())
+
+    const hasNonUSUID = !new BigNumber(String(balances[0])).isZero()
+    const hasUSAccreditedUID = !new BigNumber(String(balances[1])).isZero()
+    const hasUSNonAccreditedUID = !new BigNumber(String(balances[2])).isZero()
+    const hasUSEntityUID = !new BigNumber(String(balances[3])).isZero()
+    const hasNonUSEntityUID = !new BigNumber(String(balances[4])).isZero()
 
     return {
-      legacyGolisted,
-      golisted,
-      hasUID,
+      goListed,
+      uidTypeToBalance: {
+        [NON_US_INDIVIDUAL_ID_TYPE_0]: hasNonUSUID,
+        [US_ACCREDITED_INDIVIDUAL_ID_TYPE_1]: hasUSAccreditedUID,
+        [US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2]: hasUSNonAccreditedUID,
+        [US_ENTITY_ID_TYPE_3]: hasUSEntityUID,
+        [NON_US_ENTITY_ID_TYPE_4]: hasNonUSEntityUID,
+      },
     }
   }
 
@@ -1115,7 +1259,7 @@ async function getAndTransformUSDCEvents(
   owner: string,
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
-  let approvalEvents = await usdc.contract.readOnly.getPastEvents(APPROVAL_EVENT, {
+  let approvalEvents = await getCachedPastEvents(usdc.contract.readOnly, APPROVAL_EVENT, {
     filter: {owner, spender},
     fromBlock: "earliest",
     toBlock: currentBlock.number,
@@ -1124,7 +1268,7 @@ async function getAndTransformUSDCEvents(
     .compact()
     .map((e) => _.set(e, "erc20", usdc))
     .value()
-  return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
+  return mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
         case APPROVAL_EVENT:
@@ -1154,7 +1298,7 @@ async function getAndTransformFIDUEvents(
   currentBlock: BlockInfo
 ): Promise<HistoricalTx<ApprovalEventType>[]> {
   const approvalEvents = await goldfinchProtocol.queryEvents("Fidu", APPROVAL_EVENT_TYPES, {owner}, currentBlock.number)
-  return await mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
+  return mapEventsToTx<ApprovalEventType>(approvalEvents, APPROVAL_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<ApprovalEventType>) => {
       switch (eventData.event) {
         case APPROVAL_EVENT:
@@ -1194,16 +1338,16 @@ async function getAndTransformCreditDeskEvents(
 ): Promise<HistoricalTx<CreditDeskEventType>[]> {
   const fromBlock = getFromBlock(networkId)
   const [paymentEvents, drawdownEvents] = await Promise.all(
-    CREDIT_DESK_EVENT_TYPES.map((eventName) => {
-      return creditDesk.readOnly.getPastEvents(eventName, {
+    CREDIT_DESK_EVENT_TYPES.map((eventName) =>
+      getCachedPastEvents(creditDesk.readOnly, eventName, {
         filter: {payer: address, borrower: address},
         fromBlock,
         toBlock: currentBlock.number,
       })
-    })
+    )
   )
   const creditDeskEvents = _.compact(_.concat(paymentEvents, drawdownEvents))
-  return await mapEventsToTx<CreditDeskEventType>(creditDeskEvents, CREDIT_DESK_EVENT_TYPES, {
+  return mapEventsToTx<CreditDeskEventType>(creditDeskEvents, CREDIT_DESK_EVENT_TYPES, {
     parseName: (eventData: KnownEventData<CreditDeskEventType>) => {
       switch (eventData.event) {
         case PAYMENT_COLLECTED_EVENT:
@@ -1420,3 +1564,129 @@ async function getAndTransformMerkleDirectDistributorEvents(
       })
     )
 }
+
+async function getAndTransformBackerMerkleDistributorEvents(
+  address: string,
+  backerMerkleDistributor: BackerMerkleDistributorLoaded
+): Promise<HistoricalTx<BackerMerkleDistributorEventType>[]> {
+  return getAndTransformMerkleDistributorEvents(address, backerMerkleDistributor)
+}
+
+async function getAndTransformBackerMerkleDirectDistributorEvents(
+  address: string,
+  backerMerkleDirectDistributor: BackerMerkleDirectDistributorLoaded
+): Promise<HistoricalTx<BackerMerkleDirectDistributorEventType>[]> {
+  return getAndTransformMerkleDirectDistributorEvents(address, backerMerkleDirectDistributor)
+}
+
+type UserBackerRewardsLoadedInfo = {
+  currentBlock: BlockInfo
+  positions: BackerRewardsPosition[]
+  claimable: BigNumber
+  unvested: BigNumber
+}
+
+export class UserBackerRewards {
+  address: string
+  goldfinchProtocol: GoldfinchProtocol
+  info: Loadable<UserBackerRewardsLoadedInfo>
+
+  constructor(address: string, goldfinchProtocol: GoldfinchProtocol) {
+    if (!address) {
+      throw new Error("User must have an address.")
+    }
+    this.address = address
+    this.goldfinchProtocol = goldfinchProtocol
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(
+    backerRewards: BackerRewardsLoaded,
+    rewardsEligibleTranchedPoolBackers: TranchedPoolBacker[],
+    currentBlock: BlockInfo
+  ): Promise<void> {
+    const web3 = getWeb3()
+    const positions = await Promise.all(
+      rewardsEligibleTranchedPoolBackers
+        .filter(
+          // Remove rewards-eligible tranched pools for which the user has no junior-tranche pool tokens (and for
+          // which they therefore cannot earn any backer rewards).
+          (backer) =>
+            !!backer.tokenInfos.filter((tokenInfo) => !backer.tranchedPool.isSeniorTrancheId(tokenInfo.tranche)).length
+        )
+        .map(async (backer): Promise<BackerRewardsPosition> => {
+          // We expect `firstDepositBlockNumber` to be non-nullable, because we have filtered out tranched pools
+          // in which the user holds no pool tokens. So we expect to have found the block number of the first
+          // DepositMade event corresponding to the set of pool tokens they have for this pool.
+          const firstDepositBlockNumber = asNonNullable(backer.firstDepositBlockNumber)
+
+          const [tokenPositions, firstDepositBlock] = await Promise.all([
+            Promise.all(
+              backer.tokenInfos.map(async (tokenInfo): Promise<BackerRewardsPoolTokenPosition> => {
+                const tokenId = tokenInfo.id
+                const [
+                  backersOnlyClaimable,
+                  seniorPoolMatchingClaimable,
+                  backersOnlyTokenInfo,
+                  seniorPoolMatchingClaimed,
+                ] = await Promise.all([
+                  backerRewards.contract.readOnly.methods
+                    .poolTokenClaimableRewards(tokenId)
+                    .call(undefined, currentBlock.number),
+                  backerRewards.contract.readOnly.methods
+                    .stakingRewardsEarnedSinceLastWithdraw(tokenId)
+                    .call(undefined, currentBlock.number),
+                  backerRewards.contract.readOnly.methods.tokens(tokenId).call(undefined, currentBlock.number),
+                  backerRewards.contract.readOnly.methods
+                    .stakingRewardsClaimed(tokenId)
+                    .call(undefined, currentBlock.number),
+                ])
+                return {
+                  tokenId,
+                  claimed: {
+                    backersOnly: new BigNumber(backersOnlyTokenInfo.rewardsClaimed),
+                    seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimed),
+                  },
+                  claimable: {
+                    backersOnly: new BigNumber(backersOnlyClaimable),
+                    seniorPoolMatching: new BigNumber(seniorPoolMatchingClaimable),
+                  },
+                  unvested: {
+                    backersOnly: new BigNumber(0),
+                    seniorPoolMatching: new BigNumber(0),
+                  },
+                }
+              })
+            ),
+            web3.readOnly.eth.getBlock(firstDepositBlockNumber),
+          ])
+          const firstDepositTime = firstDepositBlock.timestamp
+          assertNumber(firstDepositTime)
+
+          const rewardsNotWithdrawableReason = backerRewards.juniorTranchePoolTokenRewardsAreNotWithdrawableReason(
+            backer.tranchedPool
+          )
+
+          return new BackerRewardsPosition(backer, firstDepositTime, rewardsNotWithdrawableReason, tokenPositions)
+        })
+    )
+
+    const claimable = defaultSum(positions.map((position) => position.claimable))
+    const unvested = defaultSum(positions.map((position) => position.unvested))
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        positions,
+        claimable,
+        unvested,
+      },
+    }
+  }
+}
+
+export type UserBackerRewardsLoaded = WithLoadedInfo<UserBackerRewards, UserBackerRewardsLoadedInfo>

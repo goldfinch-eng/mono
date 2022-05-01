@@ -1,10 +1,9 @@
 import {useLocation} from "react-router-dom"
 import {AppContext} from "../App"
-import {CreditLine} from "../ethereum/creditLine"
 import {UnlockedStatus, UserLoaded} from "../ethereum/user"
 import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
-import VerifyAddressBanner from "./verifyAddressBanner"
+import VerifyAddressBanner from "./KYCNotice/VerifyAddressBanner"
 import {KYC} from "../hooks/useGoldfinchClient"
 import {AsyncResult} from "../hooks/useAsync"
 import {assertNonNullable} from "../utils"
@@ -15,11 +14,11 @@ import Banner from "./banner"
 import {iconInfo} from "./icons"
 
 export interface ConnectionNoticeProps {
-  creditLine?: CreditLine
   requireGolist?: boolean
   requireUnlock?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
   isPaused?: boolean
+  showCreditLineStatus?: boolean
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
@@ -48,16 +47,6 @@ interface ConnectionNoticeStrategy {
 
 export const strategies: ConnectionNoticeStrategy[] = [
   {
-    devName: "install_metamask",
-    match: ({userWalletWeb3Status}) => userWalletWeb3Status?.type === "no_web3",
-    render: (_props) => (
-      <TextBanner>
-        In order to use Goldfinch, you'll first need to download and install the Metamask plug-in from{" "}
-        <a href="https://metamask.io/">metamask.io</a>.
-      </TextBanner>
-    ),
-  },
-  {
     devName: "wrong_network",
     match: ({network}) => !!network && !network.supported,
     render: (_props) => (
@@ -68,7 +57,8 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "no_credit_line",
-    match: ({user, creditLine}) => !!user && !!creditLine && creditLine.loaded && !creditLine.address,
+    match: ({user, showCreditLineStatus}) =>
+      !!showCreditLineStatus && !!user && (!user.borrower || !user.borrower.creditLinesAddresses.length),
     render: (_props) => (
       <TextBanner>
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.

@@ -9,8 +9,9 @@ import {BlockInfo} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {MerkleDistributor} from "./merkleDistributor"
 
-type MerkleDirectDistributorLoadedInfo = {
+export type MerkleDirectDistributorLoadedInfo = {
   currentBlock: BlockInfo
+  isPaused: boolean
 }
 
 export type MerkleDirectDistributorLoaded = WithLoadedInfo<MerkleDirectDistributor, MerkleDirectDistributorLoadedInfo>
@@ -32,7 +33,10 @@ export class MerkleDirectDistributor {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const gfiAddress = await this.contract.readOnly.methods.gfi().call(undefined, currentBlock.number)
+    const [gfiAddress, isPaused] = await Promise.all([
+      this.contract.readOnly.methods.gfi().call(undefined, currentBlock.number),
+      this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
+    ])
     if (gfiAddress !== this.goldfinchProtocol.getAddress("GFI")) {
       throw new Error("MerkleDirectDistributor address of GFI contract doesn't match with deployed GFI address")
     }
@@ -41,6 +45,7 @@ export class MerkleDirectDistributor {
       loaded: true,
       value: {
         currentBlock,
+        isPaused,
       },
     }
   }

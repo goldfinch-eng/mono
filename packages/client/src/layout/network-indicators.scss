@@ -3,6 +3,7 @@
   right: 14px;
   top: 10px;
   z-index: 2;
+  margin-right: 48px;
 }
 
 .network-indicators-inner {
@@ -13,4 +14,10 @@
 
 .network-widget-container {
   position: relative;
+}
+
+@media only screen and (min-width: $screen-m) {
+  .network-indicators {
+    margin-right: 0;
+  }
 }

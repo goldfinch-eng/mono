@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom"
 import {fireEvent, render, screen, waitFor} from "@testing-library/react"
 import BigNumber from "bignumber.js"
-import {mock} from "depay-web3-mock"
+import {mock} from "@depay/web3-mock"
 import {BrowserRouter as Router} from "react-router-dom"
 import sinon from "sinon"
 import {AppContext} from "../../App"
@@ -12,7 +12,7 @@ import {
   CapitalProvider,
   fetchCapitalProviderData,
   mockGetWeightedAverageSharePrice,
-  PoolData,
+  SeniorPoolData,
   SeniorPool,
   SeniorPoolLoaded,
   StakingRewardsLoaded,
@@ -21,7 +21,7 @@ import {UserLoaded} from "../../ethereum/user"
 import * as utils from "../../ethereum/utils"
 import {assertWithLoadedInfo} from "../../types/loadable"
 import {BlockInfo} from "../../utils"
-import web3 from "../../web3"
+import getWeb3 from "../../web3"
 import {defaultCurrentBlock, getDeployments, network} from "../rewards/__utils__/constants"
 import {mockCapitalProviderCalls, mockStakeFiduBannerCalls, resetAirdropMocks} from "../rewards/__utils__/mocks"
 import {prepareBaseDeps, prepareUserRelatedDeps} from "../rewards/__utils__/scenarios"
@@ -29,6 +29,8 @@ import {prepareBaseDeps, prepareUserRelatedDeps} from "../rewards/__utils__/scen
 mock({
   blockchain: "ethereum",
 })
+
+const web3 = getWeb3()
 
 web3.readOnly.setProvider((global.window as any).ethereum)
 web3.userWallet.setProvider((global.window as any).ethereum)
@@ -86,7 +88,7 @@ describe("Stake unstaked fidu", () => {
       loaded: true,
       value: {
         currentBlock,
-        poolData: {estimatedApyFromGfi: new BigNumber(0.1)} as PoolData,
+        poolData: {estimatedApyFromGfi: new BigNumber(0.1)} as SeniorPoolData,
         isPaused: false,
       },
     }

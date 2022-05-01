@@ -1,6 +1,6 @@
 import {assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import _ from "lodash"
-import React, {useContext} from "react"
+import React, {useContext, useState} from "react"
 import {AppContext} from "../App"
 import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
@@ -16,11 +16,13 @@ import {
   DRAWDOWN_TX_NAME,
   ERC20_APPROVAL_TX_TYPE,
   FIDU_APPROVAL_TX_TYPE,
+  INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME,
   INTEREST_COLLECTED_TX_NAME,
   INTEREST_PAYMENT_TX_NAME,
   MINT_UID_TX_TYPE,
   PAYMENT_TX_TYPE,
   PRINCIPAL_COLLECTED_TX_NAME,
+  PRINCIPAL_PAYMENT_TX_NAME,
   RESERVE_FUNDS_COLLECTED_TX_NAME,
   STAKE_TX_TYPE,
   SUPPLY_AND_STAKE_TX_TYPE,
@@ -32,10 +34,26 @@ import {
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
 } from "../types/transactions"
-import {ArrayItemType, BlockInfo, croppedAddress, displayDollars, displayNumber} from "../utils"
-import web3 from "../web3"
-import {iconCheck, iconOutArrow} from "./icons"
+import {
+  ArrayItemType,
+  BlockInfo,
+  croppedAddress,
+  displayDollars,
+  displayNumber,
+  isProductionAndPrivateNetwork,
+  getInjectedProvider,
+} from "../utils"
+import getWeb3, {
+  onWalletConnect,
+  closeWalletConnect,
+  isMetaMaskInpageProvider,
+  requestUserAddGfiTokenToWallet,
+} from "../web3"
+import {iconCheck, iconOutArrow, iconSolidError, iconSolidCheck, iconDisconnect} from "./icons"
 import NetworkErrors from "./networkErrors"
+import metaMaskLogo from "../images/metamask-logo.svg"
+import walletConnectLogo from "../images/walletconnect-logo.svg"
+import {isWalletConnectProvider} from "../walletConnect"
 
 interface NetworkWidgetProps {
   user: UserLoaded | undefined
@@ -47,18 +65,75 @@ interface NetworkWidgetProps {
 }
 
 function NetworkWidget(props: NetworkWidgetProps) {
-  const {userWalletWeb3Status} = useContext(AppContext)
+  const {userWalletWeb3Status, gfi} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
+  const [isEnablePending, setIsEnablePending] = useState<{metaMask: boolean; walletConnect: boolean}>({
+    walletConnect: false,
+    metaMask: false,
+  })
+  const [isSignInPending, setIsSignInPending] = useState<boolean>(false)
+  const [noWeb3Widget, setNoWeb3Widget] = useState<boolean>(false)
+  const [showInstallWallet, setShowInstallWallet] = useState<boolean>(false)
+  const [showWallets, setShowWallets] = useState<boolean>(false)
+  const web3 = getWeb3()
+
+  async function handleSignIn(): Promise<void> {
+    setShowWallets(false)
+    setIsSignInPending(true)
+    await signIn().catch((error) => {
+      console.error("Error connecting to wallet", error)
+    })
+    setIsSignInPending(false)
+  }
 
   async function enableMetamask(): Promise<void> {
-    return (window as any).ethereum
-      .request({method: "eth_requestAccounts"})
-      .then(signIn)
-      .then(props.connectionComplete)
-      .catch((error) => {
-        console.error("Error connecting to metamask", error)
+    const injectedProvider = getInjectedProvider()
+    if (injectedProvider) {
+      return injectedProvider
+        .request({method: "eth_requestAccounts"})
+        .then(async () => {
+          await props.connectionComplete()
+          await handleSignIn()
+        })
+        .catch((error) => {
+          console.error("Error connecting to metamask", error)
+        })
+    }
+  }
+
+  function isMetaMaskInstalled(): boolean {
+    return (
+      (userWalletWeb3Status?.type === "has_web3" || userWalletWeb3Status?.type === "connected") &&
+      window.hasOwnProperty("ethereum") &&
+      isMetaMaskInpageProvider(getInjectedProvider())
+    )
+  }
+
+  async function handleMetamask(): Promise<void> {
+    if (!isMetaMaskInstalled()) {
+      return setNoWeb3Widget(true)
+    }
+    setIsEnablePending({metaMask: true, walletConnect: false})
+    await enableMetamask()
+    setIsEnablePending({metaMask: false, walletConnect: false})
+  }
+
+  async function handleWalletConnect(): Promise<void> {
+    await onWalletConnect()
+      .then(async () => {
+        await props.connectionComplete()
+        await handleSignIn()
       })
+      .catch((error) => {
+        console.error("Error connecting to wallet", error)
+      })
+  }
+
+  async function handleAddGFIToWallet() {
+    if (gfi?.address) {
+      await requestUserAddGfiTokenToWallet(gfi?.address)
+    }
   }
 
   function toggleOpenWidget() {
@@ -67,6 +142,19 @@ function NetworkWidget(props: NetworkWidgetProps) {
     } else {
       setShowNetworkWidgetInfo("")
     }
+  }
+
+  function walletConnectButton(): JSX.Element {
+    return (
+      <button
+        className={`button wallet ${(isEnablePending.metaMask || isEnablePending.walletConnect) && "active"}`}
+        onClick={handleWalletConnect}
+        disabled={isEnablePending.metaMask || isEnablePending.walletConnect}
+      >
+        <img className="wallet-logo" src={walletConnectLogo} alt="WalletConnect Logo" />
+        {isEnablePending.walletConnect ? "Working..." : "WalletConnect"}
+      </button>
+    )
   }
 
   let transactions: JSX.Element = <></>
@@ -132,6 +220,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case PRINCIPAL_COLLECTED_TX_NAME:
         case RESERVE_FUNDS_COLLECTED_TX_NAME:
         case INTEREST_PAYMENT_TX_NAME:
+        case PRINCIPAL_PAYMENT_TX_NAME:
+        case INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME:
         case DRAWDOWN_TX_NAME:
         case UNSTAKE_TX_NAME:
           switch (tx.amount.units) {
@@ -159,25 +249,32 @@ function NetworkWidget(props: NetworkWidgetProps) {
 
     return (
       <div key={tx.id} className={`transaction-item ${tx.status}`}>
-        <div className="status-icon">
-          <div className="indicator"></div>
-          <div className="spinner">
-            <div className="double-bounce1"></div>
-            <div className="double-bounce2"></div>
+        <div>
+          <div className="status-icon">
+            {tx.status === "error" && <div className="tx-status-indicator error-icon">{iconSolidError}</div>}
+            {tx.status === "successful" && <div className="tx-status-indicator success-icon">{iconSolidCheck}</div>}
+            <div className="spinner">
+              <div className="double-bounce1"></div>
+              <div className="double-bounce2"></div>
+            </div>
+          </div>
+          <div>
+            <span className={`${tx.status === "error" && "error-text"}`}>{transactionLabel}&nbsp;</span>
           </div>
         </div>
-        {transactionLabel}&nbsp;
-        {web3.readOnly.utils.isHexStrict(tx.id) && (
-          <a
-            className="inline-button"
-            href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {iconOutArrow}
-          </a>
-        )}
-        {confirmationMessage}
+        <div>
+          {web3.readOnly.utils.isHexStrict(tx.id) && (
+            <a
+              className="inline-button"
+              href={isString(etherscanSubdomain) ? `https://${etherscanSubdomain}etherscan.io/tx/${tx.id}` : ""}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {iconOutArrow}
+            </a>
+          )}
+          {confirmationMessage}
+        </div>
       </div>
     )
   }
@@ -203,7 +300,28 @@ function NetworkWidget(props: NetworkWidgetProps) {
     enabledClass = "success"
   }
 
-  let allTxs = _.compact([...props.currentTxs, ..._.slice(props.user ? props.user.info.value.pastTxs : [], 0, 5)])
+  let allTxs = [...props.currentTxs, ..._.slice(props.user ? props.user.info.value.pastTxs : [], 0, 5)]
+  // Makes newer transactions always appear on top
+  allTxs = allTxs.sort((a, b) => {
+    if (a.current && b.current) {
+      if (a.blockTime < b.blockTime) {
+        return 1
+      } else {
+        return -1
+      }
+    }
+    if (a.blockNumber && b.blockNumber) {
+      if (a.blockNumber < b.blockNumber) {
+        return 1
+      } else if (a.blockNumber === b.blockNumber) {
+        return 0
+      } else {
+        return -1
+      }
+    }
+    return 0
+  })
+  allTxs = _.compact(allTxs)
   allTxs = _.uniqBy(allTxs, "id")
   if (allTxs.length > 0) {
     transactions = (
@@ -216,6 +334,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
       </div>
     )
   }
+
   if (!userWalletWeb3Status) {
     return (
       <div ref={node} className="network-widget">
@@ -227,30 +346,137 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (userWalletWeb3Status?.type === "no_web3") {
+  } else if (showInstallWallet) {
     return (
-      <div ref={node} className="network-widget">
-        <a href="https://metamask.io" className="network-widget-button bold">
-          Go to metamask.io
-        </a>
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
+          Connect Wallet
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section install-wallet-info">
+            <p>
+              A wallet makes it possible for you to hold tokens and to participate in Goldfinch activities like
+              investing and governance.
+            </p>
+            <p>Goldfinch is compatible with any Ethereum wallet, but here are some we recommend.</p>
+            <a href="https://metamask.io/" rel="noreferrer" target="_blank" className="button wallet">
+              <img className="wallet-logo" src={metaMaskLogo} alt="MetaMask Logo" />
+              <span>Install MetaMask</span>
+              <span className="out-icon">{iconOutArrow}</span>
+            </a>
+            <button className="no-wallet" onClick={() => setShowInstallWallet(false)}>
+              Back to wallets
+            </button>
+          </div>
+        </div>
       </div>
     )
   } else if (
-    userWalletWeb3Status?.type === "has_web3" &&
-    props.network &&
-    props.network.name &&
-    !props.network.supported
+    (userWalletWeb3Status?.type === "has_web3" && props.network && props.network.name && !props.network.supported) ||
+    isProductionAndPrivateNetwork(props.network)
   ) {
     return (
       <div ref={node} className="network-widget">
         <div className="network-widget-button disabled">Wrong Network</div>
       </div>
     )
-  } else if (session.status !== "authenticated") {
+  } else if (noWeb3Widget) {
     return (
       <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
         <button className="network-widget-button bold" onClick={toggleOpenWidget}>
-          Connect Metamask
+          Connect Wallet
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section no-metamask-info">
+            <p>
+              Looks like you don’t have Metamask installed. Go to Metamask’s website and download and install the
+              browser extension.
+            </p>
+            <a href="https://metamask.io/" rel="noreferrer" target="_blank" className="button wallet">
+              <img className="wallet-logo" src={metaMaskLogo} alt="MetaMask Logo" />
+              <span>Install MetaMask</span>
+              <span className="out-icon">{iconOutArrow}</span>
+            </a>
+            {walletConnectButton()}
+            <button className="no-wallet" onClick={() => setNoWeb3Widget(false)}>
+              Back to wallets
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  } else if (userWalletWeb3Status?.type === "connected" && session.status !== "authenticated" && !showWallets) {
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
+          Connect Wallet
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section wallet-address">
+            <span>Wallet address</span>
+            <div className="address">{userAddressForDisplay}</div>
+          </div>
+          <div className="network-widget-section">
+            <button
+              className={`button bold ${isSignInPending && "wallet active"}`}
+              disabled={isSignInPending}
+              onClick={handleSignIn}
+            >
+              {isSignInPending ? "Waiting..." : "Connect"}
+            </button>
+            {isSignInPending ? (
+              <span className="check-wallet">Check your wallet to finish signing</span>
+            ) : (
+              <button className="other-wallets" onClick={() => setShowWallets(true)}>
+                Other wallets
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  } else if (userWalletWeb3Status?.type === "connected" && session.status === "authenticated") {
+    const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
+          <div className="status-icon">
+            <div className="indicator"></div>
+            <div className="spinner">
+              <div className="double-bounce1"></div>
+              <div className="double-bounce2"></div>
+            </div>
+          </div>
+          {enabledText}
+          <div className="success-indicator">{iconCheck}Success</div>
+        </button>
+        <div className="network-widget-info">
+          <div className="network-widget-section wallet-address">
+            <span>Wallet address</span>
+            <div className="address">{userAddressForDisplay}</div>
+          </div>
+          <NetworkErrors currentErrors={props.currentErrors} />
+          <div className="network-widget-section">
+            USDC balance <span className="value">{usdcBalance}</span>
+          </div>
+          {transactions}
+          {isWalletConnectProvider(web3.readOnly.currentProvider) ? (
+            <button className="disconnect" onClick={closeWalletConnect}>
+              {iconDisconnect} Disconnect wallet
+            </button>
+          ) : (
+            <button className="add-gfi-to-wallet" onClick={handleAddGFIToWallet}>
+              Add GFI token to wallet {iconOutArrow}
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  } else {
+    return (
+      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
+        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
+          Connect Wallet
         </button>
         <div className="network-widget-info">
           <div className="network-widget-section">
@@ -267,35 +493,19 @@ function NetworkWidget(props: NetworkWidgetProps) {
                 .
               </p>
             </div>
-            <button className="button bold" onClick={enableMetamask}>
-              Connect Metamask
+            <button
+              className={`button wallet ${(isEnablePending.metaMask || isEnablePending.walletConnect) && "active"}`}
+              onClick={handleMetamask}
+              disabled={isEnablePending.metaMask || isEnablePending.walletConnect}
+            >
+              <img className="wallet-logo" src={metaMaskLogo} alt="MetaMask Logo" />
+              {isEnablePending.metaMask ? "Working..." : "MetaMask"}
+            </button>
+            {walletConnectButton()}
+            <button className="no-wallet" onClick={() => setShowInstallWallet(true)}>
+              I don't have a wallet
             </button>
           </div>
-        </div>
-      </div>
-    )
-  } else {
-    const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
-    return (
-      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-        <button className={`network-widget-button ${enabledClass}`} onClick={toggleOpenWidget}>
-          <div className="status-icon">
-            <div className="indicator"></div>
-            <div className="spinner">
-              <div className="double-bounce1"></div>
-              <div className="double-bounce2"></div>
-            </div>
-          </div>
-          {enabledText}
-          <div className="success-indicator">{iconCheck}Success</div>
-        </button>
-        <div className="network-widget-info">
-          <div className="network-widget-section address">{userAddressForDisplay}</div>
-          <NetworkErrors currentErrors={props.currentErrors} />
-          <div className="network-widget-section">
-            USDC balance <span className="value">{usdcBalance}</span>
-          </div>
-          {transactions}
         </div>
       </div>
     )

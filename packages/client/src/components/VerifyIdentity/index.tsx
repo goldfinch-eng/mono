@@ -4,9 +4,11 @@ import {AppContext} from "../../App"
 import {useCurrentRoute} from "../../hooks/useCurrentRoute"
 import {useSignIn} from "../../hooks/useSignIn"
 import {assertNonNullable} from "../../utils"
+import Banner from "../banner"
 import ConnectionNotice from "../connectionNotice"
+import {iconCircleCheck} from "../icons"
 import LoadingButton from "../loadingButton"
-import {Action, CREATE_UID, END, SIGN_IN, START, Step, VERIFY_ADDRESS} from "./constants"
+import {Action, CREATE_UID, END, SIGN_IN, START, State, VERIFY_ADDRESS} from "./constants"
 import CreateUID from "./CreateUID"
 import VerifyAddress from "./VerifyAddress"
 
@@ -24,11 +26,11 @@ function SignInForm({action, disabled}) {
   )
 }
 
-const initialState: {step: Step} = {
+const initialState: State = {
   step: START,
 }
 
-const reducer = (state: typeof initialState, action: Action): typeof initialState => {
+const reducer = (state: State, action: Action): State => {
   if (action.type === SIGN_IN) {
     return {
       ...state,
@@ -43,6 +45,7 @@ const reducer = (state: typeof initialState, action: Action): typeof initialStat
     return {
       ...state,
       step: CREATE_UID,
+      kyc: action.kyc,
     }
   } else if (action.type === END) {
     return {
@@ -54,10 +57,13 @@ const reducer = (state: typeof initialState, action: Action): typeof initialStat
 }
 
 function VerifyIdentity() {
-  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock} = useContext(AppContext)
+  const {userWalletWeb3Status, currentBlock, setLeafCurrentBlock, user} = useContext(AppContext)
   const [session, signIn] = useSignIn()
   const [state, dispatch] = useReducer(reducer, initialState)
   const currentRoute = useCurrentRoute()
+
+  const uidTypeToBalance = (user && user.info.value.uidTypeToBalance) || {}
+  const hasAnyUID = Object.keys(uidTypeToBalance).some((uidType) => !!uidTypeToBalance[uidType])
 
   useEffect(() => {
     if (state.step === START && session.status !== "authenticated") {
@@ -99,6 +105,12 @@ function VerifyIdentity() {
   } else {
     children = (
       <>
+        {user?.info.value.goListed && !hasAnyUID && (
+          <Banner icon={iconCircleCheck}>
+            You were an early participant through our legacy validation system. You have been grandfathered in and can
+            still participate, but we recommend you upgrade to the new UID system by minting your UID.
+          </Banner>
+        )}
         <VerifyAddress disabled={state.step !== VERIFY_ADDRESS} dispatch={dispatch} />
         <CreateUID disabled={state.step !== CREATE_UID} dispatch={dispatch} />
       </>

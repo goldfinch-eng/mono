@@ -104,8 +104,11 @@ venv/
 .python-version
 .rgignore
 goldfinch-frontends-prod-firebase*.json
+goldfinch-frontends-prod-*.json
 
 packages/subgraph/build/
 packages/subgraph/data/
 packages/subgraph/generated/
 packages/subgraph/docker-compose.yml
+
+*.wasm

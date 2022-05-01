@@ -1,48 +1,54 @@
-import {useContext, useEffect, useState} from "react"
 import {ApolloError} from "@apollo/client"
 import _ from "lodash"
+import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
-import {parseBackers} from "../graphql/parsers"
 import {SeniorPoolStatus} from "../components/Earn/types"
-import {PoolBacker, TranchedPool} from "../ethereum/tranchedPool"
-import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
-import {BlockInfo} from "../utils"
-import {Loadable} from "../types/loadable"
-import {User} from "@sentry/browser"
-import {POOL_CREATED_EVENT} from "../types/events"
-import {CapitalProvider} from "../ethereum/pool"
-import {RINKEBY} from "../ethereum/utils"
-import useNonNullContext from "./useNonNullContext"
-import {getTranchedPoolsData, getTranchedPoolsData_tranchedPools} from "../graphql/types"
 import {usdcToAtomic} from "../ethereum/erc20"
+import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
+import {CapitalProvider} from "../ethereum/pool"
+import {PoolState, TranchedPool, TranchedPoolBacker} from "../ethereum/tranchedPool"
+import {UserLoaded} from "../ethereum/user"
+import {RINKEBY} from "../ethereum/utils"
+import {parseBackers} from "../graphql/parsers"
+import {GET_TRANCHED_POOLS_DATA} from "../graphql/queries"
+import {getTranchedPoolsData, getTranchedPoolsData_tranchedPools} from "../graphql/types"
+import {POOL_CREATED_EVENT} from "../types/events"
+import {Loadable} from "../types/loadable"
+import {BlockInfo} from "../utils"
 import useGraphQuerier, {UseGraphQuerierConfig} from "./useGraphQuerier"
 
 // Filter out 0 limit (inactive) and test pools
 export const MIN_POOL_LIMIT = usdcToAtomic(process.env.REACT_APP_POOL_FILTER_LIMIT || "200")
 
-function sortPoolBackers(poolBackers: PoolBacker[]): PoolBacker[] {
-  return poolBackers.sort(
-    (a, b) =>
-      // Primary sort: ascending by tranched pool status (Open -> JuniorLocked -> ...)
-      a.tranchedPool.poolState - b.tranchedPool.poolState ||
-      // Secondary sort: descending by user's balance
-      b.balanceInDollars.comparedTo(a.balanceInDollars) ||
-      // Tertiary sort: alphabetical by display name, for the sake of stable ordering.
-      a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName)
+function sortPoolBackers(poolBackers: TranchedPoolBacker[]): TranchedPoolBacker[] {
+  return poolBackers.sort((a, b) =>
+    // Primary sort: by pool status. Open pools are sorted in reverse-chronological order
+    // of fundable-at time.
+    a.tranchedPool.poolState === PoolState.Open && b.tranchedPool.poolState === PoolState.Open
+      ? b.tranchedPool.fundableAt.toNumber() - a.tranchedPool.fundableAt.toNumber()
+      : a.tranchedPool.poolState - b.tranchedPool.poolState ||
+        // Secondary sort: descending by user's balance
+        b.balanceInDollars.comparedTo(a.balanceInDollars) ||
+        // Tertiary sort: reverse-chronological by launch time.
+        (a.tranchedPool.metadata?.launchTime && b.tranchedPool.metadata?.launchTime
+          ? b.tranchedPool.metadata.launchTime - a.tranchedPool.metadata.launchTime
+          : // Quaternary sort: alphabetical by display name.
+            a.tranchedPool.displayName.localeCompare(b.tranchedPool.displayName))
   )
+}
+
+export type TranchedPoolSubgraphData = {
+  backers: Loadable<TranchedPoolBacker[]>
+  loading: boolean
+  error: ApolloError | undefined
 }
 
 export function useTranchedPoolSubgraphData(
   graphQuerierConfig: UseGraphQuerierConfig,
   skip = false
-): {
-  backers: Loadable<PoolBacker[]>
-  loading: boolean
-  error: ApolloError | undefined
-} {
-  const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useNonNullContext(AppContext)
-  const [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
+): TranchedPoolSubgraphData {
+  const {goldfinchProtocol, currentBlock, user, userWalletWeb3Status} = useContext(AppContext)
+  const [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
   })
@@ -56,13 +62,16 @@ export function useTranchedPoolSubgraphData(
   useEffect(() => {
     async function parseData(
       tranchedPools: getTranchedPoolsData_tranchedPools[],
-      goldfinchProtocol?: GoldfinchProtocol,
-      currentBlock?: BlockInfo,
+      goldfinchProtocol: GoldfinchProtocol,
+      currentBlock: BlockInfo,
       userAddress?: string
     ) {
       const backers = await parseBackers(tranchedPools, goldfinchProtocol, currentBlock, userAddress)
       const activePoolBackers = backers.filter(
-        (p) => p.tranchedPool.creditLine.limit.gte(MIN_POOL_LIMIT) && p.tranchedPool.metadata
+        (p) =>
+          p.tranchedPool.metadata &&
+          p.tranchedPool.creditLine.limit &&
+          p.tranchedPool.creditLine.limit.gte(MIN_POOL_LIMIT)
       )
       setBackers({
         loaded: true,
@@ -70,11 +79,7 @@ export function useTranchedPoolSubgraphData(
       })
     }
 
-    if (userWalletWeb3Status?.type === "no_web3" && data?.tranchedPools) {
-      parseData(data.tranchedPools)
-    }
-
-    if (userWalletWeb3Status?.type !== "no_web3" && data?.tranchedPools && goldfinchProtocol && currentBlock) {
+    if (data?.tranchedPools && goldfinchProtocol && currentBlock) {
       parseData(data.tranchedPools, goldfinchProtocol, currentBlock, user?.address)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,12 +88,14 @@ export function useTranchedPoolSubgraphData(
   return {loading, error, backers}
 }
 
-export function usePoolBackersWeb3(skip = false): {
-  backers: Loadable<PoolBacker[]>
+export type PoolBackersWeb3Data = {
+  backers: Loadable<TranchedPoolBacker[]>
   poolsAddresses: Loadable<string[]>
-} {
-  const {user, goldfinchProtocol, currentBlock, network} = useNonNullContext(AppContext)
-  let [backers, setBackers] = useState<Loadable<PoolBacker[]>>({
+}
+
+export function usePoolBackersWeb3(skip = false): PoolBackersWeb3Data {
+  const {user, goldfinchProtocol, currentBlock, network} = useContext(AppContext)
+  let [backers, setBackers] = useState<Loadable<TranchedPoolBacker[]>>({
     loaded: false,
     value: undefined,
   })
@@ -98,8 +105,11 @@ export function usePoolBackersWeb3(skip = false): {
   })
 
   useEffect(() => {
-    async function loadTranchedPools(goldfinchProtocol: GoldfinchProtocol, user: User, currentBlock: BlockInfo) {
-      user = user || {address: undefined}
+    async function loadTranchedPools(
+      goldfinchProtocol: GoldfinchProtocol,
+      user: UserLoaded | undefined,
+      currentBlock: BlockInfo
+    ) {
       let poolEvents = await goldfinchProtocol.queryEvents(
         "GoldfinchFactory",
         [POOL_CREATED_EVENT],
@@ -109,7 +119,7 @@ export function usePoolBackersWeb3(skip = false): {
       let poolAddresses = poolEvents.map((e) => e.returnValues.pool)
 
       // Remove invalid pool on rinkeby that returns wrong number of values for getTranche
-      if (network.name === RINKEBY) {
+      if (network?.name === RINKEBY) {
         poolAddresses = _.remove(poolAddresses, "0x3622Bf116643c5f2f1764924Ce6ce8814302BA76")
       }
 
@@ -122,7 +132,7 @@ export function usePoolBackersWeb3(skip = false): {
       tranchedPools = tranchedPools.filter((p) => p.metadata)
       const activePoolBackers = tranchedPools
         .filter((p) => p.creditLine.limit.gte(MIN_POOL_LIMIT))
-        .map((p) => new PoolBacker(user.address, p, goldfinchProtocol))
+        .map((p) => new TranchedPoolBacker(user?.address, p, goldfinchProtocol))
       await Promise.all(activePoolBackers.map((b) => b.initialize(currentBlock)))
       setBackers({
         loaded: true,
@@ -130,7 +140,7 @@ export function usePoolBackersWeb3(skip = false): {
       })
     }
 
-    if (goldfinchProtocol && currentBlock && !skip) {
+    if (goldfinchProtocol && user && currentBlock && !skip) {
       loadTranchedPools(goldfinchProtocol, user, currentBlock)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,10 +149,12 @@ export function usePoolBackersWeb3(skip = false): {
   return {backers, poolsAddresses}
 }
 
+export type SeniorPoolStatusWeb3Data = {seniorPoolStatus: Loadable<SeniorPoolStatus>}
+
 export function useSeniorPoolStatusWeb3(
   capitalProvider: Loadable<CapitalProvider>,
   skip = false
-): {seniorPoolStatus: Loadable<SeniorPoolStatus>} {
+): SeniorPoolStatusWeb3Data {
   const {pool, goldfinchConfig} = useContext(AppContext)
   const [seniorPoolStatus, setSeniorPoolStatus] = useState<Loadable<SeniorPoolStatus>>({
     loaded: false,
