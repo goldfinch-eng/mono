@@ -4,6 +4,7 @@ import { buildClientSchema, IntrospectionQuery } from "graphql";
 
 import localSchema from "./client-only-schema.graphql";
 import { nonFatalErrorLink } from "./non-fatal-error-link";
+import { resolvers } from "./resolvers";
 import introspectionResult from "./schema.json";
 import { typePolicies } from "./type-policies";
 import { typesMap } from "./types-map";
@@ -28,4 +29,5 @@ export const apolloClient = new ApolloClient({
       errorPolicy: "all",
     },
   },
+  resolvers,
 });

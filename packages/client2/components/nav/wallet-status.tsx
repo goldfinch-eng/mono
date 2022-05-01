@@ -15,9 +15,9 @@ import UsdcSvg from "./usdc.svg";
 
 gql`
   query CurrentUserWalletInfo {
-    gfi {
+    gfiPrice(fiat: USD) {
       price {
-        usd
+        amount
       }
     }
     currentUser @client {
@@ -43,7 +43,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const gfiBalance = data?.currentUser.gfiBalance
     ? gfiFromAtomic(data.currentUser.gfiBalance)
     : undefined;
-  const gfiPrice = data?.gfi?.price.usd;
+  const gfiPrice = data?.gfiPrice.price.amount;
   const gfiBalanceAsDollars =
     gfiPrice && data?.currentUser.gfiBalance
       ? formatGfiAsDollars(data.currentUser.gfiBalance, gfiPrice)

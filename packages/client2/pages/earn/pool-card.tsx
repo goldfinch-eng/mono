@@ -80,18 +80,19 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    estimatedJuniorApyFromGfi @client
   }
 `;
 
 interface TranchedPoolCardProps {
   tranchedPool: TranchedPoolCardFieldsFragment;
   href: string;
+  fiatPerGfi: number;
 }
 
 export function TranchedPoolCard({
   tranchedPool,
   href,
+  fiatPerGfi,
 }: TranchedPoolCardProps) {
   return (
     <PoolCard
@@ -99,7 +100,9 @@ export function TranchedPoolCard({
       subtitle={tranchedPool.category}
       icon={tranchedPool.icon}
       apy={tranchedPool.estimatedJuniorApy}
-      apyFromGfi={tranchedPool.estimatedJuniorApyFromGfi}
+      apyFromGfi={tranchedPool.estimatedJuniorApyFromGfiRaw.mulUnsafe(
+        FixedNumber.fromString(fiatPerGfi.toString())
+      )}
       href={href}
     />
   );

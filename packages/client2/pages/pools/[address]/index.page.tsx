@@ -40,7 +40,6 @@ gql`
       borrowerHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
-      estimatedJuniorApyFromGfi @client
       estimatedTotalAssets
       estimatedLeverageRatio
       remainingCapacity
@@ -80,11 +79,6 @@ gql`
         dueDate
         isEligibleForRewards
         name
-      }
-    }
-    gfi @client {
-      price {
-        usd
       }
     }
   }
@@ -320,7 +314,7 @@ export default function PoolPage() {
         <div className="relative col-span-4">
           <SupplyPanel
             apy={tranchedPool?.estimatedJuniorApy}
-            apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
+            apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
           />
         </div>
       </div>

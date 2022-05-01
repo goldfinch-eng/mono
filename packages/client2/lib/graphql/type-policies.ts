@@ -1,9 +1,8 @@
 import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
-import { FixedNumber } from "ethers";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
-import { currentUserVar, gfiVar, isWalletModalOpenVar } from "@/lib/state/vars";
+import { currentUserVar, isWalletModalOpenVar } from "@/lib/state/vars";
 
 function readFieldFromMetadata(
   fieldName: string,
@@ -25,7 +24,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       currentUser: { read: () => currentUserVar() },
-      gfi: { read: () => gfiVar() },
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
     },
   },
@@ -34,37 +32,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       name: { read: () => "Goldfinch Senior Pool" },
       category: { read: () => "Automated diversified portfolio" },
       icon: { read: () => goldfinchLogoPngUrl },
-    },
-  },
-  SeniorPoolStatus: {
-    fields: {
-      estimatedApyFromGfi: {
-        read: (_, { readField }) => {
-          const gfiPrice = gfiVar()?.price.usd;
-          if (!gfiPrice) {
-            // It's possible that this warning will come up as a false positive, because gfi is added to the Apollo cache in an asynchronous way. This warning might get played even though the end result is eventually correct.
-            console.warn(
-              "Tried to read estimatedApyFromGfi but gfi was null. Please include gfi in this query."
-            );
-            return null;
-          }
-          const gfiPriceAsFixedNumber = FixedNumber.fromString(
-            gfiPrice.toString()
-          );
-          const estimatedApyFromGfiRaw = readField({
-            fieldName: "estimatedApyFromGfiRaw",
-          });
-          if (!estimatedApyFromGfiRaw) {
-            console.warn(
-              "Tried to read estimatedApyFromGfi but estimatedApyFromGfiRaw was null. Please include estimatedApyFromGfiRaw in this query."
-            );
-            return null;
-          }
-          return gfiPriceAsFixedNumber.mulUnsafe(
-            estimatedApyFromGfiRaw as unknown as FixedNumber
-          );
-        },
-      },
     },
   },
   TranchedPool: {
@@ -81,35 +48,9 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
         read: readFieldFromMetadata("borrowerDescription"),
       },
       borrowerHighlights: { read: readFieldFromMetadata("borrowerHighlights") },
-      estimatedJuniorApyFromGfi: {
-        read: (_, { readField }) => {
-          // Implementation here is really similar to estimatedApyFromGfi on SeniorPoolStatus
-
-          const gfiPrice = gfiVar()?.price.usd;
-          if (!gfiPrice) {
-            // It's possible that this warning will come up as a false positive, because gfi is added to the Apollo cache in an asynchronous way. This warning might get played even though the end result is eventually correct.
-            console.warn(
-              "Tried to read estimatedJuniorApyFromGfi but gfi was null. Please include gfi in this query."
-            );
-            return null;
-          }
-          const gfiPriceAsFixedNumber = FixedNumber.fromString(
-            gfiPrice.toString()
-          );
-          const estimatedJuniorApyFromGfiRaw = readField({
-            fieldName: "estimatedJuniorApyFromGfiRaw",
-          });
-          if (!estimatedJuniorApyFromGfiRaw) {
-            console.warn(
-              "Tried to read estimatedJuniorApyFromGfi but estimatedJuniorApyFromGfiRaw was null. Please include estimatedJuniorApyFromGfiRaw in this query."
-            );
-            return null;
-          }
-          return gfiPriceAsFixedNumber.mulUnsafe(
-            estimatedJuniorApyFromGfiRaw as unknown as FixedNumber
-          );
-        },
-      },
     },
+  },
+  GfiPrice2: {
+    keyFields: ["price", ["symbol"]],
   },
 };
