@@ -47,11 +47,11 @@ Both options will start several processes, including your local blockchain and f
 #### One time setup (only necessary for front-end development)
 - Ensure you have Java installed (Firebase emulator requires the JVM)
 - Copy `.env.example` to `.env.local` (the local will be ignored by git).
-- Add the following into your new `.env.local` file. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
+- Find the following variables in `.env.local` and update them with your API key and EOA address. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with
 
   ```
   ALCHEMY_API_KEY={your alchemy api key}
-  TEST_USERS={your metamask address}`
+  TEST_USER={your metamask address}
   ALLOWED_SENDERS={your metamask address}`
   ```
 
