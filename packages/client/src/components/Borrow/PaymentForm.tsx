@@ -116,14 +116,14 @@ function PaymentForm(props: PaymentFormProps) {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingTotalDueAmount.gt(0)) {
             addresses.push(cl.address)
-            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingTotalDueAmountInDollars)))
+            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingTotalDueAmountInDollars.toFixed())))
           }
         })
       } else if (paymentOption === "periodDue") {
         creditLine.creditLines.forEach((cl) => {
           if (cl.remainingPeriodDueAmount.gt(0)) {
             addresses.push(cl.address)
-            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingPeriodDueAmountInDollars)))
+            usdcAmounts.push(new BigNumber(usdcToAtomic(cl.remainingPeriodDueAmountInDollars.toFixed())))
           }
         })
       } else {
