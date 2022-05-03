@@ -164,7 +164,7 @@ export default function Stake() {
           Token exchange
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens={false}>
-          Staking APY
+          Est. APY
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
           Available to LP
