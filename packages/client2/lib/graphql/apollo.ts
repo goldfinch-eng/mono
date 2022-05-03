@@ -3,8 +3,8 @@ import { withScalars } from "apollo-link-scalars";
 import { buildClientSchema, IntrospectionQuery } from "graphql";
 
 import localSchema from "./client-only-schema.graphql";
+import { resolvers } from "./local-resolvers";
 import { nonFatalErrorLink } from "./non-fatal-error-link";
-import { resolvers } from "./resolvers";
 import introspectionResult from "./schema.json";
 import { typePolicies } from "./type-policies";
 import { typesMap } from "./types-map";
