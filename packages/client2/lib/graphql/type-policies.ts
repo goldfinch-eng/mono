@@ -53,4 +53,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   GfiPrice: {
     keyFields: ["price", ["symbol"]],
   },
+  Viewer: {
+    keyFields: [], // Viewer is a singleton type representing the current viewer, therefore it shouldn't have key fields
+  },
 };

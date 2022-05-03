@@ -1,6 +1,6 @@
 import { BigNumber, FixedNumber, utils } from "ethers";
 
-import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { USDC_DECIMALS } from "@/constants";
 
 // Intl formatters are nice because they are sensitive to the user's device locale. For now they are hard-coded to en-US, but in the future this can be parameterized or even changed into hooks (to get locale from context)
 
@@ -42,27 +42,8 @@ export function formatUsdcAsDollars(usdc: BigNumber) {
   return `$${doubleDigitFormatter.format(asFloat)} USD`;
 }
 
-/**
- *
- * @param gfi Raw amount of GFI (atomic form, exactly as it is returned from its contract)
- * @returns GFI divided by the amount of GFI decimal places. For use in displaying a GFI balance.
- */
-export function gfiFromAtomic(gfi: BigNumber) {
-  const asFloat = parseFloat(utils.formatUnits(gfi, GFI_DECIMALS));
-  return `${doubleDigitFormatter.format(asFloat)}`;
-}
-
-/**
- *
- * @param gfi Atomic GFI amount
- * @param usdPerGfi Price of gfi (in USD)
- * @returns GFI converted to dollars and formatted as a dollar amount
- */
-export function formatGfiAsDollars(gfi: BigNumber, usdPerGfi: number) {
-  const gfiAsFloat = parseFloat(utils.formatUnits(gfi, GFI_DECIMALS));
-  return `$${doubleDigitFormatter.format(gfiAsFloat * usdPerGfi)} USD`;
-}
-
 export function formatDollarAmount(n: number) {
   return `$${doubleDigitFormatter.format(n)}`;
 }
+
+export * from "./currency-units";

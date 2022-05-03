@@ -40,7 +40,26 @@ type GfiPrice {
   lastUpdated: Int!
 }
 
+enum SupportedCrypto {
+  USDC
+  GFI
+  FIDU
+}
+
+type CryptoAmount {
+  token: SupportedCrypto!
+  amount: BigInt!
+}
+
+type Viewer {
+  user: User
+  account: String
+  usdcBalance: CryptoAmount
+  gfiBalance: CryptoAmount
+}
+
 extend type Query {
+  viewer: Viewer!
   currentUser: AppUser!
   isWalletModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat = USD): GfiPrice!

@@ -1,3 +1,4 @@
+import { Web3Provider } from "@ethersproject/providers";
 import { useMemo } from "react";
 
 import { CONTRACT_ADDRESSES } from "@/constants";
@@ -17,4 +18,10 @@ export function useUsdcContract() {
     }
     return { usdcAddress: undefined, usdcContract: undefined };
   }, [provider, chainId]);
+}
+
+export async function getUsdcContract(chainId: number, provider: Web3Provider) {
+  const usdcAddress = CONTRACT_ADDRESSES[chainId].USDC;
+  const usdcContract = Erc20__factory.connect(usdcAddress, provider);
+  return usdcContract;
 }
