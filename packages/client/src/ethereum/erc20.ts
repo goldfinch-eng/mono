@@ -124,7 +124,7 @@ abstract class ERC20 {
 
 class USDC extends ERC20 {
   static metadata: ERC20Metadata = {
-    name: "USDC Coin",
+    name: "USD Coin",
     ticker: Ticker.USDC,
     decimals: 6,
     approvalTxType: USDC_APPROVAL_TX_TYPE as TxType,
