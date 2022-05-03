@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { Button, Shimmer } from "@/components/design-system";
+import { Button, Shimmer, HelperText } from "@/components/design-system";
 import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
   SupportedFiat,
@@ -13,7 +13,7 @@ import UsdcSvg from "./usdc.svg";
 
 gql`
   query CurrentUserWalletInfo {
-    gfiPrice(fiat: USD) {
+    gfiPrice(fiat: USD) @client {
       price {
         amount
       }
@@ -38,7 +38,7 @@ interface WalletInfoProps {
 
 export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const { connector } = useWallet();
-  const { data, loading } = useCurrentUserWalletInfoQuery();
+  const { data, loading, error } = useCurrentUserWalletInfoQuery();
   const viewer = data?.viewer;
 
   const gfiPrice = data?.gfiPrice.price.amount;
@@ -52,6 +52,9 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
 
   return (
     <div className="min-w-[320px] space-y-8">
+      {error ? (
+        <HelperText isError>Error while fetching wallet status</HelperText>
+      ) : null}
       <div>
         <div className="mb-4 text-lg font-semibold">Balances</div>
         <div className="mb-6 flex items-center justify-between">
