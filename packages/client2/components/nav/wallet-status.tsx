@@ -67,7 +67,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
               {loading ? (
                 <Shimmer style={{ width: "12ch" }} />
               ) : viewer?.usdcBalance ? (
-                formatCrypto(viewer.usdcBalance, { includeSymbol: false })
+                formatCrypto(viewer.usdcBalance)
               ) : null}
             </div>
           </div>
@@ -82,7 +82,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
               {loading ? (
                 <Shimmer style={{ width: "12ch" }} />
               ) : viewer?.gfiBalance ? (
-                formatCrypto(viewer.gfiBalance, { includeSymbol: false })
+                formatCrypto(viewer.gfiBalance)
               ) : null}
             </div>
             <div className="text-xs">

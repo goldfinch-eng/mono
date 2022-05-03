@@ -1,8 +1,11 @@
 import { gql } from "@apollo/client";
 
 import { Heading } from "@/components/design-system";
-import { formatUsdcAsDollars } from "@/lib/format";
-import { SeniorPoolStatusFieldsFragment } from "@/lib/graphql/generated";
+import { formatCrypto } from "@/lib/format";
+import {
+  SeniorPoolStatusFieldsFragment,
+  SupportedCrypto,
+} from "@/lib/graphql/generated";
 
 export const SENIOR_POOL_STATUS_FIELDS = gql`
   fragment SeniorPoolStatusFields on SeniorPool {
@@ -27,9 +30,10 @@ export function StatusSection({ seniorPool }: StatusSectionProps) {
         <div>
           <div className="text-2xl">
             {seniorPool
-              ? formatUsdcAsDollars(
-                  seniorPool.latestPoolStatus.totalPoolAssetsUsdc
-                )
+              ? formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: seniorPool.latestPoolStatus.totalPoolAssetsUsdc,
+                })
               : "-.--"}
           </div>
           <div className="text-lg text-purple-200">Total pool balance</div>

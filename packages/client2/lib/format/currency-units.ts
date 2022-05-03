@@ -29,10 +29,6 @@ const decimalFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
-interface FormatCryptoOptions {
-  includeSymbol?: boolean;
-}
-
 export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
   switch (cryptoAmount.token) {
     case SupportedCrypto.Usdc:
@@ -52,20 +48,34 @@ export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
   }
 }
 
+interface FormatCryptoOptions {
+  /**
+   * Whether or not to include a $ sign (USDC only)
+   */
+  includeSymbol?: boolean;
+  /**
+   * Whether or not to include the token ticker beside the number
+   */
+  includeToken?: boolean;
+}
+
 export function formatCrypto(
   cryptoAmount: CryptoAmount,
   options?: FormatCryptoOptions
 ): string {
-  const defaultOptions: FormatCryptoOptions = { includeSymbol: true };
-  const { includeSymbol } = { ...defaultOptions, ...options };
+  const defaultOptions: FormatCryptoOptions = {
+    includeSymbol: false,
+    includeToken: false,
+  };
+  const { includeSymbol, includeToken } = { ...defaultOptions, ...options };
   switch (cryptoAmount.token) {
     case SupportedCrypto.Usdc:
-      return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
-        includeSymbol ? " USDC" : ""
-      }`;
+      return `${includeSymbol ? "$" : ""}${decimalFormatter.format(
+        cryptoToFloat(cryptoAmount)
+      )}${includeToken ? " USDC" : ""}`;
     case SupportedCrypto.Gfi:
       return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
-        includeSymbol ? " GFI" : ""
+        includeToken ? " GFI" : ""
       }`;
     default:
       throw new Error(

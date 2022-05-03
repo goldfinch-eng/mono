@@ -18,8 +18,11 @@ import {
   HelperText,
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
-import { usdcFromAtomic } from "@/lib/format";
-import { useSingleTranchedPoolDataQuery } from "@/lib/graphql/generated";
+import { formatCrypto } from "@/lib/format";
+import {
+  SupportedCrypto,
+  useSingleTranchedPoolDataQuery,
+} from "@/lib/graphql/generated";
 
 import FundingBar from "./funding-bar";
 import SupplyPanel from "./supply-panel";
@@ -175,27 +178,49 @@ export default function PoolPage() {
           <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
             <div className="col-span-3 border-b border-eggplant-50 p-5">
               <FundingBar
-                goal={tranchedPool?.creditLine.maxLimit}
-                backerSupply={tranchedPool?.juniorTranches.reduce(
-                  (total, curr) => {
-                    return total.add(curr.principalDeposited);
-                  },
-                  BigNumber.from(0)
-                )}
-                seniorSupply={tranchedPool?.seniorTranches.reduce(
-                  (total, curr) => {
-                    return total.add(curr.principalDeposited);
-                  },
-                  BigNumber.from(0)
-                )}
+                goal={
+                  tranchedPool?.creditLine.maxLimit
+                    ? {
+                        token: SupportedCrypto.Usdc,
+                        amount: tranchedPool.creditLine.maxLimit,
+                      }
+                    : undefined
+                }
+                backerSupply={
+                  tranchedPool?.juniorTranches
+                    ? {
+                        token: SupportedCrypto.Usdc,
+                        amount: tranchedPool.juniorTranches.reduce(
+                          (total, curr) => {
+                            return total.add(curr.principalDeposited);
+                          },
+                          BigNumber.from(0)
+                        ),
+                      }
+                    : undefined
+                }
+                seniorSupply={
+                  tranchedPool?.seniorTranches
+                    ? {
+                        token: SupportedCrypto.Usdc,
+                        amount: tranchedPool.seniorTranches.reduce(
+                          (total, curr) => {
+                            return total.add(curr.principalDeposited);
+                          },
+                          BigNumber.from(0)
+                        ),
+                      }
+                    : undefined
+                }
               />
             </div>
             <div className="border-r border-eggplant-50 p-5">
               <Stat
                 label="Drawdown cap"
-                value={usdcFromAtomic(
-                  tranchedPool?.creditLine?.limit || BigNumber.from(0)
-                )}
+                value={formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: tranchedPool?.creditLine.limit ?? BigNumber.from(0),
+                })}
                 tooltip={
                   <div>
                     <div className="mb-4 text-xl font-bold">Drawdown cap</div>
