@@ -17,12 +17,6 @@ extend type TranchedPool {
   borrowerHighlights: [String]
 }
 
-type AppUser {
-  account: String
-  usdcBalance: BigInt
-  gfiBalance: BigInt
-}
-
 enum SupportedFiat {
   USD
 }
@@ -60,7 +54,6 @@ type Viewer {
 
 extend type Query {
   viewer: Viewer!
-  currentUser: AppUser!
   isWalletModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat = USD): GfiPrice!
 }

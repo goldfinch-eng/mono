@@ -2,7 +2,7 @@ import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
-import { currentUserVar, isWalletModalOpenVar } from "@/lib/state/vars";
+import { isWalletModalOpenVar } from "@/lib/state/vars";
 
 function readFieldFromMetadata(
   fieldName: string,
@@ -23,7 +23,6 @@ function readFieldFromMetadata(
 export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
-      currentUser: { read: () => currentUserVar() },
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
     },
   },
