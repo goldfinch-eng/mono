@@ -101,7 +101,7 @@ export default function Stake() {
           Token to stake
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens={false}>
-          Rewards APY
+          Est. APY
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
           Available to stake
