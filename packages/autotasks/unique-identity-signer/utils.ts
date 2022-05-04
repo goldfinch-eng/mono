@@ -17,15 +17,20 @@ export const US_UID_TYPES = [
 export const NON_US_UID_TYPES = [NON_US_INDIVIDUAL_ID_TYPE_0, NON_US_ENTITY_ID_TYPE_4]
 
 export function isUSAccreditedIndividual(address: string): boolean {
-  return USAccreditedIndividualsList.includes(address)
+  return caseInsensitiveIncludes(USAccreditedIndividualsList, address)
 }
 
 export function isUSAccreditedEntity(address: string): boolean {
-  return USAccreditedEntitiesList.includes(address)
+  return caseInsensitiveIncludes(USAccreditedEntitiesList, address)
 }
 
 export function isNonUSEntity(address: string): boolean {
-  return NonUSEntitiesList.includes(address)
+  return caseInsensitiveIncludes(NonUSEntitiesList, address)
+}
+
+export function caseInsensitiveIncludes(list: string[], element: string): boolean {
+  const regexp = new RegExp(element, "i")
+  return list.some((x) => x.match(regexp))
 }
 
 export function getIDType({address, kycStatus}: {address: string; kycStatus?: KYC}): number {
