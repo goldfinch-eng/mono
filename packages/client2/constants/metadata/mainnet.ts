@@ -9,7 +9,10 @@ import quickcheckLogo from "./icons/quickcheck.png";
 import stratosLogo from "./icons/stratos.jpeg";
 import tugendeLogo from "./icons/tugende.png";
 
-export const mainnetMetadata: Record<string, Record<string, any>> = {
+export const mainnetMetadata: Record<
+  string,
+  Record<string, string | number | string[] | boolean>
+> = {
   "0xd43a4f3041069c6178b99d55295b00d0db955bb5": {
     name: "Cauris Fund #3: Africa Innovation Pool",
     category: "Africa multi-sector loans",

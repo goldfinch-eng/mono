@@ -14,12 +14,16 @@ export function updateCurrentUserAttributes(attributes: Partial<AppUser>) {
 
 export async function refreshCurrentUserUsdcBalance(usdcContract: Erc20) {
   const user = currentUserVar();
-  const usdcBalance = await usdcContract.balanceOf(user.account!);
-  currentUserVar({ ...user, usdcBalance });
+  if (user.account) {
+    const usdcBalance = await usdcContract.balanceOf(user.account);
+    currentUserVar({ ...user, usdcBalance });
+  }
 }
 
 export async function refreshCurrentUserGfiBalance(gfiContract: Gfi) {
   const user = currentUserVar();
-  const gfiBalance = await gfiContract.balanceOf(user.account!);
-  currentUserVar({ ...user, gfiBalance });
+  if (user.account) {
+    const gfiBalance = await gfiContract.balanceOf(user.account);
+    currentUserVar({ ...user, gfiBalance });
+  }
 }

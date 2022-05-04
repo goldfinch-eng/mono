@@ -5,10 +5,7 @@ import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
 import { currentUserVar, gfiVar, isWalletModalOpenVar } from "@/lib/state/vars";
 
-function readFieldFromMetadata(
-  fieldName: string,
-  fallback: any = null
-): FieldReadFunction {
+function readFieldFromMetadata(fieldName: string): FieldReadFunction {
   return (_, { readField }) => {
     const id = readField({ fieldName: "id" }) as string;
     if (!id) {
@@ -17,7 +14,7 @@ function readFieldFromMetadata(
       );
       return;
     }
-    return POOL_METADATA[id]?.[fieldName] ?? fallback;
+    return POOL_METADATA[id]?.[fieldName] ?? null;
   };
 }
 

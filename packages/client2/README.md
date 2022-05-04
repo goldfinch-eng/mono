@@ -51,6 +51,58 @@ This project uses Apollo client for fetching data from a remote GraphQL server (
 
 We also use `graphql-codegen` to generate TypeScript types for our GraphQL schema and queries.
 
+### Using TypeScript
+
+- Avoid using `any`, there are always better alternatives. The linter is configured to disallow this.
+- Explictly typing the return type of a function isn't strictly necessary, because type inference from the compiler is sufficient. However, if you feel that explicitly typing the return type of a function helps you make sure that you don't make any mistakes, then you are welcome to
+- Aliasing React component prop types is recommended, it keeps things nice and legible
+```jsx
+interface ButtonProps {
+  colorScheme: "red" | "green" | "blue"
+}
+
+function Button({ colorScheme }: ButtonProps) { // This area isn't oversaturated with type definitions
+  ...
+}
+```
+- Speaking of prop types, remember to always use `ReactNode` to describe the type of `children` in React, unless you're certain you want something less permissive, like `string` for example.
+- Do not feel restricted to only putting one component per file. If you need to define a couple of minor helper components in a file, that's perfectly fine
+- Use discriminated unions where possible. They definitely make your types more accurate
+```ts
+// very good
+type NetworkLoadingState = {
+  state: "loading";
+};
+type NetworkFailedState = {
+  state: "failed";
+  code: number;
+};
+type NetworkSuccessState = {
+  state: "success";
+  response: {
+    title: string;
+    duration: number;
+    summary: string;
+  }
+};
+
+type NetworkState =
+  | NetworkLoadingState
+  | NetworkFailedState
+  | NetworkSuccessState;
+
+// not as good
+type NetworkState = {
+  state: "loading" | "failed" | "success";
+  code?: number;
+  response?: {
+    title: string;
+    duration: number;
+    summary: string;
+  }
+};
+```
+
 ## Weird Things
 
 ### Emergencies with The Graph
