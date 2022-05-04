@@ -39,6 +39,7 @@ import {usdcFromAtomic} from "./erc20"
 import {EventParserConfig, mapEventsToTx} from "./events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {Pool} from "./pool"
 import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 const ZERO = new BigNumber(0)
@@ -324,9 +325,11 @@ class TranchedPool {
   }
 
   estimatedTotalAssets(): BigNumber {
-    return this.juniorTranche.principalDeposited
-      .plus(this.seniorTranche.principalDeposited)
-      .plus(this.estimatedSeniorPoolContribution)
+    const deposits = this.juniorTranche.principalDeposited.plus(this.seniorTranche.principalDeposited)
+    const seniorTrancheIsLocked = this.poolState >= PoolState.SeniorLocked
+    // if the pool is locked, no further senior pool contributions are expected, so we only
+    // consider existing assets
+    return seniorTrancheIsLocked ? deposits : deposits.plus(this.estimatedSeniorPoolContribution)
   }
 
   remainingCapacity(): BigNumber {
