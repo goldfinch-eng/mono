@@ -168,7 +168,8 @@ class BorrowerInterface {
 
   payMultiple(creditLines: string[], amounts: string[]) {
     let poolAddresses = creditLines.map((a) => this.getPoolAddress(a))
-    return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amounts))
+    const amountsAsStrings = amounts.map((x) => x.toString())
+    return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amountsAsStrings))
   }
 
   payWithSwapOnOneInch(
