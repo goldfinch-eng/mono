@@ -15,7 +15,7 @@ import BigNumber from "bignumber.js"
 import {assertNonNullable, displayDollars} from "../../utils"
 import {PAYMENT_TX_TYPE} from "../../types/transactions"
 import {CreditLine, MultipleCreditLines} from "../../ethereum/creditLine"
-import {BorrowerInterface} from "../../ethereum/borrower"
+import {BorrowerInterface, SubmittedBorrowerTx} from "../../ethereum/borrower"
 
 type PaymentFormProps = {
   borrower: BorrowerInterface
@@ -108,8 +108,12 @@ function PaymentForm(props: PaymentFormProps) {
   function action({transactionAmount}) {
     assertNonNullable(erc20)
     const erc20Amount = erc20.atomicAmount(transactionAmount)
-    let unsentAction
+    let unsentAction: SubmittedBorrowerTx | undefined
     if (creditLine.isMultiple) {
+      if (!(creditLine instanceof MultipleCreditLines)) {
+        throw new Error("Expected instance of MultipleCreditLines iff `isMultiple` is true.")
+      }
+
       let addresses: string[] = []
       let usdcAmounts: BigNumber[] = []
       if (paymentOption === "totalDue") {
@@ -135,19 +139,28 @@ function PaymentForm(props: PaymentFormProps) {
         // value will be what's used to pay
         ;[addresses, usdcAmounts] = creditLine.splitPayment(getSelectedUSDCAmount())
       }
+      const usdcAmountStrings = usdcAmounts.map((usdcAmount) => usdcAmount.toString(10))
       if (isSwapping()) {
+        assertNonNullable(transactionAmountQuote)
+
         unsentAction = borrower.payMultipleWithSwapOnOneInch(
           addresses,
-          usdcAmounts,
+          usdcAmountStrings,
           erc20Amount,
           erc20.address,
           transactionAmountQuote
         )
       } else {
-        unsentAction = borrower.payMultiple(addresses, usdcAmounts)
+        unsentAction = borrower.payMultiple(addresses, usdcAmountStrings)
       }
     } else {
+      if (!(creditLine instanceof CreditLine)) {
+        throw new Error("Expected instance of CreditLine iff `isMultiple` is false.")
+      }
+
       if (isSwapping()) {
+        assertNonNullable(transactionAmountQuote)
+
         unsentAction = borrower.payWithSwapOnOneInch(
           creditLine.address,
           erc20Amount,

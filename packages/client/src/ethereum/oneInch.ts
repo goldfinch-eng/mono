@@ -1,3 +1,4 @@
+import {isArrayOfString, isString, PlainObject} from "@goldfinch-eng/utils/src/type"
 import {Contract} from "web3-eth-contract"
 
 import {Web3IO} from "../types/web3"
@@ -13,3 +14,11 @@ export function getOneInchContract(networkId): Web3IO<Contract> {
   const userWallet = new web3.userWallet.eth.Contract(OneInchAbi, address)
   return {readOnly, userWallet}
 }
+
+export type OneInchExpectedReturn = {
+  returnAmount: string
+  distribution: string[]
+}
+
+export const isOneInchExpectedReturn = (obj: unknown): obj is OneInchExpectedReturn =>
+  isString((obj as PlainObject).returnAmount) && isArrayOfString((obj as PlainObject).distribution)
