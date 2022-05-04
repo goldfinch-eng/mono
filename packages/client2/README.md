@@ -2,6 +2,27 @@
 
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Important technologies
+
+### Next.js
+
+Next.js is basically a more comprehensive version of the ubiquitous Create React App. The additional features include: server-side rendering support, built-in API routes, image optimization, built-in router, and more! It's easy to learn and hard to go wrong with.
+
+### Apollo
+
+Apollo is one of the more fully-featured graphQL clients available. It goes quite far beyond just sending graphQL queries to a remote server. Notable features include: support for local resolvers, the ability to combine your remote server schema with a local schema, and the ability to program custom "Apollo links" (code that can transform a graphQL query before or after it is executed on the server).
+
+### Redux vs Apollo
+
+Managing global app state is a strongly-felt need for any non-trivial app. One of the common tools for this job is Redux, a library that allows you to express global app state as a function of a sequence of actions. Normally Redux would be adopted without a second thought, however, this app is also using Apollo and there is a fair bit of overlap in functionality between these two libraries. For the last couple of major releases, Apollo has touted itself as a complete state management solution. The features used to accomplish this are:
+- The Apollo normalized cache. This was already a critical part of how Apollo stores data from a remote graphQL server and sends it to React components, but it can also be used as an app-wide store for the purpose of global state. You can use a local schema to add client-exclusive fields that the remote graphQL server has no knowledge of. **Think of this as the Redux store.**
+- Local resolvers. These are graphQL resolvers that exist separate from your remote graphQL server, and they support async operations. The client can use these to enable queries for fields that only exist on the local schema. Local resolvers can also enable graphQL mutations that only affect the Apollo cache. **Local resolvers for `Query` types act as Redux selectors, local resolvers for `Mutation` types act as Redux actions. The logic inside these resolvers is like Redux reducers.** Resolvers have full access to the Apollo cache.
+- Field policies. A simplified version of local resolvers that only support synchronous actions
+- Reactive vars. Another way to read/write to the Apollo cache
+
+After some debate, we decided to use Apollo for the purpose of global app state management in addition to its use as a graphQL client. The biggest advantage of this is:
+- We can use a graphQL to interface with Apollo and get a full view of local and remote state. As application developers, we only have to use **one single API for all of the app's data**. Developers do not have to wonder "should this new piece of data be part of Redux's responsibility, or Apollo's?" It is simply always Apollo, which reduces cognitive load and simplifies decisions. We've also eliminated a potential class of bug by choosing to just use Apollo: cross-cutting issues from making Apollo and Redux work together.
+
 ## Guidelines and Conventions
 
 ### Directory structure
