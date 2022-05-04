@@ -162,11 +162,6 @@ export function gfiInDollars(gfiInDollarsAtomic: BigNumber | undefined): BigNumb
 }
 
 async function getGFIPrice(): Promise<BigNumber | undefined> {
-  const toggleGetGFIPrice = process.env.REACT_APP_TOGGLE_GET_GFI_PRICE === "true"
-  if (!toggleGetGFIPrice) {
-    return undefined
-  }
-
   try {
     const fetchResult = await GFI.fetchGfiPrice()
     if (fetchResult.usd === 0) {

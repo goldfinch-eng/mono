@@ -3,7 +3,7 @@ import {NavLink} from "react-router-dom"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
 import logoPurp from "../images/logomark-purp.svg"
 import {iconMenu} from "./icons"
-import {EARN_ROUTE, BORROW_ROUTE, GFI_ROUTE, TRANSACTIONS_ROUTE} from "../types/routes"
+import {EARN_ROUTE, BORROW_ROUTE, GFI_ROUTE, TRANSACTIONS_ROUTE, STAKE_ROUTE} from "../types/routes"
 
 function Sidebar(props) {
   const {node, open: showSidebar, setOpen: setShowSidebar} = useCloseOnClickOrEsc()
@@ -32,6 +32,9 @@ function Sidebar(props) {
       <nav>
         <NavLink to={EARN_ROUTE} onClick={closeSidebar}>
           Earn
+        </NavLink>
+        <NavLink to={STAKE_ROUTE} onClick={closeSidebar}>
+          Stake
         </NavLink>
         <NavLink to={BORROW_ROUTE} onClick={closeSidebar}>
           Borrow

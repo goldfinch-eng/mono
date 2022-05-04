@@ -7,14 +7,16 @@
     "deploy": "graph build && graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
-    "deploy-local": "graph build && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5002 goldfinch-subgraph --version-label v0.0.1",
-    "setup-local-config": "npx ts-node ./scripts/setupFilesLocalBlockchain.ts"
+    "deploy-local": "graph codegen && graph deploy --node http://localhost:8020 --ipfs http://localhost:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
+    "predeploy-local": "ts-node ./scripts/setup-subgraph-manifest-local.ts"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "^0.25.1",
-    "@graphprotocol/graph-ts": "^0.24.1"
+    "@graphprotocol/graph-cli": "^0.29.0",
+    "@graphprotocol/graph-ts": "^0.26.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^3.12.7",
+    "js-yaml": "^3.14.1",
     "matchstick-as": "^0.2.2",
     "ts-node": "^10.2.1"
   }

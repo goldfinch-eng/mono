@@ -4,8 +4,8 @@ import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {CreditLine} from "./creditLine"
-import {ERC20, Tickers} from "./erc20"
 import {submitGaslessTransaction} from "./gasless"
+import {ERC20, Ticker} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getOneInchContract} from "./oneInch"
 import {PoolState, TranchedPool} from "./tranchedPool"
@@ -32,7 +32,7 @@ class BorrowerInterface {
     this.userAddress = userAddress
     this.borrowerContract = borrowerContract
     this.goldfinchProtocol = goldfinchProtocol
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC)
     this.oneInch = oneInch
     this.borrowerAddress = this.borrowerContract.readOnly.options.address
     this.tranchedPools = {}
@@ -160,7 +160,8 @@ class BorrowerInterface {
 
   payMultiple(creditLines, amounts) {
     let poolAddresses = creditLines.map((a) => this.getPoolAddress(a))
-    return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amounts))
+    const amountsAsStrings = amounts.map((x) => x.toString())
+    return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amountsAsStrings))
   }
 
   payWithSwapOnOneInch(creditLineAddress, amount, minAmount, fromToken, quote) {
