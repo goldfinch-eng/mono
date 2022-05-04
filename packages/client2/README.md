@@ -9,16 +9,16 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 The top-level directories are as follows:
 
 - `pages/` - This is where pages are located. Any file in here ending in `.page.tsx` will be a valid route in the webapp. For example, `pages/test.page.tsx` will be rendered at `http://localhost:3000/test`. Nesting a file in a subdirectory here will affect its route: `pages/foo/bar.page.tsx` will be rendered at `http://localhost:3000/foo/bar`. It's possible to create a page that has a dynamic segment in its URL using a unique Next.js convention. For example, `http://localhost:3000/pools/0xdeadbeef` could refer to `pages/pool/[poolAddress].page.tsx`. You can read more about this Next.js routing feature here: https://nextjs.org/docs/routing/dynamic-routes. Note that in this project, we have configured it such that only files ending in `.page.tsx` inside the `pages/` directory can be mapped to routes. This means you are free to place helper components for a page in an adjacent file. Example: `pages/foo/index.page.tsx`, `pages/foo/helpers.tsx` will only produce the page `http://localhost/foo`
-- `components/` - This is where the app's shared components live. This place is meant for the UI primitives, such as buttons, links, modals, etc. Generally speaking, these components should be presentational only, meaning they shouldn't do any data-fetching. You can (and are encouraged to) write Storybook entries for your components here. We use the barrel-file convention in this repo for components. Treat each subdirectory in `components/` as its own module, and the `index.ts` file in that subdirectory should dictate what the module exports. For example:
+- `components/design-system/` - This is where the app's shared components live. This place is meant for the UI primitives, such as buttons, links, modals, etc. Generally speaking, these components should be presentational only, meaning they shouldn't do any data-fetching. You can (and are encouraged to) write Storybook entries for your components here. We use the barrel-file convention in this repo for components. Treat each subdirectory in `components/` as its own module, and the `index.ts` file in that subdirectory should dictate what the module exports. For example:
 
 ```
-components/
+design-system/
 ├── button
 │   ├── button.stories.tsx // Storybook entries to show off the <Button> component
 │   ├── button.tsx // This is where the actual definition of the component goes
 │   └── index.tsx // This is where we determine what is exported from this module
 ```
-
+- `components/` (outside of `design-system/`) this is the place for app-wide shared component that wouldn't be considered UI primitives. If there are widgets with complex behaviour that should be shared throughout the app, this is the place for them.
 - `lib/` - This directory has a very broad scope, it's basically meant for "everything else". More specifically, it should contain code related to business logic in the app, such as handling wallet connections or setting up connections to smart contracts.
 - `public/` - Any files placed in here will be hosted at the root of the webserver (exactly like create-react-app's `public/` directory). Please refrain from placing image files in here, because we have this project configured to allow images to be imported in code as if they were modules, so they can live much closer to the source code that requires them.
 - `styles/` - This is for app-level CSS. Tailwind's entrypoint CSS file lives in here. There shouldn't be a need to add any additional files here.
