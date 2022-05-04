@@ -237,14 +237,14 @@ class TranchedPool {
           .call(undefined, currentBlock.number)
       )
     }
+
+    this.poolState = this.getPoolState(currentBlock)
     this.estimatedLeverageRatio = await this.estimateLeverageRatio(currentBlock)
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
-
-    this.poolState = this.getPoolState(currentBlock)
 
     const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
       this.isMultipleDrawdownsCompatible
