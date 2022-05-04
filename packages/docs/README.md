@@ -18,7 +18,7 @@ From `packages/docs`:
 $ npm run build-solidity-docs
 ```
 
-#### To run docs app:
+#### To serve the docs locally:
 
 From `packages/docs`:
 ```

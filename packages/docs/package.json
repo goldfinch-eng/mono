@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "start": "docusaurus start",
+    "start": "docusaurus start --port 3002",
     "build": "docusaurus build",
     "_copy-solidity-docs": "cp -r ../protocol/solidity-docgen-docs/protocol/core/ ./docs/reference/core && cp -r ../protocol/solidity-docgen-docs/protocol/periphery/ ./docs/reference/periphery && cp -r ../protocol/solidity-docgen-docs/rewards/ ./docs/reference/rewards",
     "build-solidity-docs": "cd ../protocol && npm run docs && cd ../docs && npm run _copy-solidity-docs",
