@@ -18,7 +18,6 @@ From `packages/docs`:
 $ npm run build-solidity-docs
 ```
 
-
 #### To run docs app:
 
 From `packages/docs`:

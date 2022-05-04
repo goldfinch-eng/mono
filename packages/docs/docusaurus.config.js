@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Goldfinch Docs',
-  tagline: 'Dinosaurs are cool',
+  tagline: 'Bring crypto loans to the real world',
   url: 'https://docs.goldfinch.com',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -24,11 +24,6 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/goldfinch-eng/mono',
-        },
-        blog: {
-          showReadingTime: true,
-          editUrl:
-            'https://github.com/goldfinch-eng/mono',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -53,7 +48,6 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
           {
             href: 'https://github.com/goldfinch-eng/mono',
             label: 'GitHub',
@@ -77,26 +71,22 @@ const config = {
             title: 'Community',
             items: [
               {
-                label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+                label: 'Governance',
+                href: 'https://gov.goldfinch.finance',
               },
               {
                 label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
+                href: 'https://discord.gg/HVeaca3fN8',
               },
               {
                 label: 'Twitter',
-                href: 'https://twitter.com/docusaurus',
+                href: 'https://twitter.com/goldfinch_fi',
               },
             ],
           },
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: '/blog',
-              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/goldfinch-eng/mono',
