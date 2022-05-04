@@ -237,14 +237,14 @@ class TranchedPool {
           .call(undefined, currentBlock.number)
       )
     }
+
+    this.poolState = this.getPoolState(currentBlock)
     this.estimatedLeverageRatio = await this.estimateLeverageRatio(currentBlock)
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
-
-    this.poolState = this.getPoolState(currentBlock)
 
     const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
       this.isMultipleDrawdownsCompatible
@@ -324,9 +324,11 @@ class TranchedPool {
   }
 
   estimatedTotalAssets(): BigNumber {
-    return this.juniorTranche.principalDeposited
-      .plus(this.seniorTranche.principalDeposited)
-      .plus(this.estimatedSeniorPoolContribution)
+    const deposits = this.juniorTranche.principalDeposited.plus(this.seniorTranche.principalDeposited)
+    const seniorTrancheIsLocked = this.poolState >= PoolState.SeniorLocked
+    // if the pool is locked, no further senior pool contributions are expected, so we only
+    // consider existing assets
+    return seniorTrancheIsLocked ? deposits : deposits.plus(this.estimatedSeniorPoolContribution)
   }
 
   remainingCapacity(): BigNumber {
