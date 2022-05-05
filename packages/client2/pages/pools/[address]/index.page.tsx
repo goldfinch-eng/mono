@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 import { useRouter } from "next/router";
+import { useState, useEffect } from "react";
 
 import {
   Breadcrumb,
@@ -16,12 +17,17 @@ import {
   Paragraph,
   ShimmerLines,
   HelperText,
+  Marquee,
 } from "@/components/design-system";
+import { SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { usdcFromAtomic } from "@/lib/format";
+import { usdcFromAtomic, formatPercent } from "@/lib/format";
 import { useSingleTranchedPoolDataQuery } from "@/lib/graphql/generated";
+import { PoolStatus, getTranchedPoolStatus } from "@/lib/pools";
 
+import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
+import PoolFilledPanel from "./pool-filled-panel";
 import SupplyPanel from "./supply-panel";
 
 gql`
@@ -51,6 +57,8 @@ gql`
       totalDeployed
       fundableAt
       estimatedSeniorPoolContribution
+      isPaused
+      numBackers
       seniorTranches {
         principalDeposited
       }
@@ -82,11 +90,6 @@ gql`
         name
       }
     }
-    gfi @client {
-      price {
-        usd
-      }
-    }
   }
 `;
 
@@ -103,19 +106,12 @@ export default function PoolPage() {
   const {
     query: { address },
   } = useRouter();
+  const [poolStatus, setPoolStatus] = useState<PoolStatus>();
 
   const { data, error } = useSingleTranchedPoolDataQuery({
     skip: !address,
     variables: { id: address as string },
   });
-
-  if (error) {
-    return (
-      <div className="text-2xl">
-        Unable to load the specified tranched pool.
-      </div>
-    );
-  }
 
   const tranchedPool = data?.tranchedPool;
 
@@ -128,9 +124,51 @@ export default function PoolPage() {
     }
   }
 
+  useEffect(() => {
+    if (tranchedPool) {
+      setPoolStatus(getTranchedPoolStatus(tranchedPool));
+    }
+  }, [tranchedPool]);
+
+  if (error) {
+    return (
+      <div className="text-2xl">
+        Unable to load the specified tranched pool.
+      </div>
+    );
+  }
+
   return (
     <>
       <SEO title={tranchedPool?.name} />
+
+      {poolStatus && (
+        <SubnavPortal>
+          <Marquee
+            colorScheme={
+              poolStatus === PoolStatus.Full
+                ? "yellow"
+                : poolStatus === PoolStatus.Open
+                ? "purple"
+                : poolStatus === PoolStatus.ComingSoon
+                ? "blue"
+                : poolStatus === PoolStatus.Repaid
+                ? "purple"
+                : "yellow"
+            }
+          >
+            {poolStatus === PoolStatus.Full
+              ? ["Filled", `${tranchedPool?.numBackers} Backers`]
+              : poolStatus === PoolStatus.Open
+              ? ["Open", `${tranchedPool?.numBackers} Backers`]
+              : poolStatus === PoolStatus.ComingSoon
+              ? "Coming Soon"
+              : poolStatus === PoolStatus.Repaid
+              ? "Repaid"
+              : "Paused"}
+          </Marquee>
+        </SubnavPortal>
+      )}
 
       <div className="mb-8 flex flex-row justify-between">
         <div>
@@ -154,7 +192,6 @@ export default function PoolPage() {
           </Button>
         </div>
       </div>
-
       <div className="grid grid-cols-12 gap-10 ">
         <div className="col-span-8">
           <Heading level={1} className="mb-3 font-serif text-sand-800">
@@ -179,23 +216,92 @@ export default function PoolPage() {
           ) : null}
 
           <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
-            <div className="col-span-3 border-b border-eggplant-50 p-5">
-              <FundingBar
-                goal={tranchedPool?.creditLine.maxLimit}
-                backerSupply={tranchedPool?.juniorTranches.reduce(
-                  (total, curr) => {
-                    return total.add(curr.principalDeposited);
-                  },
-                  BigNumber.from(0)
-                )}
-                seniorSupply={tranchedPool?.seniorTranches.reduce(
-                  (total, curr) => {
-                    return total.add(curr.principalDeposited);
-                  },
-                  BigNumber.from(0)
-                )}
-              />
-            </div>
+            {poolStatus === PoolStatus.ComingSoon ? (
+              <>
+                <div className="border-r border-b border-eggplant-50 p-5">
+                  <Stat
+                    label="Total est. APY"
+                    value={formatPercent(
+                      tranchedPool?.estimatedJuniorApy?.addUnsafe(
+                        tranchedPool?.estimatedJuniorApyFromGfi ||
+                          FixedNumber.from(0)
+                      ) || 0
+                    )}
+                    tooltip={
+                      <div>
+                        <div className="mb-4 text-xl font-bold">
+                          Total Estimated APY
+                        </div>
+                        <div>
+                          Lorem ipsum dolor, sit amet consectetur adipisicing
+                          elit. Distinctio earum pariatur quod. Voluptatem
+                          mollitia doloribus.
+                        </div>
+                      </div>
+                    }
+                  />
+                </div>
+
+                <div className="border-b border-r border-eggplant-50 p-5">
+                  <Stat
+                    label="Est $USDC APY"
+                    value={formatPercent(tranchedPool?.estimatedJuniorApy || 0)}
+                    tooltip={
+                      <div>
+                        <div className="mb-4 text-xl font-bold">
+                          Estimated $USDC APY
+                        </div>
+                        <div>
+                          Lorem ipsum dolor, sit amet consectetur adipisicing
+                          elit. Distinctio earum pariatur quod. Voluptatem
+                          mollitia doloribus.
+                        </div>
+                      </div>
+                    }
+                  />
+                </div>
+
+                <div className="border-eggplant-50 p-5">
+                  <Stat
+                    label="Est $GFI APY"
+                    value={formatPercent(
+                      tranchedPool?.estimatedJuniorApyFromGfi || 0
+                    )}
+                    tooltip={
+                      <div>
+                        <div className="mb-4 text-xl font-bold">
+                          Estimated $GFI APY
+                        </div>
+                        <div>
+                          Lorem ipsum dolor, sit amet consectetur adipisicing
+                          elit. Distinctio earum pariatur quod. Voluptatem
+                          mollitia doloribus.
+                        </div>
+                      </div>
+                    }
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="col-span-3 border-b border-eggplant-50 p-5">
+                <FundingBar
+                  goal={tranchedPool?.creditLine.limit}
+                  backerSupply={tranchedPool?.juniorTranches.reduce(
+                    (total, curr) => {
+                      return total.add(curr.principalDeposited);
+                    },
+                    BigNumber.from(0)
+                  )}
+                  seniorSupply={tranchedPool?.seniorTranches.reduce(
+                    (total, curr) => {
+                      return total.add(curr.principalDeposited);
+                    },
+                    BigNumber.from(0)
+                  )}
+                />
+              </div>
+            )}
+
             <div className="border-r border-eggplant-50 p-5">
               <Stat
                 label="Drawdown cap"
@@ -258,21 +364,31 @@ export default function PoolPage() {
               </TabList>
               <TabPanels>
                 <TabContent>
-                  <Heading level={3} className="mb-8 !text-4xl">
+                  <Heading
+                    as="h3"
+                    level={5}
+                    className="mb-8 font-sans font-normal"
+                  >
                     Overview
                   </Heading>
                   <Paragraph className="mb-10 whitespace-pre-wrap !text-2xl">
                     {tranchedPool?.description}
                   </Paragraph>
 
-                  <Heading level={4} className="mb-4 font-semibold">
+                  <Heading
+                    level={4}
+                    className="mb-4 font-sans !text-lg !font-semibold"
+                  >
                     Pool Overview
                   </Heading>
                   <Paragraph className="mb-10 whitespace-pre-wrap">
                     {tranchedPool?.poolDescription}
                   </Paragraph>
 
-                  <Heading level={4} className="mb-4 font-semibold">
+                  <Heading
+                    level={4}
+                    className="mb-4 font-sans !text-lg !font-semibold"
+                  >
                     Highlights
                   </Heading>
                   <ul className="list-outside list-disc pl-5">
@@ -289,14 +405,21 @@ export default function PoolPage() {
                   </ul>
                 </TabContent>
                 <TabContent>
-                  <Heading level={4} className="mb-4 font-semibold">
+                  <Heading
+                    as="h3"
+                    level={5}
+                    className="mb-8 font-sans font-normal"
+                  >
                     Overview
                   </Heading>
                   <Paragraph className="mb-10 whitespace-pre-wrap">
                     {tranchedPool?.borrowerDescription}
                   </Paragraph>
 
-                  <Heading level={4} className="mb-4 font-semibold">
+                  <Heading
+                    level={4}
+                    className="mb-4 font-sans !text-lg !font-semibold"
+                  >
                     Highlights
                   </Heading>
                   <ul className="list-outside list-disc pl-5">
@@ -318,10 +441,25 @@ export default function PoolPage() {
         </div>
 
         <div className="relative col-span-4">
-          <SupplyPanel
-            apy={tranchedPool?.estimatedJuniorApy}
-            apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
-          />
+          {poolStatus === PoolStatus.Open && (
+            <SupplyPanel
+              apy={tranchedPool?.estimatedJuniorApy}
+              apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
+            />
+          )}
+
+          {poolStatus === PoolStatus.Full && (
+            <PoolFilledPanel
+              limit={tranchedPool?.creditLine.limit}
+              apy={tranchedPool?.estimatedJuniorApy}
+              apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
+              dueDate={tranchedPool?.creditLine.nextDueTime}
+            />
+          )}
+
+          {poolStatus === PoolStatus.ComingSoon && (
+            <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+          )}
         </div>
       </div>
     </>
