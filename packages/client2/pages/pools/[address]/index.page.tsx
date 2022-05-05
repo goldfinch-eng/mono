@@ -19,8 +19,8 @@ import {
   HelperText,
   Marquee,
 } from "@/components/design-system";
+import { SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { SubnavPortal } from "@/components/subnav-portal";
 import { usdcFromAtomic, formatPercent } from "@/lib/format";
 import { useSingleTranchedPoolDataQuery } from "@/lib/graphql/generated";
 import { PoolStatus, getTranchedPoolStatus } from "@/lib/pools";
