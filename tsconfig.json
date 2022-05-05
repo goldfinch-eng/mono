@@ -18,7 +18,9 @@
       ],
       "@goldfinch-eng/subgraph": ["packages/subgraph"],
       "@goldfinch-eng/functions": ["packages/functions/src"],
-      "@goldfinch-eng/functions/*": ["packages/functions/src/*"]
+      "@goldfinch-eng/functions/*": ["packages/functions/src/*"],
+      "@goldfinch-eng/docs": ["packages/docs"],
+      "@goldfinch-eng/docs/*": ["packages/docs/*"]
     }
   }
 }

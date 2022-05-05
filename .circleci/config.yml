@@ -81,6 +81,7 @@ jobs:
             - ./packages/subgraph/node_modules/
             - ./packages/utils/node_modules/
             - ./packages/utils/dist
+            - ./packages/docs/node_modules/
       - save_cache:
           name: Save intra-build contract build cache
           key: contracts-build-cache-{{ checksum "combined-contracts.txt" }}-{{ .Branch }}-{{ .Revision }}

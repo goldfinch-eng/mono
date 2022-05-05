@@ -1,5 +1,9 @@
 ## StakingRewards
 
+### Mainnet Deployment
+
+https://etherscan.io/address/0xFD6FF39DA508d281C2d255e9bBBfAb34B6be60c3
+
 ### LockupPeriod
 
 ```solidity

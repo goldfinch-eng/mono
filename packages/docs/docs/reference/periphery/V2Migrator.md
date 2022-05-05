@@ -4,6 +4,10 @@ This is a one-time use contract solely for the purpose of migrating from our V1
  to our V2 architecture. It will be temporarily granted authority from the Goldfinch governance,
  and then revokes it&#x27;s own authority and transfers it back to governance.
 
+### Mainnet Deployment
+
+https://etherscan.io/address/0xd44FE8Ec5D6cFB96A06e02e17bC109Ab98d506a5
+
 ### MINTER_ROLE
 
 ```solidity
