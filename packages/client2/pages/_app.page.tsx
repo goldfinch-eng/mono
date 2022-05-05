@@ -5,7 +5,7 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { ToastContainer } from "react-toastify";
 
-import { Nav } from "@/components/nav";
+import { Layout } from "@/components/layout";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useAppInitialization } from "@/lib/state/app-init";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
@@ -21,13 +21,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <meta name="robots" content="noindex" />
       </Head>
 
-      <Nav />
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
 
-      <div className="px-5">
-        <div className="mx-auto min-h-full max-w-7xl py-14">
-          <Component {...pageProps} />
-        </div>
-      </div>
       <AppWideModals />
     </ApolloProvider>
   );

@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { BigNumber } from "ethers";
 
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
@@ -32,10 +33,20 @@ export default function FundingBar({
   return (
     <div className="relative">
       <div
-        className="mb-3 flex items-center justify-end text-sm text-sand-600"
-        style={{
-          marginRight: `${100 - backerWidth - seniorWidth}%`,
-        }}
+        className={clsx(
+          "mb-3 flex items-center text-sm text-sand-600",
+          backerWidth + seniorWidth < 50 ? "justify-start" : "justify-end"
+        )}
+        style={
+          backerWidth + seniorWidth < 50
+            ? { marginLeft: `${Math.min(backerWidth + seniorWidth, 50)}%` }
+            : {
+                marginRight: `${Math.min(
+                  100 - backerWidth - seniorWidth,
+                  50
+                )}%`,
+              }
+        }
       >
         Supplied{" "}
         <span className="ml-3 inline-block text-base font-medium text-sand-700">
