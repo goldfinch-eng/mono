@@ -35,7 +35,7 @@
     "html-entities": "^2.3.3",
     "next": "12.1.0",
     "react": "17.0.2",
-    "react-dom": "^17.0.2",
+    "react-dom": "17.0.2",
     "react-hook-form": "^7.30.0",
     "react-imask": "^6.4.2",
     "react-toastify": "^8.2.0"
@@ -61,7 +61,7 @@
     "@typechain/ethers-v5": "^9.0.0",
     "@types/node": "17.0.21",
     "@types/react": "17.0.39",
-    "@types/react-dom": "^18.0.3",
+    "@types/react-dom": "17.0.6",
     "autoprefixer": "^10.4.2",
     "babel-loader": "^8.2.3",
     "eslint": "8.10.0",
