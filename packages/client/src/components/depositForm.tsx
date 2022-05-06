@@ -10,7 +10,7 @@ import BigNumber from "bignumber.js"
 import {decimalPlaces, MAX_UINT} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
 import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE, SUPPLY_TX_TYPE} from "../types/transactions"
-import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
+import {SeniorPoolLoaded, StakedPositionType, StakingRewardsLoaded} from "../ethereum/pool"
 import {getLegalLanguage} from "./KYCNotice/utils"
 import useGeolocation from "../hooks/useGeolocation"
 import StakingPrompt from "./StakingPrompt"
@@ -139,6 +139,7 @@ function DepositForm(props: DepositFormProps) {
         {warningMessage}
         <StakingPrompt
           stakingApy={pool.info.value.poolData.estimatedApyFromGfi}
+          stakedPositionType={StakedPositionType.Fidu}
           onToggle={(val) => formMethods.setValue(STAKING_FORM_VAL, val)}
           formVal={STAKING_FORM_VAL}
         />

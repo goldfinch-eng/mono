@@ -57,6 +57,15 @@ const Subtitle = styled.div`
 `
 
 export default function LPAndStakeTokens({depositToken, poolToken, platform}: LPAndStakeTokensProps) {
+  const platformName = (() => {
+    switch (platform) {
+      case Platform.Curve:
+        return "Curve FIDU-USDC pool"
+      default:
+        return platform.toString()
+    }
+  })()
+
   return (
     <Container>
       <IconContainer>
@@ -64,8 +73,8 @@ export default function LPAndStakeTokens({depositToken, poolToken, platform}: LP
         <IconRight src={poolToken.icon} alt={`${poolToken.name} icon`} />
       </IconContainer>
       <SymbolAndSubtitle>
-        <Symbol>{`${depositToken.ticker} > ${poolToken.ticker}`}</Symbol>
-        <Subtitle>{`via ${platform.toString()}`}</Subtitle>
+        <Symbol>{`Deposit ${depositToken.ticker}`}</Symbol>
+        <Subtitle>{`via ${platformName}`}</Subtitle>
       </SymbolAndSubtitle>
     </Container>
   )

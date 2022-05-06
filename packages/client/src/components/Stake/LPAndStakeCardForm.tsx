@@ -8,10 +8,13 @@ import useDebounce from "../../hooks/useDebounce"
 import {displayNumber, displayPercent} from "../../utils"
 import StakingPrompt from "../StakingPrompt"
 import TransactionInput from "../transactionInput"
+import {tickerToPositionType} from "./utils"
 
 type LPAndStakeCardFormProps = {
   // Token to deposit
   depositToken: ERC20Metadata
+  // LP token received in exchange
+  poolToken: ERC20Metadata
   // Max amount available to deposit (denominated in depositToken decimals)
   maxAmountToDeposit: BigNumber
   // Staking reward APY
@@ -50,6 +53,7 @@ export default function LPAndStakeCardForm({
   depositToken,
   maxAmountToDeposit,
   stakingApy,
+  poolToken,
   deposit,
   depositAndStake,
   estimateSlippage,
@@ -141,7 +145,12 @@ export default function LPAndStakeCardForm({
     <div>
       <FormProvider {...formMethods}>
         <div>
-          <StyledStakingPrompt formVal={depositToken.name} stakingApy={stakingApy} onToggle={onStakingPromptToggle} />
+          <StyledStakingPrompt
+            formVal={depositToken.name}
+            stakedPositionType={tickerToPositionType(poolToken.ticker)}
+            stakingApy={stakingApy}
+            onToggle={onStakingPromptToggle}
+          />
           <div className="form-input-label">{amountInputLabel}</div>
           <div className="form-inputs-footer">
             <TransactionInput
