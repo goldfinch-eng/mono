@@ -308,7 +308,7 @@ export default function useStakingData(): StakingData {
       await sendFromUser(
         zapper.contract.userWallet.methods.zapStakeToCurve(
           position.tokenId,
-          position.amount.toString(10),
+          position.amount.toFixed(0),
           usdcEquivalent.toFixed(0)
         ),
         {
