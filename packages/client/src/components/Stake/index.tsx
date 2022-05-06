@@ -45,10 +45,11 @@ const SectionHeaderWithLink = styled(SectionHeader)`
 `
 
 const SectionSubtitle = styled.div`
-  font-size: 14px;
+  font-size: ${({theme}) => theme.typography.fontSize.sansSizeXs};
   font-weight: normal;
   color: ${({theme}) => theme.colors.purpLight};
   padding-bottom: 36px;
+  line-height: 1.3;
 
   > a {
     color: ${({theme}) => theme.colors.purpLight};
