@@ -3,10 +3,11 @@ import { BigNumber } from "ethers";
 import { useState } from "react";
 
 import { Button, Modal } from "@/components/design-system";
-import { formatPercent, formatUsdcAsDollars } from "@/lib/format";
+import { formatPercent, formatCrypto } from "@/lib/format";
 import {
   SeniorPoolPortfolioUserFieldsFragment,
   SeniorPoolPortfolioPoolFieldsFragment,
+  SupportedCrypto,
 } from "@/lib/graphql/generated";
 
 import { DepositForm } from "./deposit-form";
@@ -47,7 +48,12 @@ export function PortfolioSection({ user, seniorPool }: PortfolioSectionProps) {
         <div className="flex flex-col items-center">
           <div>Portfolio Balance</div>
           <div className="text-4xl tabular-nums">
-            {portfolioBalance ? formatUsdcAsDollars(portfolioBalance) : "$0.00"}
+            {portfolioBalance
+              ? formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: portfolioBalance,
+                })
+              : "$0.00"}
           </div>
         </div>
         <div className="flex flex-col items-center">

@@ -29,7 +29,7 @@ type SeniorPoolStatus @entity {
   cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
   estimatedTotalInterest: BigDecimal!
   estimatedApy: BigDecimal!
-  estimatedApyFromGfiRaw: BigDecimal
+  estimatedApyFromGfiRaw: BigDecimal!
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }

@@ -2,12 +2,16 @@ import { format } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { Stat, InfoIconTooltip, Button } from "@/components/design-system";
-import { formatPercent, formatUsdcAsDollars } from "@/lib/format";
-import type { CreditLine, TranchedPool } from "@/lib/graphql/generated";
+import { formatCrypto, formatPercent } from "@/lib/format";
+import {
+  CreditLine,
+  SupportedCrypto,
+  TranchedPool,
+} from "@/lib/graphql/generated";
 
 interface PoolFilledPanelProps {
   apy?: TranchedPool["estimatedJuniorApy"];
-  apyGfi?: TranchedPool["estimatedJuniorApyFromGfi"];
+  apyGfi?: TranchedPool["estimatedJuniorApyFromGfiRaw"];
   limit?: CreditLine["limit"];
   balance?: CreditLine["balance"];
   dueDate?: CreditLine["nextDueTime"];
@@ -25,7 +29,10 @@ export default function PoolFilledPanel({
         <div className="mb-9">
           <Stat
             label="Initial investment"
-            value={formatUsdcAsDollars(limit || BigNumber.from(0))}
+            value={formatCrypto({
+              token: SupportedCrypto.Usdc,
+              amount: limit ?? BigNumber.from(0),
+            })}
             tooltip="lorem ipsum text"
           />
         </div>

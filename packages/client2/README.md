@@ -51,6 +51,10 @@ This project uses Apollo client for fetching data from a remote GraphQL server (
 
 We also use `graphql-codegen` to generate TypeScript types for our GraphQL schema and queries.
 
+## Apollo local resolvers vs field policies
+
+Local resolvers and field policies functionally overlap quite a bit. They let you use Apollo client to resolve a graphQL query that isn't supported by your server. This allows you to express app state in Apollo's global cache. Note that even though Apollo states that local resolvers are deprecated, they only mean local resolvers in their current available API. The level of functionality that local resolvers offer will be carried forward to future major releases of Apollo. The most significant difference between local resolvers and field policies is that local resolvers support async operations. So generally speaking, if you need to write an async operation to query a piece of app state, use a local resolver. Otherwise, use a field policy.
+
 ## Weird Things
 
 ### Emergencies with The Graph

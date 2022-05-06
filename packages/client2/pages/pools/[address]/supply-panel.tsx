@@ -6,7 +6,8 @@ import { useForm, Controller } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 
 import { InfoIconTooltip } from "@/components/design-system";
-import { formatPercent, formatDollarAmount } from "@/lib/format";
+import { formatPercent, formatDollarAmount, formatFiat } from "@/lib/format";
+import { SupportedFiat } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
@@ -174,7 +175,12 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
-                <span className="mr-2">{formatDollarAmount(apyEstimate)}</span>
+                <span className="mr-2">
+                  {formatFiat({
+                    symbol: SupportedFiat.Usd,
+                    amount: apyEstimate,
+                  })}
+                </span>
                 <Image
                   src="/ui/logo-usdc.png"
                   alt="USDC Logo"

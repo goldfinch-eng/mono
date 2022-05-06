@@ -1,29 +1,29 @@
 import clsx from "clsx";
-import { BigNumber, utils } from "ethers";
+import { BigNumber } from "ethers";
 
-import { USDC_DECIMALS } from "@/constants";
-import { formatDollarAmount, usdcFromAtomic } from "@/lib/format";
+import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
+import {
+  CryptoAmount,
+  SupportedCrypto,
+  SupportedFiat,
+} from "@/lib/graphql/generated";
 
 interface FundingBarProps {
-  goal?: BigNumber;
-  backerSupply?: BigNumber;
-  seniorSupply?: BigNumber;
+  goal?: CryptoAmount;
+  backerSupply?: CryptoAmount;
+  seniorSupply?: CryptoAmount;
 }
 
+const zeroUsdc = { token: SupportedCrypto.Usdc, amount: BigNumber.from(0) };
+
 export default function FundingBar({
-  goal = BigNumber.from(0),
-  backerSupply = BigNumber.from(0),
-  seniorSupply = BigNumber.from(0),
+  goal = zeroUsdc,
+  backerSupply = zeroUsdc,
+  seniorSupply = zeroUsdc,
 }: FundingBarProps) {
-  const goalFloat = parseFloat(utils.formatUnits(goal, USDC_DECIMALS));
-
-  const backerSupplyFloat = parseFloat(
-    utils.formatUnits(backerSupply, USDC_DECIMALS)
-  );
-
-  const seniorSupplyFloat = parseFloat(
-    utils.formatUnits(seniorSupply, USDC_DECIMALS)
-  );
+  const goalFloat = cryptoToFloat(goal);
+  const backerSupplyFloat = cryptoToFloat(backerSupply);
+  const seniorSupplyFloat = cryptoToFloat(seniorSupply);
 
   const backerWidth =
     goalFloat === 0 ? 0 : (backerSupplyFloat / goalFloat) * 100;
@@ -50,7 +50,10 @@ export default function FundingBar({
       >
         Supplied{" "}
         <span className="ml-3 inline-block text-base font-medium text-sand-700">
-          {formatDollarAmount(backerSupplyFloat + seniorSupplyFloat)}
+          {formatFiat({
+            symbol: SupportedFiat.Usd,
+            amount: backerSupplyFloat + seniorSupplyFloat,
+          })}
         </span>
       </div>
       <div className="relative mb-3 h-8 overflow-hidden rounded bg-sand-200 bg-diagonals bg-repeat">
@@ -71,7 +74,7 @@ export default function FundingBar({
       <div className="flex items-center justify-end text-sm text-sand-600">
         Goal{" "}
         <span className="ml-3 inline-block text-base font-medium text-sand-700">
-          ${usdcFromAtomic(goal)}
+          {formatCrypto(goal, { includeSymbol: true })}
         </span>
       </div>
     </div>

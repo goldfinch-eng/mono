@@ -21,8 +21,11 @@ import {
 } from "@/components/design-system";
 import { SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { usdcFromAtomic, formatPercent } from "@/lib/format";
-import { useSingleTranchedPoolDataQuery } from "@/lib/graphql/generated";
+import { formatCrypto, formatPercent } from "@/lib/format";
+import {
+  SupportedCrypto,
+  useSingleTranchedPoolDataQuery,
+} from "@/lib/graphql/generated";
 import { PoolStatus, getTranchedPoolStatus } from "@/lib/pools";
 
 import ComingSoonPanel from "./coming-soon-panel";
@@ -46,7 +49,6 @@ gql`
       borrowerHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
-      estimatedJuniorApyFromGfi @client
       estimatedTotalAssets
       estimatedLeverageRatio
       remainingCapacity
@@ -223,7 +225,7 @@ export default function PoolPage() {
                     label="Total est. APY"
                     value={formatPercent(
                       tranchedPool?.estimatedJuniorApy?.addUnsafe(
-                        tranchedPool?.estimatedJuniorApyFromGfi ||
+                        tranchedPool?.estimatedJuniorApyFromGfiRaw ||
                           FixedNumber.from(0)
                       ) || 0
                     )}
@@ -265,7 +267,7 @@ export default function PoolPage() {
                   <Stat
                     label="Est $GFI APY"
                     value={formatPercent(
-                      tranchedPool?.estimatedJuniorApyFromGfi || 0
+                      tranchedPool?.estimatedJuniorApyFromGfiRaw || 0
                     )}
                     tooltip={
                       <div>
@@ -285,19 +287,40 @@ export default function PoolPage() {
             ) : (
               <div className="col-span-3 border-b border-eggplant-50 p-5">
                 <FundingBar
-                  goal={tranchedPool?.creditLine.limit}
-                  backerSupply={tranchedPool?.juniorTranches.reduce(
-                    (total, curr) => {
-                      return total.add(curr.principalDeposited);
-                    },
-                    BigNumber.from(0)
-                  )}
-                  seniorSupply={tranchedPool?.seniorTranches.reduce(
-                    (total, curr) => {
-                      return total.add(curr.principalDeposited);
-                    },
-                    BigNumber.from(0)
-                  )}
+                  goal={
+                    tranchedPool?.creditLine.maxLimit
+                      ? {
+                          token: SupportedCrypto.Usdc,
+                          amount: tranchedPool.creditLine.maxLimit,
+                        }
+                      : undefined
+                  }
+                  backerSupply={
+                    tranchedPool?.juniorTranches
+                      ? {
+                          token: SupportedCrypto.Usdc,
+                          amount: tranchedPool.juniorTranches.reduce(
+                            (total, curr) => {
+                              return total.add(curr.principalDeposited);
+                            },
+                            BigNumber.from(0)
+                          ),
+                        }
+                      : undefined
+                  }
+                  seniorSupply={
+                    tranchedPool?.seniorTranches
+                      ? {
+                          token: SupportedCrypto.Usdc,
+                          amount: tranchedPool.seniorTranches.reduce(
+                            (total, curr) => {
+                              return total.add(curr.principalDeposited);
+                            },
+                            BigNumber.from(0)
+                          ),
+                        }
+                      : undefined
+                  }
                 />
               </div>
             )}
@@ -305,9 +328,10 @@ export default function PoolPage() {
             <div className="border-r border-eggplant-50 p-5">
               <Stat
                 label="Drawdown cap"
-                value={usdcFromAtomic(
-                  tranchedPool?.creditLine?.limit || BigNumber.from(0)
-                )}
+                value={formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: tranchedPool?.creditLine.limit ?? BigNumber.from(0),
+                })}
                 tooltip={
                   <div>
                     <div className="mb-4 text-xl font-bold">Drawdown cap</div>
@@ -444,7 +468,7 @@ export default function PoolPage() {
           {poolStatus === PoolStatus.Open && (
             <SupplyPanel
               apy={tranchedPool?.estimatedJuniorApy}
-              apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
+              apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
             />
           )}
 
@@ -452,7 +476,7 @@ export default function PoolPage() {
             <PoolFilledPanel
               limit={tranchedPool?.creditLine.limit}
               apy={tranchedPool?.estimatedJuniorApy}
-              apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
+              apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
               dueDate={tranchedPool?.creditLine.nextDueTime}
             />
           )}

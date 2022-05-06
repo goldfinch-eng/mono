@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 import { Button, Input, Link } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
-import { refreshCurrentUserUsdcBalance } from "@/lib/state/actions";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -69,7 +68,6 @@ export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
     // PATTERN the "active" refetch strategy is a pretty decent medium between refetching everything and explicitly telling Apollo what to refetch
     // It's recommended to use "active" by default unless you know for sure that it's insufficient (for example, there's a piece of data offscreen that needs to be refetched)
     await apolloClient.refetchQueries({ include: "active" });
-    refreshCurrentUserUsdcBalance(usdcContract);
     toast.update(toastId, {
       render: "Senior pool deposit completed",
       type: "success",
