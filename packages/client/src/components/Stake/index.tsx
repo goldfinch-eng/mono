@@ -90,7 +90,7 @@ export default function Stake() {
         Stake your FIDU, or your LP tokens from providing liquidity to the Curve FIDU-USDC pool, on Goldfinch to earn
         additional GFI rewards. Or, migrate your staked FIDU to the Curve FIDU-USDC pool.{" "}
         <a
-          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -155,7 +155,7 @@ export default function Stake() {
         Deposit your unstaked FIDU or USDC into the FIDU-USDC Curve liquidity pool, with the option to stake your
         resulting Curve LP tokens on Goldfinch.{" "}
         <a
-          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
           target="_blank"
           rel="noopener noreferrer"
         >
