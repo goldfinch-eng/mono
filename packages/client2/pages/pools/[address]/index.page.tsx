@@ -1,7 +1,6 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
 
 import {
   Breadcrumb,
@@ -108,7 +107,6 @@ export default function PoolPage() {
   const {
     query: { address },
   } = useRouter();
-  const [poolStatus, setPoolStatus] = useState<PoolStatus>();
 
   const { data, error } = useSingleTranchedPoolDataQuery({
     skip: !address,
@@ -126,12 +124,6 @@ export default function PoolPage() {
     }
   }
 
-  useEffect(() => {
-    if (tranchedPool) {
-      setPoolStatus(getTranchedPoolStatus(tranchedPool));
-    }
-  }, [tranchedPool]);
-
   if (error) {
     return (
       <div className="text-2xl">
@@ -139,6 +131,8 @@ export default function PoolPage() {
       </div>
     );
   }
+
+  const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
 
   return (
     <>
@@ -465,27 +459,29 @@ export default function PoolPage() {
         </div>
 
         <div className="relative col-span-4">
-          <div className="sticky top-12">
-            {poolStatus === PoolStatus.Open && (
-              <SupplyPanel
-                apy={tranchedPool?.estimatedJuniorApy}
-                apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
-              />
-            )}
+          {tranchedPool ? (
+            <div className="sticky top-12">
+              {poolStatus === PoolStatus.Open && (
+                <SupplyPanel
+                  apy={tranchedPool?.estimatedJuniorApy}
+                  apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
+                />
+              )}
 
-            {poolStatus === PoolStatus.Full && (
-              <PoolFilledPanel
-                limit={tranchedPool?.creditLine.limit}
-                apy={tranchedPool?.estimatedJuniorApy}
-                apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
-                dueDate={tranchedPool?.creditLine.nextDueTime}
-              />
-            )}
+              {poolStatus === PoolStatus.Full && (
+                <PoolFilledPanel
+                  limit={tranchedPool?.creditLine.limit}
+                  apy={tranchedPool?.estimatedJuniorApy}
+                  apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
+                  dueDate={tranchedPool?.creditLine.nextDueTime}
+                />
+              )}
 
-            {poolStatus === PoolStatus.ComingSoon && (
-              <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-            )}
-          </div>
+              {poolStatus === PoolStatus.ComingSoon && (
+                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
     </>
