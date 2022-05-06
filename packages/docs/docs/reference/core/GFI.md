@@ -1,10 +1,8 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b
+
 ## GFI
 
 GFI is Goldfinch&#x27;s governance token.
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0xdab396cCF3d84Cf2D07C4454e10C8A6F5b008D2b
 
 ### OWNER_ROLE
 

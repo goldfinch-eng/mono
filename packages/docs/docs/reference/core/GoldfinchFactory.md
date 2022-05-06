@@ -1,11 +1,9 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xd20508E1E971b80EE172c73517905bfFfcBD87f9
+
 ## GoldfinchFactory
 
 Contract that allows us to create other contracts, such as CreditLines and BorrowerContracts
  Note GoldfinchFactory is a legacy name. More properly this can be considered simply the GoldfinchFactory
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0xd20508E1E971b80EE172c73517905bfFfcBD87f9
 
 ### config
 

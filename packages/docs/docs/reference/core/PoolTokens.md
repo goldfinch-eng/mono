@@ -1,11 +1,9 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x57686612C601Cb5213b01AA8e80AfEb24BBd01df
+
 ## PoolTokens
 
 PoolTokens is an ERC721 compliant contract, which can represent
  junior tranche or senior tranche shares of any of the borrower pools.
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0x57686612C601Cb5213b01AA8e80AfEb24BBd01df
 
 ### OWNER_ROLE
 

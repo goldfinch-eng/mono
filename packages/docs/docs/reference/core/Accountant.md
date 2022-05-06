@@ -1,10 +1,8 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xCb4c20Da8BB0D8496708eDB919e0db925E1C2D93
+
 ## Accountant
 
 Library for handling key financial calculations, such as interest and principal accrual.
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0xCb4c20Da8BB0D8496708eDB919e0db925E1C2D93
 
 ### FP_SCALING_FACTOR
 

@@ -1,3 +1,5 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1
+
 ## GoldfinchConfig
 
 This contract stores mappings of useful &quot;protocol config state&quot;, giving a central place
@@ -5,10 +7,6 @@ This contract stores mappings of useful &quot;protocol config state&quot;, givin
  are enumerated in the &#x60;ConfigOptions&#x60; library, and can only be changed by admins of the protocol.
  Note: While this inherits from BaseUpgradeablePausable, it is not deployed as an upgradeable contract (this
    is mostly to save gas costs of having each call go through a proxy)
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1
 
 ### GO_LISTER_ROLE
 

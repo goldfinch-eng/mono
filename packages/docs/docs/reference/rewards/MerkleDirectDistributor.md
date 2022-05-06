@@ -1,8 +1,6 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x7766e86584069Cf5d1223323d89486e95d9a8C22
+
 ## MerkleDirectDistributor
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0x7766e86584069Cf5d1223323d89486e95d9a8C22
 
 ### gfi
 

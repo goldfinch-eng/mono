@@ -1,4 +1,5 @@
 import fs from "fs"
+import { lastIndexOf } from "lodash"
 import every from "lodash/every"
 import fromPairs from "lodash/fromPairs"
 import _isPlainObject from "lodash/isPlainObject"
@@ -46,6 +47,8 @@ if (!isDeploymentsJson(deploymentsJson)) {
   throw new Error("Unexpected deployments json.")
 }
 
+const deploymentTextPrefix = "**Deployment on Ethereum mainnet: **"
+
 const addressByContractName = fromPairs(Object.entries(deploymentsJson[1].mainnet.contracts).map((tuple) => [tuple[0], tuple[1].address]))
 
 const contractDocRegexp = /^([A-Za-z0-9]+)\.md$/
@@ -71,11 +74,19 @@ contractDocsSubdirs.forEach((subdir: string) => {
         const pathToFile = `${pathToSubdir}/${fileName}`
         const content = fs.readFileSync(pathToFile, fileOptions).split(/[\n\r]/)
 
-        const insertIndex = content.findIndex((line: string) => line.startsWith("### "))
-        if (insertIndex !== -1 && content[insertIndex] === "### Mainnet Deployment") {
-          content[insertIndex + 2] = `https://etherscan.io/address/${address}`
+        const insertIndex = content.findIndex((line: string) => line.startsWith(deploymentTextPrefix) || line.startsWith("## "))
+        if (insertIndex === -1) {
+          throw new Error("Failed to identify insertion point.")
         } else {
-          content.splice(insertIndex, 0, "### Mainnet Deployment", "", `https://etherscan.io/address/${address}`, "")
+          const insertionPoint = content[insertIndex]
+          assertNonNullable(insertionPoint)
+          const deploymentText = `${deploymentTextPrefix}https://etherscan.io/address/${address}`
+
+          if (insertionPoint.startsWith(deploymentTextPrefix)) {
+            content[insertIndex] = deploymentText
+          } else {
+            content.splice(insertIndex, 0, deploymentText, "")
+          }
         }
 
         fs.writeFileSync(pathToFile, content.join("\n"), fileOptions)

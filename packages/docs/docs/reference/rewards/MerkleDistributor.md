@@ -1,8 +1,6 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x0f306E3f6b2d5ae820d33C284659B29847972d9A
+
 ## MerkleDistributor
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0x0f306E3f6b2d5ae820d33C284659B29847972d9A
 
 ### communityRewards
 

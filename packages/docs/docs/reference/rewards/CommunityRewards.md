@@ -1,8 +1,6 @@
+**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x0Cd73c18C085dEB287257ED2307eC713e9Af3460
+
 ## CommunityRewards
-
-### Mainnet Deployment
-
-https://etherscan.io/address/0x0Cd73c18C085dEB287257ED2307eC713e9Af3460
 
 ### GoldfinchConfigUpdated
 
