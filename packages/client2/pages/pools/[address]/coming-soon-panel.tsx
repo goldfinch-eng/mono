@@ -18,7 +18,7 @@ export default function ComingSoonPanel({
   const difference = differenceInDays(date, new Date());
 
   return (
-    <div className="sticky top-12 flex flex-col items-center rounded-xl border border-sand-200 px-5 py-10">
+    <div className="flex flex-col items-center rounded-xl border border-sand-200 px-5 py-10">
       <div className="mb-5 text-xl">
         This pool will open on{" "}
         <span className="font-semibold text-sky-700">

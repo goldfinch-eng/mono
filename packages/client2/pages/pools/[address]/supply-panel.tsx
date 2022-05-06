@@ -58,7 +58,7 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
   }, [supplyValue, apy, apyGfi]);
 
   return (
-    <div className="sticky top-12 rounded-xl bg-[#192852] bg-gradientRed p-5 text-white">
+    <div className="rounded-xl bg-[#192852] bg-gradientRed p-5 text-white">
       <div className="mb-3 flex flex-row justify-between">
         <span className="text-sm">Est APY</span>
         <span className="opacity-60">

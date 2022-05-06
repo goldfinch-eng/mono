@@ -24,7 +24,7 @@ export default function PoolFilledPanel({
   dueDate,
 }: PoolFilledPanelProps) {
   return (
-    <div className="sticky top-12 rounded-xl border border-sand-200">
+    <div className="rounded-xl border border-sand-200">
       <div className="p-5">
         <div className="mb-9">
           <Stat

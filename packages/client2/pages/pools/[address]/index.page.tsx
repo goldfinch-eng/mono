@@ -465,25 +465,27 @@ export default function PoolPage() {
         </div>
 
         <div className="relative col-span-4">
-          {poolStatus === PoolStatus.Open && (
-            <SupplyPanel
-              apy={tranchedPool?.estimatedJuniorApy}
-              apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
-            />
-          )}
+          <div className="sticky top-12">
+            {poolStatus === PoolStatus.Open && (
+              <SupplyPanel
+                apy={tranchedPool?.estimatedJuniorApy}
+                apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
+              />
+            )}
 
-          {poolStatus === PoolStatus.Full && (
-            <PoolFilledPanel
-              limit={tranchedPool?.creditLine.limit}
-              apy={tranchedPool?.estimatedJuniorApy}
-              apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
-              dueDate={tranchedPool?.creditLine.nextDueTime}
-            />
-          )}
+            {poolStatus === PoolStatus.Full && (
+              <PoolFilledPanel
+                limit={tranchedPool?.creditLine.limit}
+                apy={tranchedPool?.estimatedJuniorApy}
+                apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
+                dueDate={tranchedPool?.creditLine.nextDueTime}
+              />
+            )}
 
-          {poolStatus === PoolStatus.ComingSoon && (
-            <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-          )}
+            {poolStatus === PoolStatus.ComingSoon && (
+              <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+            )}
+          </div>
         </div>
       </div>
     </>
