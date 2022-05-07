@@ -1,3 +1,5 @@
+import { FixedNumber } from "ethers";
+
 import type { CreditLine, TranchedPool } from "@/lib/graphql/generated";
 
 interface PoolStatusProps {
@@ -37,4 +39,11 @@ export function getTranchedPoolStatus(pool: PoolStatusProps) {
   } else {
     return PoolStatus.Open;
   }
+}
+
+export function computeApyFromGfiInFiat(
+  apyFromGfiRaw: FixedNumber,
+  fiatPerGfi: number
+): FixedNumber {
+  return apyFromGfiRaw.mulUnsafe(FixedNumber.fromString(fiatPerGfi.toString()));
 }

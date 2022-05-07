@@ -12,8 +12,8 @@ import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 interface SupplyPanelProps {
-  apy?: FixedNumber;
-  apyGfi?: FixedNumber;
+  apy: FixedNumber;
+  apyGfi: FixedNumber;
 }
 
 interface SupplyForm {
@@ -39,18 +39,8 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
   useEffect(() => {
     if (supplyValue) {
       const s = parseFloat(supplyValue);
-
-      if (apy) {
-        setApyEstimate(s * apy.toUnsafeFloat());
-      } else {
-        setApyEstimate(0);
-      }
-
-      if (apyGfi) {
-        setApyGfiEstimate(s * apyGfi.toUnsafeFloat());
-      } else {
-        setApyGfiEstimate(0);
-      }
+      setApyEstimate(s * apy.toUnsafeFloat());
+      setApyGfiEstimate(s * apyGfi.toUnsafeFloat());
     } else {
       setApyEstimate(0);
       setApyGfiEstimate(0);
@@ -75,7 +65,7 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
       </div>
 
       <div className="mb-14 text-6xl font-medium">
-        {formatPercent(apy?.addUnsafe(apyGfi || FixedNumber.from(0)) || 0)}
+        {formatPercent(apy.addUnsafe(apyGfi))}
       </div>
 
       <div className="mb-3 flex flex-row items-end justify-between">
@@ -171,7 +161,7 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
         <tbody>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(apy || 0)} APY
+              {formatPercent(apy)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
@@ -192,7 +182,7 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
           </tr>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(apyGfi || 0)} APY
+              {formatPercent(apyGfi)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">

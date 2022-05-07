@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
-import { FixedNumber } from "ethers";
 
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { useExampleQuery } from "@/lib/graphql/generated";
+import { computeApyFromGfiInFiat } from "@/lib/pools";
 
 import {
   PoolCard,
@@ -75,8 +75,9 @@ export default function EarnPage() {
             subtitle={seniorPool.category}
             icon={seniorPool.icon}
             apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyFromGfi={seniorPool.latestPoolStatus.estimatedApyFromGfiRaw?.mulUnsafe(
-              FixedNumber.fromString(fiatPerGfi.toString())
+            apyFromGfi={computeApyFromGfiInFiat(
+              seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+              fiatPerGfi
             )}
             href="/pools/senior"
           />

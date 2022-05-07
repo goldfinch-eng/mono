@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber } from "ethers";
 import { useRouter } from "next/router";
 
 import {
@@ -25,7 +25,11 @@ import {
   SupportedCrypto,
   useSingleTranchedPoolDataQuery,
 } from "@/lib/graphql/generated";
-import { PoolStatus, getTranchedPoolStatus } from "@/lib/pools";
+import {
+  PoolStatus,
+  getTranchedPoolStatus,
+  computeApyFromGfiInFiat,
+} from "@/lib/pools";
 
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
@@ -91,6 +95,12 @@ gql`
         name
       }
     }
+    gfiPrice @client {
+      price {
+        amount
+        symbol
+      }
+    }
   }
 `;
 
@@ -114,6 +124,7 @@ export default function PoolPage() {
   });
 
   const tranchedPool = data?.tranchedPool;
+  const fiatPerGfi = data?.gfiPrice.price.amount;
 
   function share() {
     if (navigator && window) {
@@ -212,16 +223,18 @@ export default function PoolPage() {
           ) : null}
 
           <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
-            {poolStatus === PoolStatus.ComingSoon ? (
+            {tranchedPool &&
+            fiatPerGfi &&
+            poolStatus === PoolStatus.ComingSoon ? (
               <>
                 <div className="border-r border-b border-eggplant-50 p-5">
                   <Stat
                     label="Total est. APY"
-                    value={formatPercent(
-                      tranchedPool?.estimatedJuniorApy?.addUnsafe(
-                        tranchedPool?.estimatedJuniorApyFromGfiRaw ||
-                          FixedNumber.from(0)
-                      ) || 0
+                    value={tranchedPool.estimatedJuniorApy.addUnsafe(
+                      computeApyFromGfiInFiat(
+                        tranchedPool.estimatedJuniorApyFromGfiRaw,
+                        fiatPerGfi
+                      )
                     )}
                     tooltip={
                       <div>
@@ -241,7 +254,7 @@ export default function PoolPage() {
                 <div className="border-b border-r border-eggplant-50 p-5">
                   <Stat
                     label="Est $USDC APY"
-                    value={formatPercent(tranchedPool?.estimatedJuniorApy || 0)}
+                    value={formatPercent(tranchedPool.estimatedJuniorApy)}
                     tooltip={
                       <div>
                         <div className="mb-4 text-xl font-bold">
@@ -261,7 +274,7 @@ export default function PoolPage() {
                   <Stat
                     label="Est $GFI APY"
                     value={formatPercent(
-                      tranchedPool?.estimatedJuniorApyFromGfiRaw || 0
+                      tranchedPool.estimatedJuniorApyFromGfiRaw
                     )}
                     tooltip={
                       <div>
@@ -470,10 +483,10 @@ export default function PoolPage() {
 
               {poolStatus === PoolStatus.Full && (
                 <PoolFilledPanel
-                  limit={tranchedPool?.creditLine.limit}
-                  apy={tranchedPool?.estimatedJuniorApy}
-                  apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
-                  dueDate={tranchedPool?.creditLine.nextDueTime}
+                  limit={tranchedPool.creditLine.limit}
+                  apy={tranchedPool.estimatedJuniorApy}
+                  apyGfi={tranchedPool.estimatedJuniorApyFromGfiRaw}
+                  dueDate={tranchedPool.creditLine.nextDueTime}
                 />
               )}
 

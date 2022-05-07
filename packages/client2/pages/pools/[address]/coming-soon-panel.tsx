@@ -1,15 +1,12 @@
 import { differenceInDays, format } from "date-fns";
-import { BigNumber } from "ethers";
 
 import type { TranchedPool } from "@/lib/graphql/generated";
 
 interface ComingSoonPanelProps {
-  fundableAt?: TranchedPool["fundableAt"];
+  fundableAt: TranchedPool["fundableAt"];
 }
 
-export default function ComingSoonPanel({
-  fundableAt = BigNumber.from(0),
-}: ComingSoonPanelProps) {
+export default function ComingSoonPanel({ fundableAt }: ComingSoonPanelProps) {
   if (fundableAt.isZero()) {
     return <></>;
   }

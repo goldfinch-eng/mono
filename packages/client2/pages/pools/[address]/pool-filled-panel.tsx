@@ -1,5 +1,4 @@
 import { format } from "date-fns";
-import { BigNumber } from "ethers";
 
 import { Stat, InfoIconTooltip, Button } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
@@ -10,11 +9,10 @@ import {
 } from "@/lib/graphql/generated";
 
 interface PoolFilledPanelProps {
-  apy?: TranchedPool["estimatedJuniorApy"];
-  apyGfi?: TranchedPool["estimatedJuniorApyFromGfiRaw"];
-  limit?: CreditLine["limit"];
-  balance?: CreditLine["balance"];
-  dueDate?: CreditLine["nextDueTime"];
+  apy: TranchedPool["estimatedJuniorApy"];
+  apyGfi: TranchedPool["estimatedJuniorApyFromGfiRaw"];
+  limit: CreditLine["limit"];
+  dueDate: CreditLine["nextDueTime"];
 }
 
 export default function PoolFilledPanel({
@@ -31,7 +29,7 @@ export default function PoolFilledPanel({
             label="Initial investment"
             value={formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: limit ?? BigNumber.from(0),
+              amount: limit,
             })}
             tooltip="lorem ipsum text"
           />
@@ -71,7 +69,7 @@ export default function PoolFilledPanel({
                 $XXX.XX
               </td>
               <td className="w-1/2 border border-sand-100 p-3 text-right text-xl">
-                {formatPercent(apy || 0)}
+                {formatPercent(apy)}
               </td>
             </tr>
             <tr>
@@ -79,25 +77,23 @@ export default function PoolFilledPanel({
                 $XXX.XX
               </td>
               <td className="w-1/2 border border-sand-100 p-3 text-right text-xl">
-                {formatPercent(apyGfi || 0)}
+                {formatPercent(apyGfi)}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      {dueDate && (
-        <div className="flex items-end justify-between border-t border-sand-200 p-5 ">
-          <Stat
-            label="Next repayment date"
-            value={format(dueDate.toNumber() * 1000, "MMM d, y")}
-            tooltip="lorem ipsum text"
-          />
-          <Button variant="rounded" colorScheme="secondary">
-            See schedule
-          </Button>
-        </div>
-      )}
+      <div className="flex items-end justify-between border-t border-sand-200 p-5 ">
+        <Stat
+          label="Next repayment date"
+          value={format(dueDate.toNumber() * 1000, "MMM d, y")}
+          tooltip="lorem ipsum text"
+        />
+        <Button variant="rounded" colorScheme="secondary">
+          See schedule
+        </Button>
+      </div>
     </div>
   );
 }

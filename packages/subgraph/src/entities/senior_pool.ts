@@ -38,6 +38,7 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.cumulativeDrawdowns = new BigInt(0)
     poolStatus.estimatedTotalInterest = BigDecimal.zero()
     poolStatus.estimatedApy = BigDecimal.zero()
+    poolStatus.estimatedApyFromGfiRaw = BigDecimal.zero()
     poolStatus.defaultRate = new BigInt(0)
     poolStatus.tranchedPools = []
     poolStatus.save()
@@ -76,7 +77,6 @@ const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
-  const stakingRewards = getStakingRewards()
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
