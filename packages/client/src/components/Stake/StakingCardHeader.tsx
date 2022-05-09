@@ -5,6 +5,7 @@ import StakingToken, {Platform} from "./StakingToken"
 import {iconCarrotDown, iconCarrotUp} from "../icons"
 import {mediaPoint} from "../../styles/mediaPoint"
 import {ERC20Metadata} from "../../ethereum/erc20"
+import {InfoIcon} from "../../ui/icons"
 
 type StakingCardHeaderProps = {
   className?: string
@@ -20,6 +21,8 @@ type StakingCardHeaderProps = {
   rewardToken: ERC20Metadata
   // Platform of the staking token
   platform: Platform
+  // Optional APY tooltip. The tooltip will be displayed if this prop exists.
+  apyTooltip?: React.ReactNode
   expanded?: boolean
   onToggle: () => any
 }
@@ -53,6 +56,14 @@ export const HeaderText = styled.div<{light?: boolean; justifySelf: string; hide
   }
 `
 
+export const APYHeaderText = styled(HeaderText)`
+  & {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+`
+
 const Carrot = styled.button`
   > .icon {
     width: 20px;
@@ -68,14 +79,31 @@ export default function StakingCardHeader({
   rewardApy,
   rewardToken,
   platform,
+  apyTooltip,
   onToggle,
 }: StakingCardHeaderProps) {
   return (
     <ClickableHeaderGrid className={className} onClick={onToggle}>
       <StakingToken token={token} platform={platform} />
-      <HeaderText justifySelf="end" hideOnSmallerScreens={false}>{`${displayPercent(rewardApy)} ${
-        rewardToken.ticker
-      }`}</HeaderText>
+      <APYHeaderText justifySelf="end" hideOnSmallerScreens={false}>
+        <div>{`${displayPercent(rewardApy)} ${rewardToken.ticker}`}</div>
+        {!!apyTooltip && (
+          <>
+            <div>
+              <span
+                data-tip=""
+                data-for="curve-apy-tooltip"
+                data-offset="{'top': 0, 'left': 0}"
+                data-place="bottom"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <InfoIcon />
+              </span>
+            </div>
+            {apyTooltip}
+          </>
+        )}
+      </APYHeaderText>
       <HeaderText justifySelf="end" light={maxAmountToStake.isZero()} hideOnSmallerScreens>
         {displayNumber(maxAmountToStake.div(new BigNumber(10).pow(token.decimals)))}
       </HeaderText>
