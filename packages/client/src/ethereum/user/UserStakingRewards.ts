@@ -1,3 +1,4 @@
+import {asNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import {KnownEventData, STAKED_EVENT} from "../../types/events"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../../types/loadable"
@@ -25,10 +26,6 @@ export class UserStakingRewards {
   }
 
   async initialize(address: string, stakingRewards: StakingRewardsLoaded, currentBlock: BlockInfo): Promise<void> {
-    // NOTE: In defining `positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
-    // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
-    // The former approach reflects any token transfers that may have occurred to or from the
-    // `recipient`, whereas the latter does not.
     const positions = await this.getTokenIds({address, stakingRewards, currentBlock})
       .then((tokenIds: string[]) =>
         Promise.all([
@@ -42,10 +39,10 @@ export class UserStakingRewards {
         return tokenIds.map((tokenId, i) =>
           this.buildStakingRewardsPosition({
             tokenId,
-            stakedEvent: correspondingStakedEvents[i],
-            storedPosition: storedAndIncrements[i]?.storedPosition,
-            optimisticIncrement: storedAndIncrements[i]?.optimisticIncrement,
-            currentEarnRate: currentEarnRates[i],
+            stakedEvent: asNonNullable(correspondingStakedEvents[i]),
+            storedPosition: asNonNullable(storedAndIncrements[i]?.storedPosition),
+            optimisticIncrement: asNonNullable(storedAndIncrements[i]?.optimisticIncrement),
+            currentEarnRate: asNonNullable(currentEarnRates[i]),
           })
         )
       })
@@ -74,16 +71,11 @@ export class UserStakingRewards {
     optimisticIncrement,
   }: {
     tokenId: string
-    currentEarnRate?: string
-    stakedEvent?: KnownEventData<typeof STAKED_EVENT>
-    storedPosition?: StoredPosition
-    optimisticIncrement?: PositionOptimisticIncrement
+    currentEarnRate: string
+    stakedEvent: KnownEventData<typeof STAKED_EVENT>
+    storedPosition: StoredPosition
+    optimisticIncrement: PositionOptimisticIncrement
   }): StakingRewardsPosition {
-    assertNonNullable(storedPosition)
-    assertNonNullable(optimisticIncrement)
-    assertNonNullable(stakedEvent)
-    assertNonNullable(currentEarnRate)
-
     return new StakingRewardsPosition(
       tokenId,
       stakedEvent,
