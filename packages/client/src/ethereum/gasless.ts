@@ -1,3 +1,4 @@
+import {NonPayableTransactionObject} from "@goldfinch-eng/protocol/typechain/web3/types"
 import getWeb3 from "../web3"
 import {getDeployments, chainIdToNetworkID, FORWARDER_ADDRESSES, isMainnetForking} from "./utils"
 const ForwarderAbi = require("../../../autotasks/relayer/Forwarder.json")
@@ -41,7 +42,10 @@ const TypedData = {
   message: {},
 }
 
-async function submitGaslessTransaction(contractAddress, unsentAction) {
+async function submitGaslessTransaction(
+  contractAddress: string,
+  unsentAction: NonPayableTransactionObject<void>
+): Promise<unknown> {
   const web3 = getWeb3()
   const provider = new ethers.providers.Web3Provider(web3.userWallet.currentProvider)
   const signer = provider.getSigner()
