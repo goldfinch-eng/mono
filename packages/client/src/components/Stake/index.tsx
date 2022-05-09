@@ -184,6 +184,7 @@ export default function Stake() {
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
         platform={Platform.Curve}
+        apyTooltip={<CurveStakingAPYTooltip />}
         deposit={(amount) => depositToCurve(amount, new BigNumber(0))}
         depositAndStake={(amount) => depositToCurveAndStake(amount, new BigNumber(0))}
         estimateSlippage={(fiduAmount) => estimateSlippage(fiduAmount, new BigNumber(0))}
@@ -196,6 +197,7 @@ export default function Stake() {
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
         platform={Platform.Curve}
+        apyTooltip={<CurveStakingAPYTooltip />}
         deposit={(amount) => depositToCurve(new BigNumber(0), amount)}
         depositAndStake={(amount) => depositToCurveAndStake(new BigNumber(0), amount)}
         estimateSlippage={(usdcAmount) => estimateSlippage(new BigNumber(0), usdcAmount)}

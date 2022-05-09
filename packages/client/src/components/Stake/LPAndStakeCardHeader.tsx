@@ -2,10 +2,11 @@ import BigNumber from "bignumber.js"
 import styled from "styled-components"
 import {ERC20Metadata} from "../../ethereum/erc20"
 import {mediaPoint} from "../../styles/mediaPoint"
+import {InfoIcon} from "../../ui/icons"
 import {displayNumber, displayPercent} from "../../utils"
 import {iconCarrotDown, iconCarrotUp} from "../icons"
 import LPAndStakeTokens, {Platform} from "./LPAndStakeTokens"
-import {HeaderText} from "./StakingCardHeader"
+import {APYHeaderText, HeaderText} from "./StakingCardHeader"
 
 type LPAndStakeCardHeaderProps = {
   className?: string
@@ -21,6 +22,8 @@ type LPAndStakeCardHeaderProps = {
   rewardToken: ERC20Metadata
   // Platform of the liquidity pool
   platform: Platform
+  // Optional APY tooltip. The tooltip will be displayed if this prop exists.
+  apyTooltip?: React.ReactNode
   expanded?: boolean
   onToggle: () => any
 }
@@ -56,14 +59,31 @@ export default function LPAndStakeCardHeader({
   rewardApy,
   rewardToken,
   platform,
+  apyTooltip,
   onToggle,
 }: LPAndStakeCardHeaderProps) {
   return (
     <ClickableHeaderGrid className={className} onClick={onToggle}>
       <LPAndStakeTokens depositToken={depositToken} poolToken={poolToken} platform={platform} />
-      <HeaderText justifySelf="end" hideOnSmallerScreens={false}>{`${displayPercent(rewardApy)} ${
-        rewardToken.ticker
-      }`}</HeaderText>
+      <APYHeaderText justifySelf="end" hideOnSmallerScreens={false}>
+        <div>{`${displayPercent(rewardApy)} ${rewardToken.ticker}`}</div>
+        {!!apyTooltip && (
+          <>
+            <div>
+              <span
+                data-tip=""
+                data-for="curve-apy-tooltip"
+                data-offset="{'top': 0, 'left': 0}"
+                data-place="bottom"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <InfoIcon />
+              </span>
+            </div>
+            {apyTooltip}
+          </>
+        )}
+      </APYHeaderText>
       <HeaderText justifySelf="end" light={maxAmountToDeposit.isZero()} hideOnSmallerScreens>
         {displayNumber(maxAmountToDeposit.div(new BigNumber(10).pow(depositToken.decimals)))}
       </HeaderText>

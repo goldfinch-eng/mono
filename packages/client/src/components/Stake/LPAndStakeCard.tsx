@@ -20,6 +20,8 @@ type LPAndStakeCardProps = {
   rewardToken: ERC20Metadata
   // Platform of the liquidity pool
   platform: Platform
+  // Optional APY tooltip. The tooltip will be displayed if this prop exists.
+  apyTooltip?: React.ReactNode
   deposit: (BigNumber) => Promise<any>
   depositAndStake: (BigNumber) => Promise<any>
   estimateSlippage: (BigNumber) => Promise<Slippage>
@@ -38,6 +40,7 @@ export default function LPAndStakeCard({
   rewardApy,
   rewardToken,
   platform,
+  apyTooltip,
   deposit,
   depositAndStake,
   estimateSlippage,
@@ -58,6 +61,7 @@ export default function LPAndStakeCard({
         rewardApy={rewardApy}
         rewardToken={rewardToken}
         platform={platform}
+        apyTooltip={apyTooltip}
         onToggle={onToggle}
       />
       {expanded && (

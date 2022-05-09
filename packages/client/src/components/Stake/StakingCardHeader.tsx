@@ -56,7 +56,7 @@ export const HeaderText = styled.div<{light?: boolean; justifySelf: string; hide
   }
 `
 
-const APYHeaderText = styled(HeaderText)`
+export const APYHeaderText = styled(HeaderText)`
   display: flex;
   gap: 5px;
 `
