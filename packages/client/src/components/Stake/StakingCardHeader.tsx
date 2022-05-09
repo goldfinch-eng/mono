@@ -57,8 +57,11 @@ export const HeaderText = styled.div<{light?: boolean; justifySelf: string; hide
 `
 
 export const APYHeaderText = styled(HeaderText)`
-  display: flex;
-  gap: 5px;
+  & {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
 `
 
 const Carrot = styled.button`
