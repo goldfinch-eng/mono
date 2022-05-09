@@ -876,7 +876,7 @@ export function getStakedPositionTypeByValue(value: string, legacyFallback = fal
   }
 }
 
-type PositionOptimisticIncrement = {
+export type PositionOptimisticIncrement = {
   vested: BigNumber
   unvested: BigNumber
 }
