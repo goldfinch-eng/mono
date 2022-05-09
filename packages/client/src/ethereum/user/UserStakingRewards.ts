@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js"
 import {KnownEventData, STAKED_EVENT} from "../../types/events"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../../types/loadable"
-import {assertNonNullable, BlockInfo, defaultSum, WithCurrentBlock} from "../../utils"
+import {assertNonNullable, BlockInfo, defaultSum} from "../../utils"
 import {PositionOptimisticIncrement, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "../pool"
 
 type UserStakingRewardsLoadedInfo = {
@@ -24,12 +24,7 @@ export class UserStakingRewards {
     }
   }
 
-  async initialize(
-    address: string,
-    stakingRewards: StakingRewardsLoaded,
-    stakedEvents: WithCurrentBlock<{value: KnownEventData<typeof STAKED_EVENT>[]}>,
-    currentBlock: BlockInfo
-  ): Promise<void> {
+  async initialize(address: string, stakingRewards: StakingRewardsLoaded, currentBlock: BlockInfo): Promise<void> {
     // NOTE: In defining `positions`, we want to use `balanceOf()` plus `tokenOfOwnerByIndex()`
     // to determine `tokenIds`, rather than using the set of Staked events for the `recipient`.
     // The former approach reflects any token transfers that may have occurred to or from the
@@ -39,7 +34,7 @@ export class UserStakingRewards {
         Promise.all([
           tokenIds,
           this.getStoredPositionsWithOptimisticIncrements({tokenIds, stakingRewards, currentBlock}),
-          this.getStakedEvents({tokenIds, stakedEvents}),
+          this.getStakedEvents({tokenIds, stakingRewards, currentBlock}),
           this.getCurrentEarnRateForPositions({tokenIds, stakingRewards, currentBlock}),
         ])
       )
@@ -119,21 +114,38 @@ export class UserStakingRewards {
       )
   }
 
-  async getStakedEvents({tokenIds, stakedEvents}): Promise<KnownEventData<typeof STAKED_EVENT>[]> {
-    return Promise.all(
-      tokenIds.map(async (tokenId) => {
-        const stakedEvent = stakedEvents.value.find(
-          (stakedEvent: KnownEventData<typeof STAKED_EVENT>) => stakedEvent.returnValues.tokenId === tokenId
-        )
-        if (!stakedEvent) {
-          throw new Error(
-            `Failed to retrieve Staked event for tokenId ${tokenId}, from set for token ids: ${stakedEvents.value.map(
-              (stakedEvent: KnownEventData<typeof STAKED_EVENT>) => stakedEvent.returnValues.tokenId
-            )}`
+  async getStakedEvents({
+    tokenIds,
+    stakingRewards,
+    currentBlock,
+  }: {
+    tokenIds: string[]
+    stakingRewards: StakingRewardsLoaded
+    currentBlock: BlockInfo
+  }): Promise<KnownEventData<typeof STAKED_EVENT>[]> {
+    return (
+      stakingRewards
+        // Fetch all Staked events for the positions that the user currently holds.
+        // This handles scenarios where token transfers have occurred where the
+        // user was the recipient.
+        .getEventsForPositions<typeof STAKED_EVENT>(tokenIds, ["Staked"], undefined, currentBlock.number)
+        .then((stakedEventsForPositions) =>
+          Promise.all(
+            tokenIds.map(async (tokenId) => {
+              const stakedEvent = stakedEventsForPositions.find(
+                (stakedEvent: KnownEventData<typeof STAKED_EVENT>) => stakedEvent.returnValues.tokenId === tokenId
+              )
+              if (!stakedEvent) {
+                throw new Error(
+                  `Failed to retrieve Staked event for tokenId ${tokenId}, from set for token ids: ${stakedEventsForPositions.map(
+                    (stakedEvent: KnownEventData<typeof STAKED_EVENT>) => stakedEvent.returnValues.tokenId
+                  )}`
+                )
+              }
+              return stakedEvent
+            })
           )
-        }
-        return stakedEvent
-      })
+        )
     )
   }
 

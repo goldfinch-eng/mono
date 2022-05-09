@@ -195,7 +195,7 @@ export class User {
       currentBlock
     )
     const {poolEvents, poolTxs} = poolEventsAndTxs
-    const {stakedEvents, stakingRewardsTxs} = stakingRewardsEventsAndTxs
+    const {stakingRewardsTxs} = stakingRewardsEventsAndTxs
     let pastTxs = _.reverse(
       _.sortBy(
         [
@@ -222,7 +222,7 @@ export class User {
     )
 
     const userStakingRewards = new UserStakingRewards()
-    await userStakingRewards.initialize(this.address, stakingRewards, stakedEvents, currentBlock)
+    await userStakingRewards.initialize(this.address, stakingRewards, currentBlock)
     assertWithLoadedInfo(userStakingRewards)
 
     this.info = {
@@ -627,7 +627,7 @@ async function getOverlappingStakingRewardsEvents(
 ): Promise<WithCurrentBlock<{value: KnownEventData<StakingRewardsEventType>[]}>> {
   return {
     currentBlock: stakingRewards.info.value.currentBlock,
-    value: await stakingRewards.getEvents(
+    value: await stakingRewards.getEventsFromUser(
       address,
       STAKING_REWARDS_EVENT_TYPES,
       undefined,
