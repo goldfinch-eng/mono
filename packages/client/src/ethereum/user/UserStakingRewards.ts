@@ -115,6 +115,10 @@ export class UserStakingRewards {
     stakingRewards: StakingRewardsLoaded
     currentBlock: BlockInfo
   }): Promise<KnownEventData<typeof STAKED_EVENT>[]> {
+    if (tokenIds.length === 0) {
+      return Promise.resolve([])
+    }
+
     return (
       stakingRewards
         // Fetch all Staked events for the positions that the user currently holds.
