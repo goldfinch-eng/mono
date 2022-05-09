@@ -313,111 +313,113 @@ export class User {
         currentBlock
       ),
 
-      getOverlappingStakingRewardsEvents(this.address, stakingRewards).then(async (overlappingStakingRewardsEvents) => {
-        const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
-        const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
-          (
-            eventData: KnownEventData<StakingRewardsEventType>
-          ): eventData is KnownEventData<StakingRewardsEventType> & {event: typeof STAKED_EVENT} =>
-            eventData.event === STAKED_EVENT
-        )
-        return {
-          stakedEvents: {
-            currentBlock: overlappingStakingRewardsEvents.currentBlock,
-            value: stakedEvents,
-          },
-          stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
-            parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
-              switch (eventData.event) {
-                case STAKED_EVENT:
-                  return STAKE_TX_TYPE
-                case DEPOSITED_AND_STAKED_EVENT:
-                  return SUPPLY_AND_STAKE_TX_TYPE
-                case DEPOSITED_TO_CURVE_EVENT:
-                  return DEPOSIT_TO_CURVE_TX_TYPE
-                case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
-                  return DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE
-                case UNSTAKED_EVENT:
-                  return UNSTAKE_TX_NAME
-                case UNSTAKED_AND_WITHDREW_EVENT:
-                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                  return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
-                case UNSTAKED_MULTIPLE_EVENT:
-                  return UNSTAKE_MULTIPLE_TX_TYPE
-                case REWARD_PAID_EVENT:
-                  return CLAIM_TX_TYPE
-                default:
-                  return assertUnreachable(eventData.event)
-              }
+      getOverlappingStakingRewardsEventsForUser(this.address, stakingRewards).then(
+        async (overlappingStakingRewardsEvents) => {
+          const nonOverlappingEvents = getNonOverlappingStakingRewardsEvents(overlappingStakingRewardsEvents.value)
+          const stakedEvents: KnownEventData<typeof STAKED_EVENT>[] = overlappingStakingRewardsEvents.value.filter(
+            (
+              eventData: KnownEventData<StakingRewardsEventType>
+            ): eventData is KnownEventData<StakingRewardsEventType> & {event: typeof STAKED_EVENT} =>
+              eventData.event === STAKED_EVENT
+          )
+          return {
+            stakedEvents: {
+              currentBlock: overlappingStakingRewardsEvents.currentBlock,
+              value: stakedEvents,
             },
-            parseAmount: async (eventData: KnownEventData<StakingRewardsEventType>) => {
-              switch (eventData.event) {
-                case STAKED_EVENT:
-                  return {
-                    amount: eventData.returnValues.amount,
-                    units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
-                  }
-                case DEPOSITED_AND_STAKED_EVENT:
-                  return {
-                    amount: eventData.returnValues.depositedAmount,
-                    units: "usdc",
-                  }
-                case DEPOSITED_TO_CURVE_EVENT:
-                case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
-                  const fiduAmount = eventData.returnValues.fiduAmount
-                  const usdcAmount = eventData.returnValues.usdcAmount
-                  if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
-                    // USDC-only deposit
+            stakingRewardsTxs: await mapEventsToTx(nonOverlappingEvents, STAKING_REWARDS_EVENT_TYPES, {
+              parseName: (eventData: KnownEventData<StakingRewardsEventType>) => {
+                switch (eventData.event) {
+                  case STAKED_EVENT:
+                    return STAKE_TX_TYPE
+                  case DEPOSITED_AND_STAKED_EVENT:
+                    return SUPPLY_AND_STAKE_TX_TYPE
+                  case DEPOSITED_TO_CURVE_EVENT:
+                    return DEPOSIT_TO_CURVE_TX_TYPE
+                  case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
+                    return DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE
+                  case UNSTAKED_EVENT:
+                    return UNSTAKE_TX_NAME
+                  case UNSTAKED_AND_WITHDREW_EVENT:
+                  case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+                    return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
+                  case UNSTAKED_MULTIPLE_EVENT:
+                    return UNSTAKE_MULTIPLE_TX_TYPE
+                  case REWARD_PAID_EVENT:
+                    return CLAIM_TX_TYPE
+                  default:
+                    return assertUnreachable(eventData.event)
+                }
+              },
+              parseAmount: async (eventData: KnownEventData<StakingRewardsEventType>) => {
+                switch (eventData.event) {
+                  case STAKED_EVENT:
                     return {
-                      amount: usdcAmount,
+                      amount: eventData.returnValues.amount,
+                      units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
+                    }
+                  case DEPOSITED_AND_STAKED_EVENT:
+                    return {
+                      amount: eventData.returnValues.depositedAmount,
                       units: "usdc",
                     }
-                  } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
-                    // FIDU-only deposit
-                    return {
-                      amount: fiduAmount,
-                      units: "fidu",
+                  case DEPOSITED_TO_CURVE_EVENT:
+                  case DEPOSITED_TO_CURVE_AND_STAKED_EVENT:
+                    const fiduAmount = eventData.returnValues.fiduAmount
+                    const usdcAmount = eventData.returnValues.usdcAmount
+                    if (new BigNumber(fiduAmount).isZero() && !new BigNumber(usdcAmount).isZero()) {
+                      // USDC-only deposit
+                      return {
+                        amount: usdcAmount,
+                        units: "usdc",
+                      }
+                    } else if (!new BigNumber(fiduAmount).isZero() && new BigNumber(usdcAmount).isZero()) {
+                      // FIDU-only deposit
+                      return {
+                        amount: fiduAmount,
+                        units: "fidu",
+                      }
+                    } else {
+                      throw new Error("Cannot deposit both FIDU and USDC")
                     }
-                  } else {
-                    throw new Error("Cannot deposit both FIDU and USDC")
-                  }
-                case UNSTAKED_EVENT:
-                  return {
-                    amount: eventData.returnValues.amount,
-                    units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
-                  }
-                case UNSTAKED_AND_WITHDREW_EVENT:
-                case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
-                  return {
-                    amount: eventData.returnValues.usdcReceivedAmount,
-                    units: "usdc",
-                  }
-                case UNSTAKED_MULTIPLE_EVENT:
-                  // We can assume that all positions in an "Unstaked Multiple" event are of the same
-                  // position type, so we just check the type of the first unstaked position.
-                  const tokenId = eventData.returnValues.tokenIds[0]
-                  const position = await stakingRewards.contract.readOnly.methods
-                    .positions(tokenId)
-                    .call(undefined, "latest")
-                  return {
-                    amount: eventData.returnValues.amounts.reduce(
-                      (sum, amount) => new BigNumber(amount).plus(sum),
-                      new BigNumber(0)
-                    ),
-                    units: this.getUnitsForStakedPositionType(position.positionType),
-                  }
-                case REWARD_PAID_EVENT:
-                  return {
-                    amount: eventData.returnValues.reward,
-                    units: "gfi",
-                  }
-                default:
-                  return assertUnreachable(eventData.event)
-              }
-            },
-          }),
+                  case UNSTAKED_EVENT:
+                    return {
+                      amount: eventData.returnValues.amount,
+                      units: this.getUnitsForStakedPositionType(eventData.returnValues.positionType),
+                    }
+                  case UNSTAKED_AND_WITHDREW_EVENT:
+                  case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
+                    return {
+                      amount: eventData.returnValues.usdcReceivedAmount,
+                      units: "usdc",
+                    }
+                  case UNSTAKED_MULTIPLE_EVENT:
+                    // We can assume that all positions in an "Unstaked Multiple" event are of the same
+                    // position type, so we just check the type of the first unstaked position.
+                    const tokenId = eventData.returnValues.tokenIds[0]
+                    const position = await stakingRewards.contract.readOnly.methods
+                      .positions(tokenId)
+                      .call(undefined, "latest")
+                    return {
+                      amount: eventData.returnValues.amounts.reduce(
+                        (sum, amount) => new BigNumber(amount).plus(sum),
+                        new BigNumber(0)
+                      ),
+                      units: this.getUnitsForStakedPositionType(position.positionType),
+                    }
+                  case REWARD_PAID_EVENT:
+                    return {
+                      amount: eventData.returnValues.reward,
+                      units: "gfi",
+                    }
+                  default:
+                    return assertUnreachable(eventData.event)
+                }
+              },
+            }),
+          }
         }
-      }),
+      ),
       getAndTransformCommunityRewardsEvents(this.address, communityRewards),
       getAndTransformMerkleDistributorEvents(this.address, merkleDistributor),
       getAndTransformMerkleDirectDistributorEvents(this.address, merkleDirectDistributor),
@@ -621,7 +623,7 @@ async function getAndTransformCreditDeskEvents(
   })
 }
 
-async function getOverlappingStakingRewardsEvents(
+async function getOverlappingStakingRewardsEventsForUser(
   address: string,
   stakingRewards: StakingRewardsLoaded
 ): Promise<WithCurrentBlock<{value: KnownEventData<StakingRewardsEventType>[]}>> {
