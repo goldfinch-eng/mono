@@ -2,7 +2,7 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import {KnownEventData, STAKED_EVENT} from "../../types/events"
 import {assertWithLoadedInfo, Loadable, WithLoadedInfo} from "../../types/loadable"
-import {assertNonNullable, BlockInfo, defaultSum} from "../../utils"
+import {BlockInfo, defaultSum} from "../../utils"
 import {PositionOptimisticIncrement, StakingRewardsLoaded, StakingRewardsPosition, StoredPosition} from "../pool"
 
 type UserStakingRewardsLoadedInfo = {
