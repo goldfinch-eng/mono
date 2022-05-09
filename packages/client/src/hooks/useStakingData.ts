@@ -21,7 +21,6 @@ import {requestUserAddERC20TokenToWallet} from "../web3"
 import {positionTypeToTicker} from "../components/Stake/utils"
 
 const APY_DECIMALS = new BigNumber(1e18)
-const CURVE_FIDU_USDC_DECIMALS = getMultiplierDecimals(Ticker.CURVE_FIDU_USDC)
 const GFI_DECIMALS = getMultiplierDecimals(Ticker.GFI)
 
 type StakingData = {
@@ -37,8 +36,12 @@ type StakingData = {
   usdcUnstaked: BigNumber
   // Estimated APY when staking FIDU
   estimatedFiduStakingApy: BigNumber
-  // Estimated APY when staking Curve
+  // Estimated APY when staking Curve. This does not represent the total APY; it
+  // represents the APY on the FIDU portion of the Curve LP token.
   estimatedCurveStakingApy: BigNumber
+  // Estimated total APY when staking Curve. This represents the APY on both the
+  // FIDU and USDC portion of the Curve LP token.
+  estimatedTotalCurveStakingApy: BigNumber
   // FIDU share price (denominated in FIDU decimals - 1e18)
   fiduSharePrice: BigNumber
   stake: (BigNumber, StakedPositionType) => Promise<any>
@@ -76,6 +79,7 @@ export default function useStakingData(): StakingData {
   const [fiduUSDCCurveUnstaked, setFiduUSDCCurveUnstaked] = useState(new BigNumber(0))
   const [usdcUnstaked, setUSDCUnstaked] = useState(new BigNumber(0))
   const [estimatedCurveStakingApy, setEstimatedCurveStakingApy] = useState<BigNumber>(new BigNumber(0))
+  const [estimatedTotalCurveStakingApy, setEstimatedTotalCurveStakingApy] = useState<BigNumber>(new BigNumber(0))
   const [estimatedFiduStakingApy, setEstimatedFiduStakingApy] = useState<BigNumber>(new BigNumber(0))
   const [fiduSharePrice, setFiduSharePrice] = useState(new BigNumber(0))
 
@@ -112,11 +116,10 @@ export default function useStakingData(): StakingData {
 
       const estimatedApyFromGfi =
         // Convert the amount of GFI earned in a year per Curve LP token staked to a dollar amount using the current GFI price
-        gfiToDollarsAtomic(currentEarnRatePerYearPerCurveToken, gfi.info.value.price)
-          ?.dividedBy(GFI_DECIMALS)
-          .multipliedBy(CURVE_FIDU_USDC_DECIMALS)
-          .dividedBy(curveLPTokenPrice)
+        gfiToDollarsAtomic(currentEarnRatePerYearPerCurveToken, gfi.info.value.price)?.dividedBy(GFI_DECIMALS)
+      const estimatedTotalApyFromGfi = estimatedApyFromGfi?.multipliedBy(APY_DECIMALS).dividedBy(curveLPTokenPrice)
       setEstimatedCurveStakingApy(estimatedApyFromGfi || new BigNumber(0))
+      setEstimatedTotalCurveStakingApy(estimatedTotalApyFromGfi || new BigNumber(0))
     }
   }, [currentBlock, stakingRewards, gfi])
 
@@ -402,6 +405,7 @@ export default function useStakingData(): StakingData {
     usdcUnstaked,
     estimatedFiduStakingApy,
     estimatedCurveStakingApy,
+    estimatedTotalCurveStakingApy,
     fiduSharePrice,
     stake,
     unstake,

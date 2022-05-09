@@ -19,8 +19,10 @@ type StakingCardProps = {
   rewardToken: ERC20Metadata
   // Platform of the staking token
   platform: Platform
-  // Optional migrate form. The "Migrate" tab will be displayed if this props exists.
+  // Optional migrate form. The "Migrate" tab will be displayed if this prop exists.
   migrateForm?: React.ReactNode
+  // Optional APY tooltip. The tooltip will be displayed if this prop exists.
+  apyTooltip?: React.ReactNode
   stake: (BigNumber) => Promise<any>
   unstake: (BigNumber) => Promise<any>
 }
@@ -38,6 +40,7 @@ export default function StakingCard({
   rewardApy,
   rewardToken,
   platform,
+  apyTooltip,
   stake,
   unstake,
   migrateForm,
@@ -58,6 +61,7 @@ export default function StakingCard({
         rewardApy={rewardApy}
         rewardToken={rewardToken}
         platform={platform}
+        apyTooltip={apyTooltip}
         onToggle={onToggle}
       />
       {expanded && (

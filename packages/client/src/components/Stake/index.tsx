@@ -12,6 +12,7 @@ import {Platform} from "./StakingToken"
 import StakingCardMigrateToCurveForm from "./StakingCardMigrateToCurveForm"
 import useCurvePool from "../../hooks/useCurvePool"
 import {iconOutArrow} from "../icons"
+import CurveStakingAPYTooltip from "./CurveStakingAPYTooltip"
 
 const SectionHeader = styled.div`
   margin-bottom: 0;
@@ -140,6 +141,7 @@ export default function Stake() {
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
         platform={Platform.Curve}
+        apyTooltip={<CurveStakingAPYTooltip />}
         stake={(amount) => stake(amount, StakedPositionType.CurveLP)}
         unstake={(amount) => unstake(amount, StakedPositionType.CurveLP)}
       />
