@@ -1,7 +1,5 @@
 import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 
-import _ from "lodash"
-
 import {assertWithLoadedInfo} from "../../types/loadable"
 
 import {Web3IO} from "../../types/web3"
