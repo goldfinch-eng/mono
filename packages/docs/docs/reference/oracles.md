@@ -1,10 +1,12 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 ---
 
 # Oracles
 
-The Goldfinch Protocol does not use oracles -- that is, on-chain "sources of truth" about off-chain data -- operated by third parties. The Goldfinch Protocol does use an oracle which it operates, insofar as UID is an oracle by virtue of representing the off-chain identity to which a chain address corresponds.
+The Goldfinch Protocol does not use oracles -- understood as on-chain "sources of truth" about off-chain data -- operated by untrusted third parties.
+
+The Goldfinch Protocol does use an oracle operated by Warbler Labs, in the form of the [UniqueIdentity](TODO) (UID) contract. UID tokens are non-transferrable and describe the off-chain identity to which the chain address that owns the token corresponds. Warbler Labs possesses the permission required by the UID contract to mint and burn UID tokens. Warbler Labs allows a user of the Protocol to mint their UID token after satisfying the identity verification requirements corresponding to their identity type (e.g non-U.S. individual).
 
 The Goldfinch Protocol does make use of on-chain data sources that are external to the Protocol but which are not oracles. For example, the Protocol integrates with the Curve pool for FIDU/USDC.
 
