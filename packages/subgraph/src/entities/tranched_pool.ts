@@ -51,6 +51,11 @@ export function handleDeposit(event: DepositMade): void {
   deposit.blockNumber = event.block.number
   deposit.timestamp = event.block.timestamp
   deposit.save()
+  const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
+  if (juniorTrancheInfo) {
+    juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
+    juniorTrancheInfo.save()
+  }
 
   let backer = getOrInitPoolBacker(event.address, userAddress)
   let addresses = tranchedPool.backers
@@ -171,7 +176,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
   }
 
-  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
+  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(tranchedPool)
   tranchedPool.save()
 
   if (isCreating) {

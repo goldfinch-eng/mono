@@ -144,6 +144,21 @@ export default function PoolPage() {
   }
 
   const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
+  const backerSupply = tranchedPool?.juniorTranches
+    ? {
+        token: SupportedCrypto.Usdc,
+        amount: tranchedPool.juniorTranches.reduce((total, curr) => {
+          return total.add(curr.principalDeposited);
+        }, BigNumber.from(0)),
+      }
+    : undefined;
+  const seniorSupply =
+    backerSupply && tranchedPool
+      ? {
+          token: SupportedCrypto.Usdc,
+          amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
+        }
+      : undefined;
 
   return (
     <>
@@ -302,32 +317,8 @@ export default function PoolPage() {
                         }
                       : undefined
                   }
-                  backerSupply={
-                    tranchedPool?.juniorTranches
-                      ? {
-                          token: SupportedCrypto.Usdc,
-                          amount: tranchedPool.juniorTranches.reduce(
-                            (total, curr) => {
-                              return total.add(curr.principalDeposited);
-                            },
-                            BigNumber.from(0)
-                          ),
-                        }
-                      : undefined
-                  }
-                  seniorSupply={
-                    tranchedPool?.seniorTranches
-                      ? {
-                          token: SupportedCrypto.Usdc,
-                          amount: tranchedPool.seniorTranches.reduce(
-                            (total, curr) => {
-                              return total.add(curr.principalDeposited);
-                            },
-                            BigNumber.from(0)
-                          ),
-                        }
-                      : undefined
-                  }
+                  backerSupply={backerSupply}
+                  seniorSupply={seniorSupply}
                 />
               </div>
             )}
