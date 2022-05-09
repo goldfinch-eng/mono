@@ -767,7 +767,7 @@ describe("StakingRewards", function () {
 
     context("when the slippage is too high", async () => {
       it("reverts", async () => {
-        await fiduUSDCCurveLP._set_slippage(MULTIPLIER_DECIMALS.mul(new BN(2)).div(new BN(3)))
+        await fiduUSDCCurveLP._setSlippage(MULTIPLIER_DECIMALS.mul(new BN(2)).div(new BN(3)))
 
         await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
         await usdc.approve(stakingRewards.address, usdcAmount, {from: investor})

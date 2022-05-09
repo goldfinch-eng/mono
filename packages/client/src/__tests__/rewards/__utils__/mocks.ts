@@ -755,12 +755,12 @@ export async function mockStakingRewardsContractCalls(
       return: new BigNumber(1e18).toString(10),
     },
   })
-  const callCurvePoolGetVirtualPrice = mock({
+  const callCurvePoolLPPrice = mock({
     blockchain,
     call: {
       to: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.address,
       api: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.abi,
-      method: "get_virtual_price",
+      method: "lp_price",
       return: new BigNumber(1e18).toString(10),
     },
   })
@@ -770,7 +770,7 @@ export async function mockStakingRewardsContractCalls(
     callCurrentEarnRatePerToken,
     callGetBaseTokenExchangeRate,
     callGetEffectiveMultiplierForPositionType,
-    callCurvePoolGetVirtualPrice,
+    callCurvePoolLPPrice,
   }
 }
 
