@@ -57,6 +57,7 @@ import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
 import {BackerMerkleDirectDistributor} from "../../../ethereum/backerMerkleDirectDistributor"
 import {BackerMerkleDistributor} from "../../../ethereum/backerMerkleDistributor"
 import {BackerRewards} from "../../../ethereum/backerRewards"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 
 class ImproperlyConfiguredMockError extends Error {}
 
@@ -513,6 +514,25 @@ export async function mockUserRelatedInitializationContractCalls(
           }
         } else {
           throw new Error(`Unexpected event names: ${eventNames}`)
+        }
+      } else if (eventNames.length === 1 && eventNames[0] === STAKED_EVENT) {
+        if (Array.isArray(filter?.tokenId)) {
+          assertNonNullable(filter?.tokenId)
+          return Promise.resolve(
+            filter.tokenId.map(
+              (tokenId) =>
+                ({
+                  returnValues: {
+                    index: 0,
+                    account: "0x0000000000000000000000000000000000000002",
+                    tokenId: tokenId,
+                  },
+                  transactionHash: `0x000000000000000000000000000000000000000000000000000000000000000${tokenId}`,
+                } as unknown as KnownEventData<T>)
+            )
+          )
+        } else {
+          throw new Error(`Unexpected filter: ${filter}`)
         }
       } else {
         throw new Error("Unexpected contract.")
@@ -1013,7 +1033,26 @@ export function setupMocksForMerkleDirectDistributorAirdrop(
           throw new Error(`Unexpected toBlock: ${toBlock}`)
         }
       } else {
-        throw new Error(`Unexpected filter: ${filter}`)
+        throw new Error(`Unexpected filter: ${JSON.stringify(filter)}`)
+      }
+    } else if (eventNames.length === 1 && eventNames[0] === STAKED_EVENT) {
+      if (Array.isArray(filter?.tokenId)) {
+        assertNonNullable(filter?.tokenId)
+        return Promise.resolve(
+          filter.tokenId.map(
+            (tokenId) =>
+              ({
+                returnValues: {
+                  index: 0,
+                  account: "0x0000000000000000000000000000000000000002",
+                  tokenId: tokenId,
+                },
+                transactionHash: `0x000000000000000000000000000000000000000000000000000000000000000${tokenId}`,
+              } as unknown as KnownEventData<T>)
+          )
+        )
+      } else {
+        throw new Error(`Unexpected filter: ${JSON.stringify(filter)}`)
       }
     } else {
       throw new Error(`Unexpected event names: ${eventNames}`)
