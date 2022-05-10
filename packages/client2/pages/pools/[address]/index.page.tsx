@@ -55,7 +55,6 @@ gql`
       estimatedTotalAssets
       estimatedLeverageRatio
       remainingCapacity
-      remainingJuniorCapacity
       juniorFeePercent
       reserveFeePercent
       totalDeposited
@@ -245,10 +244,12 @@ export default function PoolPage() {
                 <div className="border-r border-b border-eggplant-50 p-5">
                   <Stat
                     label="Total est. APY"
-                    value={tranchedPool.estimatedJuniorApy.addUnsafe(
-                      computeApyFromGfiInFiat(
-                        tranchedPool.estimatedJuniorApyFromGfiRaw,
-                        fiatPerGfi
+                    value={formatPercent(
+                      tranchedPool.estimatedJuniorApy.addUnsafe(
+                        computeApyFromGfiInFiat(
+                          tranchedPool.estimatedJuniorApyFromGfiRaw,
+                          fiatPerGfi
+                        )
                       )
                     )}
                     tooltip={
@@ -289,7 +290,10 @@ export default function PoolPage() {
                   <Stat
                     label="Est $GFI APY"
                     value={formatPercent(
-                      tranchedPool.estimatedJuniorApyFromGfiRaw
+                      computeApyFromGfiInFiat(
+                        tranchedPool.estimatedJuniorApyFromGfiRaw,
+                        fiatPerGfi
+                      )
                     )}
                     tooltip={
                       <div>

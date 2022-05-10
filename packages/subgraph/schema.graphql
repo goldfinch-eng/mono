@@ -180,7 +180,6 @@ type TranchedPool @entity {
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
-  remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
   """

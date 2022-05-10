@@ -5,6 +5,7 @@ import type { CreditLine, TranchedPool } from "@/lib/graphql/generated";
 interface PoolStatusProps {
   isPaused: TranchedPool["isPaused"];
   remainingCapacity: TranchedPool["remainingCapacity"];
+  fundableAt: TranchedPool["fundableAt"];
   creditLine: {
     balance: CreditLine["balance"];
     termEndTime: CreditLine["termEndTime"];
@@ -34,7 +35,10 @@ export function getTranchedPoolStatus(pool: PoolStatusProps) {
     return PoolStatus.Repaid;
   } else if (pool.remainingCapacity.isZero()) {
     return PoolStatus.Full;
-  } else if (pool.creditLine.termEndTime.isZero()) {
+  } else if (
+    pool.creditLine.termEndTime.isZero() &&
+    Date.now() / 1000 < parseInt(pool.fundableAt.toString())
+  ) {
     return PoolStatus.ComingSoon;
   } else {
     return PoolStatus.Open;
