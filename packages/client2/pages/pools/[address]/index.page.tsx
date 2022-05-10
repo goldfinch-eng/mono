@@ -317,13 +317,18 @@ export default function PoolPage() {
             <div className="border-r border-eggplant-50 p-5">
               <Stat
                 label="Drawdown cap"
-                value={formatCrypto({
-                  token: SupportedCrypto.Usdc,
-                  amount:
-                    tranchedPool?.creditLine.limit ??
-                    tranchedPool?.creditLine.maxLimit ??
-                    BigNumber.from(0),
-                })}
+                value={
+                  tranchedPool
+                    ? formatCrypto({
+                        token: SupportedCrypto.Usdc,
+                        amount: !tranchedPool.creditLine.limit.eq(
+                          BigNumber.from("0")
+                        )
+                          ? tranchedPool.creditLine.limit
+                          : tranchedPool.creditLine.maxLimit,
+                      })
+                    : null
+                }
                 tooltip={
                   <div>
                     <div className="mb-4 text-xl font-bold">Drawdown cap</div>
