@@ -1,15 +1,24 @@
+import { gql } from "@apollo/client";
 import { FixedNumber } from "ethers";
 
-import type { CreditLine, TranchedPool } from "@/lib/graphql/generated";
+import type { TranchedPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 
-interface PoolStatusProps {
-  isPaused: TranchedPool["isPaused"];
-  remainingCapacity: TranchedPool["remainingCapacity"];
-  creditLine: {
-    balance: CreditLine["balance"];
-    termEndTime: CreditLine["termEndTime"];
-  };
-}
+/**
+ * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
+ */
+export const TRANCHED_POOL_STATUS_FIELDS = gql`
+  fragment TranchedPoolStatusFields on TranchedPool {
+    id
+    isPaused
+    remainingCapacity
+    fundableAt
+    creditLine {
+      id
+      balance
+      termEndTime
+    }
+  }
+`;
 
 export enum PoolStatus {
   Paused,
@@ -21,10 +30,10 @@ export enum PoolStatus {
 
 /**
  * Get the current status of the tranched pool
- * @param pool TranchedPool to get the status for
+ * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
  * @returns the status of the pool
  */
-export function getTranchedPoolStatus(pool: PoolStatusProps) {
+export function getTranchedPoolStatus(pool: TranchedPoolStatusFieldsFragment) {
   if (pool.isPaused) {
     return PoolStatus.Paused;
   } else if (
@@ -34,7 +43,10 @@ export function getTranchedPoolStatus(pool: PoolStatusProps) {
     return PoolStatus.Repaid;
   } else if (pool.remainingCapacity.isZero()) {
     return PoolStatus.Full;
-  } else if (pool.creditLine.termEndTime.isZero()) {
+  } else if (
+    pool.creditLine.termEndTime.isZero() &&
+    Date.now() / 1000 < parseInt(pool.fundableAt.toString())
+  ) {
     return PoolStatus.ComingSoon;
   } else {
     return PoolStatus.Open;

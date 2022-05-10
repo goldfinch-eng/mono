@@ -20,4 +20,5 @@ export const ChipStory: ComponentStory<typeof Chip> = (args) => {
 
 ChipStory.args = {
   children: "It's chippy!",
+  colorScheme: "white",
 };

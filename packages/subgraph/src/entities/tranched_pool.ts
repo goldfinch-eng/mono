@@ -51,12 +51,26 @@ export function handleDeposit(event: DepositMade): void {
   deposit.blockNumber = event.block.number
   deposit.timestamp = event.block.timestamp
   deposit.save()
+  const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
+  if (juniorTrancheInfo) {
+    juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
+    juniorTrancheInfo.save()
+  }
 
   let backer = getOrInitPoolBacker(event.address, userAddress)
   let addresses = tranchedPool.backers
   addresses.push(backer.id)
   tranchedPool.backers = addresses
   tranchedPool.numBackers = addresses.length
+
+  tranchedPool.estimatedTotalAssets = tranchedPool.estimatedTotalAssets.plus(event.params.amount)
+  const creditLine = CreditLine.load(tranchedPool.creditLine)
+  if (!creditLine) {
+    throw new Error(`Missing credit line for tranched pool ${tranchedPool.id} while handling deposit`)
+  }
+  const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
+  tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
+
   tranchedPool.save()
 
   updatePoolCreditLine(event.address, event.block.timestamp)
@@ -154,6 +168,10 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
   tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches, version)
+  log.info("tranchedPool: {}, estimatedTotalAssets: {}", [
+    tranchedPool.id,
+    tranchedPool.estimatedTotalAssets.toString(),
+  ])
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.isPaused = poolContract.paused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
@@ -161,17 +179,23 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.totalDeployed = totalDeployed
   tranchedPool.fundableAt = fundableAt
 
+  const creditLineAddress = poolContract.creditLine().toHexString()
+  const creditLine = getOrInitCreditLine(Address.fromString(creditLineAddress), timestamp)
+  tranchedPool.creditLine = creditLine.id
+  const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
+  tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
+  // This can happen in weird cases where the senior pool investment causes a pool to overfill
+  if (tranchedPool.remainingCapacity.lt(BigInt.zero())) {
+    tranchedPool.remainingCapacity = BigInt.zero()
+  }
   if (isCreating) {
-    const creditLineAddress = poolContract.creditLine().toHexString()
-    const creditLine = getOrInitCreditLine(Address.fromString(creditLineAddress), timestamp)
-    tranchedPool.creditLine = creditLine.id
     tranchedPool.backers = []
     tranchedPool.tokens = []
     tranchedPool.createdAt = timestamp
     tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
   }
 
-  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(address.toHexString())
+  tranchedPool.estimatedJuniorApy = estimateJuniorAPY(tranchedPool)
   tranchedPool.save()
 
   if (isCreating) {

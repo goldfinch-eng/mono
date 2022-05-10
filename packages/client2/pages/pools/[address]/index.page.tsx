@@ -29,6 +29,7 @@ import {
   PoolStatus,
   getTranchedPoolStatus,
   computeApyFromGfiInFiat,
+  TRANCHED_POOL_STATUS_FIELDS,
 } from "@/lib/pools";
 
 import ComingSoonPanel from "./coming-soon-panel";
@@ -37,6 +38,7 @@ import PoolFilledPanel from "./pool-filled-panel";
 import SupplyPanel from "./supply-panel";
 
 gql`
+  ${TRANCHED_POOL_STATUS_FIELDS}
   query SingleTranchedPoolData($id: ID!) {
     tranchedPool(id: $id) {
       id
@@ -55,7 +57,6 @@ gql`
       estimatedTotalAssets
       estimatedLeverageRatio
       remainingCapacity
-      remainingJuniorCapacity
       juniorFeePercent
       reserveFeePercent
       totalDeposited
@@ -71,29 +72,14 @@ gql`
         principalDeposited
       }
       creditLine {
+        id
         limit
         maxLimit
-        interestApr
-        balance
-        remainingPeriodDueAmount
-        remainingTotalDueAmount
-        availableCredit
-        interestAccruedAsOf
         paymentPeriodInDays
         termInDays
         nextDueTime
-        interestOwed
-        termEndTime
-        termStartTime
-        lastFullPaymentTime
-        periodDueAmount
-        interestAprDecimal
-        collectedPaymentBalance
-        totalDueAmount
-        dueDate
-        isEligibleForRewards
-        name
       }
+      ...TranchedPoolStatusFields
     }
     gfiPrice @client {
       price {
@@ -144,6 +130,21 @@ export default function PoolPage() {
   }
 
   const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
+  const backerSupply = tranchedPool?.juniorTranches
+    ? {
+        token: SupportedCrypto.Usdc,
+        amount: tranchedPool.juniorTranches.reduce((total, curr) => {
+          return total.add(curr.principalDeposited);
+        }, BigNumber.from(0)),
+      }
+    : undefined;
+  const seniorSupply =
+    backerSupply && tranchedPool
+      ? {
+          token: SupportedCrypto.Usdc,
+          amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
+        }
+      : undefined;
 
   return (
     <>
@@ -230,10 +231,12 @@ export default function PoolPage() {
                 <div className="border-r border-b border-eggplant-50 p-5">
                   <Stat
                     label="Total est. APY"
-                    value={tranchedPool.estimatedJuniorApy.addUnsafe(
-                      computeApyFromGfiInFiat(
-                        tranchedPool.estimatedJuniorApyFromGfiRaw,
-                        fiatPerGfi
+                    value={formatPercent(
+                      tranchedPool.estimatedJuniorApy.addUnsafe(
+                        computeApyFromGfiInFiat(
+                          tranchedPool.estimatedJuniorApyFromGfiRaw,
+                          fiatPerGfi
+                        )
                       )
                     )}
                     tooltip={
@@ -274,7 +277,10 @@ export default function PoolPage() {
                   <Stat
                     label="Est $GFI APY"
                     value={formatPercent(
-                      tranchedPool.estimatedJuniorApyFromGfiRaw
+                      computeApyFromGfiInFiat(
+                        tranchedPool.estimatedJuniorApyFromGfiRaw,
+                        fiatPerGfi
+                      )
                     )}
                     tooltip={
                       <div>
@@ -302,32 +308,8 @@ export default function PoolPage() {
                         }
                       : undefined
                   }
-                  backerSupply={
-                    tranchedPool?.juniorTranches
-                      ? {
-                          token: SupportedCrypto.Usdc,
-                          amount: tranchedPool.juniorTranches.reduce(
-                            (total, curr) => {
-                              return total.add(curr.principalDeposited);
-                            },
-                            BigNumber.from(0)
-                          ),
-                        }
-                      : undefined
-                  }
-                  seniorSupply={
-                    tranchedPool?.seniorTranches
-                      ? {
-                          token: SupportedCrypto.Usdc,
-                          amount: tranchedPool.seniorTranches.reduce(
-                            (total, curr) => {
-                              return total.add(curr.principalDeposited);
-                            },
-                            BigNumber.from(0)
-                          ),
-                        }
-                      : undefined
-                  }
+                  backerSupply={backerSupply}
+                  seniorSupply={seniorSupply}
                 />
               </div>
             )}
@@ -335,10 +317,18 @@ export default function PoolPage() {
             <div className="border-r border-eggplant-50 p-5">
               <Stat
                 label="Drawdown cap"
-                value={formatCrypto({
-                  token: SupportedCrypto.Usdc,
-                  amount: tranchedPool?.creditLine.limit ?? BigNumber.from(0),
-                })}
+                value={
+                  tranchedPool
+                    ? formatCrypto({
+                        token: SupportedCrypto.Usdc,
+                        amount: !tranchedPool.creditLine.limit.eq(
+                          BigNumber.from("0")
+                        )
+                          ? tranchedPool.creditLine.limit
+                          : tranchedPool.creditLine.maxLimit,
+                      })
+                    : null
+                }
                 tooltip={
                   <div>
                     <div className="mb-4 text-xl font-bold">Drawdown cap</div>
