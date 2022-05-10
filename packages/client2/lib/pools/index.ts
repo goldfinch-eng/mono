@@ -3,6 +3,9 @@ import { FixedNumber } from "ethers";
 
 import type { TranchedPoolStatusFieldsFragment } from "@/lib/graphql/generated";
 
+/**
+ * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
+ */
 export const TRANCHED_POOL_STATUS_FIELDS = gql`
   fragment TranchedPoolStatusFields on TranchedPool {
     id
@@ -27,7 +30,7 @@ export enum PoolStatus {
 
 /**
  * Get the current status of the tranched pool
- * @param pool TranchedPool to get the status for
+ * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
  * @returns the status of the pool
  */
 export function getTranchedPoolStatus(pool: TranchedPoolStatusFieldsFragment) {
