@@ -3,9 +3,10 @@ import { FixedNumber } from "ethers";
 import Image from "next/image";
 import NextLink from "next/link";
 
-import { ShimmerLines } from "@/components/design-system";
+import { Chip, ShimmerLines } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
+import { PoolStatus, getTranchedPoolStatus } from "@/lib/pools";
 
 interface PoolCardProps {
   title?: string | null;
@@ -14,6 +15,7 @@ interface PoolCardProps {
   apyFromGfi?: number | FixedNumber | null;
   icon?: string | null;
   href?: string;
+  poolStatus?: PoolStatus;
   /**
    * Set this if the pool card is being used as a placeholder during loading
    */
@@ -27,6 +29,7 @@ export function PoolCard({
   apyFromGfi,
   icon,
   href,
+  poolStatus,
   isPlaceholder = false,
 }: PoolCardProps) {
   return (
@@ -68,6 +71,32 @@ export function PoolCard({
           {apyFromGfi ? `${formatPercent(apyFromGfi)} from GFI` : "\u00A0"}
         </div>
       </div>
+      {poolStatus ? (
+        <Chip
+          className="absolute -top-2 -right-2"
+          colorScheme={
+            poolStatus === PoolStatus.Full
+              ? "yellow"
+              : poolStatus === PoolStatus.Open
+              ? "purple"
+              : poolStatus === PoolStatus.ComingSoon
+              ? "blue"
+              : poolStatus === PoolStatus.Repaid
+              ? "purple"
+              : "white"
+          }
+        >
+          {poolStatus === PoolStatus.Full
+            ? "FULL"
+            : poolStatus === PoolStatus.Open
+            ? "OPEN"
+            : poolStatus === PoolStatus.ComingSoon
+            ? "COMING SOON"
+            : poolStatus === PoolStatus.Repaid
+            ? "REPAID"
+            : null}
+        </Chip>
+      ) : null}
     </div>
   );
 }
@@ -80,6 +109,14 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
+    # Fields for computing pool status
+    isPaused
+    remainingCapacity
+    fundableAt
+    creditLine {
+      balance
+      termEndTime
+    }
   }
 `;
 
@@ -94,6 +131,7 @@ export function TranchedPoolCard({
   href,
   fiatPerGfi,
 }: TranchedPoolCardProps) {
+  const poolStatus = getTranchedPoolStatus(tranchedPool);
   return (
     <PoolCard
       title={tranchedPool.name}
@@ -104,6 +142,7 @@ export function TranchedPoolCard({
         FixedNumber.fromString(fiatPerGfi.toString())
       )}
       href={href}
+      poolStatus={poolStatus}
     />
   );
 }
