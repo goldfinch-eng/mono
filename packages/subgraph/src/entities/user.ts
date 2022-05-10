@@ -1,15 +1,18 @@
-import {Address, BigDecimal, BigInt, crypto} from "@graphprotocol/graph-ts"
-import {User, CapitalProviderStatus, SeniorPoolDeposit} from "../../generated/schema"
-import {DepositMade, SeniorPool as SeniorPoolContract} from "../../generated/templates/SeniorPool/SeniorPool"
+import { Address, BigDecimal, BigInt, crypto } from '@graphprotocol/graph-ts';
+import { User, CapitalProviderStatus, SeniorPoolDeposit } from "../../generated/schema"
+import { DepositMade, SeniorPool as SeniorPoolContract } from '../../generated/templates/SeniorPool/SeniorPool';
 import {DepositMade as V1DepositMade} from "../../generated/templates/Pool/Pool"
-import {Fidu_Implementation as FiduContract} from "../../generated/templates/SeniorPool/Fidu_Implementation"
-import {getOrInitSeniorPool} from "./senior_pool"
+import {
+  Fidu_Implementation as FiduContract,
+} from "../../generated/templates/SeniorPool/Fidu_Implementation"
+import { getOrInitSeniorPool } from './senior_pool';
 
-import {FIDU_ADDRESS} from "../constants"
+import { FIDU_ADDRESS } from '../constants';
+
 
 function getWeightedAverageSharePrice(address: Address): BigDecimal {
-  let BIG_INT_1E18 = BigInt.fromString("10").pow(18)
-  let BIG_INT_1E6 = BigInt.fromString("10").pow(6)
+  let BIG_INT_1E18 = BigInt.fromString('10').pow(18)
+  let BIG_INT_1E6 = BigInt.fromString('10').pow(6)
   let user = User.load(address.toHexString()) as User
   let capitalProvider = CapitalProviderStatus.load(user.capitalProviderStatus as string) as CapitalProviderStatus
   let sharesLeftToAccountFor = capitalProvider.numShares
@@ -46,8 +49,9 @@ function getWeightedAverageSharePrice(address: Address): BigDecimal {
   return totalAmountPaid.divDecimal(capitalProvider.numShares.toBigDecimal())
 }
 
+
 export function getOrInitUser(address: Address): User {
-  let user = User.load(address.toHexString())
+  let user = User.load(address.toHexString());
   if (!user) {
     user = new User(address.toHexString())
     user.goListed = true
@@ -55,7 +59,7 @@ export function getOrInitUser(address: Address): User {
     user.save()
 
     let zero = new BigInt(0)
-    let status = new CapitalProviderStatus(address.toHexString() + "1")
+    let status = new CapitalProviderStatus(address.toHexString() + '1')
     status.user = user.id
     status.numShares = zero
     status.availableToWithdraw = zero
@@ -70,7 +74,6 @@ export function getOrInitUser(address: Address): User {
 }
 
 export function updateCapitalProviders(seniorPoolAddress: Address): void {
-  return
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let seniorPoolCapitalProviders = seniorPool.capitalProviders
 
@@ -96,6 +99,7 @@ export function updateUser(seniorPoolAddress: Address, userAddress: Address): vo
   status.allowance = allowance
   status.save()
 }
+
 
 export function handleDeposit(event: DepositMade): void {
   let userAddress = event.params.capitalProvider
