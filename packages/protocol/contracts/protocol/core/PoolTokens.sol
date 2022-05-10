@@ -251,14 +251,6 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return tokens[tokenId];
   }
 
-  /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
   modifier onlyAdmin() {
     require(isAdmin(), "Must have admin role to perform this action");
     _;

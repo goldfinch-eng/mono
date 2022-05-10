@@ -867,24 +867,4 @@ describe("PoolTokens", () => {
       // TODO Reuse logic from tests of `transferFrom()`.
     })
   })
-
-  describe("updateGoldfinchConfig", async () => {
-    describe("setting it", () => {
-      it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-        const tx = await poolTokens.updateGoldfinchConfig()
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-
-    context("paused", async () => {
-      it("does not revert", async () => {
-        // TODO
-      })
-    })
-  })
 })

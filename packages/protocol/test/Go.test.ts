@@ -177,42 +177,6 @@ describe("Go", () => {
     })
   })
 
-  describe("updateGoldfinchConfig", () => {
-    let newConfig: DeployResult
-
-    beforeEach(async () => {
-      newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-      await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-    })
-
-    it("rejects sender who lacks owner role", async () => {
-      expect(await go.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
-      await expect(go.updateGoldfinchConfig({from: anotherUser})).to.be.rejectedWith(
-        /Must have admin role to perform this action/
-      )
-    })
-    it("allows sender who has owner role", async () => {
-      expect(await go.hasRole(OWNER_ROLE, owner)).to.equal(true)
-      await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
-    })
-    it("updates config address, emits an event", async () => {
-      expect(await go.config()).to.equal(goldfinchConfig.address)
-      const receipt = await go.updateGoldfinchConfig({from: owner})
-      expect(await go.config()).to.equal(newConfig.address)
-      expectEvent(receipt, "GoldfinchConfigUpdated", {
-        who: owner,
-        configAddress: newConfig.address,
-      })
-    })
-
-    context("paused", () => {
-      it("does not reject", async () => {
-        await pause()
-        await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
-      })
-    })
-  })
-
   describe("go", () => {
     it("rejects zero address account", async () => {
       await expect(go.go(ethersConstants.AddressZero)).to.be.rejectedWith(/Zero address is not go-listed/)

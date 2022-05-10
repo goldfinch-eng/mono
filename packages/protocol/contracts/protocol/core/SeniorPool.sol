@@ -133,14 +133,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   }
 
   /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
-  /**
    * @notice Moves any USDC still in the SeniorPool to Compound, and tracks the amount internally.
    * This is done to earn interest on latent funds until we have other borrowers who can use it.
    *
