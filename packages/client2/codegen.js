@@ -18,7 +18,11 @@ module.exports = {
     env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL, // ./lib/graphql/schema.json in case of emergency (see above note)
     "./lib/graphql/client-only-schema.graphql",
   ],
-  documents: ["./pages/**/*.tsx", "./components/**/*.tsx"],
+  documents: [
+    "./pages/**/*.tsx",
+    "./components/**/*.tsx",
+    "./lib/pools/**/*.ts",
+  ],
   generates: {
     "lib/graphql/generated.ts": {
       plugins: [

@@ -29,6 +29,7 @@ import {
   PoolStatus,
   getTranchedPoolStatus,
   computeApyFromGfiInFiat,
+  TRANCHED_POOL_STATUS_FIELDS,
 } from "@/lib/pools";
 
 import ComingSoonPanel from "./coming-soon-panel";
@@ -37,6 +38,7 @@ import PoolFilledPanel from "./pool-filled-panel";
 import SupplyPanel from "./supply-panel";
 
 gql`
+  ${TRANCHED_POOL_STATUS_FIELDS}
   query SingleTranchedPoolData($id: ID!) {
     tranchedPool(id: $id) {
       id
@@ -70,29 +72,14 @@ gql`
         principalDeposited
       }
       creditLine {
+        id
         limit
         maxLimit
-        interestApr
-        balance
-        remainingPeriodDueAmount
-        remainingTotalDueAmount
-        availableCredit
-        interestAccruedAsOf
         paymentPeriodInDays
         termInDays
         nextDueTime
-        interestOwed
-        termEndTime
-        termStartTime
-        lastFullPaymentTime
-        periodDueAmount
-        interestAprDecimal
-        collectedPaymentBalance
-        totalDueAmount
-        dueDate
-        isEligibleForRewards
-        name
       }
+      ...TranchedPoolStatusFields
     }
     gfiPrice @client {
       price {
@@ -332,7 +319,10 @@ export default function PoolPage() {
                 label="Drawdown cap"
                 value={formatCrypto({
                   token: SupportedCrypto.Usdc,
-                  amount: tranchedPool?.creditLine.limit ?? BigNumber.from(0),
+                  amount:
+                    tranchedPool?.creditLine.limit ??
+                    tranchedPool?.creditLine.maxLimit ??
+                    BigNumber.from(0),
                 })}
                 tooltip={
                   <div>

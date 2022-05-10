@@ -6,7 +6,11 @@ import NextLink from "next/link";
 import { Chip, ShimmerLines } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
-import { PoolStatus, getTranchedPoolStatus } from "@/lib/pools";
+import {
+  PoolStatus,
+  getTranchedPoolStatus,
+  TRANCHED_POOL_STATUS_FIELDS,
+} from "@/lib/pools";
 
 interface PoolCardProps {
   title?: string | null;
@@ -102,6 +106,7 @@ export function PoolCard({
 }
 
 export const TRANCHED_POOL_CARD_FIELDS = gql`
+  ${TRANCHED_POOL_STATUS_FIELDS}
   fragment TranchedPoolCardFields on TranchedPool {
     id
     name @client
@@ -109,14 +114,7 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    # Fields for computing pool status
-    isPaused
-    remainingCapacity
-    fundableAt
-    creditLine {
-      balance
-      termEndTime
-    }
+    ...TranchedPoolStatusFields
   }
 `;
 
