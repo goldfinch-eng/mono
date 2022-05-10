@@ -1,12 +1,8 @@
-const nextEnv = require("@next/env");
-const env = nextEnv.loadEnvConfig(".");
+const codegenConfig = require("./codegen");
 
 module.exports = {
-  schema: [
-    env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL,
-    "./lib/graphql/client-only-schema.graphql",
-  ],
-  documents: ["./pages/**/*.tsx", "./components/**/*.tsx"],
+  schema: codegenConfig.schema,
+  documents: codegenConfig.documents,
   generates: {
     "lib/graphql/schema.json": {
       plugins: ["introspection"],

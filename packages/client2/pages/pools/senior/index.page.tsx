@@ -26,6 +26,12 @@ gql`
       ...SeniorPoolPortfolioPoolFields
       ...SeniorPoolStatusFields
     }
+    gfiPrice(fiat: USD) @client {
+      price {
+        amount
+        symbol
+      }
+    }
   }
 `;
 

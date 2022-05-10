@@ -124,15 +124,19 @@ type NetworkState = {
 };
 ```
 
+## Apollo local resolvers vs field policies
+
+Local resolvers and field policies functionally overlap quite a bit. They let you use Apollo client to resolve a graphQL query that isn't supported by your server. This allows you to express app state in Apollo's global cache. Note that even though Apollo states that local resolvers are deprecated, they only mean local resolvers in their current available API. The level of functionality that local resolvers offer will be carried forward to future major releases of Apollo. The most significant difference between local resolvers and field policies is that local resolvers support async operations. So generally speaking, if you need to write an async operation to query a piece of app state, use a local resolver. Otherwise, use a field policy.
+
 ## Weird Things
 
 ### Emergencies with The Graph
 
-There is one catastrophic emergency scenario that we all fear: our subgraph ingests a block that causes an indexing error, and the subgraph enters a failure state **with no code changes to the subgraph itself**. On The Graph, this means that the subgraph will stop syncing, and will give an error response to all further queries. This would mean our app experiences a total outage because our subgraph can no longer be queried. To make matters even worse, introspection queries result in an error as well, which makes building the app impossible because an introspection query is part of our prebuild process (it's the `codegen-introspection` script in package.json).
+There is one catastrophic emergency scenario that we all fear: our subgraph ingests a block that causes an indexing error, and the subgraph enters a failure state **with no code changes to the subgraph itself**. On The Graph, this means that the subgraph will stop syncing, and will give an error response to all further queries. This would mean our app experiences a total outage because our subgraph can no longer be queried. To make matters even worse, introspection queries result in an error as well, which makes building the app impossible because an introspection query is part of our prebuild process (it's seen inside `codegen.js`).
 
 It seems like our only option in such a scenario is to debug our subgraph and re-index it to resolve the root error, all the while our app experiences painful downtime. **However**, we have taken steps to mitigate this by taking advantage of a feature called [Non-Fatal Errors](https://thegraph.com/docs/en/developer/create-subgraph-hosted/#non-fatal-errors).
 
-1. The introspection result `lib/graphql/schema.json` has been committed to the repo, so we always have a backup of it. If we need to deploy the app in this catastrophic scenario, we can disable the introspection step by (temporarily) removing the `precodegen` step in our package.json scripts. This will cause the build system to just use the committed schema instead of trying to fetch a fresh one from The Graph.
+1. The introspection result `lib/graphql/schema.json` can be generated from a local subgraph (the one you can run with Docker) and it can be temporarily committed to the repo. The schema generated from a local subgraph is fully compatible with the prod subgraph. If we need to deploy the app in this catastrophic scenario, follow the instructions inside `codegen.js` to make the app build with the (temporarily) committed copy of `schema.json`.
 2. (and more importantly), we have made our queries tolerant to this scenario on The Graph by using the Non-Fatal Errors feature. We accomplished this by writing a custom Apollo Link that always adds the `subgraphError: allow` argument to our queries so that they will be able to get information from The Graph even if it enters a failure state (although the data will be stale). Developers do not have to be conscious of this argument when writing queries, it is added automatically.
 
 #2 has one important impact on how you should handle data from queries: by default, the `errorPolicy` in Apollo is set to `"all"`, meaning that you can have `data` and `error` populated at the same time, so please plan around this. `error` being populated does not mean that `data` will be undefined (unless of course you override the errorPolicy for your particular query, which is perfectly fine).

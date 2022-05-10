@@ -126,29 +126,28 @@ export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string
   return balance.times(interestAprDecimal).times(seniorPoolPercentageOfInterest)
 }
 
-export function estimateJuniorAPY(tranchedPoolId: string): BigDecimal {
-  const tranchedPool = TranchedPool.load(tranchedPoolId)
+export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   if (!tranchedPool) {
     return BigDecimal.fromString("0")
   }
 
   const creditLine = CreditLine.load(tranchedPool.creditLine)
   if (!creditLine) {
-    return BigDecimal.fromString("0")
+    throw new Error(`Missing creditLine for TranchedPool ${tranchedPool.id}`)
   }
 
-  if (isV1StyleDeal(Address.fromString(tranchedPoolId))) {
+  if (isV1StyleDeal(Address.fromString(tranchedPool.id))) {
     return creditLine.interestAprDecimal
   }
 
   let balance: BigInt
-  if (creditLine.balance.isZero()) {
-    balance = creditLine.limit
-  } else {
+  if (!creditLine.balance.isZero()) {
     balance = creditLine.balance
-  }
-
-  if (balance.isZero()) {
+  } else if (!creditLine.limit.isZero()) {
+    balance = creditLine.limit
+  } else if (!creditLine.maxLimit.isZero()) {
+    balance = creditLine.maxLimit
+  } else {
     return BigDecimal.fromString("0")
   }
 

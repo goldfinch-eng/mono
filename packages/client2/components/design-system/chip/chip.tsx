@@ -4,13 +4,27 @@ import type { ReactNode } from "react";
 interface ChipProps {
   children: ReactNode;
   className?: string;
+  colorScheme?: "white" | "blue" | "purple" | "yellow";
 }
 
-export function Chip({ children, className }: ChipProps) {
+export function Chip({
+  children,
+  className,
+  colorScheme = "white",
+}: ChipProps) {
   return (
     <div
       className={clsx(
-        "inline-block rounded-full border border-eggplant-100 py-1.5 px-3 text-xs font-medium text-eggplant-700",
+        "inline-block rounded-full border py-1.5 px-3 text-xs font-medium",
+        colorScheme === "white"
+          ? "border-eggplant-100 bg-white text-eggplant-700"
+          : colorScheme === "blue"
+          ? "bg-gradient-to-t from-[#D2C2F2] to-sky-300 text-white "
+          : colorScheme === "purple"
+          ? "bg-gradient-to-t from-[#D17673] to-[#49386D] text-white "
+          : colorScheme === "yellow"
+          ? "bg-gradient-to-t from-[#F2EDC2] to-[#F1D26E] text-eggplant-800 "
+          : null,
         className
       )}
     >

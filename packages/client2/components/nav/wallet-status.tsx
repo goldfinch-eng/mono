@@ -1,13 +1,11 @@
 import { gql } from "@apollo/client";
 
-import { Button, Spinner } from "@/components/design-system";
+import { Button, Shimmer, HelperText } from "@/components/design-system";
+import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
-  usdcFromAtomic,
-  formatUsdcAsDollars,
-  gfiFromAtomic,
-  formatGfiAsDollars,
-} from "@/lib/format";
-import { useCurrentUserWalletInfoQuery } from "@/lib/graphql/generated";
+  SupportedFiat,
+  useCurrentUserWalletInfoQuery,
+} from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import GfiSvg from "./gfi.svg";
@@ -15,14 +13,21 @@ import UsdcSvg from "./usdc.svg";
 
 gql`
   query CurrentUserWalletInfo {
-    gfi {
+    gfiPrice(fiat: USD) @client {
       price {
-        usd
+        amount
       }
     }
-    currentUser @client {
-      usdcBalance
-      gfiBalance
+    viewer @client(always: true) {
+      account
+      usdcBalance {
+        token
+        amount
+      }
+      gfiBalance {
+        token
+        amount
+      }
     }
   }
 `;
@@ -33,24 +38,23 @@ interface WalletInfoProps {
 
 export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const { connector } = useWallet();
-  const { data } = useCurrentUserWalletInfoQuery();
-  const usdcBalance = data?.currentUser.usdcBalance
-    ? usdcFromAtomic(data.currentUser.usdcBalance)
-    : undefined;
-  const usdcBalanceAsDollars = data?.currentUser.usdcBalance
-    ? formatUsdcAsDollars(data.currentUser.usdcBalance)
-    : undefined;
-  const gfiBalance = data?.currentUser.gfiBalance
-    ? gfiFromAtomic(data.currentUser.gfiBalance)
-    : undefined;
-  const gfiPrice = data?.gfi?.price.usd;
-  const gfiBalanceAsDollars =
-    gfiPrice && data?.currentUser.gfiBalance
-      ? formatGfiAsDollars(data.currentUser.gfiBalance, gfiPrice)
-      : undefined;
+  const { data, loading, error } = useCurrentUserWalletInfoQuery();
+  const viewer = data?.viewer;
+
+  const gfiPrice = data?.gfiPrice.price.amount;
+  const gfiBalanceAsFiat =
+    viewer?.gfiBalance && gfiPrice
+      ? formatFiat({
+          symbol: SupportedFiat.Usd,
+          amount: gfiPrice * cryptoToFloat(viewer?.gfiBalance),
+        })
+      : null;
 
   return (
     <div className="min-w-[320px] space-y-8">
+      {error ? (
+        <HelperText isError>Error while fetching wallet status</HelperText>
+      ) : null}
       <div>
         <div className="mb-4 text-lg font-semibold">Balances</div>
         <div className="mb-6 flex items-center justify-between">
@@ -59,8 +63,13 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
             <span className="font-medium">USDC</span>
           </div>
           <div className="text-right">
-            <div>{usdcBalance ?? <Spinner />}</div>
-            <div className="text-xs">{usdcBalanceAsDollars}</div>
+            <div>
+              {loading ? (
+                <Shimmer style={{ width: "12ch" }} />
+              ) : viewer?.usdcBalance ? (
+                formatCrypto(viewer.usdcBalance)
+              ) : null}
+            </div>
           </div>
         </div>
         <div className="flex items-center justify-between">
@@ -69,8 +78,20 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
             <span className="font-medium">GFI</span>
           </div>
           <div className="text-right">
-            <div>{gfiBalance ?? <Spinner />}</div>
-            <div className="text-xs">{gfiBalanceAsDollars}</div>
+            <div>
+              {loading ? (
+                <Shimmer style={{ width: "12ch" }} />
+              ) : viewer?.gfiBalance ? (
+                formatCrypto(viewer.gfiBalance)
+              ) : null}
+            </div>
+            <div className="text-xs">
+              {loading ? (
+                <Shimmer style={{ width: "12ch" }} />
+              ) : gfiBalanceAsFiat ? (
+                gfiBalanceAsFiat
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

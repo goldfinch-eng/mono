@@ -1,3 +1,4 @@
+import { Web3Provider } from "@ethersproject/providers";
 import { useMemo } from "react";
 
 import { CONTRACT_ADDRESSES } from "@/constants";
@@ -17,4 +18,10 @@ export function useGfiContract() {
     }
     return { gfiAddress: undefined, gfiContract: undefined };
   }, [provider, chainId]);
+}
+
+export async function getGfiContract(chainId: number, provider: Web3Provider) {
+  const gfiAddress = CONTRACT_ADDRESSES[chainId].GFI;
+  const gfiContract = Gfi__factory.connect(gfiAddress, provider);
+  return gfiContract;
 }

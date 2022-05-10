@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { useExampleQuery } from "@/lib/graphql/generated";
+import { computeApyFromGfiInFiat } from "@/lib/pools";
 
 import {
   PoolCard,
@@ -21,7 +22,6 @@ gql`
         id
         estimatedApy
         estimatedApyFromGfiRaw
-        estimatedApyFromGfi @client
         tranchedPools {
           id
           ...TranchedPoolCardFields
@@ -32,9 +32,11 @@ gql`
       id
       ...TranchedPoolCardFields
     }
-    gfi @client {
+    gfiPrice(fiat: USD) @client {
+      lastUpdated
       price {
-        usd
+        amount
+        symbol
       }
     }
   }
@@ -46,6 +48,7 @@ export default function EarnPage() {
   const tranchedPools = data?.tranchedPools.filter(
     (tranchedPool) => tranchedPool.name !== null
   );
+  const fiatPerGfi = data?.gfiPrice.price.amount;
 
   return (
     <div>
@@ -59,14 +62,12 @@ export default function EarnPage() {
           outdated.
         </HelperText>
       ) : null}
-      <Paragraph className="mb-12">
-        Price of GFI: ${data?.gfi?.price.usd ?? ""}
-      </Paragraph>
+      <Paragraph className="mb-12">Price of GFI: ${fiatPerGfi ?? ""}</Paragraph>
       <Heading level={2} className="mb-4">
         Senior Pool
       </Heading>
       <div className="mb-12">
-        {!seniorPool ? (
+        {!seniorPool || !fiatPerGfi ? (
           <PoolCard isPlaceholder />
         ) : (
           <PoolCard
@@ -74,7 +75,10 @@ export default function EarnPage() {
             subtitle={seniorPool.category}
             icon={seniorPool.icon}
             apy={seniorPool.latestPoolStatus.estimatedApy}
-            apyFromGfi={seniorPool.latestPoolStatus.estimatedApyFromGfi}
+            apyFromGfi={computeApyFromGfiInFiat(
+              seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+              fiatPerGfi
+            )}
             href="/pools/senior"
           />
         )}
@@ -94,13 +98,16 @@ export default function EarnPage() {
           ))
         ) : (
           <div className="flex flex-col space-y-4">
-            {tranchedPools?.map((tranchedPool) => (
-              <TranchedPoolCard
-                key={tranchedPool.id}
-                tranchedPool={tranchedPool}
-                href={`/pools/${tranchedPool.id}`}
-              />
-            ))}
+            {tranchedPools && fiatPerGfi
+              ? tranchedPools.map((tranchedPool) => (
+                  <TranchedPoolCard
+                    key={tranchedPool.id}
+                    tranchedPool={tranchedPool}
+                    href={`/pools/${tranchedPool.id}`}
+                    fiatPerGfi={fiatPerGfi}
+                  />
+                ))
+              : null}
           </div>
         )}
       </div>

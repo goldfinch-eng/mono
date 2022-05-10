@@ -6,6 +6,7 @@ export * from "./icon";
 export * from "./input";
 export * from "./link";
 export * from "./logo";
+export * from "./marquee";
 export * from "./modal";
 export * from "./popover";
 export * from "./spinners";
