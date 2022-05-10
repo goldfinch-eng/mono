@@ -441,7 +441,7 @@ async function getDepositEventsByCapitalProvider(
     true,
     currentBlock.number
   )
-  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEvents(
+  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEventsFromUser(
     capitalProviderAddress,
     ["DepositedAndStaked"],
     undefined,
@@ -876,7 +876,7 @@ export function getStakedPositionTypeByValue(value: string, legacyFallback = fal
   }
 }
 
-type PositionOptimisticIncrement = {
+export type PositionOptimisticIncrement = {
   vested: BigNumber
   unvested: BigNumber
 }
@@ -1058,7 +1058,32 @@ class StakingRewards {
     return StakingRewards.parseStoredPosition(raw)
   }
 
-  async getEvents<T extends StakingRewardsEventType>(
+  // Returns events for the given staked positions.
+  //
+  // Note: It may include events that were NOT initiated by the current user.
+  // In the case of token transfers, the staked position may have been been
+  // transacted with by the previous owner(s).
+  async getEventsForPositions<T extends StakingRewardsEventType>(
+    tokenIds: string[],
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: number
+  ): Promise<KnownEventData<T>[]> {
+    const filters = {
+      ...(filter || {}),
+      tokenId: tokenIds,
+    }
+
+    return this.queryEvents(eventNames, filters, toBlock)
+  }
+
+  // Returns events that were initiated by a given user.
+  //
+  // Note: It does NOT include all events for staked positions
+  // that the user currently holds. In the case of token transfers,
+  // the staked position may have been been transacted with by the previous
+  // owner(s).
+  async getEventsFromUser<T extends StakingRewardsEventType>(
     address: string,
     eventNames: T[],
     filter: Filter | undefined,
@@ -1069,9 +1094,13 @@ class StakingRewards {
       user: address,
     }
 
+    return this.queryEvents(eventNames, filters, toBlock)
+  }
+
+  async queryEvents<T extends StakingRewardsEventType>(eventNames: T[], filters: Filter = {}, toBlock: number) {
     const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
     if (networkIsMainnet) {
-      const [legacyEvents, events] = await Promise.all([
+      return Promise.all([
         this.goldfinchProtocol.queryEvents(
           this.legacyContract.readOnly,
           // Filter out any StakingRewards events that were not created before the v2.6.0 migration.
@@ -1088,8 +1117,7 @@ class StakingRewards {
               toBlock,
               this.v26MigrationInfo.blockNumber + 1
             ),
-      ])
-      return legacyEvents.concat(events)
+      ]).then(([legacyEvents, events]) => legacyEvents.concat(events))
     } else {
       return this.goldfinchProtocol.queryEvents(this.contract.readOnly, eventNames, filters, toBlock)
     }
