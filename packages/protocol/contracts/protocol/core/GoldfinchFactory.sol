@@ -152,11 +152,6 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     return pool;
   }
 
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
   // Stolen from:
   // https://github.com/OpenZeppelin/openzeppelin-sdk/blob/master/packages/lib/contracts/upgradeability/ProxyFactory.sol
   function _deployMinimal(address _logic) internal returns (address proxy) {

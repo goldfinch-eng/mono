@@ -24,6 +24,4 @@ abstract contract IGo {
   function goOnlyIdTypes(address account, uint256[] calldata onlyIdTypes) public view virtual returns (bool);
 
   function goSeniorPool(address account) public view virtual returns (bool);
-
-  function updateGoldfinchConfig() external virtual;
 }

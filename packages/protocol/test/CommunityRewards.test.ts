@@ -1069,30 +1069,4 @@ describe("CommunityRewards", () => {
       })
     })
   })
-
-  describe("updateGoldfinchConfig", async () => {
-    let otherConfig: GoldfinchConfigInstance
-
-    const updateGoldfinchConfigTestSetup = deployments.createFixture(async ({deployments}) => {
-      const deployment = await deployments.deploy("GoldfinchConfig", {from: owner})
-      const goldfinchConfig = await artifacts.require("GoldfinchConfig").at(deployment.address)
-      return {goldfinchConfig}
-    })
-
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({goldfinchConfig: otherConfig} = await updateGoldfinchConfigTestSetup())
-    })
-
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        await goldfinchConfig.setGoldfinchConfig(otherConfig.address, {from: owner})
-        const tx = await communityRewards.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: otherConfig.address,
-        })
-      })
-    })
-  })
 })

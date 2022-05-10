@@ -209,41 +209,6 @@ async function getExistingContracts(
   return contracts
 }
 
-async function performPostUpgradeMigration(upgradedContracts: any, deployments: DeploymentsExtension) {
-  const deployed = await deployments.getOrNull("TestForwarder")
-  assertNonNullable(deployed)
-  const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
-  await forwarder.registerDomainSeparator("Defender", "1")
-  await migrateToNewConfig(upgradedContracts, [
-    "CreditDesk",
-    "CreditLine",
-    "Fidu",
-    "FixedLeverageRatioStrategy",
-    "Go",
-    "MigratedTranchedPool",
-    "Pool",
-    "PoolTokens",
-    "SeniorPool",
-  ])
-}
-
-export async function migrateToNewConfig(upgradedContracts: any, contractsToUpgrade: string[]) {
-  const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
-  const existingConfig = upgradedContracts.GoldfinchConfig.ExistingContract
-  const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
-  if (!(await newConfig.hasRole(OWNER_ROLE, safeAddress))) {
-    await (await newConfig.initialize(safeAddress)).wait()
-  }
-  await newConfig.initializeFromOtherConfig(existingConfig.address)
-  await updateConfig(existingConfig, "address", CONFIG_KEYS.GoldfinchConfig, newConfig.address)
-
-  await Promise.all(
-    contractsToUpgrade.map(async (contract) => {
-      await (await upgradedContracts[contract].UpgradedContract.updateGoldfinchConfig()).wait()
-    })
-  )
-}
-
 type ContractInfo = {
   address: string
   abi: {}[]
@@ -312,6 +277,5 @@ export {
   getExistingContracts,
   upgradeContracts,
   getCurrentlyDeployedContracts,
-  performPostUpgradeMigration,
   getAllExistingContracts,
 }

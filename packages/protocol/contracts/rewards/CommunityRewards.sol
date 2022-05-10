@@ -134,12 +134,6 @@ contract CommunityRewards is ICommunityRewards, ERC721PresetMinterPauserAutoIdUp
     tokenLaunchTimeInSeconds = _tokenLaunchTimeInSeconds;
   }
 
-  /// @notice updates current config
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(_msgSender(), address(config));
-  }
-
   /* ========== MUTATIVE, NON-ADMIN-ONLY FUNCTIONS ========== */
 
   /// @notice Grant rewards to a recipient. The recipient address receives an

@@ -230,31 +230,6 @@ describe("SeniorPool", () => {
     })
   })
 
-  describe("updateGoldfinchConfig", () => {
-    describe("setting it", async () => {
-      it("should allow the owner to set it", async () => {
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
-        return expectAction(() => seniorPool.updateGoldfinchConfig({from: owner})).toChange([
-          [() => seniorPool.config(), {to: person2, bignumber: false}],
-        ])
-      })
-      it("should disallow non-owner to set", async () => {
-        return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
-      })
-
-      it("should emit an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-        const tx = await seniorPool.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-  })
-
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {

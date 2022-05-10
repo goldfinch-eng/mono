@@ -150,18 +150,4 @@ describe("GoldfinchFactory", async () => {
       expect(await goldfinchFactory.getRoleAdmin(borrowerRole)).to.eq(ownerRole)
     })
   })
-
-  describe("updateGoldfinchConfig", async () => {
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address, {from: owner})
-        const tx = await goldfinchFactory.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-  })
 })

@@ -155,33 +155,6 @@ describe("CreditLine", () => {
     })
   })
 
-  describe("updateGoldfinchConfig", () => {
-    describe("setting it", async () => {
-      it("should allow the owner to set it", async () => {
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
-        return expectAction(() => creditLine.updateGoldfinchConfig({from: owner})).toChange([
-          [() => creditLine.config(), {to: person2, bignumber: false}],
-        ])
-      })
-
-      it("should disallow non-owner to set", async () => {
-        return expect(creditLine.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
-      })
-
-      it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, newConfig.address)
-        const tx = await creditLine.updateGoldfinchConfig()
-        const logs = decodeLogs(tx.receipt.rawLogs, creditLine, "GoldfinchConfigUpdated")
-        const firstLog = getFirstLog(logs)
-        expect(firstLog.event).to.equal("GoldfinchConfigUpdated")
-        expect(firstLog.args.who).to.match(new RegExp(tx.receipt.from, "i"))
-        expect(firstLog.args.configAddress).to.match(new RegExp(newConfig.address, "i"))
-      })
-    })
-  })
-
   describe("assess", async () => {
     let currentTime
     beforeEach(async () => {
@@ -370,18 +343,6 @@ describe("CreditLine", () => {
       expect(await creditLine.termStartTime()).to.bignumber.equal(
         termEndTime.sub(SECONDS_PER_DAY.mul(new BN(termInDays)))
       )
-    })
-  })
-
-  describe("updateGoldfinchConfig", () => {
-    it("emits an event", async () => {
-      const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-      await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-      const tx = await creditLine.updateGoldfinchConfig({from: owner})
-      expectEvent(tx, "GoldfinchConfigUpdated", {
-        who: owner,
-        configAddress: newConfig.address,
-      })
     })
   })
 })
