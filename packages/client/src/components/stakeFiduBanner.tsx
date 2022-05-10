@@ -55,7 +55,8 @@ export default function StakeFiduBanner(props: StakeFiduBannerProps) {
         sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), StakedPositionType.Fidu), {
           type: STAKE_TX_TYPE,
           data: {
-            fiduAmount: fiduFromAtomic(amount),
+            amount: fiduFromAtomic(amount),
+            ticker: "FIDU",
           },
         })
       )

@@ -9,9 +9,9 @@ type EtherscanLinkProps = {
 } & (
   | {
       address: string
-      txHash?: never
+      txHash: undefined
     }
-  | {address?: never; txHash: string}
+  | {address: undefined; txHash: string}
 )
 
 function EtherscanLink(props: EtherscanLinkProps) {

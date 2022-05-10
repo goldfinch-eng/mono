@@ -4,39 +4,35 @@ import CreditActionsMultipleContainer from "./CreditActionsMultipleContainer"
 import CreditStatus from "./CreditStatus"
 import ConnectionNotice from "../connectionNotice"
 import BorrowHeader from "./BorrowHeader"
-import {fetchCreditLineData, defaultCreditLine} from "../../ethereum/creditLine"
+import {fetchCreditLineData, CreditLine, MultipleCreditLines} from "../../ethereum/creditLine"
 import {AppContext} from "../../App"
 import CreditLinesList from "./CreditLinesList"
 import {useBorrow} from "../../contexts/BorrowContext"
 import {assertNonNullable} from "../../utils"
+import {useSession} from "../../hooks/useSignIn"
 
-function Borrow(props) {
+function Borrow() {
   const {creditDesk, user, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [creditLinesAddresses, setCreditLinesAddresses] = useState<string[]>([])
-  const [creditLine, setCreditLine] = useState(defaultCreditLine)
+  const [creditLine, setCreditLine] = useState<CreditLine | MultipleCreditLines | undefined>()
   const {borrowStore, setBorrowStore} = useBorrow()
+  const session = useSession()
 
   async function updateBorrowerAndCreditLine() {
     if (user && user.borrower && creditDesk) {
       const borrowerCreditLines = user.borrower.creditLinesAddresses
       setCreditLinesAddresses(borrowerCreditLines)
-      if (!creditLine.loaded || (creditLine.loaded && !creditLine.address)) {
-        changeCreditLine(borrowerCreditLines)
-      }
+      changeCreditLine(borrowerCreditLines)
     }
   }
 
   useEffect(() => {
-    if (!creditDesk) {
-      return
-    }
     updateBorrowerAndCreditLine()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [creditDesk, user])
+  }, [creditDesk, user, currentBlock])
 
-  const isDefaultCreditLine = creditLine.isDefaultObject
   useEffect(() => {
-    if (!isDefaultCreditLine) {
+    if (creditLine) {
       setBorrowStore({...borrowStore, creditLine})
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,45 +40,48 @@ function Borrow(props) {
 
   const creditLineData = borrowStore.creditLine
 
-  async function actionComplete() {
-    return changeCreditLine(creditLineData.address)
+  async function actionComplete(): Promise<void> {
+    // No need to do anything here to trigger refreshing the chain data;
+    // that refreshing is accomplished via the invocation of `updateBorrowerAndCreditLine()`
+    // upon the changing of `currentBlock`.
   }
 
-  async function changeCreditLine(clAddresses) {
+  async function changeCreditLine(clAddresses: string | string[]) {
     assertNonNullable(goldfinchProtocol)
     assertNonNullable(currentBlock)
     setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol, currentBlock))
   }
 
+  const disabled = !creditLine || !creditLine.loaded || session.status !== "authenticated"
+
   let creditActionsContainer
   let creditLineStatus
-  if (creditLineData.isMultiple) {
-    creditActionsContainer = (
-      <CreditActionsMultipleContainer
-        borrower={user?.borrower}
-        creditLine={creditLineData}
-        actionComplete={actionComplete}
-        disabled={isDefaultCreditLine}
-      />
-    )
-    creditLineStatus = (
-      <CreditLinesList
-        creditLine={creditLineData}
-        user={user}
-        changeCreditLine={changeCreditLine}
-        disabled={isDefaultCreditLine}
-      />
-    )
-  } else {
-    creditActionsContainer = (
-      <CreditActionsContainer
-        borrower={user?.borrower}
-        creditLine={creditLineData}
-        actionComplete={actionComplete}
-        disabled={isDefaultCreditLine}
-      />
-    )
-    creditLineStatus = <CreditStatus creditLine={creditLineData} user={user} disabled={isDefaultCreditLine} />
+  if (creditLineData && user?.borrower) {
+    if (creditLineData.isMultiple) {
+      creditActionsContainer = (
+        <CreditActionsMultipleContainer
+          borrower={user.borrower}
+          creditLine={creditLineData}
+          actionComplete={actionComplete}
+          disabled={disabled}
+        />
+      )
+      creditLineStatus = (
+        <CreditLinesList creditLine={creditLineData} changeCreditLine={changeCreditLine} disabled={disabled} />
+      )
+    } else {
+      creditActionsContainer = (
+        <CreditActionsContainer
+          borrower={user.borrower}
+          creditLine={creditLineData}
+          actionComplete={actionComplete}
+          disabled={disabled}
+        />
+      )
+      creditLineStatus = (
+        <CreditStatus creditLine={creditLineData} user={user} borrower={user.borrower} disabled={disabled} />
+      )
+    }
   }
 
   return (
@@ -95,7 +94,10 @@ function Borrow(props) {
           changeCreditLine={changeCreditLine}
         />
       </div>
-      <ConnectionNotice creditLine={creditLineData} requireUnlock={!!user && !!user.borrower} />
+      <ConnectionNotice
+        showCreditLineStatus={true}
+        requireUnlock={!!(user && user.borrower && user.borrower.creditLinesAddresses.length)}
+      />
       {creditActionsContainer}
       {creditLineStatus}
     </div>

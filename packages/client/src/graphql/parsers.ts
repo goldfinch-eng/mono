@@ -90,6 +90,9 @@ async function parseTranchedPool(
   tranchedPool.isV1StyleDeal = !!tranchedPool.metadata?.v1StyleDeal
   tranchedPool.isMigrated = !!tranchedPool.metadata?.migrated
   tranchedPool.isPaused = pool.isPaused
+  tranchedPool.drawdownsPaused = await tranchedPool.contract.readOnly.methods
+    .drawdownsPaused()
+    .call(undefined, currentBlock?.number || "latest")
 
   // This code addresses the case when the user doesn't have a web3 provider
   // since we need the current block timestamp to define the pool status.
@@ -183,7 +186,7 @@ export async function parseBackers(
         backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
         backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
         const filteredTokens = (backerData?.user.tokens || []).filter(
-          (token) => token.tranchedPool.id === tranchedPool.address
+          (token) => token.tranchedPool.id.toLowerCase() === tranchedPool.address.toLowerCase()
         )
         backer.tokenInfos = tokenInfo(filteredTokens)
         const events = await Promise.all(
@@ -196,7 +199,11 @@ export async function parseBackers(
                 currentBlock.number
               )
           )
-        )
+        ).catch((error) => {
+          console.error("Error fetching deposit_made events for backer tokenInfo", error)
+          throw error
+        })
+
         backer.firstDepositBlockNumber = events
           .flat()
           .reduce<number | undefined>(

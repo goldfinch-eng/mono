@@ -1,82 +1,107 @@
 import _ from "lodash"
+import {Contract} from "web3-eth-contract"
 import BigNumber from "bignumber.js"
-import {AppContext} from "../../App"
+import {AppContext, GlobalState} from "../../App"
 import DrawdownForm from "../../components/Borrow/DrawdownForm"
 import {render, screen, fireEvent, waitFor} from "@testing-library/react"
 import {usdcToAtomic} from "../../ethereum/erc20"
+import {GoldfinchConfigData} from "../../ethereum/goldfinchConfig"
+import {SeniorPoolLoaded} from "../../ethereum/pool"
+import {NetworkConfig} from "../../types/network"
+import {BorrowerInterface} from "../../ethereum/borrower"
+import {CreditLine} from "../../ethereum/creditLine"
+import {Web3IO} from "../../types/web3"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {Borrower} from "@goldfinch-eng/protocol/typechain/web3/Borrower"
 
-function renderDrawdownForm(transactionLimit, creditLineBalance, seniorPoolremainingCapacity) {
-  const mockAddress = "0x0000000000000000000000000"
-  creditLineBalance = new BigNumber(creditLineBalance)
+function renderDrawdownForm(
+  transactionLimitInDollars: number,
+  availableCreditInDollars: number,
+  tranchedPoolAmountAvailableInDollars: number
+) {
+  const creditLineAddress = "0xfoo"
+  const borrowerAddress = "0xbar"
 
-  let store = {
+  let store: GlobalState = {
     goldfinchConfig: {
-      transactionLimit: new BigNumber(usdcToAtomic(transactionLimit)),
-    },
-    creditLine: {
-      availableCreditInDollars: creditLineBalance,
-    },
+      transactionLimit: new BigNumber(usdcToAtomic(transactionLimitInDollars.toString())),
+    } as GoldfinchConfigData,
     pool: {
       gf: {
-        remainingCapacity: () => new BigNumber(usdcToAtomic(seniorPoolremainingCapacity)),
         totalPoolAssets: new BigNumber(0),
       },
-    },
+    } as unknown as SeniorPoolLoaded,
     network: {
       name: "mainnet",
-    },
+    } as NetworkConfig,
   }
+  const borrower = new BorrowerInterface(
+    "0xasdf",
+    {
+      readOnly: {
+        options: {
+          address: borrowerAddress,
+        },
+      },
+    } as Web3IO<Borrower>,
+    {
+      getERC20: () => {},
+    } as unknown as GoldfinchProtocol,
+    {} as Web3IO<Contract>
+  )
+  borrower.getPoolAmountAvailableForDrawdownInDollars = (clAddress: string): BigNumber => {
+    if (clAddress === creditLineAddress) {
+      return new BigNumber(tranchedPoolAmountAvailableInDollars)
+    } else {
+      throw new Error(`Unexpected credit line address: ${clAddress}`)
+    }
+  }
+  const creditLine = {
+    address: creditLineAddress,
+    availableCreditInDollars: new BigNumber(availableCreditInDollars),
+  } as unknown as CreditLine
   return render(
-    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ goldfinchConfig: { transactionLimit: BigNu... Remove this comment to see the full error message
     <AppContext.Provider value={store}>
-      <DrawdownForm
-        actionComplete={_.noop}
-        closeForm={_.noop}
-        owner={{userAddress: mockAddress}}
-        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ borrowerAddress: string; }' is missing... Remove this comment to see the full error message
-        borrower={{borrowerAddress: mockAddress}}
-        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ availableCreditInDollars: any; }' is missing... Remove this comment to see the full error message
-        creditLine={{availableCreditInDollars: creditLineBalance}}
-      />
+      <DrawdownForm actionComplete={_.noop} closeForm={_.noop} borrower={borrower} creditLine={creditLine} />
     </AppContext.Provider>
   )
 }
 
 describe("max transaction amount for drawdownForm", () => {
-  it("fills the transaction amount with the credit line balance", async () => {
-    let seniorPoolremainingCapacity = 300,
-      transactionLimit = 200,
-      creditLineBalance = 100
-    renderDrawdownForm(transactionLimit, creditLineBalance, seniorPoolremainingCapacity)
+  it("fills the transaction amount with the amount available in the tranched pool, if that is the proximate constraint", async () => {
+    const transactionLimitInDollars = 200
+    const availableCreditInDollars = 100
+    const tranchedPoolAmountAvailableInDollars = 50
+    renderDrawdownForm(transactionLimitInDollars, availableCreditInDollars, tranchedPoolAmountAvailableInDollars)
     fireEvent.click(screen.getByText("Borrow"))
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
     await waitFor(() => {
-      expect(screen.getAllByRole("textbox")[1]).toHaveProperty("value", creditLineBalance.toString())
+      expect(screen.getAllByRole("textbox")[1]).toHaveProperty("value", tranchedPoolAmountAvailableInDollars.toString())
     })
   })
 
-  it("fills the transaction amount with the transaction limit", async () => {
-    let seniorPoolremainingCapacity = 300,
-      transactionLimit = 200,
-      creditLineBalance = 500
-    renderDrawdownForm(transactionLimit, creditLineBalance, seniorPoolremainingCapacity)
-    fireEvent.click(screen.getByText("Borrow"))
-    fireEvent.click(screen.getByText("Max", {selector: "button"}))
-
-    expect(screen.getAllByRole("textbox")[1]).toHaveProperty("value", transactionLimit.toString())
-  })
-
-  it("is not limited by the senior pool remaining capacity", async () => {
-    let seniorPoolremainingCapacity = 300,
-      transactionLimit = 400,
-      creditLineBalance = 500
-    renderDrawdownForm(transactionLimit, creditLineBalance, seniorPoolremainingCapacity)
+  it("fills the transaction amount with the available credit of the credit line, if that is the proximate constraint", async () => {
+    const transactionLimitInDollars = 200
+    const availableCreditInDollars = 100
+    const tranchedPoolAmountAvailableInDollars = 150
+    renderDrawdownForm(transactionLimitInDollars, availableCreditInDollars, tranchedPoolAmountAvailableInDollars)
     fireEvent.click(screen.getByText("Borrow"))
     fireEvent.click(screen.getByText("Max", {selector: "button"}))
 
     await waitFor(() => {
-      expect(screen.getAllByRole("textbox")[1]).toHaveProperty("value", transactionLimit.toString())
+      expect(screen.getAllByRole("textbox")[1]).toHaveProperty("value", availableCreditInDollars.toString())
     })
+  })
+
+  it("fills the transaction amount with the transaction limit, if that is the proximate constraint", async () => {
+    const transactionLimitInDollars = 200
+    const availableCreditInDollars = 500
+    const tranchedPoolAmountAvailableInDollars = 250
+    renderDrawdownForm(transactionLimitInDollars, availableCreditInDollars, tranchedPoolAmountAvailableInDollars)
+    fireEvent.click(screen.getByText("Borrow"))
+    fireEvent.click(screen.getByText("Max", {selector: "button"}))
+
+    expect(screen.getAllByRole("textbox")[1]).toHaveProperty("value", transactionLimitInDollars.toString())
   })
 })

@@ -74,8 +74,9 @@ function DrawdownForm(props: DrawdownFormProps) {
     }).then(props.actionComplete)
   }
 
+  const availableToBorrowInDollars = props.borrower.getAvailableToBorrowInDollarsForCreditLine(props.creditLine)
   const maxAmountInDollars = minimumNumber(
-    props.creditLine.availableCreditInDollars,
+    availableToBorrowInDollars,
     goldfinchConfig ? usdcFromAtomic(goldfinchConfig.transactionLimit) : undefined
   )
 
@@ -129,7 +130,7 @@ function DrawdownForm(props: DrawdownFormProps) {
             <div className="form-inputs-footer">
               <TransactionInput
                 formMethods={formMethods}
-                maxAmountInDollars={maxAmountInDollars}
+                maxAmount={maxAmountInDollars}
                 disabled={disabled}
                 onChange={(e) => {
                   debouncedSetTransactionAmount(formMethods.getValues("transactionAmount"))
@@ -174,7 +175,7 @@ function DrawdownForm(props: DrawdownFormProps) {
     <TransactionForm
       formClass="drawdown-form"
       title="Borrow"
-      headerMessage={`Available to borrow: ${displayDollars(props.creditLine.availableCreditInDollars)}`}
+      headerMessage={`Available to borrow: ${displayDollars(availableToBorrowInDollars)}`}
       render={renderForm}
       closeForm={props.closeForm}
     />

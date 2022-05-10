@@ -61,7 +61,7 @@ export function Overview({tranchedPool, handleDetails}: {tranchedPool: TranchedP
                 Dataroom {iconOutArrow}
               </a>
             )}
-            <EtherscanLink address={tranchedPool.address!}>
+            <EtherscanLink address={tranchedPool.address!} txHash={undefined}>
               Pool<span className="outbound-link">{iconOutArrow}</span>
             </EtherscanLink>
           </div>

@@ -52,7 +52,7 @@ export function TranchedPoolWithdrawForm({
         <div className="form-inputs-footer">
           <TransactionInput
             formMethods={formMethods}
-            maxAmountInDollars={backer.availableToWithdrawInDollars.toString(10)}
+            maxAmount={backer.availableToWithdrawInDollars.toString(10)}
             rightDecoration={
               <button
                 className="enter-max-amount"

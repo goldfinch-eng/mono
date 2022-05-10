@@ -491,6 +491,7 @@ async function writePoolMetadata({
   const status = [false, true, undefined]
 
   const metadataPath = "../../packages/client/config/pool-metadata/localhost.json"
+  const metadataPathForClient2 = "../../packages/client2/constants/metadata/localhost.json"
   let metadata: any
   try {
     const data = await fs.promises.readFile(metadataPath)
@@ -498,7 +499,7 @@ async function writePoolMetadata({
   } catch (error) {
     metadata = {}
   }
-  const name = `${borrower.slice(0, 6)}: ${_.sample(names)}`
+  const name = `${borrower}: ${_.sample(names)}`
   const launchTime = await getCurrentTimestamp()
 
   logger(`Write metadata for ${pool.address}:${name}`)
@@ -515,6 +516,7 @@ async function writePoolMetadata({
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
+  await fs.promises.writeFile(metadataPathForClient2, JSON.stringify(metadata, null, 2))
 }
 
 function getLastEventArgs(result: ContractReceipt): Result {

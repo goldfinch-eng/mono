@@ -4,6 +4,7 @@ import { createPoolCreatedEvent } from './factories'
 import { handlePoolCreated } from '../src/mappings/goldfinch_factory'
 import { mockTranchedPoolCalls } from './mocks'
 import { VERSION_BEFORE_V2_2, VERSION_V2_2 } from '../src/utils'
+import { SENIOR_POOL_STATUS_ID } from '../src/entities/senior_pool'
 
 test('handlePoolCreated creates a new Tranched pool record', () => {
   const tranchedPoolAddress = '0x9999999999999999999999999999999999999999'
@@ -57,8 +58,9 @@ test('handlePoolCreated creates a new Tranched pool record', () => {
   assert.fieldEquals('CreditLine', creditLineAddress, 'interestOwed', '0')
   assert.fieldEquals('CreditLine', creditLineAddress, 'termEndTime', '1697995148')
   assert.fieldEquals('CreditLine', creditLineAddress, 'lastFullPaymentTime', '1637515148')
-  assert.fieldEquals('CreditLine', creditLineAddress, 'termEndDate', '0')
   assert.fieldEquals('CreditLine', creditLineAddress, 'version', VERSION_BEFORE_V2_2)
+
+  assert.fieldEquals('SeniorPoolStatus', SENIOR_POOL_STATUS_ID, 'tranchedPools', `[${tranchedPoolAddress}]`)
 
   clearStore()
 })
@@ -117,8 +119,9 @@ test('handlePoolCreated creates a new Tranched pool record after V2_2 migration'
   assert.fieldEquals('CreditLine', creditLineAddress, 'interestOwed', '0')
   assert.fieldEquals('CreditLine', creditLineAddress, 'termEndTime', '1697995148')
   assert.fieldEquals('CreditLine', creditLineAddress, 'lastFullPaymentTime', '1637515148')
-  assert.fieldEquals('CreditLine', creditLineAddress, 'termEndDate', '0')
   assert.fieldEquals('CreditLine', creditLineAddress, 'version', VERSION_V2_2)
+
+  assert.fieldEquals('SeniorPoolStatus', SENIOR_POOL_STATUS_ID, 'tranchedPools', `[${tranchedPoolAddress}]`)
 
   clearStore()
 })

@@ -242,7 +242,7 @@ function Details(props: DetailsProps) {
       {columns}
       {props.itemDetails.etherscanAddress && (
         <EtherscanLinkContainer className="pool-links">
-          <EtherscanLink txHash={props.itemDetails.etherscanAddress}>
+          <EtherscanLink txHash={props.itemDetails.etherscanAddress} address={undefined}>
             Etherscan<span className="outbound-link">{iconOutArrow}</span>
           </EtherscanLink>
         </EtherscanLinkContainer>

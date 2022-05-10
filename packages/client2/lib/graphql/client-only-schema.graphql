@@ -1,0 +1,53 @@
+extend type SeniorPool {
+  name: String!
+  category: String!
+  icon: String!
+}
+
+extend type SeniorPoolStatus {
+  """
+  Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field.
+  """
+  estimatedApyFromGfi: BigDecimal!
+}
+
+extend type TranchedPool {
+  name: String
+  category: String
+  description: String
+  icon: String
+  agreement: String
+  dataroom: String
+  poolDescription: String
+  poolHighlights: [String]
+  borrowerDescription: String
+  borrowerHighlights: [String]
+  """
+  Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedJuniorApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field.
+  """
+  estimatedJuniorApyFromGfi: BigDecimal!
+}
+
+type AppUser {
+  account: String
+  usdcBalance: BigInt
+  gfiBalance: BigInt
+}
+
+type Gfi {
+  price: GfiPrice!
+  lastUpdated: Int!
+}
+
+"""
+Leaves some room to add other fiat currencies in the future
+"""
+type GfiPrice {
+  usd: Float!
+}
+
+extend type Query {
+  currentUser: AppUser!
+  gfi: Gfi
+  isWalletModalOpen: Boolean!
+}

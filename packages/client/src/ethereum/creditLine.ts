@@ -1,7 +1,7 @@
 import getWeb3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
-import {Tickers, usdcFromAtomic, usdcToAtomic} from "./erc20"
+import {Ticker, usdcFromAtomic, usdcToAtomic} from "./erc20"
 import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
 import {BlockInfo, croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
@@ -86,34 +86,6 @@ abstract class BaseCreditLine {
   }
 }
 
-class DefaultCreditLine extends BaseCreditLine {
-  currentLimit: BigNumber
-  maxLimit: BigNumber
-  remainingPeriodDueAmount: BigNumber
-  remainingTotalDueAmount: BigNumber
-  availableCredit: BigNumber
-  isDefaultObject: boolean
-
-  constructor() {
-    super()
-    this.balance = zero
-    this.currentLimit = zero
-    this.maxLimit = zero
-    this.periodDueAmount = zero
-    this.remainingPeriodDueAmount = zero
-    this.interestAprDecimal = zero
-    this.availableCredit = zero
-    this.collectedPaymentBalance = zero
-    this.totalDueAmount = zero
-    this.remainingTotalDueAmount = zero
-    this.isLate = false
-    this.loaded = true
-    this.creditLines = []
-    this.name = "No Credit Lines"
-    this.isDefaultObject = true
-  }
-}
-
 class CreditLine extends BaseCreditLine {
   address: string
   currentLimit!: BigNumber
@@ -141,7 +113,7 @@ class CreditLine extends BaseCreditLine {
     this.address = address
     this.goldfinchProtocol = goldfinchProtocol
     this.creditLine = goldfinchProtocol.getContract<CreditlineContract>("CreditLine", address)
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC).contract
     this.isLate = false
     this.loaded = false
     this.creditLines = [this]
@@ -254,7 +226,7 @@ class MultipleCreditLines extends BaseCreditLine {
     this.isLate = false
     this.loaded = false
     this.name = "All"
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC).contract
   }
 
   async initialize(currentBlock: BlockInfo) {
@@ -268,6 +240,8 @@ class MultipleCreditLines extends BaseCreditLine {
     // Picks the minimum due date
     const formattedNextDueDate = moment.unix(this.nextDueTime.toNumber()).format("MMM D")
     this.dueDate = this.nextDueTime.toNumber() === 0 ? "" : formattedNextDueDate
+
+    this.loaded = true
   }
 
   splitPayment(dollarAmount): [string[], BigNumber[]] {
@@ -351,15 +325,13 @@ async function fetchCreditLineData(
   creditLineAddresses: string | string[],
   goldfinchProtocol: GoldfinchProtocol,
   currentBlock: BlockInfo
-) {
-  let result
+): Promise<CreditLine | MultipleCreditLines | undefined> {
+  let result: CreditLine | MultipleCreditLines | undefined
   // Provided address can be a nothing, a single address or an array of addresses. Normalize the single address to an array
   creditLineAddresses = typeof creditLineAddresses === "string" ? [creditLineAddresses] : creditLineAddresses
 
   if (!creditLineAddresses || creditLineAddresses.length === 0) {
-    const defaultCreditLine = new DefaultCreditLine()
-    defaultCreditLine.loaded = true
-    return Promise.resolve(defaultCreditLine)
+    return
   }
   if (creditLineAddresses.length === 1) {
     result = new CreditLine(creditLineAddresses[0], goldfinchProtocol)
@@ -370,8 +342,6 @@ async function fetchCreditLineData(
   return result
 }
 
-const defaultCreditLine = new DefaultCreditLine()
-
 export function displayDueDate(cl: CreditLine): string {
   if (cl.isLate) {
     return "now"
@@ -379,4 +349,4 @@ export function displayDueDate(cl: CreditLine): string {
   return cl.dueDate
 }
 
-export {fetchCreditLineData, defaultCreditLine, CreditLine, MultipleCreditLines}
+export {fetchCreditLineData, CreditLine, MultipleCreditLines}

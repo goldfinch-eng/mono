@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  @font-face {
+    font-family: "Newsreader Display";
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url(./NewsreaderDisplay.woff2) format("woff2");
+  }
+
+  html,
+  body,
+  #__next {
+    height: 100%;
+  }
+  body {
+    @apply font-sans font-normal text-sand-700;
+  }
+
+  /* gets rid of that highlight when you tap buttons on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  *:focus {
+    outline: none;
+    @apply focused;
+  }
+
+  *:focus:not(:focus-visible) {
+    @apply unfocused;
+  }
+}
+
+@layer components {
+  .spinner .spinner-gradient {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-image: conic-gradient(rgba(0, 0, 0, 0), currentColor);
+  }
+}
+
+@layer utilities {
+  .focused {
+    @apply ring-2 ring-purple-300;
+  }
+  .unfocused {
+    @apply ring-0;
+  }
+}

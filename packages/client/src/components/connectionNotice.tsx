@@ -1,7 +1,6 @@
 import {useLocation} from "react-router-dom"
 import {AppContext} from "../App"
-import {CreditLine} from "../ethereum/creditLine"
-import {UnlockedStatus, UserLoaded} from "../ethereum/user"
+import {UserLoaded} from "../ethereum/user"
 import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./KYCNotice/VerifyAddressBanner"
@@ -14,12 +13,17 @@ import {UserWalletWeb3Status} from "../types/web3"
 import Banner from "./banner"
 import {iconInfo} from "./icons"
 
+interface UnlockedStatus {
+  unlockAddress: string
+  isUnlocked: boolean
+}
+
 export interface ConnectionNoticeProps {
-  creditLine?: CreditLine
   requireGolist?: boolean
   requireUnlock?: boolean
   requireKYC?: {kyc: AsyncResult<KYC>; condition: (KYC: KYC) => boolean}
   isPaused?: boolean
+  showCreditLineStatus?: boolean
 }
 
 function TextBanner({children}: React.PropsWithChildren<{}>) {
@@ -58,7 +62,8 @@ export const strategies: ConnectionNoticeStrategy[] = [
   },
   {
     devName: "no_credit_line",
-    match: ({user, creditLine}) => !!user && !!creditLine && creditLine.loaded && !creditLine.address,
+    match: ({user, showCreditLineStatus}) =>
+      !!showCreditLineStatus && !!user && (!user.borrower || !user.borrower.creditLinesAddresses.length),
     render: (_props) => (
       <TextBanner>
         You do not have any credit lines. To borrow funds from the pool, you need a Goldfinch credit line.

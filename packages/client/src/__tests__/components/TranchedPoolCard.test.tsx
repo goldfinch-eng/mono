@@ -2,10 +2,10 @@ import "@testing-library/jest-dom"
 import {AppContext} from "../../App"
 import {render, screen, waitFor} from "@testing-library/react"
 import TranchedPoolCard from "../../components/Earn/TranchedPoolCard"
-import {defaultCreditLine} from "../../ethereum/creditLine"
 import BigNumber from "bignumber.js"
 import {TranchedPool, TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {CreditLine} from "../../ethereum/creditLine"
 
 function renderTranchedPoolCard(
   isPaused: boolean,
@@ -21,7 +21,7 @@ function renderTranchedPoolCard(
       return
     },
   } as unknown as GoldfinchProtocol)
-  tranchedPool.creditLine = defaultCreditLine as any
+  tranchedPool.creditLine = {} as CreditLine
   tranchedPool.creditLine.termEndTime = creditLineTermEndTime
   tranchedPool.fundableAt = new BigNumber(1644858313)
   tranchedPool.remainingCapacity = () => remainingCapacity

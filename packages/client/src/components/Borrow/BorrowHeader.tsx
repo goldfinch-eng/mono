@@ -1,29 +1,36 @@
 import React, {useState, useEffect, useContext} from "react"
-import {fetchCreditLineData} from "../../ethereum/creditLine"
+import {CreditLine, fetchCreditLineData, MultipleCreditLines} from "../../ethereum/creditLine"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {assertNonNullable, displayDollars} from "../../utils"
+import {assertNonNullable, BlockInfo, displayDollars} from "../../utils"
 import Dropdown from "../dropdown"
 import {AppContext} from "../../App"
+import {UserLoaded} from "../../ethereum/user"
+import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
 
-function BorrowHeader(props): JSX.Element {
+type BorrowHeaderProps = {
+  user: UserLoaded | undefined
+  creditLinesAddresses: string[]
+  selectedCreditLine: CreditLine | undefined
+  changeCreditLine: (clAddress: string) => void
+}
+
+function BorrowHeader(props: BorrowHeaderProps): JSX.Element {
   const {goldfinchProtocol, currentBlock} = useContext(AppContext)
-  const [creditLinePreviews, setCreditLinePreviews] = useState([])
+  const [creditLinePreviews, setCreditLinePreviews] = useState<Array<CreditLine | MultipleCreditLines>>([])
 
   useEffect(() => {
-    async function getCreditLinePreviews() {
-      let creditLines = []
+    async function getCreditLinePreviews(goldfinchProtocol: GoldfinchProtocol, currentBlock: BlockInfo) {
+      let creditLines: Array<CreditLine | MultipleCreditLines> = []
       if (props.creditLinesAddresses.length > 1) {
-        assertNonNullable(goldfinchProtocol)
-        assertNonNullable(currentBlock)
         const multipleCreditLines = await fetchCreditLineData(
           props.creditLinesAddresses,
           goldfinchProtocol,
           currentBlock
         )
+        assertNonNullable(multipleCreditLines)
         if (multipleCreditLines.creditLines.length > 1) {
-          // If there are multiple credit lines, we nee dto show the Multiple creditlines first (the "All" option), and
+          // If there are multiple credit lines, we need to show the Multiple creditlines first (the "All" option), and
           // then each of the individual credit lines
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
           creditLines = [multipleCreditLines, ...multipleCreditLines.creditLines]
         } else {
           // In some cases multiple credit lines can only have a single active creditline (e.g. an old creditline
@@ -31,15 +38,17 @@ function BorrowHeader(props): JSX.Element {
           creditLines = multipleCreditLines.creditLines
         }
       } else {
-        // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
-        creditLines = [await fetchCreditLineData(props.creditLinesAddresses, goldfinchProtocol, currentBlock)]
+        const creditLine = await fetchCreditLineData(props.creditLinesAddresses, goldfinchProtocol, currentBlock)
+        creditLines = creditLine ? [creditLine] : []
       }
       setCreditLinePreviews(creditLines)
     }
-    getCreditLinePreviews()
+    if (goldfinchProtocol && currentBlock) {
+      getCreditLinePreviews(goldfinchProtocol, currentBlock)
+    }
   }, [goldfinchProtocol, props.creditLinesAddresses, currentBlock])
 
-  if (props.creditLinesAddresses.length > 1) {
+  if (props.creditLinesAddresses.length > 1 && props.selectedCreditLine && creditLinePreviews.length) {
     const options = creditLinePreviews.map((cl) => {
       return {
         value: (cl as any).address,
@@ -68,7 +77,7 @@ function BorrowHeader(props): JSX.Element {
   }
 
   let header = "Loading..."
-  if (props.user && props.selectedCreditLine.address) {
+  if (props.user && props.selectedCreditLine) {
     header = `Credit Line / ${props.selectedCreditLine.name}`
   } else if (props.user) {
     header = "Credit Line"

@@ -4,8 +4,8 @@ import _ from "lodash"
 import React from "react"
 import {MemoryRouter} from "react-router-dom"
 import {AppContext, GlobalState} from "../App"
-import {CreditLine, defaultCreditLine} from "../ethereum/creditLine"
-import {getERC20, Tickers} from "../ethereum/erc20"
+import {BorrowerInterface} from "../ethereum/borrower"
+import {getERC20, Ticker} from "../ethereum/erc20"
 import {GoldfinchProtocol} from "../ethereum/GoldfinchProtocol"
 import {UserLoaded} from "../ethereum/user"
 import {AsyncResult} from "../hooks/useAsync"
@@ -49,17 +49,17 @@ const scenarios: Scenario[] = [
   {
     devName: "no_credit_line",
     setUpMatch: ({store, props}) => {
+      props.showCreditLineStatus = true
       store.user = {
         address: testUserAddress,
+        borrower: {
+          creditLinesAddresses: [],
+        } as unknown as BorrowerInterface,
         info: {loaded: true, value: {goListed: false}},
       } as UserLoaded
       store.sessionData = {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 47, version: 1}
-      defaultCreditLine.loaded = true
-      props.creditLine = defaultCreditLine as unknown as CreditLine
     },
-    setUpFallthrough: ({store}) => {
-      defaultCreditLine.loaded = false
-    },
+    setUpFallthrough: ({store}) => {},
     expectedText: /You do not have any credit lines./,
   },
   {
@@ -179,7 +179,7 @@ describe("ConnectionNotice", () => {
     await goldfinchProtocol.initialize()
     store = {
       user: undefined,
-      usdc: getERC20(Tickers.USDC, goldfinchProtocol),
+      usdc: getERC20(Ticker.USDC, goldfinchProtocol),
       network,
     }
     context = {
