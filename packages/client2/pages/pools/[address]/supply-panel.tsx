@@ -145,75 +145,11 @@ export default function SupplyPanel({
         </span>
       </div>
 
-      <div className="mb-14 text-6xl font-medium">
+      <div className="mb-8 text-6xl font-medium">
         {formatPercent(estimatedJuniorApy.addUnsafe(fiatApyFromGfi))}
       </div>
 
-      <div className="mb-3 flex flex-row items-end justify-between">
-        <span className="text-sm">Supply capital</span>
-        {account && (
-          <span className="text-xs opacity-60">
-            {account.substring(0, 6)}...{account.substring(account.length - 4)}
-            <span className=""></span>
-          </span>
-        )}
-      </div>
-
-      <div className="mb-6 rounded-lg bg-sky-900 p-1">
-        {account ? (
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="relative">
-              <Controller
-                control={control}
-                name="supply"
-                rules={{ required: "Required" }}
-                render={({ field: { onChange, ref } }) => (
-                  <IMaskInput
-                    mask="$amount USDC"
-                    blocks={{
-                      amount: {
-                        mask: Number,
-                        thousandsSeparator: ",",
-                        placeholderChar: "9",
-                        lazy: false,
-                        scale: 2,
-                        radix: ".",
-                      },
-                    }}
-                    radix="."
-                    unmask={true}
-                    lazy={false}
-                    ref={ref}
-                    onAccept={onChange}
-                    className="w-full bg-transparent py-4 pl-4 pr-16 text-2xl focus:ring-0"
-                  />
-                )}
-              />
-
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase">
-                Max
-              </div>
-            </div>
-            <button
-              className={clsx(
-                "block w-full rounded-md bg-white py-5 font-medium text-sky-700 hover:bg-sand-200 disabled:pointer-events-none disabled:opacity-60"
-              )}
-              disabled={!supplyValue}
-            >
-              Supply
-            </button>
-          </form>
-        ) : (
-          <button
-            className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
-            onClick={openWalletModal}
-          >
-            Connect Wallet
-          </button>
-        )}
-      </div>
-
-      <table className="w-full">
+      <table className="mb-8 w-full">
         <thead>
           <tr>
             <th className="w-1/2 pb-3 text-left text-sm font-normal">
@@ -283,6 +219,70 @@ export default function SupplyPanel({
           </tr>
         </tbody>
       </table>
+
+      <div className="mb-3 flex flex-row items-end justify-between">
+        <span className="text-sm">Supply amount</span>
+        {account && (
+          <span className="text-xs opacity-60">
+            {account.substring(0, 6)}...{account.substring(account.length - 4)}
+            <span className=""></span>
+          </span>
+        )}
+      </div>
+
+      <div className="mb-6 rounded-lg bg-sky-900 p-1">
+        {account ? (
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="relative">
+              <Controller
+                control={control}
+                name="supply"
+                rules={{ required: "Required" }}
+                render={({ field: { onChange, ref } }) => (
+                  <IMaskInput
+                    mask="$amount USDC"
+                    blocks={{
+                      amount: {
+                        mask: Number,
+                        thousandsSeparator: ",",
+                        placeholderChar: "9",
+                        lazy: false,
+                        scale: 2,
+                        radix: ".",
+                      },
+                    }}
+                    radix="."
+                    unmask={true}
+                    lazy={false}
+                    ref={ref}
+                    onAccept={onChange}
+                    className="w-full bg-transparent py-4 pl-4 pr-16 text-2xl focus:ring-0"
+                  />
+                )}
+              />
+
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase">
+                Max
+              </div>
+            </div>
+            <button
+              className={clsx(
+                "block w-full rounded-md bg-white py-5 font-medium text-sky-700 hover:bg-sand-200 disabled:pointer-events-none disabled:opacity-60"
+              )}
+              disabled={!supplyValue}
+            >
+              Supply
+            </button>
+          </form>
+        ) : (
+          <button
+            className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
+            onClick={openWalletModal}
+          >
+            Connect Wallet
+          </button>
+        )}
+      </div>
       <div className="mt-3 text-xs">
         By entering my name and clicking “Supply” below, I hereby agree and
         acknowledge that (i) I am electronically signing and becoming a party to
