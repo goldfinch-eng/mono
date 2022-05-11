@@ -8,23 +8,11 @@ const percentageFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
-const doubleDigitFormatter = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 2,
-});
-
 export function formatPercent(n: number | FixedNumber) {
   if (n instanceof FixedNumber) {
     return percentageFormatter.format(n.toUnsafeFloat());
   }
   return percentageFormatter.format(n);
-}
-
-/**
- * @deprecated Use formatFiat() instead of this please
- */
-export function formatDollarAmount(n: number) {
-  return `$${doubleDigitFormatter.format(n)}`;
 }
 
 export * from "./currency-units";

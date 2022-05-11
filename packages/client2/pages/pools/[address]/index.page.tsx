@@ -35,10 +35,11 @@ import {
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
 import PoolFilledPanel from "./pool-filled-panel";
-import SupplyPanel from "./supply-panel";
+import SupplyPanel, { SUPPLY_PANEL_FIELDS } from "./supply-panel";
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
+  ${SUPPLY_PANEL_FIELDS}
   query SingleTranchedPoolData($id: ID!) {
     tranchedPool(id: $id) {
       id
@@ -54,15 +55,8 @@ gql`
       borrowerHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
-      estimatedTotalAssets
       estimatedLeverageRatio
-      remainingCapacity
-      juniorFeePercent
-      reserveFeePercent
-      totalDeposited
-      totalDeployed
       fundableAt
-      estimatedSeniorPoolContribution
       isPaused
       numBackers
       seniorTranches {
@@ -80,6 +74,7 @@ gql`
         nextDueTime
       }
       ...TranchedPoolStatusFields
+      ...SupplyPanelFields
     }
     gfiPrice @client {
       price {
@@ -462,13 +457,12 @@ export default function PoolPage() {
         </div>
 
         <div className="relative col-span-4">
-          {tranchedPool ? (
+          {tranchedPool && fiatPerGfi ? (
             <div className="sticky top-12">
               {poolStatus === PoolStatus.Open && (
                 <SupplyPanel
-                  tranchedPoolAddress={tranchedPool.id}
-                  apy={tranchedPool.estimatedJuniorApy}
-                  apyGfi={tranchedPool.estimatedJuniorApyFromGfiRaw}
+                  tranchedPool={tranchedPool}
+                  fiatPerGfi={fiatPerGfi}
                 />
               )}
 

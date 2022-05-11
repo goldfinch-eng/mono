@@ -1,6 +1,6 @@
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, gql } from "@apollo/client";
 import clsx from "clsx";
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -14,16 +14,27 @@ import {
   useUsdcContract,
   generateErc20PermitSignature,
 } from "@/lib/contracts";
-import { formatPercent, formatDollarAmount, formatFiat } from "@/lib/format";
-import { SupportedFiat } from "@/lib/graphql/generated";
+import { formatPercent, formatFiat } from "@/lib/format";
+import {
+  SupportedFiat,
+  SupplyPanelFieldsFragment,
+} from "@/lib/graphql/generated";
+import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
+export const SUPPLY_PANEL_FIELDS = gql`
+  fragment SupplyPanelFields on TranchedPool {
+    id
+    estimatedJuniorApy
+    estimatedJuniorApyFromGfiRaw
+    agreement @client
+  }
+`;
 interface SupplyPanelProps {
-  tranchedPoolAddress: string;
-  apy: FixedNumber;
-  apyGfi: FixedNumber;
+  tranchedPool: SupplyPanelFieldsFragment;
+  fiatPerGfi: number;
 }
 
 interface SupplyForm {
@@ -31,15 +42,19 @@ interface SupplyForm {
 }
 
 export default function SupplyPanel({
-  tranchedPoolAddress,
-  apy,
-  apyGfi,
+  tranchedPool: {
+    id: tranchedPoolAddress,
+    estimatedJuniorApy,
+    estimatedJuniorApyFromGfiRaw,
+    agreement,
+  },
+  fiatPerGfi,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
 
   const { account, provider, chainId } = useWallet();
-  const [apyEstimate, setApyEstimate] = useState(0);
-  const [apyGfiEstimate, setApyGfiEstimate] = useState(0);
+  const [returnFromBaseApy, setReturnFromBaseApy] = useState(0);
+  const [returnFromGfiApy, setReturnFromGfiApy] = useState(0);
 
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
@@ -98,17 +113,20 @@ export default function SupplyPanel({
   };
 
   const supplyValue = watch("supply");
-
+  const fiatApyFromGfi = computeApyFromGfiInFiat(
+    estimatedJuniorApyFromGfiRaw,
+    fiatPerGfi
+  );
   useEffect(() => {
     if (supplyValue) {
       const s = parseFloat(supplyValue);
-      setApyEstimate(s * apy.toUnsafeFloat());
-      setApyGfiEstimate(s * apyGfi.toUnsafeFloat());
+      setReturnFromBaseApy(s * estimatedJuniorApy.toUnsafeFloat());
+      setReturnFromGfiApy(s * fiatApyFromGfi.toUnsafeFloat());
     } else {
-      setApyEstimate(0);
-      setApyGfiEstimate(0);
+      setReturnFromBaseApy(0);
+      setReturnFromGfiApy(0);
     }
-  }, [supplyValue, apy, apyGfi]);
+  }, [supplyValue, estimatedJuniorApy, fiatApyFromGfi]);
 
   return (
     <div className="rounded-xl bg-[#192852] bg-gradientRed p-5 text-white">
@@ -128,7 +146,7 @@ export default function SupplyPanel({
       </div>
 
       <div className="mb-14 text-6xl font-medium">
-        {formatPercent(apy.addUnsafe(apyGfi))}
+        {formatPercent(estimatedJuniorApy.addUnsafe(fiatApyFromGfi))}
       </div>
 
       <div className="mb-3 flex flex-row items-end justify-between">
@@ -223,14 +241,14 @@ export default function SupplyPanel({
         <tbody>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(apy)} APY
+              {formatPercent(estimatedJuniorApy)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
                   {formatFiat({
                     symbol: SupportedFiat.Usd,
-                    amount: apyEstimate,
+                    amount: returnFromBaseApy,
                   })}
                 </span>
                 <Image
@@ -244,12 +262,15 @@ export default function SupplyPanel({
           </tr>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(apyGfi)} APY
+              {formatPercent(fiatApyFromGfi)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
-                  {formatDollarAmount(apyGfiEstimate)}
+                  {formatFiat({
+                    symbol: SupportedFiat.Usd,
+                    amount: returnFromGfiApy,
+                  })}
                 </span>
                 <Image
                   src="/ui/logo-gfi.png"
@@ -262,6 +283,18 @@ export default function SupplyPanel({
           </tr>
         </tbody>
       </table>
+      <div className="mt-3 text-xs">
+        By entering my name and clicking “Supply” below, I hereby agree and
+        acknowledge that (i) I am electronically signing and becoming a party to
+        the{" "}
+        {agreement ? (
+          <Link href={agreement}>Loan Agreement</Link>
+        ) : (
+          "Loan Agreement"
+        )}{" "}
+        for this pool, and (ii) my name and transaction information may be
+        shared with the borrower.
+      </div>
     </div>
   );
 }
