@@ -466,8 +466,9 @@ export default function PoolPage() {
             <div className="sticky top-12">
               {poolStatus === PoolStatus.Open && (
                 <SupplyPanel
-                  apy={tranchedPool?.estimatedJuniorApy}
-                  apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
+                  tranchedPoolAddress={tranchedPool.id}
+                  apy={tranchedPool.estimatedJuniorApy}
+                  apyGfi={tranchedPool.estimatedJuniorApyFromGfiRaw}
                 />
               )}
 

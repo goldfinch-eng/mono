@@ -9,3 +9,8 @@ export const POOL_METADATA =
 
 export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
+
+export const TRANCHES = {
+  Senior: 1,
+  Junior: 2,
+};
