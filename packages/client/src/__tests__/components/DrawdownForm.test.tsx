@@ -12,6 +12,7 @@ import {BorrowerInterface} from "../../ethereum/borrower"
 import {CreditLine} from "../../ethereum/creditLine"
 import {Web3IO} from "../../types/web3"
 import {GoldfinchProtocol} from "../../ethereum/GoldfinchProtocol"
+import {Borrower} from "@goldfinch-eng/protocol/typechain/web3/Borrower"
 
 function renderDrawdownForm(
   transactionLimitInDollars: number,
@@ -42,7 +43,7 @@ function renderDrawdownForm(
           address: borrowerAddress,
         },
       },
-    } as Web3IO<Contract>,
+    } as Web3IO<Borrower>,
     {
       getERC20: () => {},
     } as unknown as GoldfinchProtocol,

@@ -42,12 +42,21 @@ const Subtitle = styled.div`
 `
 
 export default function StakingToken({token, platform}: StakingTokenProps) {
+  const platformName = (() => {
+    switch (platform) {
+      case Platform.Curve:
+        return "Curve LP"
+      default:
+        return platform.toString()
+    }
+  })()
+
   return (
     <Container>
       <Icon src={token.icon} alt={`${token.name} icon`} />
       <SymbolAndSubtitle>
         <Symbol>{token.ticker}</Symbol>
-        <Subtitle>{`via ${platform.toString()}`}</Subtitle>
+        <Subtitle>{`${platformName} token`}</Subtitle>
       </SymbolAndSubtitle>
     </Container>
   )

@@ -434,7 +434,7 @@ async function getDepositEventsByCapitalProvider(
     true,
     currentBlock.number
   )
-  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEvents(
+  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEventsFromUser(
     capitalProviderAddress,
     ["DepositedAndStaked"],
     undefined,
@@ -869,7 +869,7 @@ export function getStakedPositionTypeByValue(value: string, legacyFallback = fal
   }
 }
 
-type PositionOptimisticIncrement = {
+export type PositionOptimisticIncrement = {
   vested: BigNumber
   unvested: BigNumber
 }
@@ -922,27 +922,46 @@ class StakingRewards {
   async initialize(currentBlock: BlockInfo): Promise<void> {
     const [isPaused, currentEarnRate, curveLPTokenExchangeRate, curveLPTokenMultiplier, curveLPTokenPrice] =
       await Promise.all([
-        this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
+        this.contract.readOnly.methods
+          .paused()
+          .call(undefined, currentBlock.number)
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: paused", error)
+            throw error
+          }),
         this.contract.readOnly.methods
           .currentEarnRatePerToken()
           .call(undefined, currentBlock.number)
-          .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
+          .then((currentEarnRate: string) => new BigNumber(currentEarnRate))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: currentEarnRatePerToken", error)
+            throw error
+          }),
         this.contract.readOnly.methods
           .getBaseTokenExchangeRate(StakedPositionType.CurveLP)
           .call(undefined, currentBlock.number)
-          .then((exchangeRate) => new BigNumber(exchangeRate)),
+          .then((exchangeRate) => new BigNumber(exchangeRate))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: getBaseTokenExchangeRate", error)
+            throw error
+          }),
         this.contract.readOnly.methods
           .getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)
           .call(undefined, currentBlock.number)
-          .then((multiplier) => new BigNumber(multiplier)),
+          .then((multiplier) => new BigNumber(multiplier))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: getEffectiveMultiplierForPositionType", error)
+            throw error
+          }),
         this.curvePool.readOnly.methods
-          .get_virtual_price()
+          .lp_price()
           .call(undefined, currentBlock.number)
-          .then((price) => new BigNumber(price)),
-      ]).catch((error) => {
-        console.error("Error initializing StakingRewards", error)
-        throw error
-      })
+          .then((price) => new BigNumber(price))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: lp_price", error)
+            throw error
+          }),
+      ])
 
     this.info = {
       loaded: true,
@@ -1032,7 +1051,32 @@ class StakingRewards {
     return StakingRewards.parseStoredPosition(raw)
   }
 
-  async getEvents<T extends StakingRewardsEventType>(
+  // Returns events for the given staked positions.
+  //
+  // Note: It may include events that were NOT initiated by the current user.
+  // In the case of token transfers, the staked position may have been been
+  // transacted with by the previous owner(s).
+  async getEventsForPositions<T extends StakingRewardsEventType>(
+    tokenIds: string[],
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: number
+  ): Promise<KnownEventData<T>[]> {
+    const filters = {
+      ...(filter || {}),
+      tokenId: tokenIds,
+    }
+
+    return this.queryEvents(eventNames, filters, toBlock)
+  }
+
+  // Returns events that were initiated by a given user.
+  //
+  // Note: It does NOT include all events for staked positions
+  // that the user currently holds. In the case of token transfers,
+  // the staked position may have been been transacted with by the previous
+  // owner(s).
+  async getEventsFromUser<T extends StakingRewardsEventType>(
     address: string,
     eventNames: T[],
     filter: Filter | undefined,
@@ -1043,8 +1087,12 @@ class StakingRewards {
       user: address,
     }
 
+    return this.queryEvents(eventNames, filters, toBlock)
+  }
+
+  async queryEvents<T extends StakingRewardsEventType>(eventNames: T[], filters: Filter = {}, toBlock: number) {
     if (this.goldfinchProtocol.networkIsMainnet) {
-      const [legacyEvents, events] = await Promise.all([
+      return Promise.all([
         this.goldfinchProtocol.queryEvents(
           this.legacyContract.readOnly,
           // Filter out any StakingRewards events that were not created before the v2.6.0 migration.
@@ -1061,8 +1109,7 @@ class StakingRewards {
               toBlock,
               this.v26MigrationInfo.blockNumber + 1
             ),
-      ])
-      return legacyEvents.concat(events)
+      ]).then(([legacyEvents, events]) => legacyEvents.concat(events))
     } else {
       return this.goldfinchProtocol.queryEvents(this.contract.readOnly, eventNames, filters, toBlock)
     }

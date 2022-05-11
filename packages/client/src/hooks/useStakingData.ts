@@ -18,9 +18,9 @@ import useERC20Approve from "./useERC20Approve"
 import useERC721Approve from "./useERC721Approve"
 import {getERC20Metadata, getMultiplierDecimals, Ticker, toDecimalString} from "../ethereum/erc20"
 import {requestUserAddERC20TokenToWallet} from "../web3"
+import {positionTypeToTicker} from "../components/Stake/utils"
 
 const APY_DECIMALS = new BigNumber(1e18)
-const CURVE_FIDU_USDC_DECIMALS = getMultiplierDecimals(Ticker.CURVE_FIDU_USDC)
 const GFI_DECIMALS = getMultiplierDecimals(Ticker.GFI)
 
 type StakingData = {
@@ -36,8 +36,12 @@ type StakingData = {
   usdcUnstaked: BigNumber
   // Estimated APY when staking FIDU
   estimatedFiduStakingApy: BigNumber
-  // Estimated APY when staking Curve
+  // Estimated APY when staking Curve. This does not represent the total APY; it
+  // represents the APY on the FIDU portion of the Curve LP token.
   estimatedCurveStakingApy: BigNumber
+  // Estimated total APY when staking Curve. This represents the APY on both the
+  // FIDU and USDC portion of the Curve LP token.
+  estimatedTotalCurveStakingApy: BigNumber
   // FIDU share price (denominated in FIDU decimals - 1e18)
   fiduSharePrice: BigNumber
   stake: (BigNumber, StakedPositionType) => Promise<any>
@@ -75,6 +79,7 @@ export default function useStakingData(): StakingData {
   const [fiduUSDCCurveUnstaked, setFiduUSDCCurveUnstaked] = useState(new BigNumber(0))
   const [usdcUnstaked, setUSDCUnstaked] = useState(new BigNumber(0))
   const [estimatedCurveStakingApy, setEstimatedCurveStakingApy] = useState<BigNumber>(new BigNumber(0))
+  const [estimatedTotalCurveStakingApy, setEstimatedTotalCurveStakingApy] = useState<BigNumber>(new BigNumber(0))
   const [estimatedFiduStakingApy, setEstimatedFiduStakingApy] = useState<BigNumber>(new BigNumber(0))
   const [fiduSharePrice, setFiduSharePrice] = useState(new BigNumber(0))
 
@@ -102,19 +107,19 @@ export default function useStakingData(): StakingData {
       const currentEarnRatePerYearPerFidu = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
       // The amount of GFI earned in a year per Curve LP token staked (denominated in 1e18)
       const currentEarnRatePerYearPerCurveToken = currentEarnRatePerYearPerFidu
-        // Denominate the Curve earn rate in 1e18
-        .multipliedBy(APY_DECIMALS)
-        // Convert the FIDU earn rate to the Curve LP token earn rate by dividing by the Curve LP token multiplier.
-        // The Curve LP token multiplier is denominated in 1e18, so we can simply divide here.
-        .div(stakingRewards.info.value.curveLPTokenMultiplier)
+        // Apply the exchange rate. The exchange rate is denominated in 1e18, so divide by 1e18 to keep the original denomination.
+        .multipliedBy(stakingRewards.info.value.curveLPTokenExchangeRate)
+        .div(APY_DECIMALS)
+        // Apply the multiplier. The multiplier is denominated in 1e18, so divide by 1e18 to keep the original denomination.
+        .multipliedBy(stakingRewards.info.value.curveLPTokenMultiplier)
+        .div(APY_DECIMALS)
 
       const estimatedApyFromGfi =
         // Convert the amount of GFI earned in a year per Curve LP token staked to a dollar amount using the current GFI price
-        gfiToDollarsAtomic(currentEarnRatePerYearPerCurveToken, gfi.info.value.price)
-          ?.dividedBy(GFI_DECIMALS)
-          .multipliedBy(CURVE_FIDU_USDC_DECIMALS)
-          .dividedBy(curveLPTokenPrice)
+        gfiToDollarsAtomic(currentEarnRatePerYearPerCurveToken, gfi.info.value.price)?.dividedBy(GFI_DECIMALS)
+      const estimatedTotalApyFromGfi = estimatedApyFromGfi?.multipliedBy(APY_DECIMALS).dividedBy(curveLPTokenPrice)
       setEstimatedCurveStakingApy(estimatedApyFromGfi || new BigNumber(0))
+      setEstimatedTotalCurveStakingApy(estimatedTotalApyFromGfi || new BigNumber(0))
     }
   }, [currentBlock, stakingRewards, gfi])
 
@@ -183,7 +188,7 @@ export default function useStakingData(): StakingData {
     assertNonNullable(stakingRewards)
     assertNonNullable(user)
 
-    const ticker: Ticker = tickerForStakedPositionType(positionType)
+    const ticker: Ticker = positionTypeToTicker(positionType)
 
     return erc20Approve(amount, ticker, stakingRewards.address).then(() =>
       sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType), {
@@ -207,7 +212,7 @@ export default function useStakingData(): StakingData {
   async function unstake(amount: BigNumber, positionType: StakedPositionType): Promise<void> {
     assertNonNullable(stakingRewards)
 
-    const ticker = tickerForStakedPositionType(positionType)
+    const ticker = positionTypeToTicker(positionType)
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
     const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
     const amounts = optimalPositionsToUnstake.map(({amount}) => amount.toString(10))
@@ -308,7 +313,7 @@ export default function useStakingData(): StakingData {
       await sendFromUser(
         zapper.contract.userWallet.methods.zapStakeToCurve(
           position.tokenId,
-          position.amount.toString(10),
+          position.amount.toFixed(0),
           usdcEquivalent.toFixed(0)
         ),
         {
@@ -392,17 +397,6 @@ export default function useStakingData(): StakingData {
       .filter(({amount}) => amount.isGreaterThan(new BigNumber(0)))
   }
 
-  function tickerForStakedPositionType(positionType: StakedPositionType): Ticker {
-    switch (positionType) {
-      case StakedPositionType.Fidu:
-        return Ticker.FIDU
-      case StakedPositionType.CurveLP:
-        return Ticker.CURVE_FIDU_USDC
-      default:
-        throw new Error(`Unexpected positionType: ${positionType}`)
-    }
-  }
-
   return {
     fiduStaked,
     fiduUnstaked,
@@ -411,6 +405,7 @@ export default function useStakingData(): StakingData {
     usdcUnstaked,
     estimatedFiduStakingApy,
     estimatedCurveStakingApy,
+    estimatedTotalCurveStakingApy,
     fiduSharePrice,
     stake,
     unstake,

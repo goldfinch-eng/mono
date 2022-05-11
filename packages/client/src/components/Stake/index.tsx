@@ -12,6 +12,7 @@ import {Platform} from "./StakingToken"
 import StakingCardMigrateToCurveForm from "./StakingCardMigrateToCurveForm"
 import useCurvePool from "../../hooks/useCurvePool"
 import {iconOutArrow} from "../icons"
+import CurveStakingAPYTooltip from "./CurveStakingAPYTooltip"
 
 const SectionHeader = styled.div`
   margin-bottom: 0;
@@ -45,10 +46,11 @@ const SectionHeaderWithLink = styled(SectionHeader)`
 `
 
 const SectionSubtitle = styled.div`
-  font-size: 14px;
+  font-size: ${({theme}) => theme.typography.fontSize.sansSizeXs};
   font-weight: normal;
   color: ${({theme}) => theme.colors.purpLight};
   padding-bottom: 36px;
+  line-height: 1.3;
 
   > a {
     color: ${({theme}) => theme.colors.purpLight};
@@ -83,12 +85,13 @@ export default function Stake() {
   return (
     <div className="content-section">
       <SectionHeader className="page-header">
-        <div>Stake</div>
+        <div>Stake on Goldfinch</div>
       </SectionHeader>
       <SectionSubtitle>
-        Stake FIDU and/or Curve FIDU-USDC-F tokens to earn additional APY.{" "}
+        Stake your FIDU, or your LP tokens from providing liquidity to the Curve FIDU-USDC pool, on Goldfinch to earn
+        additional GFI rewards. Or, migrate your staked FIDU to the Curve FIDU-USDC pool.{" "}
         <a
-          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -101,7 +104,7 @@ export default function Stake() {
           Token to stake
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens={false}>
-          Rewards APY
+          Est. APY
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
           Available to stake
@@ -138,6 +141,7 @@ export default function Stake() {
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
         platform={Platform.Curve}
+        apyTooltip={<CurveStakingAPYTooltip />}
         stake={(amount) => stake(amount, StakedPositionType.CurveLP)}
         unstake={(amount) => unstake(amount, StakedPositionType.CurveLP)}
       />
@@ -145,14 +149,15 @@ export default function Stake() {
         <div>LP on Curve</div>
         <div className="link">
           <a href="https://curve.fi/factory-crypto/23" target="_blank" rel="noopener noreferrer">
-            View on Curve<span className="outbound-link">{iconOutArrow}</span>
+            View pool on Curve<span className="outbound-link">{iconOutArrow}</span>
           </a>
         </div>
       </SectionHeaderWithLink>
       <SectionSubtitle>
-        Deposit unstaked FIDU and/or USDC to the FIDU-USDC Curve liquidity pool.{" "}
+        Deposit your unstaked FIDU or USDC into the FIDU-USDC Curve liquidity pool, with the option to stake your
+        resulting Curve LP tokens on Goldfinch.{" "}
         <a
-          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
+          href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -161,13 +166,13 @@ export default function Stake() {
       </SectionSubtitle>
       <LPAndStakeHeaderGrid>
         <StyledHeaderText justifySelf="start" hideOnSmallerScreens={false}>
-          Token exchange
+          Token to deposit
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens={false}>
-          Staking APY
+          Est. APY
         </StyledHeaderText>
         <StyledHeaderText justifySelf="end" hideOnSmallerScreens>
-          Available to LP
+          Available to deposit
         </StyledHeaderText>
         <div></div>
       </LPAndStakeHeaderGrid>
@@ -179,6 +184,7 @@ export default function Stake() {
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
         platform={Platform.Curve}
+        apyTooltip={<CurveStakingAPYTooltip />}
         deposit={(amount) => depositToCurve(amount, new BigNumber(0))}
         depositAndStake={(amount) => depositToCurveAndStake(amount, new BigNumber(0))}
         estimateSlippage={(fiduAmount) => estimateSlippage(fiduAmount, new BigNumber(0))}
@@ -191,6 +197,7 @@ export default function Stake() {
         rewardApy={estimatedCurveStakingApy}
         rewardToken={getERC20Metadata(Ticker.GFI)}
         platform={Platform.Curve}
+        apyTooltip={<CurveStakingAPYTooltip />}
         deposit={(amount) => depositToCurve(new BigNumber(0), amount)}
         depositAndStake={(amount) => depositToCurveAndStake(new BigNumber(0), amount)}
         estimateSlippage={(usdcAmount) => estimateSlippage(new BigNumber(0), usdcAmount)}

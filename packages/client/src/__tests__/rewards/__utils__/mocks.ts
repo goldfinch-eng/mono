@@ -27,6 +27,7 @@ import {
   UserBackerMerkleDistributor,
   UserMerkleDirectDistributor,
   UserMerkleDistributor,
+  UserStakingRewards,
 } from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
@@ -298,6 +299,24 @@ export async function mockUserRelatedInitializationContractCalls(
             transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
           } as unknown as KnownEventData<typeof STAKED_EVENT>)
       )
+
+    UserStakingRewards.prototype.getStakedEvents = ({tokenIds}) => {
+      return Promise.resolve(
+        tokenIds.map(
+          (tokenId) =>
+            ({
+              returnValues: {
+                index: 0,
+                account: "0x0000000000000000000000000000000000000002",
+                tokenId,
+                amount: stakedAmount,
+              },
+              transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+            } as unknown as KnownEventData<typeof STAKED_EVENT>)
+        )
+      )
+    }
+
     const granted = rewardsMock.staking?.granted || earnedSince
 
     callTokenOfOwnerByIndexMock = mock({
@@ -755,12 +774,12 @@ export async function mockStakingRewardsContractCalls(
       return: new BigNumber(1e18).toString(10),
     },
   })
-  const callCurvePoolGetVirtualPrice = mock({
+  const callCurvePoolLPPrice = mock({
     blockchain,
     call: {
       to: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.address,
       api: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.abi,
-      method: "get_virtual_price",
+      method: "lp_price",
       return: new BigNumber(1e18).toString(10),
     },
   })
@@ -770,7 +789,7 @@ export async function mockStakingRewardsContractCalls(
     callCurrentEarnRatePerToken,
     callGetBaseTokenExchangeRate,
     callGetEffectiveMultiplierForPositionType,
-    callCurvePoolGetVirtualPrice,
+    callCurvePoolLPPrice,
   }
 }
 
@@ -1013,7 +1032,7 @@ export function setupMocksForMerkleDirectDistributorAirdrop(
           throw new Error(`Unexpected toBlock: ${toBlock}`)
         }
       } else {
-        throw new Error(`Unexpected filter: ${filter}`)
+        throw new Error(`Unexpected filter: ${JSON.stringify(filter)}`)
       }
     } else {
       throw new Error(`Unexpected event names: ${eventNames}`)
