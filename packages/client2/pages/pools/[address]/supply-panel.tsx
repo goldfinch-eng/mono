@@ -9,7 +9,11 @@ import { toast } from "react-toastify";
 
 import { InfoIconTooltip, Link } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import { useTranchedPoolContract, useUsdcContract } from "@/lib/contracts";
+import {
+  useTranchedPoolContract,
+  useUsdcContract,
+  generateErc20PermitSignature,
+} from "@/lib/contracts";
 import { formatPercent, formatDollarAmount, formatFiat } from "@/lib/format";
 import { SupportedFiat } from "@/lib/graphql/generated";
 import { openWalletModal } from "@/lib/state/actions";
@@ -53,51 +57,18 @@ export default function SupplyPanel({
       throw new Error("Wallet not connected properly");
     }
 
-    const domain = {
-      name: await usdcContract.name(),
-      version: chainId === 1 ? "2" : "1",
-      chainId: chainId,
-      verifyingContract: usdcContract.address,
-    };
-    const EIP712_DOMAIN_TYPE = [
-      { name: "name", type: "string" },
-      { name: "version", type: "string" },
-      { name: "chainId", type: "uint256" },
-      { name: "verifyingContract", type: "address" },
-    ];
-
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
     const now = (await provider.getBlock("latest")).timestamp;
     const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
-    const nonce = await usdcContract.nonces(account);
-    const message = {
+
+    const signature = await generateErc20PermitSignature({
+      erc20TokenContract: usdcContract,
+      provider,
       owner: account,
       spender: tranchedPoolAddress,
-      value: value.toString(),
-      nonce: nonce.toString(),
-      deadline: deadline.toString(),
-    };
-    const EIP2612_TYPE = [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-      { name: "value", type: "uint256" },
-      { name: "nonce", type: "uint256" },
-      { name: "deadline", type: "uint256" },
-    ];
-
-    const dataForSigning = JSON.stringify({
-      types: {
-        EIP712Domain: EIP712_DOMAIN_TYPE,
-        Permit: EIP2612_TYPE,
-      },
-      domain,
-      primaryType: "Permit",
-      message,
+      value,
+      deadline,
     });
-
-    const signature = await provider
-      .send("eth_signTypedData_v4", [account, dataForSigning])
-      .then(utils.splitSignature);
 
     const transaction = await tranchedPoolContract.depositWithPermit(
       TRANCHES.Junior,
