@@ -39,6 +39,7 @@ interface SupplyPanelProps {
 
 interface SupplyForm {
   supply: string;
+  backerName: string;
 }
 
 export default function SupplyPanel({
@@ -59,7 +60,7 @@ export default function SupplyPanel({
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
 
-  const { handleSubmit, control, watch } = useForm<SupplyForm>();
+  const { handleSubmit, control, watch, register } = useForm<SupplyForm>();
 
   const onSubmit = async (data: SupplyForm) => {
     if (
@@ -113,6 +114,7 @@ export default function SupplyPanel({
   };
 
   const supplyValue = watch("supply");
+  const backerName = watch("backerName");
   const fiatApyFromGfi = computeApyFromGfiInFiat(
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
@@ -220,19 +222,18 @@ export default function SupplyPanel({
         </tbody>
       </table>
 
-      <div className="mb-3 flex flex-row items-end justify-between">
-        <span className="text-sm">Supply amount</span>
-        {account && (
-          <span className="text-xs opacity-60">
-            {account.substring(0, 6)}...{account.substring(account.length - 4)}
-            <span className=""></span>
-          </span>
-        )}
-      </div>
-
-      <div className="mb-6 rounded-lg bg-sky-900 p-1">
-        {account ? (
-          <form onSubmit={handleSubmit(onSubmit)}>
+      {account ? (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div>
+            <div className="mb-3 flex flex-row items-end justify-between">
+              <label htmlFor="supply" className="text-sm">
+                Supply amount
+              </label>
+              <span className="text-xs opacity-60">
+                {account.substring(0, 6)}...
+                {account.substring(account.length - 4)}
+              </span>
+            </div>
             <div className="relative">
               <Controller
                 control={control}
@@ -251,50 +252,68 @@ export default function SupplyPanel({
                         radix: ".",
                       },
                     }}
+                    id="supply"
                     radix="."
                     unmask={true}
                     lazy={false}
                     ref={ref}
                     onAccept={onChange}
-                    className="w-full bg-transparent py-4 pl-4 pr-16 text-2xl focus:ring-0"
+                    className="mb-4 w-full rounded bg-sky-900 py-4 pl-5 pr-16 text-2xl"
                   />
                 )}
               />
 
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase">
+              <button
+                type="button"
+                className="absolute right-4 top-1/2 -translate-y-3/4 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase"
+              >
                 Max
-              </div>
+              </button>
             </div>
-            <button
-              className={clsx(
-                "block w-full rounded-md bg-white py-5 font-medium text-sky-700 hover:bg-sand-200 disabled:pointer-events-none disabled:opacity-60"
-              )}
-              disabled={!supplyValue}
-            >
-              Supply
-            </button>
-          </form>
-        ) : (
+          </div>
+          <div className={!supplyValue ? "hidden" : undefined}>
+            <div className="mb-3">
+              <label htmlFor="backerName" className="mb-3 block w-max text-sm">
+                Full legal name
+              </label>
+              <input
+                id="backerName"
+                {...register("backerName")}
+                className="w-full rounded bg-sky-900 py-4 px-5 text-2xl"
+                placeholder="First and last name"
+              />
+            </div>
+            <div className="mb-3 text-xs">
+              By entering my name and clicking “Supply” below, I hereby agree
+              and acknowledge that (i) I am electronically signing and becoming
+              a party to the{" "}
+              {agreement ? (
+                <Link href={agreement}>Loan Agreement</Link>
+              ) : (
+                "Loan Agreement"
+              )}{" "}
+              for this pool, and (ii) my name and transaction information may be
+              shared with the borrower.
+            </div>
+          </div>
           <button
-            className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
-            onClick={openWalletModal}
+            className={clsx(
+              "block w-full rounded-md bg-white py-5 font-medium text-sky-700 hover:bg-sand-200 disabled:pointer-events-none disabled:opacity-60"
+            )}
+            disabled={!supplyValue || !backerName}
+            type="submit"
           >
-            Connect Wallet
+            Supply
           </button>
-        )}
-      </div>
-      <div className="mt-3 text-xs">
-        By entering my name and clicking “Supply” below, I hereby agree and
-        acknowledge that (i) I am electronically signing and becoming a party to
-        the{" "}
-        {agreement ? (
-          <Link href={agreement}>Loan Agreement</Link>
-        ) : (
-          "Loan Agreement"
-        )}{" "}
-        for this pool, and (ii) my name and transaction information may be
-        shared with the borrower.
-      </div>
+        </form>
+      ) : (
+        <button
+          className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
+          onClick={openWalletModal}
+        >
+          Connect Wallet
+        </button>
+      )}
     </div>
   );
 }
