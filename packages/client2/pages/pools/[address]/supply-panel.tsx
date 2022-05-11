@@ -2,7 +2,6 @@ import { useApolloClient, gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber, utils } from "ethers";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 import { toast } from "react-toastify";
@@ -54,8 +53,6 @@ export default function SupplyPanel({
   const apolloClient = useApolloClient();
 
   const { account, provider, chainId } = useWallet();
-  const [returnFromBaseApy, setReturnFromBaseApy] = useState(0);
-  const [returnFromGfiApy, setReturnFromGfiApy] = useState(0);
 
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
@@ -119,16 +116,6 @@ export default function SupplyPanel({
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
   );
-  useEffect(() => {
-    if (supplyValue) {
-      const s = parseFloat(supplyValue);
-      setReturnFromBaseApy(s * estimatedJuniorApy.toUnsafeFloat());
-      setReturnFromGfiApy(s * fiatApyFromGfi.toUnsafeFloat());
-    } else {
-      setReturnFromBaseApy(0);
-      setReturnFromGfiApy(0);
-    }
-  }, [supplyValue, estimatedJuniorApy, fiatApyFromGfi]);
 
   return (
     <div className="rounded-xl bg-[#192852] bg-gradientRed p-5 text-white">
@@ -186,7 +173,10 @@ export default function SupplyPanel({
                 <span className="mr-2">
                   {formatFiat({
                     symbol: SupportedFiat.Usd,
-                    amount: returnFromBaseApy,
+                    amount: supplyValue
+                      ? parseFloat(supplyValue) *
+                        estimatedJuniorApy.toUnsafeFloat()
+                      : 0,
                   })}
                 </span>
                 <Image
@@ -207,7 +197,9 @@ export default function SupplyPanel({
                 <span className="mr-2">
                   {formatFiat({
                     symbol: SupportedFiat.Usd,
-                    amount: returnFromGfiApy,
+                    amount: supplyValue
+                      ? parseFloat(supplyValue) * fiatApyFromGfi.toUnsafeFloat()
+                      : 0,
                   })}
                 </span>
                 <Image
