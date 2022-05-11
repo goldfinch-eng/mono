@@ -4,15 +4,19 @@ import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {CreditLine} from "./creditLine"
-import {ERC20, Tickers} from "./erc20"
 import {submitGaslessTransaction} from "./gasless"
+import {ERC20, Ticker} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getOneInchContract} from "./oneInch"
+import {getOneInchContract, OneInchExpectedReturn} from "./oneInch"
 import {PoolState, TranchedPool} from "./tranchedPool"
+import {Borrower} from "@goldfinch-eng/protocol/typechain/web3/Borrower"
+import {NonPayableTransactionObject} from "@goldfinch-eng/protocol/typechain/web3/types"
+
+export type SubmittedBorrowerTx = (() => Promise<unknown>) | NonPayableTransactionObject<void>
 
 class BorrowerInterface {
   userAddress: string
-  borrowerContract: Web3IO<Contract>
+  borrowerContract: Web3IO<Borrower>
   usdc: ERC20
   goldfinchProtocol: GoldfinchProtocol
   oneInch: Web3IO<Contract>
@@ -25,14 +29,14 @@ class BorrowerInterface {
 
   constructor(
     userAddress: string,
-    borrowerContract: Web3IO<Contract>,
+    borrowerContract: Web3IO<Borrower>,
     goldfinchProtocol: GoldfinchProtocol,
     oneInch: Web3IO<Contract>
   ) {
     this.userAddress = userAddress
     this.borrowerContract = borrowerContract
     this.goldfinchProtocol = goldfinchProtocol
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC)
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC)
     this.oneInch = oneInch
     this.borrowerAddress = this.borrowerContract.readOnly.options.address
     this.tranchedPools = {}
@@ -141,29 +145,39 @@ class BorrowerInterface {
     )
   }
 
-  drawdownViaOneInch(creditLineAddress, amount, sendToAddress, toToken) {
+  async drawdownViaOneInch(creditLineAddress: string, amount: string, sendToAddress: string, toToken: string) {
     sendToAddress = sendToAddress || this.userAddress
-    return this.submit(
-      this.drawdownViaOneInchAsync(this.getPoolAddress(creditLineAddress), amount, sendToAddress, toToken)
+    const unsentAction = await this.drawdownViaOneInchAsync(
+      this.getPoolAddress(creditLineAddress),
+      amount,
+      sendToAddress,
+      toToken
     )
+    return this.submit(unsentAction)
   }
 
-  pay(creditLineAddress, amount) {
+  pay(creditLineAddress: string, amount: string) {
     return this.submit(this.borrowerContract.userWallet.methods.pay(this.getPoolAddress(creditLineAddress), amount))
   }
 
-  payInFull(creditLineAddress, amount) {
+  payInFull(creditLineAddress: string, amount: string) {
     return this.submit(
       this.borrowerContract.userWallet.methods.payInFull(this.getPoolAddress(creditLineAddress), amount)
     )
   }
 
-  payMultiple(creditLines, amounts) {
+  payMultiple(creditLines: string[], amounts: string[]) {
     let poolAddresses = creditLines.map((a) => this.getPoolAddress(a))
     return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amounts))
   }
 
-  payWithSwapOnOneInch(creditLineAddress, amount, minAmount, fromToken, quote) {
+  payWithSwapOnOneInch(
+    creditLineAddress: string,
+    amount: string,
+    minAmount: string,
+    fromToken: string,
+    quote: OneInchExpectedReturn
+  ) {
     return this.submit(
       this.borrowerContract.userWallet.methods.payWithSwapOnOneInch(
         this.getPoolAddress(creditLineAddress),
@@ -175,7 +189,13 @@ class BorrowerInterface {
     )
   }
 
-  payMultipleWithSwapOnOneInch(creditLines, amounts, originAmount, fromToken, quote) {
+  payMultipleWithSwapOnOneInch(
+    creditLines: string[],
+    amounts: string[],
+    originAmount: string,
+    fromToken: string,
+    quote: OneInchExpectedReturn
+  ) {
     return this.submit(
       this.borrowerContract.userWallet.methods.payMultipleWithSwapOnOneInch(
         creditLines.map((a) => this.getPoolAddress(a)),
@@ -187,7 +207,12 @@ class BorrowerInterface {
     )
   }
 
-  async drawdownViaOneInchAsync(creditLineAddress, amount, sendToAddress, toToken) {
+  async drawdownViaOneInchAsync(
+    creditLineAddress: string,
+    amount: string,
+    sendToAddress: string,
+    toToken: string
+  ): Promise<NonPayableTransactionObject<void>> {
     toToken = toToken || "0xdac17f958d2ee523a2206206994597c13d831ec7" // Mainnet USDT
     const splitParts = 10
 
@@ -208,7 +233,7 @@ class BorrowerInterface {
     return new BigNumber(amount).times(new BigNumber(99)).idiv(new BigNumber(100)).toString()
   }
 
-  submit(unsentAction) {
+  submit(unsentAction: NonPayableTransactionObject<void>): SubmittedBorrowerTx {
     if (this.shouldUseGasless) {
       // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
       // resolve (and therefore initialize the signing request) before updating the network widget
@@ -232,12 +257,12 @@ async function getBorrowerContract(
     },
     currentBlock.number
   )
-  let borrower: Web3IO<Contract> | null = null
+  let borrower: Web3IO<Borrower> | null = null
   if (borrowerCreatedEvents.length > 0) {
     const lastIndex = borrowerCreatedEvents.length - 1
     const lastEvent = borrowerCreatedEvents[lastIndex]
     if (lastEvent) {
-      borrower = goldfinchProtocol.getContract<Contract>("Borrower", lastEvent.returnValues.borrower)
+      borrower = goldfinchProtocol.getContract<Borrower>("Borrower", lastEvent.returnValues.borrower)
       const oneInch = getOneInchContract(goldfinchProtocol.networkId)
       const borrowerInterface = new BorrowerInterface(ownerAddress, borrower, goldfinchProtocol, oneInch)
       await borrowerInterface.initialize(currentBlock)

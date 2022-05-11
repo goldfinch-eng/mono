@@ -29,14 +29,14 @@ import {
 import {BackerMerkleDistributor, BackerMerkleDistributorLoaded} from "./ethereum/backerMerkleDistributor"
 import {BackerRewards, BackerRewardsLoaded} from "./ethereum/backerRewards"
 import {CommunityRewards, CommunityRewardsLoaded} from "./ethereum/communityRewards"
-import {ERC20, Tickers} from "./ethereum/erc20"
+import {ERC20, Ticker} from "./ethereum/erc20"
 import {GFI, GFILoaded} from "./ethereum/gfi"
 import {GoldfinchConfigData, refreshGoldfinchConfigData} from "./ethereum/goldfinchConfig"
 import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 import {MerkleDirectDistributor, MerkleDirectDistributorLoaded} from "./ethereum/merkleDirectDistributor"
 import {MerkleDistributor, MerkleDistributorLoaded} from "./ethereum/merkleDistributor"
 import {NetworkMonitor} from "./ethereum/networkMonitor"
-import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded} from "./ethereum/pool"
+import {SeniorPool, SeniorPoolLoaded, StakingRewards, StakingRewardsLoaded, Zapper, ZapperLoaded} from "./ethereum/pool"
 import {
   getUserData,
   UserBackerMerkleDirectDistributor,
@@ -66,6 +66,7 @@ import {
   BORROW_ROUTE,
   EARN_ROUTE,
   GFI_ROUTE,
+  STAKE_ROUTE,
   INDEX_ROUTE,
   PRIVACY_POLICY_ROUTE,
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
@@ -81,6 +82,7 @@ import {CurrentTx, TxType} from "./types/transactions"
 import {UserWalletWeb3Status, Web3IO} from "./types/web3"
 import {assertNonNullable, BlockInfo, getBlockInfo, getCurrentBlock, switchNetworkIfRequired} from "./utils"
 import getWeb3, {getUserWalletWeb3Status, SESSION_DATA_KEY} from "./web3"
+import Stake from "./components/Stake"
 
 interface GeolocationData {
   ip: string
@@ -149,6 +151,7 @@ export interface GlobalState {
 
   gfi?: GFILoaded
   stakingRewards?: StakingRewardsLoaded
+  zapper?: ZapperLoaded
   communityRewards?: CommunityRewardsLoaded
   merkleDistributor?: MerkleDistributorLoaded
   merkleDirectDistributor?: MerkleDirectDistributorLoaded
@@ -192,6 +195,7 @@ function App() {
   const [userWalletWeb3Status, setUserWalletWeb3Status] = useState<UserWalletWeb3Status>()
   const [_gfi, setGfi] = useState<GFILoaded>()
   const [_stakingRewards, setStakingRewards] = useState<StakingRewardsLoaded>()
+  const [_zapper, setZapper] = useState<ZapperLoaded>()
   const [_communityRewards, setCommunityRewards] = useState<CommunityRewardsLoaded>()
   const [_merkleDistributor, setMerkleDistributor] = useState<MerkleDistributorLoaded>()
   const [_merkleDirectDistributor, setMerkleDirectDistributor] = useState<MerkleDirectDistributorLoaded>()
@@ -214,6 +218,7 @@ function App() {
   const [leavesCurrentBlock, setLeavesCurrentBlock] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
+    [STAKE_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
     [GFI_ROUTE]: undefined,
     [BORROW_ROUTE]: undefined,
@@ -232,6 +237,7 @@ function App() {
   ] = useState<LeavesCurrentBlock>({
     [INDEX_ROUTE]: undefined,
     [EARN_ROUTE]: undefined,
+    [STAKE_ROUTE]: undefined,
     [ABOUT_ROUTE]: undefined,
     [GFI_ROUTE]: undefined,
     [BORROW_ROUTE]: undefined,
@@ -266,7 +272,8 @@ function App() {
     _merkleDirectDistributor,
     _backerMerkleDistributor,
     _backerMerkleDirectDistributor,
-    _backerRewards
+    _backerRewards,
+    _zapper
   )
   const gfi = consistent?.[0]
   const stakingRewards = consistent?.[1]
@@ -276,6 +283,7 @@ function App() {
   const backerMerkleDistributor = consistent?.[5]
   const backerMerkleDirectDistributor = consistent?.[6]
   const backerRewards = consistent?.[7]
+  const zapper = consistent?.[8]
 
   // To ensure `gfi`, `stakingRewards`, `communityRewards`, `merkleDistributor`,
   // `merkleDirectDistributor`, `backerMerkleDistributor`, `backerMerkleDirectDistributor`
@@ -347,6 +355,7 @@ function App() {
       creditDesk &&
       network &&
       stakingRewards &&
+      zapper &&
       gfi &&
       communityRewards &&
       merkleDistributor &&
@@ -400,7 +409,7 @@ function App() {
       const protocol = new GoldfinchProtocol(networkConfig)
       await protocol.initialize()
 
-      const usdc = await protocol.getERC20(Tickers.USDC)
+      const usdc = await protocol.getERC20(Ticker.USDC)
 
       const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       const goldfinchConfigData = await refreshGoldfinchConfigData(goldfinchConfigContract, currentBlock)
@@ -434,6 +443,7 @@ function App() {
     const backerMerkleDistributor = new BackerMerkleDistributor(goldfinchProtocol)
     const backerMerkleDirectDistributor = new BackerMerkleDirectDistributor(goldfinchProtocol)
     const backerRewards = new BackerRewards(goldfinchProtocol)
+    const zapper = new Zapper(goldfinchProtocol)
 
     await Promise.all([
       gfi.initialize(currentBlock),
@@ -444,6 +454,7 @@ function App() {
       backerMerkleDistributor.initialize(currentBlock),
       backerMerkleDirectDistributor.initialize(currentBlock),
       backerRewards.initialize(currentBlock),
+      zapper.initialize(currentBlock),
     ])
 
     assertWithLoadedInfo(gfi)
@@ -454,6 +465,7 @@ function App() {
     assertWithLoadedInfo(backerMerkleDistributor)
     assertWithLoadedInfo(backerMerkleDirectDistributor)
     assertWithLoadedInfo(backerRewards)
+    assertWithLoadedInfo(zapper)
 
     setGfi(gfi)
     setStakingRewards(stakingRewards)
@@ -463,6 +475,7 @@ function App() {
     setBackerMerkleDistributor(backerMerkleDistributor)
     setBackerMerkleDirectDistributor(backerMerkleDirectDistributor)
     setBackerRewards(backerRewards)
+    setZapper(zapper)
   }
 
   async function refreshPool(): Promise<void> {
@@ -620,6 +633,7 @@ function App() {
     backerMerkleDistributor,
     backerMerkleDirectDistributor,
     backerRewards,
+    zapper,
     pool,
     creditDesk,
     user,
@@ -674,6 +688,9 @@ function App() {
                     <Route path={ABOUT_ROUTE}>{/* <About /> */}</Route>
                     <Route path={EARN_ROUTE}>
                       <Earn />
+                    </Route>
+                    <Route path={STAKE_ROUTE}>
+                      <Stake />
                     </Route>
                     <Route path={GFI_ROUTE}>
                       <Rewards />

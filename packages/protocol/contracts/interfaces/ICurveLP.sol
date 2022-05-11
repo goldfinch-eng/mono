@@ -6,9 +6,11 @@ pragma experimental ABIEncoderV2;
 interface ICurveLP {
   function token() external view returns (address);
 
-  function get_virtual_price() external view returns (uint256);
-
   function calc_token_amount(uint256[2] calldata amounts) external view returns (uint256);
+
+  function lp_price() external view returns (uint256);
+
+  function get_virtual_price() external view returns (uint256);
 
   function add_liquidity(
     uint256[2] calldata amounts,

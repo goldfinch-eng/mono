@@ -1,12 +1,12 @@
-import BN from "bn.js"
 import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
+import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {PoolTokens as PoolTokensContract} from "@goldfinch-eng/protocol/typechain/web3/PoolTokens"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
-import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {TranchedPool as TranchedPoolContract} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
 import {asNonNullable, assertNonNullable, assertUnreachable, isString} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
+import BN from "bn.js"
 import _ from "lodash"
 import {
   DEPOSIT_MADE_EVENT,
@@ -237,14 +237,14 @@ class TranchedPool {
           .call(undefined, currentBlock.number)
       )
     }
+
+    this.poolState = this.getPoolState(currentBlock)
     this.estimatedLeverageRatio = await this.estimateLeverageRatio(currentBlock)
 
     this.isV1StyleDeal = !!this.metadata?.v1StyleDeal
     this.isMigrated = !!this.metadata?.migrated
     this.isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
     this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
-
-    this.poolState = this.getPoolState(currentBlock)
 
     const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
       this.isMultipleDrawdownsCompatible
@@ -254,7 +254,10 @@ class TranchedPool {
             this.contract.readOnly.methods.NUM_TRANCHES_PER_SLICE().call(undefined, currentBlock.number),
           ]
         : ["0", "0", "2"]
-    )
+    ).catch((error) => {
+      console.error("MultipleDrawdownsCompatible error fetching", error)
+      throw error
+    })
 
     this.totalDeployed = new BigNumber(totalDeployed)
     this.fundableAt = new BigNumber(fundableAt)
@@ -321,9 +324,11 @@ class TranchedPool {
   }
 
   estimatedTotalAssets(): BigNumber {
-    return this.juniorTranche.principalDeposited
-      .plus(this.seniorTranche.principalDeposited)
-      .plus(this.estimatedSeniorPoolContribution)
+    const deposits = this.juniorTranche.principalDeposited.plus(this.seniorTranche.principalDeposited)
+    const seniorTrancheIsLocked = this.poolState >= PoolState.SeniorLocked
+    // if the pool is locked, no further senior pool contributions are expected, so we only
+    // consider existing assets
+    return seniorTrancheIsLocked ? deposits : deposits.plus(this.estimatedSeniorPoolContribution)
   }
 
   remainingCapacity(): BigNumber {
@@ -357,7 +362,7 @@ class TranchedPool {
         const result = await this.contract.readOnly.methods.getAllowedUIDTypes().call(undefined, currentBlock.number)
         return result.map((x) => parseInt(x))
       } catch (e) {
-        console.error("getAllowedUIDTypes function does not exist on TranchedPool")
+        console.error("getAllowedUIDTypes function does not exist on TranchedPool", e)
       }
     }
     return [NON_US_INDIVIDUAL_ID_TYPE_0]
@@ -380,53 +385,59 @@ class TranchedPool {
     transactions = _.reverse(_.sortBy(transactions, ["blockNumber", "transactionIndex"])).slice(0, 3)
     let sharePriceUpdates = await this.sharePriceUpdatesByTx(TRANCHES.Junior, currentBlock)
     let blockTimestamps = await this.timestampsByBlockNumber(transactions)
-    return mapEventsToTx(transactions, [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT], tranchedPoolEventParserConfig).map(
-      (
-        tx: HistoricalTx<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>
-      ): TranchedPoolRecentTransactionData => {
-        let juniorInterest = new BigNumber(0)
-        const sharePriceUpdate = sharePriceUpdates[tx.eventData.transactionHash]?.[0]
-        if (sharePriceUpdate) {
-          juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
-        }
+    return mapEventsToTx(
+      transactions,
+      [DRAWDOWN_MADE_EVENT, PAYMENT_APPLIED_EVENT],
+      tranchedPoolEventParserConfig
+    ).then((events) =>
+      events.map(
+        (
+          tx: HistoricalTx<typeof DRAWDOWN_MADE_EVENT | typeof PAYMENT_APPLIED_EVENT>
+        ): TranchedPoolRecentTransactionData => {
+          let juniorInterest = new BigNumber(0)
+          const sharePriceUpdate = sharePriceUpdates[tx.eventData.transactionHash]?.[0]
+          if (sharePriceUpdate) {
+            juniorInterest = new BigNumber(sharePriceUpdate.returnValues.interestDelta)
+          }
 
-        const timestamp = asNonNullable(blockTimestamps[tx.eventData.blockNumber])
-        let data = {
-          name: tx.name,
-          amount: tx.amount,
-          txHash: tx.eventData.transactionHash,
-          juniorInterestDelta: juniorInterest,
-          juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
-          timestamp,
+          const timestamp = asNonNullable(blockTimestamps[tx.eventData.blockNumber])
+          let data = {
+            name: tx.name,
+            amount: tx.amount,
+            txHash: tx.eventData.transactionHash,
+            juniorInterestDelta: juniorInterest,
+            juniorPrincipalDelta: new BigNumber(sharePriceUpdate?.returnValues.principalDelta),
+            timestamp,
+          }
+          switch (tx.type) {
+            case DRAWDOWN_MADE_EVENT:
+              return {
+                ...data,
+                event: tx.type,
+              }
+            case PAYMENT_APPLIED_EVENT:
+              const totalPrincipalAmount = new BigNumber(tx.eventData.returnValues.principalAmount).plus(
+                new BigNumber(tx.eventData.returnValues.remainingAmount)
+              )
+              return {
+                ...data,
+                event: tx.type,
+                interestAmount: {
+                  display: tx.eventData.returnValues.interestAmount,
+                  atomic: new BigNumber(tx.eventData.returnValues.interestAmount),
+                  units: "usdc",
+                },
+                principalAmount: {
+                  display: totalPrincipalAmount.toString(10),
+                  atomic: totalPrincipalAmount,
+                  units: "usdc",
+                },
+              }
+            default:
+              return assertUnreachable(tx.type)
+          }
         }
-        switch (tx.type) {
-          case DRAWDOWN_MADE_EVENT:
-            return {
-              ...data,
-              event: tx.type,
-            }
-          case PAYMENT_APPLIED_EVENT:
-            const totalPrincipalAmount = new BigNumber(tx.eventData.returnValues.principalAmount).plus(
-              new BigNumber(tx.eventData.returnValues.remainingAmount)
-            )
-            return {
-              ...data,
-              event: tx.type,
-              interestAmount: {
-                display: tx.eventData.returnValues.interestAmount,
-                atomic: new BigNumber(tx.eventData.returnValues.interestAmount),
-                units: "usdc",
-              },
-              principalAmount: {
-                display: totalPrincipalAmount.toString(10),
-                atomic: totalPrincipalAmount,
-                units: "usdc",
-              },
-            }
-          default:
-            return assertUnreachable(tx.type)
-        }
-      }
+      )
     )
   }
 
@@ -763,7 +774,10 @@ class TranchedPoolBacker {
                     .tokenOfOwnerByIndex(address, i)
                     .call(undefined, currentBlock.number)
                 )
-            )
+            ).catch((error) => {
+              console.error("Error fetching tokenOfOwnerByIndex", error)
+              throw error
+            })
           )
           .then((tokenIds: string[]) =>
             Promise.all(
@@ -773,12 +787,15 @@ class TranchedPoolBacker {
                   .call(undefined, currentBlock.number)
                   .then((res) => tokenInfo(tokenId, res))
               )
-            )
+            ).catch((error) => {
+              console.error("Error fetching tokenInfo for poolToken", error)
+              throw error
+            })
           )
           .then((tokenInfos: TokenInfo[]) =>
             // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
             // the instantiation-by-pool of TranchedPoolBacker instances.
-            tokenInfos.filter((tokenInfo) => tokenInfo.pool === this.tranchedPool.address)
+            tokenInfos.filter((tokenInfo) => tokenInfo.pool.toLowerCase() === this.tranchedPool.address.toLowerCase())
           )
       : []
 
@@ -819,7 +836,11 @@ class TranchedPoolBacker {
             currentBlock.number
           )
       )
-    )
+    ).catch((error) => {
+      console.error("TokenInfos error on reading deposit_made_event", error)
+      throw error
+    })
+
     this.firstDepositBlockNumber = events
       .flat()
       .reduce<number | undefined>((acc, curr) => (acc ? Math.min(acc, curr.blockNumber) : curr.blockNumber), undefined)

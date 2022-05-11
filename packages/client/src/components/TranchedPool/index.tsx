@@ -121,7 +121,13 @@ function TranchedPoolView() {
   const maxCapacityNotice = isAtMaxCapacity ? (
     <div className="info-banner background-container">
       <div className="message">
-        <span>This borrower pool has reached its capital limit and is closed to additional capital.</span>
+        <span>
+          This borrower pool has reached its capital limit and is closed to additional capital.{" "}
+          <a href="http://eepurl.com/hJmQsP" target="_blank" rel="noreferrer">
+            Sign up here
+          </a>{" "}
+          to be notified of future pools.
+        </span>
       </div>
     </div>
   ) : (

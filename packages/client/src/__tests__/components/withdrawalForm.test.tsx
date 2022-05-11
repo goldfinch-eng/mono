@@ -106,7 +106,6 @@ describe("withdrawal form", () => {
       return getDeployments()
     })
 
-    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
     jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
       const url = input.toString()
       if (url === COINGECKO_API_GFI_PRICE_URL) {
