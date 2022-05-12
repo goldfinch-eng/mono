@@ -2,10 +2,11 @@ import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
+import { PoolMetadata } from "@/constants/metadata/types";
 import { isWalletModalOpenVar } from "@/lib/state/vars";
 
 function readFieldFromMetadata(
-  fieldName: string,
+  fieldName: keyof PoolMetadata,
   fallback: any = null
 ): FieldReadFunction {
   return (_, { readField }) => {
