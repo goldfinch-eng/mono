@@ -102,7 +102,6 @@ module.exports = {
         marquee: "marquee 20s linear infinite",
       },
       backgroundImage: {
-        diagonals: "url('/ui/bg-diagonals.png')",
         "sunrise-01":
           "linear-gradient(180deg, rgba(241, 110, 236, 0) 17.71%, #F8E0CE 100%),linear-gradient(0deg, #1D325F, #1D325F)",
         "sunrise-02":

@@ -8,6 +8,8 @@ import {
   SupportedFiat,
 } from "@/lib/graphql/generated";
 
+import diagonals from "./diagonals.png";
+
 interface FundingBarProps {
   goal?: CryptoAmount;
   backerSupply?: CryptoAmount;
@@ -56,7 +58,13 @@ export default function FundingBar({
           })}
         </span>
       </div>
-      <div className="relative mb-3 h-8 overflow-hidden rounded bg-sand-200 bg-diagonals bg-repeat">
+      <div
+        className="relative mb-3 h-8 overflow-hidden rounded bg-sand-200"
+        style={{
+          backgroundImage: `url(${diagonals.src})`,
+          backgroundRepeat: "repeat",
+        }}
+      >
         <div
           className="absolute left-0 top-0 bottom-0 w-full bg-[#D17673] transition-[max-width] duration-500"
           style={{
