@@ -21,7 +21,7 @@ import {gfiFromAtomic, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {SeniorPoolLoaded} from "./pool"
 import {PoolState, TranchedPool, TranchedPoolBacker} from "./tranchedPool"
-import {DAYS_PER_YEAR, MAINNET, USDC_DECIMALS} from "./utils"
+import {DAYS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 type BackerRewardsLoadedInfo = {
   currentBlock: BlockInfo
@@ -52,8 +52,6 @@ export class BackerRewards {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
-
     const [isPaused, maxInterestDollarsEligible, totalRewardPercentOfTotalGFI] = await Promise.all([
       this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
       this.contract.readOnly.methods.maxInterestDollarsEligible().call(undefined, currentBlock.number),
@@ -67,7 +65,7 @@ export class BackerRewards {
         isPaused,
         maxInterestDollarsEligible: new BigNumber(maxInterestDollarsEligible),
         totalRewardPercentOfTotalGFI: new BigNumber(totalRewardPercentOfTotalGFI),
-        startBlock: networkIsMainnet
+        startBlock: this.goldfinchProtocol.networkIsMainnet
           ? {
               number: 14142864,
               timestamp: 1644021439,
