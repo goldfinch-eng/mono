@@ -6,7 +6,6 @@ import {usdcFromAtomic} from "../ethereum/erc20"
 import {UserLoaded, UserLoadedInfo} from "../ethereum/user"
 import {CONFIRMATION_THRESHOLD, getEtherscanSubdomain} from "../ethereum/utils"
 import useCloseOnClickOrEsc from "../hooks/useCloseOnClickOrEsc"
-import {useSignIn} from "../hooks/useSignIn"
 import {NetworkConfig} from "../types/network"
 import {
   ACCEPT_TX_TYPE,
@@ -73,26 +72,14 @@ interface NetworkWidgetProps {
 
 function NetworkWidget(props: NetworkWidgetProps) {
   const {userWalletWeb3Status, gfi} = useContext(AppContext)
-  const [session, signIn] = useSignIn()
   const {node, open: showNetworkWidgetInfo, setOpen: setShowNetworkWidgetInfo} = useCloseOnClickOrEsc<HTMLDivElement>()
   const [isEnablePending, setIsEnablePending] = useState<{metaMask: boolean; walletConnect: boolean}>({
     walletConnect: false,
     metaMask: false,
   })
-  const [isSignInPending, setIsSignInPending] = useState<boolean>(false)
   const [noWeb3Widget, setNoWeb3Widget] = useState<boolean>(false)
   const [showInstallWallet, setShowInstallWallet] = useState<boolean>(false)
-  const [showWallets, setShowWallets] = useState<boolean>(false)
   const web3 = getWeb3()
-
-  async function handleSignIn(): Promise<void> {
-    setShowWallets(false)
-    setIsSignInPending(true)
-    await signIn().catch((error) => {
-      console.error("Error connecting to wallet", error)
-    })
-    setIsSignInPending(false)
-  }
 
   async function enableMetamask(): Promise<void> {
     const injectedProvider = getInjectedProvider()
@@ -101,7 +88,6 @@ function NetworkWidget(props: NetworkWidgetProps) {
         .request({method: "eth_requestAccounts"})
         .then(async () => {
           await props.connectionComplete()
-          await handleSignIn()
         })
         .catch((error) => {
           console.error("Error connecting to metamask", error)
@@ -130,7 +116,6 @@ function NetworkWidget(props: NetworkWidgetProps) {
     await onWalletConnect()
       .then(async () => {
         await props.connectionComplete()
-        await handleSignIn()
       })
       .catch((error) => {
         console.error("Error connecting to wallet", error)
@@ -450,37 +435,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         </div>
       </div>
     )
-  } else if (userWalletWeb3Status?.type === "connected" && session.status !== "authenticated" && !showWallets) {
-    return (
-      <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>
-        <button className="network-widget-button bold" onClick={toggleOpenWidget}>
-          Connect Wallet
-        </button>
-        <div className="network-widget-info">
-          <div className="network-widget-section wallet-address">
-            <span>Wallet address</span>
-            <div className="address">{userAddressForDisplay}</div>
-          </div>
-          <div className="network-widget-section">
-            <button
-              className={`button bold ${isSignInPending && "wallet active"}`}
-              disabled={isSignInPending}
-              onClick={handleSignIn}
-            >
-              {isSignInPending ? "Waiting..." : "Connect"}
-            </button>
-            {isSignInPending ? (
-              <span className="check-wallet">Check your wallet to finish signing</span>
-            ) : (
-              <button className="other-wallets" onClick={() => setShowWallets(true)}>
-                Other wallets
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  } else if (userWalletWeb3Status?.type === "connected" && session.status === "authenticated") {
+  } else if (userWalletWeb3Status?.type === "connected") {
     const usdcBalance = props.user ? displayNumber(usdcFromAtomic(props.user.info.value.usdcBalance), 2) : "Loading..."
     return (
       <div ref={node} className={`network-widget ${showNetworkWidgetInfo}`}>

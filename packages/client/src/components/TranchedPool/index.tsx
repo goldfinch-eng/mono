@@ -8,7 +8,6 @@ import {SeniorPoolLoaded} from "../../ethereum/pool"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import {useFetchNDA} from "../../hooks/useNDA"
-import {useSession} from "../../hooks/useSignIn"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {Loadable, Loaded} from "../../types/loadable"
 import {assertNonNullable, croppedAddress, sameBlock} from "../../utils"
@@ -23,6 +22,7 @@ import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
 import {V1DealSupplyStatus} from "./V1DealSupplyStatus"
 import {BorrowerOverview} from "./BorrowerOverview"
+import {AuthenticatedSession, useSignIn} from "../../hooks/useSignIn"
 
 interface TranchedPoolViewURLParams {
   poolAddress: string
@@ -30,12 +30,12 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
+  const [session, signIn] = useSignIn()
   const {goldfinchProtocol, backerRewards, pool, gfi, user, network, setSessionData, currentBlock} =
     useContext(AppContext)
   const {
     earnStore: {backers},
   } = useEarn()
-  const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
@@ -96,10 +96,23 @@ function TranchedPoolView() {
     assertNonNullable(user)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
+    let userSession: AuthenticatedSession
     if (session.status !== "authenticated") {
-      return
+      try {
+        const result = await signIn()
+        if (result.status !== "authenticated") {
+          return
+        } else {
+          userSession = result
+        }
+      } catch (e) {
+        return
+      }
+    } else {
+      userSession = session
     }
-    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+
+    const client = new DefaultGoldfinchClient(network.name!, userSession, setSessionData)
     return client
       .signNDA(user.address, tranchedPool!.address)
       .then((r) => {

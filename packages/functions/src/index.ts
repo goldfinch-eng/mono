@@ -180,18 +180,18 @@ const signNDA = genRequestHandler({
 })
 
 const fetchNDA = genRequestHandler({
-  requireAuth: true,
+  requireAuth: false,
   cors: true,
-  handler: async (
-    req: Request,
-    res: Response,
-    verificationResult: SignatureVerificationSuccessResult,
-  ): Promise<Response> => {
-    const address = verificationResult.address
+  handler: async (req: Request, res: Response): Promise<Response> => {
+    const addressHeader = req.headers["x-goldfinch-address"]
+    const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
     const pool = ((req.query.pool || "") as string).trim()
 
     if (pool === "") {
       return res.status(403).send({error: "Invalid pool"})
+    }
+    if (!address) {
+      return res.status(403).send({error: "Invalid address"})
     }
     const ndas = getNDAs(admin.firestore())
     const key = `${pool.toLowerCase()}-${address.toLowerCase()}`

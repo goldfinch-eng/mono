@@ -23,10 +23,13 @@ export interface KYC {
   countryCode: string
 }
 
-interface GoldfinchClient {
+interface GoldfinchAuthenticatedClient {
   fetchKYCStatus(address: string): Promise<any>
   signAgreement(address: string, fullName: string, pool: string): Promise<any>
   signNDA(address: string, fullName: string, pool: string): Promise<any>
+}
+
+interface GoldfinchUnauthenticatedClient {
   fetchNDA(address: string, fullName: string, pool: string): Promise<any>
 }
 
@@ -41,7 +44,7 @@ export class GoldfinchClientError extends Error {
   }
 }
 
-class DefaultGoldfinchClient implements GoldfinchClient {
+class DefaultGoldfinchClient implements GoldfinchAuthenticatedClient {
   private readonly baseURL: string
   private readonly session: AuthenticatedSession
   private readonly setSessionData: (data: SessionData | undefined) => void
@@ -140,10 +143,38 @@ class DefaultGoldfinchClient implements GoldfinchClient {
   async signNDA(address: string, pool: string): Promise<HandledResponse> {
     return this._handleResponse(fetch(this._getSignNDAURL(), this._getSignNDARequestInit(address, {pool})))
   }
+}
+
+export class ReadOnlyGoldfinchClient implements GoldfinchUnauthenticatedClient {
+  private readonly baseURL: string
+
+  constructor(networkName: string) {
+    this.baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[networkName]
+  }
+
+  async _handleResponse<T = any>(fetched: Promise<Response>): Promise<HandledResponse<T>> {
+    const response = await fetched
+    const json = (await response.json()) as T
+    if (response.ok) {
+      return {
+        ok: response.ok,
+        response,
+        json,
+      }
+    } else {
+      throw new GoldfinchClientError({
+        ok: response.ok,
+        response,
+        json,
+      })
+    }
+  }
 
   _getFetchNDARequestInit(address: string): RequestInit {
     return {
-      headers: this._getAuthHeaders(address),
+      headers: {
+        "x-goldfinch-address": address,
+      },
     }
   }
 
