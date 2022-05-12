@@ -1,12 +1,11 @@
 import { useApolloClient, gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber, utils } from "ethers";
-import Image from "next/image";
 import { useForm, Controller } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 import { toast } from "react-toastify";
 
-import { InfoIconTooltip, Link } from "@/components/design-system";
+import { Icon, InfoIconTooltip, Link } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import {
   useTranchedPoolContract,
@@ -179,12 +178,7 @@ export default function SupplyPanel({
                       : 0,
                   })}
                 </span>
-                <Image
-                  src="/ui/logo-usdc.png"
-                  alt="USDC Logo"
-                  width={20}
-                  height={20}
-                />
+                <Icon name="Usdc" aria-label="USDC logo" size="md" />
               </div>
             </td>
           </tr>
@@ -202,12 +196,7 @@ export default function SupplyPanel({
                       : 0,
                   })}
                 </span>
-                <Image
-                  src="/ui/logo-gfi.png"
-                  alt="GFI Logo"
-                  width={20}
-                  height={20}
-                />
+                <Icon name="Gfi" aria-label="GFI logo" size="md" />
               </div>
             </td>
           </tr>
