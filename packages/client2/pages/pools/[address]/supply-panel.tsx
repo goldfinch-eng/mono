@@ -5,7 +5,12 @@ import { useForm, Controller } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 import { toast } from "react-toastify";
 
-import { Icon, InfoIconTooltip, Link } from "@/components/design-system";
+import {
+  Icon,
+  InfoIconTooltip,
+  Link,
+  Tooltip,
+} from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import {
   useTranchedPoolContract,
@@ -196,7 +201,13 @@ export default function SupplyPanel({
                       : 0,
                   })}
                 </span>
-                <Icon name="Gfi" aria-label="GFI logo" size="md" />
+                <Tooltip
+                  content="This return is estimated based on the current value of GFI in US dollars."
+                  placement="top"
+                  useWrapper
+                >
+                  <Icon name="Gfi" aria-label="GFI logo" size="md" />
+                </Tooltip>
               </div>
             </td>
           </tr>
