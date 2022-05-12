@@ -43,13 +43,13 @@ export function Marquee({
       ref={bgRef}
       aria-hidden="true" // hidden because this element is decorative and very noisy to screen readers
       className={clsx(
-        "flex w-full overflow-hidden whitespace-nowrap bg-gradient-to-t py-3 text-xs font-medium uppercase",
+        "flex w-full overflow-hidden whitespace-nowrap py-3 text-xs font-medium uppercase",
         colorScheme === "blue"
-          ? "from-[#D2C2F2] to-sky-300 text-white"
+          ? "bg-afternoon text-white"
           : colorScheme === "purple"
-          ? "from-[#D17673] to-[#49386D] text-white"
+          ? "bg-sunrise-02 text-white"
           : colorScheme === "yellow"
-          ? "from-[#F2EDC2] to-[#F1D26E] text-eggplant-800"
+          ? "bg-gradient-to-t from-[#F2EDC2] to-[#F1D26E] text-eggplant-800"
           : null,
         className
       )}

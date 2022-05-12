@@ -61,7 +61,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <label
         htmlFor={_id}
         className={clsx(
-          isError && "text-red-200",
+          isError && "text-clay-200",
           "mb-1.5 leading-none",
           hideLabel && "sr-only"
         )}
@@ -71,7 +71,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <div className="relative w-full">
         <input
           className={clsx(
-            "w-full rounded bg-sand-200 py-2.5 px-3.5 outline-none ring-purple-400 ring-offset-0 placeholder:text-purple-200 focus:ring-2",
+            "w-full rounded bg-sand-200 py-2.5 px-3.5 outline-none ring-eggplant-400 ring-offset-0 placeholder:text-eggplant-200 focus:ring-2",
             disabled && "opacity-50",
             icon ? "pr-8" : null,
             inputClassName
@@ -94,7 +94,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {helperText || errorMessage ? (
         <HelperText
           className={clsx(
-            isError ? "text-red-200" : "text-purple-200",
+            isError ? "text-clay-200" : "text-eggplant-200",
             "mt-1 leading-none"
           )}
         >

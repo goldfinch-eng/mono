@@ -46,7 +46,7 @@
 
 @layer utilities {
   .focused {
-    @apply ring-2 ring-purple-300;
+    @apply ring-2 ring-eggplant-300;
   }
   .unfocused {
     @apply ring-0;

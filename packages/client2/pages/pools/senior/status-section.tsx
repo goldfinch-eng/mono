@@ -36,7 +36,7 @@ export function StatusSection({ seniorPool }: StatusSectionProps) {
                 })
               : "-.--"}
           </div>
-          <div className="text-lg text-purple-200">Total pool balance</div>
+          <div className="text-lg text-eggplant-200">Total pool balance</div>
         </div>
       </div>
     </div>

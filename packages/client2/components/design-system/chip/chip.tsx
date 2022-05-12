@@ -19,11 +19,11 @@ export function Chip({
         colorScheme === "white"
           ? "border-eggplant-100 bg-white text-eggplant-700"
           : colorScheme === "blue"
-          ? "bg-gradient-to-t from-[#D2C2F2] to-sky-300 text-white "
+          ? "bg-afternoon text-white"
           : colorScheme === "purple"
-          ? "bg-gradient-to-t from-[#D17673] to-[#49386D] text-white "
+          ? "bg-sunrise-02 text-white"
           : colorScheme === "yellow"
-          ? "bg-gradient-to-t from-[#F2EDC2] to-[#F1D26E] text-eggplant-800 "
+          ? "bg-gradient-to-t from-[#F2EDC2] to-[#F1D26E] text-eggplant-800"
           : null,
         className
       )}

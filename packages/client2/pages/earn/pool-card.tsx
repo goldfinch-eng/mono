@@ -63,7 +63,7 @@ export function PoolCard({
             ) : (
               <div className="text-lg">{title}</div>
             )}
-            <div className="text-purple-100">{subtitle}</div>
+            <div className="text-eggplant-100">{subtitle}</div>
           </>
         )}
       </div>
@@ -71,7 +71,7 @@ export function PoolCard({
         <div className="text-lg">
           {apy ? `${formatPercent(apy)} USDC` : "\u00A0"}
         </div>
-        <div className="text-purple-100">
+        <div className="text-eggplant-100">
           {apyFromGfi ? `${formatPercent(apyFromGfi)} from GFI` : "\u00A0"}
         </div>
       </div>
