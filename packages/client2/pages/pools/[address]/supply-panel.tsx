@@ -1,11 +1,11 @@
 import { useApolloClient, gql } from "@apollo/client";
-import clsx from "clsx";
 import { BigNumber, utils } from "ethers";
 import { useForm, Controller } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 import { toast } from "react-toastify";
 
 import {
+  Button,
   Icon,
   InfoIconTooltip,
   Link,
@@ -61,7 +61,13 @@ export default function SupplyPanel({
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
 
-  const { handleSubmit, control, watch, register } = useForm<SupplyForm>();
+  const {
+    handleSubmit,
+    control,
+    watch,
+    register,
+    formState: { isSubmitting },
+  } = useForm<SupplyForm>();
 
   const onSubmit = async (data: SupplyForm) => {
     if (
@@ -288,23 +294,26 @@ export default function SupplyPanel({
               shared with the borrower.
             </div>
           </div>
-          <button
-            className={clsx(
-              "block w-full rounded-md bg-white py-5 font-medium text-sky-700 hover:bg-sand-200 disabled:pointer-events-none disabled:opacity-60"
-            )}
+          <Button
+            className="block w-full"
             disabled={!supplyValue || !backerName}
+            size="xl"
+            colorScheme="secondary"
             type="submit"
+            isLoading={isSubmitting}
           >
             Supply
-          </button>
+          </Button>
         </form>
       ) : (
-        <button
-          className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
+        <Button
+          className="block w-full"
           onClick={openWalletModal}
+          size="xl"
+          colorScheme="secondary"
         >
           Connect Wallet
-        </button>
+        </Button>
       )}
     </div>
   );
