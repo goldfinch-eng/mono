@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 
 import {
   Button,
+  HelperText,
   Icon,
   InfoIconTooltip,
   Link,
@@ -66,8 +67,30 @@ export default function SupplyPanel({
     control,
     watch,
     register,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
+    setValue,
   } = useForm<SupplyForm>();
+
+  // TODO this should consider the amount of junior capacity remaining in the pool
+  const handleMax = async () => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
+  };
+
+  // TODO this should also consider the amoutn of junior capacity remaining in the pool
+  const validateMaximumAmount = async (value: string) => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    if (valueAsUsdc.gt(userUsdcBalance)) {
+      return "Amount exceeds USDC balance";
+    }
+  };
 
   const onSubmit = async (data: SupplyForm) => {
     if (
@@ -222,7 +245,7 @@ export default function SupplyPanel({
 
       {account ? (
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div>
+          <div className="mb-4">
             <div className="mb-3 flex flex-row items-end justify-between">
               <label htmlFor="supply" className="text-sm">
                 Supply amount
@@ -236,8 +259,11 @@ export default function SupplyPanel({
               <Controller
                 control={control}
                 name="supply"
-                rules={{ required: "Required" }}
-                render={({ field: { onChange, ref } }) => (
+                rules={{
+                  required: "Required",
+                  validate: validateMaximumAmount,
+                }}
+                render={({ field: { onChange, ...rest } }) => (
                   <IMaskInput
                     mask="$amount USDC"
                     blocks={{
@@ -254,20 +280,24 @@ export default function SupplyPanel({
                     radix="."
                     unmask={true}
                     lazy={false}
-                    ref={ref}
                     onAccept={onChange}
-                    className="mb-4 w-full rounded bg-sky-900 py-4 pl-5 pr-16 text-2xl"
+                    {...rest}
+                    className="w-full rounded bg-sky-900 py-4 pl-5 pr-16 text-2xl"
                   />
                 )}
               />
 
               <button
                 type="button"
+                onClick={handleMax}
                 className="absolute right-4 top-1/2 -translate-y-3/4 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase"
               >
                 Max
               </button>
             </div>
+            {errors?.supply ? (
+              <HelperText isError>{errors.supply.message}</HelperText>
+            ) : null}
           </div>
           <div className={!supplyValue ? "hidden" : undefined}>
             <div className="mb-3">
