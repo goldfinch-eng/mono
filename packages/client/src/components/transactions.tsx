@@ -43,7 +43,7 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
-  UNSTAKE_MULTIPLE_TX_TYPE,
+  UNSTAKE_TX_TYPE,
   DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
   FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
   DEPOSIT_TO_CURVE_TX_TYPE,
@@ -236,7 +236,7 @@ function Transactions(props: TransactionsProps) {
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)
           break
         }
-        case UNSTAKE_MULTIPLE_TX_TYPE: {
+        case UNSTAKE_TX_TYPE: {
           direction = "outflow"
           amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)
           break
