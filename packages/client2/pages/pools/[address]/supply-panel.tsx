@@ -301,7 +301,7 @@ export default function SupplyPanel({
               <button
                 type="button"
                 onClick={handleMax}
-                className="absolute right-4 top-1/2 -translate-y-3/4 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase"
+                className="absolute right-4 top-1/2 -translate-y-1/2 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase"
               >
                 Max
               </button>
