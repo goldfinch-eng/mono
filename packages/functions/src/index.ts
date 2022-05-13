@@ -121,15 +121,16 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
 }
 
 const signAgreement = genRequestHandler({
-  requireAuth: true,
+  requireAuth: false,
   cors: true,
-  handler: async (
-    req: Request,
-    res: Response,
-    verificationResult: SignatureVerificationSuccessResult,
-  ): Promise<Response> => {
-    const address = verificationResult.address
+  handler: async (req: Request, res: Response): Promise<Response> => {
+    const addressHeader = req.headers["x-goldfinch-address"]
+    const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
     const pool = (req.body.pool || "").trim()
+
+    if (!address) {
+      return res.status(403).send({error: "Invalid address"})
+    }
     const fullName = (req.body.fullName || "").trim()
 
     if (pool === "" || fullName === "") {
@@ -150,15 +151,16 @@ const signAgreement = genRequestHandler({
 })
 
 const signNDA = genRequestHandler({
-  requireAuth: true,
+  requireAuth: false,
   cors: true,
-  handler: async (
-    req: Request,
-    res: Response,
-    verificationResult: SignatureVerificationSuccessResult,
-  ): Promise<Response> => {
-    const address = verificationResult.address
+  handler: async (req: Request, res: Response): Promise<Response> => {
+    const addressHeader = req.headers["x-goldfinch-address"]
+    const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
     const pool = (req.body.pool || "").trim()
+
+    if (!address) {
+      return res.status(403).send({error: "Invalid address"})
+    }
 
     if (pool === "") {
       return res.status(403).send({error: "Invalid pool"})

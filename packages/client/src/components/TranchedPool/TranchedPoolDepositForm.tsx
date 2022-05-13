@@ -7,7 +7,7 @@ import useERC20Permit from "../../hooks/useERC20Permit"
 import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
 import useNonNullContext from "../../hooks/useNonNullContext"
 import useSendFromUser from "../../hooks/useSendFromUser"
-import {AuthenticatedSession, useSignIn} from "../../hooks/useSignIn"
+import {useSignIn, AuthenticatedSession} from "../../hooks/useSignIn"
 import {SUPPLY_TX_TYPE} from "../../types/transactions"
 import {assertError, displayDollars} from "../../utils"
 import LoadingButton from "../loadingButton"
@@ -28,27 +28,11 @@ export function TranchedPoolDepositForm({
   const {user, goldfinchConfig, usdc, network, networkMonitor, setSessionData} = useNonNullContext(AppContext)
   const {gatherPermitSignature} = useERC20Permit()
   const sendFromUser = useSendFromUser()
-  const [session, signIn] = useSignIn()
+  const [session] = useSignIn()
 
   async function action({transactionAmount, fullName}) {
     try {
-      let userSession: AuthenticatedSession
-      if (session.status !== "authenticated") {
-        try {
-          const result = await signIn()
-          if (result.status !== "authenticated") {
-            return
-          } else {
-            userSession = result
-          }
-        } catch (e) {
-          return
-        }
-      } else {
-        userSession = session
-      }
-
-      const client = new DefaultGoldfinchClient(network.name!, userSession, setSessionData)
+      const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
       const response = await client.signAgreement(user.address, fullName, tranchedPool.address)
       if (response.json.status !== "success") {
         throw new Error(response.json.error)

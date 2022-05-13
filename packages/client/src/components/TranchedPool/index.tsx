@@ -30,7 +30,7 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const [session, signIn] = useSignIn()
+  const [session] = useSignIn()
   const {goldfinchProtocol, backerRewards, pool, gfi, user, network, setSessionData, currentBlock} =
     useContext(AppContext)
   const {
@@ -96,23 +96,8 @@ function TranchedPoolView() {
     assertNonNullable(user)
     assertNonNullable(network)
     assertNonNullable(setSessionData)
-    let userSession: AuthenticatedSession
-    if (session.status !== "authenticated") {
-      try {
-        const result = await signIn()
-        if (result.status !== "authenticated") {
-          return
-        } else {
-          userSession = result
-        }
-      } catch (e) {
-        return
-      }
-    } else {
-      userSession = session
-    }
 
-    const client = new DefaultGoldfinchClient(network.name!, userSession, setSessionData)
+    const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
     return client
       .signNDA(user.address, tranchedPool!.address)
       .then((r) => {

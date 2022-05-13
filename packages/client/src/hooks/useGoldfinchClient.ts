@@ -83,10 +83,11 @@ class DefaultGoldfinchClient implements GoldfinchAuthenticatedClient {
 
   _getAuthHeaders(address: string) {
     const signature = this.session.signature === "pending" ? "" : this.session.signature
+    const signatureBlockNum = !this.session.signatureBlockNum ? "" : this.session.signatureBlockNum.toString()
     return {
       "x-goldfinch-address": address,
       "x-goldfinch-signature": signature,
-      "x-goldfinch-signature-block-num": this.session.signatureBlockNum.toString(),
+      "x-goldfinch-signature-block-num": signatureBlockNum,
     }
   }
 
