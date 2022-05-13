@@ -9,7 +9,7 @@ import {
   DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
   DEPOSIT_TO_CURVE_TX_TYPE,
   STAKE_TX_TYPE,
-  UNSTAKE_MULTIPLE_TX_TYPE,
+  UNSTAKE_TX_TYPE,
   ZAP_STAKE_TO_CURVE_TX_TYPE,
 } from "../types/transactions"
 import {gfiToDollarsAtomic} from "../ethereum/gfi"
@@ -215,15 +215,23 @@ export default function useStakingData(): StakingData {
     const ticker = positionTypeToTicker(positionType)
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
     const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
-    const amounts = optimalPositionsToUnstake.map(({amount}) => amount.toString(10))
+    const amounts = optimalPositionsToUnstake.map(({amount}) => amount)
 
-    return sendFromUser(stakingRewards.contract.userWallet.methods.unstakeMultiple(tokenIds, amounts), {
-      type: UNSTAKE_MULTIPLE_TX_TYPE,
-      data: {
-        totalAmount: toDecimalString(amount, ticker),
-        ticker: ticker.toString(),
-      },
-    })
+    if (positionType === StakedPositionType.Fidu && tokenIds.length === 1 && amounts.length === 1) {
+      const tokenId = tokenIds[0]
+      const amount = amounts[0]
+      assertNonNullable(tokenId)
+      assertNonNullable(amount)
+      return sendFromUser(stakingRewards.contract.userWallet.methods.unstake(tokenId, amount.toString(10)), {
+        type: UNSTAKE_TX_TYPE,
+        data: {
+          totalAmount: toDecimalString(amount, ticker),
+          ticker: ticker.toString(),
+        },
+      })
+    } else {
+      throw new Error("Unstaking multiple positions or a Curve LP position is currently disabled, pending a bug fix.")
+    }
   }
 
   /**
