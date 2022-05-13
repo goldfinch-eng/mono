@@ -34,6 +34,8 @@ export const SUPPLY_PANEL_FIELDS = gql`
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     agreement @client
+    remainingCapacity
+    estimatedLeverageRatio
   }
 `;
 interface SupplyPanelProps {
@@ -52,16 +54,15 @@ export default function SupplyPanel({
     estimatedJuniorApy,
     estimatedJuniorApyFromGfiRaw,
     agreement,
+    remainingCapacity,
+    estimatedLeverageRatio,
   },
   fiatPerGfi,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
-
   const { account, provider, chainId } = useWallet();
-
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
-
   const {
     handleSubmit,
     control,
@@ -71,13 +72,20 @@ export default function SupplyPanel({
     setValue,
   } = useForm<SupplyForm>();
 
+  const remainingJuniorCapacity = remainingCapacity.div(
+    estimatedLeverageRatio.add(1)
+  );
+
   // TODO this should consider the amount of junior capacity remaining in the pool
   const handleMax = async () => {
     if (!account || !usdcContract) {
       return;
     }
     const userUsdcBalance = await usdcContract.balanceOf(account);
-    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
+    const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
+      ? userUsdcBalance
+      : remainingJuniorCapacity;
+    setValue("supply", utils.formatUnits(maxAvailable, USDC_DECIMALS));
   };
 
   // TODO this should also consider the amoutn of junior capacity remaining in the pool
@@ -86,6 +94,9 @@ export default function SupplyPanel({
       return;
     }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
+    if (valueAsUsdc.gt(remainingJuniorCapacity)) {
+      return "Amount exceeds remaining junior capacity";
+    }
     const userUsdcBalance = await usdcContract.balanceOf(account);
     if (valueAsUsdc.gt(userUsdcBalance)) {
       return "Amount exceeds USDC balance";
