@@ -54,9 +54,9 @@ const addressByContractName = fromPairs(Object.entries(deploymentsJson[1].mainne
 const contractDocRegexp = /^([A-Za-z0-9]+)\.md$/
 const skipFileNames = ['_category_.json']
 
-const contractDocsSubdirs = ["core", "periphery", "rewards"]
+const contractDocsSubdirs = ["core", "periphery", "rewards", "deprecated"]
 contractDocsSubdirs.forEach((subdir: string) => {
-  const pathToSubdir = `./docs/reference/${subdir}`
+  const pathToSubdir = `./docs/reference/contracts/${subdir}`
   fs.readdir(pathToSubdir, function (err, fileNames) {
     fileNames.forEach(function (fileName) {
       if (skipFileNames.includes(fileName)) {

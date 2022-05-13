@@ -10,6 +10,8 @@ The test suites can be viewed in the open-source repo:
 - [Goldfinch Protocol](https://github.com/goldfinch-eng/mono/tree/main/packages/protocol/test)
 - [Goldfinch Interface](https://github.com/goldfinch-eng/mono/tree/main/packages/client/src/__tests__)
 
-Code coverage TODO[PR]
+The test suites do not currently produce a code coverage report.
 
-Formal Verification TODO[PR]
+The Protocol's smart contracts have not undergone formal verification.
+
+The Protocol's smart contracts are developed against extensive use of Ethereum mainnet, via so-called "mainnet forking". Deployment to Ethereum testnets is also used in development.
