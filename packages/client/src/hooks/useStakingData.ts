@@ -217,20 +217,16 @@ export default function useStakingData(): StakingData {
     const tokenIds = optimalPositionsToUnstake.map(({tokenId}) => tokenId)
     const amounts = optimalPositionsToUnstake.map(({amount}) => amount)
 
-    if (positionType === StakedPositionType.Fidu && tokenIds.length === 1 && amounts.length === 1) {
-      const tokenId = tokenIds[0]
-      const amount = amounts[0]
+    for (const {tokenId, amount} of optimalPositionsToUnstake) {
       assertNonNullable(tokenId)
       assertNonNullable(amount)
-      return sendFromUser(stakingRewards.contract.userWallet.methods.unstake(tokenId, amount.toString(10)), {
+      await sendFromUser(stakingRewards.contract.userWallet.methods.unstake(tokenId, amount.toString(10)), {
         type: UNSTAKE_TX_TYPE,
         data: {
           totalAmount: toDecimalString(amount, ticker),
           ticker: ticker.toString(),
         },
       })
-    } else {
-      throw new Error("Unstaking multiple positions or a Curve LP position is currently disabled, pending a bug fix.")
     }
   }
 
