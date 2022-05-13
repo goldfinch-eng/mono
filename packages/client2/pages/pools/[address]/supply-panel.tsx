@@ -279,6 +279,7 @@ export default function SupplyPanel({
                 {...register("backerName")}
                 className="w-full rounded bg-sky-900 py-4 px-5 text-2xl"
                 placeholder="First and last name"
+                autoComplete="off"
               />
             </div>
             <div className="mb-3 text-xs">
