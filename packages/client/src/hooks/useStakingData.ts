@@ -191,13 +191,17 @@ export default function useStakingData(): StakingData {
     const ticker: Ticker = positionTypeToTicker(positionType)
 
     return erc20Approve(amount, ticker, stakingRewards.address).then(() =>
-      sendFromUser(stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType), {
-        type: STAKE_TX_TYPE,
-        data: {
-          amount: toDecimalString(amount, ticker),
-          ticker: getERC20Metadata(ticker).ticker.toString(),
+      sendFromUser(
+        stakingRewards.contract.userWallet.methods.stake(amount.toString(10), positionType),
+        {
+          type: STAKE_TX_TYPE,
+          data: {
+            amount: toDecimalString(amount, ticker),
+            ticker: getERC20Metadata(ticker).ticker.toString(),
+          },
         },
-      })
+        {rejectOnError: true}
+      )
     )
   }
 
@@ -218,13 +222,17 @@ export default function useStakingData(): StakingData {
     for (const {tokenId, amount} of optimalPositionsToUnstake) {
       assertNonNullable(tokenId)
       assertNonNullable(amount)
-      await sendFromUser(stakingRewards.contract.userWallet.methods.unstake(tokenId, amount.toString(10)), {
-        type: UNSTAKE_TX_TYPE,
-        data: {
-          totalAmount: toDecimalString(amount, ticker),
-          ticker: ticker.toString(),
+      await sendFromUser(
+        stakingRewards.contract.userWallet.methods.unstake(tokenId, amount.toString(10)),
+        {
+          type: UNSTAKE_TX_TYPE,
+          data: {
+            totalAmount: toDecimalString(amount, ticker),
+            ticker: ticker.toString(),
+          },
         },
-      })
+        {rejectOnError: true}
+      )
     }
   }
 
@@ -250,7 +258,8 @@ export default function useStakingData(): StakingData {
               fiduAmount: toDecimalString(fiduAmount, Ticker.FIDU),
               usdcAmount: toDecimalString(usdcAmount, Ticker.USDC),
             },
-          }
+          },
+          {rejectOnError: true}
         )
       )
       .then(() => promptUserToAddTokenToWalletIfNecessary(Ticker.CURVE_FIDU_USDC))
@@ -281,7 +290,8 @@ export default function useStakingData(): StakingData {
               fiduAmount: toDecimalString(fiduAmount, Ticker.FIDU),
               usdcAmount: toDecimalString(usdcAmount, Ticker.USDC),
             },
-          }
+          },
+          {rejectOnError: true}
         )
       )
       .then(() => promptUserToAddTokenToWalletIfNecessary(Ticker.CURVE_FIDU_USDC))
@@ -324,7 +334,8 @@ export default function useStakingData(): StakingData {
             fiduAmount: toDecimalString(position.amount, Ticker.FIDU),
             usdcAmount: toDecimalString(usdcEquivalent, Ticker.USDC),
           },
-        }
+        },
+        {rejectOnError: true}
       )
     }
 
