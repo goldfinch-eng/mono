@@ -53,7 +53,7 @@ import {
   SUPPLY_AND_STAKE_TX_TYPE,
   SUPPLY_TX_TYPE,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-  UNSTAKE_MULTIPLE_TX_TYPE,
+  UNSTAKE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
@@ -344,7 +344,8 @@ export class User {
                   case UNSTAKED_AND_WITHDREW_MULTIPLE_EVENT:
                     return UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
                   case UNSTAKED_MULTIPLE_EVENT:
-                    return UNSTAKE_MULTIPLE_TX_TYPE
+                    // TODO(@emilyhsia): Update with UNSTAKE_MULTIPLE_TX_TYPE when unstakeMultiple is fixed
+                    return UNSTAKE_TX_TYPE
                   case REWARD_PAID_EVENT:
                     return CLAIM_TX_TYPE
                   default:

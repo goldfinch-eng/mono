@@ -32,7 +32,7 @@ import {
   SUPPLY_TX_TYPE,
   TxType,
   UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
-  UNSTAKE_MULTIPLE_TX_TYPE,
+  UNSTAKE_TX_TYPE,
   UNSTAKE_TX_NAME,
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
@@ -198,7 +198,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
           )} ${tx.name}`
           break
         }
-        case UNSTAKE_MULTIPLE_TX_TYPE: {
+        case UNSTAKE_TX_TYPE: {
           transactionLabel = `${displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)} ${
             (tx.data as CurrentTx<typeof tx.name>["data"]).ticker
           } ${tx.name}`
@@ -256,7 +256,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
         case BORROW_TX_TYPE:
         case UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
-        case UNSTAKE_MULTIPLE_TX_TYPE:
+        case UNSTAKE_TX_TYPE:
         case STAKE_TX_TYPE:
         case INTEREST_COLLECTED_TX_NAME:
         case PRINCIPAL_COLLECTED_TX_NAME:
