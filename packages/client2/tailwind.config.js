@@ -103,7 +103,7 @@ module.exports = {
       },
       backgroundImage: {
         "sunrise-01":
-          "linear-gradient(180deg, rgba(241, 110, 236, 0) 17.71%, #F8E0CE 100%),linear-gradient(0deg, #1D325F, #1D325F)",
+          "linear-gradient(180deg, rgba(29,50,95,1) 0%, rgba(118,95,148,1) 50%, rgba(248,224,206,1) 100%)",
         "sunrise-02":
           "linear-gradient(180deg, rgba(209, 118, 115, 0) 17.71%, #D17673 100%),linear-gradient(0deg, #1D325F, #1D325F)",
         afternoon:
