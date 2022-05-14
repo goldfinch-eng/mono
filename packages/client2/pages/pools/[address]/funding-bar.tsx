@@ -34,7 +34,7 @@ export default function FundingBar({
     goalFloat === 0 ? 0 : (seniorSupplyFloat / goalFloat) * 100;
 
   return (
-    <div className="relative">
+    <div>
       <div
         className={clsx(
           "mb-3 flex items-center text-sm text-sand-600",
@@ -45,7 +45,7 @@ export default function FundingBar({
             ? { marginLeft: `${Math.min(backerWidth + seniorWidth, 50)}%` }
             : {
                 marginRight: `${Math.min(
-                  100 - backerWidth - seniorWidth,
+                  Math.max(100 - backerWidth - seniorWidth, 0),
                   50
                 )}%`,
               }
