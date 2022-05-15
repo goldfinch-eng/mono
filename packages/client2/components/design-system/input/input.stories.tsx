@@ -14,4 +14,5 @@ export const InputStory: ComponentStory<typeof Input> = (args) => (
 InputStory.args = {
   label: "Name",
   placeholder: "John Doe",
+  colorScheme: "light",
 };

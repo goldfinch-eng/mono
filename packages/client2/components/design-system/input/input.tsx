@@ -34,6 +34,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   inputClassName?: string;
   disabled?: boolean;
   icon?: IconNameType;
+  colorScheme?: "light" | "dark";
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -50,6 +51,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     inputClassName,
     className,
     autoComplete = "off",
+    colorScheme = "light",
     ...rest
   },
   ref
@@ -61,8 +63,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <label
         htmlFor={_id}
         className={clsx(
-          isError && "text-clay-200",
           "mb-1.5 leading-none",
+          colorScheme === "light"
+            ? "text-sand-700"
+            : colorScheme === "dark"
+            ? "text-white"
+            : null,
           hideLabel && "sr-only"
         )}
       >
@@ -71,7 +77,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <div className="relative w-full">
         <input
           className={clsx(
-            "w-full rounded bg-sand-200 py-2.5 px-3.5 outline-none ring-eggplant-400 ring-offset-0 placeholder:text-eggplant-200 focus:ring-2",
+            "unfocused w-full rounded py-2 px-3", // unfocused because the color schemes supply a border color as a focus style
+            colorScheme === "light"
+              ? [
+                  "border bg-white text-sand-700 focus:border-sand-600",
+                  isError
+                    ? "border-clay-100 placeholder:text-clay-700"
+                    : "border-sand-200 placeholder:text-sand-500",
+                ]
+              : colorScheme === "dark"
+              ? [
+                  "border bg-sky-900 text-white focus:border-white",
+                  isError
+                    ? "border-clay-500 placeholder:text-clay-500"
+                    : "border-transparent placeholder:text-sand-300",
+                ]
+              : null,
             disabled && "opacity-50",
             icon ? "pr-8" : null,
             inputClassName
@@ -94,8 +115,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {helperText || errorMessage ? (
         <HelperText
           className={clsx(
-            isError ? "text-clay-200" : "text-eggplant-200",
-            "mt-1 leading-none"
+            isError
+              ? "text-clay-500"
+              : colorScheme === "light"
+              ? "text-sand-500"
+              : colorScheme === "dark"
+              ? "text-sand-300"
+              : null,
+            "mt-1 text-sm leading-none"
           )}
         >
           {errorMessage ? errorMessage : helperText}
