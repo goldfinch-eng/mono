@@ -17,7 +17,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     if (isActive) {
       onClose();
     }
-  }, [isActive, onClose]);
+  }, [isActive, , onClose]);
   return (
     <Modal size="xs" title="Select a wallet" isOpen={isOpen} onClose={onClose}>
       <Paragraph className="mb-8">

@@ -1,5 +1,6 @@
-import { useApolloClient, gql } from "@apollo/client";
+import { useApolloClient, gql, useReactiveVar } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
@@ -22,9 +23,16 @@ import { formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedFiat,
   SupplyPanelFieldsFragment,
+  useGetUidBalancesQuery,
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
-import { openWalletModal } from "@/lib/state/actions";
+import {
+  openWalletModal,
+  openKYCModal,
+  openUIDModal,
+} from "@/lib/state/actions";
+import { isKYCDoneVar } from "@/lib/state/vars";
+import { getKYCStatus } from "@/lib/user";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -38,6 +46,21 @@ export const SUPPLY_PANEL_FIELDS = gql`
     estimatedLeverageRatio
   }
 `;
+
+gql`
+  query GetUidBalances {
+    viewer @client {
+      uidBalances {
+        NonUSIndividual
+        USAccreditedIndividual
+        USNonAccreditedIndividual
+        USEntity
+        NonUSEntity
+      }
+    }
+  }
+`;
+
 interface SupplyPanelProps {
   tranchedPool: SupplyPanelFieldsFragment;
   fiatPerGfi: number;
@@ -63,6 +86,21 @@ export default function SupplyPanel({
   const { account, provider, chainId } = useWallet();
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
+  const isKYCDone = useReactiveVar(isKYCDoneVar);
+  const { data: uidQueryData } = useGetUidBalancesQuery();
+  const [uidCreated, setUIDCreated] = useState<boolean>(false);
+
+  useEffect(() => {
+    const isUIDCreated =
+      uidQueryData?.viewer?.uidBalances?.NonUSEntity ||
+      uidQueryData?.viewer?.uidBalances?.NonUSIndividual ||
+      uidQueryData?.viewer?.uidBalances?.USAccreditedIndividual ||
+      uidQueryData?.viewer?.uidBalances?.USEntity ||
+      uidQueryData?.viewer?.uidBalances?.USNonAccreditedIndividual;
+
+    setUIDCreated(!!isUIDCreated);
+  }, [uidQueryData]);
+
   const {
     handleSubmit,
     control,
@@ -254,7 +292,36 @@ export default function SupplyPanel({
         </tbody>
       </table>
 
-      {account ? (
+      {account && !isKYCDone && !uidCreated && (
+        <button
+          className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
+          onClick={() => {
+            openKYCModal();
+          }}
+        >
+          Verify Identity
+        </button>
+      )}
+
+      {account && isKYCDone && !uidCreated && (
+        <button
+          className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
+          onClick={async () => {
+            try {
+              // Prefetch KYC status
+              await getKYCStatus(account);
+
+              openUIDModal();
+            } catch {
+              throw new Error("Could not get KYC status.");
+            }
+          }}
+        >
+          Claim my UID
+        </button>
+      )}
+
+      {account && isKYCDone && uidCreated && (
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <DollarInput
@@ -318,7 +385,9 @@ export default function SupplyPanel({
             Supply
           </Button>
         </form>
-      ) : (
+      )}
+
+      {!account && (
         <Button
           className="block w-full"
           onClick={openWalletModal}

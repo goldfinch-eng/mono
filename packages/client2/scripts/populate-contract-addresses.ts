@@ -36,6 +36,7 @@ const mainnetContracts = mainnetDeployments["1"].mainnet.contracts;
       "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // mainnet doesn't have TestERC20 (obviously), use the actual USDC mainnet address instead
     SeniorPool: contracts.SeniorPool.address,
     GFI: contracts.GFI.address,
+    UniqueIdentity: contracts.UniqueIdentity.address,
   };
   const pathname = path.resolve(__dirname, relativePath);
   fs.writeFileSync(pathname, JSON.stringify(addresses, null, 2));

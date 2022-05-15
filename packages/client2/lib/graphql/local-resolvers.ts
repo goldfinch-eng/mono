@@ -1,6 +1,7 @@
 import { Resolvers } from "@apollo/client";
 
-import { getGfiContract, getUsdcContract } from "../contracts";
+import { getGfiContract, getUsdcContract, getUidContract } from "../contracts";
+import { UIDType } from "../user";
 import { getProvider } from "../wallet";
 import { GfiPrice, SupportedCrypto, SupportedFiat, Viewer } from "./generated";
 
@@ -60,12 +61,14 @@ export const resolvers: Resolvers = {
     },
     async viewer(): Promise<Viewer | null> {
       const provider = getProvider();
+
       if (!provider) {
         return {
           __typename: "Viewer",
           account: null,
           gfiBalance: null,
           usdcBalance: null,
+          uidBalances: null,
         };
       }
 
@@ -78,6 +81,18 @@ export const resolvers: Resolvers = {
       const usdcContract = await getUsdcContract(chainId, provider);
       const usdcBalance = await usdcContract.balanceOf(account);
 
+      const uidContract = await getUidContract(chainId, provider);
+      const uidBalances = await uidContract.balanceOfBatch(
+        [account, account, account, account, account],
+        [
+          UIDType.NonUSIndividual,
+          UIDType.USAccreditedIndividual,
+          UIDType.USNonAccreditedIndividual,
+          UIDType.USEntity,
+          UIDType.NonUSEntity,
+        ]
+      );
+
       return {
         __typename: "Viewer",
         account,
@@ -88,6 +103,13 @@ export const resolvers: Resolvers = {
         usdcBalance: {
           token: SupportedCrypto.Usdc,
           amount: usdcBalance,
+        },
+        uidBalances: {
+          NonUSIndividual: !uidBalances[0].isZero(),
+          USAccreditedIndividual: !uidBalances[1].isZero(),
+          USNonAccreditedIndividual: !uidBalances[2].isZero(),
+          USEntity: !uidBalances[3].isZero(),
+          NonUSEntity: !uidBalances[4].isZero(),
         },
       };
     },

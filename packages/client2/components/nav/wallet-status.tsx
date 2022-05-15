@@ -25,6 +25,13 @@ gql`
         token
         amount
       }
+      uidBalances {
+        NonUSIndividual
+        USAccreditedIndividual
+        USNonAccreditedIndividual
+        USEntity
+        NonUSEntity
+      }
     }
   }
 `;
