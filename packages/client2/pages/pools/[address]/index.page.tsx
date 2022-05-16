@@ -480,7 +480,7 @@ export default function PoolPage() {
 
         <div className="relative col-span-4">
           {tranchedPool && fiatPerGfi ? (
-            <div className="sticky top-12">
+            <div className="sticky top-12 space-y-8">
               {poolStatus === PoolStatus.Open && (
                 <SupplyPanel
                   tranchedPool={tranchedPool}

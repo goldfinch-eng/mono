@@ -97,6 +97,9 @@ export default function SupplyPanel({
     if (valueAsUsdc.gt(remainingJuniorCapacity)) {
       return "Amount exceeds remaining junior capacity";
     }
+    if (valueAsUsdc.lte(BigNumber.from(0))) {
+      return "Must deposit more than 0";
+    }
     const userUsdcBalance = await usdcContract.balanceOf(account);
     if (valueAsUsdc.gt(userUsdcBalance)) {
       return "Amount exceeds USDC balance";
@@ -155,7 +158,6 @@ export default function SupplyPanel({
   };
 
   const supplyValue = watch("supply");
-  const backerName = watch("backerName");
   const fiatApyFromGfi = computeApyFromGfiInFiat(
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
@@ -309,7 +311,7 @@ export default function SupplyPanel({
           </div>
           <Button
             className="block w-full"
-            disabled={!supplyValue || !backerName}
+            disabled={Object.keys(errors).length !== 0}
             size="xl"
             colorScheme="secondary"
             type="submit"

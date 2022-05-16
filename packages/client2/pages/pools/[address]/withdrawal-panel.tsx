@@ -47,7 +47,7 @@ export function WithdrawalPanel({
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<{ amount: string }>();
   const apolloClient = useApolloClient();
 
@@ -116,6 +116,9 @@ export function WithdrawalPanel({
     if (usdcToWithdraw.gt(totalWithdrawable)) {
       return "Withdrawal amount too high";
     }
+    if (usdcToWithdraw.lte(BigNumber.from(0))) {
+      return "Must withdraw more than 0";
+    }
   };
 
   return (
@@ -144,7 +147,13 @@ export function WithdrawalPanel({
             errorMessage={errors?.amount?.message}
           />
         </div>
-        <Button colorScheme="secondary" size="xl" className="block w-full">
+        <Button
+          colorScheme="secondary"
+          size="xl"
+          className="block w-full"
+          isLoading={isSubmitting}
+          disabled={Object.keys(errors).length !== 0}
+        >
           Withdraw
         </Button>
       </form>
