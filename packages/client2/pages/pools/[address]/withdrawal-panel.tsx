@@ -3,13 +3,7 @@ import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
-import {
-  Icon,
-  Button,
-  Input,
-  Link,
-  HelperText,
-} from "@/components/design-system";
+import { Icon, Button, DollarInput, Link } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useTranchedPoolContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
@@ -51,7 +45,7 @@ export function WithdrawalPanel({
 
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<{ amount: string }>();
@@ -139,16 +133,16 @@ export function WithdrawalPanel({
       </div>
       <form onSubmit={handler}>
         <div className="mb-3">
-          <Input
+          <DollarInput
+            name="amount"
             label="Amount"
-            id="withdrawal-amount"
-            {...register("amount", { validate: validateWithdrawalAmount })}
+            control={control}
+            textSize="xl"
+            colorScheme="dark"
+            rules={{ required: "Required", validate: validateWithdrawalAmount }}
+            labelClassName="!mb-3 text-sm"
+            errorMessage={errors?.amount?.message}
           />
-          {errors?.amount ? (
-            <HelperText className="mt-1 text-clay-200">
-              {errors.amount.message}
-            </HelperText>
-          ) : null}
         </div>
         <Button colorScheme="secondary" size="xl" className="block w-full">
           Withdraw
