@@ -1,6 +1,7 @@
 import { ComponentMeta, ComponentStory } from "@storybook/react";
+import { useForm } from "react-hook-form";
 
-import { Input } from ".";
+import { Input, DollarInput } from ".";
 
 export default {
   component: Input,
@@ -15,4 +16,19 @@ InputStory.args = {
   label: "Name",
   placeholder: "John Doe",
   colorScheme: "light",
+};
+
+export const DollarInputStory: ComponentStory<typeof DollarInput> = () => {
+  const { control } = useForm<{ amount: string }>();
+  return (
+    <form>
+      <div className="mb-4">
+        It is important to keep in mind that the DollarInput component is an
+        adapted controlled input, and as such it can only be used alongside
+        React Hook Form, not by itself. This is considered a best-practice for
+        input elements in this project regardless.
+      </div>
+      <DollarInput control={control} name="amount" label="Dollar amount" />
+    </form>
+  );
 };
