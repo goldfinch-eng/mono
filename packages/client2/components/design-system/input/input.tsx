@@ -42,6 +42,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    */
   decoration?: ReactNode;
   /**
+   * An element that will render on the right side of the label. Can be used to add extra contextual information like a tooltip.
+   */
+  labelDecoration?: ReactNode;
+  /**
    * Occupies the same space as `decoration`. Offered as a convenience if you just want a static icon as a decoration.
    */
   icon?: IconNameType;
@@ -59,8 +63,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     helperText,
     errorMessage,
     disabled = false,
-    decoration,
     icon,
+    decoration,
+    labelDecoration,
     inputClassName,
     labelClassName,
     className,
@@ -77,6 +82,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     <div
       className={clsx(
         "flex flex-col items-start justify-start",
+        colorScheme === "light"
+          ? "text-sand-700"
+          : colorScheme === "dark"
+          ? "text-white"
+          : null,
         textSize === "sm"
           ? "text-sm"
           : textSize === "lg"
@@ -87,31 +97,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         className
       )}
     >
-      <label
-        htmlFor={_id}
+      <div
         className={clsx(
-          "mb-1.5 leading-none",
-          colorScheme === "light"
-            ? "text-sand-700"
-            : colorScheme === "dark"
-            ? "text-white"
-            : null,
+          "mb-1.5 flex w-full items-center justify-between gap-4 leading-none",
           hideLabel && "sr-only",
           labelClassName
         )}
       >
-        {label}
-      </label>
-      <div
-        className={clsx(
-          "relative w-full",
-          colorScheme === "light"
-            ? "text-sand-700"
-            : colorScheme === "dark"
-            ? "text-white"
-            : null
-        )}
-      >
+        <label htmlFor={_id}>{label}</label>
+        {labelDecoration ? labelDecoration : null}
+      </div>
+      <div className="relative w-full">
         <input
           className={clsx(
             "unfocused w-full rounded", // unfocused because the color schemes supply a border color as a focus style

@@ -261,6 +261,12 @@ export default function SupplyPanel({
               control={control}
               name="supply"
               label="Supply amount"
+              labelDecoration={
+                <span className="text-xs opacity-60">
+                  {account.substring(0, 6)}...
+                  {account.substring(account.length - 4)}
+                </span>
+              }
               rules={{ required: "Required", validate: validateMaximumAmount }}
               colorScheme="dark"
               textSize="xl"
@@ -274,6 +280,13 @@ export default function SupplyPanel({
               <Input
                 {...register("backerName", { required: "Required" })}
                 label="Full legal name"
+                labelDecoration={
+                  <InfoIconTooltip
+                    size="sm"
+                    placement="top"
+                    content="Lorem ipsum. Your full name is required for reasons"
+                  />
+                }
                 placeholder="First and last name"
                 colorScheme="dark"
                 textSize="xl"
