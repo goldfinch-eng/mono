@@ -85,7 +85,7 @@ export function WithdrawalPanel({
           : redeemable;
         tokenIds.push(BigNumber.from(poolToken.id));
         amounts.push(amountFromThisToken);
-        remainingAmount.sub(amountFromThisToken);
+        remainingAmount = remainingAmount.sub(amountFromThisToken);
       }
       transaction = await tranchedPoolContract.withdrawMultiple(
         tokenIds,
