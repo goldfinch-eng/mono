@@ -4,7 +4,7 @@ title: Smart Contracts Overview
 sidebar_position: 1
 ---
 
-The Goldfinch Protocol's smart contracts are organized into three categories: Core, Periphery, and GFI Distribution.
+The Goldfinch Protocol's smart contracts are organized into three main categories: Core, Periphery, and GFI Distribution.
 
 ## Core
 
@@ -23,3 +23,7 @@ The periphery consists of smart contracts that facilitate usage or development o
 > [**GFI Distribution Source Code**](https://github.com/goldfinch-eng/mono/tree/main/packages/protocol/contracts/rewards)
 
 This category organizes the logic that manages how GFI are disbursed to participants of the Goldfinch Protocol.
+
+## (Deprecated)
+
+This category contains contracts that are no longer used by the Protocol, but are provided for completeness.
