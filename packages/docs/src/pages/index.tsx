@@ -33,7 +33,7 @@ export default function Home(): JSX.Element {
       description="Bring crypto loans to the real world">
       <HomepageHeader />
       <main>
-        <HomepageFeatures />
+        {/* <HomepageFeatures /> */}
       </main>
     </Layout>
   );

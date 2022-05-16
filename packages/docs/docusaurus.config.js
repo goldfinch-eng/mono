@@ -6,7 +6,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Goldfinch Docs',
+  title: 'Goldfinch Developer Docs',
   tagline: 'Bring crypto loans to the real world',
   url: 'https://docs.goldfinch.com',
   baseUrl: '/',
@@ -36,7 +36,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'Goldfinch Docs',
+        title: 'Goldfinch Developer Docs',
         logo: {
           alt: 'Goldfinch Logo',
           src: 'img/logo.svg',
