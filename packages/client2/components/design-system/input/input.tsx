@@ -32,6 +32,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    * Class that goes specifically on the input element, not on the wrapper. Makes it easier to override input-specific styles like placeholder
    */
   inputClassName?: string;
+  /**
+   * Class that goes specifically on the label element, not on the wrapper. Makes it easier to override label-specific styles.
+   */
+  labelClassName?: string;
   disabled?: boolean;
   /**
    * An element that will render on the right side of the input. Can be used to create things like a "reveal password" button, or a "max" button
@@ -41,6 +45,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    * Occupies the same space as `decoration`. Offered as a convenience if you just want a static icon as a decoration.
    */
   icon?: IconNameType;
+  textSize?: "sm" | "md" | "lg" | "xl";
   colorScheme?: "light" | "dark";
 }
 
@@ -57,9 +62,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     decoration,
     icon,
     inputClassName,
+    labelClassName,
     className,
     autoComplete = "off",
     colorScheme = "light",
+    textSize = "md",
     ...rest
   },
   ref
@@ -67,7 +74,19 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const _id = id ?? name;
   const isError = !!errorMessage;
   return (
-    <div className={clsx("flex flex-col items-start justify-start", className)}>
+    <div
+      className={clsx(
+        "flex flex-col items-start justify-start",
+        textSize === "sm"
+          ? "text-sm"
+          : textSize === "lg"
+          ? "text-lg"
+          : textSize === "xl"
+          ? "text-2xl"
+          : null,
+        className
+      )}
+    >
       <label
         htmlFor={_id}
         className={clsx(
@@ -77,7 +96,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             : colorScheme === "dark"
             ? "text-white"
             : null,
-          hideLabel && "sr-only"
+          hideLabel && "sr-only",
+          labelClassName
         )}
       >
         {label}
@@ -94,7 +114,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       >
         <input
           className={clsx(
-            "unfocused w-full rounded py-2 px-3", // unfocused because the color schemes supply a border color as a focus style
+            "unfocused w-full rounded", // unfocused because the color schemes supply a border color as a focus style
             colorScheme === "light"
               ? [
                   "border bg-white focus:border-sand-600",
@@ -112,6 +132,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               : null,
             disabled && "opacity-50",
             decoration || icon ? "pr-8" : null,
+            textSize === "sm"
+              ? "py-1.5 px-3"
+              : textSize === "md"
+              ? "py-2 px-3"
+              : textSize === "lg"
+              ? "px-4 py-3"
+              : textSize === "xl"
+              ? "px-5 py-4"
+              : null,
             inputClassName
           )}
           ref={ref}

@@ -62,7 +62,7 @@ export function DollarInput({
           <button
             type="button"
             onClick={onMaxClick}
-            className="rounded-md border border-sky-500 px-2 py-1 text-[0.625em] uppercase"
+            className="block rounded-md border border-sky-500 p-2 text-[10px] uppercase leading-none"
           >
             Max
           </button>

@@ -16,9 +16,10 @@ InputStory.args = {
   label: "Name",
   placeholder: "John Doe",
   colorScheme: "light",
+  textSize: "md",
 };
 
-export const DollarInputStory: ComponentStory<typeof DollarInput> = () => {
+export const DollarInputStory: ComponentStory<typeof DollarInput> = (args) => {
   const { control, setValue, handleSubmit } = useForm<{ amount: string }>();
   return (
     <form onSubmit={handleSubmit((data) => alert(`Amount: ${data.amount}`))}>
@@ -30,12 +31,15 @@ export const DollarInputStory: ComponentStory<typeof DollarInput> = () => {
       </div>
       <DollarInput
         control={control}
-        name="amount"
-        label="Dollar amount"
         onMaxClick={() => setValue("amount", "1000000")}
-        colorScheme="dark"
+        {...args}
       />
       <button type="submit">Submit</button>
     </form>
   );
+};
+
+DollarInputStory.args = {
+  label: "Dollar amount",
+  name: "amount",
 };
