@@ -1,14 +1,14 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
-import { useForm, Controller } from "react-hook-form";
-import { IMaskInput } from "react-imask";
+import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
 import {
   Button,
-  HelperText,
+  DollarInput,
   Icon,
   InfoIconTooltip,
+  Input,
   Link,
   Tooltip,
 } from "@/components/design-system";
@@ -257,70 +257,41 @@ export default function SupplyPanel({
       {account ? (
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
-            <div className="mb-3 flex flex-row items-end justify-between">
-              <label htmlFor="supply" className="text-sm">
-                Supply amount
-              </label>
-              <span className="text-xs opacity-60">
-                {account.substring(0, 6)}...
-                {account.substring(account.length - 4)}
-              </span>
-            </div>
-            <div className="relative">
-              <Controller
-                control={control}
-                name="supply"
-                rules={{
-                  required: "Required",
-                  validate: validateMaximumAmount,
-                }}
-                render={({ field: { onChange, ...rest } }) => (
-                  <IMaskInput
-                    mask="$amount USDC"
-                    blocks={{
-                      amount: {
-                        mask: Number,
-                        thousandsSeparator: ",",
-                        placeholderChar: "9",
-                        lazy: false,
-                        scale: 2,
-                        radix: ".",
-                      },
-                    }}
-                    id="supply"
-                    radix="."
-                    unmask={true}
-                    lazy={false}
-                    onAccept={onChange}
-                    {...rest}
-                    className="w-full rounded bg-sky-900 py-4 pl-5 pr-16 text-2xl"
-                  />
-                )}
-              />
-
-              <button
-                type="button"
-                onClick={handleMax}
-                className="absolute right-4 top-1/2 -translate-y-1/2 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase"
-              >
-                Max
-              </button>
-            </div>
-            {errors?.supply ? (
-              <HelperText isError>{errors.supply.message}</HelperText>
-            ) : null}
+            <DollarInput
+              control={control}
+              name="supply"
+              label="Supply amount"
+              labelDecoration={
+                <span className="text-xs opacity-60">
+                  {account.substring(0, 6)}...
+                  {account.substring(account.length - 4)}
+                </span>
+              }
+              rules={{ required: "Required", validate: validateMaximumAmount }}
+              colorScheme="dark"
+              textSize="xl"
+              onMaxClick={handleMax}
+              labelClassName="!text-sm !mb-3"
+              errorMessage={errors?.supply?.message}
+            />
           </div>
           <div className={!supplyValue ? "hidden" : undefined}>
             <div className="mb-3">
-              <label htmlFor="backerName" className="mb-3 block w-max text-sm">
-                Full legal name
-              </label>
-              <input
-                id="backerName"
-                {...register("backerName")}
-                className="w-full rounded bg-sky-900 py-4 px-5 text-2xl"
+              <Input
+                {...register("backerName", { required: "Required" })}
+                label="Full legal name"
+                labelDecoration={
+                  <InfoIconTooltip
+                    size="sm"
+                    placement="top"
+                    content="Lorem ipsum. Your full name is required for reasons"
+                  />
+                }
                 placeholder="First and last name"
-                autoComplete="off"
+                colorScheme="dark"
+                textSize="xl"
+                labelClassName="!text-sm !mb-3"
+                errorMessage={errors?.backerName?.message}
               />
             </div>
             <div className="mb-3 text-xs">
