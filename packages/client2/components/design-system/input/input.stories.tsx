@@ -19,16 +19,23 @@ InputStory.args = {
 };
 
 export const DollarInputStory: ComponentStory<typeof DollarInput> = () => {
-  const { control } = useForm<{ amount: string }>();
+  const { control, setValue, handleSubmit } = useForm<{ amount: string }>();
   return (
-    <form>
+    <form onSubmit={handleSubmit((data) => alert(`Amount: ${data.amount}`))}>
       <div className="mb-4">
         It is important to keep in mind that the DollarInput component is an
         adapted controlled input, and as such it can only be used alongside
         React Hook Form, not by itself. This is considered a best-practice for
         input elements in this project regardless.
       </div>
-      <DollarInput control={control} name="amount" label="Dollar amount" />
+      <DollarInput
+        control={control}
+        name="amount"
+        label="Dollar amount"
+        onMaxClick={() => setValue("amount", "1000000")}
+        colorScheme="dark"
+      />
+      <button type="submit">Submit</button>
     </form>
   );
 };

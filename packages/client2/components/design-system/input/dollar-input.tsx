@@ -15,10 +15,15 @@ type DollarInputProps = ComponentProps<typeof Input> &
      * Note that mask must contain "amount" The hard-coded block in this mask revolves around the "amount" key. Example: $amount USDC
      */
     mask?: string;
+    /**
+     * If this prop is included, a "MAX" button will be included on the input. When that button is clicked, this callback will be invoked.
+     */
+    onMaxClick?: () => void;
   };
 
 export function DollarInput({
   mask = "$amount USDC",
+  onMaxClick,
   name,
   rules,
   control,
@@ -52,6 +57,17 @@ export function DollarInput({
       unmask
       onAccept={onChange}
       lazy={false}
+      decoration={
+        onMaxClick ? (
+          <button
+            type="button"
+            onClick={onMaxClick}
+            className="rounded-md border border-sky-500 px-2 py-1 text-[0.625em] uppercase"
+          >
+            Max
+          </button>
+        ) : undefined
+      }
       {...rest}
       {...controllerField}
     />

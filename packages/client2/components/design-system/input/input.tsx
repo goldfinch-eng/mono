@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { forwardRef, InputHTMLAttributes } from "react";
+import { forwardRef, InputHTMLAttributes, ReactNode } from "react";
 
 import { Icon, IconNameType, HelperText } from "@/components/design-system";
 
@@ -29,10 +29,17 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    */
   errorMessage?: string;
   /**
-   * Class that goes specifically on the <input>, not on the wrapper. Makes it easier to override input-specific styles like placeholder
+   * Class that goes specifically on the input element, not on the wrapper. Makes it easier to override input-specific styles like placeholder
    */
   inputClassName?: string;
   disabled?: boolean;
+  /**
+   * An element that will render on the right side of the input. Can be used to create things like a "reveal password" button, or a "max" button
+   */
+  decoration?: ReactNode;
+  /**
+   * Occupies the same space as `decoration`. Offered as a convenience if you just want a static icon as a decoration.
+   */
   icon?: IconNameType;
   colorScheme?: "light" | "dark";
 }
@@ -47,6 +54,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     helperText,
     errorMessage,
     disabled = false,
+    decoration,
     icon,
     inputClassName,
     className,
@@ -74,27 +82,36 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       >
         {label}
       </label>
-      <div className="relative w-full">
+      <div
+        className={clsx(
+          "relative w-full",
+          colorScheme === "light"
+            ? "text-sand-700"
+            : colorScheme === "dark"
+            ? "text-white"
+            : null
+        )}
+      >
         <input
           className={clsx(
             "unfocused w-full rounded py-2 px-3", // unfocused because the color schemes supply a border color as a focus style
             colorScheme === "light"
               ? [
-                  "border bg-white text-sand-700 focus:border-sand-600",
+                  "border bg-white focus:border-sand-600",
                   isError
                     ? "border-clay-100 placeholder:text-clay-700"
                     : "border-sand-200 placeholder:text-sand-500",
                 ]
               : colorScheme === "dark"
               ? [
-                  "border bg-sky-900 text-white focus:border-white",
+                  "border bg-sky-900 focus:border-white",
                   isError
                     ? "border-clay-500 placeholder:text-clay-500"
                     : "border-transparent placeholder:text-sand-300",
                 ]
               : null,
             disabled && "opacity-50",
-            icon ? "pr-8" : null,
+            decoration || icon ? "pr-8" : null,
             inputClassName
           )}
           ref={ref}
@@ -105,7 +122,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           autoComplete={autoComplete}
           {...rest}
         />
-        {icon ? (
+        {decoration ? (
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+            {decoration}
+          </div>
+        ) : icon ? (
           <Icon
             name={icon}
             className="absolute right-3.5 top-1/2 -translate-y-1/2"
