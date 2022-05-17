@@ -581,8 +581,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     });
     _mint(nftRecipient, tokenId);
 
-    uint256 effectiveAmount = _positionToEffectiveAmount(positions[tokenId]);
-    totalStakedSupply = totalStakedSupply.add(effectiveAmount);
+    totalStakedSupply = totalStakedSupply.add(_positionToEffectiveAmount(positions[tokenId]));
 
     // Staker is address(this) when using depositAndStake or other convenience functions
     if (staker != address(this)) {
@@ -605,7 +604,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
   ///   Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
-  ///   Positions that are still locked cannot be unstaked until the position's lockedUntil time has passed.
   ///
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
@@ -636,12 +634,11 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 curveAmountToUnstake = 0;
 
     for (uint256 i = 0; i < amounts.length; i++) {
-      StakedPositionType positionType = positions[tokenIds[i]].positionType;
       // Checkpoint rewards
       _updateReward(tokenIds[i]);
       // Unstake
       _unstake(tokenIds[i], amounts[i]);
-      if (positionType == StakedPositionType.CurveLP) {
+      if (positions[tokenIds[i]].positionType == StakedPositionType.CurveLP) {
         curveAmountToUnstake = curveAmountToUnstake.add(amounts[i]);
       } else {
         fiduAmountToUnstake = fiduAmountToUnstake.add(amounts[i]);
@@ -774,12 +771,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     /// @dev IA: Invalid amount. Cannot unstake zero, and cannot unstake more than staked balance.
     require(amount > 0 && amount <= prevAmount, "IA");
 
-    uint256 effectiveAmount = toEffectiveAmount(
-      amount,
-      safeBaseTokenExchangeRate(position),
-      safeEffectiveMultiplier(position)
+    totalStakedSupply = totalStakedSupply.sub(
+      toEffectiveAmount(amount, safeBaseTokenExchangeRate(position), safeEffectiveMultiplier(position))
     );
-    totalStakedSupply = totalStakedSupply.sub(effectiveAmount);
     position.amount = prevAmount.sub(amount);
 
     // Slash unvested rewards. If this method is being called by the Zapper, then unvested rewards are not slashed.
@@ -863,12 +857,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     StakedPosition storage position = positions[tokenId];
     position.amount = position.amount.add(amount);
 
-    uint256 effectiveAmount = toEffectiveAmount(
-      amount,
-      safeBaseTokenExchangeRate(position),
-      safeEffectiveMultiplier(position)
+    totalStakedSupply = totalStakedSupply.add(
+      toEffectiveAmount(amount, safeBaseTokenExchangeRate(position), safeEffectiveMultiplier(position))
     );
-    totalStakedSupply = totalStakedSupply.add(effectiveAmount);
 
     stakingToken(position.positionType).safeTransferFrom(msg.sender, address(this), amount);
   }
