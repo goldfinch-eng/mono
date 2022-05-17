@@ -594,13 +594,28 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return tokenId;
   }
 
+  //==============================================================
+  // START: UNSTAKING FUNCTIONS
+  //
+  // Note: All unstake functions need to checkpoint rewards by
+  // calling `_updateReward(tokenId)` before unstaking to ensure
+  // that latest rewards earned since the last checkpoint are
+  // accounted for.
+  //==============================================================
+
   /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
   ///   Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
+  ///   Positions that are still locked cannot be unstaked until the position's lockedUntil time has passed.
+  ///
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
-  function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused updateReward(tokenId) {
+  function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused {
+    // Checkpoint rewards
+    _updateReward(tokenId);
+    // Unstake
     _unstake(tokenId, amount);
+    // Transfer staked tokens back to msg.sender
     stakingToken(positions[tokenId].positionType).safeTransfer(msg.sender, amount);
   }
 
@@ -645,14 +660,69 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) external nonReentrant whenNotPaused {
+    // Checkpoint rewards
+    _updateReward(tokenId);
+    // Unstake and withdraw staked tokens
     (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenId, usdcAmount);
 
     emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
   }
 
+  function unstakeAndWithdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata usdcAmounts)
+    external
+    nonReentrant
+    whenNotPaused
+  {
+    /// @dev LEN: Params must have the same length
+    require(tokenIds.length == usdcAmounts.length, "LEN");
+
+    uint256 usdcReceivedAmountTotal = 0;
+    uint256[] memory fiduAmounts = new uint256[](usdcAmounts.length);
+    for (uint256 i = 0; i < usdcAmounts.length; i++) {
+      // Checkpoint rewards
+      _updateReward(tokenIds[i]);
+      // Unstake and withdraw staked tokens
+      (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenIds[i], usdcAmounts[i]);
+
+      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
+      fiduAmounts[i] = fiduAmount;
+    }
+
+    emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
+  }
+
+  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external nonReentrant whenNotPaused {
+    // Checkpoint rewards
+    _updateReward(tokenId);
+    // Unstake and withdraw staked FIDU
+    uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
+
+    emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
+  }
+
+  function unstakeAndWithdrawMultipleInFidu(uint256[] calldata tokenIds, uint256[] calldata fiduAmounts)
+    external
+    nonReentrant
+    whenNotPaused
+  {
+    /// @dev LEN: Params must have the same length
+    require(tokenIds.length == fiduAmounts.length, "LEN");
+
+    uint256 usdcReceivedAmountTotal = 0;
+    for (uint256 i = 0; i < fiduAmounts.length; i++) {
+      // Checkpoint rewards
+      _updateReward(tokenIds[i]);
+      // Unstake and withdraw staked FIDU
+      uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]);
+
+      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
+    }
+
+    emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
+  }
+
   function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount)
     internal
-    updateReward(tokenId)
     returns (uint256 usdcAmountReceived, uint256 fiduUsed)
   {
     /// @dev CW: Cannot withdraw funds with this position
@@ -673,35 +743,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return (usdcAmountReceived, fiduUsed);
   }
 
-  function unstakeAndWithdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata usdcAmounts)
-    external
-    nonReentrant
-    whenNotPaused
-  {
-    /// @dev LEN: Params must have the same length
-    require(tokenIds.length == usdcAmounts.length, "LEN");
-
-    uint256 usdcReceivedAmountTotal = 0;
-    uint256[] memory fiduAmounts = new uint256[](usdcAmounts.length);
-    for (uint256 i = 0; i < usdcAmounts.length; i++) {
-      (uint256 usdcReceivedAmount, uint256 fiduAmount) = _unstakeAndWithdraw(tokenIds[i], usdcAmounts[i]);
-
-      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
-      fiduAmounts[i] = fiduAmount;
-    }
-
-    emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
-  }
-
-  function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external nonReentrant whenNotPaused {
-    uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenId, fiduAmount);
-
-    emit UnstakedAndWithdrew(msg.sender, usdcReceivedAmount, tokenId, fiduAmount);
-  }
-
   function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount)
     internal
-    updateReward(tokenId)
     returns (uint256 usdcReceivedAmount)
   {
     /// @dev CW: Cannot withdraw funds with this position
@@ -713,24 +756,15 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     return usdcReceivedAmount;
   }
 
-  function unstakeAndWithdrawMultipleInFidu(uint256[] calldata tokenIds, uint256[] calldata fiduAmounts)
-    external
-    nonReentrant
-    whenNotPaused
-  {
-    /// @dev LEN: Params must have the same length
-    require(tokenIds.length == fiduAmounts.length, "LEN");
-
-    uint256 usdcReceivedAmountTotal = 0;
-    for (uint256 i = 0; i < fiduAmounts.length; i++) {
-      uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]);
-
-      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
-    }
-
-    emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
-  }
-
+  /// @notice Unstake an amount from a single position
+  ///
+  /// @dev This function does NOT checkpoint rewards; the caller of this function is responsible
+  ///   for ensuring that rewards are properly checkpointed before invocation.
+  /// @dev This function does NOT transfer staked tokens back to the user; the caller of this
+  ///   function is responsible for ensuring that tokens are transferred back to the
+  ///   owner if necessary.
+  /// @param tokenId The token ID
+  /// @param amount The amount of of `stakingToken()` to be unstaked from the position
   function _unstake(uint256 tokenId, uint256 amount) internal {
     /// @dev AD: Access denied
     require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
@@ -759,6 +793,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     emit Unstaked(msg.sender, tokenId, amount, position.positionType);
   }
+
+  //==============================================================
+  // END: UNSTAKING FUNCTIONS
+  //==============================================================
 
   /// @notice "Kick" a user's reward multiplier. If they are past their lock-up period, their reward
   ///   multiplier will be reset to 1x.
