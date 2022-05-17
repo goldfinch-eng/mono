@@ -23,7 +23,7 @@ TranchedPool and SeniorPool are the essence of the Protocol. The remaining contr
 
 Each instance of the TranchedPool contract has its own instance of the [**CreditLine**](./contracts/core/CreditLine) contract. CreditLine models the terms of the loan and is the workhorse for loan mechanics (e.g. calculating interest due, receiving borrower payments).
 
-Supplying to the TranchedPool contract mints, via the [**PoolTokens**](./contracts/core/PoolTokens) contract, a token representing the lender's position in the tranched pool. This token confers the ability to withdraw the lender's principal plus their share of interest repaid by the borrower.
+Supplying to the TranchedPool contract mints, via the [**PoolTokens**](./contracts/core/PoolTokens) contract, an ERC721 token representing the lender's position in the tranched pool. This token confers the ability to withdraw the lender's principal plus their share of interest repaid by the borrower.
 
 [**Fidu**](./contracts/core/Fidu) is an ERC20 contract (ticker: FIDU) for representing user positions in the SeniorPool. FIDU is minted upon supplying USDC to, and burned upon withdrawing USDC from, the SeniorPool. The exchange rate between FIDU and USDC is the `sharePrice` in the Fidu contract. `sharePrice` is incremented upon interest repayments and decremented upon writedowns.
 
