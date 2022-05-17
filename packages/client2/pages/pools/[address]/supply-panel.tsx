@@ -86,6 +86,7 @@ export default function SupplyPanel({
   const { account, provider, chainId } = useWallet();
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
+
   const isKYCDone = useReactiveVar(isKYCDoneVar);
   const { data: uidQueryData } = useGetUidBalancesQuery();
   const [uidCreated, setUIDCreated] = useState<boolean>(false);

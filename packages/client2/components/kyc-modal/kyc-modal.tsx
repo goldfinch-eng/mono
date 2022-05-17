@@ -43,6 +43,10 @@ export function KYCModal({ isOpen, onClose }: KYCModalProps) {
   const [history, setHistory] = useState<string[]>([initialStep]);
   const [uidAttributes, setUidAttributes] = useState<TUIDAttributes[]>([]);
   const [uidLabel, setUidLabel] = useState<string>();
+  const [participation, setParticipation] = useState<
+    "limited" | "full" | undefined
+  >();
+  const [isPersonaLoading, setPersonaLoading] = useState<boolean>(false);
 
   const steps: TSteps = {
     entity: {
@@ -93,6 +97,18 @@ export function KYCModal({ isOpen, onClose }: KYCModalProps) {
       setUidLabel(label);
     }
   }, [uidAttributes]);
+
+  useEffect(() => {
+    if (currentStep === "persona" || currentStep === "parallel") {
+      if (uidAttributes.indexOf("usa") >= 0) {
+        setParticipation("limited");
+      } else {
+        setParticipation("full");
+      }
+    } else {
+      setParticipation(undefined);
+    }
+  }, [currentStep, uidAttributes]);
 
   return (
     <Modal
@@ -171,7 +187,7 @@ export function KYCModal({ isOpen, onClose }: KYCModalProps) {
             </div>
 
             <div className="w-5/12">
-              <KYCModalUID text={uidLabel} />
+              <KYCModalUID text={uidLabel} participation={participation} />
             </div>
           </div>
         )}
@@ -220,11 +236,17 @@ export function KYCModal({ isOpen, onClose }: KYCModalProps) {
 
         {currentStep === "persona" && (
           <Button
+            isLoading={isPersonaLoading}
+            disabled={isPersonaLoading}
             size="lg"
             onClick={() => {
               if (account) {
+                setPersonaLoading(true);
                 openPersonaForm({
                   address: account,
+                  onReady: () => {
+                    setPersonaLoading(false);
+                  },
                   onComplete: () => {
                     isKYCDoneVar(true);
                     setCurrentStep("confirmation");
@@ -232,7 +254,6 @@ export function KYCModal({ isOpen, onClose }: KYCModalProps) {
                 });
               }
             }}
-            className="mx-auto"
             iconRight="ArrowSmRight"
           >
             Verify my identity

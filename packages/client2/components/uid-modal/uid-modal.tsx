@@ -31,6 +31,7 @@ export function UIDModal({ isOpen, onClose }: UIDModalProps) {
   const [uidType, setUidType] = useState<UIDType | null>();
   const [uidLabel, setUidLabel] = useState<string>();
   const [status, setStatus] = useState<string>();
+  const [isMinted, setMinted] = useState<boolean>(false);
 
   const setupUIDCallback = useCallback(async () => {
     if (account && isOpen) {
@@ -86,7 +87,7 @@ export function UIDModal({ isOpen, onClose }: UIDModalProps) {
             </div>
           </div>
           <div className="w-5/12">
-            <KYCModalUID text={uidLabel} />
+            <KYCModalUID text={uidLabel} minted={isMinted} />
           </div>
         </div>
       </div>
@@ -127,6 +128,7 @@ export function UIDModal({ isOpen, onClose }: UIDModalProps) {
                     }
                   );
 
+                  setMinted(true);
                   setStatus("complete");
                 }
               }

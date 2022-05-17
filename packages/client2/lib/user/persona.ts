@@ -2,6 +2,7 @@ import { PERSONA_CONFIG } from "@/constants";
 
 interface PersonaFormProps {
   address: string;
+  onReady?: () => void;
   onComplete?: () => void;
   onError?: () => void;
   onCancel?: () => void;
@@ -9,6 +10,7 @@ interface PersonaFormProps {
 
 export async function openPersonaForm({
   address,
+  onReady,
   onComplete,
   onError,
   onCancel,
@@ -24,6 +26,7 @@ export async function openPersonaForm({
     referenceId: address,
     onReady: () => {
       client.open();
+      onReady && onReady();
     },
     onComplete: () => {
       onComplete && onComplete();
