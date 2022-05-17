@@ -622,6 +622,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     for (uint256 i = 0; i < amounts.length; i++) {
       StakedPositionType positionType = positions[tokenIds[i]].positionType;
+      // Checkpoint rewards
+      _updateReward(tokenIds[i]);
+      // Unstake
       _unstake(tokenIds[i], amounts[i]);
       if (positionType == StakedPositionType.CurveLP) {
         curveAmountToUnstake = curveAmountToUnstake.add(amounts[i]);
@@ -630,6 +633,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       }
     }
 
+    // Transfer all staked tokens back to msg.sender
     if (fiduAmountToUnstake > 0) {
       stakingToken(StakedPositionType.Fidu).safeTransfer(msg.sender, fiduAmountToUnstake);
     }
