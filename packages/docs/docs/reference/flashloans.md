@@ -12,8 +12,8 @@ Consider the levers that a user of the Protocol can pull, so to speak. A user ca
   - withdraw their supplied capital (plus interest) from the SeniorPool
   - supply into a [TranchedPool](./contracts/core/TranchedPool)
   - withdraw their supplied capital (plus interest) from a TranchedPool
-  - zap their supplied capital from the SeniorPool into a TranchedPool, and vice versa
-  - zap their supplied capital from the SeniorPool into the Curve pool for FIDU/USDC
+  - [zap](./contracts/core/Zapper) their supplied capital from the SeniorPool into a TranchedPool, and vice versa
+  - [zap](./contracts/core/Zapper) their supplied capital from the SeniorPool into the Curve pool for FIDU/USDC
   - stake FIDU tokens, via [StakingRewards](./contracts/rewards/StakingRewards), to earn GFI
   - unstake FIDU tokens
   - stake Curve LP tokens, via StakingRewards, to earn GFI
