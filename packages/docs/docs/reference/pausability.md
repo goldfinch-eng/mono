@@ -10,4 +10,4 @@ All of the GFI Distribution contracts are also pausable, with the exception of t
 
 Pausability is a security countermeasure. In the event of an emergency, a pausable contract can be paused, to halt the execution of its functions that respect its paused status.
 
-All pausable contracts in the Goldfinch Protocol are pausable only by Governance, with the exception of deployed instances of the [Borrower](./contracts/periphery/Borrower) contract. The Borrower contract is pausable by its owner (i.e. the borrower to which it belongs).
+All pausable Core and GFI Distribution contracts in the Protocol are pausable and unpausable by Governance, and some are pausable on an immediate basis via a signer pre-approved by Governance. Of the Protocol's Periphery contracts, a deployed instance of the [Borrower](./contracts/periphery/Borrower) contract is pausable and unpausable by its owner: the borrower to which it belongs. The remaining Periphery contracts are pausable and unpausable by Governance.
