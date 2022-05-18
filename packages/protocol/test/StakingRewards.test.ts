@@ -539,7 +539,7 @@ describe("StakingRewards", function () {
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-      expect(depositedAndStakedEvent.args.tokenId).to.equal(returnedTokenId)
+      expect(depositedAndStakedEvent.args.tokenId).to.bignumber.equal(returnedTokenId)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -611,7 +611,7 @@ describe("StakingRewards", function () {
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
-      expect(depositedAndStakedEvent.args.tokenId).to.equal(returnedTokenId)
+      expect(depositedAndStakedEvent.args.tokenId).to.bignumber.equal(returnedTokenId)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
