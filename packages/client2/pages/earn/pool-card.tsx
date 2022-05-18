@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { FixedNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 import Image from "next/image";
 import NextLink from "next/link";
 import { ReactNode } from "react";
@@ -9,8 +9,11 @@ import {
   InfoIconTooltip,
   ShimmerLines,
 } from "@/components/design-system";
-import { formatPercent } from "@/lib/format";
-import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
+import { formatCrypto, formatPercent } from "@/lib/format";
+import {
+  SupportedCrypto,
+  TranchedPoolCardFieldsFragment,
+} from "@/lib/graphql/generated";
 import {
   PoolStatus,
   getTranchedPoolStatus,
@@ -24,6 +27,7 @@ interface PoolCardProps {
   apy: FixedNumber;
   apyWithGfi: FixedNumber;
   apyTooltipContent: ReactNode;
+  limit?: BigNumber;
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
@@ -35,6 +39,7 @@ export function PoolCard({
   apy,
   apyWithGfi,
   apyTooltipContent,
+  limit,
   icon,
   href,
   poolStatus,
@@ -70,6 +75,14 @@ export function PoolCard({
             }
           />
         </div>
+      </div>
+      <div className="relative flex w-1/5 items-center justify-center">
+        {limit
+          ? formatCrypto(
+              { token: SupportedCrypto.Usdc, amount: limit },
+              { includeSymbol: true }
+            )
+          : "Unlimited"}
       </div>
       {poolStatus ? (
         <Chip
@@ -130,6 +143,10 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
     icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
+    creditLine {
+      id
+      maxLimit
+    }
     ...TranchedPoolStatusFields
   }
 `;
@@ -196,6 +213,7 @@ export function TranchedPoolCard({
           </div>
         </div>
       }
+      limit={tranchedPool.creditLine.maxLimit}
       href={href}
       poolStatus={poolStatus}
     />
