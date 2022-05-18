@@ -114,6 +114,8 @@ describe("StakingRewards", function () {
     )
     expect(stakedEvent.args.user).to.equal(from)
 
+    // expect(stakedEvent.args.tokenId).to.bignumber.equal(<<somehow get stake's return value>>)
+
     return stakedEvent.args.tokenId
   }
 
