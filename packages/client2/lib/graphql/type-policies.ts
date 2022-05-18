@@ -11,8 +11,7 @@ import {
 } from "@/lib/state/vars";
 
 function readFieldFromMetadata(
-  fieldName: keyof PoolMetadata,
-  fallback: any = null
+  fieldName: keyof PoolMetadata
 ): FieldReadFunction {
   return (_, { readField }) => {
     const id = readField({ fieldName: "id" }) as string;
@@ -22,7 +21,7 @@ function readFieldFromMetadata(
       );
       return;
     }
-    return POOL_METADATA[id]?.[fieldName] ?? fallback;
+    return POOL_METADATA[id]?.[fieldName] ?? null;
   };
 }
 
