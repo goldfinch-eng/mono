@@ -103,6 +103,7 @@ describe("StakingRewards", function () {
     await fidu.approve(stakingRewards.address, amount, {from})
     await fiduUSDCCurveLP.approve(stakingRewards.address, amount, {from})
 
+    const tokenId = await stakingRewards.stake.call(amount, positionType, {from})
     const receipt = await stakingRewards.stake(amount, positionType, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
@@ -114,7 +115,7 @@ describe("StakingRewards", function () {
     )
     expect(stakedEvent.args.user).to.equal(from)
 
-    // expect(stakedEvent.args.tokenId).to.bignumber.equal(<<somehow get stake's return value>>)
+    expect(stakedEvent.args.tokenId).to.bignumber.equal(tokenId)
 
     return stakedEvent.args.tokenId
   }
