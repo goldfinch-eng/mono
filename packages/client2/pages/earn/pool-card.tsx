@@ -2,8 +2,13 @@ import { gql } from "@apollo/client";
 import { FixedNumber } from "ethers";
 import Image from "next/image";
 import NextLink from "next/link";
+import { ReactNode } from "react";
 
-import { Chip, ShimmerLines } from "@/components/design-system";
+import {
+  Chip,
+  InfoIconTooltip,
+  ShimmerLines,
+} from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
 import {
@@ -17,7 +22,8 @@ interface PoolCardProps {
   title?: string | null;
   subtitle?: string | null;
   apy: FixedNumber;
-  apyFromGfi: FixedNumber;
+  apyWithGfi: FixedNumber;
+  apyTooltipContent: ReactNode;
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
@@ -27,7 +33,8 @@ export function PoolCard({
   title,
   subtitle,
   apy,
-  apyFromGfi,
+  apyWithGfi,
+  apyTooltipContent,
   icon,
   href,
   poolStatus,
@@ -47,16 +54,21 @@ export function PoolCard({
       </div>
       <div className="grow">
         <NextLink passHref href={href}>
-          <a className="text-lg before:absolute before:inset-0">
+          <a className="text-lg font-medium before:absolute before:inset-0">
             {title ?? "Unnamed Pool"}
           </a>
         </NextLink>
-        <div className="text-eggplant-100">{subtitle}</div>
+        <div>{subtitle}</div>
       </div>
-      <div className="w-1/5">
-        <div className="text-lg">{formatPercent(apy)} USDC</div>
-        <div className="text-eggplant-100">
-          {formatPercent(apyFromGfi)} from GFI
+      <div className="relative w-1/5">
+        <div className="text-lg font-medium">{formatPercent(apy)} USDC</div>
+        <div className="flex items-center">
+          {formatPercent(apyWithGfi)} with GFI{" "}
+          <InfoIconTooltip
+            content={
+              <div className="max-w-[320px] text-sm">{apyTooltipContent}</div>
+            }
+          />
         </div>
       </div>
       {poolStatus ? (
@@ -126,24 +138,64 @@ interface TranchedPoolCardProps {
   tranchedPool: TranchedPoolCardFieldsFragment;
   href: string;
   fiatPerGfi: number;
+  seniorPoolApyFromGfiRaw: FixedNumber;
 }
 
 export function TranchedPoolCard({
   tranchedPool,
   href,
   fiatPerGfi,
+  seniorPoolApyFromGfiRaw,
 }: TranchedPoolCardProps) {
   const poolStatus = getTranchedPoolStatus(tranchedPool);
+  const apyFromGfiFiat = computeApyFromGfiInFiat(
+    tranchedPool.estimatedJuniorApyFromGfiRaw,
+    fiatPerGfi
+  );
+  const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
+    seniorPoolApyFromGfiRaw,
+    fiatPerGfi
+  );
   return (
     <PoolCard
       title={tranchedPool.name}
       subtitle={tranchedPool.category}
       icon={tranchedPool.icon}
       apy={tranchedPool.estimatedJuniorApy}
-      apyFromGfi={computeApyFromGfiInFiat(
-        tranchedPool.estimatedJuniorApyFromGfiRaw,
-        fiatPerGfi
-      )}
+      apyWithGfi={apyFromGfiFiat}
+      apyTooltipContent={
+        <div>
+          <div className="mb-4">
+            Includes the senior pool yield from allocating to borrower pools,
+            plus GFI distributions.
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <div>Base interest USDC APY</div>
+              <div>{formatPercent(tranchedPool.estimatedJuniorApy)}</div>
+            </div>
+            <div className="flex justify-between">
+              <div>Backer liquidity mining GFI APY</div>
+              <div>{formatPercent(apyFromGfiFiat)}</div>
+            </div>
+            <div className="flex justify-between">
+              <div>LP rewards match GFI APY</div>
+              <div>{formatPercent(seniorPoolApyFromGfiFiat)}</div>
+            </div>
+            <hr className="border-t border-sand-300" />
+            <div className="flex justify-between">
+              <div>Total Est. APY</div>
+              <div>
+                {formatPercent(
+                  tranchedPool.estimatedJuniorApy
+                    .addUnsafe(apyFromGfiFiat)
+                    .addUnsafe(seniorPoolApyFromGfiFiat)
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      }
       href={href}
       poolStatus={poolStatus}
     />

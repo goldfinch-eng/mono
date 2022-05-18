@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
+import { formatPercent } from "@/lib/format";
 import { useExampleQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
@@ -106,10 +107,56 @@ export default function EarnPage() {
               subtitle={seniorPool.category}
               icon={seniorPool.icon}
               apy={seniorPool.latestPoolStatus.estimatedApy}
-              apyFromGfi={computeApyFromGfiInFiat(
-                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
-                fiatPerGfi
+              apyWithGfi={seniorPool.latestPoolStatus.estimatedApy.addUnsafe(
+                computeApyFromGfiInFiat(
+                  seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+                  fiatPerGfi
+                )
               )}
+              apyTooltipContent={
+                <div>
+                  <div className="mb-4">
+                    Includes the senior pool yield from allocating to borrower
+                    pools, plus GFI distributions.
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <div>Senior Pool APY</div>
+                      <div>
+                        {formatPercent(
+                          seniorPool.latestPoolStatus.estimatedApy
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div>GFI Distribution APY</div>
+                      <div>
+                        {formatPercent(
+                          computeApyFromGfiInFiat(
+                            seniorPool.latestPoolStatus.estimatedApyFromGfiRaw,
+                            fiatPerGfi
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <hr className="my-3 border-t border-sand-300" />
+                    <div className="flex justify-between">
+                      <div>Total Est. APY</div>
+                      <div>
+                        {formatPercent(
+                          seniorPool.latestPoolStatus.estimatedApy.addUnsafe(
+                            computeApyFromGfiInFiat(
+                              seniorPool.latestPoolStatus
+                                .estimatedApyFromGfiRaw,
+                              fiatPerGfi
+                            )
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
               href="/pools/senior"
             />
           )}
@@ -123,24 +170,23 @@ export default function EarnPage() {
           individual pools.
         </Paragraph>
         <div className="flex flex-col space-y-4">
-          {!tranchedPools ? (
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
-              <PoolCardPlaceholder key={nonce} />
-            ))
-          ) : (
-            <div className="flex flex-col space-y-4">
-              {tranchedPools && fiatPerGfi
-                ? tranchedPools.map((tranchedPool) => (
-                    <TranchedPoolCard
-                      key={tranchedPool.id}
-                      tranchedPool={tranchedPool}
-                      href={`/pools/${tranchedPool.id}`}
-                      fiatPerGfi={fiatPerGfi}
-                    />
-                  ))
-                : null}
-            </div>
-          )}
+          {seniorPool && tranchedPools && fiatPerGfi
+            ? tranchedPools.map((tranchedPool) => (
+                <TranchedPoolCard
+                  key={tranchedPool.id}
+                  tranchedPool={tranchedPool}
+                  href={`/pools/${tranchedPool.id}`}
+                  fiatPerGfi={fiatPerGfi}
+                  seniorPoolApyFromGfiRaw={
+                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+                  }
+                />
+              ))
+            : !tranchedPools
+            ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
+                <PoolCardPlaceholder key={nonce} />
+              ))
+            : null}
         </div>
       </div>
       <div className="relative col-span-4">
