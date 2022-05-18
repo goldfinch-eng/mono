@@ -10,18 +10,11 @@ contract TestStakingRewards is StakingRewards {
 
   mapping(StakedPositionType => uint256) private exchangeRates;
 
-  event TestStakeReturnValue(uint256 tokenId);
-
   /// @dev Used in unit tests to mock the `unsafeEffectiveMultiplier` for a given position
   function _setPositionUnsafeEffectiveMultiplier(uint256 tokenId, uint256 newMultiplier) external {
     StakedPosition storage position = positions[tokenId];
 
     position.unsafeEffectiveMultiplier = newMultiplier;
-  }
-
-  function _emitStakeReturn(uint256 amount, StakedPositionType positionType) external {
-    stake(amount, positionType);
-    emit TestStakeReturnValue(stake(amount, positionType));
   }
 
   function _getStakingAndRewardsTokenMantissa() public view returns (uint256) {

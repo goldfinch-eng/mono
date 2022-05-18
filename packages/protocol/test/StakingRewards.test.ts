@@ -103,7 +103,10 @@ describe("StakingRewards", function () {
     await fidu.approve(stakingRewards.address, amount, {from})
     await fiduUSDCCurveLP.approve(stakingRewards.address, amount, {from})
 
-    const receipt = await stakingRewards._emitStakeReturn(amount, positionType, {from})
+    // .call(...) first to get the output of the transaction. This does not write to the chain
+    // so the subsequent call is exactly the same.
+    const tokenId = await stakingRewards.stake.call(amount, positionType, {from})
+    const receipt = await stakingRewards.stake(amount, positionType, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
     // Verify Staked event has correct fields
@@ -114,10 +117,7 @@ describe("StakingRewards", function () {
     )
     expect(stakedEvent.args.user).to.equal(from)
 
-    const stakeReturnValueEvent = getFirstLog<Staked>(
-      decodeLogs(receipt.receipt.rawLogs, stakingRewards, "TestStakeReturnValue")
-    )
-    expect(stakedEvent.args.tokenId).to.bignumber.equal(stakeReturnValueEvent.args.tokenId)
+    expect(stakedEvent.args.tokenId).to.bignumber.equal(tokenId)
 
     return stakedEvent.args.tokenId
   }
@@ -522,6 +522,7 @@ describe("StakingRewards", function () {
       const seniorPoolAssetsBefore = await seniorPool.assets()
 
       await usdc.approve(stakingRewards.address, amount, {from: investor})
+      const returnedTokenId = await stakingRewards.depositAndStake.call(amount, {from: investor})
       const receipt = await stakingRewards.depositAndStake(amount, {from: investor})
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
       const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
@@ -538,6 +539,7 @@ describe("StakingRewards", function () {
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(returnedTokenId)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -581,6 +583,16 @@ describe("StakingRewards", function () {
       const balanceBefore = await usdc.balanceOf(investor)
       const seniorPoolAssetsBefore = await seniorPool.assets()
 
+      const returnedTokenId = await stakingRewards.depositWithPermitAndStake.call(
+        amount,
+        deadline,
+        v,
+        r as any,
+        s as any,
+        {
+          from: investor,
+        }
+      )
       const receipt = await stakingRewards.depositWithPermitAndStake(amount, deadline, v, r as any, s as any, {
         from: investor,
       })
@@ -599,6 +611,7 @@ describe("StakingRewards", function () {
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.equal(returnedTokenId)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
