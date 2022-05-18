@@ -168,6 +168,31 @@ type TranchedPoolBorrowerTransaction @entity {
   timestamp: BigInt!
 }
 
+interface TranchedPoolTransaction {
+  id: ID!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  tranchedPool: TranchedPool!
+}
+
+type TranchedPoolDrawdownMadeTransaction implements TranchedPoolTransaction @entity(immutable: true) {
+  id: ID!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  tranchedPool: TranchedPool!
+  amount: BigInt!
+}
+
+type TranchedPoolPaymentAppliedTransaction implements TranchedPoolTransaction @entity(immutable: true) {
+  id: ID!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  tranchedPool: TranchedPool!
+  principalAmount: BigInt!
+  interestAmount: BigInt!
+  remainingAmount: BigInt!
+}
+
 enum TranchedPoolCreditLineVersion {
   BEFORE_V2_2
   V2_2
@@ -201,9 +226,9 @@ type TranchedPool @entity {
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
-  borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
+  transactions: [TranchedPoolTransaction!]! @derivedFrom(field: "tranchedPool")
 }
 
 type TranchedPoolToken @entity {
