@@ -86,9 +86,13 @@ export default function EarnPage() {
         <Paragraph className="mb-12">
           Price of GFI: ${fiatPerGfi ?? ""}
         </Paragraph>
-        <Heading level={2} className="mb-4">
+        <Heading level={2} className="mb-3">
           Senior Pool
         </Heading>
+        <Paragraph className="mb-8">
+          The simple, lower risk, lower return option. Capital is automatically
+          diversified across Borrower pools, and protected by Backer capital.
+        </Paragraph>
         <div className="mb-12">
           {!seniorPool || !fiatPerGfi ? (
             <PoolCard isPlaceholder />
@@ -106,10 +110,10 @@ export default function EarnPage() {
             />
           )}
         </div>
-        <Heading level={2} className="mb-4">
+        <Heading level={2} className="mb-3">
           Borrower Pools
         </Heading>
-        <Paragraph className="mb-4">
+        <Paragraph className="mb-8">
           The more active, higher risk, higher return option. Earn higher APYs
           by vetting borrowers and supplying first-loss capital directly to
           individual pools.
