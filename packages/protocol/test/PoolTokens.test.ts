@@ -32,6 +32,8 @@ import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/
 import {TokenMinted} from "../typechain/truffle/IPoolTokens"
 import {TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
 import {PoolCreated} from "../typechain/truffle/GoldfinchFactory"
+import {behavesLikeConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.test"
+import {behavesLikeHasAdmin} from "./HasAdmin.test"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -564,7 +566,7 @@ describe("PoolTokens", () => {
       describe("as a wallet without OWNER_ROLE", () => {
         it("it fails", async () => {
           await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount, {from: person2})).to.be.rejectedWith(
-            /Must have admin role to perform this action/i
+            /AD/i
           )
         })
       })
@@ -623,7 +625,7 @@ describe("PoolTokens", () => {
           const notOwner = person2
           await expect(
             poolTokens.reducePrincipalAmount(tokenId, redemptionAmount, {from: notOwner})
-          ).to.be.rejectedWith(/Must have admin role to perform this action/i)
+          ).to.be.rejectedWith(/AD/i)
         })
       })
     })
@@ -867,4 +869,16 @@ describe("PoolTokens", () => {
       // TODO Reuse logic from tests of `transferFrom()`.
     })
   })
+
+  behavesLikeConfigurableRoyaltyStandard(() => ({
+    contract: poolTokens,
+    owner,
+    anotherUser: person2,
+  }))
+
+  behavesLikeHasAdmin(() => ({
+    contract: poolTokens,
+    owner,
+    anotherUser: person2,
+  }))
 })

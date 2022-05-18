@@ -5,6 +5,9 @@ pragma experimental ABIEncoderV2;
 import "../../external/ERC721PresetMinterPauserAutoId.sol";
 import "./GoldfinchConfig.sol";
 import "./ConfigHelper.sol";
+import "./HasAdmin.sol";
+import "./ConfigurableRoyaltyStandard.sol";
+import "../../interfaces/IERC2981.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IPoolTokens.sol";
 
@@ -14,8 +17,7 @@ import "../../interfaces/IPoolTokens.sol";
  *  junior tranche or senior tranche shares of any of the borrower pools.
  * @author Goldfinch
  */
-contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
-  bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, HasAdmin, IERC2981 {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -29,6 +31,9 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   mapping(uint256 => TokenInfo) public tokens;
   // poolAddress => poolInfo
   mapping(address => PoolInfo) public pools;
+
+  ConfigurableRoyaltyStandard.RoyaltyParams public royaltyParams;
+  using ConfigurableRoyaltyStandard for ConfigurableRoyaltyStandard.RoyaltyParams;
 
   event TokenMinted(
     address indexed owner,
@@ -58,6 +63,8 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
   event TokenBurned(address indexed owner, address indexed pool, uint256 indexed tokenId);
 
   event GoldfinchConfigUpdated(address indexed who, address configAddress);
+
+  event RoyaltyParamsSet(address indexed sender, address newReceiver, uint256 newRoyaltyPercent);
 
   /*
     We are using our own initializer function so that OZ doesn't automatically
@@ -251,13 +258,23 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe {
     return tokens[tokenId];
   }
 
-  modifier onlyAdmin() {
-    require(isAdmin(), "Must have admin role to perform this action");
-    _;
+  /// @notice Called with the sale price to determine how much royalty
+  //    is owed and to whom.
+  /// @param _tokenId The NFT asset queried for royalty information
+  /// @param _salePrice The sale price of the NFT asset specified by _tokenId
+  /// @return receiver Address that should receive royalties
+  /// @return royaltyAmount The royalty payment amount for _salePrice
+  function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view override returns (address, uint256) {
+    return royaltyParams.royaltyInfo(_tokenId, _salePrice);
   }
 
-  function isAdmin() public view returns (bool) {
-    return hasRole(OWNER_ROLE, _msgSender());
+  /// @notice Set royalty params used in `royaltyInfo`. This function is only callable by
+  ///   an address with `OWNER_ROLE`.
+  /// @param newReceiver The new address which should receive royalties. See `receiver`.
+  /// @param newRoyaltyPercent The new percent of `salePrice` that should be taken for royalties.
+  ///   See `royaltyPercent`.
+  function setRoyaltyParams(address newReceiver, uint256 newRoyaltyPercent) external onlyAdmin {
+    royaltyParams.setRoyaltyParams(newReceiver, newRoyaltyPercent);
   }
 
   modifier onlyGoldfinchFactory() {
