@@ -237,6 +237,12 @@ class Repayment {
   tranchedPoolAddress: string
   timestamp: BigInt
   interestAmount: BigInt
+  constructor(tranchedPoolAddress: string, timestamp: BigInt, interestAmount: BigInt) {
+    this.tranchedPoolAddress = tranchedPoolAddress
+    this.timestamp = timestamp
+    this.interestAmount = interestAmount
+  }
+
   toString(): string {
     return `{ tranchedPoolAddress: ${
       this.tranchedPoolAddress
@@ -248,6 +254,11 @@ class GfiRewardOnInterest {
   tranchedPoolAddress: string
   timestamp: BigInt
   gfiAmount: BigDecimal
+  constructor(tranchedPoolAddress: string, timestamp: BigInt, gfiAmount: BigDecimal) {
+    this.tranchedPoolAddress = tranchedPoolAddress
+    this.timestamp = timestamp
+    this.gfiAmount = gfiAmount
+  }
   toString(): string {
     return `{ tranchedPoolAddress: ${
       this.tranchedPoolAddress
@@ -304,10 +315,9 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
     }
   }
   const gfiPerPrincipalDollar = calculateAnnualizedGfiRewardsPerPrincipalDollar(summedRewardsByTranchedPool)
-  // @ts-ignore .keys() returns an array in AssemblyScript
   for (let i = 0; i < gfiPerPrincipalDollar.keys().length; i++) {
     const tranchedPoolAddress = gfiPerPrincipalDollar.keys()[i]
-    const tranchedPool = TranchedPool.load(tranchedPoolAddress)
+    const tranchedPool = TranchedPool.load(tranchedPoolAddress as string)
     if (!tranchedPool) {
       continue
     }
@@ -319,7 +329,6 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
 }
 
 // TODO tiebreaking logic
-// @ts-ignore
 function repaymentComparator(a: Repayment, b: Repayment): i32 {
   const timeDiff = a.timestamp.minus(b.timestamp)
   return timeDiff.toI32()
@@ -359,11 +368,7 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
     const interestAmount = expectedAnnualInterest
       .times(periodDuration.toBigDecimal())
       .div(SECONDS_PER_YEAR.toBigDecimal())
-    repayments.push({
-      tranchedPoolAddress: tranchedPool.id,
-      timestamp: periodEndTime,
-      interestAmount: bigDecimalToBigInt(interestAmount),
-    })
+    repayments.push(new Repayment(tranchedPool.id, periodEndTime, bigDecimalToBigInt(interestAmount)))
     periodStartTime = periodEndTime
   }
   return repayments
@@ -387,11 +392,7 @@ function estimateRewards(
     const gfiAmount = sqrtDiff
       .times(totalGfiAvailableForBackerRewards)
       .divDecimal(maxInterestDollarsEligible.sqrt().toBigDecimal())
-    rewards.push({
-      tranchedPoolAddress: repayment.tranchedPoolAddress,
-      timestamp: repayment.timestamp,
-      gfiAmount: gfiAmount,
-    })
+    rewards.push(new GfiRewardOnInterest(repayment.tranchedPoolAddress, repayment.timestamp, gfiAmount))
     oldTotalInterest = newTotalInterest
   }
 
@@ -403,10 +404,9 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
   summedRewardsByTranchedPool: Map<String, BigDecimal>
 ): Map<String, BigDecimal> {
   const rewardsPerPrincipalDollar = new Map<String, BigDecimal>()
-  // @ts-ignore
   for (let i = 0; i < summedRewardsByTranchedPool.keys().length; i++) {
     const tranchedPoolAddress = summedRewardsByTranchedPool.keys()[i]
-    const tranchedPool = TranchedPool.load(tranchedPoolAddress)
+    const tranchedPool = TranchedPool.load(tranchedPoolAddress as string)
     if (!tranchedPool) {
       throw new Error("Unable to load tranchedPool from summedRewardsByTranchedPool")
     }
