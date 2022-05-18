@@ -28,6 +28,7 @@ interface PoolCardProps {
   apyWithGfi: FixedNumber;
   apyTooltipContent: ReactNode;
   limit?: BigNumber;
+  userBalance: BigNumber;
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
@@ -40,6 +41,7 @@ export function PoolCard({
   apyWithGfi,
   apyTooltipContent,
   limit,
+  userBalance,
   icon,
   href,
   poolStatus,
@@ -57,7 +59,7 @@ export function PoolCard({
           />
         )}
       </div>
-      <div className="grow">
+      <div className="w-2/5">
         <NextLink passHref href={href}>
           <a className="text-lg font-medium before:absolute before:inset-0">
             {title ?? "Unnamed Pool"}
@@ -76,13 +78,19 @@ export function PoolCard({
           />
         </div>
       </div>
-      <div className="relative flex w-1/5 items-center justify-center">
+      <div className="flex w-1/5 items-center justify-center">
         {limit
           ? formatCrypto(
               { token: SupportedCrypto.Usdc, amount: limit },
               { includeSymbol: true }
             )
           : "Unlimited"}
+      </div>
+      <div className="flex w-1/5 items-center justify-center">
+        {formatCrypto(
+          { token: SupportedCrypto.Usdc, amount: userBalance },
+          { includeSymbol: true }
+        )}
       </div>
       {poolStatus ? (
         <Chip
@@ -147,6 +155,11 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
       id
       maxLimit
     }
+    # Beware, this is tightly coupled to $userAccount in the parent query
+    backers(where: { user: $userAccount }) {
+      id
+      balance
+    }
     ...TranchedPoolStatusFields
   }
 `;
@@ -173,6 +186,7 @@ export function TranchedPoolCard({
     seniorPoolApyFromGfiRaw,
     fiatPerGfi
   );
+
   return (
     <PoolCard
       title={tranchedPool.name}
@@ -214,6 +228,12 @@ export function TranchedPoolCard({
         </div>
       }
       limit={tranchedPool.creditLine.maxLimit}
+      userBalance={
+        tranchedPool.backers?.reduce(
+          (prev, current) => prev.add(current.balance),
+          BigNumber.from(0)
+        ) ?? BigNumber.from(0)
+      }
       href={href}
       poolStatus={poolStatus}
     />

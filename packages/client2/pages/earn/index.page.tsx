@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { BigNumber } from "ethers";
 
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
@@ -32,10 +33,6 @@ gql`
     tranchedPools(orderBy: createdAt, orderDirection: desc) {
       id
       ...TranchedPoolCardFields
-      backers(where: { user: $userAccount }) {
-        id
-        balance
-      }
     }
     gfiPrice(fiat: USD) @client {
       lastUpdated
@@ -157,6 +154,7 @@ export default function EarnPage() {
                   </div>
                 </div>
               }
+              userBalance={BigNumber.from(0)}
               href="/pools/senior"
             />
           )}
@@ -169,6 +167,12 @@ export default function EarnPage() {
           by vetting borrowers and supplying first-loss capital directly to
           individual pools.
         </Paragraph>
+        <div className="mb-3 flex px-3">
+          <div className="w-2/5">Pool</div>
+          <div className="w-1/5">Est. APY</div>
+          <div className="w-1/5">Pool Limit</div>
+          <div className="w-1/5">Your Balance</div>
+        </div>
         <div className="flex flex-col space-y-4">
           {seniorPool && tranchedPools && fiatPerGfi
             ? tranchedPools.map((tranchedPool) => (
