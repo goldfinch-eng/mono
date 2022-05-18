@@ -1,6 +1,6 @@
 import { Resolvers } from "@apollo/client";
 
-import { getGfiContract, getUsdcContract } from "../contracts";
+import { getFiduContract, getGfiContract, getUsdcContract } from "../contracts";
 import { getProvider } from "../wallet";
 import { GfiPrice, SupportedCrypto, SupportedFiat, Viewer } from "./generated";
 
@@ -66,6 +66,7 @@ export const resolvers: Resolvers = {
           account: null,
           gfiBalance: null,
           usdcBalance: null,
+          fiduBalance: null,
         };
       }
 
@@ -78,6 +79,8 @@ export const resolvers: Resolvers = {
       const usdcContract = await getUsdcContract(chainId, provider);
       const usdcBalance = await usdcContract.balanceOf(account);
 
+      const fiduContract = await getFiduContract(chainId, provider);
+      const fiduBalance = await fiduContract.balanceOf(account);
       return {
         __typename: "Viewer",
         account,
@@ -88,6 +91,10 @@ export const resolvers: Resolvers = {
         usdcBalance: {
           token: SupportedCrypto.Usdc,
           amount: usdcBalance,
+        },
+        fiduBalance: {
+          token: SupportedCrypto.Fidu,
+          amount: fiduBalance,
         },
       };
     },

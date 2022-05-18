@@ -50,6 +50,7 @@ type Viewer {
   account: String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
+  fiduBalance: CryptoAmount
 }
 
 extend type Query {
