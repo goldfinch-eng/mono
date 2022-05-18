@@ -6,7 +6,6 @@ Notes
 """
 type SeniorPool @entity {
   id: ID!
-  capitalProviders: [User!]!
   latestPoolStatus: SeniorPoolStatus!
   investmentsMade: [TranchedPool!]!
 }
@@ -34,19 +33,6 @@ type SeniorPoolStatus @entity {
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
 
-type CapitalProviderStatus @entity {
-  id: ID!
-  user: User!
-  numShares: BigInt!
-  availableToWithdraw: BigInt!
-  allowance: BigInt!
-  weightedAverageSharePrice: BigDecimal
-  unrealizedGains: BigDecimal
-  unrealizedGainsPercentage: BigDecimal # TODO conversion issues
-  availableToWithdrawInDollars: BigInt # TODO
-  unrealizedGainsInDollars: BigInt # TODO
-}
-
 type SeniorPoolDeposit @entity {
   """
   tx hash
@@ -68,9 +54,15 @@ enum UserType {
 type User @entity {
   id: ID!
   type: UserType
-  capitalProviderStatus: CapitalProviderStatus
   goListed: Boolean
-
+  """
+  This includes the amount staked in the senior pool. Doesn't count senior pool shares obtained through a secondary market.
+  """
+  seniorPoolBalance: BigInt!
+  """
+  Amount of FIDU the user has staked
+  """
+  stakedSeniorPoolBalance: BigInt!
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
