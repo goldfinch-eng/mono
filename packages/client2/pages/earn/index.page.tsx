@@ -7,6 +7,7 @@ import { useWallet } from "@/lib/wallet";
 
 import {
   PoolCard,
+  PoolCardPlaceholder,
   TranchedPoolCard,
   TRANCHED_POOL_CARD_FIELDS,
 } from "./pool-card";
@@ -14,7 +15,7 @@ import { Portfolio } from "./portfolio";
 
 gql`
   ${TRANCHED_POOL_CARD_FIELDS}
-  query Example($userAccount: String!) {
+  query Example($userId: ID!, $userAccount: String!) {
     seniorPools(first: 1) {
       id
       name @client
@@ -42,7 +43,7 @@ gql`
         symbol
       }
     }
-    user(id: $userAccount) {
+    user(id: $userId) {
       id
       seniorPoolDeposits {
         amount
@@ -60,7 +61,10 @@ gql`
 export default function EarnPage() {
   const { account } = useWallet();
   const { data, error } = useExampleQuery({
-    variables: { userAccount: account?.toLowerCase() ?? "" },
+    variables: {
+      userId: account?.toLowerCase() ?? "",
+      userAccount: account?.toLowerCase() ?? "",
+    },
     returnPartialData: true, // PATTERN: allow partial data so when this query re-runs due to `account` being populated, it doesn't wipe out the existing data
   });
 
@@ -95,7 +99,7 @@ export default function EarnPage() {
         </Paragraph>
         <div className="mb-12">
           {!seniorPool || !fiatPerGfi ? (
-            <PoolCard isPlaceholder />
+            <PoolCardPlaceholder />
           ) : (
             <PoolCard
               title={seniorPool.name}
@@ -121,7 +125,7 @@ export default function EarnPage() {
         <div className="flex flex-col space-y-4">
           {!tranchedPools ? (
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((nonce) => (
-              <PoolCard key={nonce} isPlaceholder />
+              <PoolCardPlaceholder key={nonce} />
             ))
           ) : (
             <div className="flex flex-col space-y-4">

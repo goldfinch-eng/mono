@@ -1,7 +1,8 @@
 import { BigNumber } from "ethers";
 
-import { formatCrypto, sharesToUsdc } from "@/lib/format";
+import { formatCrypto } from "@/lib/format";
 import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
+import { sharesToUsdc } from "@/lib/pools";
 
 interface PortfolioProps {
   /**

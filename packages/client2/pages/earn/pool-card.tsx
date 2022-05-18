@@ -10,20 +10,17 @@ import {
   PoolStatus,
   getTranchedPoolStatus,
   TRANCHED_POOL_STATUS_FIELDS,
+  computeApyFromGfiInFiat,
 } from "@/lib/pools";
 
 interface PoolCardProps {
   title?: string | null;
   subtitle?: string | null;
-  apy?: number | FixedNumber | null;
-  apyFromGfi?: number | FixedNumber | null;
+  apy: FixedNumber;
+  apyFromGfi: FixedNumber;
   icon?: string | null;
-  href?: string;
+  href: string;
   poolStatus?: PoolStatus;
-  /**
-   * Set this if the pool card is being used as a placeholder during loading
-   */
-  isPlaceholder?: boolean;
 }
 
 export function PoolCard({
@@ -34,12 +31,11 @@ export function PoolCard({
   icon,
   href,
   poolStatus,
-  isPlaceholder = false,
 }: PoolCardProps) {
   return (
     <div className="relative flex space-x-4 rounded bg-sand-100 px-7 py-5 hover:bg-sand-200">
       <div className="relative h-12 w-12 overflow-hidden rounded-full bg-white">
-        {icon && !isPlaceholder ? (
+        {icon && (
           <Image
             src={icon}
             alt={`${title} icon`}
@@ -47,32 +43,20 @@ export function PoolCard({
             sizes="48px"
             objectFit="contain"
           />
-        ) : null}
-      </div>
-      <div className="grow">
-        {isPlaceholder ? (
-          <ShimmerLines lines={2} truncateFirstLine />
-        ) : (
-          <>
-            {href ? (
-              <NextLink passHref href={href}>
-                <a className="text-lg before:absolute before:inset-0">
-                  {title}
-                </a>
-              </NextLink>
-            ) : (
-              <div className="text-lg">{title}</div>
-            )}
-            <div className="text-eggplant-100">{subtitle}</div>
-          </>
         )}
       </div>
+      <div className="grow">
+        <NextLink passHref href={href}>
+          <a className="text-lg before:absolute before:inset-0">
+            {title ?? "Unnamed Pool"}
+          </a>
+        </NextLink>
+        <div className="text-eggplant-100">{subtitle}</div>
+      </div>
       <div className="w-1/5">
-        <div className="text-lg">
-          {apy ? `${formatPercent(apy)} USDC` : "\u00A0"}
-        </div>
+        <div className="text-lg">{formatPercent(apy)} USDC</div>
         <div className="text-eggplant-100">
-          {apyFromGfi ? `${formatPercent(apyFromGfi)} from GFI` : "\u00A0"}
+          {formatPercent(apyFromGfi)} from GFI
         </div>
       </div>
       {poolStatus ? (
@@ -101,6 +85,26 @@ export function PoolCard({
             : null}
         </Chip>
       ) : null}
+    </div>
+  );
+}
+
+export function PoolCardPlaceholder() {
+  return (
+    <div className="flex space-x-4 rounded bg-sand-100 px-7 py-5 hover:bg-sand-200">
+      <div className="h-12 w-12 overflow-hidden rounded-full bg-white" />
+      <div className="grow">
+        <ShimmerLines lines={2} truncateFirstLine />
+      </div>
+      <div className="w-1/5">
+        <ShimmerLines lines={2} truncateFirstLine={false} />
+      </div>
+      <div className="w-1/5">
+        <ShimmerLines lines={1} truncateFirstLine={false} />
+      </div>
+      <div className="w-1/5">
+        <ShimmerLines lines={1} truncateFirstLine={false} />
+      </div>
     </div>
   );
 }
@@ -136,8 +140,9 @@ export function TranchedPoolCard({
       subtitle={tranchedPool.category}
       icon={tranchedPool.icon}
       apy={tranchedPool.estimatedJuniorApy}
-      apyFromGfi={tranchedPool.estimatedJuniorApyFromGfiRaw.mulUnsafe(
-        FixedNumber.fromString(fiatPerGfi.toString())
+      apyFromGfi={computeApyFromGfiInFiat(
+        tranchedPool.estimatedJuniorApyFromGfiRaw,
+        fiatPerGfi
       )}
       href={href}
       poolStatus={poolStatus}
