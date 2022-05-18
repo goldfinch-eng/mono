@@ -1,54 +1,170 @@
-import clsx from "clsx";
-import { FixedNumber } from "ethers";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { IMaskInput } from "react-imask";
+import { useApolloClient, gql } from "@apollo/client";
+import { BigNumber, utils } from "ethers";
+import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 
-import { InfoIconTooltip } from "@/components/design-system";
-import { formatPercent, formatDollarAmount, formatFiat } from "@/lib/format";
-import { SupportedFiat } from "@/lib/graphql/generated";
+import {
+  Button,
+  DollarInput,
+  Icon,
+  InfoIconTooltip,
+  Input,
+  Link,
+  Tooltip,
+} from "@/components/design-system";
+import { TRANCHES, USDC_DECIMALS } from "@/constants";
+import {
+  useTranchedPoolContract,
+  useUsdcContract,
+  generateErc20PermitSignature,
+} from "@/lib/contracts";
+import { formatPercent, formatFiat } from "@/lib/format";
+import {
+  SupportedFiat,
+  SupplyPanelFieldsFragment,
+} from "@/lib/graphql/generated";
+import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
+import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
+export const SUPPLY_PANEL_FIELDS = gql`
+  fragment SupplyPanelFields on TranchedPool {
+    id
+    estimatedJuniorApy
+    estimatedJuniorApyFromGfiRaw
+    agreement @client
+    remainingCapacity
+    estimatedLeverageRatio
+  }
+`;
 interface SupplyPanelProps {
-  apy: FixedNumber;
-  apyGfi: FixedNumber;
+  tranchedPool: SupplyPanelFieldsFragment;
+  fiatPerGfi: number;
 }
 
 interface SupplyForm {
   supply: string;
+  backerName: string;
 }
 
-export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
-  const { account } = useWallet();
-  const [apyEstimate, setApyEstimate] = useState(0);
-  const [apyGfiEstimate, setApyGfiEstimate] = useState(0);
+export default function SupplyPanel({
+  tranchedPool: {
+    id: tranchedPoolAddress,
+    estimatedJuniorApy,
+    estimatedJuniorApyFromGfiRaw,
+    agreement,
+    remainingCapacity,
+    estimatedLeverageRatio,
+  },
+  fiatPerGfi,
+}: SupplyPanelProps) {
+  const apolloClient = useApolloClient();
+  const { account, provider, chainId } = useWallet();
+  const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
+  const { usdcContract } = useUsdcContract();
+  const {
+    handleSubmit,
+    control,
+    watch,
+    register,
+    formState: { isSubmitting, errors },
+    setValue,
+  } = useForm<SupplyForm>();
 
-  const { handleSubmit, control, watch } = useForm<SupplyForm>();
+  const remainingJuniorCapacity = remainingCapacity.div(
+    estimatedLeverageRatio.add(1)
+  );
 
-  const onSubmit = (data: SupplyForm) => {
-    // eslint-disable-next-line
-    console.log(data);
+  // TODO this should consider the amount of junior capacity remaining in the pool
+  const handleMax = async () => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
+      ? userUsdcBalance
+      : remainingJuniorCapacity;
+    setValue("supply", utils.formatUnits(maxAvailable, USDC_DECIMALS));
+  };
 
-    // TODO
+  // TODO this should also consider the amoutn of junior capacity remaining in the pool
+  const validateMaximumAmount = async (value: string) => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
+    if (valueAsUsdc.gt(remainingJuniorCapacity)) {
+      return "Amount exceeds remaining junior capacity";
+    }
+    if (valueAsUsdc.lte(BigNumber.from(0))) {
+      return "Must deposit more than 0";
+    }
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    if (valueAsUsdc.gt(userUsdcBalance)) {
+      return "Amount exceeds USDC balance";
+    }
+  };
+
+  const onSubmit = async (data: SupplyForm) => {
+    if (
+      !usdcContract ||
+      !tranchedPoolContract ||
+      !provider ||
+      !account ||
+      !chainId
+    ) {
+      throw new Error("Wallet not connected properly");
+    }
+
+    const value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    const now = (await provider.getBlock("latest")).timestamp;
+    const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+
+    const signature = await generateErc20PermitSignature({
+      erc20TokenContract: usdcContract,
+      provider,
+      owner: account,
+      spender: tranchedPoolAddress,
+      value,
+      deadline,
+    });
+
+    const transaction = await tranchedPoolContract.depositWithPermit(
+      TRANCHES.Junior,
+      value,
+      deadline,
+      signature.v,
+      signature.r,
+      signature.s
+    );
+    const toastId = toast(
+      <div>
+        Deposit submitted for pool {tranchedPoolAddress}, view it on{" "}
+        <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
+          etherscan.io
+        </Link>
+      </div>,
+      { autoClose: false }
+    );
+    const receipt = await transaction.wait();
+    await waitForSubgraphBlock(receipt.blockNumber);
+    await apolloClient.refetchQueries({ include: "active" });
+    toast.update(toastId, {
+      render: `Deposit into pool ${tranchedPoolAddress} succeeded`,
+      type: "success",
+      autoClose: 5000,
+    });
   };
 
   const supplyValue = watch("supply");
-
-  useEffect(() => {
-    if (supplyValue) {
-      const s = parseFloat(supplyValue);
-      setApyEstimate(s * apy.toUnsafeFloat());
-      setApyGfiEstimate(s * apyGfi.toUnsafeFloat());
-    } else {
-      setApyEstimate(0);
-      setApyGfiEstimate(0);
-    }
-  }, [supplyValue, apy, apyGfi]);
+  const fiatApyFromGfi = computeApyFromGfiInFiat(
+    estimatedJuniorApyFromGfiRaw,
+    fiatPerGfi
+  );
 
   return (
-    <div className="rounded-xl bg-[#192852] bg-gradientRed p-5 text-white">
+    <div className="rounded-xl bg-sunrise-02 p-5 text-white">
       <div className="mb-3 flex flex-row justify-between">
         <span className="text-sm">Est APY</span>
         <span className="opacity-60">
@@ -64,76 +180,11 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
         </span>
       </div>
 
-      <div className="mb-14 text-6xl font-medium">
-        {formatPercent(apy.addUnsafe(apyGfi))}
+      <div className="mb-8 text-6xl font-medium">
+        {formatPercent(estimatedJuniorApy.addUnsafe(fiatApyFromGfi))}
       </div>
 
-      <div className="mb-3 flex flex-row items-end justify-between">
-        <span className="text-sm">Supply capital</span>
-        {account && (
-          <span className="text-xs opacity-60">
-            {account.substring(0, 6)}...{account.substring(account.length - 4)}
-            <span className=""></span>
-          </span>
-        )}
-      </div>
-
-      <div className="mb-6 rounded-lg bg-sky-900 p-1">
-        {account ? (
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="relative">
-              <Controller
-                control={control}
-                name="supply"
-                rules={{ required: "Required" }}
-                render={({ field: { onChange, ref } }) => (
-                  <IMaskInput
-                    mask="$amount USDC"
-                    blocks={{
-                      amount: {
-                        mask: Number,
-                        thousandsSeparator: ",",
-                        placeholderChar: "9",
-                        lazy: false,
-                        scale: 2,
-                        radix: ".",
-                      },
-                    }}
-                    radix="."
-                    unmask={true}
-                    lazy={false}
-                    ref={ref}
-                    onAccept={onChange}
-                    className="w-full bg-transparent py-4 pl-4 pr-16 text-2xl focus:ring-0"
-                  />
-                )}
-              />
-
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 transform rounded-md border border-sky-500 px-2 py-1 text-[10px] uppercase">
-                Max
-              </div>
-            </div>
-            <button
-              className={clsx(
-                "block w-full rounded-md bg-white py-5 font-medium text-sky-700",
-                !supplyValue ? "opacity-60" : "opacity-100"
-              )}
-              disabled={!supplyValue}
-            >
-              Supply
-            </button>
-          </form>
-        ) : (
-          <button
-            className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
-            onClick={openWalletModal}
-          >
-            Connect Wallet
-          </button>
-        )}
-      </div>
-
-      <table className="w-full">
+      <table className="mb-8 w-full">
         <thead>
           <tr>
             <th className="w-1/2 pb-3 text-left text-sm font-normal">
@@ -161,45 +212,124 @@ export default function SupplyPanel({ apy, apyGfi }: SupplyPanelProps) {
         <tbody>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(apy)} APY
+              {formatPercent(estimatedJuniorApy)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
                   {formatFiat({
                     symbol: SupportedFiat.Usd,
-                    amount: apyEstimate,
+                    amount: supplyValue
+                      ? parseFloat(supplyValue) *
+                        estimatedJuniorApy.toUnsafeFloat()
+                      : 0,
                   })}
                 </span>
-                <Image
-                  src="/ui/logo-usdc.png"
-                  alt="USDC Logo"
-                  width={20}
-                  height={20}
-                />
+                <Icon name="Usdc" aria-label="USDC logo" size="md" />
               </div>
             </td>
           </tr>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(apyGfi)} APY
+              {formatPercent(fiatApyFromGfi)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
-                  {formatDollarAmount(apyGfiEstimate)}
+                  {formatFiat({
+                    symbol: SupportedFiat.Usd,
+                    amount: supplyValue
+                      ? parseFloat(supplyValue) * fiatApyFromGfi.toUnsafeFloat()
+                      : 0,
+                  })}
                 </span>
-                <Image
-                  src="/ui/logo-gfi.png"
-                  alt="GFI Logo"
-                  width={20}
-                  height={20}
-                />
+                <Tooltip
+                  content="This return is estimated based on the current value of GFI in US dollars."
+                  placement="top"
+                  useWrapper
+                >
+                  <Icon name="Gfi" aria-label="GFI logo" size="md" />
+                </Tooltip>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
+
+      {account ? (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="mb-4">
+            <DollarInput
+              control={control}
+              name="supply"
+              label="Supply amount"
+              labelDecoration={
+                <span className="text-xs opacity-60">
+                  {account.substring(0, 6)}...
+                  {account.substring(account.length - 4)}
+                </span>
+              }
+              rules={{ required: "Required", validate: validateMaximumAmount }}
+              colorScheme="dark"
+              textSize="xl"
+              onMaxClick={handleMax}
+              labelClassName="!text-sm !mb-3"
+              errorMessage={errors?.supply?.message}
+            />
+          </div>
+          <div className={!supplyValue ? "hidden" : undefined}>
+            <div className="mb-3">
+              <Input
+                {...register("backerName", { required: "Required" })}
+                label="Full legal name"
+                labelDecoration={
+                  <InfoIconTooltip
+                    size="sm"
+                    placement="top"
+                    content="Lorem ipsum. Your full name is required for reasons"
+                  />
+                }
+                placeholder="First and last name"
+                colorScheme="dark"
+                textSize="xl"
+                labelClassName="!text-sm !mb-3"
+                errorMessage={errors?.backerName?.message}
+              />
+            </div>
+            <div className="mb-3 text-xs">
+              By entering my name and clicking “Supply” below, I hereby agree
+              and acknowledge that (i) I am electronically signing and becoming
+              a party to the{" "}
+              {agreement ? (
+                <Link href={agreement}>Loan Agreement</Link>
+              ) : (
+                "Loan Agreement"
+              )}{" "}
+              for this pool, and (ii) my name and transaction information may be
+              shared with the borrower.
+            </div>
+          </div>
+          <Button
+            className="block w-full"
+            disabled={Object.keys(errors).length !== 0}
+            size="xl"
+            colorScheme="secondary"
+            type="submit"
+            isLoading={isSubmitting}
+          >
+            Supply
+          </Button>
+        </form>
+      ) : (
+        <Button
+          className="block w-full"
+          onClick={openWalletModal}
+          size="xl"
+          colorScheme="secondary"
+        >
+          Connect Wallet
+        </Button>
+      )}
     </div>
   );
 }

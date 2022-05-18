@@ -186,7 +186,7 @@ export async function parseBackers(
         backer.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(backer.availableToWithdraw))
         backer.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(backer.interestRedeemable)))
         const filteredTokens = (backerData?.user.tokens || []).filter(
-          (token) => token.tranchedPool.id === tranchedPool.address
+          (token) => token.tranchedPool.id.toLowerCase() === tranchedPool.address.toLowerCase()
         )
         backer.tokenInfos = tokenInfo(filteredTokens)
         const events = await Promise.all(
@@ -199,7 +199,11 @@ export async function parseBackers(
                 currentBlock.number
               )
           )
-        )
+        ).catch((error) => {
+          console.error("Error fetching deposit_made events for backer tokenInfo", error)
+          throw error
+        })
+
         backer.firstDepositBlockNumber = events
           .flat()
           .reduce<number | undefined>(

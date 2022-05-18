@@ -8,11 +8,9 @@ import payjoyLogo from "./icons/payjoy.png";
 import quickcheckLogo from "./icons/quickcheck.png";
 import stratosLogo from "./icons/stratos.jpeg";
 import tugendeLogo from "./icons/tugende.png";
+import type { PoolMetadata } from "./types";
 
-export const mainnetMetadata: Record<
-  string,
-  Record<string, string | number | string[] | boolean>
-> = {
+export const mainnetMetadata: Record<string, PoolMetadata> = {
   "0xd43a4f3041069c6178b99d55295b00d0db955bb5": {
     name: "Cauris Fund #3: Africa Innovation Pool",
     category: "Africa multi-sector loans",
@@ -162,8 +160,6 @@ export const mainnetMetadata: Record<
     description:
       "Cauris is a credit fund created to bring decentralized financing to fintechs in emerging markets. This facility will be used by Cauris to provide debt capital to vetted consumer and SMB lenders in the Global South and Europe, who pledge well-performing loan portfolios as collateral.",
     icon: caurisLogo.src,
-    backerLimit: "0.006",
-    maxBackers: 90,
   },
   "0xf74ea34ac88862b7ff419e60e476be2651433e68": {
     name: "Divibank",
@@ -171,7 +167,6 @@ export const mainnetMetadata: Record<
     description:
       "Divibank is a data-driven financing platform that helps online businesses in Latin America scale by providing quick and affordable growth capital. The company provides revenue share loans along with a marketing analytics product to help online businesses scale in a capital-efficient way.",
     icon: divibankLogo.src,
-    v1StyleDeal: true,
   },
   "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": {
     name: "Tugende",
@@ -179,7 +174,6 @@ export const mainnetMetadata: Record<
     description:
       "Tugende uses asset finance, technology, and a customer-centric model to help informal sector entrepreneurs increase their economic trajectory. By providing them with financing and value-added services, Tugende is building a long-term ecosystem for Micro, Small & Medium Enterprises (MSMEs) to grow.",
     icon: tugendeLogo.src,
-    v1StyleDeal: true,
   },
   "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": {
     name: "QuickCheck #1",
@@ -187,9 +181,6 @@ export const mainnetMetadata: Record<
     description:
       "QuickCheck uses machine learning to provide loans instantly to customers in Nigeria. Through its mobile app, customers can apply for a loan, and have them funded in minutes.",
     icon: quickcheckLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0xeee76ffacd818bd54cedacd5e970736c91deb795",
   },
   "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c": {
     name: "QuickCheck #2",
@@ -197,9 +188,6 @@ export const mainnetMetadata: Record<
     description:
       "QuickCheck uses machine learning to provide loans instantly to customers in Nigeria. Through its mobile app, customers can apply for a loan, and have them funded in minutes.",
     icon: quickcheckLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0x6ddc3a7233ecd5514607fb1a0e3475a7da6e58ed",
   },
   "0x1cc90f7bb292dab6fa4398f3763681cfe497db97": {
     name: "QuickCheck #3",
@@ -207,9 +195,6 @@ export const mainnetMetadata: Record<
     description:
       "QuickCheck uses machine learning to provide loans instantly to customers in Nigeria. Through its mobile app, customers can apply for a loan, and have them funded in minutes.",
     icon: quickcheckLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0x96b10e62695a915a8beea6c3d6842137c83d22b8",
   },
   "0x3634855ec1beaf6f9be0f7d2f67fc9cb5f4eeea4": {
     name: "Aspire #1",
@@ -217,9 +202,6 @@ export const mainnetMetadata: Record<
     description:
       "Aspire is a modern bank for businesses in Southeast Asia. The company provides businesses with seamless payments, savings products, tools to help teams manage their finances, and a range of credit products to help businesses grow.",
     icon: aspireLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0x8b57ecdac654d32a6befc33204f4b041b459dff4",
   },
   "0x9e8b9182abba7b4c188c979bc8f4c79f7f4c90d3": {
     name: "Aspire #2",
@@ -227,9 +209,6 @@ export const mainnetMetadata: Record<
     description:
       "Aspire is a modern bank for businesses in Southeast Asia. The company provides businesses with seamless payments, savings products, tools to help teams manage their finances, and a range of credit products to help businesses grow.",
     icon: aspireLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0xb2ad56df3bce9bad4d8f04be1fc0eda982a84f44",
   },
   "0x8bbd80f88e662e56b918c353da635e210ece93c6": {
     name: "Aspire #3",
@@ -237,9 +216,6 @@ export const mainnetMetadata: Record<
     description:
       "Aspire is a modern bank for businesses in Southeast Asia. The company provides businesses with seamless payments, savings products, tools to help teams manage their finances, and a range of credit products to help businesses grow.",
     icon: aspireLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0x7ec34e4075b6bfacce771144285a8e74bb8c309b",
   },
   "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7": {
     name: "PayJoy",
@@ -247,9 +223,6 @@ export const mainnetMetadata: Record<
     description:
       "PayJoy offers a buy-now-pay-later product that allows consumers to transform the purchases of mobile phones into monthly installment plans. They serve customers in Mexico and other emerging markets.",
     icon: payjoyLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0x0039ab09f6691f5a7716890864a289903b3ae548",
   },
   "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": {
     name: "Almavest Basket #1",
@@ -257,9 +230,6 @@ export const mainnetMetadata: Record<
     description:
       "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Selfin - an SME lender in India, Upwards - an consumer lender in India, Impact Water - a company that provides safe drinking water systems in Africa, and Greenway - an Indian company that makes ‘clean cookstoves’ for low-income households globally.",
     icon: almavestLogo.src,
-    v1StyleDeal: true,
-    migrated: true,
-    migratedFrom: "0x306e330d084f7996f41bb113b5f0f15501c821a5",
   },
   "0xe32c22e4d95cae1fb805c60c9e0026ed57971bcf": {
     name: "Almavest Basket #2",
@@ -267,7 +237,6 @@ export const mainnetMetadata: Record<
     description:
       "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Adelantos - an asset financier providing loans secured on mobile phones across LatAm.",
     icon: almavestLogo.src,
-    v1StyleDeal: true,
   },
   "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": {
     name: "Almavest Basket #3",
@@ -275,8 +244,6 @@ export const mainnetMetadata: Record<
     description:
       "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
     icon: almavestLogo.src,
-    backerLimit: "0.005",
-    detailsUrl: "https://mailchi.mp/goldfinch/x6hozzm8fs",
     agreement:
       "https://s3.us-west-2.amazonaws.com/secure.notion-static.com/a22b60ac-89b7-4184-a6ba-3ed16c45ab8f/ALMA_Goldfinch_Protocol_Loan_Agreement_FINAL_%288-30-21%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAT73L2G45O3KS52Y5%2F20210831%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20210831T000715Z&X-Amz-Expires=86400&X-Amz-Signature=01c8b63f01e46afb753c4f37ba75836b0743fa8e82ce94fbf32aefbbad367e6a&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22ALMA%2520Goldfinch%2520Protocol%2520Loan%2520Agreement%2520FINAL%2520%288-30-21%29.pdf%22",
   },
@@ -293,6 +260,5 @@ export const mainnetMetadata: Record<
     description:
       "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Oya - an asset financier providing loans helping small and medium sized business across Africa scale up.",
     icon: almavestLogo.src,
-    v1StyleDeal: true,
   },
 };

@@ -1,5 +1,5 @@
 import React, {useState} from "react"
-import {Tickers} from "../ethereum/erc20"
+import {Ticker} from "../ethereum/erc20"
 import Dropdown from "./dropdown"
 
 interface CurrencyDropdownProps {
@@ -23,19 +23,19 @@ export default function CurrencyDropdown({
 }: CurrencyDropdownProps): JSX.Element {
   const options = [
     {
-      value: Tickers.USDC,
-      el: <span>{Tickers.USDC}</span>,
+      value: Ticker.USDC,
+      el: <span>{Ticker.USDC}</span>,
     },
     {
-      value: Tickers.USDT,
-      el: <span>{Tickers.USDT}</span>,
+      value: Ticker.USDT,
+      el: <span>{Ticker.USDT}</span>,
     },
     {
-      value: Tickers.BUSD,
-      el: <span>{Tickers.BUSD}</span>,
+      value: Ticker.BUSD,
+      el: <span>{Ticker.BUSD}</span>,
     },
   ]
-  const [selected, setSelected] = useState(Tickers.USDC)
+  const [selected, setSelected] = useState(Ticker.USDC)
 
   return (
     <Dropdown

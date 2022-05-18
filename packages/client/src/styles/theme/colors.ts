@@ -22,6 +22,8 @@ const colors = {
   redXLight: "#fae6de",
   red: "#e4af98",
   redDark: "#cc937a",
+
+  yellow: "#F2E1C7",
 }
 
 export default colors

@@ -31,16 +31,27 @@ import {
   computeApyFromGfiInFiat,
   TRANCHED_POOL_STATUS_FIELDS,
 } from "@/lib/pools";
+import { useWallet } from "@/lib/wallet";
 
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
 import PoolFilledPanel from "./pool-filled-panel";
-import SupplyPanel from "./supply-panel";
+import SupplyPanel, { SUPPLY_PANEL_FIELDS } from "./supply-panel";
+import {
+  WithdrawalPanel,
+  WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
+} from "./withdrawal-panel";
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
-  query SingleTranchedPoolData($id: ID!) {
-    tranchedPool(id: $id) {
+  ${SUPPLY_PANEL_FIELDS}
+  ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  query SingleTranchedPoolData(
+    $tranchedPoolId: ID!
+    $tranchedPoolAddress: String!
+    $userId: ID!
+  ) {
+    tranchedPool(id: $tranchedPoolId) {
       id
       name @client
       category @client
@@ -54,15 +65,8 @@ gql`
       borrowerHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
-      estimatedTotalAssets
       estimatedLeverageRatio
-      remainingCapacity
-      juniorFeePercent
-      reserveFeePercent
-      totalDeposited
-      totalDeployed
       fundableAt
-      estimatedSeniorPoolContribution
       isPaused
       numBackers
       seniorTranches {
@@ -80,11 +84,18 @@ gql`
         nextDueTime
       }
       ...TranchedPoolStatusFields
+      ...SupplyPanelFields
     }
     gfiPrice @client {
       price {
         amount
         symbol
+      }
+    }
+    user(id: $userId) {
+      id
+      tokens(where: { tranchedPool: $tranchedPoolAddress }) {
+        ...WithdrawalPanelPoolTokenFields
       }
     }
   }
@@ -103,10 +114,16 @@ export default function PoolPage() {
   const {
     query: { address },
   } = useRouter();
+  const { account } = useWallet();
 
   const { data, error } = useSingleTranchedPoolDataQuery({
     skip: !address,
-    variables: { id: address as string },
+    variables: {
+      tranchedPoolId: address as string,
+      tranchedPoolAddress: address as string,
+      userId: account?.toLowerCase() ?? "",
+    },
+    returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
 
   const tranchedPool = data?.tranchedPool;
@@ -462,12 +479,12 @@ export default function PoolPage() {
         </div>
 
         <div className="relative col-span-4">
-          {tranchedPool ? (
-            <div className="sticky top-12">
+          {tranchedPool && fiatPerGfi ? (
+            <div className="sticky top-12 space-y-8">
               {poolStatus === PoolStatus.Open && (
                 <SupplyPanel
-                  apy={tranchedPool?.estimatedJuniorApy}
-                  apyGfi={tranchedPool?.estimatedJuniorApyFromGfiRaw}
+                  tranchedPool={tranchedPool}
+                  fiatPerGfi={fiatPerGfi}
                 />
               )}
 
@@ -483,6 +500,13 @@ export default function PoolPage() {
               {poolStatus === PoolStatus.ComingSoon && (
                 <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
               )}
+
+              {data?.user && data?.user.tokens.length > 0 ? (
+                <WithdrawalPanel
+                  tranchedPoolAddress={tranchedPool.id}
+                  poolTokens={data.user.tokens}
+                />
+              ) : null}
             </div>
           ) : null}
         </div>

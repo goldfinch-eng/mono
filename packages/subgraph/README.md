@@ -157,6 +157,17 @@ graph test
 - [Demo Subgraph (The Graph) showcasing unit testing with Matchstick](https://github.com/LimeChain/demo-subgraph)
 - [aavegotchi-matic-subgraph tests](https://github.com/aavegotchi/aavegotchi-matic-subgraph/tree/main/src/tests)
 
+## Deploy
+For deploying the production subgraph:
+
+```
+cd packages/subgraph
+npx graph auth --product hosted-service <deploykey>
+npx graph codegen
+npx graph build
+npx graph deploy --product hosted-service goldfinch-eng/goldfinch
+```
+
 ## Resources
 - [The Graph Academy](https://thegraph.academy/developers/)
 - [The Graph Academy Hub](https://github.com/TheGraphAcademy/Graph-Academy-Hub)

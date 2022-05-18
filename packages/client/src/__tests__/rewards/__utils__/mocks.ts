@@ -27,6 +27,7 @@ import {
   UserBackerMerkleDistributor,
   UserMerkleDirectDistributor,
   UserMerkleDistributor,
+  UserStakingRewards,
 } from "../../../ethereum/user"
 import * as utils from "../../../ethereum/utils"
 import {GRANT_ACCEPTED_EVENT, KnownEventData, KnownEventName, STAKED_EVENT} from "../../../types/events"
@@ -298,6 +299,24 @@ export async function mockUserRelatedInitializationContractCalls(
             transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
           } as unknown as KnownEventData<typeof STAKED_EVENT>)
       )
+
+    UserStakingRewards.prototype.getStakedEvents = ({tokenIds}) => {
+      return Promise.resolve(
+        tokenIds.map(
+          (tokenId) =>
+            ({
+              returnValues: {
+                index: 0,
+                account: "0x0000000000000000000000000000000000000002",
+                tokenId,
+                amount: stakedAmount,
+              },
+              transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+            } as unknown as KnownEventData<typeof STAKED_EVENT>)
+        )
+      )
+    }
+
     const granted = rewardsMock.staking?.granted || earnedSince
 
     callTokenOfOwnerByIndexMock = mock({
@@ -715,6 +734,8 @@ export async function mockStakingRewardsContractCalls(
     currentEarnRatePerToken = "10000000000000000000"
   }
 
+  const DEPLOYMENTS = await getDeployments()
+
   let callPausedMock = mock({
     blockchain,
     call: {
@@ -733,8 +754,43 @@ export async function mockStakingRewardsContractCalls(
       return: currentEarnRatePerToken,
     },
   })
+  let callGetBaseTokenExchangeRate = mock({
+    blockchain,
+    call: {
+      to: stakingRewards.address,
+      api: await getStakingRewardsAbi(),
+      method: "getBaseTokenExchangeRate",
+      params: [StakedPositionType.CurveLP],
+      return: new BigNumber(1e18).toString(10),
+    },
+  })
+  let callGetEffectiveMultiplierForPositionType = mock({
+    blockchain,
+    call: {
+      to: stakingRewards.address,
+      api: await getStakingRewardsAbi(),
+      method: "getEffectiveMultiplierForPositionType",
+      params: [StakedPositionType.CurveLP],
+      return: new BigNumber(1e18).toString(10),
+    },
+  })
+  const callCurvePoolLPPrice = mock({
+    blockchain,
+    call: {
+      to: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.address,
+      api: DEPLOYMENTS.contracts.TestFiduUSDCCurveLP.abi,
+      method: "lp_price",
+      return: new BigNumber(1e18).toString(10),
+    },
+  })
 
-  return {callPausedMock, callCurrentEarnRatePerToken}
+  return {
+    callPausedMock,
+    callCurrentEarnRatePerToken,
+    callGetBaseTokenExchangeRate,
+    callGetEffectiveMultiplierForPositionType,
+    callCurvePoolLPPrice,
+  }
 }
 
 export async function mockCommunityRewardsContractCalls(communityRewards: CommunityRewards) {
@@ -976,7 +1032,7 @@ export function setupMocksForMerkleDirectDistributorAirdrop(
           throw new Error(`Unexpected toBlock: ${toBlock}`)
         }
       } else {
-        throw new Error(`Unexpected filter: ${filter}`)
+        throw new Error(`Unexpected filter: ${JSON.stringify(filter)}`)
       }
     } else {
       throw new Error(`Unexpected event names: ${eventNames}`)

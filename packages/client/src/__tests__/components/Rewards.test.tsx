@@ -42,6 +42,7 @@ import {
   SENIOR_POOL_AGREEMENT_NON_US_ROUTE,
   SENIOR_POOL_AGREEMENT_US_ROUTE,
   SENIOR_POOL_ROUTE,
+  STAKE_ROUTE,
   TERMS_OF_SERVICE_ROUTE,
   TRANCHED_POOL_ROUTE,
   TRANSACTIONS_ROUTE,
@@ -872,7 +873,6 @@ describe("Rewards list and detail", () => {
     })
 
     // Mock GFI price request.
-    process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "true"
     jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
       const url = input.toString()
       if (url === COINGECKO_API_GFI_PRICE_URL) {
@@ -935,6 +935,7 @@ describe("Rewards list and detail", () => {
     renderRewards(goldfinchProtocol, deps, currentBlock, undefined, undefined, undefined, {
       [INDEX_ROUTE]: undefined,
       [EARN_ROUTE]: undefined,
+      [STAKE_ROUTE]: undefined,
       [ABOUT_ROUTE]: undefined,
       [GFI_ROUTE]: {number: currentBlock.number - 1, timestamp: currentBlock.timestamp - 1},
       [BORROW_ROUTE]: undefined,
@@ -986,32 +987,6 @@ describe("Rewards list and detail", () => {
   })
 
   describe("GFI Price", () => {
-    it("shows empty value when getting GFI price is toggled off", async () => {
-      process.env.REACT_APP_TOGGLE_GET_GFI_PRICE = "false"
-
-      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
-        const url = input.toString()
-        if (url === COINGECKO_API_GFI_PRICE_URL) {
-          fail("Expected this not to be called.")
-        } else {
-          fail(`Unexpected fetch url: ${url}`)
-        }
-      })
-
-      const deps = await setupClaimableStakingReward(goldfinchProtocol, seniorPool, currentBlock)
-
-      renderRewards(goldfinchProtocol, deps, currentBlock)
-      await waitFor(() => {
-        expect(screen.queryByText("Loading...")).not.toBeInTheDocument()
-      })
-
-      fireEvent.click(screen.getByText("Staked 50K FIDU"))
-      await waitFor(async () => {
-        expect(await screen.findByText("Claim status")).toBeVisible()
-        expect(await screen.findByText("$--.-- (0.00 GFI) claimed of your total unlocked 0.71 GFI")).toBeVisible()
-      })
-    })
-
     it("shows empty value when request to Coingecko and fallback fail", async () => {
       jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
         const url = input.toString()

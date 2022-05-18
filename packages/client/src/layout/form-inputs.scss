@@ -90,6 +90,16 @@
     color: $purp-dark;
   }
 
+  &.error {
+    border: 2px solid $red-xxdark;
+    color: $red-xxdark;
+  }
+
+  &.warning {
+    border: 2px solid $yellow-xxxdark;
+    color: $yellow-xxxdark;
+  }
+
   .ticker {
     flex-shrink: 0;
 
@@ -143,6 +153,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   flex-shrink: 0;
+  width: auto;
 
   &:hover {
     border: 1px solid $purp-dark;

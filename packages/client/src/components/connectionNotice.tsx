@@ -1,6 +1,6 @@
 import {useLocation} from "react-router-dom"
 import {AppContext} from "../App"
-import {UnlockedStatus, UserLoaded} from "../ethereum/user"
+import {UserLoaded} from "../ethereum/user"
 import {Session, useSession} from "../hooks/useSignIn"
 import UnlockUSDCForm from "./unlockUSDCForm"
 import VerifyAddressBanner from "./KYCNotice/VerifyAddressBanner"
@@ -12,6 +12,11 @@ import {NetworkConfig} from "../types/network"
 import {UserWalletWeb3Status} from "../types/web3"
 import Banner from "./banner"
 import {iconInfo} from "./icons"
+
+interface UnlockedStatus {
+  unlockAddress: string
+  isUnlocked: boolean
+}
 
 export interface ConnectionNoticeProps {
   requireGolist?: boolean

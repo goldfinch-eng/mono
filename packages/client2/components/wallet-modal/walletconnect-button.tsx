@@ -21,7 +21,7 @@ export function WalletConnectButton() {
     >
       {`WalletConnect${isActive ? " (Connected)" : ""}`}
       {isActivating ? (
-        <Spinner className="h-10 w-10 text-[#3f99fc]" />
+        <Spinner className="!h-10 !w-10 text-[#3f99fc]" />
       ) : (
         <WalletConnectLogo className="h-10 w-10" />
       )}

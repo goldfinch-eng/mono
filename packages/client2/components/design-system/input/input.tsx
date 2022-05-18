@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { forwardRef, InputHTMLAttributes } from "react";
+import { forwardRef, InputHTMLAttributes, ReactNode } from "react";
 
 import { Icon, IconNameType, HelperText } from "@/components/design-system";
 
@@ -29,11 +29,28 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    */
   errorMessage?: string;
   /**
-   * Class that goes specifically on the <input>, not on the wrapper. Makes it easier to override input-specific styles like placeholder
+   * Class that goes specifically on the input element, not on the wrapper. Makes it easier to override input-specific styles like placeholder
    */
   inputClassName?: string;
+  /**
+   * Class that goes specifically on the label element, not on the wrapper. Makes it easier to override label-specific styles.
+   */
+  labelClassName?: string;
   disabled?: boolean;
+  /**
+   * An element that will render on the right side of the input. Can be used to create things like a "reveal password" button, or a "max" button
+   */
+  decoration?: ReactNode;
+  /**
+   * An element that will render on the right side of the label. Can be used to add extra contextual information like a tooltip.
+   */
+  labelDecoration?: ReactNode;
+  /**
+   * Occupies the same space as `decoration`. Offered as a convenience if you just want a static icon as a decoration.
+   */
   icon?: IconNameType;
+  textSize?: "sm" | "md" | "lg" | "xl";
+  colorScheme?: "light" | "dark";
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -47,9 +64,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     errorMessage,
     disabled = false,
     icon,
+    decoration,
+    labelDecoration,
     inputClassName,
+    labelClassName,
     className,
     autoComplete = "off",
+    colorScheme = "light",
+    textSize = "md",
     ...rest
   },
   ref
@@ -57,23 +79,64 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const _id = id ?? name;
   const isError = !!errorMessage;
   return (
-    <div className={clsx("flex flex-col items-start justify-start", className)}>
-      <label
-        htmlFor={_id}
+    <div
+      className={clsx(
+        "flex flex-col items-start justify-start",
+        colorScheme === "light"
+          ? "text-sand-700"
+          : colorScheme === "dark"
+          ? "text-white"
+          : null,
+        textSize === "sm"
+          ? "text-sm"
+          : textSize === "lg"
+          ? "text-lg"
+          : textSize === "xl"
+          ? "text-2xl"
+          : null,
+        className
+      )}
+    >
+      <div
         className={clsx(
-          isError && "text-red-200",
-          "mb-1.5 leading-none",
-          hideLabel && "sr-only"
+          "mb-1.5 flex w-full items-center justify-between gap-4 leading-none",
+          hideLabel && "sr-only",
+          labelClassName
         )}
       >
-        {label}
-      </label>
+        <label htmlFor={_id}>{label}</label>
+        {labelDecoration ? labelDecoration : null}
+      </div>
       <div className="relative w-full">
         <input
           className={clsx(
-            "w-full rounded bg-sand-200 py-2.5 px-3.5 outline-none ring-purple-400 ring-offset-0 placeholder:text-purple-200 focus:ring-2",
+            "unfocused w-full rounded", // unfocused because the color schemes supply a border color as a focus style
+            colorScheme === "light"
+              ? [
+                  "border bg-white focus:border-sand-600",
+                  isError
+                    ? "border-clay-100 placeholder:text-clay-700"
+                    : "border-sand-200 placeholder:text-sand-500",
+                ]
+              : colorScheme === "dark"
+              ? [
+                  "border bg-sky-900 focus:border-white",
+                  isError
+                    ? "border-clay-500 placeholder:text-clay-500"
+                    : "border-transparent placeholder:text-sand-300",
+                ]
+              : null,
             disabled && "opacity-50",
-            icon ? "pr-8" : null,
+            decoration || icon ? "pr-8" : null,
+            textSize === "sm"
+              ? "py-1.5 px-3"
+              : textSize === "md"
+              ? "py-2 px-3"
+              : textSize === "lg"
+              ? "px-4 py-3"
+              : textSize === "xl"
+              ? "px-5 py-4"
+              : null,
             inputClassName
           )}
           ref={ref}
@@ -84,7 +147,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           autoComplete={autoComplete}
           {...rest}
         />
-        {icon ? (
+        {decoration ? (
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+            {decoration}
+          </div>
+        ) : icon ? (
           <Icon
             name={icon}
             className="absolute right-3.5 top-1/2 -translate-y-1/2"
@@ -94,8 +161,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {helperText || errorMessage ? (
         <HelperText
           className={clsx(
-            isError ? "text-red-200" : "text-purple-200",
-            "mt-1 leading-none"
+            isError
+              ? "text-clay-500"
+              : colorScheme === "light"
+              ? "text-sand-500"
+              : colorScheme === "dark"
+              ? "text-sand-300"
+              : null,
+            "mt-1 text-sm leading-none"
           )}
         >
           {errorMessage ? errorMessage : helperText}

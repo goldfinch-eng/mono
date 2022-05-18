@@ -1,12 +1,15 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 
+import { Tooltip } from "@/components/design-system";
 import { cryptoToFloat, formatCrypto, formatFiat } from "@/lib/format";
 import {
   CryptoAmount,
   SupportedCrypto,
   SupportedFiat,
 } from "@/lib/graphql/generated";
+
+import diagonals from "./diagonals.png";
 
 interface FundingBarProps {
   goal?: CryptoAmount;
@@ -31,7 +34,7 @@ export default function FundingBar({
     goalFloat === 0 ? 0 : (seniorSupplyFloat / goalFloat) * 100;
 
   return (
-    <div className="relative">
+    <div>
       <div
         className={clsx(
           "mb-3 flex items-center text-sm text-sand-600",
@@ -42,7 +45,7 @@ export default function FundingBar({
             ? { marginLeft: `${Math.min(backerWidth + seniorWidth, 50)}%` }
             : {
                 marginRight: `${Math.min(
-                  100 - backerWidth - seniorWidth,
+                  Math.max(100 - backerWidth - seniorWidth, 0),
                   50
                 )}%`,
               }
@@ -56,20 +59,54 @@ export default function FundingBar({
           })}
         </span>
       </div>
-      <div className="relative mb-3 h-8 overflow-hidden rounded bg-sand-200 bg-diagonals bg-repeat">
+      <div
+        className="mb-3 flex h-8 overflow-hidden rounded bg-sand-200"
+        style={{
+          backgroundImage: `url(${diagonals.src})`,
+          backgroundRepeat: "repeat",
+        }}
+      >
         <div
-          className="absolute left-0 top-0 bottom-0 w-full bg-[#D17673] transition-[max-width] duration-500"
+          className="w-full bg-[#D17673] transition-[max-width] duration-500"
           style={{
             maxWidth: `${backerWidth}%`,
           }}
-        ></div>
+        >
+          <Tooltip
+            placement="top"
+            content={
+              <div className="max-w-[250px]">
+                <div className="text-lg font-bold">Junior Capital</div>
+                <div>
+                  The amount of capital provided to this pool by backers.
+                </div>
+              </div>
+            }
+          >
+            <div tabIndex={0} className="h-full w-full" />
+          </Tooltip>
+        </div>
         <div
-          className="absolute top-0 bottom-0 w-full bg-[#3F4A7E] transition-[max-width] delay-500 duration-500"
+          className="w-full bg-[#3F4A7E] transition-[max-width] delay-500 duration-500"
           style={{
-            left: `${backerWidth}%`,
             maxWidth: `${seniorWidth}%`,
           }}
-        ></div>
+        >
+          <Tooltip
+            placement="top"
+            content={
+              <div className="max-w-[250px]">
+                <div className="text-lg font-bold">Senior Capital</div>
+                <div>
+                  The estimated contribution that the Goldfinch Senior Pool will
+                  make.
+                </div>
+              </div>
+            }
+          >
+            <div tabIndex={0} className="h-full w-full" />
+          </Tooltip>
+        </div>
       </div>
       <div className="flex items-center justify-end text-sm text-sand-600">
         Goal{" "}

@@ -20,5 +20,12 @@ module.exports = {
         xmlnsOrder: "alphabetical",
       },
     },
+    {
+      name: "prefixIds",
+      params: {
+        prefixIds: true,
+        prefixClassNames: false, // mainly because this interferes with Spinner's gradient-spinner classname
+      },
+    },
   ],
 };

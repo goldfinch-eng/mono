@@ -1,15 +1,12 @@
 import { gql } from "@apollo/client";
 
-import { Button, Shimmer, HelperText } from "@/components/design-system";
+import { Button, Shimmer, HelperText, Icon } from "@/components/design-system";
 import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
   SupportedFiat,
   useCurrentUserWalletInfoQuery,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
-
-import GfiSvg from "./gfi.svg";
-import UsdcSvg from "./usdc.svg";
 
 gql`
   query CurrentUserWalletInfo {
@@ -59,7 +56,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         <div className="mb-4 text-lg font-semibold">Balances</div>
         <div className="mb-6 flex items-center justify-between">
           <div className="flex gap-2">
-            <UsdcSvg className="h-6 w-6" />
+            <Icon name="Usdc" size="md" />
             <span className="font-medium">USDC</span>
           </div>
           <div className="text-right">
@@ -74,7 +71,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            <GfiSvg className="h-6 w-6" />
+            <Icon name="Gfi" size="md" />
             <span className="font-medium">GFI</span>
           </div>
           <div className="text-right">
