@@ -25,4 +25,6 @@ As of this writing (May 2022), the Protocol's upgradeable contracts are:
 The Protocol's non-upgradeable contracts are:
 - [GFI](./contracts/core/GFI)
 
-The Protocol's upgradeable contracts use OpenZeppelin's [proxy upgrade pattern](https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies). The Protocol's upgradeable contracts are upgradeable only by Governance.
+The Protocol's upgradeable contracts use OpenZeppelin's [proxy upgrade pattern](https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies).
+
+The Protocol's upgradeable contracts are upgradeable only by Governance.
