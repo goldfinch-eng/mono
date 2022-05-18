@@ -58,10 +58,12 @@ export function handleDeposit(event: DepositMade): void {
   }
 
   let backer = getOrInitPoolBacker(event.address, userAddress)
-  let addresses = tranchedPool.backers
-  addresses.push(backer.id)
-  tranchedPool.backers = addresses
-  tranchedPool.numBackers = addresses.length
+  if (!tranchedPool.backers.includes(backer.id)) {
+    const addresses = tranchedPool.backers
+    addresses.push(backer.id)
+    tranchedPool.backers = addresses
+    tranchedPool.numBackers = addresses.length
+  }
 
   tranchedPool.estimatedTotalAssets = tranchedPool.estimatedTotalAssets.plus(event.params.amount)
   const creditLine = CreditLine.load(tranchedPool.creditLine)
