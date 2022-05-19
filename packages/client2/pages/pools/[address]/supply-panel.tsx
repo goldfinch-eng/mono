@@ -32,7 +32,6 @@ import {
   openUIDModal,
 } from "@/lib/state/actions";
 import { isKYCDoneVar } from "@/lib/state/vars";
-import { getKYCStatus } from "@/lib/user";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -309,16 +308,7 @@ export default function SupplyPanel({
       {account && isKYCDone && !uidCreated && (
         <button
           className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
-          onClick={async () => {
-            try {
-              // Prefetch KYC status
-              await getKYCStatus(account);
-
-              openUIDModal();
-            } catch {
-              throw new Error("Could not get KYC status.");
-            }
-          }}
+          onClick={openUIDModal}
         >
           Claim my UID
         </button>

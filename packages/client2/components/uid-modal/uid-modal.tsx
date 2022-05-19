@@ -1,22 +1,17 @@
+import { useApolloClient } from "@apollo/client";
 import Image from "next/image";
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { Modal, ModalProps, Button } from "@/components/design-system";
+import { Modal, ModalProps, Button, Spinner } from "@/components/design-system";
 import { KYCModalUID } from "@/components/kyc-modal";
-import {
-  UNIQUE_IDENTITY_SIGNER_URL,
-  UNIQUE_IDENTITY_MINT_PRICE,
-} from "@/constants";
+import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { useUidContract } from "@/lib/contracts";
+import { wait } from "@/lib/utils";
 import {
+  fetchUniqueIdentitySigner,
+  getSignatureForKyc,
   getUIDLabelFromType,
-  getKYCStatus,
-  getUIDType,
-  getSignature,
-  convertSignatureToAuth,
-  asUIDSignatureResponse,
-  UIDType,
-} from "@/lib/user";
+} from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
 interface UIDModalProps {
@@ -27,33 +22,92 @@ interface UIDModalProps {
 export function UIDModal({ isOpen, onClose }: UIDModalProps) {
   const { account, provider } = useWallet();
   const { uidContract } = useUidContract();
+  const apolloClient = useApolloClient();
 
-  const [uidType, setUidType] = useState<UIDType | null>();
-  const [uidLabel, setUidLabel] = useState<string>();
-  const [status, setStatus] = useState<string>();
-  const [isMinted, setMinted] = useState<boolean>(false);
-
-  const setupUIDCallback = useCallback(async () => {
-    if (account && isOpen) {
-      // Fetch from cache - triggered just before opening modal
-      const kycStatus = await getKYCStatus(account);
-
-      // Get UID type
-      const type = getUIDType(account, kycStatus);
-
-      if (type !== null) {
-        // Get UID label
-        const label = getUIDLabelFromType(type);
-
-        setUidType(type);
-        setUidLabel(label);
-      }
-    }
-  }, [account, isOpen]);
+  // TODO there's probably a better way to express the local state here
+  const [isPolling, setIsPolling] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
+  const [isMinted, setIsMinted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [mintingParameters, setMintingParameters] =
+    useState<{ id: number; expiresAt: number; signature: string }>();
 
   useEffect(() => {
-    setupUIDCallback();
-  }, [setupUIDCallback, isOpen, account]);
+    if (provider && account && isOpen) {
+      const asyncEffect = async () => {
+        setIsPolling(true);
+        try {
+          const { signature, signatureBlockNum } = await getSignatureForKyc(
+            provider
+          );
+
+          let signer: Awaited<
+            ReturnType<typeof fetchUniqueIdentitySigner>
+          > | null = null;
+          let numAttempts = 0;
+          const maxPollAttempts = 10;
+          while (numAttempts < maxPollAttempts) {
+            numAttempts += 1;
+            try {
+              signer = await fetchUniqueIdentitySigner(
+                account,
+                signature,
+                signatureBlockNum
+              );
+              setMintingParameters({
+                id: signer.idVersion,
+                expiresAt: signer.expiresAt,
+                signature: signer.signature,
+              });
+              break;
+            } catch (e) {
+              await wait(5000);
+              continue;
+            }
+          }
+          setIsPolling(false);
+          if (numAttempts === maxPollAttempts) {
+            setErrorMessage("Unable to verify eligibility to mint.");
+          }
+        } catch (e) {
+          setIsPolling(false);
+          setErrorMessage((e as Error).message);
+        }
+      };
+      asyncEffect();
+    } else {
+      setIsPolling(false);
+      setErrorMessage(undefined);
+      setMintingParameters(undefined);
+      setIsMinting(false);
+      setIsMinted(false);
+    }
+  }, [provider, account, isOpen]);
+
+  const handleMint = async () => {
+    if (!mintingParameters || !uidContract || !provider) {
+      return;
+    }
+    try {
+      setIsMinting(true);
+      const gasPrice = await provider.getGasPrice();
+      const transaction = await uidContract.mint(
+        mintingParameters.id,
+        mintingParameters.expiresAt,
+        mintingParameters.signature,
+        {
+          value: UNIQUE_IDENTITY_MINT_PRICE,
+          gasPrice: gasPrice,
+        }
+      );
+      // TODO index UIDs in subgraph
+      await transaction.wait();
+      apolloClient.refetchQueries({ include: "active" });
+      setIsMinted(true);
+    } catch (e) {
+      setErrorMessage("Error while minting");
+    }
+  };
 
   return (
     <Modal
@@ -87,61 +141,40 @@ export function UIDModal({ isOpen, onClose }: UIDModalProps) {
             </div>
           </div>
           <div className="w-5/12">
-            <KYCModalUID text={uidLabel} minted={isMinted} />
+            {errorMessage ? (
+              <div className="text-clay-500">{errorMessage}</div>
+            ) : isPolling ? (
+              <div className="flex h-full w-full items-center justify-center">
+                <div>
+                  <Spinner className="m-auto mb-8 block !h-16 !w-16" />
+                  <div className="text-center">
+                    Checking your eligibility for minting. This requires a
+                    signature.
+                  </div>
+                </div>
+              </div>
+            ) : mintingParameters ? (
+              <KYCModalUID
+                text={getUIDLabelFromType(mintingParameters.id)}
+                minted={isMinted}
+              />
+            ) : null}
           </div>
         </div>
       </div>
-      <div className="mt-6 flex w-full items-center">
-        {status !== "complete" && (
+      <div className="mt-6 flex w-full items-center justify-end">
+        {!isMinted ? (
           <Button
-            disabled={!account}
-            isLoading={status === "minting"}
+            disabled={!mintingParameters}
+            isLoading={isMinting}
             size="lg"
-            onClick={async () => {
-              if (account && provider && typeof uidType === "number") {
-                const signature = await getSignature();
-
-                if (signature) {
-                  setStatus("minting");
-
-                  const auth = convertSignatureToAuth(account, signature);
-
-                  const response = await fetch(UNIQUE_IDENTITY_SIGNER_URL, {
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ auth }),
-                    method: "POST",
-                  });
-
-                  const body = await response.json();
-
-                  const uidSignature = asUIDSignatureResponse(body);
-
-                  const gasPrice = await provider?.getGasPrice();
-
-                  await uidContract?.mint(
-                    uidType,
-                    uidSignature.expiresAt,
-                    uidSignature.signature,
-                    {
-                      value: UNIQUE_IDENTITY_MINT_PRICE,
-                      gasPrice: gasPrice,
-                    }
-                  );
-
-                  setMinted(true);
-                  setStatus("complete");
-                }
-              }
-            }}
-            className="mx-auto"
+            onClick={handleMint}
             iconRight="ArrowSmRight"
           >
             Claim my UID
           </Button>
-        )}
-
-        {status === "complete" && (
-          <Button className="mx-auto" size="lg">
+        ) : (
+          <Button size="lg" onClick={onClose}>
             Done
           </Button>
         )}
