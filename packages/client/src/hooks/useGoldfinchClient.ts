@@ -1,5 +1,5 @@
 import {SessionData} from "../types/session"
-import {AuthenticatedSession} from "./useSignIn"
+import {AuthenticatedSession, KnownSession} from "./useSignIn"
 
 const API_URLS = {
   mainnet: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -25,6 +25,9 @@ export interface KYC {
 
 interface GoldfinchAuthenticatedClient {
   fetchKYCStatus(address: string): Promise<any>
+}
+
+interface GoldfinchKnownClient {
   signAgreement(address: string, fullName: string, pool: string): Promise<any>
   signNDA(address: string, fullName: string, pool: string): Promise<any>
 }
@@ -44,6 +47,7 @@ export class GoldfinchClientError extends Error {
   }
 }
 
+// Requires a signature and signature block number
 class DefaultGoldfinchClient implements GoldfinchAuthenticatedClient {
   private readonly baseURL: string
   private readonly session: AuthenticatedSession
@@ -103,6 +107,47 @@ class DefaultGoldfinchClient implements GoldfinchAuthenticatedClient {
 
   async fetchKYCStatus(address: string): Promise<HandledResponse<KYC>> {
     return this._handleResponse(fetch(this._getKYCStatusURL(), this._getKYCStatusRequestInit(address)))
+  }
+}
+
+// Does not require a signature
+export class KnownGoldfinchClient implements GoldfinchKnownClient {
+  private readonly baseURL: string
+  private readonly session: KnownSession
+  private readonly setSessionData: (data: SessionData | undefined) => void
+
+  constructor(networkName: string, session: KnownSession, setSessionData: (data: SessionData | undefined) => void) {
+    this.baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[networkName]
+    this.session = session
+    this.setSessionData = setSessionData
+  }
+
+  async _handleResponse<T = any>(fetched: Promise<Response>): Promise<HandledResponse<T>> {
+    const response = await fetched
+    const json = (await response.json()) as T
+    if (response.ok) {
+      return {
+        ok: response.ok,
+        response,
+        json,
+      }
+    } else {
+      if (response.status === 401) {
+        this.setSessionData(undefined)
+      }
+
+      throw new GoldfinchClientError({
+        ok: response.ok,
+        response,
+        json,
+      })
+    }
+  }
+
+  _getAuthHeaders(address: string) {
+    return {
+      "x-goldfinch-address": address,
+    }
   }
 
   _getSignAgreementRequestInit(address: string, body: {fullName: string; pool: string}): RequestInit {

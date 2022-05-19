@@ -6,7 +6,7 @@ import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {SeniorPoolLoaded} from "../../ethereum/pool"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
-import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
+import {KnownGoldfinchClient} from "../../hooks/useGoldfinchClient"
 import {useFetchNDA} from "../../hooks/useNDA"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {Loadable, Loaded} from "../../types/loadable"
@@ -22,7 +22,7 @@ import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
 import {V1DealSupplyStatus} from "./V1DealSupplyStatus"
 import {BorrowerOverview} from "./BorrowerOverview"
-import {AuthenticatedSession, useSignIn} from "../../hooks/useSignIn"
+import {useSignIn} from "../../hooks/useSignIn"
 
 interface TranchedPoolViewURLParams {
   poolAddress: string
@@ -97,7 +97,10 @@ function TranchedPoolView() {
     assertNonNullable(network)
     assertNonNullable(setSessionData)
 
-    const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
+    if (session.status !== "known") {
+      throw new Error("Not signed in. Please refresh the page and try again")
+    }
+    const client = new KnownGoldfinchClient(network.name!, session, setSessionData)
     return client
       .signNDA(user.address, tranchedPool!.address)
       .then((r) => {

@@ -108,7 +108,7 @@ describe("network widget sign in", () => {
     expect(screen.getByText("USDC balance")).toBeInTheDocument()
   })
 
-  it("shows signed in when user has session data but address doesn't exist", async () => {
+  it("shows connect wallet when user has session data but address doesn't exist", async () => {
     ;(global.window as any).ethereum = jest.fn()
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
