@@ -220,7 +220,7 @@ describe("functions", () => {
       it("checks if address is present", async () => {
         await signAgreement(
           generateAgreementRequest("", "", "", "", currentBlockNum),
-          expectResponse(403, {error: "Address not provided."}),
+          expectResponse(403, {error: "Invalid address"}),
         )
       })
     })
@@ -410,10 +410,7 @@ describe("functions", () => {
 
     describe("validation", async () => {
       it("checks if address is present", async () => {
-        await signNDA(
-          generateNDARequest("", "", "", currentBlockNum),
-          expectResponse(403, {error: "Address not provided."}),
-        )
+        await signNDA(generateNDARequest("", "", "", currentBlockNum), expectResponse(403, {error: "Invalid address"}))
       })
     })
 
@@ -457,7 +454,7 @@ describe("functions", () => {
       it("checks if address is present", async () => {
         await signNDA(
           generateFetchNDARequest("", "", "", currentBlockNum),
-          expectResponse(403, {error: "Address not provided."}),
+          expectResponse(403, {error: "Invalid address"}),
         )
       })
     })

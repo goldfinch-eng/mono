@@ -165,6 +165,7 @@ const signNDA = genRequestHandler({
     if (pool === "") {
       return res.status(403).send({error: "Invalid pool"})
     }
+
     const ndas = getNDAs(admin.firestore())
     const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
     const ndaRef = ndas.doc(key)
@@ -189,12 +190,14 @@ const fetchNDA = genRequestHandler({
     const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
     const pool = ((req.query.pool || "") as string).trim()
 
-    if (pool === "") {
-      return res.status(403).send({error: "Invalid pool"})
-    }
     if (!address) {
       return res.status(403).send({error: "Invalid address"})
     }
+
+    if (pool === "") {
+      return res.status(403).send({error: "Invalid pool"})
+    }
+
     const ndas = getNDAs(admin.firestore())
     const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
     const nda = await ndas.doc(key).get()
