@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x4Df1e7fFB382F79736CA565F378F783678d995D8
-
 ## CreditLine
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0x4Df1e7fFB382F79736CA565F378F783678d995D8
 
 A contract that represents the agreement between Backers and
  a Borrower. Includes the terms of the loan, as well as the current accounting state, such as interest owed.

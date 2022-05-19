@@ -18,6 +18,9 @@ export function isPlainObject(obj: unknown): obj is PlainObject {
 export function isNonEmptyString(obj: unknown): obj is string {
   return typeof obj === "string" && obj !== ""
 }
+export function isNumber(obj: unknown): obj is number {
+  return typeof obj === "number"
+}
 export function assertNonNullable<T>(val: T | null | undefined, errorMessage?: string): asserts val is NonNullable<T> {
   if (val === null || val === undefined) {
     throw new Error(errorMessage || `Value ${val} is not non-nullable.`)
@@ -39,6 +42,18 @@ const isDeploymentsJson = (json: unknown): json is DeploymentsJson => {
   return isPlainObject(json) && isPlainObject(json["1"]) && isPlainObject(json["1"].mainnet) && isPlainObject(json["1"].mainnet.contracts) && every(json["1"].mainnet.contracts, (val, key): boolean => isPlainObject(val) && isNonEmptyString(val.address))
 }
 
+type MainnetTranchedPoolsJson = {
+  [address: string]: {
+    name: string
+    launchTime: number
+  }
+}
+const isMainnetTranchedPoolsJson = (json: unknown): json is MainnetTranchedPoolsJson => {
+  return isPlainObject(json) && every(json, (val: unknown, key: unknown): boolean => {
+    return isNonEmptyString(key) && isPlainObject(val) && isNonEmptyString(val.name) && isNumber(val.launchTime)
+  })
+}
+
 const fileOptions: {encoding: BufferEncoding} = {encoding: "utf8"}
 const pathToDeploymentsJson = "../protocol/deployments/all.json"
 const deploymentsJson: unknown = JSON.parse(fs.readFileSync(pathToDeploymentsJson, fileOptions))
@@ -47,7 +62,15 @@ if (!isDeploymentsJson(deploymentsJson)) {
   throw new Error("Unexpected deployments json.")
 }
 
+const pathToMainnetTranchedPoolsJson = "../client/config/pool-metadata/mainnet.json"
+const mainnetTranchedPoolsJson = JSON.parse(fs.readFileSync(pathToMainnetTranchedPoolsJson, fileOptions))
+
+if (!isMainnetTranchedPoolsJson(mainnetTranchedPoolsJson)) {
+  throw new Error("Unexpected mainnet tranched pools json.")
+}
+
 const deploymentTextPrefix = "**Deployment on Ethereum mainnet: **"
+const tranchedPoolsDeploymentTextPrefix = "**Borrower Pool deployments on Ethereum mainnet: **"
 
 const addressByContractName = fromPairs(Object.entries(deploymentsJson[1].mainnet.contracts).map((tuple) => [tuple[0], tuple[1].address]))
 
@@ -74,19 +97,25 @@ contractDocsSubdirs.forEach((subdir: string) => {
         const pathToFile = `${pathToSubdir}/${fileName}`
         const content = fs.readFileSync(pathToFile, fileOptions).split(/[\n\r]/)
 
-        const insertIndex = content.findIndex((line: string) => line.startsWith(deploymentTextPrefix) || line.startsWith("## "))
-        if (insertIndex === -1) {
+        const headingIndex = content.findIndex((line: string) => line.startsWith(`## ${contractName}`))
+        if (headingIndex === -1) {
           throw new Error("Failed to identify insertion point.")
         } else {
-          const insertionPoint = content[insertIndex]
-          assertNonNullable(insertionPoint)
-          const deploymentText = `${deploymentTextPrefix}https://etherscan.io/address/${address}`
+          content.splice(headingIndex + 2, 0, deploymentTextPrefix, "", `https://etherscan.io/address/${address}`, "")
+        }
 
-          if (insertionPoint.startsWith(deploymentTextPrefix)) {
-            content[insertIndex] = deploymentText
-          } else {
-            content.splice(insertIndex, 0, deploymentText, "")
-          }
+        if (contractName === "TranchedPool") {
+          const tranchedPoolAddresses = Object.keys(mainnetTranchedPoolsJson)
+          const tranchedPoolsInfo = tranchedPoolAddresses.map((address: string) => {
+            const info = mainnetTranchedPoolsJson[address]
+            assertNonNullable(info)
+            return {...info, address}
+          }).sort(
+            (a, b) => b.launchTime - a.launchTime // reverse-chronological order
+          )
+          const tranchedPoolsText = tranchedPoolsInfo.map((info) => `- [${info.name}](https://etherscan.io/address/${info.address})`)
+
+          content.splice(headingIndex + 6, 0, tranchedPoolsDeploymentTextPrefix, "", ...tranchedPoolsText, "")
         }
 
         fs.writeFileSync(pathToFile, content.join("\n"), fileOptions)

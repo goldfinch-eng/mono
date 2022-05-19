@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xB8276651612df04E48DA5f353c969aa1C0076099
-
 ## Borrower
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0xB8276651612df04E48DA5f353c969aa1C0076099
 
 These contracts represent the a convenient way for a borrower to interact with Goldfinch
  They are 100% optional. However, they let us add many sophisticated and convient features for borrowers

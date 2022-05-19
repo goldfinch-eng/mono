@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x384860F14B39CcD9C89A73519c70cD5f5394D0a6
-
 ## BackerRewards
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0x384860F14B39CcD9C89A73519c70cD5f5394D0a6
 
 ### config
 

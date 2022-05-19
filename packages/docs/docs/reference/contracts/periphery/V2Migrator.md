@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xd44FE8Ec5D6cFB96A06e02e17bC109Ab98d506a5
-
 ## V2Migrator
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0xd44FE8Ec5D6cFB96A06e02e17bC109Ab98d506a5
 
 This is a one-time use contract solely for the purpose of migrating from our V1
  to our V2 architecture. It will be temporarily granted authority from the Goldfinch governance,

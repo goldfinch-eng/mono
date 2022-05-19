@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x9BCE1F08012DD6e72756Cd015E50068f90963D22
-
 ## TranchingLogic
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0x9BCE1F08012DD6e72756Cd015E50068f90963D22
 
 Library for handling the payments waterfall
 

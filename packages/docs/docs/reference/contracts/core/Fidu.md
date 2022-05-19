@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF
-
 ## Fidu
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF
 
 Fidu (symbol: FIDU) is Goldfinch&#x27;s liquidity token, representing shares
  in the Pool. When you deposit, we mint a corresponding amount of Fidu, and when you withdraw, we

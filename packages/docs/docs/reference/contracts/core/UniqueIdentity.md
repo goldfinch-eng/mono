@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xba0439088dc1e75F58e0A7C107627942C15cbb41
-
 ## UniqueIdentity
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0xba0439088dc1e75F58e0A7C107627942C15cbb41
 
 UniqueIdentity is an ERC1155-compliant contract for representing
 the identity verification status of addresses.

@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822
-
 ## SeniorPool
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822
 
 Main entry point for senior LPs (a.k.a. capital providers)
  Automatically invests across borrower pools using an adjustable strategy.

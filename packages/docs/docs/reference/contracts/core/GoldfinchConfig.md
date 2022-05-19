@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1
-
 ## GoldfinchConfig
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0xaA425F8BfE82CD18f634e2Fe91E5DdEeFD98fDA1
 
 This contract stores mappings of useful &quot;protocol config state&quot;, giving a central place
  for all other contracts to access it. For example, the TransactionLimit, or the PoolAddress. These config vars

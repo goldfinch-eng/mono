@@ -1,6 +1,8 @@
-**Deployment on Ethereum mainnet: **https://etherscan.io/address/0x19BfbF921d48279391c7445303D89Cb4a6066b71
-
 ## ConfigOptions
+
+**Deployment on Ethereum mainnet: **
+
+https://etherscan.io/address/0x19BfbF921d48279391c7445303D89Cb4a6066b71
 
 A central place for enumerating the configurable options of our GoldfinchConfig contract
 
