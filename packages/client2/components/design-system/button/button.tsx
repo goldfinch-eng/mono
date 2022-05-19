@@ -41,6 +41,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) {
+    const spinnerOnLeft = isLoading && iconLeft;
+    const spinnerOnRight = isLoading && !spinnerOnLeft;
     return (
       <button
         ref={ref}
@@ -69,7 +71,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...rest}
       >
-        {isLoading ? (
+        {spinnerOnLeft ? (
           <Spinner
             size="sm"
             className={clsx(children ? "-my-2 -ml-1" : null)}
@@ -82,7 +84,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           />
         ) : null}
         {children}
-        {isLoading && iconRight && !iconLeft ? (
+        {spinnerOnRight ? (
           <Spinner
             size="sm"
             className={clsx(children ? "-my-2 -mr-1" : null)}
