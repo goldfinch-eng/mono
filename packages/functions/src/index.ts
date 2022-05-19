@@ -156,7 +156,7 @@ const signNDA = genRequestHandler({
   handler: async (req: Request, res: Response): Promise<Response> => {
     const addressHeader = req.headers["x-goldfinch-address"]
     const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
-    const pool = (req.body.pool || "").trim()
+    const pool = ((req?.query?.pool || req?.body?.pool || "") as string).trim()
 
     if (!address) {
       return res.status(403).send({error: "Invalid address"})
@@ -188,7 +188,7 @@ const fetchNDA = genRequestHandler({
   handler: async (req: Request, res: Response): Promise<Response> => {
     const addressHeader = req.headers["x-goldfinch-address"]
     const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
-    const pool = ((req.query.pool || "") as string).trim()
+    const pool = ((req?.query?.pool || req?.body?.pool || "") as string).trim()
 
     if (!address) {
       return res.status(403).send({error: "Invalid address"})
