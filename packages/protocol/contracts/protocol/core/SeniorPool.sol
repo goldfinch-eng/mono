@@ -71,7 +71,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
-    require(_sharesWithinLimit(potentialNewTotalShares), "Deposit would put the senior pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
@@ -330,12 +329,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   function _getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
     return _fiduToUSDC(fiduAmount.mul(sharePrice).div(_fiduMantissa()));
-  }
-
-  function _sharesWithinLimit(uint256 _totalShares) internal view returns (bool) {
-    return
-      _totalShares.mul(sharePrice).div(_fiduMantissa()) <=
-      _usdcToFidu(config.getNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit)));
   }
 
   function doUSDCTransfer(
