@@ -22,7 +22,7 @@ import {PoolOverview} from "./PoolOverview"
 import {SupplyStatus} from "./SupplyStatus"
 import {V1DealSupplyStatus} from "./V1DealSupplyStatus"
 import {BorrowerOverview} from "./BorrowerOverview"
-import {useSignIn} from "../../hooks/useSignIn"
+import {KnownSession, useSignIn} from "../../hooks/useSignIn"
 
 interface TranchedPoolViewURLParams {
   poolAddress: string
@@ -97,10 +97,10 @@ function TranchedPoolView() {
     assertNonNullable(network)
     assertNonNullable(setSessionData)
 
-    if (session.status !== "known") {
+    if (session.status !== "known" && session.status !== "authenticated") {
       throw new Error("Not signed in. Please refresh the page and try again")
     }
-    const client = new KnownGoldfinchClient(network.name!, session, setSessionData)
+    const client = new KnownGoldfinchClient(network.name!, session as KnownSession, setSessionData)
     return client
       .signNDA(user.address, tranchedPool!.address)
       .then((r) => {

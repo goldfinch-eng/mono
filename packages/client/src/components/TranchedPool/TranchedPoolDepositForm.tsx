@@ -7,7 +7,7 @@ import useERC20Permit from "../../hooks/useERC20Permit"
 import {KnownGoldfinchClient} from "../../hooks/useGoldfinchClient"
 import useNonNullContext from "../../hooks/useNonNullContext"
 import useSendFromUser from "../../hooks/useSendFromUser"
-import {useSignIn} from "../../hooks/useSignIn"
+import {KnownSession, useSignIn} from "../../hooks/useSignIn"
 import {SUPPLY_TX_TYPE} from "../../types/transactions"
 import {assertError, displayDollars} from "../../utils"
 import LoadingButton from "../loadingButton"
@@ -32,10 +32,10 @@ export function TranchedPoolDepositForm({
 
   async function action({transactionAmount, fullName}) {
     try {
-      if (session.status !== "known") {
+      if (session.status !== "known" && session.status !== "authenticated") {
         throw new Error("Not signed in. Please refresh the page and try again")
       }
-      const client = new KnownGoldfinchClient(network.name!, session, setSessionData)
+      const client = new KnownGoldfinchClient(network.name!, session as KnownSession, setSessionData)
       const response = await client.signAgreement(user.address, fullName, tranchedPool.address)
       if (response.json.status !== "success") {
         throw new Error(response.json.error)
