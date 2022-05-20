@@ -478,36 +478,6 @@ describe("SeniorPool", () => {
     })
   })
 
-  describe("hard limits", async () => {
-    describe("totalFundsLimit", async () => {
-      describe("once it's set", async () => {
-        const limit = new BN(5000)
-        const testSetup = deployments.createFixture(async () => {
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(USDC_DECIMALS))
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(new BN(2)).mul(USDC_DECIMALS))
-        })
-
-        beforeEach(async () => {
-          await testSetup()
-        })
-
-        it("should accept deposits before the limit is reached", async () => {
-          return expect(makeDeposit(person2, new BN(1000).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should accept everything right up to the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should fail if you're over the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /put the senior pool over the total limit/
-          )
-        })
-      })
-    })
-  })
-
   describe("assets matching liabilities", async () => {
     describe("when there is a super tiny rounding error", async () => {
       it("should still work", async () => {
