@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Governance
 
-All of the Goldfinch Protocol's smart contracts are controlled exclusively by the Governance multi-sig wallet (address [0xBEb28978B2c755155f20fd3d09Cb37e300A6981f](https://etherscan.io/address/0xBEb28978B2c755155f20fd3d09Cb37e300A6981f)), with the exception of deployments of the Borrower contract, which are each controlled by the borrower for whom it was created.
+The Goldfinch Protocol's smart contracts are controlled by the Governance multi-sig wallet (address [0xBEb28978B2c755155f20fd3d09Cb37e300A6981f](https://etherscan.io/address/0xBEb28978B2c755155f20fd3d09Cb37e300A6981f)), with the exception of deployments of the Borrower contract, which are controlled by the borrower for whom each was created.
 
 The Governance multi-sig wallet is configured such that at least 6 out of 10 account signatures are necessary to sign a wallet transaction. Each of the Governance multi-sig wallet's 10 accounts is controlled by a different person.
 
