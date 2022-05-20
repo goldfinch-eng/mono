@@ -5,5 +5,7 @@
   "solidity.solhintRules": {},
   "eslint.workingDirectories": [
     "./packages/client2"
-  ]
+  ],
+  "solidity.defaultCompiler": "remote",
+  "solidity.packageDefaultDependenciesDirectory": "packages/protocol/node_modules"
 }
