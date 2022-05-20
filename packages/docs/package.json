@@ -7,7 +7,7 @@
     "start": "docusaurus start --port 3002",
     "build": "docusaurus build",
     "_copy-solidity-docs": "cp -r ../protocol/solidity-docgen-docs/protocol/core/. ./docs/reference/contracts/core/. && cp -r ../protocol/solidity-docgen-docs/protocol/periphery/. ./docs/reference/contracts/periphery/. && cp -r ../protocol/solidity-docgen-docs/rewards/. ./docs/reference/contracts/rewards/.",
-    "_move-deprecated-docs": "mv ./docs/reference/contracts/core/{Pool,CreditDesk}.md ./docs/reference/contracts/deprecated",
+    "_move-deprecated-docs": "mv ./docs/reference/contracts/core/{Pool,CreditDesk}.md ./docs/reference/contracts/deprecated && mv ./docs/reference/contracts/periphery/TransferRestrictedVault.md ./docs/reference/contracts/deprecated",
     "_add-deployed-addresses-to-solidity-docs": "npx ts-node utils/addDeployedAddressesToSolidityDocs",
     "_build-solidity-docs": "cd ../protocol && npm run docs && cd ../docs ",
     "build-contract-docs": "npm run _build-solidity-docs && npm run _copy-solidity-docs && npm run _move-deprecated-docs && npm run _add-deployed-addresses-to-solidity-docs",

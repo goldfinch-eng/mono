@@ -24,7 +24,6 @@ As of this writing (May 2022), the Protocol's upgradeable contracts are:
   - [Zapper](./contracts/core/Zapper)
 - Periphery
   - [Borrower](./contracts/periphery/Borrower)
-  - [TransferRestrictedVault](./contracts/periphery/TransferRestrictedVault)
   - [V2Migrator](./contracts/periphery/V2Migrator)
 - GFI Distribution
   - [BackerMerkleDirectDistributor](./contracts/rewards/BackerMerkleDirectDistributor)
