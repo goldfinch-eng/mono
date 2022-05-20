@@ -1,6 +1,5 @@
-import { useApolloClient, gql, useReactiveVar } from "@apollo/client";
+import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
-import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
@@ -31,7 +30,6 @@ import {
   openKYCModal,
   openUIDModal,
 } from "@/lib/state/actions";
-import { isKYCDoneVar } from "@/lib/state/vars";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -47,15 +45,17 @@ export const SUPPLY_PANEL_FIELDS = gql`
 `;
 
 gql`
-  query GetUidBalances {
+  query GetUidBalances($userAccount: ID!) {
     viewer @client {
-      uidBalances {
-        NonUSIndividual
-        USAccreditedIndividual
-        USNonAccreditedIndividual
-        USEntity
-        NonUSEntity
-      }
+      account(format: "lowercase") @export(as: "userAccount")
+    }
+    user(id: $userAccount) {
+      id
+      isUsEntity
+      isNonUsEntity
+      isUsAccreditedIndividual
+      isUsNonAccreditedIndividual
+      isNonUsIndividual
     }
   }
 `;
@@ -86,20 +86,16 @@ export default function SupplyPanel({
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
 
-  const isKYCDone = useReactiveVar(isKYCDoneVar);
-  const { data: uidQueryData } = useGetUidBalancesQuery();
-  const [uidCreated, setUIDCreated] = useState<boolean>(false);
-
-  useEffect(() => {
-    const isUIDCreated =
-      uidQueryData?.viewer?.uidBalances?.NonUSEntity ||
-      uidQueryData?.viewer?.uidBalances?.NonUSIndividual ||
-      uidQueryData?.viewer?.uidBalances?.USAccreditedIndividual ||
-      uidQueryData?.viewer?.uidBalances?.USEntity ||
-      uidQueryData?.viewer?.uidBalances?.USNonAccreditedIndividual;
-
-    setUIDCreated(!!isUIDCreated);
-  }, [uidQueryData]);
+  const { data: uidQueryData } = useGetUidBalancesQuery({
+    variables: { userAccount: "" },
+  });
+  // TODO clean this up. The supply panel should only care about whether or not a user's UID meets to criteria for this pool.
+  const userHasUid =
+    uidQueryData?.user?.isUsEntity ||
+    uidQueryData?.user?.isNonUsEntity ||
+    uidQueryData?.user?.isUsAccreditedIndividual ||
+    uidQueryData?.user?.isUsNonAccreditedIndividual ||
+    uidQueryData?.user?.isNonUsIndividual;
 
   const {
     handleSubmit,
@@ -294,7 +290,7 @@ export default function SupplyPanel({
         </tbody>
       </table>
 
-      {account && !isKYCDone && !uidCreated && (
+      {account && !userHasUid && (
         <button
           className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
           onClick={() => {
@@ -305,7 +301,7 @@ export default function SupplyPanel({
         </button>
       )}
 
-      {account && isKYCDone && !uidCreated && (
+      {account && !userHasUid && (
         <button
           className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
           onClick={openUIDModal}
@@ -314,7 +310,7 @@ export default function SupplyPanel({
         </button>
       )}
 
-      {account && isKYCDone && uidCreated && (
+      {account && userHasUid && (
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <DollarInput

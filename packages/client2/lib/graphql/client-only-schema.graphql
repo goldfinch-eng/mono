@@ -66,10 +66,9 @@ type KYCStatus {
 
 type Viewer {
   user: User
-  account: String
+  account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
-  uidBalances: UIDType
 }
 
 extend type Query {

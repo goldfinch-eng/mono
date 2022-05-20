@@ -21,6 +21,7 @@ const deployedGfiAddress = localhostContracts.GFI.address
 const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Proxy.address
 const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
+const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
@@ -48,6 +49,9 @@ for (let dataSource of subgraphManifest.dataSources) {
       break
     case "BackerRewardsProxy":
       dataSource.source.address = deployedBackerRewardsProxyAddress
+      break
+    case "UniqueIdentityProxy":
+      dataSource.source.address = deployedUniqueIdentityProxyAddress
       break
     default:
       break
