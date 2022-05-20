@@ -47,13 +47,6 @@ import {DepositedToCurve, UnstakedMultiple} from "../typechain/truffle/TestStaki
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
-// Typechain doesn't generate types for solidity enums, so redefining here
-enum LockupPeriod {
-  SixMonths,
-  TwelveMonths,
-  TwentyFourMonths,
-}
-
 async function quoteFiduToUSDC({
   fiduAmount,
   seniorPool,
@@ -97,12 +90,6 @@ describe("StakingRewards", function () {
 
   const yearInSeconds = new BN(365 * 24 * 60 * 60)
   const halfYearInSeconds = yearInSeconds.div(new BN(2))
-
-  const lockupPeriodToDuration = {
-    [LockupPeriod.SixMonths]: halfYearInSeconds,
-    [LockupPeriod.TwelveMonths]: yearInSeconds,
-    [LockupPeriod.TwentyFourMonths]: yearInSeconds.mul(new BN(2)),
-  }
 
   async function stake({
     from,

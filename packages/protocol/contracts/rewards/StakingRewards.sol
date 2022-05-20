@@ -44,8 +44,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     // @notice Struct describing rewards owed with vesting
     StakingRewardsVesting.Rewards rewards;
     // @notice Multiplier applied to staked amount when locking up position
+    // @dev UNUSED (definition kept for storage slot)
     uint256 leverageMultiplier;
     // @notice Time in seconds after which position can be unstaked
+    // @dev UNUSED (definition kept for storage slot)
     uint256 lockedUntil;
     // @notice Type of the staked position
     StakedPositionType positionType;
@@ -594,7 +596,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
   ///   Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
-  ///   Positions that are still locked cannot be unstaked until the position's lockedUntil time has passed.
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
@@ -734,9 +735,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256 prevAmount = position.amount;
     /// @dev IA: Invalid amount. Cannot unstake zero, and cannot unstake more than staked balance.
     require(amount > 0 && amount <= prevAmount, "IA");
-
-    /// @dev LOCKED: Staked funds are locked.
-    require(block.timestamp >= position.lockedUntil, "LOCKED");
 
     uint256 effectiveAmount = toEffectiveAmount(
       amount,
