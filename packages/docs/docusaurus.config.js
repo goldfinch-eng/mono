@@ -8,7 +8,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'Goldfinch Developer Docs',
   tagline: 'Bring crypto loans to the real world',
-  url: 'https://dev.goldfinch.com',
+  url: 'https://dev.goldfinch.finance',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
