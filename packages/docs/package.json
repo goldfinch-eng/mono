@@ -1,0 +1,52 @@
+{
+  "name": "@goldfinch-eng/docs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "docusaurus start --port 3002",
+    "build": "docusaurus build",
+    "_copy-solidity-docs": "cp -r ../protocol/solidity-docgen-docs/protocol/core/. ./docs/reference/contracts/core/. && cp -r ../protocol/solidity-docgen-docs/protocol/periphery/. ./docs/reference/contracts/periphery/. && cp -r ../protocol/solidity-docgen-docs/rewards/. ./docs/reference/contracts/rewards/.",
+    "_move-deprecated-docs": "mv ./docs/reference/contracts/core/{Pool,CreditDesk}.md ./docs/reference/contracts/deprecated && mv ./docs/reference/contracts/periphery/TransferRestrictedVault.md ./docs/reference/contracts/deprecated",
+    "_add-deployed-addresses-to-solidity-docs": "npx ts-node utils/addDeployedAddressesToSolidityDocs",
+    "_build-solidity-docs": "cd ../protocol && npm run docs && cd ../docs ",
+    "build-contract-docs": "npm run _build-solidity-docs && npm run _copy-solidity-docs && npm run _move-deprecated-docs && npm run _add-deployed-addresses-to-solidity-docs",
+    "swizzle": "docusaurus swizzle",
+    "deploy": "docusaurus deploy",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve",
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "tsc": "tsc"
+  },
+  "dependencies": {
+    "@docusaurus/core": "2.0.0-beta.18",
+    "@docusaurus/preset-classic": "2.0.0-beta.18",
+    "@mdx-js/react": "^1.6.22",
+    "clsx": "^1.1.1",
+    "prism-react-renderer": "^1.3.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "2.0.0-beta.18",
+    "@tsconfig/docusaurus": "^1.0.5",
+    "@types/lodash": "^4.14.182",
+    "lodash": "^4.17.21",
+    "prettier": "^2.6.2",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
