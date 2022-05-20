@@ -981,6 +981,17 @@ describe("StakingRewards", function () {
       ])
     })
 
+    it("checkpoints rewards before unstaking", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      await advanceTime({seconds: 10000})
+
+      await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
     it("emits an Unstaked event", async () => {
       const tokenId = await stake({amount: fiduAmount, from: investor})
       const receipt = await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
@@ -1301,6 +1312,17 @@ describe("StakingRewards", function () {
       ).to.be.rejectedWith(/IA/)
     })
 
+    it("checkpoints rewards before unstaking", async () => {
+      await stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount, thirdTokenAmount], {
+        from: investor,
+      })
+
+      await advanceTime({seconds: 10000})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
     it("emits an UnstakedMultiple event", async () => {
       const receipt = await stakingRewards.unstakeMultiple(
         [firstToken, thirdToken],
@@ -1433,6 +1455,18 @@ describe("StakingRewards", function () {
       await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})).to.be.rejected
     })
 
+    it("checkpoints rewards before unstaking", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      const withdrawAmount = fiduAmount.div(new BN(2))
+      await stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
+
+      await advanceTime({seconds: 10000})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
     it("emits an UnstakedAndWithdrew event", async () => {
       const tokenId = await stake({amount: fiduAmount, from: investor})
 
@@ -1556,6 +1590,18 @@ describe("StakingRewards", function () {
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
       await expect(stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})).to.be.rejected
+    })
+
+    it("checkpoints rewards before unstaking", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      const withdrawAmount = fiduAmount.div(new BN(2))
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
+
+      await stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
     it("emits an UnstakedAndWithdrew event", async () => {
@@ -1691,6 +1737,20 @@ describe("StakingRewards", function () {
           {from: investor}
         )
       ).to.be.rejected
+    })
+
+    it("checkpoints rewards before unstaking", async () => {
+      const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+      await stakingRewards.unstakeAndWithdrawMultiple(
+        [firstToken, secondToken],
+        [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+        {from: investor}
+      )
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
     it("emits an UnstakedAndWithdrewMultiple event", async () => {
@@ -1894,6 +1954,17 @@ describe("StakingRewards", function () {
           {from: investor}
         )
       ).to.be.rejected
+    })
+
+    it("checkpoints rewards before unstaking", async () => {
+      await stakingRewards.unstakeAndWithdrawMultipleInFidu(
+        [firstToken, secondToken],
+        [firstTokenAmount, secondTokenAmount],
+        {from: investor}
+      )
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
     it("emits an UnstakedAndWithdrewMultiple event", async () => {
