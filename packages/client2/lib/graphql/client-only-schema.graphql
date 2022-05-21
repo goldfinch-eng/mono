@@ -79,5 +79,6 @@ extend type Query {
   isKYCModalOpen: Boolean!
   isUIDModalOpen: Boolean!
   isKYCDone: Boolean!
+  isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat = USD): GfiPrice!
 }

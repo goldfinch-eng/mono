@@ -6,6 +6,7 @@ import {
   SupportedFiat,
   useCurrentUserWalletInfoQuery,
 } from "@/lib/graphql/generated";
+import { openVerificationModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -106,17 +107,28 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       <div>
         <div className="mb-4 text-lg font-semibold">Your UID</div>
         <div>
-          {data?.user?.isNonUsEntity
-            ? "You are a non-US entity"
-            : data?.user?.isNonUsIndividual
-            ? "You are a non-US individual"
-            : data?.user?.isUsAccreditedIndividual
-            ? "You are a US accredited individual"
-            : data?.user?.isUsEntity
-            ? "You are a US entity"
-            : data?.user?.isUsNonAccreditedIndividual
-            ? "You are a US non-accredited individual"
-            : "You do not have a UID yet"}
+          {loading ? (
+            <Shimmer style={{ width: "20ch" }} />
+          ) : data?.user?.isNonUsEntity ? (
+            "You are a non-US entity"
+          ) : data?.user?.isNonUsIndividual ? (
+            "You are a non-US individual"
+          ) : data?.user?.isUsAccreditedIndividual ? (
+            "You are a US accredited individual"
+          ) : data?.user?.isUsEntity ? (
+            "You are a US entity"
+          ) : data?.user?.isUsNonAccreditedIndividual ? (
+            "You are a US non-accredited individual"
+          ) : (
+            <>
+              <div>You do not have a UID yet</div>
+              <div>
+                <Button onClick={openVerificationModal}>
+                  Verify your identity
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div>

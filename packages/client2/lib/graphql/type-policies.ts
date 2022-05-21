@@ -8,6 +8,7 @@ import {
   isUIDModalOpenVar,
   isKYCModalOpenVar,
   isKYCDoneVar,
+  isVerificationModalOpenVar,
 } from "@/lib/state/vars";
 
 function readFieldFromMetadata(
@@ -32,6 +33,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       isKYCModalOpen: { read: () => isKYCModalOpenVar() },
       isUIDModalOpen: { read: () => isUIDModalOpenVar() },
       isKYCDone: { read: () => isKYCDoneVar() },
+      isVerificationModalOpen: { read: () => isVerificationModalOpenVar() },
     },
   },
   SeniorPool: {

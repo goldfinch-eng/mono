@@ -2,6 +2,7 @@ import {
   isWalletModalOpenVar,
   isKYCModalOpenVar,
   isUIDModalOpenVar,
+  isVerificationModalOpenVar,
 } from "../vars";
 
 export function openWalletModal() {
@@ -26,4 +27,12 @@ export function openUIDModal() {
 
 export function closeUIDModal() {
   isUIDModalOpenVar(false);
+}
+
+export function openVerificationModal() {
+  isVerificationModalOpenVar(true);
+}
+
+export function closeVerificationModal() {
+  isVerificationModalOpenVar(false);
 }
