@@ -25,11 +25,7 @@ import {
   useGetUidBalancesQuery,
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
-import {
-  openWalletModal,
-  openKYCModal,
-  openUIDModal,
-} from "@/lib/state/actions";
+import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -290,27 +286,25 @@ export default function SupplyPanel({
         </tbody>
       </table>
 
-      {account && !userHasUid && (
-        <button
-          className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
-          onClick={() => {
-            openKYCModal();
-          }}
+      {!account ? (
+        <Button
+          className="block w-full"
+          onClick={openWalletModal}
+          size="xl"
+          colorScheme="secondary"
         >
-          Verify Identity
-        </button>
-      )}
-
-      {account && !userHasUid && (
-        <button
-          className="block w-full rounded-md bg-white py-5 font-medium text-sky-700"
-          onClick={openUIDModal}
+          Connect Wallet
+        </Button>
+      ) : !userHasUid ? (
+        <Button
+          className="block w-full"
+          onClick={openVerificationModal}
+          size="xl"
+          colorScheme="secondary"
         >
-          Claim my UID
-        </button>
-      )}
-
-      {account && userHasUid && (
+          Verify my identity
+        </Button>
+      ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <DollarInput
@@ -374,17 +368,6 @@ export default function SupplyPanel({
             Supply
           </Button>
         </form>
-      )}
-
-      {!account && (
-        <Button
-          className="block w-full"
-          onClick={openWalletModal}
-          size="xl"
-          colorScheme="secondary"
-        >
-          Connect Wallet
-        </Button>
       )}
     </div>
   );

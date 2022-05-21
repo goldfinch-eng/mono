@@ -3,35 +3,19 @@
  */
 import { useReactiveVar } from "@apollo/client";
 
-import { KYCModal } from "@/components/kyc-modal";
-import { UIDModal } from "@/components/uid-modal";
 import { VerificationModal } from "@/components/verification-modal";
 import { WalletModal } from "@/components/wallet-modal";
 
-import {
-  closeWalletModal,
-  closeKYCModal,
-  closeUIDModal,
-  closeVerificationModal,
-} from "./actions";
-import {
-  isWalletModalOpenVar,
-  isKYCModalOpenVar,
-  isUIDModalOpenVar,
-  isVerificationModalOpenVar,
-} from "./vars";
+import { closeWalletModal, closeVerificationModal } from "./actions";
+import { isWalletModalOpenVar, isVerificationModalOpenVar } from "./vars";
 
 export function AppWideModals() {
   const isWalletModalOpen = useReactiveVar(isWalletModalOpenVar); // too lazy to write a full graphQL query just to read this from the Apollo cache, so i useReactiveVar on it
-  const isKYCModalOpen = useReactiveVar(isKYCModalOpenVar);
-  const isUIDModalOpen = useReactiveVar(isUIDModalOpenVar);
   const isVerificationModalOpen = useReactiveVar(isVerificationModalOpenVar);
 
   return (
     <>
       <WalletModal isOpen={isWalletModalOpen} onClose={closeWalletModal} />
-      <KYCModal isOpen={isKYCModalOpen} onClose={closeKYCModal} />
-      <UIDModal isOpen={isUIDModalOpen} onClose={closeUIDModal} />
       <VerificationModal
         isOpen={isVerificationModalOpen}
         onClose={closeVerificationModal}

@@ -76,9 +76,6 @@ extend type Query {
   signature: Signature
   viewer: Viewer!
   isWalletModalOpen: Boolean!
-  isKYCModalOpen: Boolean!
-  isUIDModalOpen: Boolean!
-  isKYCDone: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat = USD): GfiPrice!
 }

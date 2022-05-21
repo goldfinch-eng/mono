@@ -5,9 +5,6 @@ import { POOL_METADATA } from "@/constants";
 import { PoolMetadata } from "@/constants/metadata/types";
 import {
   isWalletModalOpenVar,
-  isUIDModalOpenVar,
-  isKYCModalOpenVar,
-  isKYCDoneVar,
   isVerificationModalOpenVar,
 } from "@/lib/state/vars";
 
@@ -30,9 +27,6 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
-      isKYCModalOpen: { read: () => isKYCModalOpenVar() },
-      isUIDModalOpen: { read: () => isUIDModalOpenVar() },
-      isKYCDone: { read: () => isKYCDoneVar() },
       isVerificationModalOpen: { read: () => isVerificationModalOpenVar() },
     },
   },
