@@ -14,6 +14,7 @@ gql`
     gfiPrice(fiat: USD) @client {
       price {
         amount
+        symbol
       }
     }
     viewer @client {

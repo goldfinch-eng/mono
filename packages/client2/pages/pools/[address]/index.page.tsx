@@ -86,7 +86,7 @@ gql`
       ...TranchedPoolStatusFields
       ...SupplyPanelFields
     }
-    gfiPrice @client {
+    gfiPrice(fiat: USD) @client {
       price {
         amount
         symbol

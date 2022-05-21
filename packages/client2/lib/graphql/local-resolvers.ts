@@ -50,7 +50,7 @@ async function fetchGfiPrice(fiat: SupportedFiat): Promise<number> {
 export const resolvers: Resolvers = {
   Query: {
     async gfiPrice(_, args: { fiat: SupportedFiat }): Promise<GfiPrice> {
-      const fiat = args ? args.fiat : SupportedFiat.Usd;
+      const fiat = args.fiat;
       const amount = await fetchGfiPrice(fiat);
       return {
         __typename: "GfiPrice", // returning typename is very important, since this is meant to be a whole type and not just a scalar. Without this, it won't enter the cache properly as a normalized entry

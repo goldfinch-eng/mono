@@ -54,7 +54,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
     },
   },
   GfiPrice: {
-    keyFields: ["price", ["symbol"]],
+    keyFields: ["price", ["symbol"]], // The cache ID of gfiPrice is actually the fiat symbol (like USD or CAD)
   },
   Viewer: {
     keyFields: [], // Viewer is a singleton type representing the current viewer, therefore it shouldn't have key fields
