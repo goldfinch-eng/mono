@@ -55,11 +55,12 @@ export const resolvers: Resolvers = {
       return {
         __typename: "GfiPrice", // returning typename is very important, since this is meant to be a whole type and not just a scalar. Without this, it won't enter the cache properly as a normalized entry
         lastUpdated: Date.now(),
-        price: { symbol: fiat, amount },
+        price: { __typename: "FiatAmount", symbol: fiat, amount },
       };
     },
     async viewer(): Promise<Viewer | null> {
       const provider = getProvider();
+
       if (!provider) {
         return {
           __typename: "Viewer",
@@ -90,6 +91,18 @@ export const resolvers: Resolvers = {
           amount: usdcBalance,
         },
       };
+    },
+  },
+  Viewer: {
+    account(viewer: Viewer, args: { format: "lowercase" }) {
+      if (!viewer || !viewer.account) {
+        return null;
+      }
+      const format = args?.format;
+      if (format === "lowercase") {
+        return viewer.account.toLowerCase();
+      }
+      return viewer.account;
     },
   },
 };

@@ -8,6 +8,7 @@
     "serve": "npm run build && npx firebase emulators:exec --ui --project=dev \"tsc -w --preserveWatchOutput\"",
     "shell": "npm run build && npx firebase functions:shell",
     "start": "npm run serve",
+    "start:local": "CHAIN_IDENTIFIER=http://localhost:8545 npm run serve",
     "start:murmuration": "npm run start",
     "start:murmuration:liquidity-mining": "npm run start",
     "logs": "firebase functions:log",

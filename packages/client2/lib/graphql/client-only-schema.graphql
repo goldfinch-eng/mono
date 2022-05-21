@@ -45,15 +45,37 @@ type CryptoAmount {
   amount: BigInt!
 }
 
+type UIDType {
+  NonUSIndividual: Boolean
+  USAccreditedIndividual: Boolean
+  USNonAccreditedIndividual: Boolean
+  USEntity: Boolean
+  NonUSEntity: Boolean
+}
+
+type Signature {
+  signature: String
+  signatureBlockNum: Int
+  signatureBlockNumTimestamp: Int
+}
+
+type KYCStatus {
+  status: String
+  countryCode: String
+}
+
 type Viewer {
   user: User
-  account: String
+  account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
 }
 
 extend type Query {
+  kycStatus: KYCStatus
+  signature: Signature
   viewer: Viewer!
   isWalletModalOpen: Boolean!
+  isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat = USD): GfiPrice!
 }

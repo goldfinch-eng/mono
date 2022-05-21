@@ -131,5 +131,5 @@ export async function main({
   const hashed = keccak256(encoded)
   const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
 
-  return {signature, expiresAt}
+  return {signature, expiresAt, idVersion}
 }

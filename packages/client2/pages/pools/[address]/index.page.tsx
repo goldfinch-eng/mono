@@ -130,7 +130,7 @@ export default function PoolPage() {
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
   function share() {
-    if (navigator && window) {
+    if (window && navigator && navigator.share) {
       navigator.share({
         title: data?.tranchedPool?.name || "Goldfinch",
         url: window.location.href,

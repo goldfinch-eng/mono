@@ -182,6 +182,27 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/backer_rewards_proxy.ts
 
+  - kind: ethereum/contract
+    name: UniqueIdentityProxy
+    network: mainnet
+    source:
+      address: "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
+      abi: UniqueIdentity_Proxy
+      startBlock: 13494815
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - User
+      abis:
+        - name: UniqueIdentity_Proxy
+          file: ./abis/UniqueIdentity_Proxy.json
+      eventHandlers:
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/unique_identity_proxy.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -447,3 +468,22 @@ templates:
           handler: handleSetTotalRewards
         - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
           handler: handleSetMaxInterestDollarsEligible
+
+  - name: UniqueIdentity
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: UniqueIdentity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/unique_identity.ts
+      entities:
+        - User
+      abis:
+        - name: UniqueIdentity
+          file: ./abis/UniqueIdentity.json
+      eventHandlers:
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle

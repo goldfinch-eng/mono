@@ -22,9 +22,10 @@ import { formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedFiat,
   SupplyPanelFieldsFragment,
+  useGetUidBalancesQuery,
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
-import { openWalletModal } from "@/lib/state/actions";
+import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { waitForSubgraphBlock } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
@@ -38,6 +39,23 @@ export const SUPPLY_PANEL_FIELDS = gql`
     estimatedLeverageRatio
   }
 `;
+
+gql`
+  query GetUidBalances($userAccount: ID!) {
+    viewer @client {
+      account(format: "lowercase") @export(as: "userAccount")
+    }
+    user(id: $userAccount) {
+      id
+      isUsEntity
+      isNonUsEntity
+      isUsAccreditedIndividual
+      isUsNonAccreditedIndividual
+      isNonUsIndividual
+    }
+  }
+`;
+
 interface SupplyPanelProps {
   tranchedPool: SupplyPanelFieldsFragment;
   fiatPerGfi: number;
@@ -63,6 +81,18 @@ export default function SupplyPanel({
   const { account, provider, chainId } = useWallet();
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
+
+  const { data: uidQueryData } = useGetUidBalancesQuery({
+    variables: { userAccount: "" },
+  });
+  // TODO clean this up. The supply panel should only care about whether or not a user's UID meets to criteria for this pool.
+  const userHasUid =
+    uidQueryData?.user?.isUsEntity ||
+    uidQueryData?.user?.isNonUsEntity ||
+    uidQueryData?.user?.isUsAccreditedIndividual ||
+    uidQueryData?.user?.isUsNonAccreditedIndividual ||
+    uidQueryData?.user?.isNonUsIndividual;
+
   const {
     handleSubmit,
     control,
@@ -256,7 +286,25 @@ export default function SupplyPanel({
         </tbody>
       </table>
 
-      {account ? (
+      {!account ? (
+        <Button
+          className="block w-full"
+          onClick={openWalletModal}
+          size="xl"
+          colorScheme="secondary"
+        >
+          Connect Wallet
+        </Button>
+      ) : !userHasUid ? (
+        <Button
+          className="block w-full"
+          onClick={openVerificationModal}
+          size="xl"
+          colorScheme="secondary"
+        >
+          Verify my identity
+        </Button>
+      ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <DollarInput
@@ -320,15 +368,6 @@ export default function SupplyPanel({
             Supply
           </Button>
         </form>
-      ) : (
-        <Button
-          className="block w-full"
-          onClick={openWalletModal}
-          size="xl"
-          colorScheme="secondary"
-        >
-          Connect Wallet
-        </Button>
       )}
     </div>
   );
