@@ -52,3 +52,30 @@
     @apply ring-0;
   }
 }
+
+/* Toastify custom styles */
+:root {
+  --toastify-color-progress-light: #000;
+  --toastify-color-success: theme("colors.grass.100");
+  --toastify-color-warning: #fbf7d5;
+  --toastify-color-error: theme("colors.clay.100");
+  --toastify-text-color-success: theme("colors.grass.800");
+  --toastify-text-color-warning: #645c18;
+  --toastify-text-color-error: theme("colors.clay.800");
+}
+
+.Toastify__toast-container {
+  @apply w-full max-w-screen-md;
+}
+
+.Toastify__close-button {
+  color: inherit;
+}
+
+.Toastify__progress-bar-theme--colored,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--info,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--success,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--warning,
+.Toastify__progress-bar-theme--colored.Toastify__progress-bar--error {
+  background: currentColor;
+}
