@@ -1,9 +1,8 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
 
-import { Icon, Button, DollarInput, Link } from "@/components/design-system";
+import { Icon, Button, DollarInput } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useTranchedPoolContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
@@ -11,7 +10,7 @@ import {
   WithdrawalPanelPoolTokenFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { waitForSubgraphBlock } from "@/lib/utils";
+import { toastTransaction } from "@/lib/toast";
 
 export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment WithdrawalPanelPoolTokenFields on TranchedPoolToken {
@@ -92,23 +91,12 @@ export function WithdrawalPanel({
         amounts
       );
     }
-    const toastId = toast(
-      <div>
-        Withdrawal submitted for pool {tranchedPoolAddress}, view it on{" "}
-        <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
-          etherscan.io
-        </Link>
-      </div>,
-      { autoClose: false }
-    );
-    const receipt = await transaction.wait();
-    await waitForSubgraphBlock(receipt.blockNumber);
-    toast.update(toastId, {
-      render: `Withdrawal from pool ${tranchedPoolAddress} succeeded`,
-      type: "success",
-      autoClose: 5000,
+    await toastTransaction({
+      transaction,
+      pendingPrompt: `Withdrawal submitted for pool ${tranchedPoolAddress}.`,
+      successPrompt: `Withdrawal from pool ${tranchedPoolAddress} succeeded.`,
     });
-    apolloClient.refetchQueries({ include: "active" });
+    await apolloClient.refetchQueries({ include: "active" });
   });
 
   const validateWithdrawalAmount = (value: string) => {

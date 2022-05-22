@@ -1,13 +1,13 @@
 import { useApolloClient } from "@apollo/client";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
 
-import { Button, Link, Spinner } from "@/components/design-system";
+import { Button, Spinner } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { useUidContract } from "@/lib/contracts";
 import { closeVerificationModal } from "@/lib/state/actions";
-import { wait, waitForSubgraphBlock } from "@/lib/utils";
+import { toastTransaction } from "@/lib/toast";
+import { wait } from "@/lib/utils";
 import { fetchUniqueIdentitySigner } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
@@ -94,23 +94,12 @@ export function MintStep() {
           gasPrice: gasPrice,
         }
       );
-      const toastId = toast(
-        <div>
-          UID mint has been submitted, view it on{" "}
-          <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
-            etherscan.io
-          </Link>
-        </div>,
-        { autoClose: false }
-      );
-      const receipt = await transaction.wait();
-      await waitForSubgraphBlock(receipt.blockNumber);
-      toast.update(toastId, {
-        render: `UID mint completed`,
-        type: "success",
-        autoClose: 5000,
+      await toastTransaction({
+        transaction,
+        pendingPrompt: "UID mint submitted.",
+        successPrompt: "UID mint succeeded.",
       });
-      apolloClient.refetchQueries({ include: "active" });
+      await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
     } catch (e) {
       setErrorMessage("Error while minting");
