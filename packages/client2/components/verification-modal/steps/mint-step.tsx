@@ -13,6 +13,7 @@ import { useWallet } from "@/lib/wallet";
 
 import { UidPreview } from "../uid-preview";
 import { useVerificationFlowContext } from "../verification-flow-context";
+import { StepTemplate } from "./step-template";
 import uidLogo from "./uid-logo.png";
 
 export function MintStep() {
@@ -117,62 +118,59 @@ export function MintStep() {
   };
 
   return (
-    <div>
-      <div className="-mx-6 items-center border-y border-sand-200 py-7 px-6">
-        <div className="flex w-full">
-          <div className="mr-10 flex-1">
-            <div className="mt-10 flex w-full flex-col items-center">
-              <Image src={uidLogo} width={120} height={120} alt="UID" />
+    <StepTemplate
+      leftContent={
+        <div className="flex flex-col items-center">
+          <Image src={uidLogo} width={120} height={120} alt="UID" />
 
-              <p className="my-5 text-center">
-                Goldfinch uses UID for identity management
-              </p>
+          <p className="my-5 text-center">
+            Goldfinch uses UID for identity management
+          </p>
 
-              <p className="text-center text-xs text-sand-500">
-                UID is a non-transferrable NFT representing KYC-verification
-                on-chain. It follows the ERC-1155 standard, and is freely usable
-                by any other protocol. A UID is required to participate in
-                Goldfinch lending pools. No personal information is stored
-                on-chain.
-              </p>
+          <p className="text-center text-xs text-sand-500">
+            UID is a non-transferrable NFT representing KYC-verification
+            on-chain. It follows the ERC-1155 standard, and is freely usable by
+            any other protocol. A UID is required to participate in Goldfinch
+            lending pools. No personal information is stored on-chain.
+          </p>
+        </div>
+      }
+      rightContent={
+        errorMessage ? (
+          <div className="text-clay-500">{errorMessage}</div>
+        ) : isPolling ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <div>
+              <Spinner className="m-auto mb-8 block !h-16 !w-16" />
+              <div className="text-center">
+                Fetching parameters for minting your UID, this may take a
+                moment.
+              </div>
             </div>
           </div>
-          <div className="w-5/12">
-            {errorMessage ? (
-              <div className="text-clay-500">{errorMessage}</div>
-            ) : isPolling ? (
-              <div className="flex h-full w-full items-center justify-center">
-                <div>
-                  <Spinner className="m-auto mb-8 block !h-16 !w-16" />
-                  <div className="text-center">
-                    Fetching parameters for minting your UID, this may take a
-                    moment.
-                  </div>
-                </div>
-              </div>
-            ) : mintingParameters ? (
-              <UidPreview minted />
-            ) : null}
-          </div>
+        ) : mintingParameters ? (
+          <UidPreview minted />
+        ) : null
+      }
+      footer={
+        <div className="flex w-full justify-end">
+          {!isMinted ? (
+            <Button
+              disabled={!mintingParameters}
+              isLoading={isMinting}
+              size="lg"
+              onClick={handleMint}
+              iconRight="ArrowSmRight"
+            >
+              Claim my UID
+            </Button>
+          ) : (
+            <Button size="lg" onClick={closeVerificationModal}>
+              Done
+            </Button>
+          )}
         </div>
-      </div>
-      <div className="mt-6 flex items-center justify-end">
-        {!isMinted ? (
-          <Button
-            disabled={!mintingParameters}
-            isLoading={isMinting}
-            size="lg"
-            onClick={handleMint}
-            iconRight="ArrowSmRight"
-          >
-            Claim my UID
-          </Button>
-        ) : (
-          <Button size="lg" onClick={closeVerificationModal}>
-            Done
-          </Button>
-        )}
-      </div>
-    </div>
+      }
+    />
   );
 }

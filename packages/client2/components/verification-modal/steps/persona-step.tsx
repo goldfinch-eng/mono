@@ -9,6 +9,7 @@ import { useWallet } from "@/lib/wallet";
 import { VerificationFlowSteps } from "../step-manifest";
 import { UidPreview } from "../uid-preview";
 import personaLogo from "./persona-logo.png";
+import { StepTemplate } from "./step-template";
 
 export function PersonaStep() {
   const { account } = useWallet();
@@ -47,9 +48,9 @@ export function PersonaStep() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between">
-        <div className="mt-10 flex w-6/12 flex-col items-center">
+    <StepTemplate
+      leftContent={
+        <div className="flex flex-col items-center px-4 pt-12">
           <Image src={personaLogo} width={120} height={120} alt="Persona" />
 
           <p className="my-5 text-center">
@@ -67,24 +68,24 @@ export function PersonaStep() {
             <p className="text-clay-500">{errorMessage}</p>
           ) : null}
         </div>
-        <div className="w-5/12">
-          <UidPreview />
-        </div>
-      </div>
-      <div className="flex justify-between">
-        <Button size="lg" colorScheme="secondary" onClick={previousStep}>
-          Back
-        </Button>
-        <Button
-          size="lg"
-          colorScheme="primary"
-          onClick={beginPersonaInquiry}
-          iconRight="ArrowSmRight"
-          isLoading={isPersonaLoading}
-        >
-          Verify my identity
-        </Button>
-      </div>
-    </div>
+      }
+      rightContent={<UidPreview />}
+      footer={
+        <>
+          <Button size="lg" colorScheme="secondary" onClick={previousStep}>
+            Back
+          </Button>
+          <Button
+            size="lg"
+            colorScheme="primary"
+            onClick={beginPersonaInquiry}
+            iconRight="ArrowSmRight"
+            isLoading={isPersonaLoading}
+          >
+            Verify my identity
+          </Button>
+        </>
+      }
+    />
   );
 }

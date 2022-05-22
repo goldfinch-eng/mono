@@ -27,20 +27,22 @@ export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
       isOpen={isOpen}
       onClose={onClose}
     >
-      <VerificationFlowContext>
-        <Wizard>
-          <StatusCheckStep />
-          <IntroStep />
-          <EntityStep />
-          <ResidencyStep />
-          <AccreditedStep />
-          <PersonaStep />
-          <ParallelMarketsStep />
-          <PendingStep />
-          <MintStep />
-          <IneligibleStep />
-        </Wizard>
-      </VerificationFlowContext>
+      <div style={{ height: "500px" }}>
+        <VerificationFlowContext>
+          <Wizard>
+            <StatusCheckStep />
+            <IntroStep />
+            <EntityStep />
+            <ResidencyStep />
+            <AccreditedStep />
+            <PersonaStep />
+            <ParallelMarketsStep />
+            <PendingStep />
+            <MintStep />
+            <IneligibleStep />
+          </Wizard>
+        </VerificationFlowContext>
+      </div>
     </Modal>
   );
 }

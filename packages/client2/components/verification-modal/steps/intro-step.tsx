@@ -15,36 +15,32 @@ export function IntroStep() {
         Goldfinch requires identity verification to participate
       </h4>
 
-      <div className="mb-5 flex px-8">
-        <div className="mx-2 flex-1 rounded-[10px] border border-sand-300 p-12">
+      <div className="mb-5 flex justify-center gap-5">
+        <div className="w-5/12 rounded-[10px] border border-sand-300 p-10">
           <h5 className="mb-5 text-center font-semibold">Step 1</h5>
-          <div className="mb-5 flex justify-center">
-            <div className="mx-1">
-              <Image
-                src={personaLogo}
-                alt="Persona"
-                width={85}
-                height={85}
-                quality={100}
-              />
-            </div>
+          <div className="mb-5 flex justify-center gap-2">
+            <Image
+              src={personaLogo}
+              alt="Persona"
+              width={85}
+              height={85}
+              quality={100}
+            />
 
-            <div className="mx-1">
-              <Image
-                src={parallelLogo}
-                alt="Parallel Markets"
-                width={85}
-                height={85}
-                quality={100}
-              />
-            </div>
+            <Image
+              src={parallelLogo}
+              alt="Parallel Markets"
+              width={85}
+              height={85}
+              quality={100}
+            />
           </div>
           <Paragraph className="text-center">
             Complete KYC using Persona or Parallel Markets
           </Paragraph>
         </div>
 
-        <div className="mx-2 flex-1 rounded-[10px] border border-sand-300 p-12">
+        <div className="w-5/12 rounded-[10px] border border-sand-300 p-10">
           <h5 className="mb-5 text-center font-semibold">Step 2</h5>
           <div className="mb-5 flex justify-center">
             <Image
@@ -61,7 +57,7 @@ export function IntroStep() {
         </div>
       </div>
 
-      <Paragraph className="m-auto mb-10 text-center text-xs">
+      <Paragraph className="m-auto mb-10 text-center text-xs text-sand-400">
         All information you provide is kept secure and will not be used for any
         purpose beyond executing your supply request. Why does Goldfinch KYC?
       </Paragraph>

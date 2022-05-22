@@ -7,15 +7,16 @@ import { VerificationFlowSteps } from "../step-manifest";
 import { UidPreview } from "../uid-preview";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import parallelMarketsLogo from "./parallel-logo.png";
+import { StepTemplate } from "./step-template";
 
 export function ParallelMarketsStep() {
   const { entity, accredited } = useVerificationFlowContext();
   const { goToStep } = useWizard();
 
   return (
-    <div>
-      <div className="flex justify-between">
-        <div className="mt-10 flex w-6/12 flex-col items-center">
+    <StepTemplate
+      leftContent={
+        <div className="flex flex-col items-center px-2 pt-12">
           <Image
             src={parallelMarketsLogo}
             width={120}
@@ -59,26 +60,26 @@ export function ParallelMarketsStep() {
             seriously. Why does Goldfinch KYC?
           </p>
         </div>
-        <div className="w-5/12">
-          <UidPreview />
-        </div>
-      </div>
-      <div className="flex justify-between">
-        <Button
-          size="lg"
-          colorScheme="secondary"
-          onClick={() => goToStep(VerificationFlowSteps.IndividualOrEntity)}
-        >
-          Back
-        </Button>
-        <Link
-          href="https://bridge.parallelmarkets.com/goldfinch"
-          target="_blank"
-          rel="noopener"
-        >
-          Verify my identity
-        </Link>
-      </div>
-    </div>
+      }
+      rightContent={<UidPreview />}
+      footer={
+        <>
+          <Button
+            size="lg"
+            colorScheme="secondary"
+            onClick={() => goToStep(VerificationFlowSteps.IndividualOrEntity)}
+          >
+            Back
+          </Button>
+          <Link
+            href="https://bridge.parallelmarkets.com/goldfinch"
+            target="_blank"
+            rel="noopener"
+          >
+            Verify my identity
+          </Link>
+        </>
+      }
+    />
   );
 }
