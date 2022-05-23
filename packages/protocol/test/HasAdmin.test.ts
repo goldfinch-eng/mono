@@ -31,11 +31,13 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   }
 })
 
-export function behavesLikeHasAdmin(params: () => {owner: string; anotherUser: string; contract: HasAdminInstance}) {
+export function behavesLikeHasAdmin(
+  params: () => {owner: string; anotherUser: string; contract: Pick<HasAdminInstance, "isAdmin">}
+) {
   describe("behaves like HasAdmin", () => {
     let owner: string
     let anotherUser: string
-    let contract: HasAdminInstance
+    let contract: Pick<HasAdminInstance, "isAdmin">
 
     beforeEach(async () => {
       // eslint-disable-next-line @typescript-eslint/no-extra-semi

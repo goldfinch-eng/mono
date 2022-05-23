@@ -83,6 +83,8 @@ export function behavesLikeConfigurableRoyaltyStandard(
   })
 }
 
+// Need to define interface manually here because ConfigurableRoyaltyStandard
+// is a library and therefore doesn't have an auto-generated typechain type
 interface ConfigurableRoyaltyStandard {
   royaltyInfo(
     _tokenId: number | BN | string,

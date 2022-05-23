@@ -20,6 +20,8 @@ import BN from "bn.js"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
+import {getImplementationAddress} from "@openzeppelin/upgrades-core"
+
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
 import {
@@ -65,7 +67,7 @@ describe("PoolTokens", () => {
     person2,
     person3,
     goldfinchConfig,
-    poolTokens,
+    poolTokens: TestPoolTokensInstance,
     pool,
     goldfinchFactory: GoldfinchFactoryInstance,
     usdc,
@@ -336,7 +338,7 @@ describe("PoolTokens", () => {
       const tokenId = mintEvent.args.tokenId
       const withdrawAmount = depositAmount.div(new BN(4))
       const result = await withdrawPrincipal(tokenId, withdrawAmount)
-      const tokenInfo = await poolTokens.tokens(tokenId)
+      const tokenInfo = (await poolTokens.tokens(tokenId)) as any
 
       const principalAmountRemaining = depositAmount.sub(withdrawAmount)
       // It decrements principalAmount and does not touch principalRedeemed
@@ -344,7 +346,7 @@ describe("PoolTokens", () => {
       expect(tokenInfo.principalRedeemed).to.bignumber.eq(new BN(0))
 
       // It decrements pool.totalMinted
-      const poolInfo = await poolTokens.pools(pool.address)
+      const poolInfo = (await poolTokens.pools(pool.address)) as any
       expect(poolInfo.totalMinted).to.bignumber.eq(principalAmountRemaining)
 
       // It emits an event
@@ -867,6 +869,28 @@ describe("PoolTokens", () => {
 
     describe("safeTransferFrom", () => {
       // TODO Reuse logic from tests of `transferFrom()`.
+    })
+  })
+
+  describe("supportsInterface", async () => {
+    const INTERFACE_ID_ERC721 = "0x80ac58cd"
+    const INTERFACE_ID_ERC721_METADATA = "0x5b5e139f"
+    const INTERFACE_ID_ERC721_ENUMERABLE = "0x780e9d63"
+    const INTERFACE_ID_ERC165 = "0x01ffc9a7"
+    const INTERFACE_ID_ERC2981 = "0x2a55205a"
+
+    context("deployed with proxy", async () => {
+      beforeEach(async () => {
+        expect(await getImplementationAddress(hre.ethers.provider, poolTokens.address)).to.not.be.null
+      })
+
+      it("returns true for ERC721, ERC721_METADATA, ERC721_ENUMERABLE, and ERC165", async () => {
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC721)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC721_METADATA)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC721_ENUMERABLE)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC165)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC2981)).to.be.true
+      })
     })
   })
 

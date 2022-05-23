@@ -15,8 +15,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Pausable.sol";
+import "./ERC721Pausable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
 
 /**

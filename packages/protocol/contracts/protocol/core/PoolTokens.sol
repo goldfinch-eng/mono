@@ -18,6 +18,11 @@ import "../../interfaces/IPoolTokens.sol";
  * @author Goldfinch
  */
 contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, HasAdmin, IERC2981 {
+  bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+  bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
+  bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
+  bytes4 private constant _INTERFACE_ID_ERC165 = 0x01ffc9a7;
+
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
 
@@ -275,6 +280,14 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
   ///   See `royaltyPercent`.
   function setRoyaltyParams(address newReceiver, uint256 newRoyaltyPercent) external onlyAdmin {
     royaltyParams.setRoyaltyParams(newReceiver, newRoyaltyPercent);
+  }
+
+  function supportsInterface(bytes4 id) public view override(ERC165UpgradeSafe, IERC165) returns (bool) {
+    return (id == _INTERFACE_ID_ERC721 ||
+      id == _INTERFACE_ID_ERC721_METADATA ||
+      id == _INTERFACE_ID_ERC721_ENUMERABLE ||
+      id == _INTERFACE_ID_ERC165 ||
+      id == ConfigurableRoyaltyStandard._INTERFACE_ID_ERC2981);
   }
 
   modifier onlyGoldfinchFactory() {
