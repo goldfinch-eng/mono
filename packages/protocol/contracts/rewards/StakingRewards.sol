@@ -375,14 +375,21 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev This function checkpoints rewards.
   /// @param amount The amount of `stakingToken()` to stake
   /// @param positionType The type of the staked position
-  function stake(uint256 amount, StakedPositionType positionType) external nonReentrant whenNotPaused updateReward(0) {
-    _stake(msg.sender, msg.sender, amount, positionType);
+  /// @return Id of the NFT representing the staked position
+  function stake(uint256 amount, StakedPositionType positionType)
+    external
+    nonReentrant
+    whenNotPaused
+    updateReward(0)
+    returns (uint256)
+  {
+    return _stake(msg.sender, msg.sender, amount, positionType);
   }
 
   /// @notice Deposit to SeniorPool and stake your shares in the same transaction.
   /// @param usdcAmount The amount of USDC to deposit into the senior pool. All shares from deposit
   ///   will be staked.
-  function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) {
+  function depositAndStake(uint256 usdcAmount) public nonReentrant whenNotPaused updateReward(0) returns (uint256) {
     /// @dev GL: This address has not been go-listed
     require(isGoListed(), "GL");
     IERC20withDec usdc = config.getUSDC();
@@ -394,6 +401,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     uint256 tokenId = _stake(address(this), msg.sender, fiduAmount, StakedPositionType.Fidu);
     emit DepositedAndStaked(msg.sender, usdcAmount, tokenId, fiduAmount);
+
+    return tokenId;
   }
 
   /// @notice Identical to `depositAndStake`, except it allows for a signature to be passed that permits
@@ -408,9 +417,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint8 v,
     bytes32 r,
     bytes32 s
-  ) external {
+  ) external returns (uint256) {
     IERC20Permit(config.usdcAddress()).permit(msg.sender, address(this), usdcAmount, deadline, v, r, s);
-    depositAndStake(usdcAmount);
+    return depositAndStake(usdcAmount);
   }
 
   /// @notice Deposits FIDU and USDC to Curve on behalf of the user. The Curve LP tokens will be minted
