@@ -259,6 +259,15 @@ describe("StakingRewards", function () {
     })
 
     context("for a FIDU position", async () => {
+      it("returns a token id", async () => {
+        const startSupply = await stakingRewards._tokenIdTracker()
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+        const tokenId = await stakingRewards.stake.call(fiduAmount, StakedPositionType.Fidu, {from: investor})
+
+        expect(tokenId).to.bignumber.equal(startSupply.add(new BN(1)))
+      })
+
       it("stakes and mints a position token", async () => {
         // Have anotherUser stake
         await stake({amount: anotherUserFiduAmount, from: anotherUser})
@@ -362,6 +371,15 @@ describe("StakingRewards", function () {
     })
 
     context("for a Curve LP position", async () => {
+      it("returns a token id", async () => {
+        const startSupply = await stakingRewards._tokenIdTracker()
+
+        await fiduUSDCCurveLP.approve(stakingRewards.address, curveLPAmount, {from: investor})
+        const tokenId = await stakingRewards.stake.call(curveLPAmount, StakedPositionType.CurveLP, {from: investor})
+
+        expect(tokenId).to.bignumber.equal(new BN(startSupply).add(new BN(1)))
+      })
+
       it("stakes and mints a position token", async () => {
         // Have anotherUser stake
         await stake({amount: anotherUserFiduAmount, from: anotherUser})
@@ -516,6 +534,16 @@ describe("StakingRewards", function () {
   })
 
   describe("depositAndStake", async () => {
+    it("returns a token id", async () => {
+      const amount = usdcVal(1000)
+      const startSupply = await stakingRewards._tokenIdTracker()
+
+      await usdc.approve(stakingRewards.address, amount, {from: investor})
+      const tokenId = await stakingRewards.depositAndStake.call(amount, {from: investor})
+
+      expect(tokenId).to.bignumber.equal(new BN(startSupply).add(new BN(1)))
+    })
+
     it("deposits into senior pool and stakes resulting shares", async () => {
       const amount = usdcVal(1000)
       const balanceBefore = await usdc.balanceOf(investor)
@@ -562,6 +590,33 @@ describe("StakingRewards", function () {
   })
 
   describe("depositWithPermitAndStake", async () => {
+    it("returns a token id", async () => {
+      const amount = usdcVal(1000)
+      const startSupply = await stakingRewards._tokenIdTracker()
+
+      const nonce = await (usdc as any).nonces(investor)
+      const deadline = MAX_UINT
+
+      // Create signature for permit
+      const digest = await getApprovalDigest({
+        token: usdc,
+        owner: investor,
+        spender: stakingRewards.address,
+        value: amount,
+        nonce,
+        deadline,
+      })
+      const wallet = await getWallet(investor)
+      assertNonNullable(wallet)
+      const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+      const tokenId = await stakingRewards.depositWithPermitAndStake.call(amount, deadline, v, r as any, s as any, {
+        from: investor,
+      })
+
+      expect(tokenId).to.bignumber.equal(new BN(startSupply).add(new BN(1)))
+    })
+
     it("deposits into senior pool using permit and stakes resulting shares", async () => {
       const nonce = await (usdc as any).nonces(investor)
       const deadline = MAX_UINT
