@@ -1,7 +1,6 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
 
 import {
   Button,
@@ -26,7 +25,7 @@ import {
 } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
-import { waitForSubgraphBlock } from "@/lib/utils";
+import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_FIELDS = gql`
@@ -160,7 +159,7 @@ export default function SupplyPanel({
       deadline,
     });
 
-    const transaction = await tranchedPoolContract.depositWithPermit(
+    const transaction = tranchedPoolContract.depositWithPermit(
       TRANCHES.Junior,
       value,
       deadline,
@@ -168,23 +167,11 @@ export default function SupplyPanel({
       signature.r,
       signature.s
     );
-    const toastId = toast(
-      <div>
-        Deposit submitted for pool {tranchedPoolAddress}, view it on{" "}
-        <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
-          etherscan.io
-        </Link>
-      </div>,
-      { autoClose: false }
-    );
-    const receipt = await transaction.wait();
-    await waitForSubgraphBlock(receipt.blockNumber);
-    await apolloClient.refetchQueries({ include: "active" });
-    toast.update(toastId, {
-      render: `Deposit into pool ${tranchedPoolAddress} succeeded`,
-      type: "success",
-      autoClose: 5000,
+    await toastTransaction({
+      transaction,
+      pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
     });
+    await apolloClient.refetchQueries({ include: "active" });
   };
 
   const supplyValue = watch("supply");

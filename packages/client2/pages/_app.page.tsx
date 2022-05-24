@@ -1,5 +1,5 @@
-import "../styles/globals.css";
 import "react-toastify/dist/ReactToastify.min.css";
+import "../styles/globals.css";
 import { ApolloProvider } from "@apollo/client";
 import type { AppProps } from "next/app";
 import Head from "next/head";
@@ -14,7 +14,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   useAppInitialization();
   return (
     <ApolloProvider client={apolloClient}>
-      <ToastContainer position="top-center" />
+      <ToastContainer position="top-center" theme="colored" />
       <Head>
         <title>Goldfinch</title>
         {/* remove this if we decide we want Google to index the app pages (unlikely) */}
