@@ -37,6 +37,7 @@ const mainnetContracts = mainnetDeployments["1"].mainnet.contracts;
     SeniorPool: contracts.SeniorPool.address,
     GFI: contracts.GFI.address,
     UniqueIdentity: contracts.UniqueIdentity.address,
+    Go: contracts.Go.address,
   };
   const pathname = path.resolve(__dirname, relativePath);
   fs.writeFileSync(pathname, JSON.stringify(addresses, null, 2));

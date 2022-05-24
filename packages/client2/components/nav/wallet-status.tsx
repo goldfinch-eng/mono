@@ -27,6 +27,7 @@ gql`
         token
         amount
       }
+      isGoListed
     }
     user(id: $userAccount) {
       id
@@ -120,6 +121,13 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
             "You are a US entity"
           ) : data?.user?.isUsNonAccreditedIndividual ? (
             "You are a US non-accredited individual"
+          ) : viewer?.isGoListed ? (
+            <>
+              <div>You are go listed (no UID required)</div>
+              <div>
+                <Button onClick={openVerificationModal}>Verify anyway</Button>
+              </div>
+            </>
           ) : (
             <>
               <div>You do not have a UID yet</div>

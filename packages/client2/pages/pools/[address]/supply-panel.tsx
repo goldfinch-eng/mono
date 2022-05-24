@@ -43,6 +43,7 @@ gql`
   query GetUidBalances($userAccount: ID!) {
     viewer @client {
       account(format: "lowercase") @export(as: "userAccount")
+      isGoListed
     }
     user(id: $userAccount) {
       id
@@ -86,6 +87,7 @@ export default function SupplyPanel({
   });
   // TODO clean this up. The supply panel should only care about whether or not a user's UID meets to criteria for this pool.
   const userHasUid =
+    uidQueryData?.viewer.isGoListed ||
     uidQueryData?.user?.isUsEntity ||
     uidQueryData?.user?.isNonUsEntity ||
     uidQueryData?.user?.isUsAccreditedIndividual ||

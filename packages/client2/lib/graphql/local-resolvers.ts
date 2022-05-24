@@ -1,6 +1,6 @@
 import { Resolvers } from "@apollo/client";
 
-import { getGfiContract, getUsdcContract } from "../contracts";
+import { getGfiContract, getGoContract, getUsdcContract } from "../contracts";
 import { getProvider } from "../wallet";
 import {
   GfiPrice,
@@ -122,6 +122,18 @@ export const resolvers: Resolvers = {
         token: SupportedCrypto.Usdc,
         amount: usdcBalance,
       };
+    },
+    async isGoListed(): Promise<boolean | null> {
+      const provider = getProvider();
+      if (!provider) {
+        return null;
+      }
+      const account = await provider.getSigner().getAddress();
+      const chainId = await provider.getSigner().getChainId();
+
+      const goContract = await getGoContract(chainId, provider);
+      const isGoListed = await goContract.go(account);
+      return isGoListed;
     },
   },
 };
