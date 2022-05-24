@@ -45,25 +45,6 @@ type CryptoAmount {
   amount: BigInt!
 }
 
-type UIDType {
-  NonUSIndividual: Boolean
-  USAccreditedIndividual: Boolean
-  USNonAccreditedIndividual: Boolean
-  USEntity: Boolean
-  NonUSEntity: Boolean
-}
-
-type Signature {
-  signature: String
-  signatureBlockNum: Int
-  signatureBlockNumTimestamp: Int
-}
-
-type KYCStatus {
-  status: String
-  countryCode: String
-}
-
 type Viewer {
   user: User
   account(format: String): String
@@ -72,8 +53,6 @@ type Viewer {
 }
 
 extend type Query {
-  kycStatus: KYCStatus
-  signature: Signature
   viewer: Viewer!
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
