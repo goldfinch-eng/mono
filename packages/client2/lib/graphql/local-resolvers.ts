@@ -2,7 +2,13 @@ import { Resolvers } from "@apollo/client";
 
 import { getGfiContract, getUsdcContract } from "../contracts";
 import { getProvider } from "../wallet";
-import { GfiPrice, SupportedCrypto, SupportedFiat, Viewer } from "./generated";
+import {
+  GfiPrice,
+  SupportedCrypto,
+  SupportedFiat,
+  Viewer,
+  CryptoAmount,
+} from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toLowerCase();
@@ -60,36 +66,17 @@ export const resolvers: Resolvers = {
     },
     async viewer(): Promise<Viewer | null> {
       const provider = getProvider();
-
       if (!provider) {
         return {
           __typename: "Viewer",
           account: null,
-          gfiBalance: null,
-          usdcBalance: null,
         };
       }
 
       const account = await provider.getSigner().getAddress();
-      const chainId = await provider.getSigner().getChainId();
-
-      const gfiContract = await getGfiContract(chainId, provider);
-      const gfiBalance = await gfiContract.balanceOf(account);
-
-      const usdcContract = await getUsdcContract(chainId, provider);
-      const usdcBalance = await usdcContract.balanceOf(account);
-
       return {
         __typename: "Viewer",
         account,
-        gfiBalance: {
-          token: SupportedCrypto.Gfi,
-          amount: gfiBalance,
-        },
-        usdcBalance: {
-          token: SupportedCrypto.Usdc,
-          amount: usdcBalance,
-        },
       };
     },
   },
@@ -103,6 +90,38 @@ export const resolvers: Resolvers = {
         return viewer.account.toLowerCase();
       }
       return viewer.account;
+    },
+    async gfiBalance(): Promise<CryptoAmount | null> {
+      const provider = getProvider();
+      if (!provider) {
+        return null;
+      }
+      const account = await provider.getSigner().getAddress();
+      const chainId = await provider.getSigner().getChainId();
+
+      const gfiContract = await getGfiContract(chainId, provider);
+      const gfiBalance = await gfiContract.balanceOf(account);
+      return {
+        __typename: "CryptoAmount",
+        token: SupportedCrypto.Gfi,
+        amount: gfiBalance,
+      };
+    },
+    async usdcBalance(): Promise<CryptoAmount | null> {
+      const provider = getProvider();
+      if (!provider) {
+        return null;
+      }
+      const account = await provider.getSigner().getAddress();
+      const chainId = await provider.getSigner().getChainId();
+
+      const usdcContract = await getUsdcContract(chainId, provider);
+      const usdcBalance = await usdcContract.balanceOf(account);
+      return {
+        __typename: "CryptoAmount",
+        token: SupportedCrypto.Usdc,
+        amount: usdcBalance,
+      };
     },
   },
 };
