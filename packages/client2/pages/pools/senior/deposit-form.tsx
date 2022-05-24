@@ -51,7 +51,7 @@ export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
       await approvalTransaction.wait();
     }
 
-    const transaction = await seniorPoolContract.deposit(depositAmount);
+    const transaction = seniorPoolContract.deposit(depositAmount);
     onTransactionSubmitted();
     await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });

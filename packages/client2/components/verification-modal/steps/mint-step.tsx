@@ -85,7 +85,7 @@ export function MintStep() {
     try {
       setIsMinting(true);
       const gasPrice = await provider.getGasPrice();
-      const transaction = await uidContract.mint(
+      const transaction = uidContract.mint(
         mintingParameters.id,
         mintingParameters.expiresAt,
         mintingParameters.signature,

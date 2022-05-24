@@ -61,7 +61,7 @@ export function WithdrawalPanel({
         poolTokens[0].principalRedeemable.add(poolTokens[0].interestRedeemable)
       )
     ) {
-      transaction = await tranchedPoolContract.withdraw(
+      transaction = tranchedPoolContract.withdraw(
         BigNumber.from(poolTokens[0].id),
         usdcToWithdraw
       );
@@ -86,10 +86,7 @@ export function WithdrawalPanel({
         amounts.push(amountFromThisToken);
         remainingAmount = remainingAmount.sub(amountFromThisToken);
       }
-      transaction = await tranchedPoolContract.withdrawMultiple(
-        tokenIds,
-        amounts
-      );
+      transaction = tranchedPoolContract.withdrawMultiple(tokenIds, amounts);
     }
     await toastTransaction({
       transaction,

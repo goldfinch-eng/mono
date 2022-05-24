@@ -159,7 +159,7 @@ export default function SupplyPanel({
       deadline,
     });
 
-    const transaction = await tranchedPoolContract.depositWithPermit(
+    const transaction = tranchedPoolContract.depositWithPermit(
       TRANCHES.Junior,
       value,
       deadline,
