@@ -197,6 +197,30 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
   }
 
+  const getAllowedUIDTypes_callResult = poolContract.try_getAllowedUIDTypes()
+  if (!getAllowedUIDTypes_callResult.reverted) {
+    const allowedUidInts = getAllowedUIDTypes_callResult.value
+    const allowedUidStrings: string[] = []
+    for (let i = 0; i < allowedUidInts.length; i++) {
+      const uidType = allowedUidInts[i]
+      if (uidType.equals(BigInt.fromI32(0))) {
+        allowedUidStrings.push("NON_US_INDIVIDUAL")
+      } else if (uidType.equals(BigInt.fromI32(1))) {
+        allowedUidStrings.push("US_ACCREDITED_INDIVIDUAL")
+      } else if (uidType.equals(BigInt.fromI32(2))) {
+        allowedUidStrings.push("US_NON_ACCREDITED_INDIVIDUAL")
+      } else if (uidType.equals(BigInt.fromI32(3))) {
+        allowedUidStrings.push("US_ENTITY")
+      } else if (uidType.equals(BigInt.fromI32(4))) {
+        allowedUidStrings.push("NON_US_ENTITY")
+      }
+    }
+    tranchedPool.allowedUidTypes = allowedUidStrings
+  } else {
+    // by default, assume everything except US non-accredited individual is allowed
+    tranchedPool.allowedUidTypes = ["NON_US_INDIVIDUAL", "US_ACCREDITED_INDIVIDUAL", "US_ENTITY", "NON_US_ENTITY"]
+  }
+
   tranchedPool.estimatedJuniorApy = estimateJuniorAPY(tranchedPool)
   tranchedPool.save()
 

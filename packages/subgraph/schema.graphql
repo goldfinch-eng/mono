@@ -179,6 +179,14 @@ enum TranchedPoolCreditLineVersion {
   V2_2
 }
 
+enum UidType {
+  NON_US_INDIVIDUAL
+  US_ACCREDITED_INDIVIDUAL
+  US_NON_ACCREDITED_INDIVIDUAL
+  US_ENTITY
+  NON_US_ENTITY
+}
+
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigDecimal!
@@ -210,6 +218,7 @@ type TranchedPool @entity {
   borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
+  allowedUidTypes: [UidType!]!
 }
 
 type TranchedPoolToken @entity {

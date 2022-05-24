@@ -7,7 +7,6 @@ import {
   TrancheLocked,
   SliceCreated,
   EmergencyShutdown,
-  GoldfinchConfigUpdated,
   DrawdownMade,
   PaymentApplied,
 } from "../../generated/templates/TranchedPool/TranchedPool"
@@ -56,11 +55,6 @@ export function handleSliceCreated(event: SliceCreated): void {
 }
 
 export function handleEmergencyShutdown(event: EmergencyShutdown): void {
-  initOrUpdateTranchedPool(event.address, event.block.timestamp)
-  updatePoolCreditLine(event.address, event.block.timestamp)
-}
-
-export function handleGoldfinchConfigUpdated(event: GoldfinchConfigUpdated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 }
