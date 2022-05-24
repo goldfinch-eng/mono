@@ -203,6 +203,29 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/unique_identity_proxy.ts
 
+  - kind: ethereum/contract
+    name: GoldfinchConfig
+    network: mainnet
+    source:
+      address: "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
+      abi: GoldfinchConfig
+      startBlock: 13096701
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - User
+      abis:
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+      eventHandlers:
+        - event: GoListed(indexed address)
+          handler: handleGoListed
+        - event: NoListed(indexed address)
+          handler: handleNoListed
+      file: ./src/mappings/goldfinch_config.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract

@@ -54,7 +54,7 @@ export function getOrInitUser(address: Address): User {
   let user = User.load(address.toHexString());
   if (!user) {
     user = new User(address.toHexString())
-    user.goListed = true
+    user.isGoListed = false
     user.type = "CAPITAL_PROVIDER"
     user.save()
 

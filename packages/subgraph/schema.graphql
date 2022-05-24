@@ -69,7 +69,6 @@ type User @entity {
   id: ID!
   type: UserType
   capitalProviderStatus: CapitalProviderStatus
-  goListed: Boolean
 
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
@@ -81,6 +80,7 @@ type User @entity {
   isUsNonAccreditedIndividual: Boolean!
   isUsEntity: Boolean!
   isNonUsEntity: Boolean!
+  isGoListed: Boolean!
 }
 
 type SeniorTrancheInfo @entity {

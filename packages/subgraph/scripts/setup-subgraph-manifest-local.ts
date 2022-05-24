@@ -53,6 +53,9 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "UniqueIdentityProxy":
       dataSource.source.address = deployedUniqueIdentityProxyAddress
       break
+    case "GoldfinchConfig":
+      dataSource.source.address = deployedGoldfinchConfigAddress
+      break
     default:
       break
   }
