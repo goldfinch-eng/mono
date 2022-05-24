@@ -10,6 +10,8 @@ import {
 } from "./test/blockchain_scripts/merkle/merkleDirectDistributor/fixtures"
 import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
+import "solidity-docgen"
+
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
 const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
@@ -128,5 +130,11 @@ export default {
     runOnCompile: true,
     strict: process.env.CI !== undefined,
     except: [":Test.*", ":MigratedTranchedPool$"],
+  },
+  docgen: {
+    // Cf. https://github.com/OpenZeppelin/solidity-docgen/blob/master/src/config.ts
+    outputDir: "solidity-docgen-docs",
+    pages: "files",
+    templates: "docs-templates",
   },
 }
