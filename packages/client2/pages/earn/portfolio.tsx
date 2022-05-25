@@ -1,3 +1,4 @@
+// ! This component is unused, repurpose this code
 import { BigNumber } from "ethers";
 
 import { formatCrypto } from "@/lib/format";

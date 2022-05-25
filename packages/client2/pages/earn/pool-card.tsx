@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { FixedNumber } from "ethers";
 import Image from "next/image";
 import NextLink from "next/link";
 import { ReactNode } from "react";
@@ -9,11 +9,8 @@ import {
   InfoIconTooltip,
   ShimmerLines,
 } from "@/components/design-system";
-import { formatCrypto, formatPercent } from "@/lib/format";
-import {
-  SupportedCrypto,
-  TranchedPoolCardFieldsFragment,
-} from "@/lib/graphql/generated";
+import { formatPercent } from "@/lib/format";
+import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
 import {
   PoolStatus,
   getTranchedPoolStatus,
@@ -27,8 +24,6 @@ interface PoolCardProps {
   apy: FixedNumber;
   apyWithGfi: FixedNumber;
   apyTooltipContent: ReactNode;
-  limit?: BigNumber;
-  userBalance: BigNumber;
   icon?: string | null;
   href: string;
   poolStatus?: PoolStatus;
@@ -40,16 +35,14 @@ export function PoolCard({
   apy,
   apyWithGfi,
   apyTooltipContent,
-  limit,
-  userBalance,
   icon,
   href,
   poolStatus,
 }: PoolCardProps) {
   return (
-    <div className="relative flex space-x-4 rounded bg-sand-100 px-7 py-5 hover:bg-sand-200">
-      <div className="relative h-12 w-12 overflow-hidden rounded-full bg-white">
-        {icon && (
+    <PoolCardLayout
+      iconSlot={
+        icon ? (
           <Image
             src={icon}
             alt={`${title} icon`}
@@ -57,18 +50,20 @@ export function PoolCard({
             sizes="48px"
             objectFit="contain"
           />
-        )}
-      </div>
-      <div className="w-2/5">
+        ) : null
+      }
+      titleSlot1={
         <NextLink passHref href={href}>
-          <a className="text-lg font-medium before:absolute before:inset-0">
+          <a className="block text-lg font-medium before:absolute before:inset-0">
             {title ?? "Unnamed Pool"}
           </a>
         </NextLink>
-        <div>{subtitle}</div>
-      </div>
-      <div className="relative w-1/5">
+      }
+      titleSlot2={subtitle}
+      dataSlot1={
         <div className="text-lg font-medium">{formatPercent(apy)} USDC</div>
+      }
+      dataSlot2={
         <div className="flex items-center">
           {formatPercent(apyWithGfi)} with GFI{" "}
           <InfoIconTooltip
@@ -77,24 +72,9 @@ export function PoolCard({
             }
           />
         </div>
-      </div>
-      <div className="flex w-1/5 items-center justify-center">
-        {limit
-          ? formatCrypto(
-              { token: SupportedCrypto.Usdc, amount: limit },
-              { includeSymbol: true }
-            )
-          : "Unlimited"}
-      </div>
-      <div className="flex w-1/5 items-center justify-center">
-        {formatCrypto(
-          { token: SupportedCrypto.Usdc, amount: userBalance },
-          { includeSymbol: true }
-        )}
-      </div>
-      {poolStatus ? (
+      }
+      chipSlot={
         <Chip
-          className="absolute -top-2 -right-2"
           colorScheme={
             poolStatus === PoolStatus.Full
               ? "yellow"
@@ -117,26 +97,62 @@ export function PoolCard({
             ? "REPAID"
             : null}
         </Chip>
-      ) : null}
-    </div>
+      }
+    />
   );
 }
 
 export function PoolCardPlaceholder() {
   return (
-    <div className="flex space-x-4 rounded bg-sand-100 px-7 py-5 hover:bg-sand-200">
-      <div className="h-12 w-12 overflow-hidden rounded-full bg-white" />
-      <div className="grow">
-        <ShimmerLines lines={2} truncateFirstLine />
+    <PoolCardLayout
+      iconSlot={null}
+      titleSlot1={<ShimmerLines lines={1} truncateFirstLine />}
+      titleSlot2={<ShimmerLines lines={1} truncateFirstLine={false} />}
+      dataSlot1={<ShimmerLines lines={1} truncateFirstLine={false} />}
+      dataSlot2={<ShimmerLines lines={1} truncateFirstLine={false} />}
+      chipSlot={null}
+    />
+  );
+}
+
+interface PoolCardLayoutProps {
+  iconSlot: ReactNode;
+  titleSlot1: ReactNode;
+  titleSlot2: ReactNode;
+  dataSlot1: ReactNode;
+  dataSlot2: ReactNode;
+  chipSlot: ReactNode;
+}
+
+function PoolCardLayout({
+  iconSlot,
+  titleSlot1,
+  titleSlot2,
+  dataSlot1,
+  dataSlot2,
+  chipSlot,
+}: PoolCardLayoutProps) {
+  return (
+    <div className="pool-card relative grid items-center gap-x-4 rounded bg-sand-100 p-5 hover:bg-sand-200">
+      <div
+        className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white"
+        style={{ gridArea: "icon" }}
+      >
+        {iconSlot}
       </div>
-      <div className="w-1/5">
-        <ShimmerLines lines={2} truncateFirstLine={false} />
+      <div style={{ gridArea: "title1" }}>{titleSlot1}</div>
+      <div style={{ gridArea: "title2" }}>{titleSlot2}</div>
+      <div className="mt-4 md:mt-0" style={{ gridArea: "data1" }}>
+        {dataSlot1}
       </div>
-      <div className="w-1/5">
-        <ShimmerLines lines={1} truncateFirstLine={false} />
+      <div className="mb-4 md:mb-0" style={{ gridArea: "data2" }}>
+        {dataSlot2}
       </div>
-      <div className="w-1/5">
-        <ShimmerLines lines={1} truncateFirstLine={false} />
+      <div
+        className="justify-self-start sm:justify-self-end"
+        style={{ gridArea: "chip" }}
+      >
+        {chipSlot}
       </div>
     </div>
   );
@@ -226,13 +242,6 @@ export function TranchedPoolCard({
             </div>
           </div>
         </div>
-      }
-      limit={tranchedPool.creditLine.maxLimit}
-      userBalance={
-        tranchedPool.backers?.reduce(
-          (prev, current) => prev.add(current.balance),
-          BigNumber.from(0)
-        ) ?? BigNumber.from(0)
       }
       href={href}
       poolStatus={poolStatus}

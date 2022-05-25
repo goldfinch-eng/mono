@@ -113,7 +113,7 @@ export function Tooltip({
     <>
       {useWrapper ? (
         <div
-          className="inline-flex"
+          className="relative inline-flex"
           tabIndex={0}
           {...getReferenceProps({ ref: reference })}
         >
