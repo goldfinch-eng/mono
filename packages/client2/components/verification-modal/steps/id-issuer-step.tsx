@@ -5,32 +5,32 @@ import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import { StepTemplate } from "./step-template";
 
-export function EntityStep() {
-  const { entity, setEntity } = useVerificationFlowContext();
+export function IdIssuerStep() {
+  const { idIssuer, setIdIssuer } = useVerificationFlowContext();
   const { goToStep } = useWizard();
   return (
     <StepTemplate
-      heading="Who are you participating on behalf of?"
-      headingClassName="w-full"
+      heading="What country issued your government ID?"
+      headingTooltip="You will need your government ID to complete identity verification."
     >
       <div className="flex h-full flex-col gap-3">
         <BigButton
-          selected={entity === "individual"}
+          selected={idIssuer === "us"}
           onClick={() => {
-            setEntity("individual");
-            goToStep(VerificationFlowSteps.Residence);
+            setIdIssuer("us");
+            goToStep(VerificationFlowSteps.Accredited);
           }}
         >
-          An individual (myself)
+          The United States
         </BigButton>
         <BigButton
-          selected={entity === "entity"}
+          selected={idIssuer === "non-us"}
           onClick={() => {
-            setEntity("entity");
-            goToStep(VerificationFlowSteps.ParallelMarkets);
+            setIdIssuer("non-us");
+            goToStep(VerificationFlowSteps.Persona);
           }}
         >
-          A business or entity
+          A country other than the United States
         </BigButton>
       </div>
     </StepTemplate>

@@ -7,7 +7,6 @@ import { PERSONA_CONFIG } from "@/constants";
 import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
-import { UidPreview } from "../uid-preview";
 import personaLogo from "./persona-logo.png";
 import { StepTemplate } from "./step-template";
 
@@ -15,7 +14,7 @@ export function PersonaStep() {
   const { account } = useWallet();
   const [isPersonaLoading, setIsPersonaLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
-  const { previousStep, goToStep } = useWizard();
+  const { goToStep } = useWizard();
 
   const beginPersonaInquiry = async () => {
     setIsPersonaLoading(true);
@@ -49,30 +48,14 @@ export function PersonaStep() {
 
   return (
     <StepTemplate
-      leftContent={
-        <div className="flex flex-col items-center px-4 pt-12">
-          <Image src={personaLogo} width={120} height={120} alt="Persona" />
-
-          <p className="my-5 text-center">
-            Goldfinch uses Persona to complete identity verification
-          </p>
-
-          <p className="text-center text-xs text-sand-500">
-            All information is kept secure and will not be used for any purpose
-            beyond executing your supply request. The only information we store
-            is your ETH address, country, and approval status. We take privacy
-            seriously. Why does Goldfinch KYC?
-          </p>
-
-          {errorMessage ? (
-            <p className="text-clay-500">{errorMessage}</p>
-          ) : null}
-        </div>
-      }
-      rightContent={<UidPreview />}
       footer={
         <>
-          <Button size="lg" colorScheme="secondary" onClick={previousStep}>
+          <Button
+            size="lg"
+            colorScheme="secondary"
+            onClick={() => goToStep(VerificationFlowSteps.IndividualOrEntity)}
+            className="w-full"
+          >
             Back
           </Button>
           <Button
@@ -81,11 +64,28 @@ export function PersonaStep() {
             onClick={beginPersonaInquiry}
             iconRight="ArrowSmRight"
             isLoading={isPersonaLoading}
+            className="w-full"
           >
             Verify my identity
           </Button>
         </>
       }
-    />
+    >
+      <div className="flex flex-col items-center">
+        <Image
+          src={personaLogo}
+          width={110}
+          height={110}
+          quality={100}
+          alt="Persona"
+        />
+
+        <p className="mt-5 w-7/12 text-center">
+          Goldfinch uses Persona to complete identity verification
+        </p>
+
+        {errorMessage ? <p className="text-clay-500">{errorMessage}</p> : null}
+      </div>
+    </StepTemplate>
   );
 }

@@ -85,5 +85,6 @@ export async function toastTransaction({
         ? `Transaction failed to submit with message: ${errorMessage}`
         : "Transaction failed to submit."
     );
+    throw error;
   }
 }

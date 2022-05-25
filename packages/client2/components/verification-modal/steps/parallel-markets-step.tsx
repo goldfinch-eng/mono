@@ -4,7 +4,6 @@ import { useWizard } from "react-use-wizard";
 import { Button, Link } from "@/components/design-system";
 
 import { VerificationFlowSteps } from "../step-manifest";
-import { UidPreview } from "../uid-preview";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import parallelMarketsLogo from "./parallel-logo.png";
 import { StepTemplate } from "./step-template";
@@ -15,59 +14,13 @@ export function ParallelMarketsStep() {
 
   return (
     <StepTemplate
-      leftContent={
-        <div className="flex flex-col items-center px-2 pt-12">
-          <Image
-            src={parallelMarketsLogo}
-            width={120}
-            height={120}
-            alt="Persona"
-          />
-
-          <p className="my-5 text-center text-sm">
-            {entity === "entity" ? (
-              <>
-                Goldfinch uses Parallel Markets to complete verification for
-                entities. After you have completed verification, we will reach
-                out within 24-72 hours. If you encounter any issues, please
-                reach out to{" "}
-                <Link
-                  rel="noopener"
-                  href="mailto:institutional@goldfinch.finance"
-                >
-                  institutional@goldfinch.finance
-                </Link>
-              </>
-            ) : accredited === "accredited" ? (
-              <>
-                Goldfinch uses Parallel Markets to complete verification for
-                accredited investors. After you have completed verification, we
-                will reach out within 24-72 hours. If you encounter any issues,
-                please reach out to{" "}
-                <Link rel="noopener" href="mailto:accredited@goldfinch.finance">
-                  accredited@goldfinch.finance
-                </Link>
-              </>
-            ) : (
-              "Goldfinch uses Parallel Markets to complete identity verification."
-            )}
-          </p>
-
-          <p className="text-center text-xs text-sand-500">
-            All information is kept secure and will not be used for any purpose
-            beyond executing your supply request. The only information we store
-            is your ETH address, country, and approval status. We take privacy
-            seriously. Why does Goldfinch KYC?
-          </p>
-        </div>
-      }
-      rightContent={<UidPreview />}
       footer={
         <>
           <Button
             size="lg"
             colorScheme="secondary"
             onClick={() => goToStep(VerificationFlowSteps.IndividualOrEntity)}
+            className="w-full"
           >
             Back
           </Button>
@@ -75,11 +28,51 @@ export function ParallelMarketsStep() {
             href="https://bridge.parallelmarkets.com/goldfinch"
             target="_blank"
             rel="noopener"
+            className="flex w-full items-center justify-center"
           >
             Verify my identity
           </Link>
         </>
       }
-    />
+    >
+      <div className="flex flex-col items-center">
+        <Image
+          src={parallelMarketsLogo}
+          width={110}
+          height={110}
+          quality={100}
+          alt="Persona"
+        />
+
+        <p className="mt-5 text-center text-sm">
+          {entity === "entity" ? (
+            <>
+              Goldfinch uses Parallel Markets to complete verification for
+              entities. After you have completed verification, we will reach out
+              within 24-72 hours. If you encounter any issues, please reach out
+              to{" "}
+              <Link
+                rel="noopener"
+                href="mailto:institutional@goldfinch.finance"
+              >
+                institutional@goldfinch.finance
+              </Link>
+            </>
+          ) : accredited === "accredited" ? (
+            <>
+              Goldfinch uses Parallel Markets to complete verification for
+              accredited investors. After you have completed verification, we
+              will reach out within 24-72 hours. If you encounter any issues,
+              please reach out to{" "}
+              <Link rel="noopener" href="mailto:accredited@goldfinch.finance">
+                accredited@goldfinch.finance
+              </Link>
+            </>
+          ) : (
+            "Goldfinch uses Parallel Markets to complete identity verification."
+          )}
+        </p>
+      </div>
+    </StepTemplate>
   );
 }

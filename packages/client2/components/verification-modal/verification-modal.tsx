@@ -4,6 +4,8 @@ import { Modal, ModalProps } from "@/components/design-system";
 
 import { AccreditedStep } from "./steps/accredited-step";
 import { EntityStep } from "./steps/entity-step";
+import { IdIssuerStep } from "./steps/id-issuer-step";
+import { IdWarningStep } from "./steps/id-warning-step";
 import { IneligibleStep } from "./steps/ineligible-step";
 import { IntroStep } from "./steps/intro-step";
 import { MintStep } from "./steps/mint-step";
@@ -22,19 +24,23 @@ interface VerificationModalProps {
 export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
   return (
     <Modal
-      size="md"
+      size="xs"
       title="Verify your identity"
       isOpen={isOpen}
       onClose={onClose}
     >
-      <div style={{ height: "500px" }}>
+      <div
+        style={{ minHeight: "400px", display: "flex", flexDirection: "column" }}
+      >
         <VerificationFlowContext>
           <Wizard>
             <StatusCheckStep />
             <IntroStep />
             <EntityStep />
             <ResidencyStep />
+            <IdIssuerStep />
             <AccreditedStep />
+            <IdWarningStep />
             <PersonaStep />
             <ParallelMarketsStep />
             <PendingStep />
