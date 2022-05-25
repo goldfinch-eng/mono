@@ -93,11 +93,10 @@ class AuthenticatedGoldfinchClient extends BaseGoldfinchClient implements Goldfi
     }
 
     const signature = this.session.signature === "pending" ? "" : this.session.signature
-    const signatureBlockNum = !this.session.signatureBlockNum ? "" : this.session.signatureBlockNum.toString()
     return {
       "x-goldfinch-address": address,
       "x-goldfinch-signature": signature,
-      "x-goldfinch-signature-block-num": signatureBlockNum,
+      "x-goldfinch-signature-block-num": this.session.signatureBlockNum.toString(),
     }
   }
 
@@ -158,7 +157,7 @@ export class ReadOnlyGoldfinchClient implements GoldfinchUnauthenticatedClient {
     this.baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[networkName]
   }
 
-  async _handleResponse<T = any>(fetched: Promise<Response>): Promise<HandledResponse<T>> {
+  async _handleResponse<T = Promise<Response>>(fetched: Promise<Response>): Promise<HandledResponse<T>> {
     const response = await fetched
     const json = (await response.json()) as T
     if (response.ok) {
