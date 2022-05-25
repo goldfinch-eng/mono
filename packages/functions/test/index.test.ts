@@ -5,7 +5,7 @@ import * as admin from "firebase-admin"
 import crypto from "crypto"
 import sinon from "sinon"
 
-import {FirebaseConfig, getAgreements, getNDAs, getUsers, setEnvForTest} from "../src/db"
+import {FirebaseConfig, getAgreements, getUsers, setEnvForTest} from "../src/db"
 import {kycStatus, personaCallback, signAgreement} from "../src"
 
 chai.use(chaiSubset)
@@ -31,7 +31,6 @@ describe("functions", () => {
     "0x46855997425525c8ae449fde8624668ce1f72485886900c585d08459822de466363faa239b8070393a2c3d1f97abe50abc48019be415258615e128b59cfd91a31c"
   let users: firestore.CollectionReference<firestore.DocumentData>
   let agreements: firestore.CollectionReference<firestore.DocumentData>
-  let ndas: firestore.CollectionReference<firestore.DocumentData>
 
   const currentBlockNum = 84
   const yesterdayBlockNum = 80
@@ -70,7 +69,6 @@ describe("functions", () => {
     setEnvForTest(testFirestore, config)
     users = getUsers(testFirestore)
     agreements = getAgreements(testFirestore)
-    ndas = getNDAs(testFirestore)
   })
 
   after(async () => {

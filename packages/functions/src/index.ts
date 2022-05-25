@@ -6,7 +6,7 @@ import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import dotenv from "dotenv"
 import {findEnvLocal, assertIsString} from "@goldfinch-eng/utils"
-import {getAgreements, getConfig, getDb, getNDAs, getUsers} from "./db"
+import {getAgreements, getConfig, getDb, getUsers} from "./db"
 import {genRequestHandler} from "./helpers"
 import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
