@@ -1,0 +1,5 @@
+@solidity-parser/=node_modules/@solidity-parser/
+@opengsn/=node_modules/@opengsn/
+@ensdomains/=node_modules/@ensdomains/
+@uniswap/=node_modules/@uniswap/
+@openzeppelin/=node_modules/@openzeppelin/
