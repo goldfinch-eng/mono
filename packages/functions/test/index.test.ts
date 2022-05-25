@@ -6,7 +6,7 @@ import crypto from "crypto"
 import sinon from "sinon"
 
 import {FirebaseConfig, getAgreements, getNDAs, getUsers, setEnvForTest} from "../src/db"
-import {fetchNDA, kycStatus, personaCallback, signAgreement, signNDA} from "../src"
+import {kycStatus, personaCallback, signAgreement} from "../src"
 
 chai.use(chaiSubset)
 const expect = chai.expect
@@ -385,103 +385,6 @@ describe("functions", () => {
           expect(userDoc.exists).to.be.true
           expect(userDoc.data()).to.containSubset({address: address})
           expect(userDoc.data()?.persona?.status).to.eq("approved")
-        })
-      })
-    })
-  })
-
-  describe("signNDA", async () => {
-    const generateNDARequest = (
-      address: string,
-      pool: string,
-      signature: string,
-      signatureBlockNum: number | string | undefined,
-    ) => {
-      return {
-        headers: {
-          "x-goldfinch-address": address,
-          "x-goldfinch-signature": signature,
-          "x-goldfinch-signature-block-num": signatureBlockNum,
-        },
-        body: {pool},
-      } as unknown as Request
-    }
-    const pool = "0x1234asdADF"
-
-    describe("validation", async () => {
-      it("checks if address is present", async () => {
-        await signNDA(generateNDARequest("", "", "", currentBlockNum), expectResponse(403, {error: "Invalid address"}))
-      })
-    })
-
-    describe("valid request", async () => {
-      it("saves the provided details to the ndas collection", async () => {
-        const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
-
-        expect((await ndas.doc(key).get()).exists).to.be.false
-
-        await signNDA(
-          generateNDARequest(address, pool, validSignature, currentBlockNum),
-          expectResponse(200, {status: "success"}),
-        )
-
-        const ndasDoc = await ndas.doc(key).get()
-        expect(ndasDoc.exists).to.be.true
-        expect(ndasDoc.data()).to.containSubset({address: address, pool: pool})
-      })
-    })
-  })
-
-  describe("fetchNDA", async () => {
-    const generateFetchNDARequest = (
-      address: string,
-      pool: string,
-      signature: string,
-      signatureBlockNum: number | string | undefined,
-    ) => {
-      return {
-        headers: {
-          "x-goldfinch-address": address,
-          "x-goldfinch-signature": signature,
-          "x-goldfinch-signature-block-num": signatureBlockNum,
-        },
-        query: {pool: pool},
-      } as unknown as Request
-    }
-    const pool = "0x1234asdADF"
-
-    describe("validation", async () => {
-      it("checks if address is present", async () => {
-        await signNDA(
-          generateFetchNDARequest("", "", "", currentBlockNum),
-          expectResponse(403, {error: "Invalid address"}),
-        )
-      })
-    })
-
-    describe("valid request", async () => {
-      describe("when nda exists", async () => {
-        it("returns valid response", async () => {
-          const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
-
-          await ndas.doc(key).set({
-            address: address,
-            pool: pool,
-            signedAt: Date.now(),
-          })
-          const req = generateFetchNDARequest(address, pool, validSignature, currentBlockNum)
-          await fetchNDA(req, expectResponse(200, {status: "success"}))
-
-          const ndaDoc = await ndas.doc(key).get()
-          expect(ndaDoc.exists).to.be.true
-          expect(ndaDoc.data()).to.containSubset({address: address, pool: pool})
-        })
-      })
-
-      describe("when nda does not exists", async () => {
-        it("returns not found", async () => {
-          const req = generateFetchNDARequest(address, pool, validSignature, currentBlockNum)
-          await fetchNDA(req, expectResponse(404, {error: "Not found"}))
         })
       })
     })

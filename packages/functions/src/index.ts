@@ -150,66 +150,6 @@ const signAgreement = genRequestHandler({
   },
 })
 
-const signNDA = genRequestHandler({
-  requireAuth: false,
-  cors: true,
-  handler: async (req: Request, res: Response): Promise<Response> => {
-    const addressHeader = req.headers["x-goldfinch-address"]
-    const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
-    const pool = ((req?.query?.pool || req?.body?.pool || "") as string).trim()
-
-    if (!address) {
-      return res.status(403).send({error: "Invalid address"})
-    }
-
-    if (pool === "") {
-      return res.status(403).send({error: "Invalid pool"})
-    }
-
-    const ndas = getNDAs(admin.firestore())
-    const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
-    const ndaRef = ndas.doc(key)
-
-    const nda = await ndaRef.get()
-    if (!nda.exists) {
-      await ndaRef.set({
-        address: address,
-        pool: pool,
-        signedAt: Date.now(),
-      })
-    }
-    return res.status(200).send({status: "success"})
-  },
-})
-
-const fetchNDA = genRequestHandler({
-  requireAuth: false,
-  cors: true,
-  handler: async (req: Request, res: Response): Promise<Response> => {
-    const addressHeader = req.headers["x-goldfinch-address"]
-    const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
-    const pool = ((req?.query?.pool || req?.body?.pool || "") as string).trim()
-
-    if (!address) {
-      return res.status(403).send({error: "Invalid address"})
-    }
-
-    if (pool === "") {
-      return res.status(403).send({error: "Invalid pool"})
-    }
-
-    const ndas = getNDAs(admin.firestore())
-    const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
-    const nda = await ndas.doc(key).get()
-
-    if (!nda.exists) {
-      return res.status(404).send({error: "Not found"})
-    }
-
-    return res.status(200).send({status: "success"})
-  },
-})
-
 const personaCallback = genRequestHandler({
   requireAuth: false,
   cors: false,
@@ -267,4 +207,4 @@ const personaCallback = genRequestHandler({
   },
 })
 
-export {kycStatus, personaCallback, signAgreement, signNDA, fetchNDA, circulatingSupply}
+export {kycStatus, personaCallback, signAgreement, circulatingSupply}

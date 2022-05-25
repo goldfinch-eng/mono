@@ -29,11 +29,6 @@ interface GoldfinchAuthenticatedClient {
 
 interface GoldfinchKnownClient {
   signAgreement(address: string, fullName: string, pool: string): Promise<any>
-  signNDA(address: string, fullName: string, pool: string): Promise<any>
-}
-
-interface GoldfinchUnauthenticatedClient {
-  fetchNDA(address: string, fullName: string, pool: string): Promise<any>
 }
 
 export class GoldfinchClientError extends Error {
@@ -131,57 +126,6 @@ export class KnownGoldfinchClient extends BaseGoldfinchClient implements Goldfin
   async signAgreement(address: string, fullName: string, pool: string): Promise<HandledResponse> {
     return this._handleResponse(
       fetch(`${this.baseURL}/signAgreement`, this._getSignAgreementRequestInit(address, {fullName, pool}))
-    )
-  }
-
-  _getSignNDARequestInit(address: string, body: {pool: string}): RequestInit {
-    return {
-      method: "POST",
-      headers: {
-        ...this._getAuthHeaders(address),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  }
-
-  async signNDA(address: string, pool: string): Promise<HandledResponse> {
-    return this._handleResponse(fetch(`${this.baseURL}/signNDA`, this._getSignNDARequestInit(address, {pool})))
-  }
-}
-
-export class ReadOnlyGoldfinchClient implements GoldfinchUnauthenticatedClient {
-  private readonly baseURL: string
-
-  constructor(networkName: string) {
-    this.baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[networkName]
-  }
-
-  async _handleResponse<T = Promise<Response>>(fetched: Promise<Response>): Promise<HandledResponse<T>> {
-    const response = await fetched
-    const json = (await response.json()) as T
-    if (response.ok) {
-      return {
-        ok: response.ok,
-        response,
-        json,
-      }
-    } else {
-      throw new GoldfinchClientError({
-        ok: response.ok,
-        response,
-        json,
-      })
-    }
-  }
-
-  async fetchNDA(address: string, pool: string): Promise<HandledResponse> {
-    return this._handleResponse(
-      fetch(`${this.baseURL}/fetchNDA/?pool=${pool}`, {
-        headers: {
-          "x-goldfinch-address": address,
-        },
-      })
     )
   }
 }
