@@ -47,7 +47,7 @@ type CryptoAmount {
 
 type Viewer {
   user: User
-  account: String
+  account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
@@ -56,5 +56,6 @@ type Viewer {
 extend type Query {
   viewer: Viewer!
   isWalletModalOpen: Boolean!
-  gfiPrice(fiat: SupportedFiat = USD): GfiPrice!
+  isVerificationModalOpen: Boolean!
+  gfiPrice(fiat: SupportedFiat!): GfiPrice!
 }

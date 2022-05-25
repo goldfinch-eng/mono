@@ -5,6 +5,8 @@ import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import {
   SupportedCrypto,
   TranchedPoolStatusFieldsFragment,
+  UserEligibilityFieldsFragment,
+  UidType,
 } from "@/lib/graphql/generated";
 
 /**
@@ -79,4 +81,50 @@ export function sharesToUsdc(numShares: BigNumber, sharePrice: BigNumber) {
     .div(fiduMantissa)
     .div(sharePriceMantissa.div(usdcMantissa));
   return { token: SupportedCrypto.Usdc, amount };
+}
+
+export const USER_ELIGIBILITY_FIELDS = gql`
+  fragment UserEligibilityFields on User {
+    id
+    isUsEntity
+    isNonUsEntity
+    isUsAccreditedIndividual
+    isUsNonAccreditedIndividual
+    isNonUsIndividual
+    isGoListed
+  }
+`;
+
+export function canUserParticipateInPool(
+  poolAllowedUids: UidType[],
+  user: UserEligibilityFieldsFragment
+): boolean {
+  if (user.isGoListed) {
+    return true;
+  }
+  if (
+    user.isNonUsIndividual &&
+    poolAllowedUids.includes(UidType.NonUsIndividual)
+  ) {
+    return true;
+  }
+  if (
+    user.isUsAccreditedIndividual &&
+    poolAllowedUids.includes(UidType.UsAccreditedIndividual)
+  ) {
+    return true;
+  }
+  if (
+    user.isUsNonAccreditedIndividual &&
+    poolAllowedUids.includes(UidType.UsNonAccreditedIndividual)
+  ) {
+    return true;
+  }
+  if (user.isUsEntity && poolAllowedUids.includes(UidType.UsEntity)) {
+    return true;
+  }
+  if (user.isNonUsEntity && poolAllowedUids.includes(UidType.NonUsEntity)) {
+    return true;
+  }
+  return false;
 }

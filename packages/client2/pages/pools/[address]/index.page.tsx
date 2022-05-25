@@ -36,7 +36,10 @@ import { useWallet } from "@/lib/wallet";
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
 import PoolFilledPanel from "./pool-filled-panel";
-import SupplyPanel, { SUPPLY_PANEL_FIELDS } from "./supply-panel";
+import SupplyPanel, {
+  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
+  SUPPLY_PANEL_USER_FIELDS,
+} from "./supply-panel";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -44,7 +47,8 @@ import {
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
-  ${SUPPLY_PANEL_FIELDS}
+  ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
+  ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -84,9 +88,9 @@ gql`
         nextDueTime
       }
       ...TranchedPoolStatusFields
-      ...SupplyPanelFields
+      ...SupplyPanelTranchedPoolFields
     }
-    gfiPrice @client {
+    gfiPrice(fiat: USD) @client {
       price {
         amount
         symbol
@@ -94,6 +98,7 @@ gql`
     }
     user(id: $userId) {
       id
+      ...SupplyPanelUserFields
       tokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
       }
@@ -127,10 +132,11 @@ export default function PoolPage() {
   });
 
   const tranchedPool = data?.tranchedPool;
+  const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
   function share() {
-    if (navigator && window) {
+    if (window && navigator && navigator.share) {
       navigator.share({
         title: data?.tranchedPool?.name || "Goldfinch",
         url: window.location.href,
@@ -484,6 +490,7 @@ export default function PoolPage() {
               {poolStatus === PoolStatus.Open && (
                 <SupplyPanel
                   tranchedPool={tranchedPool}
+                  user={user}
                   fiatPerGfi={fiatPerGfi}
                 />
               )}

@@ -6,17 +6,19 @@ import {
   SupportedFiat,
   useCurrentUserWalletInfoQuery,
 } from "@/lib/graphql/generated";
+import { openVerificationModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 gql`
-  query CurrentUserWalletInfo {
+  query CurrentUserWalletInfo($userAccount: ID!) {
     gfiPrice(fiat: USD) @client {
       price {
         amount
+        symbol
       }
     }
-    viewer @client(always: true) {
-      account
+    viewer @client {
+      account(format: "lowercase") @export(as: "userAccount")
       usdcBalance {
         token
         amount
@@ -25,6 +27,15 @@ gql`
         token
         amount
       }
+    }
+    user(id: $userAccount) {
+      id
+      isUsEntity
+      isNonUsEntity
+      isUsAccreditedIndividual
+      isUsNonAccreditedIndividual
+      isNonUsIndividual
+      isGoListed
     }
   }
 `;
@@ -35,7 +46,10 @@ interface WalletInfoProps {
 
 export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
   const { connector } = useWallet();
-  const { data, loading, error } = useCurrentUserWalletInfoQuery();
+  const { data, loading, error } = useCurrentUserWalletInfoQuery({
+    variables: { userAccount: "" }, // leaving this blank because we're using @export in the query to fill in this variable
+    fetchPolicy: "network-only", // Always fresh results when this panel is opened
+  });
   const viewer = data?.viewer;
 
   const gfiPrice = data?.gfiPrice.price.amount;
@@ -90,6 +104,40 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
               ) : null}
             </div>
           </div>
+        </div>
+      </div>
+      <div>
+        <div className="mb-4 text-lg font-semibold">Your UID</div>
+        <div>
+          {loading ? (
+            <Shimmer style={{ width: "20ch" }} />
+          ) : data?.user?.isNonUsEntity ? (
+            "You are a non-US entity"
+          ) : data?.user?.isNonUsIndividual ? (
+            "You are a non-US individual"
+          ) : data?.user?.isUsAccreditedIndividual ? (
+            "You are a US accredited individual"
+          ) : data?.user?.isUsEntity ? (
+            "You are a US entity"
+          ) : data?.user?.isUsNonAccreditedIndividual ? (
+            "You are a US non-accredited individual"
+          ) : data?.user?.isGoListed ? (
+            <>
+              <div>You are go listed (no UID required)</div>
+              <div>
+                <Button onClick={openVerificationModal}>Verify anyway</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>You do not have a UID yet</div>
+              <div>
+                <Button onClick={openVerificationModal}>
+                  Verify your identity
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div>

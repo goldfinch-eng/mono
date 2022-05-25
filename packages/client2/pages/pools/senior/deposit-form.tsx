@@ -1,12 +1,11 @@
 import { useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
 
-import { Button, Input, Link } from "@/components/design-system";
+import { Button, Input } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useSeniorPoolContract, useUsdcContract } from "@/lib/contracts";
-import { waitForSubgraphBlock } from "@/lib/utils";
+import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
 interface DepositFormProps {
@@ -52,27 +51,10 @@ export function DepositForm({ onTransactionSubmitted }: DepositFormProps) {
       await approvalTransaction.wait();
     }
 
-    const transaction = await seniorPoolContract.deposit(depositAmount);
+    const transaction = seniorPoolContract.deposit(depositAmount);
     onTransactionSubmitted();
-    const toastId = toast(
-      <div>
-        Deposit transaction submitted, view it on{" "}
-        <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
-          etherscan.io
-        </Link>
-      </div>,
-      { autoClose: false }
-    );
-    const receipt = await transaction.wait();
-    await waitForSubgraphBlock(receipt.blockNumber);
-    // PATTERN the "active" refetch strategy is a pretty decent medium between refetching everything and explicitly telling Apollo what to refetch
-    // It's recommended to use "active" by default unless you know for sure that it's insufficient (for example, there's a piece of data offscreen that needs to be refetched)
+    await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });
-    toast.update(toastId, {
-      render: "Senior pool deposit completed",
-      type: "success",
-      autoClose: 5000,
-    });
   });
 
   return (

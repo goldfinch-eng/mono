@@ -54,7 +54,6 @@ enum UserType {
 type User @entity {
   id: ID!
   type: UserType
-  goListed: Boolean
   """
   This includes the amount staked in the senior pool. Doesn't count senior pool shares obtained through a secondary market.
   """
@@ -67,6 +66,13 @@ type User @entity {
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
   tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
+
+  isNonUsIndividual: Boolean!
+  isUsAccreditedIndividual: Boolean!
+  isUsNonAccreditedIndividual: Boolean!
+  isUsEntity: Boolean!
+  isNonUsEntity: Boolean!
+  isGoListed: Boolean!
 }
 
 type SeniorTrancheInfo @entity {
@@ -190,6 +196,14 @@ enum TranchedPoolCreditLineVersion {
   V2_2
 }
 
+enum UidType {
+  NON_US_INDIVIDUAL
+  US_ACCREDITED_INDIVIDUAL
+  US_NON_ACCREDITED_INDIVIDUAL
+  US_ENTITY
+  NON_US_ENTITY
+}
+
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigDecimal!
@@ -221,6 +235,7 @@ type TranchedPool @entity {
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
   transactions: [TranchedPoolTransaction!]! @derivedFrom(field: "tranchedPool")
+  allowedUidTypes: [UidType!]!
 }
 
 type TranchedPoolToken @entity {

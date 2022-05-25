@@ -80,7 +80,7 @@ module.exports = {
       serif: ['"Newsreader Display"', "serif"],
     },
     screens: {
-      xs: "400px",
+      xs: "480px",
       ...defaultTheme.screens,
     },
     extend: {

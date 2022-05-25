@@ -3,11 +3,13 @@ import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
 import { goldfinchLogoPngUrl } from "@/components/design-system";
 import { POOL_METADATA } from "@/constants";
 import { PoolMetadata } from "@/constants/metadata/types";
-import { isWalletModalOpenVar } from "@/lib/state/vars";
+import {
+  isWalletModalOpenVar,
+  isVerificationModalOpenVar,
+} from "@/lib/state/vars";
 
 function readFieldFromMetadata(
-  fieldName: keyof PoolMetadata,
-  fallback: any = null
+  fieldName: keyof PoolMetadata
 ): FieldReadFunction {
   return (_, { readField }) => {
     const id = readField({ fieldName: "id" }) as string;
@@ -17,7 +19,7 @@ function readFieldFromMetadata(
       );
       return;
     }
-    return POOL_METADATA[id]?.[fieldName] ?? fallback;
+    return POOL_METADATA[id]?.[fieldName] ?? null;
   };
 }
 
@@ -25,6 +27,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
+      isVerificationModalOpen: { read: () => isVerificationModalOpenVar() },
     },
   },
   SeniorPool: {
@@ -51,7 +54,7 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
     },
   },
   GfiPrice: {
-    keyFields: ["price", ["symbol"]],
+    keyFields: ["price", ["symbol"]], // The cache ID of gfiPrice is actually the fiat symbol (like USD or CAD)
   },
   Viewer: {
     keyFields: [], // Viewer is a singleton type representing the current viewer, therefore it shouldn't have key fields

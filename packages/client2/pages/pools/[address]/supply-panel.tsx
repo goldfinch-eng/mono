@@ -1,7 +1,6 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
-import { toast } from "react-toastify";
 
 import {
   Button,
@@ -21,25 +20,41 @@ import {
 import { formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedFiat,
-  SupplyPanelFieldsFragment,
+  SupplyPanelTranchedPoolFieldsFragment,
+  SupplyPanelUserFieldsFragment,
 } from "@/lib/graphql/generated";
-import { computeApyFromGfiInFiat } from "@/lib/pools";
-import { openWalletModal } from "@/lib/state/actions";
-import { waitForSubgraphBlock } from "@/lib/utils";
+import { canUserParticipateInPool, computeApyFromGfiInFiat } from "@/lib/pools";
+import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
+import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-export const SUPPLY_PANEL_FIELDS = gql`
-  fragment SupplyPanelFields on TranchedPool {
+export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
+  fragment SupplyPanelTranchedPoolFields on TranchedPool {
     id
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     agreement @client
     remainingCapacity
     estimatedLeverageRatio
+    allowedUidTypes
   }
 `;
+
+export const SUPPLY_PANEL_USER_FIELDS = gql`
+  fragment SupplyPanelUserFields on User {
+    id
+    isUsEntity
+    isNonUsEntity
+    isUsAccreditedIndividual
+    isUsNonAccreditedIndividual
+    isNonUsIndividual
+    isGoListed
+  }
+`;
+
 interface SupplyPanelProps {
-  tranchedPool: SupplyPanelFieldsFragment;
+  tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
+  user: SupplyPanelUserFieldsFragment | null;
   fiatPerGfi: number;
 }
 
@@ -56,13 +71,28 @@ export default function SupplyPanel({
     agreement,
     remainingCapacity,
     estimatedLeverageRatio,
+    allowedUidTypes,
   },
+  user,
   fiatPerGfi,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider, chainId } = useWallet();
   const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
   const { usdcContract } = useUsdcContract();
+
+  const isUserVerified =
+    user?.isGoListed ||
+    user?.isUsEntity ||
+    user?.isNonUsEntity ||
+    user?.isUsAccreditedIndividual ||
+    user?.isUsNonAccreditedIndividual ||
+    user?.isNonUsIndividual;
+
+  const canUserParticipate = user
+    ? canUserParticipateInPool(allowedUidTypes, user)
+    : false;
+
   const {
     handleSubmit,
     control,
@@ -130,7 +160,7 @@ export default function SupplyPanel({
       deadline,
     });
 
-    const transaction = await tranchedPoolContract.depositWithPermit(
+    const transaction = tranchedPoolContract.depositWithPermit(
       TRANCHES.Junior,
       value,
       deadline,
@@ -138,23 +168,11 @@ export default function SupplyPanel({
       signature.r,
       signature.s
     );
-    const toastId = toast(
-      <div>
-        Deposit submitted for pool {tranchedPoolAddress}, view it on{" "}
-        <Link href={`https://etherscan.io/tx/${transaction.hash}`}>
-          etherscan.io
-        </Link>
-      </div>,
-      { autoClose: false }
-    );
-    const receipt = await transaction.wait();
-    await waitForSubgraphBlock(receipt.blockNumber);
-    await apolloClient.refetchQueries({ include: "active" });
-    toast.update(toastId, {
-      render: `Deposit into pool ${tranchedPoolAddress} succeeded`,
-      type: "success",
-      autoClose: 5000,
+    await toastTransaction({
+      transaction,
+      pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
     });
+    await apolloClient.refetchQueries({ include: "active" });
   };
 
   const supplyValue = watch("supply");
@@ -256,7 +274,25 @@ export default function SupplyPanel({
         </tbody>
       </table>
 
-      {account ? (
+      {!account ? (
+        <Button
+          className="block w-full"
+          onClick={openWalletModal}
+          size="xl"
+          colorScheme="secondary"
+        >
+          Connect Wallet
+        </Button>
+      ) : !isUserVerified ? (
+        <Button
+          className="block w-full"
+          onClick={openVerificationModal}
+          size="xl"
+          colorScheme="secondary"
+        >
+          Verify my identity
+        </Button>
+      ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <DollarInput
@@ -311,7 +347,7 @@ export default function SupplyPanel({
           </div>
           <Button
             className="block w-full"
-            disabled={Object.keys(errors).length !== 0}
+            disabled={Object.keys(errors).length !== 0 || !canUserParticipate}
             size="xl"
             colorScheme="secondary"
             type="submit"
@@ -319,16 +355,12 @@ export default function SupplyPanel({
           >
             Supply
           </Button>
+          {!canUserParticipate ? (
+            <p className="text-white">
+              You are not allowed to participate in this pool.
+            </p>
+          ) : null}
         </form>
-      ) : (
-        <Button
-          className="block w-full"
-          onClick={openWalletModal}
-          size="xl"
-          colorScheme="secondary"
-        >
-          Connect Wallet
-        </Button>
       )}
     </div>
   );
