@@ -120,6 +120,7 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
 
+// signAgreement is used to be shared with the borrowers
 const signAgreement = genRequestHandler({
   requireAuth: false,
   cors: true,
