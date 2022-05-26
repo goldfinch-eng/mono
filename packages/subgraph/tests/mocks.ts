@@ -178,6 +178,10 @@ export function mockTranchedPoolCalls(
     .returns([ethereum.Value.fromAddress(creditLineAddress)])
 
   mockCreditLineContractCalls(creditLineAddress, v2_2)
+
+  createMockedFunction(tranchedPoolAddress, "getAllowedUIDTypes", "getAllowedUIDTypes():(uint256[])")
+    .withArgs([])
+    .returns([ethereum.Value.fromI32Array([0, 1, 3, 4])])
 }
 
 export function mockCreditLineContractCalls(

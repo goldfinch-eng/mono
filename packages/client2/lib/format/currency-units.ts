@@ -1,6 +1,6 @@
 import { utils } from "ethers";
 
-import { USDC_DECIMALS, GFI_DECIMALS } from "@/constants";
+import { USDC_DECIMALS, GFI_DECIMALS, FIDU_DECIMALS } from "@/constants";
 
 import {
   CryptoAmount,
@@ -41,6 +41,11 @@ export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
         utils.formatUnits(cryptoAmount.amount, GFI_DECIMALS)
       );
       return gfiAsFloat;
+    case SupportedCrypto.Fidu:
+      const fiduAsFloat = parseFloat(
+        utils.formatUnits(cryptoAmount.amount, FIDU_DECIMALS)
+      );
+      return fiduAsFloat;
     default:
       throw new Error(
         `Unrecognized crypto (${cryptoAmount.token}) in cryptoToFloat()`
@@ -76,6 +81,10 @@ export function formatCrypto(
     case SupportedCrypto.Gfi:
       return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
         includeToken ? " GFI" : ""
+      }`;
+    case SupportedCrypto.Fidu:
+      return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
+        includeToken ? " FIDU" : ""
       }`;
     default:
       throw new Error(

@@ -223,7 +223,7 @@ export default function PoolPage() {
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-12 gap-10 ">
+      <div className="grid grid-cols-12 gap-10">
         <div className="col-span-8">
           <Heading level={1} className="mb-3 font-serif text-sand-800">
             {tranchedPool ? (

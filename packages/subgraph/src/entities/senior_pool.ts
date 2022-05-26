@@ -10,7 +10,6 @@ export function getOrInitSeniorPool(address: Address): SeniorPool {
   let seniorPool = SeniorPool.load(address.toHexString())
   if (!seniorPool) {
     seniorPool = new SeniorPool(address.toHexString())
-    seniorPool.capitalProviders = []
     seniorPool.investmentsMade = []
 
     const poolStatus = getOrInitSeniorPoolStatus()
@@ -59,14 +58,6 @@ export function updateEstimatedApyFromGfiRaw(): void {
       .div(GFI_DECIMALS.toBigDecimal())
     seniorPoolStatus.save()
   }
-}
-
-export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddress: Address): void {
-  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
-  let seniorPoolCapitalProviders = seniorPool.capitalProviders
-  seniorPoolCapitalProviders.push(userAddress.toHexString())
-  seniorPool.capitalProviders = seniorPoolCapitalProviders
-  seniorPool.save()
 }
 
 const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes

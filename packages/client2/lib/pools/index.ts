@@ -1,7 +1,9 @@
 import { gql } from "@apollo/client";
-import { FixedNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
+import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import {
+  SupportedCrypto,
   TranchedPoolStatusFieldsFragment,
   UserEligibilityFieldsFragment,
   UidType,
@@ -62,6 +64,23 @@ export function computeApyFromGfiInFiat(
   fiatPerGfi: number
 ): FixedNumber {
   return apyFromGfiRaw.mulUnsafe(FixedNumber.fromString(fiatPerGfi.toString()));
+}
+
+/**
+ * A utility function for converting senior pool shares to a USDC amount
+ * @param numShares Number of shares. This could be staked or unstaked FIDU balance, for example.
+ * @param sharePrice `sharePrice` as it is reported from the Senior Pool contract
+ * @returns a `CryptoAmount` in USDC
+ */
+export function sharesToUsdc(numShares: BigNumber, sharePrice: BigNumber) {
+  const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
+  const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
+  const sharePriceMantissa = fiduMantissa;
+  const amount = numShares
+    .mul(sharePrice)
+    .div(fiduMantissa)
+    .div(sharePriceMantissa.div(usdcMantissa));
+  return { token: SupportedCrypto.Usdc, amount };
 }
 
 export const USER_ELIGIBILITY_FIELDS = gql`

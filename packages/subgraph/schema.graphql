@@ -6,7 +6,6 @@ Notes
 """
 type SeniorPool @entity {
   id: ID!
-  capitalProviders: [User!]!
   latestPoolStatus: SeniorPoolStatus!
   investmentsMade: [TranchedPool!]!
 }
@@ -34,19 +33,6 @@ type SeniorPoolStatus @entity {
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
 
-type CapitalProviderStatus @entity {
-  id: ID!
-  user: User!
-  numShares: BigInt!
-  availableToWithdraw: BigInt!
-  allowance: BigInt!
-  weightedAverageSharePrice: BigDecimal
-  unrealizedGains: BigDecimal
-  unrealizedGainsPercentage: BigDecimal # TODO conversion issues
-  availableToWithdrawInDollars: BigInt # TODO
-  unrealizedGainsInDollars: BigInt # TODO
-}
-
 type SeniorPoolDeposit @entity {
   """
   tx hash
@@ -68,8 +54,14 @@ enum UserType {
 type User @entity {
   id: ID!
   type: UserType
-  capitalProviderStatus: CapitalProviderStatus
-
+  """
+  This includes the amount staked in the senior pool. Doesn't count senior pool shares obtained through a secondary market.
+  """
+  seniorPoolBalance: BigInt!
+  """
+  Amount of FIDU the user has staked
+  """
+  stakedSeniorPoolBalance: BigInt!
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
@@ -174,6 +166,31 @@ type TranchedPoolBorrowerTransaction @entity {
   timestamp: BigInt!
 }
 
+interface TranchedPoolTransaction {
+  id: ID!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  tranchedPool: TranchedPool!
+}
+
+type TranchedPoolDrawdownMadeTransaction implements TranchedPoolTransaction @entity(immutable: true) {
+  id: ID!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  tranchedPool: TranchedPool!
+  amount: BigInt!
+}
+
+type TranchedPoolPaymentAppliedTransaction implements TranchedPoolTransaction @entity(immutable: true) {
+  id: ID!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  tranchedPool: TranchedPool!
+  principalAmount: BigInt!
+  interestAmount: BigInt!
+  remainingAmount: BigInt!
+}
+
 enum TranchedPoolCreditLineVersion {
   BEFORE_V2_2
   V2_2
@@ -215,9 +232,9 @@ type TranchedPool @entity {
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
-  borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
+  transactions: [TranchedPoolTransaction!]! @derivedFrom(field: "tranchedPool")
   allowedUidTypes: [UidType!]!
 }
 
