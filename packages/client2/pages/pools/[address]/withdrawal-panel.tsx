@@ -1,5 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import { Icon, Button, DollarInput } from "@/components/design-system";
@@ -46,7 +47,8 @@ export function WithdrawalPanel({
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+    reset,
   } = useForm<{ amount: string }>();
   const apolloClient = useApolloClient();
 
@@ -95,6 +97,12 @@ export function WithdrawalPanel({
     });
     await apolloClient.refetchQueries({ include: "active" });
   });
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+    }
+  }, [isSubmitSuccessful, reset]);
 
   const validateWithdrawalAmount = (value: string) => {
     const usdcToWithdraw = utils.parseUnits(value, USDC_DECIMALS);

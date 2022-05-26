@@ -487,14 +487,6 @@ export default function PoolPage() {
         <div className="relative col-span-4">
           {tranchedPool && fiatPerGfi ? (
             <div className="sticky top-12 space-y-8">
-              {poolStatus === PoolStatus.Open && (
-                <SupplyPanel
-                  tranchedPool={tranchedPool}
-                  user={user}
-                  fiatPerGfi={fiatPerGfi}
-                />
-              )}
-
               {poolStatus === PoolStatus.Full && (
                 <PoolFilledPanel
                   limit={tranchedPool.creditLine.limit}
@@ -504,16 +496,24 @@ export default function PoolPage() {
                 />
               )}
 
-              {poolStatus === PoolStatus.ComingSoon && (
-                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-              )}
-
               {data?.user && data?.user.tokens.length > 0 ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tokens}
                 />
               ) : null}
+
+              {poolStatus === PoolStatus.Open && (
+                <SupplyPanel
+                  tranchedPool={tranchedPool}
+                  user={user}
+                  fiatPerGfi={fiatPerGfi}
+                />
+              )}
+
+              {poolStatus === PoolStatus.ComingSoon && (
+                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+              )}
             </div>
           ) : null}
         </div>
