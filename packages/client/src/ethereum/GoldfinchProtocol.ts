@@ -10,7 +10,7 @@ import {BlockInfo} from "../utils"
 import getWeb3 from "../web3"
 import {ERC20, getERC20, Ticker} from "./erc20"
 import {reduceToKnown} from "./events"
-import {getDeployments, getFromBlock, getLegacyDeployments} from "./utils"
+import {getDeployments, getFromBlock, getLegacyDeployments, MAINNET} from "./utils"
 import {EventData} from "web3-eth-contract"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {NetworkConfig} from "../types/network"
@@ -111,6 +111,10 @@ class GoldfinchProtocol {
     )
     const compacted = _.compact(_.concat(_.flatten(eventArrays)))
     return reduceToKnown(compacted, eventNames)
+  }
+
+  get networkIsMainnet(): boolean {
+    return this.networkId === MAINNET
   }
 }
 

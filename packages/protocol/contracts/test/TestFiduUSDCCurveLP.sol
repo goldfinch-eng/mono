@@ -98,6 +98,43 @@ contract TestFiduUSDCCurveLP is
     return virtual_price;
   }
 
+  /// @notice Mock remove_liquidity function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function remove_liquidity(uint256 _amount, uint256[2] memory min_amounts) public override returns (uint256) {
+    return 0;
+  }
+
+  /// @notice Mock remove_liquidity_one_coin function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function remove_liquidity_one_coin(
+    uint256 token_amount,
+    uint256 i,
+    uint256 min_amount
+  ) public override returns (uint256) {
+    return 0;
+  }
+
+  /// @notice Mock get_dy function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function get_dy(
+    uint256 i,
+    uint256 j,
+    uint256 dx
+  ) external view override returns (uint256) {
+    return 0;
+  }
+
+  /// @notice Mock exchange function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function exchange(
+    uint256 i,
+    uint256 j,
+    uint256 dx,
+    uint256 min_dy
+  ) public override returns (uint256) {
+    return 0;
+  }
+
   function getUSDC() internal returns (ERC20) {
     return ERC20(config.getAddress(uint256(ConfigOptions.Addresses.USDC)));
   }

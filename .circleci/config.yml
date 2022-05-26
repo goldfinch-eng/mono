@@ -30,7 +30,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
-      - image: cimg/node:12.18.3
+      - image: cimg/node:14.19.0
     resource_class: large
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
@@ -81,6 +81,7 @@ jobs:
             - ./packages/subgraph/node_modules/
             - ./packages/utils/node_modules/
             - ./packages/utils/dist
+            - ./packages/docs/node_modules/
       - save_cache:
           name: Save intra-build contract build cache
           key: contracts-build-cache-{{ checksum "combined-contracts.txt" }}-{{ .Branch }}-{{ .Revision }}
@@ -91,7 +92,7 @@ jobs:
 
   test:
     docker:
-      - image: cimg/node:12.18.3
+      - image: cimg/node:14.19.0
     parallelism: 4
     steps:
       - checkout
@@ -118,7 +119,7 @@ jobs:
 
   mainnet_forking:
     docker:
-      - image: cimg/node:12.18.3
+      - image: cimg/node:14.19.0
     parallelism: 2
     steps:
       - checkout
