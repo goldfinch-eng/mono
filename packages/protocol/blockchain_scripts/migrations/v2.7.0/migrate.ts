@@ -10,7 +10,7 @@ export async function main() {
   const upgrader = new ContractUpgrader(deployer)
 
   const deployEffects = await getDeployEffects({
-    title: "v2.6.1 upgrade",
+    title: "v2.7.0 upgrade",
     description: "TODO",
   })
 
@@ -30,7 +30,7 @@ export async function main() {
 
   // Execute effects
   await deployEffects.executeDeferred()
-  console.log("Finished v2.6.1 deploy")
+  console.log("Finished v2.7.0 deploy")
   return {
     upgradedContracts,
     deployedContracts,
