@@ -1,5 +1,6 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -98,8 +99,9 @@ export default function SupplyPanel({
     control,
     watch,
     register,
-    formState: { isSubmitting, errors },
+    formState: { isSubmitting, errors, isSubmitSuccessful },
     setValue,
+    reset,
   } = useForm<SupplyForm>();
 
   const remainingJuniorCapacity = remainingCapacity.div(
@@ -173,7 +175,14 @@ export default function SupplyPanel({
       pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
     });
     await apolloClient.refetchQueries({ include: "active" });
+    reset();
   };
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+    }
+  }, [isSubmitSuccessful, reset]);
 
   const supplyValue = watch("supply");
   const fiatApyFromGfi = computeApyFromGfiInFiat(
