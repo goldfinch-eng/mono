@@ -1,9 +1,11 @@
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
+import {ICurveLP as CurveContract} from "@goldfinch-eng/protocol/typechain/web3/ICurveLP"
 import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
+import {Zapper as ZapperContract} from "@goldfinch-eng/protocol/typechain/web3/Zapper"
 import {isUndefined} from "@goldfinch-eng/utils"
 import {assertUnreachable, genExhaustiveTuple} from "@goldfinch-eng/utils/src/type"
 import BigNumber from "bignumber.js"
@@ -12,6 +14,7 @@ import {Contract, EventData, Filter} from "web3-eth-contract"
 import {
   DRAWDOWN_MADE_EVENT,
   INTEREST_COLLECTED_EVENT,
+  isLegacyStakingRewardsEventType,
   KnownEventData,
   KnownEventName,
   PoolEventType,
@@ -34,21 +37,15 @@ import {
 import {Web3IO} from "../types/web3"
 import {assertBigNumber, BlockInfo, defaultSum, displayNumber, roundDownPenny} from "../utils"
 import {buildCreditLineReadOnly} from "./creditLine"
-import {Tickers, usdcFromAtomic} from "./erc20"
+import {getCurvePoolContract} from "./curvePool"
+import {Ticker, usdcFromAtomic} from "./erc20"
 import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getMetadataStore} from "./tranchedPool"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
-import {
-  fetchDataFromAttributes,
-  getPoolEvents,
-  INTEREST_DECIMALS,
-  MAINNET,
-  ONE_YEAR_SECONDS,
-  USDC_DECIMALS,
-} from "./utils"
+import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -84,7 +81,7 @@ class SeniorPool {
     this.goldfinchProtocol = goldfinchProtocol
     this.contract = goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
     this.address = goldfinchProtocol.getAddress("SeniorPool")
-    this.usdc = goldfinchProtocol.getERC20(Tickers.USDC).contract
+    this.usdc = goldfinchProtocol.getERC20(Ticker.USDC).contract
     this.fidu = goldfinchProtocol.getContract<FiduContract>("Fidu")
     this.chain = goldfinchProtocol.networkId
     this.v1Pool = new Pool(this.goldfinchProtocol)
@@ -326,6 +323,7 @@ type SeniorPoolData = {
   rawBalance: BigNumber
   compoundBalance: BigNumber
   balance: BigNumber
+  sharePrice: BigNumber
   totalShares: BigNumber
   totalPoolAssets: BigNumber
   totalLoansOutstanding: BigNumber
@@ -407,6 +405,7 @@ async function fetchSeniorPoolData(
     compoundBalance,
     balance,
     totalShares,
+    sharePrice,
     totalPoolAssets,
     totalLoansOutstanding,
     cumulativeWritedowns,
@@ -435,7 +434,7 @@ async function getDepositEventsByCapitalProvider(
     true,
     currentBlock.number
   )
-  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEvents(
+  const depositedAndStakedEventsByCapitalProvider: EventData[] = await stakingRewards.getEventsFromUser(
     capitalProviderAddress,
     ["DepositedAndStaked"],
     undefined,
@@ -614,14 +613,16 @@ async function getRepaymentEvents(
     currentBlock.number
   )
   const oldEvents = await goldfinchProtocol.queryEvents("Pool", REPAYMENT_EVENT_TYPES, undefined, currentBlock.number)
-  const eventTxs = mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
-    parseName: parseRepaymentEventName,
-    parseAmount: parsePoolRepaymentEventAmount,
-  })
-  const oldEventTxs = mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
-    parseName: parseRepaymentEventName,
-    parseAmount: parseOldPoolRepaymentEventAmount,
-  })
+  const [eventTxs, oldEventTxs] = await Promise.all([
+    mapEventsToTx<RepaymentEventType>(events, REPAYMENT_EVENT_TYPES, {
+      parseName: parseRepaymentEventName,
+      parseAmount: parsePoolRepaymentEventAmount,
+    }),
+    mapEventsToTx<RepaymentEventType>(oldEvents, REPAYMENT_EVENT_TYPES, {
+      parseName: parseRepaymentEventName,
+      parseAmount: parseOldPoolRepaymentEventAmount,
+    }),
+  ])
   const combined = _.map(_.groupBy(eventTxs.concat(oldEventTxs), "id"), (val): CombinedRepaymentTx | null => {
     const interestPayment = _.find(val, (event) => event.type === "InterestCollected")
     const principalPayment = _.find(val, (event) => event.type === "PrincipalCollected")
@@ -849,11 +850,26 @@ export type StoredPosition = {
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 export enum StakedPositionType {
-  Fidu,
-  CurveLP,
+  Fidu = 0,
+  CurveLP = 1,
 }
 
-type PositionOptimisticIncrement = {
+export function getStakedPositionTypeByValue(value: string, legacyFallback = false): StakedPositionType {
+  if (parseInt(value) === 0) {
+    return StakedPositionType.Fidu
+  } else if (parseInt(value) === 1) {
+    return StakedPositionType.CurveLP
+  } else {
+    if (legacyFallback) {
+      // Fallback to FIDU for legacy staked positions (pre GIP-01) that do not have a position type
+      return StakedPositionType.Fidu
+    }
+
+    throw new Error(`Unknown staked position type: ${value}`)
+  }
+}
+
+export type PositionOptimisticIncrement = {
   vested: BigNumber
   unvested: BigNumber
 }
@@ -862,6 +878,9 @@ type StakingRewardsLoadedInfo = {
   currentBlock: BlockInfo
   isPaused: boolean
   currentEarnRate: BigNumber
+  curveLPTokenExchangeRate: BigNumber
+  curveLPTokenMultiplier: BigNumber
+  curveLPTokenPrice: BigNumber
 }
 
 export type StakingRewardsLoaded = WithLoadedInfo<StakingRewards, StakingRewardsLoadedInfo>
@@ -878,6 +897,8 @@ class StakingRewards {
     // The block number in which the v2.6 migration was executed.
     blockNumber: 14635526,
   }
+  curvePool: Web3IO<CurveContract>
+  curveLPToken: Web3IO<Contract>
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
@@ -885,10 +906,13 @@ class StakingRewards {
     this.legacyContract = goldfinchProtocol.getContract<Contract>(
       "StakingRewards",
       undefined,
-      // Disable this legacy contract behavior in the test environment, where it's not needed.
-      process.env.NODE_ENV !== "test"
+      // This legacy contract behavior is only needed in production, or when running in a non-production environment
+      // but pointed against mainnet.
+      process.env.NODE_ENV === "production" || this.goldfinchProtocol.networkIsMainnet
     )
     this.address = goldfinchProtocol.getAddress("StakingRewards")
+    this.curvePool = getCurvePoolContract(goldfinchProtocol)
+    this.curveLPToken = goldfinchProtocol.getERC20(Ticker.CURVE_FIDU_USDC).contract
     this.info = {
       loaded: false,
       value: undefined,
@@ -896,13 +920,48 @@ class StakingRewards {
   }
 
   async initialize(currentBlock: BlockInfo): Promise<void> {
-    const [isPaused, currentEarnRate] = await Promise.all([
-      this.contract.readOnly.methods.paused().call(undefined, currentBlock.number),
-      this.contract.readOnly.methods
-        .currentEarnRatePerToken()
-        .call(undefined, currentBlock.number)
-        .then((currentEarnRate: string) => new BigNumber(currentEarnRate)),
-    ])
+    const [isPaused, currentEarnRate, curveLPTokenExchangeRate, curveLPTokenMultiplier, curveLPTokenPrice] =
+      await Promise.all([
+        this.contract.readOnly.methods
+          .paused()
+          .call(undefined, currentBlock.number)
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: paused", error)
+            throw error
+          }),
+        this.contract.readOnly.methods
+          .currentEarnRatePerToken()
+          .call(undefined, currentBlock.number)
+          .then((currentEarnRate: string) => new BigNumber(currentEarnRate))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: currentEarnRatePerToken", error)
+            throw error
+          }),
+        this.contract.readOnly.methods
+          .getBaseTokenExchangeRate(StakedPositionType.CurveLP)
+          .call(undefined, currentBlock.number)
+          .then((exchangeRate) => new BigNumber(exchangeRate))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: getBaseTokenExchangeRate", error)
+            throw error
+          }),
+        this.contract.readOnly.methods
+          .getEffectiveMultiplierForPositionType(StakedPositionType.CurveLP)
+          .call(undefined, currentBlock.number)
+          .then((multiplier) => new BigNumber(multiplier))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: getEffectiveMultiplierForPositionType", error)
+            throw error
+          }),
+        this.curvePool.readOnly.methods
+          .lp_price()
+          .call(undefined, currentBlock.number)
+          .then((price) => new BigNumber(price))
+          .catch((error) => {
+            console.error("Error initializing StakingRewards: lp_price", error)
+            throw error
+          }),
+      ])
 
     this.info = {
       loaded: true,
@@ -910,6 +969,9 @@ class StakingRewards {
         currentBlock,
         isPaused,
         currentEarnRate,
+        curveLPTokenExchangeRate,
+        curveLPTokenMultiplier,
+        curveLPTokenPrice,
       },
     }
   }
@@ -977,8 +1039,7 @@ class StakingRewards {
     // migration proposal has executed; it might be the case that `raw` for older positions will include
     // the newer fields. We can follow-up to see if we can remove this. It is definitely necessary now though.
     let raw: unknown
-    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
-    if (networkIsMainnet) {
+    if (this.goldfinchProtocol.networkIsMainnet) {
       try {
         raw = await this.contract.readOnly.methods.positions(tokenId).call(undefined, currentBlock.number)
       } catch {
@@ -990,7 +1051,32 @@ class StakingRewards {
     return StakingRewards.parseStoredPosition(raw)
   }
 
-  async getEvents<T extends StakingRewardsEventType>(
+  // Returns events for the given staked positions.
+  //
+  // Note: It may include events that were NOT initiated by the current user.
+  // In the case of token transfers, the staked position may have been been
+  // transacted with by the previous owner(s).
+  async getEventsForPositions<T extends StakingRewardsEventType>(
+    tokenIds: string[],
+    eventNames: T[],
+    filter: Filter | undefined,
+    toBlock: number
+  ): Promise<KnownEventData<T>[]> {
+    const filters = {
+      ...(filter || {}),
+      tokenId: tokenIds,
+    }
+
+    return this.queryEvents(eventNames, filters, toBlock)
+  }
+
+  // Returns events that were initiated by a given user.
+  //
+  // Note: It does NOT include all events for staked positions
+  // that the user currently holds. In the case of token transfers,
+  // the staked position may have been been transacted with by the previous
+  // owner(s).
+  async getEventsFromUser<T extends StakingRewardsEventType>(
     address: string,
     eventNames: T[],
     filter: Filter | undefined,
@@ -1001,12 +1087,16 @@ class StakingRewards {
       user: address,
     }
 
-    const networkIsMainnet = this.goldfinchProtocol.networkId === MAINNET
-    if (networkIsMainnet) {
-      const [legacyEvents, events] = await Promise.all([
+    return this.queryEvents(eventNames, filters, toBlock)
+  }
+
+  async queryEvents<T extends StakingRewardsEventType>(eventNames: T[], filters: Filter = {}, toBlock: number) {
+    if (this.goldfinchProtocol.networkIsMainnet) {
+      return Promise.all([
         this.goldfinchProtocol.queryEvents(
           this.legacyContract.readOnly,
-          eventNames,
+          // Filter out any StakingRewards events that were not created before the v2.6.0 migration.
+          eventNames.filter((eventName) => isLegacyStakingRewardsEventType(eventName)),
           filters,
           Math.min(toBlock, this.v26MigrationInfo.blockNumber)
         ),
@@ -1019,10 +1109,45 @@ class StakingRewards {
               toBlock,
               this.v26MigrationInfo.blockNumber + 1
             ),
-      ])
-      return legacyEvents.concat(events)
+      ]).then(([legacyEvents, events]) => legacyEvents.concat(events))
     } else {
       return this.goldfinchProtocol.queryEvents(this.contract.readOnly, eventNames, filters, toBlock)
+    }
+  }
+}
+
+type ZapperLoadedInfo = {
+  currentBlock: BlockInfo
+  isPaused: boolean
+}
+
+export type ZapperLoaded = WithLoadedInfo<Zapper, ZapperLoadedInfo>
+
+class Zapper {
+  goldfinchProtocol: GoldfinchProtocol
+  contract: Web3IO<ZapperContract>
+  address: string
+  info: Loadable<ZapperLoadedInfo>
+
+  constructor(goldfinchProtocol: GoldfinchProtocol) {
+    this.goldfinchProtocol = goldfinchProtocol
+    this.contract = goldfinchProtocol.getContract<ZapperContract>("Zapper")
+    this.address = goldfinchProtocol.getAddress("Zapper")
+    this.info = {
+      loaded: false,
+      value: undefined,
+    }
+  }
+
+  async initialize(currentBlock: BlockInfo): Promise<void> {
+    const isPaused = await this.contract.readOnly.methods.paused().call(undefined, currentBlock.number)
+
+    this.info = {
+      loaded: true,
+      value: {
+        currentBlock,
+        isPaused,
+      },
     }
   }
 }
@@ -1031,5 +1156,5 @@ export function mockGetWeightedAverageSharePrice(mock: typeof getWeightedAverage
   getWeightedAverageSharePrice = mock || _getWeightedAverageSharePrice
 }
 
-export {fetchCapitalProviderData, fetchSeniorPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition}
+export {fetchCapitalProviderData, fetchSeniorPoolData, SeniorPool, Pool, StakingRewards, StakingRewardsPosition, Zapper}
 export type {SeniorPoolData, CapitalProvider}

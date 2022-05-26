@@ -12,5 +12,5 @@ module.exports = {
           "explicitTypes": "always"
         }
       }
-    ]
+    ],
 }

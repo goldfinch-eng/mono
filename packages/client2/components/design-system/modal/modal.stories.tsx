@@ -1,0 +1,78 @@
+import { Meta, Story } from "@storybook/react";
+import React, { useState } from "react";
+
+import { Button } from "@/components/design-system";
+
+import { Modal, ModalProps } from "./index";
+
+export default {
+  component: Modal,
+  title: "Components/Modal",
+} as Meta;
+
+export const ModalStory: Story<ModalProps> = (args) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <div style={{ height: "2000px" }}>
+      <Button onClick={() => setIsModalOpen(!isModalOpen)}>Open Modal</Button>
+      <br />
+      <div>this frame should lock scrolling while the modal is open</div>
+      <Modal
+        {...args}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      >
+        <p>
+          This is the main body of the modal. You put your content here. This is
+          scrollable if it fills up.
+        </p>
+        <a href="#">This is a link inside the body</a>
+        <p>
+          Bacon ipsum dolor amet capicola sirloin cupim, sausage doner filet
+          mignon beef leberkas kielbasa turkey tenderloin andouille tri-tip
+          salami flank. Jerky turducken turkey burgdoggen, alcatra jowl bresaola
+          salami short ribs pork belly rump cupim ground round tri-tip.
+          Drumstick tail cupim short ribs leberkas tongue landjaeger corned beef
+          ribeye short loin kevin chislic jowl. Tongue pork chop drumstick, pig
+          cupim kielbasa shankle t-bone chislic ham hock hamburger andouille
+          leberkas turducken tenderloin. Capicola porchetta tongue spare ribs
+          brisket frankfurter alcatra salami t-bone pastrami strip steak
+          pancetta. Landjaeger leberkas chislic, sirloin bacon swine turducken
+          ham frankfurter pork chop biltong hamburger. Buffalo flank shoulder
+          chislic meatloaf rump picanha spare ribs shank pig ball tip burgdoggen
+          venison fatback capicola. Pig jerky frankfurter, rump corned beef
+          pancetta short loin picanha beef. Cow sausage ball tip andouille,
+          chuck pork belly burgdoggen frankfurter salami turducken. Capicola
+          venison chicken tongue, chuck shoulder porchetta meatloaf prosciutto
+          doner strip steak shankle brisket. Brisket alcatra landjaeger sausage.
+          Alcatra shoulder corned beef kielbasa ball tip ham hock meatball tail
+          landjaeger strip steak t-bone jerky buffalo bresaola. Chislic kevin
+          sirloin beef ribs swine capicola pork. Filet mignon jerky turkey
+          t-bone picanha biltong. Shankle chicken pork belly pastrami cupim
+          corned beef pig. Meatball jerky frankfurter pastrami picanha swine
+          tail andouille biltong boudin. Prosciutto brisket porchetta burgdoggen
+          buffalo picanha. Drumstick bacon hamburger jowl beef ribs chuck
+          brisket short loin turkey, venison alcatra shoulder tail. Fatback
+          cupim ham hock pork belly. Chuck picanha cow, capicola fatback alcatra
+          jerky chicken landjaeger pastrami. Capicola alcatra pastrami, ground
+          round hamburger chicken picanha. Meatloaf tail brisket bresaola
+          landjaeger kevin corned beef beef tenderloin turducken drumstick.
+          T-bone tenderloin pork loin, andouille picanha capicola ground round
+          flank. Short loin tri-tip sausage, buffalo ball tip filet mignon
+          leberkas venison brisket. Capicola shank pancetta sausage, spare ribs
+          tail filet mignon hamburger chuck turducken venison t-bone landjaeger.
+          Tri-tip doner pig, landjaeger hamburger frankfurter cow boudin spare
+          ribs chislic alcatra meatball beef short ribs. Turducken pork tail
+          short loin.
+        </p>
+      </Modal>
+    </div>
+  );
+};
+
+ModalStory.args = {
+  size: "md",
+  title: "This the modal's heading",
+  description: "This is the modal's description (optional)",
+};

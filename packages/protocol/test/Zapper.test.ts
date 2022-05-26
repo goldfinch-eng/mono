@@ -35,6 +35,7 @@ import {DepositMade as TranchedPoolDepositMade} from "../typechain/truffle/Tranc
 import {DepositedToCurveAndStaked, Staked} from "../typechain/truffle/StakingRewards"
 import {mint as mintUID} from "./uniqueIdentityHelpers"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
+import {time} from "@openzeppelin/test-helpers"
 
 // Typechain doesn't generate types for solidity enums, so redefining here
 enum StakedPositionType {
@@ -139,6 +140,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
     stakingRewards,
     tranchedPool,
     fiduUSDCCurveLP,
+    maxRate,
   }
 })
 
@@ -160,6 +162,8 @@ describe("Zapper", async () => {
 
   let fiduAmount: BN
 
+  let stakingRewardsMaxRate: BN
+
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({
@@ -177,6 +181,7 @@ describe("Zapper", async () => {
       usdc,
       fiduUSDCCurveLP,
       uniqueIdentity: uid,
+      maxRate: stakingRewardsMaxRate,
     } = await testSetup())
   })
 
@@ -455,6 +460,7 @@ describe("Zapper", async () => {
     let usdcToZapInFidu: BN
     let stakedTokenId: BN
     let poolTokenId: BN
+    let zapStartedAt: BN
 
     beforeEach(async () => {
       await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
@@ -481,6 +487,7 @@ describe("Zapper", async () => {
           from: investor,
         }
       )
+      zapStartedAt = await time.latest()
 
       const depositEvent = await decodeAndGetFirstLog<TranchedPoolDepositMade>(
         result.receipt.rawLogs,
@@ -498,6 +505,7 @@ describe("Zapper", async () => {
         await zapper.unzapToStakingRewards(poolTokenId, {from: investor})
         const tokenInfo = (await poolTokens.tokens(poolTokenId)) as any
         const stakedPositionAfter = (await stakingRewards.positions(stakedTokenId)) as any
+        const zapEndedAt = await time.latest()
         const tranchedPoolBalanceAfter = await usdc.balanceOf(tranchedPool.address)
         const totalStakedSupplyAfter = await stakingRewards.totalStakedSupply()
 
@@ -513,14 +521,18 @@ describe("Zapper", async () => {
         // Vesting schedule has not changed
         expect(stakedPositionAfter.rewards.startTime).to.bignumber.eq(stakedPositionBefore.rewards.startTime)
         expect(stakedPositionAfter.rewards.endTime).to.bignumber.eq(stakedPositionBefore.rewards.endTime)
+
+        const unvestedDiff = new BN(stakedPositionAfter.rewards.totalUnvested).sub(
+          new BN(stakedPositionBefore.rewards.totalUnvested)
+        )
+        const vestedExpectedChange = zapEndedAt.sub(zapStartedAt).mul(stakingRewardsMaxRate).add(unvestedDiff.abs())
         expect(stakedPositionAfter.rewards.totalUnvested).to.bignumber.closeTo(
           stakedPositionBefore.rewards.totalUnvested,
           bigVal(1)
         )
-        expect(stakedPositionAfter.rewards.totalVested).to.bignumber.closeTo(
-          stakedPositionBefore.rewards.totalVested,
-          bigVal(2)
-        )
+        expect(
+          new BN(stakedPositionAfter.rewards.totalVested).sub(new BN(stakedPositionBefore.rewards.totalVested))
+        ).to.bignumber.eq(vestedExpectedChange)
       })
     })
 

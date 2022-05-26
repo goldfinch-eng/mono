@@ -14,11 +14,14 @@ contract TestFiduUSDCCurveLP is
   ICurveLP
 {
   uint256 private constant MULTIPLIER_DECIMALS = 1e18;
+  uint256 private constant USDC_DECIMALS = 1e6;
 
   IGoldfinchConfig public config;
 
   uint256 private virtual_price = MULTIPLIER_DECIMALS;
   uint256 private slippage = MULTIPLIER_DECIMALS;
+  uint256[2] private _balances = [1e18, 1e18];
+  uint256 private _totalSupply = 1e18;
 
   constructor(
     uint256 initialSupply,
@@ -34,22 +37,9 @@ contract TestFiduUSDCCurveLP is
     return address(this);
   }
 
-  // Mock slippage when adding liquidity
-  function _set_slippage(uint256 new_slippage) external {
-    slippage = new_slippage;
-  }
-
-  function _set_virtual_price(uint256 new_virtual_price) external {
-    virtual_price = new_virtual_price;
-  }
-
-  function get_virtual_price() public view override returns (uint256) {
-    return virtual_price;
-  }
-
   /// @notice Mock calc_token_amount function that returns the sum of both token amounts
   function calc_token_amount(uint256[2] memory amounts) public view override returns (uint256) {
-    return amounts[0].add(amounts[1]);
+    return amounts[0].add(amounts[1].mul(MULTIPLIER_DECIMALS).div(USDC_DECIMALS));
   }
 
   /// @notice Mock add_liquidity function that mints Curve LP tokens
@@ -71,7 +61,77 @@ contract TestFiduUSDCCurveLP is
     return amount;
   }
 
-  function balances(uint256 arg0) public view override returns (uint256) {
+  function lp_price() external view override returns (uint256) {
+    return MULTIPLIER_DECIMALS.mul(2);
+  }
+
+  /// @notice Used to mock slippage in unit tests
+  function _setSlippage(uint256 newSlippage) external {
+    slippage = newSlippage;
+  }
+
+  /// @notice Used to return the mocked balances in unit tests
+  function balances(uint256 index) public view override returns (uint256) {
+    return _balances[index];
+  }
+
+  /// @notice Used to mock balances in unit tests
+  function _setBalance(uint256 index, uint256 balance) public {
+    _balances[index] = balance;
+  }
+
+  /// @notice Used to return the mocked total supply in unit tests
+  function totalSupply() public view override returns (uint256) {
+    return _totalSupply;
+  }
+
+  /// @notice Used to mock the total supply in unit tests
+  function _setTotalSupply(uint256 newTotalSupply) public {
+    _totalSupply = newTotalSupply;
+  }
+
+  function _set_virtual_price(uint256 new_virtual_price) external {
+    virtual_price = new_virtual_price;
+  }
+
+  function get_virtual_price() public view override returns (uint256) {
+    return virtual_price;
+  }
+
+  /// @notice Mock remove_liquidity function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function remove_liquidity(uint256 _amount, uint256[2] memory min_amounts) public override returns (uint256) {
+    return 0;
+  }
+
+  /// @notice Mock remove_liquidity_one_coin function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function remove_liquidity_one_coin(
+    uint256 token_amount,
+    uint256 i,
+    uint256 min_amount
+  ) public override returns (uint256) {
+    return 0;
+  }
+
+  /// @notice Mock get_dy function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function get_dy(
+    uint256 i,
+    uint256 j,
+    uint256 dx
+  ) external view override returns (uint256) {
+    return 0;
+  }
+
+  /// @notice Mock exchange function
+  /// @dev Left unimplemented because we're only using this in mainnet forking tests
+  function exchange(
+    uint256 i,
+    uint256 j,
+    uint256 dx,
+    uint256 min_dy
+  ) public override returns (uint256) {
     return 0;
   }
 

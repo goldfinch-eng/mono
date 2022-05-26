@@ -4,7 +4,6 @@ Notes
 - We are using reverse lookups to create virtual fields:
   https://thegraph.com/docs/developer/create-subgraph-hosted#reverse-lookups
 """
-
 type SeniorPool @entity {
   id: ID!
   capitalProviders: [User!]!
@@ -13,6 +12,9 @@ type SeniorPool @entity {
 }
 
 type SeniorPoolStatus @entity {
+  """
+  This entity is a singleton, so the id is always "1"
+  """
   id: ID!
   rawBalance: BigInt!
   compoundBalance: BigInt!
@@ -20,14 +22,16 @@ type SeniorPoolStatus @entity {
   sharePrice: BigInt!
   totalShares: BigInt!
   totalPoolAssets: BigInt!
+  totalPoolAssetsUsdc: BigInt!
   totalLoansOutstanding: BigInt!
   cumulativeWritedowns: BigInt!
-  cumulativeDrawdowns: BigInt!      # TODO requries tranched pool data
-  estimatedTotalInterest: BigInt!   # TODO requries tranched pool data
-  estimatedApy: BigInt!             # TODO requires estimatedTotalInterest
-  defaultRate: BigInt!              # TODO requires cumulativeDrawdowns
-
-  remainingCapacity: BigInt         # TODO requires goldfinchConfig.totalFundsLimit
+  tranchedPools: [TranchedPool!]!
+  cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
+  estimatedTotalInterest: BigDecimal!
+  estimatedApy: BigDecimal!
+  estimatedApyFromGfiRaw: BigDecimal
+  defaultRate: BigInt! # TODO requires cumulativeDrawdowns
+  remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
 
 type CapitalProviderStatus @entity {
@@ -38,9 +42,9 @@ type CapitalProviderStatus @entity {
   allowance: BigInt!
   weightedAverageSharePrice: BigDecimal
   unrealizedGains: BigDecimal
-  unrealizedGainsPercentage: BigDecimal   # TODO conversion issues
-  availableToWithdrawInDollars: BigInt    # TODO
-  unrealizedGainsInDollars: BigInt        # TODO
+  unrealizedGainsPercentage: BigDecimal # TODO conversion issues
+  availableToWithdrawInDollars: BigInt # TODO
+  unrealizedGainsInDollars: BigInt # TODO
 }
 
 type SeniorPoolDeposit @entity {
@@ -135,18 +139,33 @@ type CreditLine @entity {
   nextDueTime: BigInt!
   interestOwed: BigInt!
   termEndTime: BigInt!
+  termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
-  termEndDate: BigInt!
   version: TranchedPoolCreditLineVersion!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
   periodDueAmount: BigInt
-  interestAprDecimal: BigInt
+  interestAprDecimal: BigDecimal!
   collectedPaymentBalance: BigInt
   totalDueAmount: BigInt
   dueDate: String
+  isEligibleForRewards: Boolean!
   name: String
+}
+
+enum TranchedPoolBorrowerTransactionType {
+  DRAWDOWN_MADE
+  PAYMENT_APPLIED
+}
+
+type TranchedPoolBorrowerTransaction @entity {
+  id: ID! # Set to transaction hash
+  type: TranchedPoolBorrowerTransactionType!
+  tranchedPool: TranchedPool!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
 }
 
 enum TranchedPoolCreditLineVersion {
@@ -156,13 +175,18 @@ enum TranchedPoolCreditLineVersion {
 
 type TranchedPool @entity {
   id: ID!
-  estimatedJuniorApy: BigInt!
+  estimatedJuniorApy: BigDecimal!
+  estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
+  """
+  Set to true for tranched pools that were created before the advent of junior/senior tranches. These pools have junior investment only, and they are considered legacy
+  """
+  isV1StyleDeal: Boolean!
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
@@ -170,11 +194,14 @@ type TranchedPool @entity {
   fundableAt: BigInt!
   estimatedSeniorPoolContribution: BigInt!
   backers: [PoolBacker!]!
+  numBackers: Int!
   tokens: [TranchedPoolToken!]!
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
+  borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
+  createdAt: BigInt!
 }
 
 type TranchedPoolToken @entity {
@@ -187,4 +214,23 @@ type TranchedPoolToken @entity {
   interestRedeemed: BigInt!
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
+}
+
+type StakingRewardsData @entity {
+  id: ID! # Set to "1" because this is a singleton
+  """
+  The earn rate is a measure per second
+  """
+  currentEarnRatePerToken: BigInt!
+}
+
+type BackerRewardsData @entity {
+  id: ID! # Set to "1" because this is a singleton
+  contractAddress: String!
+  totalRewards: BigInt!
+  totalRewardPercentOfTotalGFI: BigDecimal!
+  """
+  Note that this value is measured in GFI, not dollars
+  """
+  maxInterestDollarsEligible: BigInt!
 }

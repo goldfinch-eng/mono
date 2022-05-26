@@ -59,6 +59,8 @@ export const getTranchedPoolAbi = () => getAbi("TranchedPool")
 
 export const getCreditLineAbi = () => getAbi("CreditLine")
 
+export const getFiduUSDCCurveLPAbi = () => getAbi("TestFiduUSDCCurveLP")
+
 type ContractName =
   | "StakingRewards"
   | "CommunityRewards"
@@ -74,6 +76,8 @@ type ContractName =
   | "BackerRewards"
   | "TranchedPool"
   | "CreditLine"
+  | "TestFiduUSDCCurveLP"
+
 type Deployments = {
   contracts: Record<ContractName, {address: string; abi: PlainObject[]}>
 }
@@ -84,6 +88,10 @@ export const getDeployments = async () => {
   if (!_deployments) {
     _deployments = {
       contracts: {
+        TestFiduUSDCCurveLP: {
+          address: "0x0000000000000000000000000000000000000016",
+          abi: await getFiduUSDCCurveLPAbi(),
+        },
         CreditLine: {
           address: "0x0000000000000000000000000000000000000015",
           abi: await getCreditLineAbi(),

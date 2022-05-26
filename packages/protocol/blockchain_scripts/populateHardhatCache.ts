@@ -33,10 +33,16 @@ export async function main({ciJobID, hre}: {ciJobID: string; hre: HardhatRuntime
     const packageRoot = path.join(__dirname, "../")
     const filePath = path.join(packageRoot, artifact.path)
     console.log(`Writing ${filePath}`)
-    await fs.promises.writeFile(filePath, result.body)
+    const fileStream = fs.createWriteStream(filePath)
+    await new Promise((resolve, reject) => {
+      result.body.pipe(fileStream)
+      result.body.on("error", reject)
+      fileStream.on("finish", resolve)
+    })
+
     console.log(`Extracting ${filePath}`)
     await execPromise(`cd ${packageRoot} && tar -xvzf ${artifact.path}`)
-    await fs.promises.rm(filePath)
+    await fs.promises.unlink(filePath)
   }
 }
 

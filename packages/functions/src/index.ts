@@ -6,7 +6,7 @@ import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import dotenv from "dotenv"
 import {findEnvLocal, assertIsString} from "@goldfinch-eng/utils"
-import {getAgreements, getConfig, getDb, getNDAs, getUsers} from "./db"
+import {getAgreements, getConfig, getDb, getUsers} from "./db"
 import {genRequestHandler} from "./helpers"
 import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
@@ -120,16 +120,18 @@ const getCountryCode = (eventPayload: Record<string, any>): string | null => {
   return account?.attributes?.countryCode || verification?.attributes?.countryCode || null
 }
 
+// signAgreement is used to be shared with the borrowers
 const signAgreement = genRequestHandler({
-  requireAuth: true,
+  requireAuth: false,
   cors: true,
-  handler: async (
-    req: Request,
-    res: Response,
-    verificationResult: SignatureVerificationSuccessResult,
-  ): Promise<Response> => {
-    const address = verificationResult.address
+  handler: async (req: Request, res: Response): Promise<Response> => {
+    const addressHeader = req.headers["x-goldfinch-address"]
+    const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
     const pool = (req.body.pool || "").trim()
+
+    if (!address) {
+      return res.status(403).send({error: "Invalid address"})
+    }
     const fullName = (req.body.fullName || "").trim()
 
     if (pool === "" || fullName === "") {
@@ -145,62 +147,6 @@ const signAgreement = genRequestHandler({
       fullName: fullName,
       signedAt: Date.now(),
     })
-    return res.status(200).send({status: "success"})
-  },
-})
-
-const signNDA = genRequestHandler({
-  requireAuth: true,
-  cors: true,
-  handler: async (
-    req: Request,
-    res: Response,
-    verificationResult: SignatureVerificationSuccessResult,
-  ): Promise<Response> => {
-    const address = verificationResult.address
-    const pool = (req.body.pool || "").trim()
-
-    if (pool === "") {
-      return res.status(403).send({error: "Invalid pool"})
-    }
-    const ndas = getNDAs(admin.firestore())
-    const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
-    const ndaRef = ndas.doc(key)
-
-    const nda = await ndaRef.get()
-    if (!nda.exists) {
-      await ndaRef.set({
-        address: address,
-        pool: pool,
-        signedAt: Date.now(),
-      })
-    }
-    return res.status(200).send({status: "success"})
-  },
-})
-
-const fetchNDA = genRequestHandler({
-  requireAuth: true,
-  cors: true,
-  handler: async (
-    req: Request,
-    res: Response,
-    verificationResult: SignatureVerificationSuccessResult,
-  ): Promise<Response> => {
-    const address = verificationResult.address
-    const pool = ((req.query.pool || "") as string).trim()
-
-    if (pool === "") {
-      return res.status(403).send({error: "Invalid pool"})
-    }
-    const ndas = getNDAs(admin.firestore())
-    const key = `${pool.toLowerCase()}-${address.toLowerCase()}`
-    const nda = await ndas.doc(key).get()
-
-    if (!nda.exists) {
-      return res.status(404).send({error: "Not found"})
-    }
-
     return res.status(200).send({status: "success"})
   },
 })
@@ -262,4 +208,4 @@ const personaCallback = genRequestHandler({
   },
 })
 
-export {kycStatus, personaCallback, signAgreement, signNDA, fetchNDA, circulatingSupply}
+export {kycStatus, personaCallback, signAgreement, circulatingSupply}

@@ -31,6 +31,8 @@ function genAssertIsTypeof<T extends TypeofReturnType>(assertedType: T): (obj: u
 export function isString(obj: unknown): obj is string {
   return typeof obj === "string"
 }
+export const isArrayOfString = genIsArrayOf(isString)
+
 export function isNonEmptyString(obj: unknown): obj is string {
   return typeof obj === "string" && obj !== ""
 }

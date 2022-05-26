@@ -1,6 +1,6 @@
 import {usdcFromAtomic, usdcToAtomic} from "../ethereum/erc20"
 import {AppContext} from "../App"
-import {assertNonNullable, displayDollars, displayPercent} from "../utils"
+import {assertNonNullable, displayDollars} from "../utils"
 import TransactionForm from "./transactionForm"
 import TransactionInput from "./transactionInput"
 import LoadingButton from "./loadingButton"
@@ -10,10 +10,10 @@ import BigNumber from "bignumber.js"
 import {decimalPlaces, MAX_UINT} from "../ethereum/utils"
 import useERC20Permit from "../hooks/useERC20Permit"
 import {USDC_APPROVAL_TX_TYPE, SUPPLY_AND_STAKE_TX_TYPE, SUPPLY_TX_TYPE} from "../types/transactions"
-import {SeniorPoolLoaded, StakingRewardsLoaded} from "../ethereum/pool"
-import {iconOutArrow} from "./icons"
+import {SeniorPoolLoaded, StakedPositionType, StakingRewardsLoaded} from "../ethereum/pool"
 import {getLegalLanguage} from "./KYCNotice/utils"
 import useGeolocation from "../hooks/useGeolocation"
+import StakingPrompt from "./StakingPrompt"
 
 const STAKING_FORM_VAL = "staking"
 const defaultValues = {
@@ -137,39 +137,12 @@ function DepositForm(props: DepositFormProps) {
     return (
       <div className="form-inputs">
         {warningMessage}
-        <div className="checkbox-container form-input-label">
-          <input
-            data-testid="staking"
-            className="checkbox"
-            type="checkbox"
-            name={STAKING_FORM_VAL}
-            id={STAKING_FORM_VAL}
-            ref={(ref) => formMethods.register(ref)}
-          />
-          <label className="checkbox-label with-note" htmlFor={STAKING_FORM_VAL}>
-            <div>
-              <div className="checkbox-label-primary">
-                <div>{`I want to stake my supply to earn GFI (additional ${displayPercent(
-                  pool.info.value.poolData.estimatedApyFromGfi
-                )} APY).`}</div>
-              </div>
-              <div className="form-input-note">
-                <p>
-                  Staking incurs additional gas. Goldfinch incentivizes long term participation, and you will earn
-                  maximum GFI by staking for at least 12 months.{" "}
-                  <a
-                    href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/senior-pool-liquidity-mining"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="form-link"
-                  >
-                    Learn more<span className="outbound-link">{iconOutArrow}</span>
-                  </a>
-                </p>
-              </div>
-            </div>
-          </label>
-        </div>
+        <StakingPrompt
+          stakingApy={pool.info.value.poolData.estimatedApyFromGfi}
+          stakedPositionType={StakedPositionType.Fidu}
+          onToggle={(val) => formMethods.setValue(STAKING_FORM_VAL, val)}
+          formVal={STAKING_FORM_VAL}
+        />
         <div className="checkbox-container form-input-label">
           <input
             data-testid="agreement"
@@ -201,7 +174,7 @@ function DepositForm(props: DepositFormProps) {
             <TransactionInput
               formMethods={formMethods}
               disabled={disabled}
-              maxAmountInDollars={maxTxAmountInDollars}
+              maxAmount={maxTxAmountInDollars}
               rightDecoration={
                 <button
                   className="enter-max-amount"

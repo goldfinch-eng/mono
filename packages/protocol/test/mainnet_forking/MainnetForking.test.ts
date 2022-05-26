@@ -14,7 +14,6 @@ import {
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -184,7 +183,6 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate260.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -248,8 +246,8 @@ describe("mainnet forking tests", async function () {
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
-    await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
-    await seniorPool.deposit(usdcVal(10000), {from: owner})
+    await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])
+    await seniorPool.deposit(usdcVal(100_000), {from: owner})
   }
 
   async function createBorrowerContract() {

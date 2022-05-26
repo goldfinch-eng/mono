@@ -17,6 +17,8 @@ import {Web3IO, UserWalletWeb3Status} from "./types/web3"
 import {MAINNET} from "./ethereum/utils"
 import {GFITokenImageURL} from "./utils"
 import {isWalletConnectProvider, WalletConnectWeb3Provider, web3Modal} from "./walletConnect"
+import {getERC20, Ticker} from "./ethereum/erc20"
+import {GoldfinchProtocol} from "./ethereum/GoldfinchProtocol"
 
 let web3: Web3
 let web3IO: Web3IO<Web3>
@@ -337,6 +339,33 @@ async function requestUserAddGfiTokenToWallet(address: string): Promise<boolean>
     .catch(console.error)
 }
 
+async function requestUserAddERC20TokenToWallet(
+  ticker: Ticker,
+  goldfinchProtocol: GoldfinchProtocol
+): Promise<boolean> {
+  const erc20 = await getERC20(ticker, goldfinchProtocol)
+
+  return await (web3.currentProvider as any)
+    .request({
+      method: "wallet_watchAsset",
+      params: {
+        type: "ERC20",
+        options: {
+          address: erc20.address,
+          symbol: erc20.ticker,
+          decimals: erc20.decimals,
+          image: erc20.icon,
+        },
+      },
+    })
+    .then((success: boolean) => {
+      if (!success) {
+        throw new Error(`Failed to add ${erc20.ticker} token to wallet.`)
+      }
+    })
+    .catch(console.error)
+}
+
 if (window.ethereum) {
   window.ethereum.autoRefreshOnNetworkChange = false
   subscribeProvider(window.ethereum)
@@ -348,6 +377,7 @@ export {
   getUserWalletWeb3Status,
   isMetaMaskInpageProvider,
   requestUserAddGfiTokenToWallet,
+  requestUserAddERC20TokenToWallet,
   SESSION_DATA_KEY,
 }
 

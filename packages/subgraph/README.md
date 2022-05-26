@@ -68,17 +68,27 @@ Debugging on the graph should be done through logs and checking the subgraph log
 In practical terms, logs should be added to monitor the progress of the application.
 
 ## Local run
+### MacOS
 - Make sure you have docker and docker-compose installed
-- Start the frontend with npm run start to start the hardhat node
-- On another terminal, clone the subgraph and go to the subgraph folder
-- Run: `./reset-local.sh && ./start-local.sh` or `./start-local.sh`
-  - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
+- Start the local chain with `npm run start` in the `packages/protocol` directory. This should run _without_ mainnet forking (it takes way too long to index with mainnet forking)
+- In another terminal, go to the `packages/subgraph` directory and run `docker-compose up -d`. This will start up 3 Docker containers that The Graph needs. One for Postgres, one for IPFS, one for Graph Node (which is the actual The Graph product)
+- Give it a minute or so to start up, then run `npm run create-local`. This will create an instance of the Goldfinch subgraph (same as if you had created a new empty subgraph on the hosted service)
+- Now run `npm run deploy-local`. This will generate a local `subgraph-local.yaml` file, and edit some constants in the source code, then it will deploy into the Docker containers.
 - The indexing of the subgraph should start immediately.
 - Urls available are:
   - JSON-RPC admin server at: http://localhost:8020
   - GraphQL HTTP server at: http://localhost:8000
   - Index node server at: http://localhost:8030
   - Metrics server at: http://localhost:8040
+
+### Linux
+- Run: `./reset-local.sh && ./start-local.sh` or `./start-local.sh`
+  - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
+
+### Cleaning up after running locally
+- Run `docker-compose down -v` to tear down the Docker instances
+- Run `rm -rf ./data` from `packages/subgraph` to remove any leftover data from execution. If you forget this step, it can lead to errors on subsequent runs.
+- Don't forget to close your locally-running blockchain from `packages/protocol`
 
 ### Quick Runs
 - A quick run script is available: `packages/subgraph/quick-start.sh`. This requires a test dump to be restored to the postgres container.
@@ -146,6 +156,17 @@ graph test
 - [Unit Testing Framework](https://thegraph.com/docs/en/developer/matchstick/)
 - [Demo Subgraph (The Graph) showcasing unit testing with Matchstick](https://github.com/LimeChain/demo-subgraph)
 - [aavegotchi-matic-subgraph tests](https://github.com/aavegotchi/aavegotchi-matic-subgraph/tree/main/src/tests)
+
+## Deploy
+For deploying the production subgraph:
+
+```
+cd packages/subgraph
+npx graph auth --product hosted-service <deploykey>
+npx graph codegen
+npx graph build
+npx graph deploy --product hosted-service goldfinch-eng/goldfinch
+```
 
 ## Resources
 - [The Graph Academy](https://thegraph.academy/developers/)

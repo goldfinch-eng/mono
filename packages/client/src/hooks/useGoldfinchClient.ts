@@ -1,5 +1,5 @@
 import {SessionData} from "../types/session"
-import {AuthenticatedSession} from "./useSignIn"
+import {AuthenticatedSession, KnownSession} from "./useSignIn"
 
 const API_URLS = {
   mainnet: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -23,11 +23,12 @@ export interface KYC {
   countryCode: string
 }
 
-interface GoldfinchClient {
+interface GoldfinchAuthenticatedClient {
   fetchKYCStatus(address: string): Promise<any>
+}
+
+interface GoldfinchKnownClient {
   signAgreement(address: string, fullName: string, pool: string): Promise<any>
-  signNDA(address: string, fullName: string, pool: string): Promise<any>
-  fetchNDA(address: string, fullName: string, pool: string): Promise<any>
 }
 
 export class GoldfinchClientError extends Error {
@@ -41,14 +42,14 @@ export class GoldfinchClientError extends Error {
   }
 }
 
-class DefaultGoldfinchClient implements GoldfinchClient {
-  private readonly baseURL: string
-  private readonly session: AuthenticatedSession
-  private readonly setSessionData: (data: SessionData | undefined) => void
+class BaseGoldfinchClient {
+  readonly baseURL: string
+  readonly session: AuthenticatedSession | KnownSession
+  readonly setSessionData: (data: SessionData | undefined) => void
 
   constructor(
     networkName: string,
-    session: AuthenticatedSession,
+    session: AuthenticatedSession | KnownSession,
     setSessionData: (data: SessionData | undefined) => void
   ) {
     this.baseURL = process.env.REACT_APP_GCLOUD_FUNCTIONS_URL || API_URLS[networkName]
@@ -77,8 +78,15 @@ class DefaultGoldfinchClient implements GoldfinchClient {
       })
     }
   }
+}
 
+// Requires a signature and signature block number
+class AuthenticatedGoldfinchClient extends BaseGoldfinchClient implements GoldfinchAuthenticatedClient {
   _getAuthHeaders(address: string) {
+    if (this.session.status !== "authenticated") {
+      throw new Error("Not signed in. Please refresh the page and try again")
+    }
+
     const signature = this.session.signature === "pending" ? "" : this.session.signature
     return {
       "x-goldfinch-address": address,
@@ -87,18 +95,21 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     }
   }
 
-  _getKYCStatusRequestInit(address: string): RequestInit {
-    return {
-      headers: this._getAuthHeaders(address),
-    }
-  }
-
-  _getKYCStatusURL(): string {
-    return `${this.baseURL}/kycStatus`
-  }
-
   async fetchKYCStatus(address: string): Promise<HandledResponse<KYC>> {
-    return this._handleResponse(fetch(this._getKYCStatusURL(), this._getKYCStatusRequestInit(address)))
+    return this._handleResponse(
+      fetch(`${this.baseURL}/kycStatus`, {
+        headers: this._getAuthHeaders(address),
+      })
+    )
+  }
+}
+
+// Does not require a signature
+export class KnownGoldfinchClient extends BaseGoldfinchClient implements GoldfinchKnownClient {
+  _getAuthHeaders(address: string) {
+    return {
+      "x-goldfinch-address": address,
+    }
   }
 
   _getSignAgreementRequestInit(address: string, body: {fullName: string; pool: string}): RequestInit {
@@ -112,48 +123,11 @@ class DefaultGoldfinchClient implements GoldfinchClient {
     }
   }
 
-  _getSignAgreementURL(): string {
-    return `${this.baseURL}/signAgreement`
-  }
-
   async signAgreement(address: string, fullName: string, pool: string): Promise<HandledResponse> {
     return this._handleResponse(
-      fetch(this._getSignAgreementURL(), this._getSignAgreementRequestInit(address, {fullName, pool}))
+      fetch(`${this.baseURL}/signAgreement`, this._getSignAgreementRequestInit(address, {fullName, pool}))
     )
-  }
-
-  _getSignNDARequestInit(address: string, body: {pool: string}): RequestInit {
-    return {
-      method: "POST",
-      headers: {
-        ...this._getAuthHeaders(address),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  }
-
-  _getSignNDAURL(): string {
-    return `${this.baseURL}/signNDA`
-  }
-
-  async signNDA(address: string, pool: string): Promise<HandledResponse> {
-    return this._handleResponse(fetch(this._getSignNDAURL(), this._getSignNDARequestInit(address, {pool})))
-  }
-
-  _getFetchNDARequestInit(address: string): RequestInit {
-    return {
-      headers: this._getAuthHeaders(address),
-    }
-  }
-
-  _getFetchNDAURL(pool: string): string {
-    return `${this.baseURL}/fetchNDA/?pool=${pool}`
-  }
-
-  async fetchNDA(address: string, pool: string): Promise<HandledResponse> {
-    return this._handleResponse(fetch(this._getFetchNDAURL(pool), this._getFetchNDARequestInit(address)))
   }
 }
 
-export default DefaultGoldfinchClient
+export default AuthenticatedGoldfinchClient

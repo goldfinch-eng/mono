@@ -1,13 +1,12 @@
-import {useState, useEffect, useContext} from "react"
 import BigNumber from "bignumber.js"
-
+import {useContext, useEffect, useState} from "react"
 import {AppContext} from "../App"
-import {getOneInchContract} from "../ethereum/oneInch"
-import {roundUpPenny, displayNumber, assertNonNullable} from "../utils"
+import {getOneInchContract, isOneInchExpectedReturn, OneInchExpectedReturn} from "../ethereum/oneInch"
+import {assertNonNullable, displayNumber, roundUpPenny} from "../utils"
 
-function useOneInchQuote({from, to, decimalAmount, parts = 10}): [null, boolean] {
+function useOneInchQuote({from, to, decimalAmount, parts = 10}): [OneInchExpectedReturn | null, boolean] {
   const {network} = useContext(AppContext)
-  const [expectedReturn, setExpectedReturn] = useState(null)
+  const [expectedReturn, setExpectedReturn] = useState<OneInchExpectedReturn | null>(null)
   const [isLoading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -26,9 +25,12 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}): [null, boolean]
       const result = await oneInch.readOnly.methods
         .getExpectedReturn(from.address, to.address, atomicAmount, parts, 0)
         .call(undefined, "latest")
-
-      setLoading(false)
-      setExpectedReturn(result)
+      if (isOneInchExpectedReturn(result)) {
+        setLoading(false)
+        setExpectedReturn(result)
+      } else {
+        throw new Error("One Inch Expected Return failed type guard.")
+      }
     }
 
     getExpectedReturn()
@@ -43,7 +45,12 @@ function useOneInchQuote({from, to, decimalAmount, parts = 10}): [null, boolean]
 //
 // The function estimates a reasonable amount by getting a quote from 1Inch, calculating the spread,
 // and adjusting the target amount by the spread + some pre-defined padding.
-function useAmountTargetingMinAmount({from, to, targetMinAmount, padding = new BigNumber("0.0005")}) {
+function useAmountTargetingMinAmount({
+  from,
+  to,
+  targetMinAmount,
+  padding = new BigNumber("0.0005"),
+}): [BigNumber | null, boolean] {
   const [amount, setAmount] = useState<BigNumber | null>(null)
   let [quote, isLoading] = useOneInchQuote({from, to, decimalAmount: targetMinAmount})
 

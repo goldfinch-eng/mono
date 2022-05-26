@@ -28,6 +28,9 @@ export interface getSeniorPoolAndProviders__meta {
 
 export interface getSeniorPoolAndProviders_seniorPools_latestPoolStatus {
   __typename: "SeniorPoolStatus"
+  /**
+   * This entity is a singleton, so the id is always "1"
+   */
   id: string
   rawBalance: any
   compoundBalance: any
@@ -125,6 +128,9 @@ export interface getSeniorPool__meta {
 
 export interface getSeniorPool_seniorPool_latestPoolStatus {
   __typename: "SeniorPoolStatus"
+  /**
+   * This entity is a singleton, so the id is always "1"
+   */
   id: string
   rawBalance: any
   compoundBalance: any
@@ -176,24 +182,6 @@ export interface getTranchedPoolsData__meta {
   block: getTranchedPoolsData__meta_block
 }
 
-export interface getTranchedPoolsData_seniorPools_latestPoolStatus {
-  __typename: "SeniorPoolStatus"
-  totalShares: any
-  totalPoolAssets: any
-}
-
-export interface getTranchedPoolsData_seniorPools_investmentsMade {
-  __typename: "TranchedPool"
-  id: string
-}
-
-export interface getTranchedPoolsData_seniorPools {
-  __typename: "SeniorPool"
-  id: string
-  latestPoolStatus: getTranchedPoolsData_seniorPools_latestPoolStatus
-  investmentsMade: getTranchedPoolsData_seniorPools_investmentsMade[]
-}
-
 export interface getTranchedPoolsData_tranchedPools_creditLine {
   __typename: "CreditLine"
   id: string
@@ -210,9 +198,8 @@ export interface getTranchedPoolsData_tranchedPools_creditLine {
   interestOwed: any
   termEndTime: any
   lastFullPaymentTime: any
-  termEndDate: any
   periodDueAmount: any | null
-  interestAprDecimal: any | null
+  interestAprDecimal: any
   collectedPaymentBalance: any | null
   totalDueAmount: any | null
   dueDate: string | null
@@ -297,8 +284,7 @@ export interface getTranchedPoolsData {
    * Access to subgraph metadata
    */
   _meta: getTranchedPoolsData__meta | null
-  seniorPools: getTranchedPoolsData_seniorPools[] | undefined
-  tranchedPools: getTranchedPoolsData_tranchedPools[] | undefined
+  tranchedPools: getTranchedPoolsData_tranchedPools[]
 }
 
 /* tslint:disable */

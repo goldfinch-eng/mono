@@ -6,7 +6,7 @@ Goldfinch is a decentralized lending protocol built on the blockchain. This is a
 
 You will need the correct version of node/npm on your local machine.
 
-Using nvm, you can do this with `nvm install 12.18.3`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
+Using nvm, you can do this with `nvm install 14.19.0`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
 
 #### Packages
 
@@ -47,11 +47,11 @@ Both options will start several processes, including your local blockchain and f
 #### One time setup (only necessary for front-end development)
 - Ensure you have Java installed (Firebase emulator requires the JVM)
 - Copy `.env.example` to `.env.local` (the local will be ignored by git).
-- Add the following into your new `.env.local` file. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with.
+- Find the following variables in `.env.local` and update them with your API key and EOA address. Our local dev scripts will use these vars to automatically send you test ETH, and give you a credit line and USDC to play with
 
   ```
   ALCHEMY_API_KEY={your alchemy api key}
-  TEST_USERS={your metamask address}`
+  TEST_USER={your metamask address}
   ALLOWED_SENDERS={your metamask address}`
   ```
 
@@ -79,6 +79,7 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
   * [`functions/`](./packages/functions) (`@goldfinch-eng/functions`): Google cloud functions to support KYC and other server-side functionality.
   * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
+  * [`docs/`](./packages/docs) (`@goldfinch-eng/docs`): Static site of protocol documentation.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
 
 ### Tenderly debugging
