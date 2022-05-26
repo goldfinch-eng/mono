@@ -72,17 +72,15 @@ export default function EarnPage() {
 
   return (
     <div>
-      <Heading level={1} className="mb-4">
+      <Heading level={1} className="mb-12 text-center lg:text-left">
         Pools
       </Heading>
-      <Paragraph className="mb-2">Lorem ipsum</Paragraph>
       {error ? (
-        <HelperText isError className="mb-2">
+        <HelperText isError className="mb-12">
           There was a problem fetching data on pools. Shown data may be
           outdated.
         </HelperText>
       ) : null}
-      <Paragraph className="mb-12">Price of GFI: ${fiatPerGfi ?? ""}</Paragraph>
       <Heading level={2} className="mb-3">
         Senior Pool
       </Heading>
