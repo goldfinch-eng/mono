@@ -15,7 +15,7 @@ interface DropdownProps {
   options: DropdownOption[]
   onSelect?(value: any): void
   highlightSelected?: boolean
-  arrow?: boolean
+  arrow?: JSX.Element
 }
 
 function Dropdown({
@@ -25,7 +25,7 @@ function Dropdown({
   options,
   onSelect = () => {},
   highlightSelected = true,
-  arrow = true,
+  arrow = <span className="dropdown-arrow"></span>,
 }: DropdownProps) {
   const {node, open, setOpen} = useCloseOnClickOrEsc<HTMLDivElement>()
 
@@ -47,7 +47,7 @@ function Dropdown({
         <div className="dropdown-selected-content">
           {selectedOption && (selectedOption.selectedEl || selectedOption.el)}
         </div>
-        {arrow && <span className="dropdown-arrow"></span>}
+        {arrow}
       </button>
       {open && (
         <div>

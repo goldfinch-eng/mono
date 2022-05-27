@@ -1071,9 +1071,6 @@ describe("SeniorPool", () => {
     })
 
     it("initializes ZAPPER_ROLE", async () => {
-      await expect(seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2, {from: owner})).to.be.rejectedWith(
-        /sender must be an admin to grant/
-      )
       await seniorPool.initZapperRole({from: owner})
       // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
       await expect(seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2, {from: owner})).to.be.fulfilled

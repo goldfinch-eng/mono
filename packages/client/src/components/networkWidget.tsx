@@ -38,6 +38,9 @@ import {
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
   ZAP_STAKE_TO_CURVE_TX_TYPE,
   ERC721_APPROVAL_TX_TYPE,
+  ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE,
+  CLAIM_ZAP,
+  UNZAP,
 } from "../types/transactions"
 import {
   ArrayItemType,
@@ -166,6 +169,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case ERC721_APPROVAL_TX_TYPE:
         case CLAIM_TX_TYPE:
         case ACCEPT_TX_TYPE:
+        case CLAIM_ZAP:
+        case UNZAP:
           transactionLabel = tx.name
           break
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
@@ -216,6 +221,11 @@ function NetworkWidget(props: NetworkWidgetProps) {
           transactionLabel = `${displayNumber(fiduAmount)} FIDU, ${displayNumber(usdcAmount)} USDC ${tx.name}`
           break
         }
+        case ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE: {
+          usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          transactionLabel = `Zap ${displayNumber(usdcFromAtomic(usdcAmount))} USDC to Tranche`
+          break
+        }
         default:
           assertUnreachable(tx)
       }
@@ -229,6 +239,8 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case FIDU_USDC_CURVE_APPROVAL_TX_TYPE:
         case ERC20_APPROVAL_TX_TYPE:
         case ERC721_APPROVAL_TX_TYPE:
+        case CLAIM_ZAP:
+        case UNZAP:
           transactionLabel = tx.name
           break
         case SUPPLY_TX_TYPE:
@@ -236,6 +248,7 @@ function NetworkWidget(props: NetworkWidgetProps) {
         case SUPPLY_AND_STAKE_TX_TYPE:
         case DEPOSIT_TO_CURVE_TX_TYPE:
         case DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE:
+        case ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE:
         case ZAP_STAKE_TO_CURVE_TX_TYPE:
         case WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE:
         case WITHDRAW_FROM_SENIOR_POOL_TX_TYPE:
