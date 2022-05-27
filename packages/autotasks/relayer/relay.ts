@@ -23,10 +23,14 @@ export async function relay(request, context) {
 
   // This verifies the unpacked message matches the signature and therefore validates that the to/from/data passed in
   // was actually signed by the whitelisted sender
+  console.log("verifying transactions...")
   await forwarder.verify(...args)
+  console.log("successfully verified transaction.")
 
   // Send meta-tx through Defender
+  console.log("encoding transaction...")
   const forwardData = forwarder.interface.encodeFunctionData("execute", args)
+  console.log("successfully encoded transaction")
 
   const tx = await relayTx({
     speed: "fast",
