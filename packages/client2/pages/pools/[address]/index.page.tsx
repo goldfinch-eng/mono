@@ -35,7 +35,9 @@ import { useWallet } from "@/lib/wallet";
 
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
-import PoolFilledPanel from "./pool-filled-panel";
+import RepaymentProgressPanel, {
+  REPAYMENT_PROGRESS_PANEL_FIELDS,
+} from "./repayment-progress-panel";
 import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
@@ -50,6 +52,7 @@ gql`
   ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${REPAYMENT_PROGRESS_PANEL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -85,10 +88,10 @@ gql`
         maxLimit
         paymentPeriodInDays
         termInDays
-        nextDueTime
       }
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
+      ...RepaymentProgressPanelTranchedPoolFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -488,11 +491,9 @@ export default function PoolPage() {
           {tranchedPool && fiatPerGfi ? (
             <div className="sticky top-12 space-y-8">
               {poolStatus === PoolStatus.Full && (
-                <PoolFilledPanel
-                  limit={tranchedPool.creditLine.limit}
-                  apy={tranchedPool.estimatedJuniorApy}
-                  apyGfi={tranchedPool.estimatedJuniorApyFromGfiRaw}
-                  dueDate={tranchedPool.creditLine.nextDueTime}
+                <RepaymentProgressPanel
+                  tranchedPool={tranchedPool}
+                  fiatPerGfi={fiatPerGfi}
                 />
               )}
 

@@ -244,6 +244,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   drawdownTransaction.amount = event.params.amount
   drawdownTransaction.timestamp = event.block.timestamp
   drawdownTransaction.blockNumber = event.block.number
+  drawdownTransaction.sender = event.params.borrower
   drawdownTransaction.save()
 }
 
@@ -256,7 +257,15 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   paymentTransaction.remainingAmount = event.params.remainingAmount
   paymentTransaction.timestamp = event.block.timestamp
   paymentTransaction.blockNumber = event.block.number
+  paymentTransaction.sender = event.params.payer
   paymentTransaction.save()
+
+  tranchedPool.totalAmountRepaid = tranchedPool.totalAmountRepaid
+    .plus(paymentTransaction.principalAmount)
+    .plus(paymentTransaction.interestAmount)
+    .plus(paymentTransaction.remainingAmount)
+
+  tranchedPool.save()
 }
 class Repayment {
   tranchedPoolAddress: string
