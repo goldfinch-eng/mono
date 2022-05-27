@@ -53,9 +53,12 @@ export const PERSONA_CONFIG: PersonaConfig =
         environment: "production",
       };
 
+export const SERVER_URL =
+  process.env.NEXT_PUBLIC_ENV === "local" ? "http://localhost:4000" : "";
+
 export const UNIQUE_IDENTITY_SIGNER_URL =
   process.env.NEXT_PUBLIC_ENV === "local"
-    ? "http://localhost:4000/uniqueIdentitySigner"
+    ? `${SERVER_URL}/uniqueIdentitySigner`
     : "https://api.defender.openzeppelin.com/autotasks/bc31d6f7-0ab4-4170-9ba0-4978a6ed6034/runs/webhook/6a51e904-1439-4c68-981b-5f22f1c0b560/3fwK6xbVKfeBHZjSdsYQWe";
 
 export const UNIQUE_IDENTITY_MINT_PRICE = "830000000000000";

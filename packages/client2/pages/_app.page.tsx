@@ -5,6 +5,7 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { ToastContainer } from "react-toastify";
 
+import { DevToolsPanel } from "@/components/dev-tools";
 import { Layout } from "@/components/layout";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useAppInitialization } from "@/lib/state/app-init";
@@ -20,12 +21,13 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         {/* remove this if we decide we want Google to index the app pages (unlikely) */}
         <meta name="robots" content="noindex" />
       </Head>
-
       <Layout>
         <Component {...pageProps} />
       </Layout>
 
       <AppWideModals />
+
+      {process.env.NEXT_PUBLIC_ENV === "local" && <DevToolsPanel />}
     </ApolloProvider>
   );
 }
