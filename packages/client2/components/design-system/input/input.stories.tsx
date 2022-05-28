@@ -2,7 +2,7 @@ import { ComponentMeta, ComponentStory } from "@storybook/react";
 import { useForm } from "react-hook-form";
 
 import { Input, DollarInput } from ".";
-import { Listbox } from "./listbox";
+import { Select } from "./select";
 
 export default {
   component: Input,
@@ -51,7 +51,7 @@ const options = [
   { value: "pugsnax", label: "Pugsnax" },
 ];
 
-export const ListboxStory: ComponentStory<typeof Listbox> = (args) => {
+export const SelectStory: ComponentStory<typeof Select> = (args) => {
   const {
     control,
     handleSubmit,
@@ -69,7 +69,7 @@ export const ListboxStory: ComponentStory<typeof Listbox> = (args) => {
       className={
         args.colorScheme === "light"
           ? "bg-white"
-          : "dark"
+          : args.colorScheme === "dark"
           ? "bg-black text-white"
           : undefined
       }
@@ -78,7 +78,7 @@ export const ListboxStory: ComponentStory<typeof Listbox> = (args) => {
         This story is meant to illustrate how to use this Listbox component with
         React Hook Form. Please refer to the source code.
       </p>
-      <Listbox
+      <Select
         {...args}
         options={options}
         control={control}
@@ -92,6 +92,8 @@ export const ListboxStory: ComponentStory<typeof Listbox> = (args) => {
   );
 };
 
-ListboxStory.args = {
+SelectStory.args = {
   label: "Pet food",
+  colorScheme: "light",
+  textSize: "md",
 };

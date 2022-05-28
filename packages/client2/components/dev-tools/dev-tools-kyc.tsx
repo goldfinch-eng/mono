@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Input, Button, Listbox } from "@/components/design-system";
+import { Input, Button, Select } from "@/components/design-system";
 import { SERVER_URL } from "@/constants";
 
 export default function DevToolsKYC({
@@ -47,7 +47,7 @@ export default function DevToolsKYC({
         </div>
 
         <div className="px-2">
-          <Listbox
+          <Select
             label="KYC Status"
             control={control}
             name="kycStatus"
