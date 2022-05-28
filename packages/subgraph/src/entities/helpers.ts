@@ -72,7 +72,7 @@ export function getEstimatedTotalAssets(
   return totalAssets
 }
 
-function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
+export function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
   const configAddress = timestamp.lt(BigInt.fromU64(1641349586))
     ? GOLDFINCH_LEGACY_CONFIG_ADDRESS
     : GOLDFINCH_CONFIG_ADDRESS

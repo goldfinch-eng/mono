@@ -10,7 +10,7 @@ import {
 } from "../../generated/schema"
 import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
-import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR} from "../constants"
+import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
@@ -23,9 +23,11 @@ import {
   estimateJuniorAPY,
   getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
+  getGoldfinchConfig,
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
+import {BackerRewards} from "../../generated/templates/BackerRewards/BackerRewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
@@ -244,6 +246,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   drawdownTransaction.amount = event.params.amount
   drawdownTransaction.timestamp = event.block.timestamp
   drawdownTransaction.blockNumber = event.block.number
+  drawdownTransaction.sender = event.params.borrower
   drawdownTransaction.save()
 }
 
@@ -254,9 +257,19 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   paymentTransaction.principalAmount = event.params.principalAmount
   paymentTransaction.interestAmount = event.params.interestAmount
   paymentTransaction.remainingAmount = event.params.remainingAmount
+  paymentTransaction.reserveAmount = event.params.reserveAmount
   paymentTransaction.timestamp = event.block.timestamp
   paymentTransaction.blockNumber = event.block.number
+  paymentTransaction.sender = event.params.payer
   paymentTransaction.save()
+
+  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)
+  tranchedPool.totalAmountRepaid = tranchedPool.totalAmountRepaid
+    .plus(paymentTransaction.principalAmount)
+    .plus(paymentTransaction.interestAmount)
+    .plus(paymentTransaction.remainingAmount)
+
+  tranchedPool.save()
 }
 class Repayment {
   tranchedPoolAddress: string

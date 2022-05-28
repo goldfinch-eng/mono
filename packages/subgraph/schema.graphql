@@ -119,6 +119,9 @@ type PoolBacker @entity {
   principalRedeemable: BigInt!
   interestRedeemable: BigInt!
   availableToWithdraw: BigInt!
+
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
 }
 
 type CreditLine @entity {
@@ -152,22 +155,9 @@ type CreditLine @entity {
   name: String
 }
 
-enum TranchedPoolBorrowerTransactionType {
-  DRAWDOWN_MADE
-  PAYMENT_APPLIED
-}
-
-type TranchedPoolBorrowerTransaction @entity {
-  id: ID! # Set to transaction hash
-  type: TranchedPoolBorrowerTransactionType!
-  tranchedPool: TranchedPool!
-  amount: BigInt!
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
 interface TranchedPoolTransaction {
   id: ID!
+  sender: Bytes!
   timestamp: BigInt!
   blockNumber: BigInt!
   tranchedPool: TranchedPool!
@@ -175,6 +165,7 @@ interface TranchedPoolTransaction {
 
 type TranchedPoolDrawdownMadeTransaction implements TranchedPoolTransaction @entity(immutable: true) {
   id: ID!
+  sender: Bytes!
   timestamp: BigInt!
   blockNumber: BigInt!
   tranchedPool: TranchedPool!
@@ -183,12 +174,14 @@ type TranchedPoolDrawdownMadeTransaction implements TranchedPoolTransaction @ent
 
 type TranchedPoolPaymentAppliedTransaction implements TranchedPoolTransaction @entity(immutable: true) {
   id: ID!
+  sender: Bytes!
   timestamp: BigInt!
   blockNumber: BigInt!
   tranchedPool: TranchedPool!
   principalAmount: BigInt!
   interestAmount: BigInt!
   remainingAmount: BigInt!
+  reserveAmount: BigInt!
 }
 
 enum TranchedPoolCreditLineVersion {
@@ -235,6 +228,12 @@ type TranchedPool @entity {
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
   transactions: [TranchedPoolTransaction!]! @derivedFrom(field: "tranchedPool")
+  juniorPrincipalAmountRepaid: BigInt!
+  principalAmountRepaid: BigInt!
+  """
+  Totals the amounts from all repayment transactions on this pool
+  """
+  totalAmountRepaid: BigInt!
   allowedUidTypes: [UidType!]!
 }
 
@@ -248,6 +247,9 @@ type TranchedPoolToken @entity {
   interestRedeemed: BigInt!
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
+
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
 }
 
 type StakingRewardsData @entity {
