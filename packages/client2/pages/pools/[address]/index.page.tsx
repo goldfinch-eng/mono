@@ -491,10 +491,7 @@ export default function PoolPage() {
           {tranchedPool && fiatPerGfi ? (
             <div className="sticky top-12 space-y-8">
               {poolStatus === PoolStatus.Full && (
-                <RepaymentProgressPanel
-                  tranchedPool={tranchedPool}
-                  fiatPerGfi={fiatPerGfi}
-                />
+                <RepaymentProgressPanel tranchedPool={tranchedPool} />
               )}
 
               {data?.user && data?.user.tokens.length > 0 ? (

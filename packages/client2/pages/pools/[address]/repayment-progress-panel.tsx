@@ -3,19 +3,17 @@ import clsx from "clsx";
 import { format } from "date-fns";
 import { BigNumber } from "ethers";
 
-import { Stat, InfoIconTooltip, Icon } from "@/components/design-system";
+import { InfoIconTooltip, Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
   RepaymentProgressPanelTranchedPoolFieldsFragment,
 } from "@/lib/graphql/generated";
-import { computeApyFromGfiInFiat } from "@/lib/pools";
 
 export const REPAYMENT_PROGRESS_PANEL_FIELDS = gql`
   fragment RepaymentProgressPanelTranchedPoolFields on TranchedPool {
     id
     estimatedJuniorApy
-    estimatedJuniorApyFromGfiRaw
     totalAmountRepaid
     creditLine {
       nextDueTime
@@ -25,40 +23,17 @@ export const REPAYMENT_PROGRESS_PANEL_FIELDS = gql`
 
 interface RepaymentProgressPanelProps {
   tranchedPool: RepaymentProgressPanelTranchedPoolFieldsFragment;
-  fiatPerGfi: number;
   userInvestment?: BigNumber;
 }
 
 export default function RepaymentProgressPanel({
   tranchedPool,
-  fiatPerGfi,
-  userInvestment,
 }: RepaymentProgressPanelProps) {
   return (
     <div className="rounded-xl border border-sand-200">
       <div className="p-5">
-        {userInvestment ? (
-          <div className="mb-9">
-            <LittleHeading>My original investment</LittleHeading>
-            <BigText icon="Usdc">
-              {formatCrypto(
-                { token: SupportedCrypto.Usdc, amount: userInvestment },
-                { includeSymbol: true }
-              )}
-            </BigText>
-            <Stat
-              label="Initial investment"
-              value={formatCrypto({
-                token: SupportedCrypto.Usdc,
-                amount: userInvestment,
-              })}
-              tooltip="lorem ipsum text"
-            />
-          </div>
-        ) : null}
-
         <div>
-          <LittleHeading tooltipContent="Total amount repaid by the borrower, including interest. GFI allocated through repayments is also shown.">
+          <LittleHeading tooltipContent="Total amount repaid by the borrower, including interest.">
             Total amount repaid
           </LittleHeading>
           <div className="mb-2 flex items-center justify-between">
@@ -73,25 +48,6 @@ export default function RepaymentProgressPanel({
             </BigText>
             <div className="text-xl">
               {formatPercent(tranchedPool.estimatedJuniorApy)}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <BigText icon="Gfi">
-              {formatCrypto(
-                {
-                  token: SupportedCrypto.Gfi,
-                  amount: tranchedPool.totalAmountRepaid,
-                },
-                { includeSymbol: true }
-              )}
-            </BigText>
-            <div className="text-xl">
-              {formatPercent(
-                computeApyFromGfiInFiat(
-                  tranchedPool.estimatedJuniorApyFromGfiRaw,
-                  fiatPerGfi
-                )
-              )}
             </div>
           </div>
         </div>
