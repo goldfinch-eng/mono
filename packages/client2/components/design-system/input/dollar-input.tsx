@@ -10,6 +10,7 @@ const MaskedInput = IMaskMixin(({ inputRef, ...props }) => {
 });
 
 type DollarInputProps = ComponentProps<typeof Input> &
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   UseControllerProps<any> & {
     /**
      * Note that mask must contain "amount" The hard-coded block in this mask revolves around the "amount" key. Example: $amount USDC

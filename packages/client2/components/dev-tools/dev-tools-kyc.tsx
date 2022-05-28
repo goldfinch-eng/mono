@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Input, Select, Button } from "@/components/design-system";
+import { Input, Button, Listbox } from "@/components/design-system";
 import { SERVER_URL } from "@/constants";
 
 export default function DevToolsKYC({
@@ -13,9 +13,12 @@ export default function DevToolsKYC({
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors: formErrors },
-  } = useForm<{ countryCode: string; kycStatus: string }>();
+  } = useForm<{ countryCode: string; kycStatus: string }>({
+    defaultValues: { kycStatus: "approved" },
+  });
 
   const handleKYCForm = handleSubmit(async (data) => {
     setLoading(true);
@@ -44,18 +47,17 @@ export default function DevToolsKYC({
         </div>
 
         <div className="px-2">
-          <Select
+          <Listbox
             label="KYC Status"
-            inputMode="text"
-            {...register("kycStatus", {
-              required: "KYC Status is required.",
-            })}
+            control={control}
+            name="kycStatus"
+            options={[
+              { value: "approved", label: "approved" },
+              { value: "failed", label: "failed" },
+              { value: "unknown", label: "unknown" },
+            ]}
             errorMessage={formErrors.kycStatus?.message}
-          >
-            <option value="approved">approved</option>
-            <option value="failed">failed</option>
-            <option value="unknown">unknown</option>
-          </Select>
+          />
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { ComponentMeta, ComponentStory } from "@storybook/react";
 import { useForm } from "react-hook-form";
 
 import { Input, DollarInput } from ".";
+import { Listbox } from "./listbox";
 
 export default {
   component: Input,
@@ -42,4 +43,55 @@ export const DollarInputStory: ComponentStory<typeof DollarInput> = (args) => {
 DollarInputStory.args = {
   label: "Dollar amount",
   name: "amount",
+};
+
+const options = [
+  { value: "iams", label: "Iams" },
+  { value: "tlc", label: "TLC Pet Food" },
+  { value: "pugsnax", label: "Pugsnax" },
+];
+
+export const ListboxStory: ComponentStory<typeof Listbox> = (args) => {
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<{
+    petfood: string;
+  }>(); // You can set { defaultValues: { petfood: "tlc" } } here if you want a default value
+  const food = watch("petfood");
+  // eslint-disable-next-line no-console
+  console.log({ food });
+  return (
+    <form
+      onSubmit={handleSubmit((data) => alert(JSON.stringify(data)))}
+      className={
+        args.colorScheme === "light"
+          ? "bg-white"
+          : "dark"
+          ? "bg-black text-white"
+          : undefined
+      }
+    >
+      <p>
+        This story is meant to illustrate how to use this Listbox component with
+        React Hook Form. Please refer to the source code.
+      </p>
+      <Listbox
+        {...args}
+        options={options}
+        control={control}
+        rules={{ required: "Required" }}
+        errorMessage={errors?.petfood?.message}
+        name="petfood"
+        placeholder="Choose a pet food..."
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+
+ListboxStory.args = {
+  label: "Pet food",
 };
