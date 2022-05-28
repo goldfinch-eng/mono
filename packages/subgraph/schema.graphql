@@ -119,6 +119,9 @@ type PoolBacker @entity {
   principalRedeemable: BigInt!
   interestRedeemable: BigInt!
   availableToWithdraw: BigInt!
+
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
 }
 
 type CreditLine @entity {
@@ -178,6 +181,7 @@ type TranchedPoolPaymentAppliedTransaction implements TranchedPoolTransaction @e
   principalAmount: BigInt!
   interestAmount: BigInt!
   remainingAmount: BigInt!
+  reserveAmount: BigInt!
 }
 
 enum TranchedPoolCreditLineVersion {
@@ -224,6 +228,8 @@ type TranchedPool @entity {
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
   transactions: [TranchedPoolTransaction!]! @derivedFrom(field: "tranchedPool")
+  juniorPrincipalAmountRepaid: BigInt!
+  principalAmountRepaid: BigInt!
   """
   Totals the amounts from all repayment transactions on this pool
   """
@@ -241,6 +247,9 @@ type TranchedPoolToken @entity {
   interestRedeemed: BigInt!
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
+
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
 }
 
 type StakingRewardsData @entity {

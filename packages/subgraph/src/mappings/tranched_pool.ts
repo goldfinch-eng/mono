@@ -10,7 +10,7 @@ import {
   DrawdownMade,
   PaymentApplied,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import {updateAllPoolBackers} from "../entities/pool_backer"
+import {updateAllPoolBackers, updateAllPoolBackersRewardsClaimable} from "../entities/pool_backer"
 import {
   handleDeposit,
   updatePoolCreditLine,
@@ -70,4 +70,5 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   _handlePaymentApplied(event)
+  updateAllPoolBackersRewardsClaimable(event.address, event.block.timestamp)
 }

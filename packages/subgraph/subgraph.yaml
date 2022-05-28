@@ -369,6 +369,8 @@ templates:
           file: ./abis/SeniorPool.json
         - name: FixedLeverageRatioStrategy
           file: ./abis/FixedLeverageRatioStrategy.json
+        - name: BackerRewards
+          file: ./abis/BackerRewards.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
@@ -489,6 +491,8 @@ templates:
           handler: handleSetTotalRewards
         - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
           handler: handleSetMaxInterestDollarsEligible
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleBackerRewardsClaimed
 
   - name: UniqueIdentity
     kind: ethereum/contract
