@@ -8,6 +8,7 @@ import {
   SENIOR_POOL_ADDRESS,
   FIDU_ADDRESS,
   OLD_FIXED_LEVERAGE_RATIO_ADDRESS,
+  CONFIG_KEYS_ADDRESSES,
 } from "../src/constants"
 
 export function mockTranchedPoolMultipleSlicesCalls(
@@ -149,6 +150,10 @@ export function mockTranchedPoolCalls(
   createMockedFunction(Address.fromString(GOLDFINCH_LEGACY_CONFIG_ADDRESS), "getNumber", "getNumber(uint256):(uint256)")
     .withArgs([ethereum.Value.fromUnsignedBigInt(BigInt.fromString(CONFIG_KEYS_NUMBERS.ReserveDenominator.toString()))])
     .returns([reserveDenominator])
+
+  createMockedFunction(Address.fromString(GOLDFINCH_CONFIG_ADDRESS), "getAddress", "getAddress(uint256):(address)")
+    .withArgs([ethereum.Value.fromUnsignedBigInt(BigInt.fromString(CONFIG_KEYS_ADDRESSES.BackerRewards.toString()))])
+    .returns([ethereum.Value.fromAddress(Address.zero())])
 
   createMockedFunction(
     Address.fromString(SENIOR_POOL_ADDRESS),
