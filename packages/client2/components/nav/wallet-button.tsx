@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 import { Button, Popover } from "@/components/design-system";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
@@ -8,11 +6,7 @@ import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, connector, isActivating } = useWallet();
-
-  useEffect(() => {
-    connector.connectEagerly?.();
-  }, [connector]);
+  const { account, isActivating } = useWallet();
 
   return account ? (
     <Popover
