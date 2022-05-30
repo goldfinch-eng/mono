@@ -437,9 +437,24 @@ export default function PoolPage() {
                   >
                     Pool Overview
                   </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap">
+                  <Paragraph className="mb-8 whitespace-pre-wrap">
                     {tranchedPool?.poolDescription}
                   </Paragraph>
+
+                  {tranchedPool ? (
+                    <Button
+                      as="a"
+                      variant="rounded"
+                      iconRight="ArrowTopRight"
+                      href={tranchedPool.dataroom ?? ""}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="lg"
+                      className="mb-20 block"
+                    >
+                      Dataroom
+                    </Button>
+                  ) : null}
 
                   <Heading
                     level={4}
