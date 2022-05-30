@@ -34,6 +34,7 @@ import {
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel, {
@@ -54,6 +55,7 @@ gql`
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${REPAYMENT_PROGRESS_PANEL_FIELDS}
+  ${BORROWER_PROFILE_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
@@ -69,8 +71,6 @@ gql`
       dataroom @client
       poolDescription @client
       poolHighlights @client
-      borrowerDescription @client
-      borrowerHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
       estimatedLeverageRatio
@@ -93,6 +93,7 @@ gql`
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
       ...RepaymentProgressPanelTranchedPoolFields
+      ...BorrowerProfileFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -436,9 +437,24 @@ export default function PoolPage() {
                   >
                     Pool Overview
                   </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap">
+                  <Paragraph className="mb-8 whitespace-pre-wrap">
                     {tranchedPool?.poolDescription}
                   </Paragraph>
+
+                  {tranchedPool ? (
+                    <Button
+                      as="a"
+                      variant="rounded"
+                      iconRight="ArrowTopRight"
+                      href={tranchedPool.dataroom ?? ""}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="lg"
+                      className="mb-20 block"
+                    >
+                      Dataroom
+                    </Button>
+                  ) : null}
 
                   <Heading
                     level={4}
@@ -460,35 +476,9 @@ export default function PoolPage() {
                   </ul>
                 </TabContent>
                 <TabContent>
-                  <Heading
-                    as="h3"
-                    level={5}
-                    className="mb-8 font-sans font-normal"
-                  >
-                    Overview
-                  </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap">
-                    {tranchedPool?.borrowerDescription}
-                  </Paragraph>
-
-                  <Heading
-                    level={4}
-                    className="mb-4 font-sans !text-lg !font-semibold"
-                  >
-                    Highlights
-                  </Heading>
-                  <ul className="list-outside list-disc pl-5">
-                    {tranchedPool?.borrowerHighlights?.map((item, idx) => (
-                      <li
-                        key={`borrower-highlight-${address}-${idx}`}
-                        className="py-1"
-                      >
-                        <Paragraph className="whitespace-pre-wrap">
-                          {item}
-                        </Paragraph>
-                      </li>
-                    ))}
-                  </ul>
+                  {tranchedPool ? (
+                    <BorrowerProfile tranchedPool={tranchedPool} />
+                  ) : null}
                 </TabContent>
               </TabPanels>
             </TabGroup>

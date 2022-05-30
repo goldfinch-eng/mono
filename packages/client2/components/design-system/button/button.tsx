@@ -1,105 +1,113 @@
 import clsx from "clsx";
-import React, { forwardRef, ButtonHTMLAttributes, ReactNode } from "react";
+import React, {
+  forwardRef,
+  ButtonHTMLAttributes,
+  ReactNode,
+  AnchorHTMLAttributes,
+} from "react";
 
 import { Icon, IconProps, Spinner } from "@/components/design-system";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /**
-   * Content within the button
-   */
-  children?: ReactNode;
-  /**
-   * Determines the size of the button via padding and font size
-   */
-  size?: "sm" | "md" | "lg" | "xl";
-  /**
-   * Determines the shape of the button.
-   */
-  variant?: "standard" | "rounded";
-  /**
-   * Determines the coloration of the button, independent from variant
-   */
-  colorScheme?: "primary" | "secondary";
-  disabled?: boolean;
-  iconLeft?: IconProps["name"];
-  iconRight?: IconProps["name"];
-  isLoading?: boolean;
-}
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+  AnchorHTMLAttributes<HTMLAnchorElement> & {
+    /**
+     * Content within the button
+     */
+    children?: ReactNode;
+    /**
+     * Determines the size of the button via padding and font size
+     */
+    size?: "sm" | "md" | "lg" | "xl";
+    /**
+     * Determines the shape of the button.
+     */
+    variant?: "standard" | "rounded";
+    /**
+     * Determines the coloration of the button, independent from variant
+     */
+    colorScheme?: "primary" | "secondary";
+    disabled?: boolean;
+    iconLeft?: IconProps["name"];
+    iconRight?: IconProps["name"];
+    isLoading?: boolean;
+    /**
+     * The underlying tag to use when rendering this button. By default it is `button`, but can be set to `a` if you need a link that visually looks like a button.
+     */
+    as?: "button" | "a";
+  };
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  function Button(
-    {
-      children,
-      size = "md",
-      variant = "standard",
-      colorScheme = "primary",
-      iconLeft,
-      iconRight,
-      isLoading = false,
-      className,
-      ...rest
-    },
-    ref
-  ) {
-    const spinnerOnLeft = isLoading && iconLeft;
-    const spinnerOnRight = isLoading && !spinnerOnLeft;
-    return (
-      <button
-        ref={ref}
-        className={clsx(
-          "inline-flex items-center justify-center font-medium outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
-          size === "sm"
-            ? "gap-2 py-1 px-3 text-xs"
-            : size === "md"
-            ? "gap-3 py-2 px-4 text-xs"
-            : size === "lg"
-            ? "gap-4 py-2.5 px-5 text-sm"
-            : size === "xl"
-            ? "gap-4 py-4 px-6"
-            : null,
-          variant === "standard"
-            ? "rounded"
-            : variant === "rounded"
-            ? "rounded-full"
-            : null,
-          colorScheme === "primary"
-            ? "bg-sand-700 text-white hover:bg-sand-800 active:bg-sand-900"
-            : colorScheme === "secondary"
-            ? "bg-sand-100 text-sand-700 hover:bg-sand-200 hover:text-sand-900 active:bg-sand-300 active:text-sand-900"
-            : null,
-          className
-        )}
-        {...rest}
-      >
-        {spinnerOnLeft ? (
-          <Spinner
-            size="sm"
-            className={clsx(children ? "-my-2 -ml-1" : null)}
-          />
-        ) : iconLeft ? (
-          <Icon
-            name={iconLeft}
-            size="sm"
-            className={clsx(children ? "-my-2 -ml-1" : null)}
-          />
-        ) : null}
-        {children}
-        {spinnerOnRight ? (
-          <Spinner
-            size="sm"
-            className={clsx(children ? "-my-2 -mr-1" : null)}
-          />
-        ) : iconRight ? (
-          <Icon
-            name={iconRight}
-            size="sm"
-            className={clsx(children ? "-my-2 -mr-1" : null)}
-          />
-        ) : null}
-      </button>
-    );
-  }
-);
+export const Button = forwardRef<
+  HTMLButtonElement | HTMLAnchorElement,
+  ButtonProps
+>(function Button(
+  {
+    children,
+    size = "md",
+    variant = "standard",
+    colorScheme = "primary",
+    iconLeft,
+    iconRight,
+    isLoading = false,
+    className,
+    as = "button",
+    ...rest
+  },
+  ref
+) {
+  const Component = as;
+  const spinnerOnLeft = isLoading && iconLeft;
+  const spinnerOnRight = isLoading && !spinnerOnLeft;
+  return (
+    <Component
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ref={ref as any}
+      className={clsx(
+        "inline-flex items-center justify-center font-medium outline-none transition-colors disabled:pointer-events-none disabled:opacity-50",
+        size === "sm"
+          ? "gap-2 py-1 px-3 text-xs"
+          : size === "md"
+          ? "gap-3 py-2 px-4 text-xs"
+          : size === "lg"
+          ? "gap-4 py-2.5 px-5 text-sm"
+          : size === "xl"
+          ? "gap-4 py-4 px-6"
+          : null,
+        variant === "standard"
+          ? "rounded"
+          : variant === "rounded"
+          ? "rounded-full"
+          : null,
+        colorScheme === "primary"
+          ? "bg-sand-700 text-white hover:bg-sand-800 active:bg-sand-900"
+          : colorScheme === "secondary"
+          ? "bg-sand-100 text-sand-700 hover:bg-sand-200 hover:text-sand-900 active:bg-sand-300 active:text-sand-900"
+          : null,
+        className
+      )}
+      {...rest}
+    >
+      {spinnerOnLeft ? (
+        <Spinner size="sm" className={clsx(children ? "-my-2 -ml-1" : null)} />
+      ) : iconLeft ? (
+        <Icon
+          name={iconLeft}
+          size="sm"
+          className={clsx(children ? "-my-2 -ml-1" : null)}
+        />
+      ) : null}
+      {children}
+      {spinnerOnRight ? (
+        <Spinner size="sm" className={clsx(children ? "-my-2 -mr-1" : null)} />
+      ) : iconRight ? (
+        <Icon
+          name={iconRight}
+          size="sm"
+          className={clsx(children ? "-my-2 -mr-1" : null)}
+        />
+      ) : null}
+    </Component>
+  );
+});
 
 interface IconButtonProps
   extends Omit<ButtonProps, "children" | "iconLeft" | "iconRight"> {

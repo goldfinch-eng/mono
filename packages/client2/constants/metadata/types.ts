@@ -8,6 +8,5 @@ export interface PoolMetadata {
   launchTime?: number;
   poolDescription?: string;
   poolHighlights?: string[];
-  borrowerDescription?: string;
-  borrowerHighlights?: string[];
+  borrower: string;
 }

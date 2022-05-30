@@ -3,6 +3,7 @@ import { mainnetMetadata } from "./metadata/mainnet";
 import type { PoolMetadata } from "./metadata/types";
 
 export * from "./contract-addresses";
+export * from "./metadata/borrowers";
 
 export const POOL_METADATA =
   process.env.NEXT_PUBLIC_POOL_METADATA_NETWORK === "mainnet"
