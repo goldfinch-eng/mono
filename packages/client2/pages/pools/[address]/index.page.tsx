@@ -17,8 +17,9 @@ import {
   ShimmerLines,
   HelperText,
   Marquee,
+  Banner,
 } from "@/components/design-system";
-import { SubnavPortal } from "@/components/layout";
+import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
@@ -175,6 +176,13 @@ export default function PoolPage() {
   return (
     <>
       <SEO title={tranchedPool?.name} />
+
+      <BannerPortal>
+        <Banner
+          initialContent="This offering is only available to non-U.S. persons"
+          expandedContent="This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements."
+        />
+      </BannerPortal>
 
       {poolStatus && (
         <SubnavPortal>
