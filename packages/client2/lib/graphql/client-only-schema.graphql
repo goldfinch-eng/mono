@@ -4,6 +4,18 @@ extend type SeniorPool {
   icon: String!
 }
 
+type Borrower {
+  name: String!
+  orgType: String!
+  website: String!
+  linkedIn: String!
+  twitter: String
+  logo: String!
+  headerColor: String!
+  bio: String!
+  highlights: [String!]!
+}
+
 extend type TranchedPool {
   name: String
   category: String
@@ -13,8 +25,7 @@ extend type TranchedPool {
   dataroom: String
   poolDescription: String
   poolHighlights: [String]
-  borrowerDescription: String
-  borrowerHighlights: [String]
+  borrower: Borrower!
 }
 
 enum SupportedFiat {

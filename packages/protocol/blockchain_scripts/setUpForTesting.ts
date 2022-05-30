@@ -525,6 +525,7 @@ async function writePoolMetadata({
     description,
     dataroom: "/fake-dataroom",
     agreement: "/fake-agreement",
+    borrower: "goldfinchTestBorrower",
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))

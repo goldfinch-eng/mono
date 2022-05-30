@@ -12,6 +12,7 @@ import type { PoolMetadata } from "./types";
 
 export const mainnetMetadata: Record<string, PoolMetadata> = {
   "0xd43a4f3041069c6178b99d55295b00d0db955bb5": {
+    borrower: "cauris",
     name: "Cauris Fund #3: Africa Innovation Pool",
     category: "Africa multi-sector loans",
     icon: caurisLogo.src,
@@ -26,14 +27,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Cauris only invests in Fintechs characterized by management teams with deep, relevant experience in their companies’ sectors; well-performing loan books to use as collateral; and support by marquee VC, PE and strategic investors.",
       "Pool investments will target companies providing consumer and SME lending products as well as trade and equipment financing.",
     ],
-    borrowerDescription:
-      "Cauris is a mission-driven investment firm that provides private credit to financial technology companies in emerging markets. Working across the Global South — with financings in Africa, Asia and Latin America — Cauris partners with fintechs that are making financial inclusion a reality for tens of millions of consumers and small businesses.\n\nThrough debt investments, Cauris enables its partners to scale efforts that provide the traditionally underbanked access to financial services that improve their lives and livelihoods.  Leveraging Decentralized Finance (DeFi), Cauris aims to facilitate efforts that extend financial services to 100M people in line with its mission to empower individuals and small businesses through access to credit; to enable economic growth in emerging markets; and to accelerate the growth of the global middle class.",
-    borrowerHighlights: [
-      "Cauris has never had a late payment, missed payment, or default.",
-      "Strong performance track record with $15M borrowed on Goldfinch to date, generating high risk-adjusted yields for investors.",
-    ],
   },
   "0x89d7c618a4eef3065da8ad684859a547548e6169": {
+    borrower: "addem",
     name: "Asset-Backed Pool via Addem Capital",
     category: "LATAM asset-backed multi-sector loans",
     icon: addemLogo.src,
@@ -49,18 +45,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "The debt facilities Addem Capital structure will be used to fund self-liquidating assets where Addem has complete traceability and control of all the cash flows pledged as the source of payment, which positions them at the best risk-to-return ratio in Mexico and LATAM.",
       "Addem fund these structures' senior and mezzanine tranches with an interest rate ranging between 18 - 22% in MXN for unsubordinated lines and 24 - 35 % for subordinated ones.",
     ],
-    borrowerDescription:
-      "Addem Capital has developed a three-entity approach (Fund, Boutique Consulting Firm, Master Servicer) to increase liquidity in the LATAM capital markets, acting as scouts, funders, and monitoring agents within five verticals: fintech, real estate, energy, agriculture/sustainable foods, and healthcare.\n\nAddem Capital aims to become LATAM's most relevant liquidity provider by eliminating unnecessary debt intermediaries while reaching excellence in its underwriting and servicing processes.\n\nAll the monitoring and revisions on the collateral of the credit facilities are done by Addem's Master Servicer. Through its Internal Control Desk, it guarantees that all the performing assets satisfy the eligibility criteria for each facility. This enables Addem to hold more decision-making power on the line and be ahead of relevant risks.",
-    borrowerHighlights: [
-      "Addem's fund and consulting firm (Latus) have invested and worked in more than five countries, including Mexico, Colombia, Chile, Brazil, and US-based entrepreneurs working in LATAM.",
-      "Addem has evaluated and assessed +200 companies seeking financing and originated more than ten regional deals.",
-      "Addem's internal control desk has audited +15,000 individual credits underwritten by their portfolio companies and pledged as collateral and source of payment for their debt facilities.",
-      "After receiving debt from Addem Capital, all of their portfolio companies have secured Series A equity rounds with renowned investors such as Accel, Monashees, Y Combinator, Mouro Capital (Santander and SV LATAM).",
-      "Addem's three-entity approach enables them to fully service. It monitors ongoing facilities without reducing efforts on scouting new opportunities to consolidate their pipeline and avoiding the reliance on third-party services to properly assess the quality of the asset originators' underwriting process and the asset itself.",
-      "In Addem's first year of existence, it was recognized by Catalyst Fund and Brighter as one of the top 100 fintech investors across emerging markets.",
-    ],
   },
   "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": {
+    borrower: "almavest",
     name: "Almavest Basket #7: Fintech and Carbon Reduction Basket",
     category: "Global multi-sector loans",
     description:
@@ -79,13 +66,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Impact Water, which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
       "Trella, a leading digital transportation and logistics platform focused on the Middle East, with clients and investors including Maersk and Exxon",
     ],
-    borrowerDescription:
-      "ALMA Sustainable Finance is an investment management firm that creatively deploys capital for sustainable development. Our debt platform serves high-growth, impact-oriented companies in a range of sectors, primarily in emerging and developing markets in Asia, Africa, and Latin America. ALMA invests in market-leading, impactful businesses led by experienced teams. Our portfolio companies and pipeline borrowers are backed by the world’s leading equity investors including Y Combinator, Acumen, Exxon Mobil, GE, FMO and others.\n\nWith prior executive or management roles at institutions such as CGAP (World Bank), FinDev Canada, SKS Microfinance (IPO), FastCash (acquired), Rainforest Alliance, and others, our leadership team has nearly 100 combined years of experience in building, scaling and exiting sustainable impact companies, impact debt and equity investing, and data analytics.",
-    borrowerHighlights: [
-      "Since launch in 2020, we've deployed nearly $40 million and committed nearly $50 million to 11 companies with diverse underlying exposure — to multiple economic sectors and nearly 20 different global markets across Asia, Africa, and Latin America.",
-    ],
   },
   "0xb26b42dd5771689d0a7faeea32825ff9710b9c11": {
+    borrower: "lendeast",
     name: "Lend East #1: Emerging Asia Fintech Pool",
     category: "Global multi-sector loans",
     icon: lendeastLogo.src,
@@ -100,15 +83,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Project Stork: Fast growing digital consumer lending platform in Indonesia; raised over US$ 40 million dollar in equity till date",
       "Project Toucan: Leading Buy-Now-Pay-Later (BNPL) based in Singapore; raised ~US$ 500 million dollars in equity till date",
     ],
-    borrowerDescription:
-      "Lend East is a digital lending platform that connects global institutional capital with alternate lenders in Emerging Asia (Southeast Asia & India). Lend East is revolutionising alternate lending by offering scalable growth capital with zero dilution to technology ventures. Leveraging Spa{R}³k, its proprietary credit and risk analytics platform, Lend East has made high impact investments in Indonesia, the Philippines, Singapore & Vietnam since 2019.",
-    borrowerHighlights: [
-      "Since inception, Lend East has evaluated over 100 alternate lenders and onboarded 60+ of them on Spa{R}³k, its proprietary credit analytics & risk platform",
-      "Lend East has committed US$50mn in investments across seven market leading platforms across Singapore, Indonesia, Philippines, Vietnam & India",
-      "Strong performance track record, generating healthy risk adjusted yields for investors with no delays or defaults in borrower repayments",
-    ],
   },
   "0xd09a57127bc40d680be7cb061c2a6629fe71abef": {
+    borrower: "cauris",
     name: "Cauris Fund #2: Africa Innovation Pool",
     category: "Global multi-sector loans",
     description:
@@ -118,6 +95,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     launchTime: 1645027200,
   },
   "0x00c27fc71b159a346e179b4a1608a0865e8a7470": {
+    borrower: "stratos",
     name: "Secured U.S. Fintech Yield via Stratos",
     category: "Global multi-sector loans",
     icon: stratosLogo.src,
@@ -130,14 +108,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Rezi is an institutional-scale residential lease broker, making a market in multifamily leases. Rezi enters into master-leases with multifamily landlords at a discount to the sum of the expected tenant rent payments, and then sub-leases residential units included in its master-leases to individual tenants.",
       "Braavo is a data-driven accounts receivable financing platform that provides scalable funding solutions to mobile app businesses, largely on the Apple App Store and Google Play.",
     ],
-    borrowerDescription:
-      "Stratos empowers founders to achieve their vision through rigorous engagement, strategic guidance, and capital. Stratos has the expertise and a five year track record of advising and financing technology and technology enabled businesses.",
-    borrowerHighlights: [
-      "Stratos has never had a late payment, missed payment, or default in 5 years (60 months) of operation.",
-      'Since inception in 2016, the Stratos Evergreen Structured Credit Fund ("SCF"), our longest running credit focused strategy, has generated gross annualized total returns of 18.95%',
-    ],
   },
   "0x418749e294cabce5a714efccc22a8aade6f9db57": {
+    borrower: "almavest",
     name: "Almavest Basket #6",
     category: "Global multi-sector loans",
     description:
@@ -147,6 +120,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     launchTime: 1644249600,
   },
   "0x1d596d28a7923a22aa013b0e7082bba23daa656b": {
+    borrower: "almavest",
     name: "Almavest Basket #5",
     category: "Global multi-sector loans",
     description:
@@ -155,6 +129,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     agreement: "https://docsend.com/view/r9dpyy8wqxp2n5td/d/k87sbpm4ny3s23y6",
   },
   "0xc9bdd0d3b80cc6efe79a82d850f44ec9b55387ae": {
+    borrower: "cauris",
     name: "Cauris",
     category: "Global multi-sector loans",
     description:
@@ -162,6 +137,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: caurisLogo.src,
   },
   "0xf74ea34ac88862b7ff419e60e476be2651433e68": {
+    borrower: "divibank",
     name: "Divibank",
     category: "SMB Loans in Latin America",
     description:
@@ -169,6 +145,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: divibankLogo.src,
   },
   "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": {
+    borrower: "tugende",
     name: "Tugende",
     category: "Asset Finance Loans in Kenya",
     description:
@@ -176,6 +153,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: tugendeLogo.src,
   },
   "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": {
+    borrower: "quickcheck",
     name: "QuickCheck #1",
     category: "Consumer loans in Nigeria",
     description:
@@ -183,6 +161,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: quickcheckLogo.src,
   },
   "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c": {
+    borrower: "quickcheck",
     name: "QuickCheck #2",
     category: "Consumer loans in Nigeria",
     description:
@@ -190,6 +169,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: quickcheckLogo.src,
   },
   "0x1cc90f7bb292dab6fa4398f3763681cfe497db97": {
+    borrower: "quickcheck",
     name: "QuickCheck #3",
     category: "Consumer loans in Nigeria",
     description:
@@ -197,6 +177,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: quickcheckLogo.src,
   },
   "0x3634855ec1beaf6f9be0f7d2f67fc9cb5f4eeea4": {
+    borrower: "aspire",
     name: "Aspire #1",
     category: "SME loans in Southeast Asia",
     description:
@@ -204,6 +185,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: aspireLogo.src,
   },
   "0x9e8b9182abba7b4c188c979bc8f4c79f7f4c90d3": {
+    borrower: "aspire",
     name: "Aspire #2",
     category: "SME loans in Southeast Asia",
     description:
@@ -211,6 +193,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: aspireLogo.src,
   },
   "0x8bbd80f88e662e56b918c353da635e210ece93c6": {
+    borrower: "aspire",
     name: "Aspire #3",
     category: "SME loans in Southeast Asia",
     description:
@@ -218,6 +201,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: aspireLogo.src,
   },
   "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7": {
+    borrower: "payjoy",
     name: "PayJoy",
     category: "Smartphone financing in Mexico",
     description:
@@ -225,6 +209,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: payjoyLogo.src,
   },
   "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": {
+    borrower: "almavest",
     name: "Almavest Basket #1",
     category: "Global, multi-sector loans",
     description:
@@ -232,6 +217,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: almavestLogo.src,
   },
   "0xe32c22e4d95cae1fb805c60c9e0026ed57971bcf": {
+    borrower: "almavest",
     name: "Almavest Basket #2",
     category: "Global, multi-sector loans",
     description:
@@ -239,6 +225,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: almavestLogo.src,
   },
   "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": {
+    borrower: "almavest",
     name: "Almavest Basket #3",
     category: "Global, multi-sector loans",
     description:
@@ -248,6 +235,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "https://s3.us-west-2.amazonaws.com/secure.notion-static.com/a22b60ac-89b7-4184-a6ba-3ed16c45ab8f/ALMA_Goldfinch_Protocol_Loan_Agreement_FINAL_%288-30-21%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAT73L2G45O3KS52Y5%2F20210831%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20210831T000715Z&X-Amz-Expires=86400&X-Amz-Signature=01c8b63f01e46afb753c4f37ba75836b0743fa8e82ce94fbf32aefbbad367e6a&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22ALMA%2520Goldfinch%2520Protocol%2520Loan%2520Agreement%2520FINAL%2520%288-30-21%29.pdf%22",
   },
   "0xe6c30756136e07eb5268c3232efbfbe645c1ba5a": {
+    borrower: "almavest",
     name: "Almavest Basket #4",
     category: "Global, multi-sector loans",
     description:
@@ -255,6 +243,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: almavestLogo.src,
   },
   "0xc13465ce9ae3aa184eb536f04fdc3f54d2def277": {
+    borrower: "almavest",
     name: "Oya, via Almavest",
     category: "SMB loans in Africa",
     description:

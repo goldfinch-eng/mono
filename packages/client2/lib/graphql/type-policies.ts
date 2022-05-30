@@ -1,7 +1,7 @@
 import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
-import { POOL_METADATA } from "@/constants";
+import { POOL_METADATA, BORROWER_METADATA } from "@/constants";
 import { PoolMetadata } from "@/constants/metadata/types";
 import {
   isWalletModalOpenVar,
@@ -47,10 +47,19 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       dataroom: { read: readFieldFromMetadata("dataroom") },
       poolDescription: { read: readFieldFromMetadata("poolDescription") },
       poolHighlights: { read: readFieldFromMetadata("poolHighlights") },
-      borrowerDescription: {
-        read: readFieldFromMetadata("borrowerDescription"),
+      borrower: {
+        read: (_, { readField }) => {
+          const id = readField({ fieldName: "id" }) as string;
+          if (!id) {
+            console.warn(
+              `Attempted to read the borrower metadata but ID of pool was missing. Please include "id" in this query`
+            );
+            return;
+          }
+          const borrowerKey = POOL_METADATA[id].borrower;
+          return BORROWER_METADATA[borrowerKey];
+        },
       },
-      borrowerHighlights: { read: readFieldFromMetadata("borrowerHighlights") },
     },
   },
   GfiPrice: {
