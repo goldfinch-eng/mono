@@ -64,11 +64,11 @@ export default function EarnPage() {
     returnPartialData: true, // PATTERN: allow partial data so when this query re-runs due to `account` being populated, it doesn't wipe out the existing data
   });
 
-  const seniorPool = data?.seniorPools[0];
-  const tranchedPools = data?.tranchedPools.filter(
+  const seniorPool = data?.seniorPools?.[0];
+  const tranchedPools = data?.tranchedPools?.filter(
     (tranchedPool) => tranchedPool.name !== null
   );
-  const fiatPerGfi = data?.gfiPrice.price.amount;
+  const fiatPerGfi = data?.gfiPrice?.price.amount;
 
   return (
     <div>
