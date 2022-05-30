@@ -65,7 +65,7 @@ export const resolvers: Resolvers = {
       };
     },
     async viewer(): Promise<Viewer | null> {
-      const provider = getProvider();
+      const provider = await getProvider();
       if (!provider) {
         return {
           __typename: "Viewer",
@@ -92,7 +92,7 @@ export const resolvers: Resolvers = {
       return viewer.account;
     },
     async gfiBalance(): Promise<CryptoAmount | null> {
-      const provider = getProvider();
+      const provider = await getProvider();
       if (!provider) {
         return null;
       }
@@ -108,7 +108,7 @@ export const resolvers: Resolvers = {
       };
     },
     async usdcBalance(): Promise<CryptoAmount | null> {
-      const provider = getProvider();
+      const provider = await getProvider();
       if (!provider) {
         return null;
       }
@@ -124,7 +124,7 @@ export const resolvers: Resolvers = {
       };
     },
     async fiduBalance(): Promise<CryptoAmount | null> {
-      const provider = getProvider();
+      const provider = await getProvider();
       if (!provider) {
         return null;
       }

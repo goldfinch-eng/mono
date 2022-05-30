@@ -1,12 +1,18 @@
+import { useEffect } from "react";
+
 import { Button, Popover } from "@/components/design-system";
 import { openWalletModal } from "@/lib/state/actions";
-import { useWallet } from "@/lib/wallet";
+import { connectEagerly, useWallet } from "@/lib/wallet";
 
 import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account } = useWallet();
+  const { account, isActivating } = useWallet();
+
+  useEffect(() => {
+    connectEagerly();
+  }, []);
 
   return account ? (
     <Popover
@@ -30,6 +36,8 @@ export function WalletButton() {
       variant="rounded"
       colorScheme="primary"
       onClick={openWalletModal}
+      isLoading={isActivating}
+      disabled={isActivating}
     >
       Connect Wallet
     </Button>
