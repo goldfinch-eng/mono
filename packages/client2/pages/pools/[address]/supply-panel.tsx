@@ -1,5 +1,5 @@
 import { useApolloClient, gql } from "@apollo/client";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
@@ -57,6 +57,7 @@ interface SupplyPanelProps {
   tranchedPool: SupplyPanelTranchedPoolFieldsFragment;
   user: SupplyPanelUserFieldsFragment | null;
   fiatPerGfi: number;
+  seniorPoolApyFromGfiRaw: FixedNumber;
 }
 
 interface SupplyForm {
@@ -76,6 +77,7 @@ export default function SupplyPanel({
   },
   user,
   fiatPerGfi,
+  seniorPoolApyFromGfiRaw,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider, chainId } = useWallet();
@@ -189,6 +191,11 @@ export default function SupplyPanel({
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
   );
+  const seniorPoolApyFromGfiFiat = computeApyFromGfiInFiat(
+    seniorPoolApyFromGfiRaw,
+    fiatPerGfi
+  );
+  const totalApyFromGfi = fiatApyFromGfi.addUnsafe(seniorPoolApyFromGfiFiat);
 
   return (
     <div className="rounded-xl bg-sunrise-02 p-5 text-white">
@@ -208,7 +215,7 @@ export default function SupplyPanel({
       </div>
 
       <div className="mb-8 text-6xl font-medium">
-        {formatPercent(estimatedJuniorApy.addUnsafe(fiatApyFromGfi))}
+        {formatPercent(estimatedJuniorApy.addUnsafe(totalApyFromGfi))}
       </div>
 
       <table className="mb-8 w-full">
@@ -258,7 +265,7 @@ export default function SupplyPanel({
           </tr>
           <tr>
             <td className="border border-[#674C69] p-3 text-xl">
-              {formatPercent(fiatApyFromGfi)} APY
+              {formatPercent(totalApyFromGfi)} APY
             </td>
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
@@ -266,7 +273,8 @@ export default function SupplyPanel({
                   {formatFiat({
                     symbol: SupportedFiat.Usd,
                     amount: supplyValue
-                      ? parseFloat(supplyValue) * fiatApyFromGfi.toUnsafeFloat()
+                      ? parseFloat(supplyValue) *
+                        totalApyFromGfi.toUnsafeFloat()
                       : 0,
                   })}
                 </span>
