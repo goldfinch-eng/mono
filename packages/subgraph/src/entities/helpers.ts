@@ -43,6 +43,14 @@ export function getTotalDeposited(
   return totalDeposited
 }
 
+export function getJuniorDeposited(juniorTranches: JuniorTrancheInfo[]): BigInt {
+  let juniorDeposited = BigInt.zero()
+  for (let i = 0; i < juniorTranches.length; i++) {
+    juniorDeposited = juniorDeposited.plus(juniorTranches[i].principalDeposited)
+  }
+  return juniorDeposited
+}
+
 export function getEstimatedSeniorPoolInvestment(tranchedPoolAddress: Address, tranchedPoolVersion: string): BigInt {
   if (tranchedPoolVersion == VERSION_BEFORE_V2_2) {
     // This means that the pool is not compatible with multiple slices, so we need to use a hack to estimate senior pool investment

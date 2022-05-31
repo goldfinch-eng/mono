@@ -23,7 +23,7 @@ import {
   estimateJuniorAPY,
   getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
-  getGoldfinchConfig,
+  getJuniorDeposited,
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
@@ -69,12 +69,14 @@ export function handleDeposit(event: DepositMade): void {
   }
 
   tranchedPool.estimatedTotalAssets = tranchedPool.estimatedTotalAssets.plus(event.params.amount)
+  tranchedPool.juniorDeposited = tranchedPool.juniorDeposited.plus(event.params.amount)
   const creditLine = CreditLine.load(tranchedPool.creditLine)
   if (!creditLine) {
     throw new Error(`Missing credit line for tranched pool ${tranchedPool.id} while handling deposit`)
   }
   const limit = !creditLine.limit.isZero() ? creditLine.limit : creditLine.maxLimit
   tranchedPool.remainingCapacity = limit.minus(tranchedPool.estimatedTotalAssets)
+  tranchedPool.remainingJuniorCapacity = tranchedPool.remainingJuniorCapacity.minus(event.params.amount)
 
   tranchedPool.save()
 
@@ -173,11 +175,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
   tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
   tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches, version)
-  log.info("tranchedPool: {}, estimatedTotalAssets: {}", [
-    tranchedPool.id,
-    tranchedPool.estimatedTotalAssets.toString(),
-  ])
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
+  tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)
   tranchedPool.isPaused = poolContract.paused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
   tranchedPool.version = version
@@ -198,6 +197,12 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.tokens = []
     tranchedPool.createdAt = timestamp
     tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
+  }
+  tranchedPool.remainingJuniorCapacity = limit
+    .minus(tranchedPool.juniorDeposited.times(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1))))
+    .div(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)))
+  if (tranchedPool.remainingJuniorCapacity.lt(BigInt.zero())) {
+    tranchedPool.remainingJuniorCapacity = BigInt.zero()
   }
 
   const getAllowedUIDTypes_callResult = poolContract.try_getAllowedUIDTypes()

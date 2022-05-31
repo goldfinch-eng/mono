@@ -80,9 +80,7 @@ gql`
       seniorTranches {
         principalDeposited
       }
-      juniorTranches {
-        principalDeposited
-      }
+      juniorDeposited
       creditLine {
         id
         limit
@@ -166,12 +164,10 @@ export default function PoolPage() {
   }
 
   const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
-  const backerSupply = tranchedPool?.juniorTranches
+  const backerSupply = tranchedPool?.juniorDeposited
     ? {
         token: SupportedCrypto.Usdc,
-        amount: tranchedPool.juniorTranches.reduce((total, curr) => {
-          return total.add(curr.principalDeposited);
-        }, BigNumber.from(0)),
+        amount: tranchedPool.juniorDeposited,
       }
     : undefined;
   const seniorSupply =

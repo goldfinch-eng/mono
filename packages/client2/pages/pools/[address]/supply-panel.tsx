@@ -35,7 +35,7 @@ export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     agreement @client
-    remainingCapacity
+    remainingJuniorCapacity
     estimatedLeverageRatio
     allowedUidTypes
   }
@@ -71,8 +71,7 @@ export default function SupplyPanel({
     estimatedJuniorApy,
     estimatedJuniorApyFromGfiRaw,
     agreement,
-    remainingCapacity,
-    estimatedLeverageRatio,
+    remainingJuniorCapacity,
     allowedUidTypes,
   },
   user,
@@ -105,10 +104,6 @@ export default function SupplyPanel({
     setValue,
     reset,
   } = useForm<SupplyForm>();
-
-  const remainingJuniorCapacity = remainingCapacity.div(
-    estimatedLeverageRatio.add(1)
-  );
 
   // TODO this should consider the amount of junior capacity remaining in the pool
   const handleMax = async () => {
