@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 
-import { Heading } from "@/components/design-system";
-import { formatCrypto } from "@/lib/format";
+import { Stat } from "@/components/design-system";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SeniorPoolStatusFieldsFragment,
   SupportedCrypto,
@@ -12,32 +12,48 @@ export const SENIOR_POOL_STATUS_FIELDS = gql`
     latestPoolStatus {
       id
       totalPoolAssetsUsdc
+      totalLoansOutstanding
     }
   }
 `;
 
 interface StatusSectionProps {
-  seniorPool?: SeniorPoolStatusFieldsFragment;
+  seniorPool: SeniorPoolStatusFieldsFragment;
 }
 
 export function StatusSection({ seniorPool }: StatusSectionProps) {
   return (
-    <div className="rounded bg-sand-100 p-6">
-      <Heading level={2} className="mb-4">
-        Pool Status
-      </Heading>
-      <div className="flex flex-wrap">
-        <div>
-          <div className="text-2xl">
-            {seniorPool
-              ? formatCrypto({
-                  token: SupportedCrypto.Usdc,
-                  amount: seniorPool.latestPoolStatus.totalPoolAssetsUsdc,
-                })
-              : "-.--"}
-          </div>
-          <div className="text-lg text-eggplant-200">Total pool balance</div>
-        </div>
+    <div>
+      <h2 className="mb-8 font-sans text-3xl">Pool Status</h2>
+      <div className="flex gap-14">
+        <Stat
+          label="Total Pool Balance"
+          value={formatCrypto(
+            {
+              token: SupportedCrypto.Usdc,
+              amount: seniorPool.latestPoolStatus.totalPoolAssetsUsdc,
+            },
+            { includeSymbol: true }
+          )}
+          tooltip="Lorem ipsum"
+        />
+        <Stat
+          label="Loans Outstanding"
+          value={formatCrypto(
+            {
+              token: SupportedCrypto.Usdc,
+              amount: seniorPool.latestPoolStatus.totalLoansOutstanding,
+            },
+            { includeSymbol: true }
+          )}
+          tooltip="Lorem ipsum"
+        />
+        {/* TODO use the real default rate. Needs to be properly calculated on subgraph */}
+        <Stat
+          label="Default Rate"
+          value={formatPercent(0)}
+          tooltip="Lorem ipsum"
+        />
       </div>
     </div>
   );

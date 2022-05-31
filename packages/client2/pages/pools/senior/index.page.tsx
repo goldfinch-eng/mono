@@ -3,6 +3,7 @@ import { gql } from "@apollo/client";
 import {
   Banner,
   Breadcrumb,
+  Button,
   Heading,
   HelperText,
 } from "@/components/design-system";
@@ -78,8 +79,43 @@ export default function SeniorPoolPage() {
               may be outdated.
             </HelperText>
           ) : null}
+          {seniorPool ? <StatusSection seniorPool={seniorPool} /> : null}
+          <div className="mb-8 mt-14">
+            <h2 className="mb-8 text-3xl">Overview</h2>
+            <p className="mb-8 text-2xl font-light">
+              The Senior Pool is the simple, lower risk, lower return option on
+              Goldfinch. Capital is automatically diversified across Borrower
+              pools, and protected by Backer capital.
+            </p>
+            <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
+            <ul className="mb-8 list-outside list-disc pl-5 text-lg">
+              <li>
+                Earn passive yield. Capital is automatically deployed across a
+                diverse portfolio of Borrowers that are vetted by Backers.
+              </li>
+              <li>
+                Lower risk. Losses are protected by the first-loss capital
+                supplied by Backers.
+              </li>
+              <li>
+                Stable returns. Receive USDC APY from the underlying interest,
+                driven by real-world activity that is uncorrelated with crypto,
+                plus GFI from liquidity mining distributions.
+              </li>
+            </ul>
+            <Button
+              as="a"
+              iconRight="ArrowTopRight"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics"
+              target="_blank"
+              rel="noopener"
+              size="lg"
+              variant="rounded"
+            >
+              How it works
+            </Button>
+          </div>
           <PortfolioSection user={data?.user} seniorPool={seniorPool} />
-          <StatusSection seniorPool={seniorPool} />
         </div>
       </div>
     </>

@@ -57,7 +57,7 @@ export function Tooltip({
   children,
   useWrapper = false,
   content,
-  placement = "bottom",
+  placement = "top",
 }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef<HTMLDivElement | null>(null);
