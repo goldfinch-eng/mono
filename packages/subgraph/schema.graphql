@@ -204,6 +204,10 @@ type TranchedPool @entity {
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
   remainingCapacity: BigInt!
+  """
+  Note that this is just an estimate based on the fixed leverage ratio. If leverage ratio was not fixed, it would be much harder to estimate the remaining junior capacity
+  """
+  remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
   """
@@ -213,6 +217,7 @@ type TranchedPool @entity {
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
+  juniorDeposited: BigInt!
   totalDeployed: BigInt!
   fundableAt: BigInt!
   """
