@@ -203,13 +203,17 @@ export function TranchedPoolCard({
     fiatPerGfi
   );
 
+  const totalApyWithGfi = tranchedPool.estimatedJuniorApy
+    .addUnsafe(apyFromGfiFiat)
+    .addUnsafe(seniorPoolApyFromGfiFiat);
+
   return (
     <PoolCard
       title={tranchedPool.name}
       subtitle={tranchedPool.category}
       icon={tranchedPool.icon}
       apy={tranchedPool.estimatedJuniorApy}
-      apyWithGfi={apyFromGfiFiat}
+      apyWithGfi={totalApyWithGfi}
       apyTooltipContent={
         <div>
           <div className="mb-4">
@@ -232,13 +236,7 @@ export function TranchedPoolCard({
             <hr className="border-t border-sand-300" />
             <div className="flex justify-between">
               <div>Total Est. APY</div>
-              <div>
-                {formatPercent(
-                  tranchedPool.estimatedJuniorApy
-                    .addUnsafe(apyFromGfiFiat)
-                    .addUnsafe(seniorPoolApyFromGfiFiat)
-                )}
-              </div>
+              <div>{formatPercent(totalApyWithGfi)}</div>
             </div>
           </div>
         </div>

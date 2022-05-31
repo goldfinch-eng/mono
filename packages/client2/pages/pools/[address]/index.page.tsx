@@ -95,6 +95,13 @@ gql`
       ...RepaymentProgressPanelTranchedPoolFields
       ...BorrowerProfileFields
     }
+    seniorPools(first: 1) {
+      id
+      latestPoolStatus {
+        id
+        estimatedApyFromGfiRaw
+      }
+    }
     gfiPrice(fiat: USD) @client {
       price {
         amount
@@ -137,6 +144,7 @@ export default function PoolPage() {
   });
 
   const tranchedPool = data?.tranchedPool;
+  const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
@@ -486,7 +494,7 @@ export default function PoolPage() {
         </div>
 
         <div className="relative col-span-4">
-          {tranchedPool && fiatPerGfi ? (
+          {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="sticky top-12 space-y-8">
               {poolStatus === PoolStatus.Full && (
                 <RepaymentProgressPanel tranchedPool={tranchedPool} />
@@ -504,6 +512,9 @@ export default function PoolPage() {
                   tranchedPool={tranchedPool}
                   user={user}
                   fiatPerGfi={fiatPerGfi}
+                  seniorPoolApyFromGfiRaw={
+                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+                  }
                 />
               )}
 
