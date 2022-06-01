@@ -1,6 +1,6 @@
 import {PoolTokens} from "@goldfinch-eng/protocol/typechain/ethers"
 import hre from "hardhat"
-import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
+import {ContractDeployer, ContractUpgrader, getEthersContract, getProtocolOwner} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
 export async function main() {
@@ -32,6 +32,12 @@ export async function main() {
         "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net/poolTokenMetadata/"
       ),
     ],
+  })
+
+  // Set royalty params
+  const FIFTY_BASIS_POINTS = String(5e15)
+  deployEffects.add({
+    deferred: [await poolTokens.populateTransaction.setRoyaltyParams(await getProtocolOwner(), FIFTY_BASIS_POINTS)],
   })
 
   const deployedContracts = {}

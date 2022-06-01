@@ -21,7 +21,7 @@ library ConfigurableRoyaltyStandard {
     /// @dev The address that should receive royalties
     address receiver;
     /// @dev The percent of `salePrice` that should be taken for royalties.
-    ///   Represented with `_PERCENTAGE_DECIMALS`.
+    ///   Represented with `_PERCENTAGE_DECIMALS` where `_PERCENTAGE_DECIMALS` is 100%.
     uint256 royaltyPercent;
   }
 

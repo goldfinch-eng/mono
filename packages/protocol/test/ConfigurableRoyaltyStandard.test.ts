@@ -83,7 +83,7 @@ export function behavesLikeConfigurableRoyaltyStandard(
 
         const expectedRoyaltyAmount = salePrice.mul(FIFTY_BASIS_POINTS).div(new BN(String(1e18)))
         expect(royaltyInfo[0]).to.eq(owner)
-        expect(royaltyInfo[1]).to.bignumber.eq(expectedRoyaltyAmount)
+        expect(royaltyInfo[1].toString()).to.eq(expectedRoyaltyAmount.toString())
       })
     })
   })
