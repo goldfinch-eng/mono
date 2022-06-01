@@ -1,4 +1,6 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
+import { BigNumber, utils } from "ethers";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -9,13 +11,23 @@ import {
   InfoIconTooltip,
   Link,
 } from "@/components/design-system";
+import { USDC_DECIMALS } from "@/constants";
+import {
+  generateErc20PermitSignature,
+  useSeniorPoolContract,
+  useStakingRewardsContract,
+  useUsdcContract,
+} from "@/lib/contracts";
 import { formatFiat, formatPercent } from "@/lib/format";
 import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
   SeniorPoolSupplyPanelUserFieldsFragment,
   SupportedFiat,
+  UidType,
 } from "@/lib/graphql/generated";
-import { computeApyFromGfiInFiat } from "@/lib/pools";
+import { canUserParticipateInPool, computeApyFromGfiInFiat } from "@/lib/pools";
+import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -41,13 +53,13 @@ export const SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS = gql`
 
 interface SeniorPoolSupplyPanelProps {
   seniorPool: SeniorPoolSupplyPanelPoolFieldsFragment;
-  user: SeniorPoolSupplyPanelUserFieldsFragment;
+  user: SeniorPoolSupplyPanelUserFieldsFragment | null;
   fiatPerGfi: number;
 }
 
 export function SeniorPoolSupplyPanel({
   seniorPool,
-  // user,
+  user,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
   const seniorPoolApyUsdc = seniorPool.latestPoolStatus.estimatedApy;
@@ -60,9 +72,93 @@ export function SeniorPoolSupplyPanel({
     control,
     register,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+    handleSubmit,
+    reset,
   } = useForm<{ supply: string; isStaking: string }>();
   const supplyValue = watch("supply");
+  const { account, provider } = useWallet();
+  const { stakingRewardsContract, stakingRewardsAddress } =
+    useStakingRewardsContract();
+  const { seniorPoolContract, seniorPoolAddress } = useSeniorPoolContract();
+  const { usdcContract } = useUsdcContract();
+  const apolloClient = useApolloClient();
+
+  const onSubmit = handleSubmit(async (data) => {
+    if (
+      !account ||
+      !provider ||
+      !usdcContract ||
+      !stakingRewardsContract ||
+      !seniorPoolContract
+    ) {
+      return;
+    }
+    const value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    const now = (await provider.getBlock("latest")).timestamp;
+    const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+
+    if (data.isStaking) {
+      const signature = await generateErc20PermitSignature({
+        erc20TokenContract: usdcContract,
+        provider,
+        owner: account,
+        spender: stakingRewardsAddress,
+        value,
+        deadline,
+      });
+      const transaction = stakingRewardsContract.depositWithPermitAndStake(
+        value,
+        deadline,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+      await toastTransaction({
+        transaction,
+        pendingPrompt: `Deposit and stake submitted for senior pool.`,
+      });
+    } else {
+      const signature = await generateErc20PermitSignature({
+        erc20TokenContract: usdcContract,
+        provider,
+        owner: account,
+        spender: seniorPoolAddress,
+        value,
+        deadline,
+      });
+      const transaction = seniorPoolContract.depositWithPermit(
+        value,
+        deadline,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+      await toastTransaction({
+        transaction,
+        pendingPrompt: `Deposit submitted for senior pool.`,
+      });
+    }
+    await apolloClient.refetchQueries({ include: "active" });
+  });
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+    }
+  }, [isSubmitSuccessful, reset]);
+
+  const canUserParticipate = !user
+    ? false
+    : canUserParticipateInPool(
+        [
+          UidType.NonUsEntity,
+          UidType.NonUsIndividual,
+          UidType.UsEntity,
+          UidType.UsAccreditedIndividual,
+        ],
+        user
+      );
 
   return (
     <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row xl:flex-col">
@@ -136,6 +232,7 @@ export function SeniorPoolSupplyPanel({
       <form
         data-id="bottom-half"
         className="flex flex-grow basis-0 flex-col justify-between"
+        onSubmit={onSubmit}
       >
         <div>
           <DollarInput
@@ -147,6 +244,7 @@ export function SeniorPoolSupplyPanel({
             labelClassName="!text-sm !mb-3"
             className="mb-4"
             errorMessage={errors?.supply?.message}
+            rules={{ required: "Required" }}
           />
           <Checkbox
             {...register("isStaking")}
@@ -166,13 +264,20 @@ export function SeniorPoolSupplyPanel({
         </div>
         <Button
           className="block w-full"
-          disabled={Object.keys(errors).length !== 0}
+          disabled={Object.keys(errors).length !== 0 || !canUserParticipate}
           size="xl"
           colorScheme="secondary"
           type="submit"
+          isLoading={isSubmitting}
         >
           Supply
         </Button>
+        {!canUserParticipate ? (
+          <p className="mt-2 text-white">
+            Sorry, you are not allowed to participate in this pool because you
+            are either unverified or do not have a suitable UID.
+          </p>
+        ) : null}
       </form>
     </div>
   );

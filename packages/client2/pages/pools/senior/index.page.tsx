@@ -13,11 +13,6 @@ import { useWallet } from "@/lib/wallet";
 
 import goldfinchYellow from "./goldfinch-yellow.png";
 import {
-  PortfolioSection,
-  SENIOR_POOL_PORTFOLIO_USER_FIELDS,
-  SENIOR_POOL_PORTFOLIO_POOL_FIELDS,
-} from "./portfolio-section";
-import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
   SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
@@ -25,9 +20,6 @@ import {
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 
 gql`
-  # ${SENIOR_POOL_PORTFOLIO_USER_FIELDS}
-  # ${SENIOR_POOL_PORTFOLIO_POOL_FIELDS}
-
   ${SENIOR_POOL_STATUS_FIELDS}
 
   ${SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS}
@@ -35,12 +27,10 @@ gql`
   query SeniorPoolPage($userId: ID!) {
     user(id: $userId) {
       id
-      # ...SeniorPoolPortfolioUserFields
       ...SeniorPoolSupplyPanelUserFields
     }
     seniorPools(first: 1) {
       id
-      # ...SeniorPoolPortfolioPoolFields
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
     }
@@ -60,7 +50,7 @@ export default function SeniorPoolPage() {
   });
 
   const seniorPool = data?.seniorPools[0];
-  const user = data?.user;
+  const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
   return (
@@ -80,7 +70,7 @@ export default function SeniorPoolPage() {
       <div className="flex flex-col items-stretch gap-10 xl:grid xl:grid-cols-12">
         <div className="xl:relative xl:col-start-9 xl:col-end-13">
           <div className="flex flex-col items-stretch gap-8 xl:sticky xl:top-12">
-            {seniorPool && user && fiatPerGfi ? (
+            {seniorPool && fiatPerGfi ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
                 user={user}
@@ -132,7 +122,6 @@ export default function SeniorPoolPage() {
               How it works
             </Button>
           </div>
-          {/* <PortfolioSection user={data?.user} seniorPool={seniorPool} /> */}
         </div>
       </div>
     </>
