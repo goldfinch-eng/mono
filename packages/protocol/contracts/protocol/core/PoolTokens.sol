@@ -282,6 +282,10 @@ contract PoolTokens is IPoolTokens, ERC721PresetMinterPauserAutoIdUpgradeSafe, H
     royaltyParams.setRoyaltyParams(newReceiver, newRoyaltyPercent);
   }
 
+  function setBaseURI(string calldata baseURI_) external onlyAdmin {
+    _setBaseURI(baseURI_);
+  }
+
   function supportsInterface(bytes4 id) public view override(ERC165UpgradeSafe, IERC165) returns (bool) {
     return (id == _INTERFACE_ID_ERC721 ||
       id == _INTERFACE_ID_ERC721_METADATA ||

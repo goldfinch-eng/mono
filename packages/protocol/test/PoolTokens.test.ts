@@ -22,7 +22,6 @@ const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
 import {getImplementationAddress} from "@openzeppelin/upgrades-core"
 
-import {expectEvent} from "@openzeppelin/test-helpers"
 import {mint} from "./uniqueIdentityHelpers"
 import {
   GFIInstance,
@@ -891,6 +890,41 @@ describe("PoolTokens", () => {
         expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC165)).to.be.true
         expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC2981)).to.be.true
       })
+    })
+  })
+
+  describe("setBaseURI", async () => {
+    it("is only callable by OWNER_ROLE", async () => {
+      await expect(poolTokens.setBaseURI("test", {from: person2})).to.be.rejectedWith(/AD/)
+    })
+
+    it("sets base URI for tokenURI(tokenId) calls", async () => {
+      await poolTokens.setBaseURI("http://example.com/", {from: owner})
+      expect(await poolTokens.baseURI()).to.eq("http://example.com/")
+
+      const result = await goldfinchFactory.createPool(
+        person2,
+        new BN(20),
+        usdcVal(100),
+        interestAprAsBN("15.0"),
+        new BN(30),
+        new BN(365),
+        new BN(0),
+        new BN(185),
+        new BN(0),
+        [],
+        {from: owner}
+      )
+      const event = decodeAndGetFirstLog<PoolCreated>(result.receipt.rawLogs, goldfinchFactory, "PoolCreated")
+      pool = await TranchedPool.at(event.args.pool)
+      const mintReceipt = await withPoolSender(() =>
+        poolTokens.mint({principalAmount: String(usdcVal(5)), tranche: "1"}, person2)
+      )
+      const mintEvent = mintReceipt.logs[1]
+      const tokenId = mintEvent.args.tokenId
+
+      const tokenURI = await poolTokens.tokenURI(tokenId)
+      expect(tokenURI).to.eq(`http://example.com/${tokenId}`)
     })
   })
 

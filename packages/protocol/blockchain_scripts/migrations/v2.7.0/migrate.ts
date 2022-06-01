@@ -1,8 +1,6 @@
 import {PoolTokens} from "@goldfinch-eng/protocol/typechain/ethers"
-import _ from "lodash"
-import BigNumber from "bignumber.js"
 import hre from "hardhat"
-import {ContractDeployer, ContractUpgrader} from "../../deployHelpers"
+import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
 
 export async function main() {
@@ -25,6 +23,16 @@ export async function main() {
       contracts: upgradedContracts,
     })
   )
+
+  // Set metadata base URI for PoolTokens
+  const poolTokens = await getEthersContract<PoolTokens>("PoolTokens")
+  deployEffects.add({
+    deferred: [
+      await poolTokens.populateTransaction.setBaseURI(
+        "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net/poolTokenMetadata/"
+      ),
+    ],
+  })
 
   const deployedContracts = {}
 
