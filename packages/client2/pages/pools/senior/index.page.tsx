@@ -17,22 +17,32 @@ import {
   SENIOR_POOL_PORTFOLIO_USER_FIELDS,
   SENIOR_POOL_PORTFOLIO_POOL_FIELDS,
 } from "./portfolio-section";
+import {
+  SeniorPoolSupplyPanel,
+  SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
+  SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
+} from "./senior-pool-supply-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 
 gql`
-  ${SENIOR_POOL_PORTFOLIO_USER_FIELDS}
-  ${SENIOR_POOL_PORTFOLIO_POOL_FIELDS}
+  # ${SENIOR_POOL_PORTFOLIO_USER_FIELDS}
+  # ${SENIOR_POOL_PORTFOLIO_POOL_FIELDS}
 
   ${SENIOR_POOL_STATUS_FIELDS}
+
+  ${SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS}
+  ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
   query SeniorPoolPage($userId: ID!) {
     user(id: $userId) {
       id
-      ...SeniorPoolPortfolioUserFields
+      # ...SeniorPoolPortfolioUserFields
+      ...SeniorPoolSupplyPanelUserFields
     }
     seniorPools(first: 1) {
       id
-      ...SeniorPoolPortfolioPoolFields
+      # ...SeniorPoolPortfolioPoolFields
       ...SeniorPoolStatusFields
+      ...SeniorPoolSupplyPanelPoolFields
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -50,6 +60,8 @@ export default function SeniorPoolPage() {
   });
 
   const seniorPool = data?.seniorPools[0];
+  const user = data?.user;
+  const fiatPerGfi = data?.gfiPrice?.price.amount;
 
   return (
     <>
@@ -68,8 +80,13 @@ export default function SeniorPoolPage() {
       <div className="flex flex-col items-stretch gap-10 xl:grid xl:grid-cols-12">
         <div className="xl:relative xl:col-start-9 xl:col-end-13">
           <div className="flex flex-col items-stretch gap-8 xl:sticky xl:top-12">
-            <div>panel1</div>
-            <div>panel2</div>
+            {seniorPool && user && fiatPerGfi ? (
+              <SeniorPoolSupplyPanel
+                seniorPool={seniorPool}
+                user={user}
+                fiatPerGfi={fiatPerGfi}
+              />
+            ) : null}
           </div>
         </div>
         <div className="xl:col-start-1 xl:col-end-9 xl:row-start-1">
@@ -115,7 +132,7 @@ export default function SeniorPoolPage() {
               How it works
             </Button>
           </div>
-          <PortfolioSection user={data?.user} seniorPool={seniorPool} />
+          {/* <PortfolioSection user={data?.user} seniorPool={seniorPool} /> */}
         </div>
       </div>
     </>
