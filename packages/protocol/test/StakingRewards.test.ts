@@ -3098,9 +3098,6 @@ describe("StakingRewards", function () {
     })
 
     it("initializes ZAPPER_ROLE", async () => {
-      await expect(
-        stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})
-      ).to.be.rejectedWith(/sender must be an admin to grant/)
       await stakingRewards.initZapperRole({from: owner})
       // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
       await expect(stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be

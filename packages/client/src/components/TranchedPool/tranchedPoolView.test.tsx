@@ -16,6 +16,9 @@ function renderDepositForm(backerLimit, transactionLimit, userBalance, remaining
         value: {
           usdcBalanceInDollars: new BigNumber(userBalance),
           usdcBalance: new BigNumber(usdcToAtomic(userBalance)),
+          stakingRewards: {
+            unlockedPositions: [],
+          },
         },
       },
     },

@@ -25,7 +25,7 @@ const ALLOWED_SENDERS = {
     "0xA8Bd929a04C1E67E5aB03C40e70E2f83238986B6", // Cauris (Use this as borrower EOA)
     "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D", // Stratos EOA
     "0xb2A3D20999975E31727890c5084CC4A9458740F0", // LendEast metamask
-    "0xef1a2cbbfe289ba586db860cfe360058ac3944e7", // Addem Capital EOA
+    "0xEF1A2cBbFE289bA586db860CfE360058ac3944E7", // Addem Capital EOA
   ],
 }
 

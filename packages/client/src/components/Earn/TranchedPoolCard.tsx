@@ -44,7 +44,7 @@ export default function TranchedPoolCard({
     currentTimestamp && new BigNumber(currentTimestamp) < tranchedPool.fundableAt
 
   const disabledClass = disabled ? "disabled" : ""
-  const balanceDisabledClass = poolBacker?.tokenInfos.length === 0 ? "disabled" : ""
+  const balanceDisabledClass = poolBacker?.getAllTokenInfos().length === 0 ? "disabled" : ""
   const getBadge = () => {
     if (tranchedPool.isPaused) {
       return <Badge text="Paused" variant="gray" fixedWidth={false} />

@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState} from "react"
 import {useForm} from "react-hook-form"
 import {AppContext} from "../../App"
-import DefaultGoldfinchClient, {KYC} from "../../hooks/useGoldfinchClient"
+import AuthenticatedGoldfinchClient, {KYC} from "../../hooks/useGoldfinchClient"
 import {Session, useSignIn} from "../../hooks/useSignIn"
 import {assertNonNullable} from "../../utils"
 import {iconAlert, iconCircleCheck} from "../icons"
@@ -112,7 +112,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     assertNonNullable(network)
     assertNonNullable(setSessionData)
     setLoading(true)
-    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
+    const client = new AuthenticatedGoldfinchClient(network.name!, session, setSessionData)
     try {
       const response = await client.fetchKYCStatus(userAddress)
       if (response.ok) {

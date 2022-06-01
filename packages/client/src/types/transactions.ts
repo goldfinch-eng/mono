@@ -20,9 +20,12 @@ export const WITHDRAW_FROM_SENIOR_POOL_TX_TYPE = "Withdraw from Senior Pool"
 export const UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE = "Unstake and Withdraw"
 export const UNSTAKE_TX_TYPE = "Unstake"
 export const SUPPLY_TX_TYPE = "Supply"
+export const ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE = "Migrate to Tranched Pool"
 export const DEPOSIT_TO_CURVE_TX_TYPE = "Deposit to Curve"
 export const DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE = "Deposit to Curve and Stake"
 export const ZAP_STAKE_TO_CURVE_TX_TYPE = "Migrate to Curve"
+export const CLAIM_ZAP = "Claim zap from tranched pool"
+export const UNZAP = "Unzap from tranched pool"
 
 /**
  * This type defines the set of transactions that this application supports sending.
@@ -45,9 +48,12 @@ export type TxType =
   | typeof UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE
   | typeof UNSTAKE_TX_TYPE
   | typeof SUPPLY_TX_TYPE
+  | typeof ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE
   | typeof DEPOSIT_TO_CURVE_TX_TYPE
   | typeof DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE
   | typeof ZAP_STAKE_TO_CURVE_TX_TYPE
+  | typeof CLAIM_ZAP
+  | typeof UNZAP
 export function isTxType(val: unknown): val is TxType {
   return (
     val === USDC_APPROVAL_TX_TYPE ||
@@ -67,9 +73,12 @@ export function isTxType(val: unknown): val is TxType {
     val === UNSTAKE_AND_WITHDRAW_FROM_SENIOR_POOL_TX_TYPE ||
     val === UNSTAKE_TX_TYPE ||
     val === SUPPLY_TX_TYPE ||
+    val === ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE ||
     val === DEPOSIT_TO_CURVE_TX_TYPE ||
     val === DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE ||
-    val === ZAP_STAKE_TO_CURVE_TX_TYPE
+    val === ZAP_STAKE_TO_CURVE_TX_TYPE ||
+    val === CLAIM_ZAP ||
+    val === UNZAP
   )
 }
 
@@ -118,6 +127,12 @@ export type CurrentTxDataByType = {
     ticker: string
   }
   [SUPPLY_TX_TYPE]: AmountStringData
+  [ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE]: {
+    tokenId: string
+    tranchedPool: string
+    tranche: string
+    usdcAmount: string
+  }
   [DEPOSIT_TO_CURVE_TX_TYPE]: {
     fiduAmount: string
     usdcAmount: string
@@ -129,6 +144,12 @@ export type CurrentTxDataByType = {
   [ZAP_STAKE_TO_CURVE_TX_TYPE]: {
     fiduAmount: string
     usdcAmount: string
+  }
+  [CLAIM_ZAP]: {
+    poolTokenId: string
+  }
+  [UNZAP]: {
+    poolTokenId: string
   }
 }
 
