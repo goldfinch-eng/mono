@@ -47,11 +47,13 @@ library ConfigurableRoyaltyStandard {
   /// @param newReceiver The new address which should receive royalties. See `receiver`.
   /// @param newRoyaltyPercent The new percent of `salePrice` that should be taken for royalties.
   ///   See `royaltyPercent`.
+  /// @dev The receiver cannot be the null address
   function setRoyaltyParams(
     RoyaltyParams storage params,
     address newReceiver,
     uint256 newRoyaltyPercent
   ) internal {
+    require(newReceiver != address(0), "Null receiver");
     params.receiver = newReceiver;
     params.royaltyPercent = newRoyaltyPercent;
     emit RoyaltyParamsSet(msg.sender, newReceiver, newRoyaltyPercent);

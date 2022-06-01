@@ -58,6 +58,12 @@ export function behavesLikeConfigurableRoyaltyStandard(
         expect(((await contract.royaltyParams()) as any).royaltyPercent).to.bignumber.eq(FIFTY_BASIS_POINTS)
       })
 
+      it("reverts when receiver is null address", async () => {
+        await expect(
+          contract.setRoyaltyParams("0x0000000000000000000000000000000000000000", FIFTY_BASIS_POINTS, {from: owner})
+        ).to.be.rejectedWith("Null receiver")
+      })
+
       it("emits a RoyaltyParamsSet event", async () => {
         const receipt = await contract.setRoyaltyParams(owner, FIFTY_BASIS_POINTS, {from: owner})
         const log = getFirstLog<RoyaltyParamsSet>(decodeLogs(receipt.receipt.rawLogs, contract, "RoyaltyParamsSet"))
