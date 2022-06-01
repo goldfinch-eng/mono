@@ -5,7 +5,9 @@
 
 .dropdown-selected {
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
+  width: 100%;
+  padding: 12px 4px;
   justify-content: space-between;
   margin: 0 0 0 5px;
 

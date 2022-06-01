@@ -5,7 +5,6 @@ import {GFILoaded} from "../../ethereum/gfi"
 import {CapitalProvider, fetchCapitalProviderData, SeniorPoolLoaded, StakingRewardsLoaded} from "../../ethereum/pool"
 import {UserLoaded} from "../../ethereum/user"
 import {useCurrentRoute} from "../../hooks/useCurrentRoute"
-import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
 import {assertNonNullable, displayDollars} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
@@ -30,7 +29,6 @@ function SeniorPoolView(): JSX.Element {
     loaded: false,
     value: undefined,
   })
-  const session = useSession()
   const currentRoute = useCurrentRoute()
 
   useEffect(
@@ -96,7 +94,6 @@ function SeniorPoolView(): JSX.Element {
     )
   }
 
-  const disabled = session.status !== "authenticated"
   return (
     <div className="content-section">
       <div className="page-header"> {earnMessage}</div>
@@ -104,12 +101,12 @@ function SeniorPoolView(): JSX.Element {
       {maxCapacityNotice}
       <InvestorNotice user={user} allowedUIDTypes={pool?.info.value.poolData.allowedUIDTypes || []} />
       <EarnActionsContainer
-        disabled={disabled}
+        disabled={false}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
       />
       <StakeFiduBanner
-        disabled={disabled}
+        disabled={false}
         capitalProvider={capitalProvider.loaded ? capitalProvider.value : undefined}
         actionComplete={actionComplete}
       />

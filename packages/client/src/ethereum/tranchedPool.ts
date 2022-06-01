@@ -39,6 +39,7 @@ import {usdcFromAtomic} from "./erc20"
 import {EventParserConfig, mapEventsToTx} from "./events"
 import {fiduFromAtomic} from "./fidu"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
+import {Zapper} from "./pool"
 import {INTEREST_DECIMALS, isMainnetForking, SECONDS_PER_DAY, SECONDS_PER_YEAR, USDC_DECIMALS} from "./utils"
 
 const ZERO = new BigNumber(0)
@@ -745,6 +746,8 @@ class TranchedPoolBacker {
   availableToWithdrawInDollars!: BigNumber
   unrealizedGainsInDollars!: BigNumber
   tokenInfos!: TokenInfo[]
+  // TokenInfo's for pool tokens owned by Zapper but were zapped by `address`
+  zappedTokenInfos!: TokenInfo[]
   firstDepositBlockNumber: number | undefined
 
   constructor(address: string | undefined, tranchedPool: TranchedPool, goldfinchProtocol: GoldfinchProtocol) {
@@ -754,80 +757,44 @@ class TranchedPoolBacker {
   }
 
   async initialize(currentBlock: BlockInfo) {
-    const poolTokensContract = this.goldfinchProtocol.getContract<PoolTokensContract>("PoolTokens")
-
     const address = this.address
-    this.tokenInfos = address
-      ? await poolTokensContract.readOnly.methods
-          .balanceOf(address)
-          .call(undefined, currentBlock.number)
-          .then((balance: string) => {
-            const numTokens = parseInt(balance, 10)
-            return numTokens
-          })
-          .then((numTokens: number) =>
-            Promise.all(
-              Array(numTokens)
-                .fill("")
-                .map((val, i) =>
-                  poolTokensContract.readOnly.methods
-                    .tokenOfOwnerByIndex(address, i)
-                    .call(undefined, currentBlock.number)
-                )
-            ).catch((error) => {
-              console.error("Error fetching tokenOfOwnerByIndex", error)
-              throw error
-            })
-          )
-          .then((tokenIds: string[]) =>
-            Promise.all(
-              tokenIds.map((tokenId) =>
-                poolTokensContract.readOnly.methods
-                  .getTokenInfo(tokenId)
-                  .call(undefined, currentBlock.number)
-                  .then((res) => tokenInfo(tokenId, res))
-              )
-            ).catch((error) => {
-              console.error("Error fetching tokenInfo for poolToken", error)
-              throw error
-            })
-          )
-          .then((tokenInfos: TokenInfo[]) =>
-            // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
-            // the instantiation-by-pool of TranchedPoolBacker instances.
-            tokenInfos.filter((tokenInfo) => tokenInfo.pool.toLowerCase() === this.tranchedPool.address.toLowerCase())
-          )
-      : []
+    this.tokenInfos = await this.getPoolTokenInfos(currentBlock, address)
+
+    const zapper = new Zapper(this.goldfinchProtocol)
+    zapper.initialize(currentBlock)
+    this.zappedTokenInfos = address ? await this.getZappedPoolTokensForZappingUser(currentBlock, zapper, address) : []
+
+    const allTokenInfos = this.tokenInfos.concat(this.zappedTokenInfos)
 
     let zero = new BigNumber(0)
-    this.principalAmount = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalAmount).concat(zero))
-    this.principalRedeemed = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalRedeemed).concat(zero))
-    this.interestRedeemed = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemed).concat(zero))
+    this.principalAmount = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.principalAmount).concat(zero))
+    this.principalRedeemed = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.principalRedeemed).concat(zero))
+    this.interestRedeemed = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.interestRedeemed).concat(zero))
 
     let availableToWithdrawAmounts = await Promise.all(
-      this.tokenInfos.map((tokenInfo) =>
+      allTokenInfos.map((tokenInfo) =>
         this.tranchedPool.contract.readOnly.methods
           .availableToWithdraw(tokenInfo.id)
           .call(undefined, currentBlock.number)
       )
     )
-    this.tokenInfos.forEach((tokenInfo, i) => {
+    allTokenInfos.forEach((tokenInfo, i) => {
       tokenInfo.interestRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.interestRedeemable)
       tokenInfo.principalRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.principalRedeemable)
     })
-    this.interestRedeemable = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.interestRedeemable).concat(zero))
-    this.principalRedeemable = BigNumber.sum.apply(null, this.tokenInfos.map((t) => t.principalRedeemable).concat(zero))
+    this.interestRedeemable = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.interestRedeemable).concat(zero))
+    this.principalRedeemable = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.principalRedeemable).concat(zero))
 
     const unusedPrincipal = this.principalRedeemed.plus(this.principalRedeemable)
     this.principalAtRisk = this.principalAmount.minus(unusedPrincipal)
     this.balance = this.principalAmount.minus(this.principalRedeemed).plus(this.interestRedeemable)
-    this.balanceInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.balance)))
+    this.balanceInDollars = new BigNumber(usdcFromAtomic(this.balance))
     this.availableToWithdraw = this.interestRedeemable.plus(this.principalRedeemable)
     this.availableToWithdrawInDollars = new BigNumber(usdcFromAtomic(this.availableToWithdraw))
     this.unrealizedGainsInDollars = new BigNumber(roundDownPenny(usdcFromAtomic(this.interestRedeemable)))
 
     const events = await Promise.all(
-      this.tokenInfos.map(
+      allTokenInfos.map(
         (tokenInfo): Promise<KnownEventData<typeof DEPOSIT_MADE_EVENT>[]> =>
           this.goldfinchProtocol.queryEvents(
             this.tranchedPool.contract.readOnly,
@@ -844,6 +811,73 @@ class TranchedPoolBacker {
     this.firstDepositBlockNumber = events
       .flat()
       .reduce<number | undefined>((acc, curr) => (acc ? Math.min(acc, curr.blockNumber) : curr.blockNumber), undefined)
+  }
+
+  async getZappedPoolTokensForZappingUser(currentBlock: BlockInfo, zapper: Zapper, zappingUser: string) {
+    const zapperOwnedPoolTokens = await this.getPoolTokenInfos(currentBlock, zapper.address)
+    const tokensWithZappingUsers = await Promise.all(
+      zapperOwnedPoolTokens.map((tokenInfo) =>
+        zapper.contract.readOnly.methods
+          .tranchedPoolZaps(tokenInfo.id)
+          .call()
+          .then((zap) => {
+            return {
+              tokenInfo,
+              zappingUser: zap.owner,
+            }
+          })
+      )
+    )
+    return tokensWithZappingUsers.filter((token) => token.zappingUser === zappingUser).map((token) => token.tokenInfo)
+  }
+
+  async getPoolTokenInfos(currentBlock: BlockInfo, owner?: string): Promise<TokenInfo[]> {
+    if (!owner) {
+      return []
+    }
+
+    const poolTokensContract = this.goldfinchProtocol.getContract<PoolTokensContract>("PoolTokens")
+    return poolTokensContract.readOnly.methods
+      .balanceOf(owner)
+      .call(undefined, currentBlock.number)
+      .then((balance: string) => {
+        const numTokens = parseInt(balance, 10)
+        return numTokens
+      })
+      .then((numTokens: number) =>
+        Promise.all(
+          Array(numTokens)
+            .fill("")
+            .map((_, i) =>
+              poolTokensContract.readOnly.methods.tokenOfOwnerByIndex(owner, i).call(undefined, currentBlock.number)
+            )
+        ).catch((error) => {
+          console.error("Error fetching tokenOfOwnerByIndex", error)
+          throw error
+        })
+      )
+      .then((tokenIds: string[]) =>
+        Promise.all(
+          tokenIds.map((tokenId) =>
+            poolTokensContract.readOnly.methods
+              .getTokenInfo(tokenId)
+              .call(undefined, currentBlock.number)
+              .then((res) => tokenInfo(tokenId, res))
+          )
+        ).catch((error) => {
+          console.error("Error fetching tokenInfo for poolToken", error)
+          throw error
+        })
+      )
+      .then((tokenInfos: TokenInfo[]) =>
+        // TODO It would be most efficient to partition by `tokenInfo.pool` once, upstream of
+        // the instantiation-by-pool of TranchedPoolBacker instances.
+        tokenInfos.filter((tokenInfo) => tokenInfo.pool.toLowerCase() === this.tranchedPool.address.toLowerCase())
+      )
+  }
+
+  getAllTokenInfos(): TokenInfo[] {
+    return this.tokenInfos.concat(this.zappedTokenInfos)
   }
 }
 

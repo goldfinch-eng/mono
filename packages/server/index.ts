@@ -23,6 +23,7 @@ import {
   fundFromLocalWhale,
   getERC20s,
 } from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
+import {lockTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/lockTranchedPool"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
 import {
@@ -79,6 +80,21 @@ app.post("/fundWithWhales", async (req, res) => {
   } catch (e) {
     console.error("fundWithWhales error", e)
     return res.status(500).send({message: "fundWithWhales error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/lockTranchedPool", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "lockTranchedPool only available on local and murmuration"})
+  }
+
+  try {
+    const {tranchedPoolAddress} = req.body
+    await lockTranchedPool(hre, tranchedPoolAddress)
+  } catch (e) {
+    console.error("lockTranchedPool error", e)
   }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})

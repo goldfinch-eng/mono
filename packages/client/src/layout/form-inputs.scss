@@ -66,6 +66,17 @@
   }
 }
 
+.transaction-input-multisource {
+  display: flex;
+  align-items: center;
+  border: 2px solid $sand;
+  border-radius: 6px;
+  background-color: $sand;
+  font-size: $sans-size-l;
+  padding: 0 12px 0 12px;
+  width: 100%;
+}
+
 .transaction-input {
   display: flex;
   align-items: center;
@@ -114,6 +125,13 @@
       color: $purp-light;
     }
   }
+}
+
+.form-input-label-multisource {
+  font-size: $sans-size-xs;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
 }
 
 .form-input-label {
