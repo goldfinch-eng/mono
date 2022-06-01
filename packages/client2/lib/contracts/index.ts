@@ -6,3 +6,4 @@ export * from "./fidu-contract";
 export * from "./unique-identity";
 export * from "./usdc-contract";
 export * from "./go-contract";
+export * from "./staking-rewards-contract";
