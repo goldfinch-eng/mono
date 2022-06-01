@@ -16,3 +16,5 @@ declare module "@download/blockies" {
   export function createIcon(config: BlockiesConfig): HTMLCanvasElement;
   export function renderIcon(config: BlockiesConfig, canvas: HTMLCanvasElement);
 }
+
+declare module "*.md";

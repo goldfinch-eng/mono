@@ -20,11 +20,11 @@ export function WalletButton() {
       content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
     >
       <Button
-        className="inline-flex h-10 items-center gap-3"
+        className="inline-flex h-10 items-center gap-3 !px-2 md:!px-4"
         variant="rounded"
         colorScheme="secondary"
       >
-        <span>
+        <span className="hidden md:block">
           {account.substring(0, 6)}...{account.substring(account.length - 4)}
         </span>
         <Identicon account={account} scale={3} />

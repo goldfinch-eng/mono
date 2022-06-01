@@ -47,6 +47,20 @@ const nextConfig = {
       type: "asset/source",
     });
 
+    // Allows Markdown files to be imported
+    config.module.rules.push({
+      test: /\.md$/,
+      issuer: /\.[jt]sx?$/,
+      use: [
+        {
+          loader: "html-loader",
+        },
+        {
+          loader: "markdown-loader",
+        },
+      ],
+    });
+
     return config;
   },
 };

@@ -2,19 +2,21 @@ import clsx from "clsx";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
 
-import { Link, GoldfinchLogo } from "@/components/design-system";
+import { Link, GoldfinchLogo, Icon } from "@/components/design-system";
+import { NAV_ITEMS } from "@/constants";
+import { openMobileNav } from "@/lib/state/actions";
 
 import { WalletButton } from "./wallet-button";
 
-const navItems = [
-  { label: "Earn", href: "/earn" },
-  { label: "Borrow", href: "/borrow" },
-  { label: "GFI", href: "/gfi" },
-];
-
 export function Nav() {
   return (
-    <div className="flex flex-row bg-sand-50 px-10">
+    <div className="flex flex-row border-b border-sand-100 px-6 md:px-10">
+      <div className="self-center md:hidden">
+        <button className="p-1" onClick={openMobileNav}>
+          <Icon name="Menu" size="md" />
+        </button>
+      </div>
+
       <div className="flex flex-1">
         <NextLink href="/" passHref>
           <a className="flex items-center justify-center p-3">
@@ -23,8 +25,8 @@ export function Nav() {
         </NextLink>
       </div>
 
-      <nav className="flex flex-1 flex-row justify-center">
-        {navItems.map(({ label, href }) => (
+      <nav className="hidden flex-1 flex-row justify-center md:flex">
+        {NAV_ITEMS.map(({ label, href }) => (
           <NavLink key={`${label}-${href}`} href={href}>
             {label}
           </NavLink>
@@ -38,7 +40,15 @@ export function Nav() {
   );
 }
 
-function NavLink({ children, href }: { children: string; href: string }) {
+export function NavLink({
+  children,
+  href,
+  className,
+}: {
+  children: string;
+  href: string;
+  className?: string;
+}) {
   const router = useRouter();
   const isCurrentPage = router.pathname === href;
   return (
@@ -47,7 +57,8 @@ function NavLink({ children, href }: { children: string; href: string }) {
         "flex items-center border-b-2 px-5 text-sm font-medium !no-underline",
         isCurrentPage
           ? "border-eggplant-600 text-sand-900"
-          : "border-transparent text-sand-700 hover:border-eggplant-600"
+          : "border-transparent text-sand-700 hover:border-eggplant-600",
+        className
       )}
       href={href}
     >

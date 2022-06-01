@@ -7,6 +7,7 @@ import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
+import Discord from "./svg/discord.svg";
 import Gfi from "./svg/gfi.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
 import Link from "./svg/link.svg";
@@ -33,6 +34,7 @@ export const iconManifest = {
   Usdc,
   Wallet,
   X,
+  Discord,
 };
 
 export type IconNameType = keyof typeof iconManifest;
