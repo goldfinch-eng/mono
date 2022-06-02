@@ -4,50 +4,34 @@ import { useMemo } from "react";
 
 import { CONTRACT_ADDRESSES } from "@/constants";
 import {
-  Erc20,
   Erc20__factory,
-  Fidu,
   Fidu__factory,
-  Gfi,
   Gfi__factory,
-  SeniorPool,
   SeniorPool__factory,
-  StakingRewards,
   StakingRewards__factory,
-  TranchedPool,
   TranchedPool__factory,
-  UniqueIdentity,
   UniqueIdentity__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
 
-type KnownContractName =
-  | "SeniorPool"
-  | "TranchedPool"
-  | "StakingRewards"
-  | "USDC"
-  | "UniqueIdentity"
-  | "GFI"
-  | "Fidu";
+const supportedContracts = {
+  SeniorPool: SeniorPool__factory.connect,
+  TranchedPool: TranchedPool__factory.connect,
+  GFI: Gfi__factory.connect,
+  USDC: Erc20__factory.connect,
+  Fidu: Fidu__factory.connect,
+  UniqueIdentity: UniqueIdentity__factory.connect,
+  StakingRewards: StakingRewards__factory.connect,
+};
 
-type Contract<T extends KnownContractName> = T extends "SeniorPool"
-  ? SeniorPool
-  : T extends "TranchedPool"
-  ? TranchedPool
-  : T extends "StakingRewards"
-  ? StakingRewards
-  : T extends "USDC"
-  ? Erc20
-  : T extends "UniqueIdentity"
-  ? UniqueIdentity
-  : T extends "GFI"
-  ? Gfi
-  : T extends "Fidu"
-  ? Fidu
-  : never;
+type SupportedContractName = keyof typeof supportedContracts;
 
-export function getContract<T extends KnownContractName>({
+type Contract<T extends SupportedContractName> = ReturnType<
+  typeof supportedContracts[T]
+>;
+
+export function getContract<T extends SupportedContractName>({
   name,
   chainId,
   provider,
@@ -64,27 +48,12 @@ export function getContract<T extends KnownContractName>({
       `Unable to find address for contract ${name} on chainId ${chainId}`
     );
   }
-  if (name === "SeniorPool") {
-    // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
-    return SeniorPool__factory.connect(_address, provider) as Contract<T>;
-  } else if (name === "TranchedPool") {
-    return TranchedPool__factory.connect(_address, provider) as Contract<T>;
-  } else if (name === "StakingRewards") {
-    return StakingRewards__factory.connect(_address, provider) as Contract<T>;
-  } else if (name === "USDC") {
-    return Erc20__factory.connect(_address, provider) as Contract<T>;
-  } else if (name === "UniqueIdentity") {
-    return UniqueIdentity__factory.connect(_address, provider) as Contract<T>;
-  } else if (name === "GFI") {
-    return Gfi__factory.connect(_address, provider) as Contract<T>;
-  } else if (name === "Fidu") {
-    return Fidu__factory.connect(_address, provider) as Contract<T>;
-  } else {
-    throw new Error("Invalid contract name");
-  }
+  const connectFn = supportedContracts[name];
+  if (connectFn) return connectFn(_address, provider) as Contract<T>; // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
+  throw new Error("Invalid contract name");
 }
 
-export function useContract<T extends KnownContractName>(
+export function useContract<T extends SupportedContractName>(
   name: T,
   address?: string,
   useSigner = true
