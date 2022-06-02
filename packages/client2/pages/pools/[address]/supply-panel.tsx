@@ -13,11 +13,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import {
-  useTranchedPoolContract,
-  useUsdcContract,
-  generateErc20PermitSignature,
-} from "@/lib/contracts";
+import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
 import { formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedFiat,
@@ -80,8 +76,8 @@ export default function SupplyPanel({
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider, chainId } = useWallet();
-  const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
-  const { usdcContract } = useUsdcContract();
+  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
+  const usdcContract = useContract("USDC");
 
   const isUserVerified =
     user?.isGoListed ||

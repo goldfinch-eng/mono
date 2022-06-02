@@ -36,26 +36,28 @@ export function getContract<T extends KnownContractName>({
   name,
   chainId,
   provider,
+  address,
 }: {
   name: T;
   chainId: number;
   provider: Provider | Signer;
+  address?: string;
 }): Contract<T> {
-  const address = CONTRACT_ADDRESSES[chainId][name];
-  if (!address) {
+  const _address = address ?? CONTRACT_ADDRESSES[chainId][name];
+  if (!_address) {
     throw new Error(
       `Unable to find address for contract ${name} on chainId ${chainId}`
     );
   }
   if (name === "SeniorPool") {
     // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
-    return SeniorPool__factory.connect(address, provider) as Contract<T>;
+    return SeniorPool__factory.connect(_address, provider) as Contract<T>;
   } else if (name === "TranchedPool") {
-    return TranchedPool__factory.connect(address, provider) as Contract<T>;
+    return TranchedPool__factory.connect(_address, provider) as Contract<T>;
   } else if (name === "StakingRewards") {
-    return StakingRewards__factory.connect(address, provider) as Contract<T>;
+    return StakingRewards__factory.connect(_address, provider) as Contract<T>;
   } else if (name === "USDC") {
-    return Erc20__factory.connect(address, provider) as Contract<T>;
+    return Erc20__factory.connect(_address, provider) as Contract<T>;
   } else {
     throw new Error("Invalid contract name");
   }
@@ -63,6 +65,7 @@ export function getContract<T extends KnownContractName>({
 
 export function useContract<T extends KnownContractName>(
   name: T,
+  address?: string,
   useSigner = true
 ): Contract<T> | undefined {
   const { provider, chainId } = useWallet();
@@ -72,8 +75,9 @@ export function useContract<T extends KnownContractName>(
         name,
         chainId,
         provider: useSigner ? provider.getSigner() : provider,
+        address,
       });
       return contract;
     }
-  }, [name, useSigner, provider, chainId]);
+  }, [name, address, useSigner, provider, chainId]);
 }
