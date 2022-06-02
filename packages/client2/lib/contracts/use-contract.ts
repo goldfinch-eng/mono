@@ -12,6 +12,8 @@ import {
   StakingRewards__factory,
   TranchedPool,
   TranchedPool__factory,
+  UniqueIdentity,
+  UniqueIdentity__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -20,7 +22,8 @@ type KnownContractName =
   | "SeniorPool"
   | "TranchedPool"
   | "StakingRewards"
-  | "USDC";
+  | "USDC"
+  | "UniqueIdentity";
 
 type Contract<T extends KnownContractName> = T extends "SeniorPool"
   ? SeniorPool
@@ -30,6 +33,8 @@ type Contract<T extends KnownContractName> = T extends "SeniorPool"
   ? StakingRewards
   : T extends "USDC"
   ? Erc20
+  : T extends "UniqueIdentity"
+  ? UniqueIdentity
   : never;
 
 export function getContract<T extends KnownContractName>({
@@ -58,6 +63,8 @@ export function getContract<T extends KnownContractName>({
     return StakingRewards__factory.connect(_address, provider) as Contract<T>;
   } else if (name === "USDC") {
     return Erc20__factory.connect(_address, provider) as Contract<T>;
+  } else if (name === "UniqueIdentity") {
+    return UniqueIdentity__factory.connect(_address, provider) as Contract<T>;
   } else {
     throw new Error("Invalid contract name");
   }

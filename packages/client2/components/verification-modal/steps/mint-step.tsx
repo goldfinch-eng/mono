@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
-import { useUidContract } from "@/lib/contracts";
+import { useContract } from "@/lib/contracts";
 import { closeVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { wait } from "@/lib/utils";
@@ -23,7 +23,7 @@ import uidLogo2 from "./uid-logo2.png";
 export function MintStep() {
   const { signature } = useVerificationFlowContext();
   const { account, provider } = useWallet();
-  const { uidContract } = useUidContract();
+  const uidContract = useContract("UniqueIdentity");
   const apolloClient = useApolloClient();
 
   // TODO there's probably a better way to express the local state here
