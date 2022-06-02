@@ -12,12 +12,7 @@ import {
   Link,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import {
-  generateErc20PermitSignature,
-  useSeniorPoolContract,
-  useStakingRewardsContract,
-  useUsdcContract,
-} from "@/lib/contracts";
+import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
 import { formatFiat, formatPercent } from "@/lib/format";
 import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
@@ -78,10 +73,9 @@ export function SeniorPoolSupplyPanel({
   } = useForm<{ supply: string; isStaking: string }>();
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
-  const { stakingRewardsContract, stakingRewardsAddress } =
-    useStakingRewardsContract();
-  const { seniorPoolContract, seniorPoolAddress } = useSeniorPoolContract();
-  const { usdcContract } = useUsdcContract();
+  const seniorPoolContract = useContract("SeniorPool");
+  const stakingRewardsContract = useContract("StakingRewards");
+  const usdcContract = useContract("USDC");
   const apolloClient = useApolloClient();
 
   const onSubmit = handleSubmit(async (data) => {
@@ -103,7 +97,7 @@ export function SeniorPoolSupplyPanel({
         erc20TokenContract: usdcContract,
         provider,
         owner: account,
-        spender: stakingRewardsAddress,
+        spender: stakingRewardsContract.address,
         value,
         deadline,
       });
@@ -123,7 +117,7 @@ export function SeniorPoolSupplyPanel({
         erc20TokenContract: usdcContract,
         provider,
         owner: account,
-        spender: seniorPoolAddress,
+        spender: seniorPoolContract.address,
         value,
         deadline,
       });
