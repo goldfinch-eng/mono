@@ -10,6 +10,20 @@ type SeniorPool @entity {
   investmentsMade: [TranchedPool!]!
 }
 
+type SeniorPoolStakedPosition @entity {
+  id: ID!
+  user: User!
+  amount: BigInt!
+  """
+  Beginning of vesting schedule.
+  """
+  startTime: BigInt
+  """
+  End of vesting schedule.
+  """
+  endTime: BigInt
+}
+
 type SeniorPoolStatus @entity {
   """
   This entity is a singleton, so the id is always "1"
@@ -63,6 +77,8 @@ type User @entity {
   """
   stakedSeniorPoolBalance: BigInt!
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
+  seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
+
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
   tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")

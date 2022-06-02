@@ -7,11 +7,20 @@ interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   labelClassName?: string;
   id?: string;
   colorScheme?: "light" | "dark";
+  className?: string;
 }
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   function Checkbox(
-    { label, labelClassName, id, name, colorScheme = "light", ...rest },
+    {
+      label,
+      labelClassName,
+      id,
+      name,
+      colorScheme = "light",
+      className,
+      ...rest
+    },
     ref
   ) {
     const _id = id ?? name;
@@ -23,14 +32,15 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             ? "text-sand-700"
             : colorScheme === "dark"
             ? "text-white"
-            : null
+            : null,
+          className
         )}
       >
         <div className="relative flex justify-center">
           <input
             {...rest}
             id={_id}
-            name="name"
+            name={name}
             type="checkbox"
             ref={ref}
             className={clsx(

@@ -57,7 +57,6 @@ type CryptoAmount {
 }
 
 type Viewer {
-  user: User
   account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount

@@ -39,6 +39,7 @@ const mainnetContracts = mainnetDeployments["1"].mainnet.contracts;
     Fidu: contracts.Fidu.address,
     UniqueIdentity: contracts.UniqueIdentity.address,
     Go: contracts.Go.address,
+    StakingRewards: contracts.StakingRewards.address,
   };
   const pathname = path.resolve(__dirname, relativePath);
   fs.writeFileSync(pathname, JSON.stringify(addresses, null, 2));

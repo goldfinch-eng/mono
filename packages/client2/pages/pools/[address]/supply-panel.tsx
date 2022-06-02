@@ -172,7 +172,6 @@ export default function SupplyPanel({
       pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
     });
     await apolloClient.refetchQueries({ include: "active" });
-    reset();
   };
 
   useEffect(() => {
