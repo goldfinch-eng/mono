@@ -1,0 +1,79 @@
+import { Provider } from "@ethersproject/providers";
+import { Signer } from "ethers";
+import { useMemo } from "react";
+
+import { CONTRACT_ADDRESSES } from "@/constants";
+import {
+  Erc20,
+  Erc20__factory,
+  SeniorPool,
+  SeniorPool__factory,
+  StakingRewards,
+  StakingRewards__factory,
+  TranchedPool,
+  TranchedPool__factory,
+} from "@/types/ethers-contracts";
+
+import { useWallet } from "../wallet";
+
+type KnownContractName =
+  | "SeniorPool"
+  | "TranchedPool"
+  | "StakingRewards"
+  | "USDC";
+
+type Contract<T extends KnownContractName> = T extends "SeniorPool"
+  ? SeniorPool
+  : T extends "TranchedPool"
+  ? TranchedPool
+  : T extends "StakingRewards"
+  ? StakingRewards
+  : T extends "USDC"
+  ? Erc20
+  : never;
+
+export function getContract<T extends KnownContractName>({
+  name,
+  chainId,
+  provider,
+}: {
+  name: T;
+  chainId: number;
+  provider: Provider | Signer;
+}): Contract<T> {
+  const address = CONTRACT_ADDRESSES[chainId][name];
+  if (!address) {
+    throw new Error(
+      `Unable to find address for contract ${name} on chainId ${chainId}`
+    );
+  }
+  if (name === "SeniorPool") {
+    // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
+    return SeniorPool__factory.connect(address, provider) as Contract<T>;
+  } else if (name === "TranchedPool") {
+    return TranchedPool__factory.connect(address, provider) as Contract<T>;
+  } else if (name === "StakingRewards") {
+    return StakingRewards__factory.connect(address, provider) as Contract<T>;
+  } else if (name === "USDC") {
+    return Erc20__factory.connect(address, provider) as Contract<T>;
+  } else {
+    throw new Error("Invalid contract name");
+  }
+}
+
+export function useContract<T extends KnownContractName>(
+  name: T,
+  useSigner = true
+): Contract<T> | undefined {
+  const { provider, chainId } = useWallet();
+  return useMemo(() => {
+    if (provider && chainId) {
+      const contract = getContract({
+        name,
+        chainId,
+        provider: useSigner ? provider.getSigner() : provider,
+      });
+      return contract;
+    }
+  }, [name, useSigner, provider, chainId]);
+}
