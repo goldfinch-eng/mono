@@ -6,6 +6,8 @@ import { CONTRACT_ADDRESSES } from "@/constants";
 import {
   Erc20,
   Erc20__factory,
+  Gfi,
+  Gfi__factory,
   SeniorPool,
   SeniorPool__factory,
   StakingRewards,
@@ -23,7 +25,8 @@ type KnownContractName =
   | "TranchedPool"
   | "StakingRewards"
   | "USDC"
-  | "UniqueIdentity";
+  | "UniqueIdentity"
+  | "GFI";
 
 type Contract<T extends KnownContractName> = T extends "SeniorPool"
   ? SeniorPool
@@ -35,6 +38,8 @@ type Contract<T extends KnownContractName> = T extends "SeniorPool"
   ? Erc20
   : T extends "UniqueIdentity"
   ? UniqueIdentity
+  : T extends "GFI"
+  ? Gfi
   : never;
 
 export function getContract<T extends KnownContractName>({
@@ -65,6 +70,8 @@ export function getContract<T extends KnownContractName>({
     return Erc20__factory.connect(_address, provider) as Contract<T>;
   } else if (name === "UniqueIdentity") {
     return UniqueIdentity__factory.connect(_address, provider) as Contract<T>;
+  } else if (name === "GFI") {
+    return Gfi__factory.connect(_address, provider) as Contract<T>;
   } else {
     throw new Error("Invalid contract name");
   }
