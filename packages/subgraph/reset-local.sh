@@ -9,7 +9,7 @@ if [ "$REACT_APP_TOGGLE_THE_GRAPH" != "true" ]; then
     exit 0
 fi
 
-docker-compose down -v;
+docker compose down -v;
 
 if [ -d "data" ]
 then

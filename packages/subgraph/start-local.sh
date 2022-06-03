@@ -9,7 +9,7 @@ if [ "$REACT_APP_TOGGLE_THE_GRAPH" != "true" ]; then
     exit 0
 fi
 
-docker-compose down -v;
+docker compose down -v;
 
 echo "Building the subgraph..."
 
@@ -18,8 +18,8 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     bash ./setup.sh
 fi
 
-docker-compose down -v;
-docker-compose up -d;
+docker compose down -v;
+docker compose --env-file .env.local-subgraph up -d;
 
 sleep 30
 

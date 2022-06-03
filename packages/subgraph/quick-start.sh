@@ -25,14 +25,14 @@ then
   sudo rm -rf data/;
 fi
 
-docker-compose down -v;
+docker compose down -v;
 
-docker-compose up -d postgres
+docker compose --env-file .env.local-subgraph up -d postgres
 
 sleep 3
 
 cat $FILE | docker exec -i $(docker-compose ps -q postgres) psql -U graph-node
 
-docker-compose up -d;
+docker compose --env-file .env.local-subgraph up -d;
 
 sleep 30
