@@ -320,37 +320,35 @@ export default function SupplyPanel({
               errorMessage={errors?.supply?.message}
             />
           </div>
-          <div className={!supplyValue ? "hidden" : undefined}>
-            <div className="mb-3">
-              <Input
-                {...register("backerName", { required: "Required" })}
-                label="Full legal name"
-                labelDecoration={
-                  <InfoIconTooltip
-                    size="sm"
-                    placement="top"
-                    content="Lorem ipsum. Your full name is required for reasons"
-                  />
-                }
-                placeholder="First and last name"
-                colorScheme="dark"
-                textSize="xl"
-                labelClassName="!text-sm !mb-3"
-                errorMessage={errors?.backerName?.message}
-              />
-            </div>
-            <div className="mb-3 text-xs">
-              By entering my name and clicking “Supply” below, I hereby agree
-              and acknowledge that (i) I am electronically signing and becoming
-              a party to the{" "}
-              {agreement ? (
-                <Link href={agreement}>Loan Agreement</Link>
-              ) : (
-                "Loan Agreement"
-              )}{" "}
-              for this pool, and (ii) my name and transaction information may be
-              shared with the borrower.
-            </div>
+          <div className="mb-3">
+            <Input
+              {...register("backerName", { required: "Required" })}
+              label="Full legal name"
+              labelDecoration={
+                <InfoIconTooltip
+                  size="sm"
+                  placement="top"
+                  content="Lorem ipsum. Your full name is required for reasons"
+                />
+              }
+              placeholder="First and last name"
+              colorScheme="dark"
+              textSize="xl"
+              labelClassName="!text-sm !mb-3"
+              errorMessage={errors?.backerName?.message}
+            />
+          </div>
+          <div className="mb-3 text-xs">
+            By entering my name and clicking “Supply” below, I hereby agree and
+            acknowledge that (i) I am electronically signing and becoming a
+            party to the{" "}
+            {agreement ? (
+              <Link href={agreement}>Loan Agreement</Link>
+            ) : (
+              "Loan Agreement"
+            )}{" "}
+            for this pool, and (ii) my name and transaction information may be
+            shared with the borrower.
           </div>
           <Button
             className="block w-full"
