@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import { format } from "date-fns";
 import Image from "next/image";
 
-import { Icon, Table } from "@/components/design-system";
+import { Icon, Link, Table } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -72,7 +72,9 @@ export function RecentRepaymentsTable() {
               />
             ) : null}
           </div>
-          {transaction.tranchedPool.name}
+          <Link href={`/pools/${transaction.tranchedPool.id}`}>
+            {transaction.tranchedPool.name ?? ""}
+          </Link>
         </div>,
         <div key={index} className="text-right">
           {transactionAmount}
