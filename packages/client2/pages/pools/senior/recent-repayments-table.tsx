@@ -6,43 +6,10 @@ import { Icon, Table } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
-  useAllBorrowerTransactionsQuery,
+  useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
 
 gql`
-  query AllBorrowerTransactions {
-    tranchedPools {
-      id
-      createdAt
-    }
-    tranchedPoolTransactions(
-      orderBy: timestamp
-      orderDirection: desc
-      first: 20
-      skip: 0
-    ) {
-      __typename
-      id
-      timestamp
-      ... on TranchedPoolDrawdownMadeTransaction {
-        amount
-      }
-      ... on TranchedPoolPaymentAppliedTransaction {
-        reserveAmount
-        interestAmount
-        principalAmount
-        remainingAmount
-      }
-      tranchedPool {
-        id
-        name @client
-        icon @client
-      }
-    }
-  }
-`;
-
-const BorrowerTransactionsDocument = gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
     tranchedPoolTransactions(
       orderBy: timestamp
@@ -65,17 +32,16 @@ const BorrowerTransactionsDocument = gql`
       tranchedPool {
         id
         name @client
+        icon @client
       }
     }
   }
 `;
 
-// export const TRANSACTION_TABLE_FIELDS = gql`
-//   fragment
-// `;
-
 export function RecentRepaymentsTable() {
-  const { data, error, fetchMore } = useAllBorrowerTransactionsQuery();
+  const { data, error, fetchMore } = useBorrowerTransactionsQuery({
+    variables: { first: 20, skip: 0 },
+  });
 
   const transactions =
     data?.tranchedPoolTransactions.map((transaction, index) => {
@@ -142,7 +108,6 @@ export function RecentRepaymentsTable() {
       <button
         onClick={() =>
           fetchMore({
-            query: BorrowerTransactionsDocument,
             variables: {
               skip: data?.tranchedPoolTransactions.length,
               first: 20,
