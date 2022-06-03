@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
 import Image from "next/image";
+import { useCallback } from "react";
 
 import { Icon, Link, Table } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
@@ -39,6 +40,7 @@ gql`
 `;
 
 export function RecentRepaymentsTable() {
+  // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
   const { data, error, fetchMore } = useBorrowerTransactionsQuery({
     variables: { first: 20, skip: 0 },
   });
@@ -62,7 +64,7 @@ export function RecentRepaymentsTable() {
 
       return [
         <div key={index} className="flex items-center gap-2">
-          <div className="relative h-6 w-6 overflow-hidden rounded-full">
+          <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
             {transaction.tranchedPool.icon ? (
               <Image
                 src={transaction.tranchedPool.icon as string}
@@ -92,6 +94,17 @@ export function RecentRepaymentsTable() {
       ];
     }) ?? [];
 
+  const onScrollBottom = useCallback(() => {
+    if (data?.tranchedPoolTransactions) {
+      fetchMore({
+        variables: {
+          skip: data?.tranchedPoolTransactions.length,
+          first: 20,
+        },
+      });
+    }
+  }, [data, fetchMore]);
+
   return (
     <div>
       <h2 className="mb-8 text-3xl">Recent Borrower Transactions</h2>
@@ -104,21 +117,9 @@ export function RecentRepaymentsTable() {
           headings={["Borrower", "Amount", "Date"]}
           hideHeadings
           rows={transactions}
+          onScrollBottom={onScrollBottom}
         />
       )}
-
-      <button
-        onClick={() =>
-          fetchMore({
-            variables: {
-              skip: data?.tranchedPoolTransactions.length,
-              first: 20,
-            },
-          })
-        }
-      >
-        moar
-      </button>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
 type Row = ReactNode[];
 
@@ -8,6 +8,10 @@ interface TableProps {
   rows: Row[];
   className?: string;
   hideHeadings?: boolean;
+  /**
+   * Callback that gets invoked when the user scrolls to the bottom of the table. Use this to enable lazy loading of rows
+   */
+  onScrollBottom?: () => void;
 }
 
 export function Table({
@@ -15,7 +19,26 @@ export function Table({
   rows,
   className,
   hideHeadings = false,
+  onScrollBottom,
 }: TableProps) {
+  const scrollBottomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (onScrollBottom) {
+      const observer = new IntersectionObserver(
+        ([target]) => {
+          if (target.isIntersecting) {
+            onScrollBottom();
+          }
+        },
+        { root: null, rootMargin: "20px", threshold: 0 }
+      );
+      if (scrollBottomRef.current) {
+        observer.observe(scrollBottomRef.current);
+        return () => observer.disconnect();
+      }
+    }
+  }, [onScrollBottom]);
+
   return (
     <div className="relative">
       <div className="max-h-96 overflow-auto">
@@ -55,6 +78,7 @@ export function Table({
             ))}
           </tbody>
         </table>
+        <div style={{ height: "2px" }} ref={scrollBottomRef} />
       </div>
       <div
         className="pointer-events-none absolute top-0 left-0 h-full w-full"
