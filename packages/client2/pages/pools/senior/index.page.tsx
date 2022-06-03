@@ -12,6 +12,7 @@ import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import goldfinchYellow from "./goldfinch-yellow.png";
+import { RecentRepaymentsTable } from "./recent-repayments-table";
 import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
@@ -122,6 +123,7 @@ export default function SeniorPoolPage() {
               How it works
             </Button>
           </div>
+          <RecentRepaymentsTable />
         </div>
       </div>
     </>
