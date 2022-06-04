@@ -20,9 +20,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "https://www.notion.so/goldfinchfinance/Cauris-Borrower-Pool-3-Overview-2a127e4075a5406abe3c9c5a6868b08d",
     agreement: "https://docsend.com/view/428qxv8dq7uhgj8j/d/ej5z3qnrdb59wzaz",
     launchTime: 1651590000,
-    poolDescription:
+    description:
       "Proceeds will be used to provide additional backing to African fintechs in their quest to provide access to financial services to millions of traditionally underbanked customers. Our investments will include senior secured loans with covenants for additional downside protection. All loans will be secured by all-asset debentures, including our borrowers’ lending receivables.",
-    poolHighlights: [
+    highlights: [
       "Cauris uses data-driven approaches to underwriting and portfolio management efforts and a combination of strong asset-level underwriting, structural and legal protections and advanced analytics to secure our debt investments in all fintech partners.",
       "Cauris only invests in Fintechs characterized by management teams with deep, relevant experience in their companies’ sectors; well-performing loan books to use as collateral; and support by marquee VC, PE and strategic investors.",
       "Pool investments will target companies providing consumer and SME lending products as well as trade and equipment financing.",
@@ -38,9 +38,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     agreement:
       "https://addemcapital.docsend.com/view/rwchikv6dxnpa5wa/d/fcbpk9yde3a73pnb",
     launchTime: 1650466800,
-    poolDescription:
+    description:
       "Proceeds will be used to leverage Addem Capital's existing fund Utopia I, which holds positions on different structures with borrowers, all of them being asset-backed debt lines in one of the five verticals of the fund's thesis: fintech, real estate, energy, agro/sustainable foods, and healthcare. All current and future Utopia I facilities are for LATAM-based companies with solid management and which are actively contributing to the strengthening of the entrepreneur ecosystem in the region.",
-    poolHighlights: [
+    highlights: [
       "These companies must have a strong technological component and proven track record of originating consistent cash flow-generating assets.",
       "The debt facilities Addem Capital structure will be used to fund self-liquidating assets where Addem has complete traceability and control of all the cash flows pledged as the source of payment, which positions them at the best risk-to-return ratio in Mexico and LATAM.",
       "Addem fund these structures' senior and mezzanine tranches with an interest rate ranging between 18 - 22% in MXN for unsubordinated lines and 24 - 35 % for subordinated ones.",
@@ -50,16 +50,14 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "almavest",
     name: "Almavest Basket #7: Fintech and Carbon Reduction Basket",
     category: "Global multi-sector loans",
-    description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
     icon: almavestLogo.src,
     agreement: "https://docsend.com/view/i7gd73kutdaymw9z/d/fapydfdk3syv7pns",
     dataroom:
       "https://almavest.notion.site/ALMA-BASKET-7-Pool-Overview-dd4ae721d6ea4c1fad9b17ba8abdd3ac",
     launchTime: 1649343600,
-    poolDescription:
+    description:
       "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines and other markets.\n\nThe security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.\n\nIn addition, ALMA is helping Goldfinch to improve the climate impacts of DeFi by offsetting the carbon footprint of all ALMA Borrower Pool contracts for this, from the date they are created through the entire loan term on the Ethereum blockchain, effectively making this a carbon neutral DeFi pool.",
-    poolHighlights: [
+    highlights: [
       "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
       "JuanchoTePresta, a fintech Colombian lender that targets employees, gig workers, and students with on-demand loans, with 60% women customers.",
       "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
@@ -74,9 +72,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: lendeastLogo.src,
     agreement: "https://lendeast.docsend.com/view/s/i395ds3s3gsxkrcc",
     launchTime: 1647529200,
-    poolDescription:
+    description:
       "Proceeds will be used for additional funding via existing Lend East Credit Facilities to our portfolio companies and funding of new alternate lending platforms in Emerging Asia. All Lend East Credit Facilities are senior secured loans to high growth, tech forward Alternate Lenders who are backed by marquee equity investors like Ant Financial, Sequoia Capital, DST Global, Sinar Mas, Quona Capital & Arbor Ventures.\n\nEvery facility is structured to provide a healthy risk adjusted return to investors while ensuring capital preservation. Typical guardrails include excess portfolio cover (1.2x - 1.5x of the investment), established seniority over equity & other debt capital on the balance sheet and corporate guarantees from Holding Companies.",
-    poolHighlights: [
+    highlights: [
       "Project Puma: Largest alternate consumer lending player serving underserved segments in Indonesia; raised over US$ 250 million in equity till date",
       "Project Ocelot: Leading alternate consumer lending player, pioneering Offline-to-Online (O2O) lending in The Philippines; raised over US$ 100 million in equity since inception",
       "Project Falcon: Small business focused neo-bank operating in Singapore & Vietnam; raised over US$ 70 million dollar in equity till date",
@@ -101,9 +99,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: stratosLogo.src,
     agreement: "https://docsend.com/view/s/fntuciz53snd43ki",
     launchTime: 1644595200,
-    poolDescription:
+    description:
       "Proceeds will be used for additional fundings via existing Stratos Credit Facilities to Three Colts, Rezi and Braavo. All current Stratos Credit Facilities are senior secured loans to U.S. domiciled borrowers, and also include covenants for additional downside protection. The asset-backed Rezi and Braavo credit facilities are secured by cash flow generating assets, and the Three Colts credit facility is secured by all assets of the cash flow positive company.",
-    poolHighlights: [
+    highlights: [
       "Three Colts was founded to acquire, grow and launch Ecommerce SaaS companies that provide enterprise software to businesses that operate on Amazon, Shopify and other online retail platforms.",
       "Rezi is an institutional-scale residential lease broker, making a market in multifamily leases. Rezi enters into master-leases with multifamily landlords at a discount to the sum of the expected tenant rent payments, and then sub-leases residential units included in its master-leases to individual tenants.",
       "Braavo is a data-driven accounts receivable financing platform that provides scalable funding solutions to mobile app businesses, largely on the Apple App Store and Google Play.",
@@ -140,9 +138,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "divibank",
     name: "Divibank",
     category: "SMB Loans in Latin America",
-    poolDescription:
+    description:
       "Divibank will use proceeds from this pool to grow its customer base of online businesses in Latin America. These businesses span many sectors, including SaaS companies, edtechs, and fintechs. Unlike the slower and more expensive capital from traditional financial institutions, Divibank's non-dilutive financing allows these businesses to grow on their own terms with access to quick and affordable capital.",
-    poolHighlights: [
+    highlights: [
       "Divibank's portfolio is growing rapidly, and the company increased it's financing volumes by 10x in 2021",
       "72% of new loans are made to existing clients, demonstrating the stickiness of Divibank's product",
     ],
@@ -152,9 +150,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "tugende",
     name: "Tugende",
     category: "Asset Finance Loans in Kenya",
-    poolDescription:
+    description:
       "Proceeds will be used to fund the growth of Tugende's operations in Kenya by providing asset financing to motorcycle taxi operators in the region. With over $50M worth of motorcycle taxis already financed in Uganda, Tugende is using the same technology and customer-centric model to serve operators in the Kenyan market.",
-    poolHighlights: [
+    highlights: [
       "Tugende have financed over 52,000 clients in both Kenya and Uganda",
       "Tugende have financed over $50M worth of income-generating assets with loan loss rates under 1%",
     ],
@@ -164,9 +162,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "quickcheck",
     name: "QuickCheck #1",
     category: "Consumer loans in Nigeria",
-    poolDescription:
+    description:
       "Proceeds from this pool will be used to scale QuickCheck's operations in Nigeria. With this capital, the company will grow the loans issued to its customers - primarily middle income individuals and MSMEs in the country.",
-    poolHighlights: [
+    highlights: [
       "QuickCheck has borrowed $1.45M from the Goldfinch protocol across three borrower pools",
     ],
     icon: quickcheckLogo.src,
@@ -175,9 +173,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "quickcheck",
     name: "QuickCheck #2",
     category: "Consumer loans in Nigeria",
-    poolDescription:
+    description:
       "Proceeds from this pool will be used to scale QuickCheck's operations in Nigeria. With this capital, the company will grow the loans issued to its customers - primarily middle income individuals and MSMEs in the country.",
-    poolHighlights: [
+    highlights: [
       "QuickCheck has borrowed $1.45M from the Goldfinch protocol across three borrower pools",
     ],
     icon: quickcheckLogo.src,
@@ -186,9 +184,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "quickcheck",
     name: "QuickCheck #3",
     category: "Consumer loans in Nigeria",
-    poolDescription:
+    description:
       "Proceeds from this pool will be used to scale QuickCheck's operations in Nigeria. With this capital, the company will grow the loans issued to its customers - primarily middle income individuals and MSMEs in the country.",
-    poolHighlights: [
+    highlights: [
       "QuickCheck has borrowed $1.45M from the Goldfinch protocol across three borrower pools",
     ],
     icon: quickcheckLogo.src,
@@ -213,9 +211,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "aspire",
     name: "Aspire #3",
     category: "SME loans in Southeast Asia",
-    poolDescription:
+    description:
       "Proceeds from this pool will be used to grow Aspire lending operations in Singapore, Indonesia. Thailand, Malaysia and Vietnam. Aspire provides finances to SMEs in these regions through both its credit card and working capital products.",
-    poolHighlights: [
+    highlights: [
       "Aspire has borrowed $2.45M from the Goldfinch protocol across three borrower pools",
       "Aspire provides up to $300,000 it's SME customers for a variety of use cases including e-commerce companies, solar energy developers, furniture manufacturers, and many more",
     ],
@@ -225,9 +223,9 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "payjoy",
     name: "PayJoy",
     category: "Smartphone financing in Mexico",
-    poolDescription:
+    description:
       "Proceeds from this pool will go towards growing Payjoy's lending operations in Mexico. Using this capital, Payjoy's finance the purchase of mobile phones for their customers, and be repaid monthly by these customers with interest.",
-    poolHighlights: [
+    highlights: [
       "Since its inception, Payjoy has served over one million customers profitably, allowing these customers to acquire smartphones on credit",
       "These loans are backed by the financed mobile phones, with Payjoy making use of phone locking technology to keep default rates in check",
     ],

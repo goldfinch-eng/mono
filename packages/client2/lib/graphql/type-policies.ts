@@ -59,12 +59,11 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
     fields: {
       name: { read: readFieldFromMetadata("name") },
       description: { read: readFieldFromMetadata("description") },
+      highlights: { read: readFieldFromMetadata("highlights") },
       category: { read: readFieldFromMetadata("category") },
       icon: { read: readFieldFromMetadata("icon") },
       agreement: { read: readFieldFromMetadata("agreement") },
       dataroom: { read: readFieldFromMetadata("dataroom") },
-      poolDescription: { read: readFieldFromMetadata("poolDescription") },
-      poolHighlights: { read: readFieldFromMetadata("poolHighlights") },
       borrower: {
         read: (_, { readField }) => {
           const id = readField({ fieldName: "id" }) as string;

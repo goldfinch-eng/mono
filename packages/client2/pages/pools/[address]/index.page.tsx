@@ -67,10 +67,9 @@ gql`
       category @client
       icon @client
       description @client
+      highlights @client
       agreement @client
       dataroom @client
-      poolDescription @client
-      poolHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
       estimatedLeverageRatio
@@ -424,25 +423,9 @@ export default function PoolPage() {
               </TabList>
               <TabPanels>
                 <TabContent>
-                  <Heading
-                    as="h3"
-                    level={5}
-                    className="mb-8 font-sans font-normal"
-                  >
-                    Overview
-                  </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap !text-2xl">
-                    {tranchedPool?.description}
-                  </Paragraph>
-
-                  <Heading
-                    level={4}
-                    className="mb-4 font-sans !text-lg !font-semibold"
-                  >
-                    Pool Overview
-                  </Heading>
+                  <h2 className="mb-8 text-3xl">Deal Overview</h2>
                   <Paragraph className="mb-8 whitespace-pre-wrap">
-                    {tranchedPool?.poolDescription}
+                    {tranchedPool?.description}
                   </Paragraph>
 
                   {tranchedPool ? (
@@ -467,7 +450,7 @@ export default function PoolPage() {
                     Highlights
                   </Heading>
                   <ul className="list-outside list-disc pl-5">
-                    {tranchedPool?.poolHighlights?.map((item, idx) => (
+                    {tranchedPool?.highlights?.map((item, idx) => (
                       <li
                         key={`pool-highlight-${address}-${idx}`}
                         className="py-1"
