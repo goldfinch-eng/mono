@@ -13,11 +13,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import {
-  useTranchedPoolContract,
-  useUsdcContract,
-  generateErc20PermitSignature,
-} from "@/lib/contracts";
+import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
 import { formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedFiat,
@@ -80,8 +76,8 @@ export default function SupplyPanel({
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider, chainId } = useWallet();
-  const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
-  const { usdcContract } = useUsdcContract();
+  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
+  const usdcContract = useContract("USDC");
 
   const isUserVerified =
     user?.isGoListed ||
@@ -172,7 +168,6 @@ export default function SupplyPanel({
       pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
     });
     await apolloClient.refetchQueries({ include: "active" });
-    reset();
   };
 
   useEffect(() => {
@@ -325,37 +320,35 @@ export default function SupplyPanel({
               errorMessage={errors?.supply?.message}
             />
           </div>
-          <div className={!supplyValue ? "hidden" : undefined}>
-            <div className="mb-3">
-              <Input
-                {...register("backerName", { required: "Required" })}
-                label="Full legal name"
-                labelDecoration={
-                  <InfoIconTooltip
-                    size="sm"
-                    placement="top"
-                    content="Lorem ipsum. Your full name is required for reasons"
-                  />
-                }
-                placeholder="First and last name"
-                colorScheme="dark"
-                textSize="xl"
-                labelClassName="!text-sm !mb-3"
-                errorMessage={errors?.backerName?.message}
-              />
-            </div>
-            <div className="mb-3 text-xs">
-              By entering my name and clicking “Supply” below, I hereby agree
-              and acknowledge that (i) I am electronically signing and becoming
-              a party to the{" "}
-              {agreement ? (
-                <Link href={agreement}>Loan Agreement</Link>
-              ) : (
-                "Loan Agreement"
-              )}{" "}
-              for this pool, and (ii) my name and transaction information may be
-              shared with the borrower.
-            </div>
+          <div className="mb-3">
+            <Input
+              {...register("backerName", { required: "Required" })}
+              label="Full legal name"
+              labelDecoration={
+                <InfoIconTooltip
+                  size="sm"
+                  placement="top"
+                  content="Lorem ipsum. Your full name is required for reasons"
+                />
+              }
+              placeholder="First and last name"
+              colorScheme="dark"
+              textSize="xl"
+              labelClassName="!text-sm !mb-3"
+              errorMessage={errors?.backerName?.message}
+            />
+          </div>
+          <div className="mb-3 text-xs">
+            By entering my name and clicking “Supply” below, I hereby agree and
+            acknowledge that (i) I am electronically signing and becoming a
+            party to the{" "}
+            {agreement ? (
+              <Link href={agreement}>Loan Agreement</Link>
+            ) : (
+              "Loan Agreement"
+            )}{" "}
+            for this pool, and (ii) my name and transaction information may be
+            shared with the borrower.
           </div>
           <Button
             className="block w-full"

@@ -3,10 +3,9 @@ export interface PoolMetadata {
   category: string;
   icon: string;
   dataroom?: string;
-  description?: string;
+  description: string;
+  highlights?: string[];
   agreement?: string;
   launchTime?: number;
-  poolDescription?: string;
-  poolHighlights?: string[];
   borrower: string;
 }

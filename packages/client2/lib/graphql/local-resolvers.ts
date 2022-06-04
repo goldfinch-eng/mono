@@ -1,6 +1,6 @@
 import { Resolvers } from "@apollo/client";
 
-import { getFiduContract, getGfiContract, getUsdcContract } from "../contracts";
+import { getContract } from "../contracts";
 import { getProvider } from "../wallet";
 import {
   GfiPrice,
@@ -99,7 +99,7 @@ export const resolvers: Resolvers = {
       const account = await provider.getSigner().getAddress();
       const chainId = await provider.getSigner().getChainId();
 
-      const gfiContract = await getGfiContract(chainId, provider);
+      const gfiContract = getContract({ name: "GFI", chainId, provider });
       const gfiBalance = await gfiContract.balanceOf(account);
       return {
         __typename: "CryptoAmount",
@@ -115,7 +115,7 @@ export const resolvers: Resolvers = {
       const account = await provider.getSigner().getAddress();
       const chainId = await provider.getSigner().getChainId();
 
-      const usdcContract = await getUsdcContract(chainId, provider);
+      const usdcContract = getContract({ name: "USDC", chainId, provider });
       const usdcBalance = await usdcContract.balanceOf(account);
       return {
         __typename: "CryptoAmount",
@@ -131,7 +131,7 @@ export const resolvers: Resolvers = {
       const account = await provider.getSigner().getAddress();
       const chainId = await provider.getSigner().getChainId();
 
-      const fiduContract = await getFiduContract(chainId, provider);
+      const fiduContract = getContract({ name: "Fidu", chainId, provider });
       const fiduBalance = await fiduContract.balanceOf(account);
       return {
         __typename: "CryptoAmount",

@@ -23,7 +23,7 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ image, label, link }: BreadcrumbProps) {
   return (
-    <div className="flex flex-row items-center justify-center text-sm font-medium">
+    <div className="flex w-max flex-row items-center text-sm font-medium">
       <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full bg-sand-200">
         {image && (
           <Image

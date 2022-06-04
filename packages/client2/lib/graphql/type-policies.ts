@@ -28,6 +28,24 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
     fields: {
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
       isVerificationModalOpen: { read: () => isVerificationModalOpenVar() },
+      tranchedPoolTransactions: {
+        keyArgs: false,
+        // merge function reference for offset/limit pagination: https://github.com/apollographql/apollo-client/blob/main/src/utilities/policies/pagination.ts#L33-L49
+        merge(existing, incoming, { args }) {
+          const merged = existing ? existing.slice(0) : [];
+          if (incoming) {
+            if (args) {
+              const { skip = 0 } = args;
+              for (let i = 0; i < incoming.length; ++i) {
+                merged[skip + i] = incoming[i];
+              }
+            } else {
+              merged.push(incoming);
+            }
+            return merged;
+          }
+        },
+      },
     },
   },
   SeniorPool: {
@@ -41,12 +59,11 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
     fields: {
       name: { read: readFieldFromMetadata("name") },
       description: { read: readFieldFromMetadata("description") },
+      highlights: { read: readFieldFromMetadata("highlights") },
       category: { read: readFieldFromMetadata("category") },
       icon: { read: readFieldFromMetadata("icon") },
       agreement: { read: readFieldFromMetadata("agreement") },
       dataroom: { read: readFieldFromMetadata("dataroom") },
-      poolDescription: { read: readFieldFromMetadata("poolDescription") },
-      poolHighlights: { read: readFieldFromMetadata("poolHighlights") },
       borrower: {
         read: (_, { readField }) => {
           const id = readField({ fieldName: "id" }) as string;

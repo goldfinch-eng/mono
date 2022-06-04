@@ -19,12 +19,11 @@ type Borrower {
 extend type TranchedPool {
   name: String
   category: String
-  description: String
+  description: String!
+  highlights: [String!]
   icon: String
   agreement: String
   dataroom: String
-  poolDescription: String
-  poolHighlights: [String]
   borrower: Borrower!
 }
 
@@ -57,7 +56,6 @@ type CryptoAmount {
 }
 
 type Viewer {
-  user: User
   account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 
 import { Icon, Button, DollarInput } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { useTranchedPoolContract } from "@/lib/contracts";
+import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   WithdrawalPanelPoolTokenFieldsFragment,
@@ -43,7 +43,7 @@ export function WithdrawalPanel({
     totalInterestRedeemable
   );
 
-  const { tranchedPoolContract } = useTranchedPoolContract(tranchedPoolAddress);
+  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
   const {
     control,
     handleSubmit,

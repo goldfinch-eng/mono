@@ -12,6 +12,7 @@ export * from "./modal";
 export * from "./popover";
 export * from "./spinners";
 export * from "./stat";
+export * from "./table";
 export * from "./tabs";
 export * from "./tooltip";
 export * from "./typography";
