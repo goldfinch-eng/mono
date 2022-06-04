@@ -44,8 +44,11 @@ export const BORROWER_METADATA: Record<string, Borrower> = {
     twitter: "https://twitter.com/PayJoy",
     logo: payjoyLogo.src,
     headerColor: defaultHeaderColor,
-    bio: "Lorem ipsum",
-    highlights: ["lorem ipsum"],
+    bio: "PayJoy offers a buy-now-pay-later product that allows consumers to transform the purchases of mobile phones into monthly installment plans. The company has brought credit to millions of under-served consumers in emerging markets worldwide by collateralizing their smartphone to jumpstart them into the modern credit system. The company, based in San Francisco, California, was founded in 2015.",
+    highlights: [
+      "Payjoy has raised over $90M in equity and debt from leading investors such as Greylock and Union Square Ventures",
+      "The company was founded in 2015, and is Headquartered in San Francisco, California",
+    ],
   },
   aspire: {
     name: "Aspire",
@@ -55,8 +58,12 @@ export const BORROWER_METADATA: Record<string, Borrower> = {
     twitter: "https://twitter.com/AspireSEA",
     logo: aspireLogo.src,
     headerColor: "#12385b",
-    bio: "Lorem ipsum",
-    highlights: ["lorem ipsum"],
+    bio: "Aspire is a modern bank for businesses in Southeast Asia. The company provides businesses with seamless payments, savings products, tools to help teams manage their finances, and a range of credit products to help businesses grow. Aspire was founded in 2018 to provide working capital loans for small to medium-sized businesses, and has since grown it's offering to include a suite of different products for its customers.",
+    highlights: [
+      "Aspire has raised over $150M in debt and equity from renowned global investors like Sequoia, Y Combinator, DST Global Partner, Picus Capital and more",
+      "Over 10,000 businesses have opened accounts with Aspire, and they transact over $2 billion annually",
+      "Aspire is headquartered in Singapore, and has operations in Indonesia and Vietnam",
+    ],
   },
   quickcheck: {
     name: "QuickCheck",
@@ -66,8 +73,11 @@ export const BORROWER_METADATA: Record<string, Borrower> = {
     twitter: "https://twitter.com/quickcheckng",
     logo: quickcheckLogo.src,
     headerColor: "#f25f22",
-    bio: "Lorem ipsum",
-    highlights: ["lorem ipsum"],
+    bio: "QuickCheck is a Nigerian consumer lender that uses machine learning to provide loans instantly to its customers. Through their mobile app, customers can apply for loans and have them funded within minutes.",
+    highlights: [
+      "QuickCheck has disbursed over $10M in loans since inception, and is growing rapidly",
+      "The company has was founded in 2018, and is headquartered in Lagos, Nigeria",
+    ],
   },
   almavest: {
     name: "Almavest",
@@ -89,8 +99,13 @@ export const BORROWER_METADATA: Record<string, Borrower> = {
     twitter: "https://twitter.com/tugende1",
     logo: tugendeLogo.src,
     headerColor: "#eb0c6e",
-    bio: "Lorem ipsum",
-    highlights: ["lorem ipsum"],
+    bio: "Tugende is tackling the credit gap for small businesses in Africa by enabling informal entrepreneurs to own income-generating assets and build a verifiable digital credit profile based on real-world earning. Starting with motorcycle taxi operators, Tugende uses asset finance, technology, and a customer-centric model to help these entrepreneurs increase their economic trajectory.",
+    highlights: [
+      "Tugende have raised over $50M in equity from global debt and equity investors",
+      "They have over 28,000 active clients",
+      "21,000 assets have already been fully owned by alumni clients",
+      "They employ over 750 full-time staff in Kenya and Uganda",
+    ],
   },
   divibank: {
     name: "Divibank",
@@ -99,8 +114,11 @@ export const BORROWER_METADATA: Record<string, Borrower> = {
     linkedIn: "https://www.linkedin.com/company/divibank/",
     logo: divibankLogo.src,
     headerColor: "#0f1078",
-    bio: "Lorem ipsum",
-    highlights: ["lorem ipsum"],
+    bio: "Divibank is a data-driven financing platform that helps online businesses in Latin America scale by providing quick and affordable growth capital. The company provides revenue share loans along with a marketing analytics product to help online businesses scale in a capital-efficient way.",
+    highlights: [
+      "Divibank has raised over $8M in equity and debt funding to date from renowned global investors",
+      "The Divibank team has deep product and financial services experience, having worked at Goldman Sachs, JP Morgan, Itau and Amazon",
+    ],
   },
   cauris: {
     name: "Cauris",

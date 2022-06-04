@@ -140,40 +140,57 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "divibank",
     name: "Divibank",
     category: "SMB Loans in Latin America",
-    description:
-      "Divibank is a data-driven financing platform that helps online businesses in Latin America scale by providing quick and affordable growth capital. The company provides revenue share loans along with a marketing analytics product to help online businesses scale in a capital-efficient way.",
+    poolDescription:
+      "Divibank will use proceeds from this pool to grow its customer base of online businesses in Latin America. These businesses span many sectors, including SaaS companies, edtechs, and fintechs. Unlike the slower and more expensive capital from traditional financial institutions, Divibank's non-dilutive financing allows these businesses to grow on their own terms with access to quick and affordable capital.",
+    poolHighlights: [
+      "Divibank's portfolio is growing rapidly, and the company increased it's financing volumes by 10x in 2021",
+      "72% of new loans are made to existing clients, demonstrating the stickiness of Divibank's product",
+    ],
     icon: divibankLogo.src,
   },
   "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": {
     borrower: "tugende",
     name: "Tugende",
     category: "Asset Finance Loans in Kenya",
-    description:
-      "Tugende uses asset finance, technology, and a customer-centric model to help informal sector entrepreneurs increase their economic trajectory. By providing them with financing and value-added services, Tugende is building a long-term ecosystem for Micro, Small & Medium Enterprises (MSMEs) to grow.",
+    poolDescription:
+      "Proceeds will be used to fund the growth of Tugende's operations in Kenya by providing asset financing to motorcycle taxi operators in the region. With over $50M worth of motorcycle taxis already financed in Uganda, Tugende is using the same technology and customer-centric model to serve operators in the Kenyan market.",
+    poolHighlights: [
+      "Tugende have financed over 52,000 clients in both Kenya and Uganda",
+      "Tugende have financed over $50M worth of income-generating assets with loan loss rates under 1%",
+    ],
     icon: tugendeLogo.src,
   },
   "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": {
     borrower: "quickcheck",
     name: "QuickCheck #1",
     category: "Consumer loans in Nigeria",
-    description:
-      "QuickCheck uses machine learning to provide loans instantly to customers in Nigeria. Through its mobile app, customers can apply for a loan, and have them funded in minutes.",
+    poolDescription:
+      "Proceeds from this pool will be used to scale QuickCheck's operations in Nigeria. With this capital, the company will grow the loans issued to its customers - primarily middle income individuals and MSMEs in the country.",
+    poolHighlights: [
+      "QuickCheck has borrowed $1.45M from the Goldfinch protocol across three borrower pools",
+    ],
     icon: quickcheckLogo.src,
   },
   "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c": {
     borrower: "quickcheck",
     name: "QuickCheck #2",
     category: "Consumer loans in Nigeria",
-    description:
-      "QuickCheck uses machine learning to provide loans instantly to customers in Nigeria. Through its mobile app, customers can apply for a loan, and have them funded in minutes.",
+    poolDescription:
+      "Proceeds from this pool will be used to scale QuickCheck's operations in Nigeria. With this capital, the company will grow the loans issued to its customers - primarily middle income individuals and MSMEs in the country.",
+    poolHighlights: [
+      "QuickCheck has borrowed $1.45M from the Goldfinch protocol across three borrower pools",
+    ],
     icon: quickcheckLogo.src,
   },
   "0x1cc90f7bb292dab6fa4398f3763681cfe497db97": {
     borrower: "quickcheck",
     name: "QuickCheck #3",
     category: "Consumer loans in Nigeria",
-    description:
-      "QuickCheck uses machine learning to provide loans instantly to customers in Nigeria. Through its mobile app, customers can apply for a loan, and have them funded in minutes.",
+    poolDescription:
+      "Proceeds from this pool will be used to scale QuickCheck's operations in Nigeria. With this capital, the company will grow the loans issued to its customers - primarily middle income individuals and MSMEs in the country.",
+    poolHighlights: [
+      "QuickCheck has borrowed $1.45M from the Goldfinch protocol across three borrower pools",
+    ],
     icon: quickcheckLogo.src,
   },
   "0x3634855ec1beaf6f9be0f7d2f67fc9cb5f4eeea4": {
@@ -196,16 +213,24 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     borrower: "aspire",
     name: "Aspire #3",
     category: "SME loans in Southeast Asia",
-    description:
-      "Aspire is a modern bank for businesses in Southeast Asia. The company provides businesses with seamless payments, savings products, tools to help teams manage their finances, and a range of credit products to help businesses grow.",
+    poolDescription:
+      "Proceeds from this pool will be used to grow Aspire lending operations in Singapore, Indonesia. Thailand, Malaysia and Vietnam. Aspire provides finances to SMEs in these regions through both its credit card and working capital products.",
+    poolHighlights: [
+      "Aspire has borrowed $2.45M from the Goldfinch protocol across three borrower pools",
+      "Aspire provides up to $300,000 it's SME customers for a variety of use cases including e-commerce companies, solar energy developers, furniture manufacturers, and many more",
+    ],
     icon: aspireLogo.src,
   },
   "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7": {
     borrower: "payjoy",
     name: "PayJoy",
     category: "Smartphone financing in Mexico",
-    description:
-      "PayJoy offers a buy-now-pay-later product that allows consumers to transform the purchases of mobile phones into monthly installment plans. They serve customers in Mexico and other emerging markets.",
+    poolDescription:
+      "Proceeds from this pool will go towards growing Payjoy's lending operations in Mexico. Using this capital, Payjoy's finance the purchase of mobile phones for their customers, and be repaid monthly by these customers with interest.",
+    poolHighlights: [
+      "Since its inception, Payjoy has served over one million customers profitably, allowing these customers to acquire smartphones on credit",
+      "These loans are backed by the financed mobile phones, with Payjoy making use of phone locking technology to keep default rates in check",
+    ],
     icon: payjoyLogo.src,
   },
   "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": {
