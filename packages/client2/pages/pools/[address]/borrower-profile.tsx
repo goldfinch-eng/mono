@@ -54,13 +54,13 @@ export function BorrowerProfile({
           />
         </div>
       </div>
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-10">
-          <h2 className="text-3xl">{name}</h2>
+      <div className="mb-8 items-center justify-between lg:flex">
+        <div className="mb-4 items-center justify-start gap-10 lg:mb-0 lg:flex">
+          <h2 className="mb-3 text-3xl lg:mb-0">{name}</h2>
           <div className="text-xs font-medium">{orgType}</div>
         </div>
         <div className="flex gap-2">
-          <Chip className="relative flex items-center gap-2">
+          <Chip className="relative flex items-center sm:gap-2">
             <Icon name="Link" size="sm" />
             <a
               className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
@@ -68,10 +68,10 @@ export function BorrowerProfile({
               target="_blank"
               rel="noreferrer"
             >
-              Website
+              <span className="sr-only sm:not-sr-only">Website</span>
             </a>
           </Chip>
-          <Chip className="relative flex items-center gap-2">
+          <Chip className="relative flex items-center sm:gap-2">
             <Icon name="LinkedIn" size="sm" />
             <a
               className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
@@ -79,11 +79,11 @@ export function BorrowerProfile({
               target="_blank"
               rel="noreferrer"
             >
-              LinkedIn
+              <span className="sr-only sm:not-sr-only">LinkedIn</span>
             </a>
           </Chip>
           {twitter ? (
-            <Chip className="relative flex items-center gap-2">
+            <Chip className="relative flex items-center sm:gap-2">
               <Icon name="Twitter" size="sm" />
               <a
                 className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
@@ -91,7 +91,7 @@ export function BorrowerProfile({
                 target="_blank"
                 rel="noreferrer"
               >
-                Twitter
+                <span className="sr-only sm:not-sr-only">Twitter</span>
               </a>
             </Chip>
           ) : null}

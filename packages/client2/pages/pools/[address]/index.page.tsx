@@ -216,11 +216,11 @@ export default function PoolPage() {
         </SubnavPortal>
       )}
 
-      <div className="mb-8 flex flex-row justify-between">
+      <div className="mb-10 flex flex-col-reverse sm:mb-8 sm:flex-row sm:justify-between">
         <div>
           <Breadcrumb label={tranchedPool?.name} image={tranchedPool?.icon} />
         </div>
-        <div>
+        <div className="mb-6 flex justify-center sm:mb-0">
           <Button
             variant="rounded"
             colorScheme="secondary"
@@ -238,9 +238,12 @@ export default function PoolPage() {
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-12 gap-10">
-        <div className="col-span-8">
-          <Heading level={1} className="mb-3 font-serif text-sand-800">
+      <div className="grid gap-10 md:grid-flow-col md:grid-cols-12">
+        <div className="order-1 md:col-span-7 lg:col-span-8">
+          <Heading
+            level={1}
+            className="mb-5 text-center font-serif text-sand-800 sm:mb-3 md:text-left"
+          >
             {tranchedPool ? (
               tranchedPool.name
             ) : (
@@ -248,7 +251,7 @@ export default function PoolPage() {
             )}
           </Heading>
 
-          <div className="mb-12 flex flex-wrap gap-1">
+          <div className="mb-8 flex flex-wrap justify-center gap-1 sm:mb-12 sm:justify-start">
             {tags.map((t) => (
               <Chip key={`tag-${t}`}>{t}</Chip>
             ))}
@@ -261,12 +264,12 @@ export default function PoolPage() {
             </HelperText>
           ) : null}
 
-          <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
+          <div className="grid-cols-3 rounded-lg border border-eggplant-50 sm:grid md:mb-15">
             {tranchedPool &&
             fiatPerGfi &&
             poolStatus === PoolStatus.ComingSoon ? (
               <>
-                <div className="border-r border-b border-eggplant-50 p-5">
+                <div className="border-b border-eggplant-50 p-5 md:border-r md:border-b-0">
                   <Stat
                     label="Total est. APY"
                     value={formatPercent(
@@ -292,7 +295,7 @@ export default function PoolPage() {
                   />
                 </div>
 
-                <div className="border-b border-r border-eggplant-50 p-5">
+                <div className="border-b border-eggplant-50 p-5 md:border-r md:border-b-0">
                   <Stat
                     label="Est $USDC APY"
                     value={formatPercent(tranchedPool.estimatedJuniorApy)}
@@ -352,7 +355,7 @@ export default function PoolPage() {
               </div>
             )}
 
-            <div className="border-r border-eggplant-50 p-5">
+            <div className="border-b border-eggplant-50 p-5 md:border-b-0 md:border-r">
               <Stat
                 label="Drawdown cap"
                 value={
@@ -379,7 +382,7 @@ export default function PoolPage() {
                 }
               />
             </div>
-            <div className="border-r border-eggplant-50 p-5">
+            <div className="border-b border-eggplant-50 p-5 md:border-b-0 md:border-r">
               <Stat
                 label="Payment Term"
                 value={tranchedPool?.creditLine?.termInDays.toString()}
@@ -414,65 +417,65 @@ export default function PoolPage() {
               />
             </div>
           </div>
-
-          <div>
-            <TabGroup>
-              <TabList>
-                <TabButton>Deal Overview</TabButton>
-                <TabButton>Borrower Profile</TabButton>
-              </TabList>
-              <TabPanels>
-                <TabContent>
-                  <h2 className="mb-8 text-3xl">Deal Overview</h2>
-                  <Paragraph className="mb-8 whitespace-pre-wrap">
-                    {tranchedPool?.description}
-                  </Paragraph>
-
-                  {tranchedPool ? (
-                    <Button
-                      as="a"
-                      variant="rounded"
-                      iconRight="ArrowTopRight"
-                      href={tranchedPool.dataroom ?? ""}
-                      target="_blank"
-                      rel="noreferrer"
-                      size="lg"
-                      className="mb-20 block"
-                    >
-                      Dataroom
-                    </Button>
-                  ) : null}
-
-                  <Heading
-                    level={4}
-                    className="mb-4 font-sans !text-lg !font-semibold"
-                  >
-                    Highlights
-                  </Heading>
-                  <ul className="list-outside list-disc pl-5">
-                    {tranchedPool?.highlights?.map((item, idx) => (
-                      <li
-                        key={`pool-highlight-${address}-${idx}`}
-                        className="py-1"
-                      >
-                        <Paragraph className="whitespace-pre-wrap">
-                          {item}
-                        </Paragraph>
-                      </li>
-                    ))}
-                  </ul>
-                </TabContent>
-                <TabContent>
-                  {tranchedPool ? (
-                    <BorrowerProfile tranchedPool={tranchedPool} />
-                  ) : null}
-                </TabContent>
-              </TabPanels>
-            </TabGroup>
-          </div>
         </div>
 
-        <div className="relative col-span-4">
+        <div className="order-3  md:order-2 md:col-span-7 lg:col-span-8">
+          <TabGroup>
+            <TabList>
+              <TabButton>Deal Overview</TabButton>
+              <TabButton>Borrower Profile</TabButton>
+            </TabList>
+            <TabPanels>
+              <TabContent>
+                <h2 className="mb-8 text-3xl">Deal Overview</h2>
+                <Paragraph className="mb-8 whitespace-pre-wrap">
+                  {tranchedPool?.description}
+                </Paragraph>
+
+                {tranchedPool ? (
+                  <Button
+                    as="a"
+                    variant="rounded"
+                    iconRight="ArrowTopRight"
+                    href={tranchedPool.dataroom ?? ""}
+                    target="_blank"
+                    rel="noreferrer"
+                    size="lg"
+                    className="mb-20 block"
+                  >
+                    Dataroom
+                  </Button>
+                ) : null}
+
+                <Heading
+                  level={4}
+                  className="mb-4 font-sans !text-lg !font-semibold"
+                >
+                  Highlights
+                </Heading>
+                <ul className="list-outside list-disc pl-5">
+                  {tranchedPool?.highlights?.map((item, idx) => (
+                    <li
+                      key={`pool-highlight-${address}-${idx}`}
+                      className="py-1"
+                    >
+                      <Paragraph className="whitespace-pre-wrap">
+                        {item}
+                      </Paragraph>
+                    </li>
+                  ))}
+                </ul>
+              </TabContent>
+              <TabContent>
+                {tranchedPool ? (
+                  <BorrowerProfile tranchedPool={tranchedPool} />
+                ) : null}
+              </TabContent>
+            </TabPanels>
+          </TabGroup>
+        </div>
+
+        <div className="relative order-2 md:order-3 md:col-span-5 md:row-span-2 lg:col-span-4">
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="sticky top-12 space-y-8">
               {poolStatus === PoolStatus.Full && (
