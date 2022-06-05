@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Link, GoldfinchLogo, Icon } from "@/components/design-system";
 import { NAV_ITEMS } from "@/constants";
 
-import { MobileNav } from "../mobile-nav";
+import { MobileNav } from "./mobile-nav";
 import { WalletButton } from "./wallet-button";
 
 export function Nav() {
