@@ -1,42 +1,50 @@
 import clsx from "clsx";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
+import { useState } from "react";
 
 import { Link, GoldfinchLogo, Icon } from "@/components/design-system";
 import { NAV_ITEMS } from "@/constants";
-import { openMobileNav } from "@/lib/state/actions";
 
+import { MobileNav } from "../mobile-nav";
 import { WalletButton } from "./wallet-button";
 
 export function Nav() {
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   return (
-    <div className="flex flex-row border-b border-sand-100 px-6 md:px-10">
-      <div className="self-center md:hidden">
-        <button className="p-1" onClick={openMobileNav}>
-          <Icon name="Menu" size="md" />
-        </button>
-      </div>
+    <>
+      <div className="flex flex-row border-b border-sand-100 px-6 md:px-10">
+        <div className="self-center md:hidden">
+          <button className="p-1" onClick={() => setIsMobileNavOpen(true)}>
+            <Icon name="Menu" size="md" />
+          </button>
+        </div>
 
-      <div className="flex flex-1">
-        <NextLink href="/" passHref>
-          <a className="flex items-center justify-center p-3">
-            <GoldfinchLogo className="h-7 w-7" />
-          </a>
-        </NextLink>
-      </div>
+        <div className="flex flex-1">
+          <NextLink href="/" passHref>
+            <a className="flex items-center justify-center p-3">
+              <GoldfinchLogo className="h-7 w-7" />
+            </a>
+          </NextLink>
+        </div>
 
-      <nav className="hidden flex-1 flex-row justify-center md:flex">
-        {NAV_ITEMS.map(({ label, href }) => (
-          <NavLink key={`${label}-${href}`} href={href}>
-            {label}
-          </NavLink>
-        ))}
-      </nav>
+        <nav className="hidden flex-1 flex-row justify-center md:flex">
+          {NAV_ITEMS.map(({ label, href }) => (
+            <NavLink key={`${label}-${href}`} href={href}>
+              {label}
+            </NavLink>
+          ))}
+        </nav>
 
-      <div className="flex flex-1 flex-row justify-end self-center py-4">
-        <WalletButton />
+        <div className="flex flex-1 flex-row justify-end self-center py-4">
+          <WalletButton />
+        </div>
       </div>
-    </div>
+      <MobileNav
+        isOpen={isMobileNavOpen}
+        onClose={() => setIsMobileNavOpen(false)}
+      />
+    </>
   );
 }
 

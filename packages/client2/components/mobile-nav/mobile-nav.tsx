@@ -34,7 +34,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   return (
     <div
       className={clsx(
-        "fixed left-0 top-0 z-10 h-screen w-full flex-col bg-white ",
+        "fixed left-0 top-0 z-10 h-full w-full flex-col bg-white ",
         isOpen ? "flex md:!hidden" : "hidden"
       )}
     >

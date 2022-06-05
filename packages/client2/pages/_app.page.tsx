@@ -10,7 +10,6 @@ import { Layout } from "@/components/layout";
 import { apolloClient } from "@/lib/graphql/apollo";
 import { useAppInitialization } from "@/lib/state/app-init";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
-import { MobileNavMenu } from "@/lib/state/mobile-nav";
 import { WalletProvider } from "@/lib/wallet";
 
 export default function MyApp({ Component, pageProps }: AppProps) {
@@ -29,7 +28,6 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         </Layout>
 
         <AppWideModals />
-        <MobileNavMenu />
 
         {process.env.NEXT_PUBLIC_ENV === "local" && <DevToolsPanel />}
       </ApolloProvider>
