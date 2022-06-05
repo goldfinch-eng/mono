@@ -1,10 +1,27 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
+});
+const withMDX = require("@next/mdx")({
+  // reference for MDX in Next: https://nextjs.org/docs/advanced-features/using-mdx
+  extension: /\.mdx?$/,
+  options: {
+    remarkPlugins: [],
+    rehypePlugins: [],
+  },
 });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  pageExtensions: ["page.tsx", "page.ts", "page.jsx", "page.js"],
+  pageExtensions: [
+    "page.tsx",
+    "page.ts",
+    "page.jsx",
+    "page.js",
+    "page.mdx",
+    "page.md",
+  ],
   async redirects() {
     return [
       {
@@ -47,22 +64,8 @@ const nextConfig = {
       type: "asset/source",
     });
 
-    // Allows Markdown files to be imported
-    config.module.rules.push({
-      test: /\.md$/,
-      issuer: /\.[jt]sx?$/,
-      use: [
-        {
-          loader: "html-loader",
-        },
-        {
-          loader: "markdown-loader",
-        },
-      ],
-    });
-
     return config;
   },
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+module.exports = withBundleAnalyzer(withMDX(nextConfig));

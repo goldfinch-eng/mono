@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
-interface ContentBlockProps {
+interface ProseLayoutProps {
   children: ReactNode;
 }
 
-export function ContentBlock({ children }: ContentBlockProps) {
+export function ProseLayout({ children }: ProseLayoutProps) {
   return <div className="prose mx-auto">{children}</div>;
 }

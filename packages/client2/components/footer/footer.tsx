@@ -12,7 +12,7 @@ export function Footer() {
             {FOOTER_NAV_ITEMS.map((item, i) => (
               <Link
                 key={`footer-link-${item.label}`}
-                href={`/content${item.href}`}
+                href={item.href}
                 className={clsx("no-underline", i !== 0 ? "ml-4" : "")}
               >
                 {item.label}

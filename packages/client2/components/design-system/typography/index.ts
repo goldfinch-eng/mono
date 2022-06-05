@@ -1,4 +1,3 @@
-export * from "./content-block";
 export * from "./heading";
 export * from "./helper-text";
 export * from "./legal-text";
