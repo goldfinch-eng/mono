@@ -1,7 +1,11 @@
 import clsx from "clsx";
 
 import { Icon, Link } from "@/components/design-system";
-import { FOOTER_NAV_ITEMS } from "@/constants";
+
+const footerNavItems = [
+  { label: "Terms", href: "/terms" },
+  { label: "Privacy", href: "/privacy" },
+];
 
 export function Footer() {
   return (
@@ -9,7 +13,7 @@ export function Footer() {
       <div className="mx-auto max-w-screen-xl px-6 py-6 md:px-10">
         <div className="sm:flex sm:items-center sm:justify-between">
           <nav className="flex justify-center text-sm sm:justify-start">
-            {FOOTER_NAV_ITEMS.map((item, i) => (
+            {footerNavItems.map((item, i) => (
               <Link
                 key={`footer-link-${item.label}`}
                 href={item.href}

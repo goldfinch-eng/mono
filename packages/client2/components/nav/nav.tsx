@@ -4,9 +4,9 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 
 import { Link, GoldfinchLogo, Icon } from "@/components/design-system";
-import { NAV_ITEMS } from "@/constants";
 
 import { MobileNav } from "./mobile-nav";
+import { NAV_ITEMS } from "./nav-items";
 import { WalletButton } from "./wallet-button";
 
 export function Nav() {

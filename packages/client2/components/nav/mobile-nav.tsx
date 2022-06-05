@@ -6,7 +6,8 @@ import { useEffect } from "react";
 import { GoldfinchLogo, Icon } from "@/components/design-system";
 import { NavLink } from "@/components/nav";
 import { WalletButton } from "@/components/nav/wallet-button";
-import { NAV_ITEMS } from "@/constants";
+
+import { NAV_ITEMS } from "./nav-items";
 
 interface MobileNavProps {
   isOpen: boolean;
