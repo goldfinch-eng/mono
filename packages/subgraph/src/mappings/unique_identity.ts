@@ -1,4 +1,5 @@
 import {BigInt, Bytes} from "@graphprotocol/graph-ts"
+import {Transaction} from "../../generated/schema"
 import {TransferSingle} from "../../generated/templates/UniqueIdentity/UniqueIdentity"
 import {getOrInitUser} from "../entities/user"
 
@@ -33,4 +34,11 @@ export function handleTransferSingle(event: TransferSingle): void {
       sendingUser.isNonUsEntity = false
     }
   }
+
+  const transaction = new Transaction(event.transaction.hash)
+  transaction.user = receivingUser.id
+  transaction.category = "UID_MINTED"
+  transaction.timestamp = event.block.timestamp.toI32()
+  transaction.blockNumber = event.block.number.toI32()
+  transaction.save()
 }

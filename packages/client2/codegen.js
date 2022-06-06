@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 // ! IMPORTANT: In case of emergency where our subgraph goes down due to error, this codegen step will fail.
 // ! Since this codegen step is part of app builds, deployment and development will fail (the existing app in production should be OK, it uses non-fatal subgraph errors).
 // ! The most straightforward solution is to fix the subgraph error, but if you need to develop/deploy the app in the meantime, you can take these temporary countermeasures:
@@ -35,6 +36,7 @@ module.exports = {
         scalars: {
           BigInt: "TheGraph_BigInt",
           BigDecimal: "TheGraph_BigDecimal",
+          Bytes: "string",
         },
       },
     },

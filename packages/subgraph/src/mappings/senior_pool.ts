@@ -1,3 +1,4 @@
+import {Transaction} from "../../generated/schema"
 import {
   DepositMade,
   InterestCollected,
@@ -14,6 +15,14 @@ import {handleDeposit} from "../entities/user"
 export function handleDepositMade(event: DepositMade): void {
   updatePoolStatus(event.address)
   handleDeposit(event)
+
+  const transaction = new Transaction(event.transaction.hash)
+  transaction.category = "SENIOR_POOL_DEPOSIT"
+  transaction.user = event.params.capitalProvider.toHexString()
+  transaction.amount = event.params.amount
+  transaction.timestamp = event.block.timestamp.toI32()
+  transaction.blockNumber = event.block.number.toI32()
+  transaction.save()
 }
 
 export function handleInterestCollected(event: InterestCollected): void {
@@ -44,4 +53,12 @@ export function handleReserveFundsCollected(event: ReserveFundsCollected): void 
 
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   updatePoolStatus(event.address)
+
+  const transaction = new Transaction(event.transaction.hash)
+  transaction.category = "SENIOR_POOL_WITHDRAWAL"
+  transaction.user = event.params.capitalProvider.toHexString()
+  transaction.amount = event.params.userAmount
+  transaction.timestamp = event.block.timestamp.toI32()
+  transaction.blockNumber = event.block.number.toI32()
+  transaction.save()
 }

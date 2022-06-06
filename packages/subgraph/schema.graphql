@@ -89,6 +89,8 @@ type User @entity {
   isUsEntity: Boolean!
   isNonUsEntity: Boolean!
   isGoListed: Boolean!
+
+  transactions: [Transaction!]! @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
@@ -256,6 +258,8 @@ type TranchedPool @entity {
   """
   totalAmountRepaid: BigInt!
   allowedUidTypes: [UidType!]!
+
+  transactions2: [Transaction!]! @derivedFrom(field: "tranchedPool")
 }
 
 type TranchedPoolToken @entity {
@@ -290,4 +294,27 @@ type BackerRewardsData @entity {
   Note that this value is measured in GFI, not dollars
   """
   maxInterestDollarsEligible: BigInt!
+}
+
+enum TransactionCategory {
+  SENIOR_POOL_DEPOSIT
+  SENIOR_POOL_WITHDRAWAL
+  TRANCHED_POOL_DEPOSIT
+  TRANCHED_POOL_WITHDRAWAL
+  TRANCHED_POOL_REPAYMENT
+  TRANCHED_POOL_DRAWDOWN
+  UID_MINTED
+}
+
+type Transaction @entity(immutable: true) {
+  """
+  This is the transaction hash
+  """
+  id: Bytes!
+  category: TransactionCategory!
+  user: User!
+  timestamp: Int!
+  blockNumber: Int!
+  amount: BigInt!
+  tranchedPool: TranchedPool
 }

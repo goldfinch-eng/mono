@@ -44,6 +44,7 @@ import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
 } from "./supply-panel";
+import { TransactionTable } from "./transaction-table";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -453,7 +454,7 @@ export default function PoolPage() {
                 >
                   Highlights
                 </Heading>
-                <ul className="list-outside list-disc pl-5">
+                <ul className="mb-8 list-outside list-disc pl-5">
                   {tranchedPool?.highlights?.map((item, idx) => (
                     <li
                       key={`pool-highlight-${address}-${idx}`}
@@ -465,6 +466,15 @@ export default function PoolPage() {
                     </li>
                   ))}
                 </ul>
+                <Heading
+                  level={4}
+                  className="mb-4 font-sans !text-lg !font-semibold"
+                >
+                  Recent Activity
+                </Heading>
+                {tranchedPool ? (
+                  <TransactionTable tranchedPoolId={tranchedPool.id} />
+                ) : null}
               </TabContent>
               <TabContent>
                 {tranchedPool ? (
