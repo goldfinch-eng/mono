@@ -7,29 +7,23 @@ import { Icon, Link, Table } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
+  TransactionCategory,
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
 
 gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
-    tranchedPoolTransactions(
+    transactions(
+      where: { category_in: [TRANCHED_POOL_DRAWDOWN, TRANCHED_POOL_REPAYMENT] }
       orderBy: timestamp
       orderDirection: desc
       first: $first
       skip: $skip
     ) {
-      __typename
       id
       timestamp
-      ... on TranchedPoolDrawdownMadeTransaction {
-        amount
-      }
-      ... on TranchedPoolPaymentAppliedTransaction {
-        reserveAmount
-        interestAmount
-        principalAmount
-        remainingAmount
-      }
+      amount
+      category
       tranchedPool {
         id
         name @client
@@ -46,26 +40,23 @@ export function RecentRepaymentsTable() {
   });
 
   const transactions =
-    data?.tranchedPoolTransactions.map((transaction, index) => {
-      const date = new Date(transaction.timestamp.toNumber() * 1000);
+    data?.transactions.map((transaction) => {
+      const date = new Date(transaction.timestamp * 1000);
       const transactionAmount = formatCrypto(
         {
           token: SupportedCrypto.Usdc,
           amount:
-            transaction.__typename === "TranchedPoolDrawdownMadeTransaction"
+            transaction.category === TransactionCategory.TranchedPoolDrawdown
               ? transaction.amount.mul(-1)
-              : transaction.principalAmount
-                  .add(transaction.interestAmount)
-                  .add(transaction.reserveAmount)
-                  .add(transaction.remainingAmount),
+              : transaction.amount,
         },
         { includeSymbol: true }
       );
 
       return [
-        <div key={index} className="flex items-center gap-2">
+        <div key={`${transaction.id}-user`} className="flex items-center gap-2">
           <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
-            {transaction.tranchedPool.icon ? (
+            {transaction.tranchedPool?.icon ? (
               <Image
                 src={transaction.tranchedPool.icon as string}
                 layout="fill"
@@ -74,11 +65,11 @@ export function RecentRepaymentsTable() {
               />
             ) : null}
           </div>
-          <Link href={`/pools/${transaction.tranchedPool.id}`}>
-            {transaction.tranchedPool.name ?? ""}
+          <Link href={`/pools/${transaction.tranchedPool?.id}`}>
+            {transaction.tranchedPool?.name ?? "Unnamed Pool"}
           </Link>
         </div>,
-        <div key={index} className="text-right">
+        <div key={`${transaction.id}-amount`} className="text-right">
           {transactionAmount}
         </div>,
         <a
@@ -86,7 +77,7 @@ export function RecentRepaymentsTable() {
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-end gap-3 hover:underline"
-          key={index}
+          key={`${transaction.id}-timestamp`}
         >
           {format(date, "MMMM d, y")}
           <Icon name="ArrowTopRight" size="sm" />
@@ -95,10 +86,10 @@ export function RecentRepaymentsTable() {
     }) ?? [];
 
   const onScrollBottom = useCallback(() => {
-    if (data?.tranchedPoolTransactions) {
+    if (data?.transactions) {
       fetchMore({
         variables: {
-          skip: data?.tranchedPoolTransactions.length,
+          skip: data?.transactions.length,
           first: 20,
         },
       });
