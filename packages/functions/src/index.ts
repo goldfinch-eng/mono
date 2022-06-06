@@ -11,6 +11,7 @@ import {genRequestHandler} from "./helpers"
 import {SignatureVerificationSuccessResult} from "./types"
 import firestore = admin.firestore
 import {circulatingSupply} from "./handlers/circulatingSupply"
+import {poolTokenMetadata, poolTokenImage} from "./handlers/poolTokenMetadata"
 dotenv.config({path: findEnvLocal()})
 
 const _config = getConfig(functions)
@@ -208,4 +209,4 @@ const personaCallback = genRequestHandler({
   },
 })
 
-export {kycStatus, personaCallback, signAgreement, circulatingSupply}
+export {kycStatus, personaCallback, signAgreement, circulatingSupply, poolTokenMetadata, poolTokenImage}

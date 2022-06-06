@@ -510,7 +510,7 @@ async function writePoolMetadata({
   const NDAUrl = "https://example.com"
   const status = [false, true, undefined]
 
-  const metadataPath = "../../packages/client/config/pool-metadata/localhost.json"
+  const metadataPath = "../../packages/pools/metadata/localhost.json"
   const metadataPathForClient2 = "../../packages/client2/constants/metadata/localhost.json"
   let metadata: any
   try {

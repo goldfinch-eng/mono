@@ -1,0 +1,31 @@
+query poolTokenMetadata($id: ID!) {
+  tranchedPoolToken(id: $id) {
+    id
+    interestRedeemed
+    principalAmount
+    interestRedeemable
+    principalRedeemable
+    principalRedeemed
+    tranchedPool {
+      id
+      estimatedJuniorApy
+      estimatedJuniorApyFromGfiRaw
+      totalDeployed
+      totalDeposited
+      borrowerTransactions {
+        id
+        type
+        amount
+      }
+      creditLine {
+        limit
+        interestApr
+        paymentPeriodInDays
+        termInDays
+        nextDueTime
+        termEndTime
+        lastFullPaymentTime
+      }
+    }
+  }
+}

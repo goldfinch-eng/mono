@@ -57,10 +57,10 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
   try {
     let metadataStore: MetadataStore = {}
 
-    let loadedStore = await import(`../../config/pool-metadata/${networkId}.json`)
+    let loadedStore = await import(`@goldfinch-eng/pools/metadata/${networkId}.json`)
     // If mainnet-forking, merge local metadata with mainnet
     if (isMainnetForking()) {
-      let mainnetMetadata = await import("../../config/pool-metadata/mainnet.json")
+      let mainnetMetadata = await import("@goldfinch-eng/pools/metadata/mainnet.json")
       loadedStore = _.merge(loadedStore, mainnetMetadata)
     }
 

@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.6.0",
     "@gnosis.pm/safe-apps-sdk": "^0.4.2",
     "@goldfinch-eng/autotasks": "^0.0.1",
+    "@goldfinch-eng/pools": "^0.0.0",
     "@goldfinch-eng/protocol": "^0.1.0",
     "@goldfinch-eng/utils": "^0.0.1",
     "@hookform/error-message": "0.0.4",

@@ -78,6 +78,16 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
   * [`docs/`](./packages/docs) (`@goldfinch-eng/docs`): Static site of protocol documentation.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
 
+### Adding a new packages
+
+1. Create the package with lerna:
+
+```sh
+npx lerna create package-name
+```
+
+2. (optional), If this is a typescript package being used from another typescript pacakge, add the new package name to the root `tsconfig.json`.
+
 ### Tenderly debugging
 We have the ability to debug/profile local transactions via [Tenderly](Tenderly.co). To do this, get hold of a transaction hash and then run:
 

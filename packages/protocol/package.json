@@ -84,6 +84,7 @@
   "license": "MIT",
   "homepage": "https://github.com/goldfinch-eng/goldfinch-protocol/README.md",
   "dependencies": {
+    "@goldfinch-eng/pools": "^0.0.0",
     "@opengsn/gsn": "^2.1.0",
     "@openzeppelin/contracts": "^3.4.1",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
