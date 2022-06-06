@@ -6,7 +6,7 @@ Goldfinch is a decentralized lending protocol built on the blockchain. This is a
 
 You will need the correct version of node/npm on your local machine.
 
-Using nvm, you can do this with `nvm install 12.18.3`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
+Using nvm, you can do this with `nvm install 14.19.0`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
 
 #### Packages
 
@@ -79,6 +79,7 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
   * [`functions/`](./packages/functions) (`@goldfinch-eng/functions`): Google cloud functions to support KYC and other server-side functionality.
   * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
+  * [`docs/`](./packages/docs) (`@goldfinch-eng/docs`): Static site of protocol documentation.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
 
 ### Tenderly debugging

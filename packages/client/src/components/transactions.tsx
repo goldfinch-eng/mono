@@ -43,12 +43,15 @@ import {
   USDC_APPROVAL_TX_TYPE,
   WITHDRAW_FROM_SENIOR_POOL_TX_TYPE,
   WITHDRAW_FROM_TRANCHED_POOL_TX_TYPE,
-  UNSTAKE_MULTIPLE_TX_TYPE,
+  UNSTAKE_TX_TYPE,
   DEPOSIT_TO_CURVE_AND_STAKE_TX_TYPE,
   FIDU_USDC_CURVE_APPROVAL_TX_TYPE,
   DEPOSIT_TO_CURVE_TX_TYPE,
   ZAP_STAKE_TO_CURVE_TX_TYPE,
   ERC721_APPROVAL_TX_TYPE,
+  ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE,
+  CLAIM_ZAP,
+  UNZAP,
 } from "../types/transactions"
 import {assertNonNullable, BlockInfo, displayDollars, displayNumber} from "../utils"
 import ConnectionNotice from "./connectionNotice"
@@ -236,7 +239,7 @@ function Transactions(props: TransactionsProps) {
           amount = displayDollars((tx.data as CurrentTx<typeof tx.name>["data"]).recognizableUsdcAmount)
           break
         }
-        case UNSTAKE_MULTIPLE_TX_TYPE: {
+        case UNSTAKE_TX_TYPE: {
           direction = "outflow"
           amount = displayNumber((tx.data as CurrentTx<typeof tx.name>["data"]).totalAmount)
           break
@@ -265,6 +268,13 @@ function Transactions(props: TransactionsProps) {
           fiduAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).fiduAmount
           usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
           amount = `${displayNumber(fiduAmount)} FIDU, ${displayDollars(usdcAmount)}`
+          break
+        case ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE:
+          usdcAmount = (tx.data as CurrentTx<typeof tx.name>["data"]).usdcAmount
+          amount = displayDollars(usdcAmount)
+          break
+        case CLAIM_ZAP:
+        case UNZAP:
           break
         default:
           assertUnreachable(tx)
@@ -334,6 +344,9 @@ function Transactions(props: TransactionsProps) {
         case INTEREST_AND_PRINCIPAL_PAYMENT_TX_NAME:
         case DRAWDOWN_TX_NAME:
         case ZAP_STAKE_TO_CURVE_TX_TYPE:
+        case ZAP_STAKE_TO_TRANCHED_POOL_TX_TYPE:
+        case CLAIM_ZAP:
+        case UNZAP:
           break
         default:
           assertUnreachable(tx)

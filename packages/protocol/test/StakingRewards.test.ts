@@ -1189,15 +1189,15 @@ describe("StakingRewards", function () {
         const tokenId = await stake({amount: fiduAmount, from: investor})
         await stakingRewards.approve(owner, tokenId, {from: investor})
 
-        await advanceTime({seconds: yearInSeconds.div(new BN(2))})
+        await advanceTime({seconds: halfYearInSeconds})
 
-        stakingRewards.unstake(tokenId, fiduAmount, {from: owner})
+        await stakingRewards.unstake(tokenId, fiduAmount, {from: owner})
 
-        await advanceTime({seconds: yearInSeconds.div(new BN(2))})
+        await advanceTime({seconds: halfYearInSeconds})
 
         // All rewards in first half, including unvested, should be claimable by the
         // end of the vesting schedule, since no slashing has occurred
-        const grantedRewardsInFirstHalf = rewardRate.mul(halfYearInSeconds).div(new BN(2))
+        const grantedRewardsInFirstHalf = rewardRate.mul(halfYearInSeconds)
         await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
           [() => gfi.balanceOf(investor), {byCloseTo: grantedRewardsInFirstHalf}],
         ])
@@ -3229,9 +3229,6 @@ describe("StakingRewards", function () {
     })
 
     it("initializes ZAPPER_ROLE", async () => {
-      await expect(
-        stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})
-      ).to.be.rejectedWith(/sender must be an admin to grant/)
       await stakingRewards.initZapperRole({from: owner})
       // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
       await expect(stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be

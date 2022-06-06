@@ -421,10 +421,32 @@ async function createBorrowerContractAndPools({
 
   await writePoolMetadata({pool: filledPool, borrower: address})
 
+  await createUnfilledPool(address, bwrConAddr, erc20, getOrNull, goldfinchFactory, ownerSigner, underwriter)
   await createFullPool(address, bwrConAddr, erc20, getOrNull, goldfinchFactory, ownerSigner, underwriter)
   await createFullPool(address, bwrConAddr, erc20, getOrNull, goldfinchFactory, ownerSigner, underwriter)
 
   logger(`Pools ready for ${address}`)
+}
+
+async function createUnfilledPool(
+  address: string,
+  bwrConAddr: string,
+  erc20: Contract,
+  getOrNull: any,
+  goldfinchFactory: GoldfinchFactory,
+  ownerSigner: JsonRpcSigner,
+  underwriter: string
+) {
+  const pool = await createPoolForBorrower({
+    getOrNull,
+    underwriter,
+    goldfinchFactory,
+    borrower: bwrConAddr,
+    erc20,
+    allowedUIDTypes: [...NON_US_UID_TYPES],
+    limitInDollars: 25000,
+  })
+  await writePoolMetadata({pool: pool, borrower: address})
 }
 
 async function createFullPool(
@@ -472,7 +494,7 @@ async function createFullPool(
 async function writePoolMetadata({
   pool,
   borrower,
-  backerLimit = "0.025",
+  backerLimit = "1.00",
 }: {
   pool: TranchedPool
   borrower: string
@@ -511,7 +533,7 @@ async function writePoolMetadata({
     detailsUrl,
     NDAUrl,
     backerLimit,
-    disabled: _.sample(status),
+    disabled: false,
     launchTime,
   }
 
@@ -595,6 +617,7 @@ async function createPoolForBorrower({
   depositor,
   erc20,
   allowedUIDTypes,
+  limitInDollars,
 }: {
   getOrNull: any
   underwriter: string
@@ -603,9 +626,10 @@ async function createPoolForBorrower({
   depositor?: string
   erc20: Contract
   allowedUIDTypes: Array<number>
+  limitInDollars?: number
 }): Promise<TranchedPool> {
   const juniorFeePercent = String(new BN(20))
-  const limit = String(new BN(10000).mul(USDCDecimals))
+  const limit = String(new BN(limitInDollars || 10000).mul(USDCDecimals))
   const interestApr = String(interestAprAsBN("5.00"))
   const paymentPeriodInDays = String(new BN(30))
   const termInDays = String(new BN(360))

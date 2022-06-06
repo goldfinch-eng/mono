@@ -248,8 +248,8 @@ describe("mainnet forking tests", async function () {
   async function setupSeniorPool() {
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
-    await erc20Approve(usdc, seniorPool.address, usdcVal(10000), [owner])
-    await seniorPool.deposit(usdcVal(10000), {from: owner})
+    await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])
+    await seniorPool.deposit(usdcVal(100_000), {from: owner})
   }
 
   async function createBorrowerContract() {

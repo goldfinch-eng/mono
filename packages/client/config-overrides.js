@@ -142,6 +142,7 @@ const localRelayer = () => (config) => {
     "/advanceTimeThirtyDays": "http://localhost:4000",
     "/kycStatus": "http://localhost:4000",
     "/uniqueIdentitySigner": "http://localhost:4000",
+    "/lockTranchedPool": "http://localhost:4000",
   }
   return config
 }

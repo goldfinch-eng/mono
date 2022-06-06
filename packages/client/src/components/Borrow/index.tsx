@@ -9,14 +9,12 @@ import {AppContext} from "../../App"
 import CreditLinesList from "./CreditLinesList"
 import {useBorrow} from "../../contexts/BorrowContext"
 import {assertNonNullable} from "../../utils"
-import {useSession} from "../../hooks/useSignIn"
 
 function Borrow() {
   const {creditDesk, user, goldfinchProtocol, currentBlock} = useContext(AppContext)
   const [creditLinesAddresses, setCreditLinesAddresses] = useState<string[]>([])
   const [creditLine, setCreditLine] = useState<CreditLine | MultipleCreditLines | undefined>()
   const {borrowStore, setBorrowStore} = useBorrow()
-  const session = useSession()
 
   async function updateBorrowerAndCreditLine() {
     if (user && user.borrower && creditDesk) {
@@ -52,7 +50,7 @@ function Borrow() {
     setCreditLine(await fetchCreditLineData(clAddresses, goldfinchProtocol, currentBlock))
   }
 
-  const disabled = !creditLine || !creditLine.loaded || session.status !== "authenticated"
+  const disabled = !creditLine || !creditLine.loaded
 
   let creditActionsContainer
   let creditLineStatus

@@ -1,6 +1,5 @@
 import {BigNumber} from "bignumber.js"
 import {usdcFromAtomic} from "../../ethereum/erc20"
-import {useSession} from "../../hooks/useSignIn"
 import {Loadable} from "../../types/loadable"
 import {InfoIcon} from "../../ui/icons"
 import {displayDollars, displayPercent} from "../../utils"
@@ -17,7 +16,6 @@ export function DepositStatus({
   backer: TranchedPoolBacker | undefined
   tranchedPoolsEstimatedApyFromGfi: Loadable<TranchedPoolsEstimatedApyFromGfi>
 }) {
-  const session = useSession()
   if (!tranchedPool || !tranchedPoolsEstimatedApyFromGfi.loaded) {
     return <></>
   }
@@ -46,7 +44,7 @@ export function DepositStatus({
         <div className="deposit-status-sub-item-flex">
           <div className="sub-value">{`${displayPercent(estimatedApy)} with GFI`}</div>
           <span data-tip="" data-for="apy-tooltip" data-offset="{'top': 0, 'left': 80}" data-place="bottom">
-            <InfoIcon className="icon" color={session.status === "authenticated" ? "#75c1eb" : "#b4ada7"} />
+            <InfoIcon className="icon" color="#75c1eb" />
           </span>
         </div>
       </div>
