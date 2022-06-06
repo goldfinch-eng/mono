@@ -42,13 +42,18 @@
       "kind": "transparent"
     },
     {
-      "address": "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df",
-      "txHash": "0x84a4be75f4946aa541f58d7a4689077943fdaadf5552668438a9b3cfbebf01db",
+      "address": "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
+      "txHash": "0x517054372b36470ea012f6b23d165e5f3d3366d26329cd57b6e83a376ffb5614",
       "kind": "transparent"
     },
     {
-      "address": "0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822",
-      "txHash": "0x5a2ad13fdde8afb2616116d5266a75369efe240ab11fee27ca4c3aa5a7589b63",
+      "address": "0xd7b528e749078daDeE2f0071cde6fca4e191A521",
+      "txHash": "0x146cd6fa9b91ecc9e9bff568cc40762481cb4e111fdd082edff2df27f90698f5",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df",
+      "txHash": "0x84a4be75f4946aa541f58d7a4689077943fdaadf5552668438a9b3cfbebf01db",
       "kind": "transparent"
     },
     {
@@ -57,13 +62,8 @@
       "kind": "transparent"
     },
     {
-      "address": "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
-      "txHash": "0x517054372b36470ea012f6b23d165e5f3d3366d26329cd57b6e83a376ffb5614",
-      "kind": "transparent"
-    },
-    {
-      "address": "0xd7b528e749078daDeE2f0071cde6fca4e191A521",
-      "txHash": "0x146cd6fa9b91ecc9e9bff568cc40762481cb4e111fdd082edff2df27f90698f5",
+      "address": "0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822",
+      "txHash": "0x5a2ad13fdde8afb2616116d5266a75369efe240ab11fee27ca4c3aa5a7589b63",
       "kind": "transparent"
     }
   ],
@@ -5689,33 +5689,33 @@
           {
             "contract": "PoolTokens",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17564",
+            "type": "t_contract(GoldfinchConfig)17615",
             "src": "contracts/protocol/core/PoolTokens.sol:19"
           },
           {
             "contract": "PoolTokens",
             "label": "tokens",
-            "type": "t_mapping(t_uint256,t_struct(TokenInfo)10187_storage)",
+            "type": "t_mapping(t_uint256,t_struct(TokenInfo)10238_storage)",
             "src": "contracts/protocol/core/PoolTokens.sol:29"
           },
           {
             "contract": "PoolTokens",
             "label": "pools",
-            "type": "t_mapping(t_address,t_struct(PoolInfo)20061_storage)",
+            "type": "t_mapping(t_address,t_struct(PoolInfo)20112_storage)",
             "src": "contracts/protocol/core/PoolTokens.sol:31"
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17564": {
+          "t_contract(GoldfinchConfig)17615": {
             "label": "contract GoldfinchConfig"
           },
-          "t_mapping(t_uint256,t_struct(TokenInfo)10187_storage)": {
+          "t_mapping(t_uint256,t_struct(TokenInfo)10238_storage)": {
             "label": "mapping(uint256 => struct IPoolTokens.TokenInfo)"
           },
           "t_uint256": {
             "label": "uint256"
           },
-          "t_struct(TokenInfo)10187_storage": {
+          "t_struct(TokenInfo)10238_storage": {
             "label": "struct IPoolTokens.TokenInfo",
             "members": [
               {
@@ -5743,10 +5743,10 @@
           "t_address": {
             "label": "address"
           },
-          "t_mapping(t_address,t_struct(PoolInfo)20061_storage)": {
+          "t_mapping(t_address,t_struct(PoolInfo)20112_storage)": {
             "label": "mapping(address => struct PoolTokens.PoolInfo)"
           },
-          "t_struct(PoolInfo)20061_storage": {
+          "t_struct(PoolInfo)20112_storage": {
             "label": "struct PoolTokens.PoolInfo",
             "members": [
               {
@@ -6255,7 +6255,7 @@
           {
             "contract": "StakingRewards",
             "label": "config",
-            "type": "t_contract(GoldfinchConfig)17564",
+            "type": "t_contract(GoldfinchConfig)17615",
             "src": "contracts/rewards/StakingRewards.sol:87"
           },
           {
@@ -6333,24 +6333,24 @@
           {
             "contract": "StakingRewards",
             "label": "leverageMultipliers",
-            "type": "t_mapping(t_enum(LockupPeriod)32520,t_uint256)",
+            "type": "t_mapping(t_enum(LockupPeriod)32571,t_uint256)",
             "src": "contracts/rewards/StakingRewards.sol:134"
           },
           {
             "contract": "StakingRewards",
             "label": "positions",
-            "type": "t_mapping(t_uint256,t_struct(StakedPosition)32538_storage)",
+            "type": "t_mapping(t_uint256,t_struct(StakedPosition)32589_storage)",
             "src": "contracts/rewards/StakingRewards.sol:137"
           },
           {
             "contract": "StakingRewards",
             "label": "effectiveMultipliers",
-            "type": "t_mapping(t_enum(StakedPositionType)32523,t_uint256)",
+            "type": "t_mapping(t_enum(StakedPositionType)32574,t_uint256)",
             "src": "contracts/rewards/StakingRewards.sol:141"
           }
         ],
         "types": {
-          "t_contract(GoldfinchConfig)17564": {
+          "t_contract(GoldfinchConfig)17615": {
             "label": "contract GoldfinchConfig"
           },
           "t_uint256": {
@@ -6359,10 +6359,10 @@
           "t_mapping(t_uint256,t_uint256)": {
             "label": "mapping(uint256 => uint256)"
           },
-          "t_mapping(t_enum(LockupPeriod)32520,t_uint256)": {
+          "t_mapping(t_enum(LockupPeriod)32571,t_uint256)": {
             "label": "mapping(enum StakingRewards.LockupPeriod => uint256)"
           },
-          "t_enum(LockupPeriod)32520": {
+          "t_enum(LockupPeriod)32571": {
             "label": "enum StakingRewards.LockupPeriod",
             "members": [
               "SixMonths",
@@ -6370,10 +6370,10 @@
               "TwentyFourMonths"
             ]
           },
-          "t_mapping(t_uint256,t_struct(StakedPosition)32538_storage)": {
+          "t_mapping(t_uint256,t_struct(StakedPosition)32589_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
           },
-          "t_struct(StakedPosition)32538_storage": {
+          "t_struct(StakedPosition)32589_storage": {
             "label": "struct StakingRewards.StakedPosition",
             "members": [
               {
@@ -6382,7 +6382,7 @@
               },
               {
                 "label": "rewards",
-                "type": "t_struct(Rewards)11205_storage"
+                "type": "t_struct(Rewards)11256_storage"
               },
               {
                 "label": "leverageMultiplier",
@@ -6394,7 +6394,7 @@
               },
               {
                 "label": "positionType",
-                "type": "t_enum(StakedPositionType)32523"
+                "type": "t_enum(StakedPositionType)32574"
               },
               {
                 "label": "unsafeEffectiveMultiplier",
@@ -6406,7 +6406,7 @@
               }
             ]
           },
-          "t_struct(Rewards)11205_storage": {
+          "t_struct(Rewards)11256_storage": {
             "label": "struct StakingRewardsVesting.Rewards",
             "members": [
               {
@@ -6435,14 +6435,14 @@
               }
             ]
           },
-          "t_enum(StakedPositionType)32523": {
+          "t_enum(StakedPositionType)32574": {
             "label": "enum StakingRewards.StakedPositionType",
             "members": [
               "Fidu",
               "CurveLP"
             ]
           },
-          "t_mapping(t_enum(StakedPositionType)32523,t_uint256)": {
+          "t_mapping(t_enum(StakedPositionType)32574,t_uint256)": {
             "label": "mapping(enum StakingRewards.StakedPositionType => uint256)"
           },
           "t_bool": {
@@ -6756,6 +6756,1066 @@
             ]
           },
           "t_struct(Set)4024_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          }
+        }
+      }
+    },
+    "483d76ca778c81d60173349d30921a9261d852e8ce786d1fbdb160cd6b75f65b": {
+      "address": "0x19AF596bE75c4e216D68a69172a713ABF81Fb528",
+      "txHash": "0x7fa450153e0cc9e5e45ee6ee6b410e961b9501b4e37fdbd9b3c3574b4c2197de",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "AccessControlUpgradeSafe",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)260_storage)",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:58"
+          },
+          {
+            "contract": "AccessControlUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:210"
+          },
+          {
+            "contract": "ERC165UpgradeSafe",
+            "label": "_supportedInterfaces",
+            "type": "t_mapping(t_bytes4,t_bool)",
+            "src": "contracts/external/ERC165.sol:28"
+          },
+          {
+            "contract": "ERC165UpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "contracts/external/ERC165.sol:65"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_holderTokens",
+            "type": "t_mapping(t_address,t_struct(UintSet)3192_storage)",
+            "src": "contracts/external/ERC721.sol:47"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_tokenOwners",
+            "type": "t_struct(UintToAddressMap)2717_storage",
+            "src": "contracts/external/ERC721.sol:50"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_tokenApprovals",
+            "type": "t_mapping(t_uint256,t_address)",
+            "src": "contracts/external/ERC721.sol:53"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_operatorApprovals",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "contracts/external/ERC721.sol:56"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_name",
+            "type": "t_string_storage",
+            "src": "contracts/external/ERC721.sol:59"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_symbol",
+            "type": "t_string_storage",
+            "src": "contracts/external/ERC721.sol:62"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_tokenURIs",
+            "type": "t_mapping(t_uint256,t_string_storage)",
+            "src": "contracts/external/ERC721.sol:65"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_baseURI",
+            "type": "t_string_storage",
+            "src": "contracts/external/ERC721.sol:68"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)41_storage",
+            "src": "contracts/external/ERC721.sol:598"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "_paused",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:26"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:84"
+          },
+          {
+            "contract": "ERC721PausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "contracts/external/ERC721Pausable.sol:49"
+          },
+          {
+            "contract": "ERC721PresetMinterPauserAutoIdUpgradeSafe",
+            "label": "_tokenIdTracker",
+            "type": "t_struct(Counter)2397_storage",
+            "src": "contracts/external/ERC721PresetMinterPauserAutoId.sol:47"
+          },
+          {
+            "contract": "ERC721PresetMinterPauserAutoIdUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "contracts/external/ERC721PresetMinterPauserAutoId.sol:85"
+          },
+          {
+            "contract": "PoolTokens",
+            "label": "config",
+            "type": "t_contract(GoldfinchConfig)17540",
+            "src": "contracts/protocol/core/PoolTokens.sol:26"
+          },
+          {
+            "contract": "PoolTokens",
+            "label": "tokens",
+            "type": "t_mapping(t_uint256,t_struct(TokenInfo)10179_storage)",
+            "src": "contracts/protocol/core/PoolTokens.sol:36"
+          },
+          {
+            "contract": "PoolTokens",
+            "label": "pools",
+            "type": "t_mapping(t_address,t_struct(PoolInfo)20041_storage)",
+            "src": "contracts/protocol/core/PoolTokens.sol:38"
+          },
+          {
+            "contract": "PoolTokens",
+            "label": "royaltyParams",
+            "type": "t_struct(RoyaltyParams)12955_storage",
+            "src": "contracts/protocol/core/PoolTokens.sol:40"
+          }
+        ],
+        "types": {
+          "t_contract(GoldfinchConfig)17540": {
+            "label": "contract GoldfinchConfig"
+          },
+          "t_mapping(t_uint256,t_struct(TokenInfo)10179_storage)": {
+            "label": "mapping(uint256 => struct IPoolTokens.TokenInfo)"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_struct(TokenInfo)10179_storage": {
+            "label": "struct IPoolTokens.TokenInfo",
+            "members": [
+              {
+                "label": "pool",
+                "type": "t_address"
+              },
+              {
+                "label": "tranche",
+                "type": "t_uint256"
+              },
+              {
+                "label": "principalAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "principalRedeemed",
+                "type": "t_uint256"
+              },
+              {
+                "label": "interestRedeemed",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_mapping(t_address,t_struct(PoolInfo)20041_storage)": {
+            "label": "mapping(address => struct PoolTokens.PoolInfo)"
+          },
+          "t_struct(PoolInfo)20041_storage": {
+            "label": "struct PoolTokens.PoolInfo",
+            "members": [
+              {
+                "label": "totalMinted",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPrincipalRedeemed",
+                "type": "t_uint256"
+              },
+              {
+                "label": "created",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_struct(RoyaltyParams)12955_storage": {
+            "label": "struct ConfigurableRoyaltyStandard.RoyaltyParams",
+            "members": [
+              {
+                "label": "receiver",
+                "type": "t_address"
+              },
+              {
+                "label": "royaltyPercent",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_struct(Counter)2397_storage": {
+            "label": "struct Counters.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_mapping(t_address,t_struct(UintSet)3192_storage)": {
+            "label": "mapping(address => struct EnumerableSet.UintSet)"
+          },
+          "t_struct(UintSet)3192_storage": {
+            "label": "struct EnumerableSet.UintSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)2903_storage"
+              }
+            ]
+          },
+          "t_struct(Set)2903_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          },
+          "t_struct(UintToAddressMap)2717_storage": {
+            "label": "struct EnumerableMap.UintToAddressMap",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Map)2453_storage"
+              }
+            ]
+          },
+          "t_struct(Map)2453_storage": {
+            "label": "struct EnumerableMap.Map",
+            "members": [
+              {
+                "label": "_entries",
+                "type": "t_array(t_struct(MapEntry)2445_storage)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_struct(MapEntry)2445_storage)dyn_storage": {
+            "label": "struct EnumerableMap.MapEntry[]"
+          },
+          "t_struct(MapEntry)2445_storage": {
+            "label": "struct EnumerableMap.MapEntry",
+            "members": [
+              {
+                "label": "_key",
+                "type": "t_bytes32"
+              },
+              {
+                "label": "_value",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_address)": {
+            "label": "mapping(uint256 => address)"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_mapping(t_uint256,t_string_storage)": {
+            "label": "mapping(uint256 => string)"
+          },
+          "t_array(t_uint256)41_storage": {
+            "label": "uint256[41]"
+          },
+          "t_mapping(t_bytes4,t_bool)": {
+            "label": "mapping(bytes4 => bool)"
+          },
+          "t_bytes4": {
+            "label": "bytes4"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)260_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeSafe.RoleData)"
+          },
+          "t_struct(RoleData)260_storage": {
+            "label": "struct AccessControlUpgradeSafe.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)3083_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)3083_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)2903_storage"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "25e1d2d4e04f4d51c44b1f90f458527f939efacc06633d4d39dd6c3d8dc55081": {
+      "address": "0x5B06A5aA7fea5EE270E495e1418E6FdDa29766c5",
+      "txHash": "0x7948ca8eacf3580df722d590e3227f91544f4ca8de85f43c6b98c397677b25e5",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "AccessControlUpgradeSafe",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)260_storage)",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:58"
+          },
+          {
+            "contract": "AccessControlUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:210"
+          },
+          {
+            "contract": "ERC165UpgradeSafe",
+            "label": "_supportedInterfaces",
+            "type": "t_mapping(t_bytes4,t_bool)",
+            "src": "contracts/external/ERC165.sol:28"
+          },
+          {
+            "contract": "ERC165UpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "contracts/external/ERC165.sol:65"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_holderTokens",
+            "type": "t_mapping(t_address,t_struct(UintSet)3192_storage)",
+            "src": "contracts/external/ERC721.sol:47"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_tokenOwners",
+            "type": "t_struct(UintToAddressMap)2717_storage",
+            "src": "contracts/external/ERC721.sol:50"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_tokenApprovals",
+            "type": "t_mapping(t_uint256,t_address)",
+            "src": "contracts/external/ERC721.sol:53"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_operatorApprovals",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "contracts/external/ERC721.sol:56"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_name",
+            "type": "t_string_storage",
+            "src": "contracts/external/ERC721.sol:59"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_symbol",
+            "type": "t_string_storage",
+            "src": "contracts/external/ERC721.sol:62"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_tokenURIs",
+            "type": "t_mapping(t_uint256,t_string_storage)",
+            "src": "contracts/external/ERC721.sol:65"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "_baseURI",
+            "type": "t_string_storage",
+            "src": "contracts/external/ERC721.sol:68"
+          },
+          {
+            "contract": "ERC721UpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)41_storage",
+            "src": "contracts/external/ERC721.sol:598"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "_paused",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:26"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:84"
+          },
+          {
+            "contract": "ERC721PausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "contracts/external/ERC721Pausable.sol:49"
+          },
+          {
+            "contract": "ERC721PresetMinterPauserAutoIdUpgradeSafe",
+            "label": "_tokenIdTracker",
+            "type": "t_struct(Counter)2397_storage",
+            "src": "contracts/external/ERC721PresetMinterPauserAutoId.sol:47"
+          },
+          {
+            "contract": "ERC721PresetMinterPauserAutoIdUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "contracts/external/ERC721PresetMinterPauserAutoId.sol:85"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "label": "_notEntered",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:21"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:63"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "config",
+            "type": "t_contract(GoldfinchConfig)17540",
+            "src": "contracts/rewards/StakingRewards.sol:89"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "lastUpdateTime",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:92"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "accumulatedRewardsPerToken",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:95"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "rewardsAvailable",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:98"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "positionToAccumulatedRewardsPerToken",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts/rewards/StakingRewards.sol:101"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "targetCapacity",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:105"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "minRate",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:108"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "maxRate",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:111"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "maxRateAtPercent",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:115"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "minRateAtPercent",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:119"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "vestingLength",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:122"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "totalStakedSupply",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:130"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "totalLeveragedStakedSupply",
+            "type": "t_uint256",
+            "src": "contracts/rewards/StakingRewards.sol:133"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "leverageMultipliers",
+            "type": "t_mapping(t_enum(LockupPeriod)31763,t_uint256)",
+            "src": "contracts/rewards/StakingRewards.sol:136"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "positions",
+            "type": "t_mapping(t_uint256,t_struct(StakedPosition)31781_storage)",
+            "src": "contracts/rewards/StakingRewards.sol:139"
+          },
+          {
+            "contract": "StakingRewards",
+            "label": "effectiveMultipliers",
+            "type": "t_mapping(t_enum(StakedPositionType)31766,t_uint256)",
+            "src": "contracts/rewards/StakingRewards.sol:143"
+          }
+        ],
+        "types": {
+          "t_contract(GoldfinchConfig)17540": {
+            "label": "contract GoldfinchConfig"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_mapping(t_enum(LockupPeriod)31763,t_uint256)": {
+            "label": "mapping(enum StakingRewards.LockupPeriod => uint256)"
+          },
+          "t_enum(LockupPeriod)31763": {
+            "label": "enum StakingRewards.LockupPeriod",
+            "members": [
+              "SixMonths",
+              "TwelveMonths",
+              "TwentyFourMonths"
+            ]
+          },
+          "t_mapping(t_uint256,t_struct(StakedPosition)31781_storage)": {
+            "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"
+          },
+          "t_struct(StakedPosition)31781_storage": {
+            "label": "struct StakingRewards.StakedPosition",
+            "members": [
+              {
+                "label": "amount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewards",
+                "type": "t_struct(Rewards)11194_storage"
+              },
+              {
+                "label": "leverageMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "lockedUntil",
+                "type": "t_uint256"
+              },
+              {
+                "label": "positionType",
+                "type": "t_enum(StakedPositionType)31766"
+              },
+              {
+                "label": "unsafeEffectiveMultiplier",
+                "type": "t_uint256"
+              },
+              {
+                "label": "unsafeBaseTokenExchangeRate",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_struct(Rewards)11194_storage": {
+            "label": "struct StakingRewardsVesting.Rewards",
+            "members": [
+              {
+                "label": "totalUnvested",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalVested",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPreviouslyVested",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalClaimed",
+                "type": "t_uint256"
+              },
+              {
+                "label": "startTime",
+                "type": "t_uint256"
+              },
+              {
+                "label": "endTime",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_enum(StakedPositionType)31766": {
+            "label": "enum StakingRewards.StakedPositionType",
+            "members": [
+              "Fidu",
+              "CurveLP"
+            ]
+          },
+          "t_mapping(t_enum(StakedPositionType)31766,t_uint256)": {
+            "label": "mapping(enum StakingRewards.StakedPositionType => uint256)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_struct(Counter)2397_storage": {
+            "label": "struct Counters.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_mapping(t_address,t_struct(UintSet)3192_storage)": {
+            "label": "mapping(address => struct EnumerableSet.UintSet)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UintSet)3192_storage": {
+            "label": "struct EnumerableSet.UintSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)2903_storage"
+              }
+            ]
+          },
+          "t_struct(Set)2903_storage": {
+            "label": "struct EnumerableSet.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)"
+          },
+          "t_struct(UintToAddressMap)2717_storage": {
+            "label": "struct EnumerableMap.UintToAddressMap",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Map)2453_storage"
+              }
+            ]
+          },
+          "t_struct(Map)2453_storage": {
+            "label": "struct EnumerableMap.Map",
+            "members": [
+              {
+                "label": "_entries",
+                "type": "t_array(t_struct(MapEntry)2445_storage)dyn_storage"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)"
+              }
+            ]
+          },
+          "t_array(t_struct(MapEntry)2445_storage)dyn_storage": {
+            "label": "struct EnumerableMap.MapEntry[]"
+          },
+          "t_struct(MapEntry)2445_storage": {
+            "label": "struct EnumerableMap.MapEntry",
+            "members": [
+              {
+                "label": "_key",
+                "type": "t_bytes32"
+              },
+              {
+                "label": "_value",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_address)": {
+            "label": "mapping(uint256 => address)"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_mapping(t_uint256,t_string_storage)": {
+            "label": "mapping(uint256 => string)"
+          },
+          "t_array(t_uint256)41_storage": {
+            "label": "uint256[41]"
+          },
+          "t_mapping(t_bytes4,t_bool)": {
+            "label": "mapping(bytes4 => bool)"
+          },
+          "t_bytes4": {
+            "label": "bytes4"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)260_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeSafe.RoleData)"
+          },
+          "t_struct(RoleData)260_storage": {
+            "label": "struct AccessControlUpgradeSafe.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)3083_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)3083_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)2903_storage"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "23c6268308b10dc412b47233d12b0402264551f0b7f2872a5df97e8c41cddfb4": {
+      "address": "0x9ffFAD7128152190065C800774443af102B62052",
+      "txHash": "0xcfa7dbbc45574d9c60af8e6b644af7d493b97f1e1304a6b6e5fd6720dbe12e4e",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:26"
+          },
+          {
+            "contract": "Initializable",
+            "label": "______gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol:61"
+          },
+          {
+            "contract": "ContextUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/GSN/Context.sol:37"
+          },
+          {
+            "contract": "AccessControlUpgradeSafe",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)260_storage)",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:58"
+          },
+          {
+            "contract": "AccessControlUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/access/AccessControl.sol:210"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "_paused",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:26"
+          },
+          {
+            "contract": "PausableUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol:84"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "label": "_notEntered",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:21"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeSafe",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-ethereum-package/contracts/utils/ReentrancyGuard.sol:63"
+          },
+          {
+            "contract": "BaseUpgradeablePausable",
+            "label": "__gap1",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:31"
+          },
+          {
+            "contract": "BaseUpgradeablePausable",
+            "label": "__gap2",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:32"
+          },
+          {
+            "contract": "BaseUpgradeablePausable",
+            "label": "__gap3",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:33"
+          },
+          {
+            "contract": "BaseUpgradeablePausable",
+            "label": "__gap4",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "contracts/protocol/core/BaseUpgradeablePausable.sol:34"
+          },
+          {
+            "contract": "ISeniorPool",
+            "label": "sharePrice",
+            "type": "t_uint256",
+            "src": "contracts/interfaces/ISeniorPool.sol:9"
+          },
+          {
+            "contract": "ISeniorPool",
+            "label": "totalLoansOutstanding",
+            "type": "t_uint256",
+            "src": "contracts/interfaces/ISeniorPool.sol:10"
+          },
+          {
+            "contract": "ISeniorPool",
+            "label": "totalWritedowns",
+            "type": "t_uint256",
+            "src": "contracts/interfaces/ISeniorPool.sol:11"
+          },
+          {
+            "contract": "SeniorPool",
+            "label": "config",
+            "type": "t_contract(GoldfinchConfig)17540",
+            "src": "contracts/protocol/core/SeniorPool.sol:22"
+          },
+          {
+            "contract": "SeniorPool",
+            "label": "compoundBalance",
+            "type": "t_uint256",
+            "src": "contracts/protocol/core/SeniorPool.sol:28"
+          },
+          {
+            "contract": "SeniorPool",
+            "label": "writedowns",
+            "type": "t_mapping(t_contract(ITranchedPool)10615,t_uint256)",
+            "src": "contracts/protocol/core/SeniorPool.sol:29"
+          }
+        ],
+        "types": {
+          "t_contract(GoldfinchConfig)17540": {
+            "label": "contract GoldfinchConfig"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_contract(ITranchedPool)10615,t_uint256)": {
+            "label": "mapping(contract ITranchedPool => uint256)"
+          },
+          "t_contract(ITranchedPool)10615": {
+            "label": "contract ITranchedPool"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)260_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeSafe.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)260_storage": {
+            "label": "struct AccessControlUpgradeSafe.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_struct(AddressSet)3083_storage"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_struct(AddressSet)3083_storage": {
+            "label": "struct EnumerableSet.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)2903_storage"
+              }
+            ]
+          },
+          "t_struct(Set)2903_storage": {
             "label": "struct EnumerableSet.Set",
             "members": [
               {
