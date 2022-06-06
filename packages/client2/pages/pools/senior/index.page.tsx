@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { BigNumber } from "ethers";
 
 import {
   Banner,
@@ -22,6 +23,10 @@ import {
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
   SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
 } from "./senior-pool-supply-panel";
+import {
+  SeniorPoolWithDrawalPanel,
+  SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+} from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
 
 gql`
@@ -29,13 +34,22 @@ gql`
 
   ${SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS}
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
+
+  ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
   query SeniorPoolPage($userId: ID!) {
     user(id: $userId) {
       id
       ...SeniorPoolSupplyPanelUserFields
+      seniorPoolStakedPositions {
+        ...SeniorPoolWithdrawalPanelPositionFields
+      }
     }
     seniorPools(first: 1) {
       id
+      latestPoolStatus {
+        id
+        sharePrice
+      }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
     }
@@ -43,6 +57,12 @@ gql`
       price {
         amount
         symbol
+      }
+    }
+    viewer @client {
+      fiduBalance {
+        token
+        amount
       }
     }
   }
@@ -57,7 +77,10 @@ export default function SeniorPoolPage() {
   const seniorPool = data?.seniorPools[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice?.price.amount;
-
+  const shouldShowWithdrawal =
+    (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
+      user?.seniorPoolStakedPositions?.length !== 0) &&
+    seniorPool?.latestPoolStatus.sharePrice;
   return (
     <>
       <BannerPortal>
@@ -82,6 +105,13 @@ export default function SeniorPoolPage() {
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}
+            {data && shouldShowWithdrawal && (
+              <SeniorPoolWithDrawalPanel
+                fiduBalance={data.viewer.fiduBalance ?? undefined}
+                seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                stakedPositions={user?.seniorPoolStakedPositions}
+              />
+            )}
           </div>
         </div>
         <div className="xl:col-start-1 xl:col-end-9 xl:row-start-1">

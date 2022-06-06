@@ -66,6 +66,10 @@ export function computeApyFromGfiInFiat(
   return apyFromGfiRaw.mulUnsafe(FixedNumber.fromString(fiatPerGfi.toString()));
 }
 
+const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
+const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
+const sharePriceMantissa = fiduMantissa;
+
 /**
  * A utility function for converting senior pool shares to a USDC amount
  * @param numShares Number of shares. This could be staked or unstaked FIDU balance, for example.
@@ -73,14 +77,26 @@ export function computeApyFromGfiInFiat(
  * @returns a `CryptoAmount` in USDC
  */
 export function sharesToUsdc(numShares: BigNumber, sharePrice: BigNumber) {
-  const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
-  const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
-  const sharePriceMantissa = fiduMantissa;
   const amount = numShares
     .mul(sharePrice)
     .div(fiduMantissa)
     .div(sharePriceMantissa.div(usdcMantissa));
   return { token: SupportedCrypto.Usdc, amount };
+}
+
+/**
+ * A utility function for converting an amount of USDC to an amount of FIDU in the senior pool.
+ * @param usdcAmount USDC amount
+ * @param sharePrice `sharePrice` as it reported from the Senior Pool contract
+ * @returns a `CryptoAmount` in FIDU
+ */
+export function usdcToShares(usdcAmount: BigNumber, sharePrice: BigNumber) {
+  const numShares = usdcAmount
+    .mul(fiduMantissa)
+    .div(usdcMantissa)
+    .mul(sharePriceMantissa)
+    .div(sharePrice);
+  return { token: SupportedCrypto.Fidu, amount: numShares };
 }
 
 export const USER_ELIGIBILITY_FIELDS = gql`
