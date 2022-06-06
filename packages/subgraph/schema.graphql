@@ -173,35 +173,6 @@ type CreditLine @entity {
   name: String
 }
 
-interface TranchedPoolTransaction {
-  id: ID!
-  sender: Bytes!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  tranchedPool: TranchedPool!
-}
-
-type TranchedPoolDrawdownMadeTransaction implements TranchedPoolTransaction @entity(immutable: true) {
-  id: ID!
-  sender: Bytes!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  tranchedPool: TranchedPool!
-  amount: BigInt!
-}
-
-type TranchedPoolPaymentAppliedTransaction implements TranchedPoolTransaction @entity(immutable: true) {
-  id: ID!
-  sender: Bytes!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  tranchedPool: TranchedPool!
-  principalAmount: BigInt!
-  interestAmount: BigInt!
-  remainingAmount: BigInt!
-  reserveAmount: BigInt!
-}
-
 enum TranchedPoolCreditLineVersion {
   BEFORE_V2_2
   V2_2
@@ -250,7 +221,6 @@ type TranchedPool @entity {
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
-  transactions: [TranchedPoolTransaction!]! @derivedFrom(field: "tranchedPool")
   juniorPrincipalAmountRepaid: BigInt!
   principalAmountRepaid: BigInt!
   """
@@ -259,7 +229,7 @@ type TranchedPool @entity {
   totalAmountRepaid: BigInt!
   allowedUidTypes: [UidType!]!
 
-  transactions2: [Transaction!]! @derivedFrom(field: "tranchedPool")
+  transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
 }
 
 type TranchedPoolToken @entity {

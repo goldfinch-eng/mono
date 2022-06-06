@@ -16,8 +16,6 @@ import {
   handleDeposit,
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
-  handleDrawdownMade as _handleDrawdownMade,
-  handlePaymentApplied as _handlePaymentApplied,
   updateTranchedPoolLeverageRatio,
 } from "../entities/tranched_pool"
 
@@ -85,7 +83,6 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackers(event.address)
-  _handleDrawdownMade(event)
 
   const transaction = new Transaction(event.transaction.hash)
   transaction.category = "TRANCHED_POOL_DRAWDOWN"
@@ -103,7 +100,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   user.save()
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
-  _handlePaymentApplied(event)
   updateAllPoolBackersRewardsClaimable(event.address, event.block.timestamp)
 
   const transaction = new Transaction(event.transaction.hash)

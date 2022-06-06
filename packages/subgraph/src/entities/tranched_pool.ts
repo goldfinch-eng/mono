@@ -5,10 +5,8 @@ import {
   SeniorTrancheInfo,
   TranchedPoolDeposit,
   CreditLine,
-  TranchedPoolDrawdownMadeTransaction,
-  TranchedPoolPaymentAppliedTransaction,
 } from "../../generated/schema"
-import {DepositMade, DrawdownMade, PaymentApplied} from "../../generated/templates/TranchedPool/TranchedPool"
+import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
 import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
@@ -244,38 +242,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   return tranchedPool
 }
 
-export function handleDrawdownMade(event: DrawdownMade): void {
-  const drawdownTransaction = new TranchedPoolDrawdownMadeTransaction(event.transaction.hash.toHexString())
-  const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp)
-  drawdownTransaction.tranchedPool = tranchedPool.id
-  drawdownTransaction.amount = event.params.amount
-  drawdownTransaction.timestamp = event.block.timestamp
-  drawdownTransaction.blockNumber = event.block.number
-  drawdownTransaction.sender = event.params.borrower
-  drawdownTransaction.save()
-}
-
-export function handlePaymentApplied(event: PaymentApplied): void {
-  const paymentTransaction = new TranchedPoolPaymentAppliedTransaction(event.transaction.hash.toHexString())
-  const tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp)
-  paymentTransaction.tranchedPool = tranchedPool.id
-  paymentTransaction.principalAmount = event.params.principalAmount
-  paymentTransaction.interestAmount = event.params.interestAmount
-  paymentTransaction.remainingAmount = event.params.remainingAmount
-  paymentTransaction.reserveAmount = event.params.reserveAmount
-  paymentTransaction.timestamp = event.block.timestamp
-  paymentTransaction.blockNumber = event.block.number
-  paymentTransaction.sender = event.params.payer
-  paymentTransaction.save()
-
-  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)
-  tranchedPool.totalAmountRepaid = tranchedPool.totalAmountRepaid
-    .plus(paymentTransaction.principalAmount)
-    .plus(paymentTransaction.interestAmount)
-    .plus(paymentTransaction.remainingAmount)
-
-  tranchedPool.save()
-}
 class Repayment {
   tranchedPoolAddress: string
   timestamp: BigInt
