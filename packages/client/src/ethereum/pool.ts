@@ -833,6 +833,9 @@ class StakingRewardsPosition {
     return this.vested.minus(this.claimed)
   }
 
+  /**
+   * @deprecated lockedUntil is never set, this will always be true
+   */
   getLocked(currentBlock: BlockInfo): boolean {
     return this.storedPosition.lockedUntil > currentBlock.timestamp
   }
@@ -841,7 +844,13 @@ class StakingRewardsPosition {
 export type StoredPosition = {
   amount: BigNumber
   rewards: StakingRewardsVesting
+  /**
+   * @deprecated This is no longer set in the protocol
+   */
   leverageMultiplier: BigNumber
+  /**
+   * @deprecated This is no longer set in the protocol
+   */
   lockedUntil: number
   positionType: StakedPositionType
   unsafeEffectiveMultiplier: BigNumber

@@ -20,7 +20,8 @@ import BN from "bn.js"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 const {deployments} = hre
 const TranchedPool = artifacts.require("TranchedPool")
-import {expectEvent} from "@openzeppelin/test-helpers"
+import {getImplementationAddress} from "@openzeppelin/upgrades-core"
+
 import {mint} from "./uniqueIdentityHelpers"
 import {
   GFIInstance,
@@ -32,6 +33,8 @@ import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/
 import {TokenMinted} from "../typechain/truffle/IPoolTokens"
 import {TokenPrincipalWithdrawn} from "../typechain/truffle/PoolTokens"
 import {PoolCreated} from "../typechain/truffle/GoldfinchFactory"
+import {behavesLikeConfigurableRoyaltyStandard} from "./ConfigurableRoyaltyStandard.test"
+import {behavesLikeHasAdmin} from "./HasAdmin.test"
 
 const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
   const [_owner, _person2, _person3] = await web3.eth.getAccounts()
@@ -63,7 +66,7 @@ describe("PoolTokens", () => {
     person2,
     person3,
     goldfinchConfig,
-    poolTokens,
+    poolTokens: TestPoolTokensInstance,
     pool,
     goldfinchFactory: GoldfinchFactoryInstance,
     usdc,
@@ -334,7 +337,7 @@ describe("PoolTokens", () => {
       const tokenId = mintEvent.args.tokenId
       const withdrawAmount = depositAmount.div(new BN(4))
       const result = await withdrawPrincipal(tokenId, withdrawAmount)
-      const tokenInfo = await poolTokens.tokens(tokenId)
+      const tokenInfo = (await poolTokens.tokens(tokenId)) as any
 
       const principalAmountRemaining = depositAmount.sub(withdrawAmount)
       // It decrements principalAmount and does not touch principalRedeemed
@@ -342,7 +345,7 @@ describe("PoolTokens", () => {
       expect(tokenInfo.principalRedeemed).to.bignumber.eq(new BN(0))
 
       // It decrements pool.totalMinted
-      const poolInfo = await poolTokens.pools(pool.address)
+      const poolInfo = (await poolTokens.pools(pool.address)) as any
       expect(poolInfo.totalMinted).to.bignumber.eq(principalAmountRemaining)
 
       // It emits an event
@@ -564,7 +567,7 @@ describe("PoolTokens", () => {
       describe("as a wallet without OWNER_ROLE", () => {
         it("it fails", async () => {
           await expect(poolTokens.reducePrincipalAmount(tokenId, redemptionAmount, {from: person2})).to.be.rejectedWith(
-            /Must have admin role to perform this action/i
+            /AD/i
           )
         })
       })
@@ -623,7 +626,7 @@ describe("PoolTokens", () => {
           const notOwner = person2
           await expect(
             poolTokens.reducePrincipalAmount(tokenId, redemptionAmount, {from: notOwner})
-          ).to.be.rejectedWith(/Must have admin role to perform this action/i)
+          ).to.be.rejectedWith(/AD/i)
         })
       })
     })
@@ -868,23 +871,72 @@ describe("PoolTokens", () => {
     })
   })
 
-  describe("updateGoldfinchConfig", async () => {
-    describe("setting it", () => {
-      it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-        const tx = await poolTokens.updateGoldfinchConfig()
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
+  describe("supportsInterface", async () => {
+    const INTERFACE_ID_ERC721 = "0x80ac58cd"
+    const INTERFACE_ID_ERC721_METADATA = "0x5b5e139f"
+    const INTERFACE_ID_ERC721_ENUMERABLE = "0x780e9d63"
+    const INTERFACE_ID_ERC165 = "0x01ffc9a7"
+    const INTERFACE_ID_ERC2981 = "0x2a55205a"
 
-    context("paused", async () => {
-      it("does not revert", async () => {
-        // TODO
+    context("deployed with proxy", async () => {
+      beforeEach(async () => {
+        expect(await getImplementationAddress(hre.ethers.provider, poolTokens.address)).to.not.be.null
+      })
+
+      it("returns true for ERC721, ERC721_METADATA, ERC721_ENUMERABLE, and ERC165", async () => {
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC721)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC721_METADATA)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC721_ENUMERABLE)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC165)).to.be.true
+        expect(await poolTokens.supportsInterface(INTERFACE_ID_ERC2981)).to.be.true
       })
     })
   })
+
+  describe("setBaseURI", async () => {
+    it("is only callable by OWNER_ROLE", async () => {
+      await expect(poolTokens.setBaseURI("test", {from: person2})).to.be.rejectedWith(/AD/)
+    })
+
+    it("sets base URI for tokenURI(tokenId) calls", async () => {
+      await poolTokens.setBaseURI("http://example.com/", {from: owner})
+      expect(await poolTokens.baseURI()).to.eq("http://example.com/")
+
+      const result = await goldfinchFactory.createPool(
+        person2,
+        new BN(20),
+        usdcVal(100),
+        interestAprAsBN("15.0"),
+        new BN(30),
+        new BN(365),
+        new BN(0),
+        new BN(185),
+        new BN(0),
+        [],
+        {from: owner}
+      )
+      const event = decodeAndGetFirstLog<PoolCreated>(result.receipt.rawLogs, goldfinchFactory, "PoolCreated")
+      pool = await TranchedPool.at(event.args.pool)
+      const mintReceipt = await withPoolSender(() =>
+        poolTokens.mint({principalAmount: String(usdcVal(5)), tranche: "1"}, person2)
+      )
+      const mintEvent = mintReceipt.logs[1]
+      const tokenId = mintEvent.args.tokenId
+
+      const tokenURI = await poolTokens.tokenURI(tokenId)
+      expect(tokenURI).to.eq(`http://example.com/${tokenId}`)
+    })
+  })
+
+  behavesLikeConfigurableRoyaltyStandard(() => ({
+    contract: poolTokens,
+    owner,
+    anotherUser: person2,
+  }))
+
+  behavesLikeHasAdmin(() => ({
+    contract: poolTokens,
+    owner,
+    anotherUser: person2,
+  }))
 })

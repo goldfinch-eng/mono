@@ -106,14 +106,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
     require(!_isLate(timestamp), "Cannot drawdown when payments are past due");
   }
 
-  /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
   function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {
     lateFeeApr = newLateFeeApr;
   }
