@@ -101,7 +101,6 @@ export default function SupplyPanel({
     reset,
   } = useForm<SupplyForm>();
 
-  // TODO this should consider the amount of junior capacity remaining in the pool
   const handleMax = async () => {
     if (!account || !usdcContract) {
       return;
@@ -113,7 +112,6 @@ export default function SupplyPanel({
     setValue("supply", utils.formatUnits(maxAvailable, USDC_DECIMALS));
   };
 
-  // TODO this should also consider the amoutn of junior capacity remaining in the pool
   const validateMaximumAmount = async (value: string) => {
     if (!account || !usdcContract) {
       return;

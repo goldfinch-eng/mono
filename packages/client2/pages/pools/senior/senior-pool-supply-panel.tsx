@@ -70,6 +70,7 @@ export function SeniorPoolSupplyPanel({
     formState: { errors, isSubmitting, isSubmitSuccessful },
     handleSubmit,
     reset,
+    setValue,
   } = useForm<{ supply: string; isStaking: string }>();
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
@@ -154,6 +155,29 @@ export function SeniorPoolSupplyPanel({
         user
       );
 
+  const handleMax = async () => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
+  };
+
+  const validateMaximumAmount = async (value: string) => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
+
+    if (valueAsUsdc.lte(BigNumber.from(0))) {
+      return "Must deposit more than 0";
+    }
+    const userUsdcBalance = await usdcContract.balanceOf(account);
+    if (valueAsUsdc.gt(userUsdcBalance)) {
+      return "Amount exceeds USDC balance";
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row xl:flex-col">
       <div
@@ -237,8 +261,9 @@ export function SeniorPoolSupplyPanel({
             textSize="xl"
             labelClassName="!text-sm !mb-3"
             className="mb-4"
+            onMaxClick={handleMax}
             errorMessage={errors?.supply?.message}
-            rules={{ required: "Required" }}
+            rules={{ required: "Required", validate: validateMaximumAmount }}
           />
           <Checkbox
             {...register("isStaking")}
