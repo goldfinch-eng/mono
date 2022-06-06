@@ -70,7 +70,6 @@ function DrawdownForm(props: DrawdownFormProps) {
       data: {
         amount: transactionAmount,
       },
-      gasless: props.borrower.shouldUseGasless,
     }).then(props.actionComplete)
   }
 

@@ -60,8 +60,8 @@
   },
   "scripts": {
     "start": "react-app-rewired start",
-    "start:murmuration": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
-    "start:murmuration:liquidity-mining": "PORT=80 REACT_APP_DISABLE_GASLESS=true REACT_APP_HARDHAT_FORK= HARDHAT_FORK= MURMURATION=yes npm run start",
+    "start:murmuration": "PORT=80 REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
+    "start:murmuration:liquidity-mining": "PORT=80 REACT_APP_HARDHAT_FORK= HARDHAT_FORK= MURMURATION=yes npm run start",
     "build": "react-app-rewired build",
     "test": "cd ../protocol && npm run deploy-for-client-test && cd ../client && NODE_OPTIONS=--unhandled-rejections=strict react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",

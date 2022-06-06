@@ -1,7 +1,7 @@
 import {useContext} from "react"
 import {AppContext} from "../App"
 import {CurrentTxDataByType, PendingCurrentTx, TxType} from "../types/transactions"
-import {assertError, assertErrorLike, assertNonNullable, isCodedErrorLike} from "../utils"
+import {assertErrorLike, assertNonNullable, isCodedErrorLike} from "../utils"
 import getWeb3 from "../web3"
 
 type UseSendFromUserOptions = {
@@ -16,7 +16,6 @@ type SendTransactionOptions = {
 export type TxData<T extends TxType> = {
   type: T
   data: CurrentTxDataByType[T]
-  gasless?: boolean
 }
 
 function useSendFromUser() {
@@ -33,38 +32,6 @@ function useSendFromUser() {
     assertNonNullable(user)
     // unsent action could be a promise that returns the action, so resolve it
     unsentAction = await Promise.resolve(unsentAction)
-
-    // Gasless transactions
-    if (txData.gasless) {
-      // We need to assign it a temporary id, so we can update it if we get an error back
-      // (since we only get a txid if relay call succeed)
-      const pendingTx = networkMonitor.addPendingTX(txData)
-      return new Promise<void>((resolve, reject) => {
-        unsentAction()
-          .then((res) => {
-            if (res.status === "success") {
-              const txResult = JSON.parse(res.result)
-              networkMonitor.watch(txResult.txHash, pendingTx, () => {
-                refreshCurrentBlock()
-                resolve()
-              })
-            } else {
-              networkMonitor.markTXErrored(pendingTx, new Error(res.message))
-              resolve()
-            }
-          })
-          .catch((err: unknown) => {
-            assertError(err)
-            networkMonitor.markTXErrored(pendingTx, err)
-
-            if (options.rejectOnError) {
-              reject(err)
-            } else {
-              resolve()
-            }
-          })
-      })
-    }
 
     return new Promise<void>((resolve, reject) => {
       let working: PendingCurrentTx<T> | undefined

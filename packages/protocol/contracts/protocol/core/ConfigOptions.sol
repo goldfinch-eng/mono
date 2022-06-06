@@ -26,6 +26,7 @@ library ConfigOptions {
     TransferRestrictionPeriodInDays,
     LeverageRatio
   }
+  /// @dev TrustedForwarder is deprecated because we no longer use GSN
   enum Addresses {
     Pool,
     CreditLineImplementation,

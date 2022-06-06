@@ -178,7 +178,6 @@ function PaymentForm(props: PaymentFormProps) {
       data: {
         amount: transactionAmount,
       },
-      gasless: borrower.shouldUseGasless,
     }).then(actionComplete)
   }
 

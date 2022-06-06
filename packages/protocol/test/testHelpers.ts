@@ -30,7 +30,6 @@ import {
   PoolTokensInstance,
   SeniorPoolInstance,
   CreditLineInstance,
-  TestForwarderInstance,
   TranchedPoolInstance,
   TransferRestrictedVaultInstance,
   GFIInstance,
@@ -245,9 +244,6 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
 }
 
 export type DeployAllContractsOptions = {
-  deployForwarder?: {
-    fromAccount: string
-  }
   deployMerkleDistributor?: {
     fromAccount: string
     root: string
@@ -272,7 +268,6 @@ async function deployAllContracts(
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
   goldfinchFactory: GoldfinchFactoryInstance
-  forwarder: TestForwarderInstance | null
   poolTokens: TestPoolTokensInstance
   tranchedPool: TranchedPoolInstance
   transferRestrictedVault: TransferRestrictedVaultInstance
@@ -307,13 +302,6 @@ async function deployAllContracts(
   const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<TestPoolTokensInstance>(deployments, "PoolTokens")
-  let forwarder: TestForwarderInstance | null = null
-  if (options.deployForwarder) {
-    await deployments.deploy("TestForwarder", {from: options.deployForwarder.fromAccount, gasLimit: 4000000})
-    forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
-    assertNonNullable(forwarder)
-    await forwarder.registerDomainSeparator("Defender", "1")
-  }
   const tranchedPool = await getDeployedAsTruffleContract<TranchedPoolInstance>(deployments, "TranchedPool")
   const transferRestrictedVault = await getDeployedAsTruffleContract<TransferRestrictedVaultInstance>(
     deployments,
@@ -383,7 +371,6 @@ async function deployAllContracts(
     fiduUSDCCurveLP,
     goldfinchConfig,
     goldfinchFactory,
-    forwarder,
     poolTokens,
     tranchedPool,
     transferRestrictedVault,
