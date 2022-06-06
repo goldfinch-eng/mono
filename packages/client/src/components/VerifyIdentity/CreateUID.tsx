@@ -6,9 +6,9 @@ import Web3Library from "web3"
 import {AppContext, SetSessionFn} from "../../App"
 import {US_ACCREDITED_INDIVIDUAL_ID_TYPE_1, US_NON_ACCREDITED_INDIVIDUAL_ID_TYPE_2} from "../../ethereum/user"
 import {LOCAL, MAINNET} from "../../ethereum/utils"
-import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
+import AuthenticatedGoldfinchClient from "../../hooks/useGoldfinchClient"
 import useSendFromUser from "../../hooks/useSendFromUser"
-import {AuthenticatedSession, Session, useSignIn} from "../../hooks/useSignIn"
+import {Session, useSignIn} from "../../hooks/useSignIn"
 import {NetworkConfig} from "../../types/network"
 import {MINT_UID_TX_TYPE} from "../../types/transactions"
 import {UserWalletWeb3Status} from "../../types/web3"
@@ -59,7 +59,7 @@ async function fetchTrustedSignature({
   }
   const userAddress = userWalletWeb3Status.address
   assertNonNullable(userAddress)
-  const client = new DefaultGoldfinchClient(network.name, session, setSessionData)
+  const client = new AuthenticatedGoldfinchClient(network.name, session, setSessionData)
   const auth = client._getAuthHeaders(userAddress)
 
   const response = await fetch(UNIQUE_IDENTITY_SIGNER_URLS[network.name], {
@@ -96,7 +96,11 @@ export default function CreateUID({disabled, dispatch}: {disabled: boolean; disp
 
       const uniqueIdentity = goldfinchProtocol.getContract<UniqueIdentityContract>("UniqueIdentity")
 
-      const client = new DefaultGoldfinchClient(network.name!, session as AuthenticatedSession, setSessionData)
+      if (session.status !== "authenticated") {
+        throw new Error("Not signed in. Please refresh the page and try again")
+      }
+
+      const client = new AuthenticatedGoldfinchClient(network.name!, session, setSessionData)
       const userAddress = userWalletWeb3Status.address
       assertNonNullable(userAddress)
       let version

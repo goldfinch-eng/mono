@@ -329,6 +329,28 @@ export default function Form(props: FormProps) {
     </div>
   )
 
+  const seniorPoolBalance = usdcFromAtomic(props.poolData.balance)
+  const amountBeingWithdrawn = props.formMethods.getValues("transactionAmount") || "0"
+  const seniorPoolHasSufficientLiquidity = new BigNumber(seniorPoolBalance).gte(amountBeingWithdrawn)
+  const insufficientLiquidityAdisory = seniorPoolHasSufficientLiquidity ? undefined : (
+    <div data-testid="liquidity-advisory" className="form-message paragraph font-bold">
+      {`This amount is above the total $${seniorPoolBalance.toString()} USDC
+      available for withdrawals from the Senior Pool. Utilize `}
+      <a href="https://curve.fi/factory-crypto/23" target="_blank" rel="noreferrer">
+        {"the FIDU<>USDC Curve pool"}
+      </a>
+      {` instead, or wait for more USDC to enter the Senior Pool via
+      Borrower repayments or new Liquidity Providers. Learn more in `}
+      <a
+        target="_blank"
+        href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
+        rel="noreferrer"
+      >
+        the documentation
+      </a>
+    </div>
+  )
+
   let notes: Array<{key: string; content: React.ReactNode}> = []
   let withdrawalInfo: WithdrawalInfo | undefined
   if (transactionConfig) {
@@ -371,6 +393,7 @@ export default function Form(props: FormProps) {
     <div className="form-inputs">
       {forfeitAdvisory}
       {protocolFeeAdvisory}
+      {insufficientLiquidityAdisory}
       <div className="form-inputs-footer">
         <TransactionInput
           formMethods={props.formMethods}
@@ -389,7 +412,7 @@ export default function Form(props: FormProps) {
           notes={notes}
         />
         <LoadingButton
-          disabled={!withdrawalInfo}
+          disabled={!withdrawalInfo || !seniorPoolHasSufficientLiquidity}
           action={async (data): Promise<void> => {
             await action(data)
             props.formMethods.reset()

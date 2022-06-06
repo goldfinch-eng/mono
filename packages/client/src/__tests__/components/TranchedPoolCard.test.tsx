@@ -35,6 +35,7 @@ function renderTranchedPoolCard(
   const poolBacker = {
     tranchedPool,
     tokenInfos: ["info"],
+    getAllTokenInfos: () => ["info"],
   }
 
   const store = {

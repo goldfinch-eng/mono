@@ -92,6 +92,25 @@ export default function DevTools() {
           >
             setUserAddress
           </DevToolsButton>
+          <DevToolsButton
+            disabled={disabled}
+            setDisabled={setDisabled}
+            onClick={async () => {
+              const prefix = "http://127.0.0.1:3000/pools/"
+              if (window.location.href.startsWith(prefix)) {
+                const tranchedPoolAddress = window.location.href.slice(prefix.length)
+                fetch("/lockTranchedPool", {
+                  method: "POST",
+                  headers: {"Content-Type": "application/json"},
+                  body: JSON.stringify({
+                    tranchedPoolAddress,
+                  }),
+                })
+              }
+            }}
+          >
+            lockTranchedPool
+          </DevToolsButton>
         </div>
       )
     } else if (panel === "kyc") {

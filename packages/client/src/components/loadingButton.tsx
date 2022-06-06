@@ -6,6 +6,9 @@ type LoadingButtonProps = {
   text?: string | React.ReactNode
   disabled?: boolean
   className?: string
+  // Hacky solution to get the temporary Zapper UI layout correct
+  // without affecting the other components that use this.
+  marginTop?: string
 }
 
 function LoadingButton(props: LoadingButtonProps) {
@@ -17,8 +20,11 @@ function LoadingButton(props: LoadingButtonProps) {
     buttonText = "Submitting..."
   }
 
+  const style = props.marginTop ? {marginTop: props.marginTop} : {}
+
   return (
     <button
+      style={style}
       type="button"
       onClick={formMethods.handleSubmit((data) => {
         setIsPending(true)

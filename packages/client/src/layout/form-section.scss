@@ -1,9 +1,5 @@
 @import "./utils.scss";
 
-.form-full {
-  overflow: hidden;
-}
-
 .form {
   position: relative;
 
@@ -20,6 +16,7 @@
   font-size: $sans-size-xs;
   margin: -20px 0 25px -25px;
   padding: 15px 25px;
+  border-radius: 10px 10px 0px 0px;
   position: relative;
   width: calc(100% + 50px);
   display: flex;

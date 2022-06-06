@@ -3,7 +3,6 @@ import {useContext} from "react"
 import {AppContext} from "../../App"
 import {usdcFromAtomic} from "../../ethereum/erc20"
 import {TranchedPool} from "../../ethereum/tranchedPool"
-import {useSession} from "../../hooks/useSignIn"
 import {displayDollars, displayPercent, roundUpPenny} from "../../utils"
 import EtherscanLink from "../etherscanLink"
 import {iconOutArrow} from "../icons"
@@ -11,7 +10,6 @@ import InfoSection from "../infoSection"
 
 export function PoolOverview({tranchedPool, handleDetails}: {tranchedPool: TranchedPool; handleDetails: () => void}) {
   const {user} = useContext(AppContext)
-  const session = useSession()
 
   let rows: Array<{label: string; value: string}> = []
   if (tranchedPool) {
@@ -39,7 +37,7 @@ export function PoolOverview({tranchedPool, handleDetails}: {tranchedPool: Tranc
   }
 
   let detailsLink = <></>
-  if (user && user.info.value.goListed && session.status === "authenticated" && tranchedPool.metadata?.detailsUrl) {
+  if (user && user.info.value.goListed && tranchedPool.metadata?.detailsUrl) {
     detailsLink = (
       <button onClick={() => handleDetails()}>
         Details & Discussion <span className="outbound-link">{iconOutArrow}</span>

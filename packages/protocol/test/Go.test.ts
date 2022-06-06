@@ -412,9 +412,6 @@ describe("Go", () => {
       })
 
       it("initializes ZAPPER_ROLE", async () => {
-        await expect(go.grantRole(await go.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be.rejectedWith(
-          /sender must be an admin to grant/
-        )
         await go.initZapperRole({from: owner})
         // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
         await expect(go.grantRole(await go.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be.fulfilled

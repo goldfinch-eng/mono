@@ -1,4 +1,11 @@
-import {OWNER_ROLE, MINTER_ROLE, isMainnetForking, assertIsChainId, ContractDeployer} from "./deployHelpers"
+import {
+  OWNER_ROLE,
+  MINTER_ROLE,
+  isMainnetForking,
+  assertIsChainId,
+  ContractDeployer,
+  ZAPPER_ROLE,
+} from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
 import {Fidu} from "../typechain/ethers"
@@ -65,7 +72,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   logger("Granting minter role to Pool")
   await grantMinterRoleToPool(fidu, pool)
   const creditDesk = await deployCreditDesk(deployer, {config})
-  await deploySeniorPool(deployer, {config, fidu})
+  const seniorPool = await deploySeniorPool(deployer, {config, fidu})
   await deployBorrower(deployer, {config})
   await deploySeniorPoolStrategies(deployer, {config})
   logger("Deploying GoldfinchFactory")
@@ -73,7 +80,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployClImplementation(deployer, {config})
 
   const gfi = await deployGFI(deployer, {config})
-  await deployLPStakingRewards(deployer, {config, deployEffects})
+  const stakingRewards = await deployLPStakingRewards(deployer, {config, deployEffects})
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
   await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
   await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
@@ -94,10 +101,17 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   assertNonNullable(trustedSigner)
   const uniqueIdentity = await deployUniqueIdentity({deployer, trustedSigner, deployEffects})
 
-  await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
+  const go = await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
   await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
 
-  await deployZapper(deployer, {config, deployEffects})
+  logger("deploying Zapper and granting it ZAPPER_ROLE role on SeniorPool, StakingRewards, and Go")
+  const zapper = await deployZapper(deployer, {config, deployEffects})
+  await seniorPool.initZapperRole({from: trustedSigner})
+  await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
+  await stakingRewards.initZapperRole({from: trustedSigner})
+  await stakingRewards.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
+  await go.contract.initZapperRole({from: trustedSigner})
+  await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})
 
   logger("Granting ownership of Pool to CreditDesk")
   await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)

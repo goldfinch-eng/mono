@@ -1,7 +1,7 @@
 ## BaseUpgradeablePausable
 
 This is our Base contract that most other contracts inherit from. It includes many standard
- useful abilities like ugpradeability, pausability, access control, and re-entrancy guards.
+ useful abilities like upgradeability, pausability, access control, and re-entrancy guards.
 
 ### OWNER_ROLE
 

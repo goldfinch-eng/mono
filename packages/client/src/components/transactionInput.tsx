@@ -27,6 +27,7 @@ type TransactionInputProps = {
   rightDecoration?: React.ReactNode
   error?: boolean
   warning?: boolean
+  className?: string
 }
 
 function TransactionInput(props: TransactionInputProps) {
@@ -69,8 +70,12 @@ function TransactionInput(props: TransactionInputProps) {
     maxAmountErrorMessage = `Amount is above the max allowed (${displayNumber(props.maxAmount)} ${ticker}). `
   }
 
+  // Another hacky solution to get the temporary Zapper UI layout correct
+  // without affecting the other components that use this
+  let className = props.className || "form-field"
+
   return (
-    <div className="form-field">
+    <div className={className}>
       <div className={`form-input-container ${inputClass}`}>
         <div className={`transaction-input ${!!props.error ? "error" : !!props.warning ? "warning" : ""}`}>
           {ticker === Ticker.USDC && displayTicker && !props.displayUSDCTicker && (

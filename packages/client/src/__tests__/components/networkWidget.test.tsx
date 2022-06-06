@@ -80,17 +80,6 @@ describe("network widget sign in", () => {
     expect(screen.getByText("MetaMask")).toBeInTheDocument()
   })
 
-  it("shows modal with connect btn", async () => {
-    ;(global.window as any).ethereum = jest.fn()
-    ;(global.window as any).ethereum.request = () => {
-      return Promise.resolve()
-    }
-    renderNetworkWidget(undefined, "0x000", undefined)
-
-    fireEvent.click(screen.getByText("Connect Wallet"))
-    expect(screen.getByText("Connect")).toBeInTheDocument()
-  })
-
   it("shows walletConnect modal", async () => {
     renderNetworkWidget(undefined, undefined, {
       type: "has_web3",
@@ -103,15 +92,6 @@ describe("network widget sign in", () => {
     expect(screen.getByAltText("WalletConnect Logo")).toBeInTheDocument()
     fireEvent.click(screen.getByAltText("WalletConnect Logo"))
     expect(screen.getByText("Scan with WalletConnect to connect")).toBeInTheDocument()
-  })
-
-  it("shows connect with metamask if session data is invalid", async () => {
-    ;(global.window as any).ethereum = jest.fn()
-    ;(global.window as any).ethereum.request = () => {
-      return Promise.resolve()
-    }
-    renderNetworkWidget(undefined, "0x000", undefined)
-    expect(screen.getByText("Connect Wallet")).toBeInTheDocument()
   })
 
   it("shows signed in with correct session data", async () => {
@@ -128,7 +108,7 @@ describe("network widget sign in", () => {
     expect(screen.getByText("USDC balance")).toBeInTheDocument()
   })
 
-  it("shows signed in when user has session data but address doesn't exist", async () => {
+  it("shows connect wallet when user has session data but address doesn't exist", async () => {
     ;(global.window as any).ethereum = jest.fn()
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
@@ -137,18 +117,22 @@ describe("network widget sign in", () => {
     renderNetworkWidget(
       {signature: "foo", signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519, version: 1},
       "",
-      undefined
+      {
+        type: "has_web3",
+        networkName: "private",
+        undefined,
+      }
     )
-    expect(screen.getAllByText("Connect Wallet")[0]).toBeInTheDocument()
+    expect(screen.getByText("Connect Wallet")).toBeInTheDocument()
   })
 
-  it("shows connect with metamask with missing signature", async () => {
+  it("shows connected state with missing signature", async () => {
     ;(global.window as any).ethereum = jest.fn()
     ;(global.window as any).ethereum.request = () => {
       return Promise.resolve()
     }
     renderNetworkWidget({signatureBlockNum: 42, signatureBlockNumTimestamp: 1631996519}, "0x000", undefined)
-    expect(screen.getAllByText("Connect Wallet")[0]).toBeInTheDocument()
+    expect(screen.getByText("USDC balance")).toBeInTheDocument()
   })
 
   it("shows I don't have a wallet button when user is not connected", async () => {

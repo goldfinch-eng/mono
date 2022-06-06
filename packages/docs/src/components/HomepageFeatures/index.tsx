@@ -39,7 +39,7 @@ const FeatureList: FeatureItem[] = [
         {' '}<a href="/docs/reference/upgradeability">upgradeability</a>,
         dealing with <a href="/docs/reference/flashloans">flashloans</a>, mitigating
         {' '}<a href="/docs/reference/front-running">front-running</a>, and more. Read the Protocol's
-        {' '}<a href="/docs/security-audit-reports">external audit reports</a>.
+        {' '}<a href="/docs/security/audit-reports">external audit reports</a>.
       </>
     ),
   },

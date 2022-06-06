@@ -6,12 +6,9 @@ import {BackerRewardsLoaded} from "../../ethereum/backerRewards"
 import {GFILoaded} from "../../ethereum/gfi"
 import {SeniorPoolLoaded} from "../../ethereum/pool"
 import {TranchedPoolBacker} from "../../ethereum/tranchedPool"
-import DefaultGoldfinchClient from "../../hooks/useGoldfinchClient"
-import {useFetchNDA} from "../../hooks/useNDA"
-import {useSession} from "../../hooks/useSignIn"
 import {useBacker, useTranchedPool} from "../../hooks/useTranchedPool"
 import {Loadable, Loaded} from "../../types/loadable"
-import {assertNonNullable, croppedAddress, sameBlock} from "../../utils"
+import {croppedAddress, sameBlock} from "../../utils"
 import ConnectionNotice from "../connectionNotice"
 import {TranchedPoolsEstimatedApyFromGfi} from "../Earn/types"
 import InvestorNotice from "../KYCNotice/InvestorNotice"
@@ -30,17 +27,13 @@ interface TranchedPoolViewURLParams {
 
 function TranchedPoolView() {
   const {poolAddress} = useParams<TranchedPoolViewURLParams>()
-  const {goldfinchProtocol, backerRewards, pool, gfi, user, network, setSessionData, currentBlock} =
-    useContext(AppContext)
+  const {goldfinchProtocol, backerRewards, pool, gfi, user, currentBlock} = useContext(AppContext)
   const {
     earnStore: {backers},
   } = useEarn()
-  const session = useSession()
   const [tranchedPool, refreshTranchedPool] = useTranchedPool({address: poolAddress, goldfinchProtocol, currentBlock})
   const [showModal, setShowModal] = useState(false)
   const backer = useBacker({user, tranchedPool})
-  const [nda, refreshNDA] = useFetchNDA({user, tranchedPool})
-  const hasSignedNDA = nda && nda?.status === "success"
   const [tranchedPoolsEstimatedApyFromGfi, setTranchedPoolsEstimatedApyFromGfi] = useState<
     Loadable<TranchedPoolsEstimatedApyFromGfi>
   >({
@@ -85,32 +78,11 @@ function TranchedPoolView() {
   }
 
   const handleDetails = () => {
-    if (!tranchedPool?.metadata?.NDAUrl || hasSignedNDA) {
+    if (!tranchedPool?.metadata?.NDAUrl) {
       openDetailsUrl()
     } else {
       setShowModal(true)
     }
-  }
-
-  async function handleSignNDA() {
-    assertNonNullable(user)
-    assertNonNullable(network)
-    assertNonNullable(setSessionData)
-    if (session.status !== "authenticated") {
-      return
-    }
-    const client = new DefaultGoldfinchClient(network.name!, session, setSessionData)
-    return client
-      .signNDA(user.address, tranchedPool!.address)
-      .then((r) => {
-        openDetailsUrl()
-        setShowModal(false)
-        refreshNDA()
-      })
-      .catch((error) => {
-        setShowModal(false)
-        console.error(error)
-      })
   }
 
   const earnMessage = tranchedPool
@@ -161,8 +133,8 @@ function TranchedPoolView() {
       {tranchedPool?.metadata?.borrowerDescription && <BorrowerOverview tranchedPool={tranchedPool} />}
       <NdaPrompt
         show={showModal}
+        onSign={() => Promise.resolve()}
         onClose={() => setShowModal(false)}
-        onSign={handleSignNDA}
         NDAUrl={tranchedPool?.metadata?.NDAUrl}
       />
     </div>
