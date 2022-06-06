@@ -14,7 +14,7 @@ import {
 import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
+import * as migrate270 from "../../blockchain_scripts/migrations/v2.7.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -184,7 +184,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate260.main()
+  await migrate270.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -749,6 +749,11 @@ describe("mainnet forking tests", async function () {
         await tranchedPoolWithOwnerConnected.deposit(TRANCHES.Junior, String(trackedStakedAmount))
       ).wait()
       await (await tranchedPoolWithBorrowerConnected.lockJuniorCapital()).wait()
+      const circleEoa = "0x55FE002aefF02F77364de339a1292923A15844B8"
+      await legacyGoldfinchConfig.addToGoList(circleEoa, {from: await getProtocolOwner()})
+      await impersonateAccount(hre, circleEoa)
+      await usdc.approve(seniorPool.address, usdcVal(10_000_000), {from: circleEoa})
+      await seniorPool.deposit(usdcVal(10_000_000), {from: circleEoa})
       await seniorPool.invest(tranchedPoolWithBorrowerConnected.address, {from: owner})
 
       await erc20Approve(usdc, stakingRewardsEthers.address, MAX_UINT, [bwr, owner])
@@ -900,7 +905,10 @@ describe("mainnet forking tests", async function () {
         backerStakingTokenId,
         paymentTx.blockNumber
       )
-      expect(backerStakingRewardsEarnedAfterFinalRepayment).to.bignumber.eq(stakingRewardsAtTermEnd)
+      expect(backerStakingRewardsEarnedAfterFinalRepayment).to.bignumber.closeTo(
+        stakingRewardsAtTermEnd,
+        microTolerance
+      )
 
       // Even long after the final repayment where there was no outstanding principal
       // You should have accrued no rewards during that time
