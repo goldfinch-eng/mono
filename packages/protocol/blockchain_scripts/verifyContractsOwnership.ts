@@ -1,9 +1,11 @@
 import {constants as ethersConstants, Contract} from "ethers"
 import fs from "fs"
 import {deployments, ethers} from "hardhat"
+import intersection from "lodash/intersection"
 import difference from "lodash/difference"
 import every from "lodash/every"
-import {assertNonEmptyString, isNonEmptyString, isPlainObject} from "../../utils/src/type"
+import mapKeys from "lodash/mapKeys"
+import {assertNonEmptyString, assertNonNullable, isNonEmptyString, isPlainObject} from "../../utils/src/type"
 import {getDeployedContract, OWNER_ROLE} from "./deployHelpers"
 import {
   MAINNET_CREDIT_DESK,
@@ -23,23 +25,38 @@ const expectedProtocolContractNamesWithoutAnyOwnership: Record<string, true> = {
   TranchingLogic: true,
 }
 
-type OwnershipVerificationConfig = {
-  expectedOwners: string[] | undefined
+const _protocolAddressDescriptionByLowercaseAddress = {
+  [MAINNET_GOVERNANCE_MULTISIG.toLowerCase()]: "Governance multi-sig",
+  [MAINNET_WARBLER_LABS_MULTISIG.toLowerCase()]: "Warbler Labs multi-sig",
+  [MAINNET_GF_DEPLOYER.toLowerCase()]: "Goldfinch deployer",
+  [MAINNET_CREDIT_DESK.toLowerCase()]: "CreditDesk contract",
+}
+const getProtocolAddressDescription = (address: string): string =>
+  _protocolAddressDescriptionByLowercaseAddress[address.toLowerCase()] || address
+
+type MemberVerificationConfig = {
+  roleDescription: string
+  role: string
+  expectedMembers: string[]
 }
 type VerificationResult = {
   ok: boolean
 }
 
-async function _contractExplicitOwnerVerifier(contract: Contract): Promise<VerificationResult> {
+async function _contractExplicitOwnerVerifier(contract: Contract, expectedOwner: string): Promise<VerificationResult> {
   console.log("")
   let contractIssue = false
 
-  const owner = await contract.owner()
-  if (owner == MAINNET_GOVERNANCE_MULTISIG) {
-    console.log("Contract is explicitly owned by Governance multi-sig.")
+  const owner = (await contract.owner()).toLowerCase()
+  if (owner == expectedOwner.toLowerCase()) {
+    console.log(`Contract has explicit \`owner\` as expected: ${getProtocolAddressDescription(expectedOwner)}`)
   } else {
     contractIssue = true
-    console.error(`[CRITICAL] Expected contract to have explicit \`owner\` (Governance multi-sig), but found: ${owner}`)
+    console.error(
+      `[CRITICAL] Expected contract to have explicit \`owner\` (${getProtocolAddressDescription(
+        expectedOwner
+      )}), but found: ${owner}`
+    )
   }
 
   return {ok: !contractIssue}
@@ -139,49 +156,54 @@ async function _contractRoleBasedAccessControlNotConfiguredVerifier(contract: Co
   return {ok: !contractHasRoleBasedAccessControl}
 }
 
-async function _contractOwnerRoleVerifier(
+async function _contractRoleMemberVerifier(
   contract: Contract,
-  config: OwnershipVerificationConfig,
-  describeExpectedOwner: (expectedOwner: string) => string
+  config: MemberVerificationConfig,
+  describeExpectedMember: (expectedMember: string) => string
 ): Promise<VerificationResult> {
   console.log("")
   let contractIssue = false
 
-  const ownerCount = Number((await contract.getRoleMemberCount(OWNER_ROLE)).toString())
-  if (config.expectedOwners && config.expectedOwners.length) {
-    if (ownerCount === config.expectedOwners.length) {
-      for (const expectedOwner of config.expectedOwners) {
-        const expectedOwnerIsOwner = await contract.hasRole(OWNER_ROLE, expectedOwner)
-        if (expectedOwnerIsOwner) {
-          console.log(`Contract is owned by ${describeExpectedOwner(expectedOwner)}.`)
-        } else {
-          contractIssue = true
-          console.error(`[CRITICAL] Expected owner ${expectedOwner} lacks OWNER_ROLE!`)
-        }
-      }
-    } else {
-      contractIssue = true
+  const memberCount = Number((await contract.getRoleMemberCount(config.role)).toString())
+  const members = (
+    await Promise.all(
+      Array(memberCount)
+        .fill("")
+        .map((_, i) => contract.getRoleMember(config.role, i))
+    )
+  ).map((owner: string) => owner.toLowerCase())
+  const expectedMembers = config.expectedMembers.map((expectedMember: string) => expectedMember.toLowerCase())
 
-      console.error(
-        `[CRITICAL] Expected ${config.expectedOwners.length} owners, but contract has ${ownerCount} owners!`
-      )
-      if (ownerCount) {
-        const owners = await Promise.all(
-          Array(ownerCount)
-            .fill("")
-            .map((_, i) => contract.getRoleMember(OWNER_ROLE, i))
-        )
-        const unexpectedOwners = difference(owners, config.expectedOwners)
-        console.error(`[CRITICAL] Unexpected owners: ${unexpectedOwners}`)
-      }
-    }
+  const membersAsExpected = intersection(expectedMembers, members)
+  const missingMembers = difference(expectedMembers, members)
+  const unexpectedMembers = difference(members, expectedMembers)
+
+  if (membersAsExpected.length) {
+    console.log(
+      `Contract role ${config.roleDescription} has expected members: ${membersAsExpected.map(describeExpectedMember)}`
+    )
   } else {
-    if (ownerCount) {
-      contractIssue = true
-      console.error(`[CRITICAL] Expected no contract owners, but contract has owners.`)
-    } else {
-      console.log("Contract has no owners, as expected.")
-    }
+    console.log(`Contract role ${config.roleDescription} has no expected members.`)
+  }
+  if (missingMembers.length) {
+    contractIssue = true
+    console.error(
+      `[CRITICAL] Contract role ${config.roleDescription} lacks expected members: ${missingMembers.map(
+        describeExpectedMember
+      )}`
+    )
+  } else {
+    console.log(`Contract role ${config.roleDescription} lacks no expected members.`)
+  }
+  if (unexpectedMembers.length) {
+    contractIssue = true
+    console.error(
+      `[CRITICAL] Contract role ${config.roleDescription} has unexpected members: ${unexpectedMembers.map(
+        describeExpectedMember
+      )}`
+    )
+  } else {
+    console.log(`Contract role ${config.roleDescription} has no unexpected members.`)
   }
 
   return {ok: !contractIssue}
@@ -227,7 +249,7 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
         return {ok: noExplicitOwnerResult.ok && rolesBasedNotConfiguredResult.ok}
       } else if (name.endsWith("_Proxy")) {
         // Confirm that contract has explicit Governance `owner`.
-        const explicitOwnerResult = await _contractExplicitOwnerVerifier(contract)
+        const explicitOwnerResult = await _contractExplicitOwnerVerifier(contract, MAINNET_GOVERNANCE_MULTISIG)
 
         // Confirm that contract does not have role-based access control.
         const rolesBasedNotConfiguredResult = await _contractRoleBasedAccessControlNotConfiguredVerifier(contract)
@@ -243,23 +265,10 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
 
         // Confirm who has the OWNER_ROLE.
         const expectedOwners = _getRoleBasedAccessControlledContractExpectedOwners(name)
-        const ownerRoleResult = await _contractOwnerRoleVerifier(
+        const ownerRoleResult = await _contractRoleMemberVerifier(
           contract,
-          {expectedOwners},
-          (expectedOwner: string): string => {
-            switch (expectedOwner) {
-              case MAINNET_GOVERNANCE_MULTISIG:
-                return "Governance multi-sig"
-              case MAINNET_WARBLER_LABS_MULTISIG:
-                return "Warbler Labs multi-sig"
-              case MAINNET_GF_DEPLOYER:
-                return "Goldfinch deployer"
-              case MAINNET_CREDIT_DESK:
-                return "CreditDesk contract"
-              default:
-                throw new Error(`Unexpected expected-owner: ${expectedOwner}`)
-            }
-          }
+          {roleDescription: "OWNER_ROLE", role: OWNER_ROLE, expectedMembers: expectedOwners},
+          (expectedOwner: string): string => getProtocolAddressDescription(expectedOwner)
         )
 
         return {ok: noExplicitOwnerResult.ok && rolesBaseConfiguredResult.ok && ownerRoleResult.ok}
@@ -285,74 +294,81 @@ const isMainnetTranchedPoolsJson = (json: unknown): json is MainnetTranchedPools
 
 const fileOptions: {encoding: BufferEncoding} = {encoding: "utf8"}
 const pathToMainnetTranchedPoolsJson = "../client/config/pool-metadata/mainnet.json"
-const mainnetTranchedPoolsJson = JSON.parse(fs.readFileSync(pathToMainnetTranchedPoolsJson, fileOptions))
+const _mainnetTranchedPoolsJson = JSON.parse(fs.readFileSync(pathToMainnetTranchedPoolsJson, fileOptions))
 
-if (!isMainnetTranchedPoolsJson(mainnetTranchedPoolsJson)) {
+if (!isMainnetTranchedPoolsJson(_mainnetTranchedPoolsJson)) {
   throw new Error("Unexpected mainnet tranched pools json.")
 }
 
+const mainnetTranchedPoolsJson: MainnetTranchedPoolsJson = mapKeys(_mainnetTranchedPoolsJson, (val, key) =>
+  key.toLowerCase()
+)
+
 // Cf. https://www.notion.so/goldfinchfinance/Borrower-Addresses-4ccccde54b8a451e8c38de22d116355e
+// NOTE: These addresses should be lowercased, for compatibility with the way we lowercase the
+// keys from `mainnetTranchedPoolsJson` (see above).
 const borrowerContractAddressByTranchedPoolAddress = {
-  "0xd43a4f3041069c6178b99d55295b00d0db955bb5": "0xd750033CD9ab91EaD99074f671bBcBCE0FFd91A8",
-  "0x1e73b5C1A3570B362d46Ae9Bf429b25c05e514A7": "0x54aff655036db5741e805583a1589f81f8e697ea",
-  "0x3634855ec1BeAf6F9BE0f7d2f67fC9Cb5F4EEeA4": "0x71693a31d4026edaf24bd192bd51558d442bb2ef",
-  "0x9e8B9182ABbA7b4C188C979bC8F4C79F7f4c90d3": "0x71693a31d4026edaf24bd192bd51558d442bb2ef",
-  "0x8bbd80F88e662e56B918c353DA635E210ECe93C6": "0x71693a31d4026edaf24bd192bd51558d442bb2ef",
-  "0xd798d527F770ad920BB50680dBC202bB0a1DaFD6": "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e",
-  "0x2107adE0E536b8b0b85cca5E0c0C3F66E58c053C": "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e",
-  "0x1CC90f7bB292DAB6FA4398F3763681cFE497Db97": "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e",
-  "0x67df471EaCD82c3dbc95604618FF2a1f6b14b8a1": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0xe32c22e4D95caE1fB805C60C9e0026ed57971BCf": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0xefeB69eDf6B6999B0e3f2Fa856a2aCf3bdEA4ab5": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0xC13465CE9Ae3Aa184eB536F04FDc3f54D2dEf277": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0xe6C30756136e07eB5268c3232efBFBe645c1BA5A": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0x1d596D28A7923a22aA013b0e7082bbA23DAA656b": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0x418749e294cAbce5A714EfcCC22a8AAde6F9dB57": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0x759f097f3153f5d62FF1C2D82bA78B6350F223e3": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
-  "0xaA2ccC5547f64C5dFfd0a624eb4aF2543A67bA65": "0x33fCf9230AD1d2950EE562fF0888b7240C7aa8eA",
-  "0xF74ea34ac88862B7Ff419e60E476BE2651433e68": "0x53799810ee9919c3bAD470952f016f4E7c67C9a8",
-  "0xc9BDd0D3B80CC6EfE79a82d850f44EC9B55387Ae": "0xd750033CD9ab91EaD99074f671bBcBCE0FFd91A8",
-  "0xd09a57127BC40D680Be7cb061C2a6629Fe71AbEf": "0xd750033CD9ab91EaD99074f671bBcBCE0FFd91A8",
-  "0x00c27FC71b159a346e179b4A1608a0865e8A7470": "0xf8C4A0fEDf9b249253D89203034374E5A57b617C",
-  "0xb26B42Dd5771689D0a7faEea32825ff9710b9c11": "0x37E12D7AbFF5a2636aCc3Dced31030F3Ed9cc0F8",
-  "0x89d7C618a4EeF3065DA8ad684859a547548E6169": "0xf0721f76527f5388eC8C952b033C6113362BCa88",
+  "0xd43a4f3041069c6178b99d55295b00d0db955bb5": "0xd750033cd9ab91ead99074f671bbcbce0ffd91a8",
+  "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7": "0x54aff655036db5741e805583a1589f81f8e697ea",
+  "0x3634855ec1beaf6f9be0f7d2f67fc9cb5f4eeea4": "0x71693a31d4026edaf24bd192bd51558d442bb2ef",
+  "0x9e8b9182abba7b4c188c979bc8f4c79f7f4c90d3": "0x71693a31d4026edaf24bd192bd51558d442bb2ef",
+  "0x8bbd80f88e662e56b918c353da635e210ece93c6": "0x71693a31d4026edaf24bd192bd51558d442bb2ef",
+  "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e",
+  "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c": "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e",
+  "0x1cc90f7bb292dab6fa4398f3763681cfe497db97": "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e",
+  "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0xe32c22e4d95cae1fb805c60c9e0026ed57971bcf": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0xc13465ce9ae3aa184eb536f04fdc3f54d2def277": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0xe6c30756136e07eb5268c3232efbfbe645c1ba5a": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0x1d596d28a7923a22aa013b0e7082bba23daa656b": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0x418749e294cabce5a714efccc22a8aade6f9db57": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": "0xcf595641c40008fdc97e5ccbce710ab4d31539a3",
+  "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": "0x33fcf9230ad1d2950ee562ff0888b7240c7aa8ea",
+  "0xf74ea34ac88862b7ff419e60e476be2651433e68": "0x53799810ee9919c3bad470952f016f4e7c67c9a8",
+  "0xc9bdd0d3b80cc6efe79a82d850f44ec9b55387ae": "0xd750033cd9ab91ead99074f671bbcbce0ffd91a8",
+  "0xd09a57127bc40d680be7cb061c2a6629fe71abef": "0xd750033cd9ab91ead99074f671bbcbce0ffd91a8",
+  "0x00c27fc71b159a346e179b4a1608a0865e8a7470": "0xf8c4a0fedf9b249253d89203034374e5a57b617c",
+  "0xb26b42dd5771689d0a7faeea32825ff9710b9c11": "0x37e12d7abff5a2636acc3dced31030f3ed9cc0f8",
+  "0x89d7c618a4eef3065da8ad684859a547548e6169": "0xf0721f76527f5388ec8c952b033c6113362bca88",
 }
 
 const expectedBorrowerContractOwnerByContractAddress = {
-  "0x54aff655036db5741e805583a1589f81f8e697ea": "0xC4aA3F35d54E6aAe7b32fBD239D309A3C805A156",
-  "0x71693a31d4026edaf24bd192bd51558d442bb2ef": "0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC",
-  "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e": "0x8652854C25bd553d522d118AC2bee6FFA3Cce317",
-  "0xcf595641c40008fdc97e5ccbce710ab4d31539a3": "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6",
-  "0x33fCf9230AD1d2950EE562fF0888b7240C7aa8eA": "0x9892245a6A6A0706bF10a59129ba9CBf0e1033e3",
-  "0x53799810ee9919c3bAD470952f016f4E7c67C9a8": "0xD677476BeF65Fa6B3AaB8Defeb0E5bFD69848036",
-  "0xd750033CD9ab91EaD99074f671bBcBCE0FFd91A8": "0xFF27f53fdEC54f2077F80350c7011F76f84f9622",
-  "0xf8C4A0fEDf9b249253D89203034374E5A57b617C": "0x3253e0bdac8475440ffead59c7b063db7eccb50f",
-  "0x37E12D7AbFF5a2636aCc3Dced31030F3Ed9cc0F8": "0xb2A3D20999975E31727890c5084CC4A9458740F0",
-  "0xf0721f76527f5388eC8C952b033C6113362BCa88": "0xEF1A2cBbFE289bA586db860CfE360058ac3944E7",
+  "0x54aff655036db5741e805583a1589f81f8e697ea": "0xc4aa3f35d54e6aae7b32fbd239d309a3c805a156",
+  "0x71693a31d4026edaf24bd192bd51558d442bb2ef": "0xbd04f16cdd0e7e1ed8e4382aab3f0f7b17672ddc",
+  "0x7d100b9932c9d200be8907e2c9b94ec7a23d371e": "0x8652854c25bd553d522d118ac2bee6ffa3cce317",
+  "0xcf595641c40008fdc97e5ccbce710ab4d31539a3": "0x4bbd638eb377ea00b84fac2aa24a769a1516ecb6",
+  "0x33fcf9230ad1d2950ee562ff0888b7240c7aa8ea": "0x9892245a6a6a0706bf10a59129ba9cbf0e1033e3",
+  "0x53799810ee9919c3bad470952f016f4e7c67c9a8": "0xd677476bef65fa6b3aab8defeb0e5bfd69848036",
+  "0xd750033cd9ab91ead99074f671bbcbce0ffd91a8": "0xff27f53fdec54f2077f80350c7011f76f84f9622",
+  "0xf8c4a0fedf9b249253d89203034374e5a57b617c": "0x3253e0bdac8475440ffead59c7b063db7eccb50f",
+  "0x37e12d7abff5a2636acc3dced31030f3ed9cc0f8": "0xb2a3d20999975e31727890c5084cc4a9458740f0",
+  "0xf0721f76527f5388ec8c952b033c6113362bca88": "0xef1a2cbbfe289ba586db860cfe360058ac3944e7",
 }
 
 const borrowerNameByBorrowerContractExpectedOwnerAddress = {
-  "0xC4aA3F35d54E6aAe7b32fBD239D309A3C805A156": "Payjoy",
-  "0xbD04f16cdd0e7E1ed8E4382AAb3f0F7B17672DdC": "Aspire",
-  "0x8652854C25bd553d522d118AC2bee6FFA3Cce317": "QuickCheck",
-  "0x4bBD638eb377ea00b84fAc2aA24A769a1516eCb6": "Almavest",
-  "0x9892245a6A6A0706bF10a59129ba9CBf0e1033e3": "Tugende",
-  "0xD677476BeF65Fa6B3AaB8Defeb0E5bFD69848036": "Divibank",
-  "0xFF27f53fdEC54f2077F80350c7011F76f84f9622": "Cauris",
+  "0xc4aa3f35d54e6aae7b32fbd239d309a3c805a156": "Payjoy",
+  "0xbd04f16cdd0e7e1ed8e4382aab3f0f7b17672ddc": "Aspire",
+  "0x8652854c25bd553d522d118ac2bee6ffa3cce317": "QuickCheck",
+  "0x4bbd638eb377ea00b84fac2aa24a769a1516ecb6": "Almavest",
+  "0x9892245a6a6a0706bf10a59129ba9cbf0e1033e3": "Tugende",
+  "0xd677476bef65fa6b3aab8defeb0e5bfd69848036": "Divibank",
+  "0xff27f53fdec54f2077f80350c7011f76f84f9622": "Cauris",
   "0x3253e0bdac8475440ffead59c7b063db7eccb50f": "Stratos",
-  "0xb2A3D20999975E31727890c5084CC4A9458740F0": "Lendeast",
-  "0xEF1A2cBbFE289bA586db860CfE360058ac3944E7": "Addem Capital",
+  "0xb2a3d20999975e31727890c5084cc4a9458740f0": "Lendeast",
+  "0xef1a2cbbfe289ba586db860cfe360058ac3944e7": "Addem Capital",
 }
 
 async function verifyBorrowerContractsOwnership() {
   const tranchedPoolAddresses = Object.keys(mainnetTranchedPoolsJson)
 
+  // TODO Verify who has LOCKER_ROLE on each tranched pool.
+
   return _verifyContractsOwnership(
-    "borrower contracts",
+    "borrower contract corresponding to tranched pool",
     tranchedPoolAddresses,
     async (tranchedPoolAddress: string): Promise<VerificationResult> => {
       const borrowerContractAddress = borrowerContractAddressByTranchedPoolAddress[tranchedPoolAddress]
-      console.log("BORROWER CONTRACT ADDRESS", borrowerContractAddress, tranchedPoolAddress)
       assertNonEmptyString(borrowerContractAddress)
 
       const borrowerContract = await ethers.getContractAt("Borrower", borrowerContractAddress)
@@ -360,20 +376,21 @@ async function verifyBorrowerContractsOwnership() {
       const rolesBasedConfiguredResult = await _contractRoleBasedAccessControlConfiguredVerifier(borrowerContract)
 
       const expectedOwner = expectedBorrowerContractOwnerByContractAddress[borrowerContractAddress]
-      console.log("EXPECTED OWNER", expectedOwner)
       assertNonEmptyString(expectedOwner)
       const expectedOwners = [expectedOwner]
-      const ownerRoleResult = await _contractOwnerRoleVerifier(
+      const ownerRoleResult = await _contractRoleMemberVerifier(
         borrowerContract,
         {
-          expectedOwners,
+          roleDescription: "OWNER_ROLE",
+          role: OWNER_ROLE,
+          expectedMembers: expectedOwners,
         },
         (expectedOwner): string => {
           const borrowerName = borrowerNameByBorrowerContractExpectedOwnerAddress[expectedOwner]
           if (borrowerName) {
             return borrowerName
           } else {
-            throw new Error(`Unexpected expected-owner: ${expectedOwner}`)
+            return expectedOwner
           }
         }
       )
@@ -381,9 +398,9 @@ async function verifyBorrowerContractsOwnership() {
       return {ok: rolesBasedConfiguredResult.ok && ownerRoleResult.ok}
     },
     (tranchedPoolAddress: string): string => {
-      const name = mainnetTranchedPoolsJson[tranchedPoolAddress].name
-      assertNonEmptyString(name)
-      return name
+      const info = mainnetTranchedPoolsJson[tranchedPoolAddress]
+      assertNonNullable(info)
+      return info.name
     }
   )
 }
@@ -394,6 +411,7 @@ async function _verifyContractsOwnership(
   verifier: (key: string) => Promise<VerificationResult>,
   getVerifierHeading: (key: string) => string
 ): Promise<VerificationResult> {
+  console.log("")
   console.log("#########################################")
   console.log(`Verifying ownership of ${description}`)
   console.log("#########################################")
@@ -401,6 +419,7 @@ async function _verifyContractsOwnership(
   let anyIssue = false
   for (const key of keys) {
     const heading = getVerifierHeading(key)
+    console.log("")
     console.log("**********************")
     console.log(heading)
     console.log("**********************")
@@ -414,7 +433,6 @@ async function _verifyContractsOwnership(
       anyIssue = true
       console.error(`${key} HAS ISSUE ^^^`)
     }
-    console.log("")
   }
 
   return {ok: !anyIssue}
