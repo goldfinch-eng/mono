@@ -329,19 +329,21 @@ export const poolTokenImage = genRequestHandler({
 
     // eslint-disable-next-line new-cap
     const container = SVG(document.documentElement) as Container
-    const draw = container.size(350, 350)
-    draw.rect(600, 600).fill({color: "#212121"})
+    const draw = container.size(720, 720)
+    draw.rect(720, 720).fill({color: "#483E5E"})
     const nested = draw
 
     const attributesToDisplay: Array<AttributeType> = [
-      "BORROWER_NAME",
       "POOL_NAME",
+      "BORROWER_NAME",
       "BACKER_POSITION_PRINCIPAL",
       "USDC_INTEREST_RATE",
       "MONTHLY_INTEREST_PAYMENT",
       "PAYMENT_FREQUENCY",
       "TERM_REMAINING",
       "TOTAL_LOAN_SIZE",
+      "TOTAL_AMOUNT_REPAID",
+      "PAYMENT_STATUS",
       "LAST_UPDATED_AT",
     ]
     const attributeTypeToValue: {[traitType: string]: any} = {}
@@ -359,19 +361,18 @@ export const poolTokenImage = genRequestHandler({
     nested
       .text((t) => {
         t.tspan("\n")
-        t.tspan(`#${tokenId}`).newLine()
         formattedAttributes.forEach(({type, value}) => {
-          // t.tspan(trait_type).newLine()
-          // t.tspan(value).newLine()
-          if (value.toString().length > 30) {
+          if (type === "Pool") {
             t.tspan(`${value}`).newLine()
           } else {
             t.tspan(`${type}: ${value}`).newLine()
           }
         })
       })
-      .fill("#f5f5f5")
-      .dx(5)
+      .font({family: "sans-serif", size: 33})
+      .fill("#FFFFFF")
+      .leading(1.45)
+      .dx(16)
 
     return res.status(200).send(draw.svg())
   },
