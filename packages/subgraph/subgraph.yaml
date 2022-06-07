@@ -253,6 +253,8 @@ templates:
           file: ./abis/Fidu.json
         - name: Fidu_Proxy
           file: ./abis/Fidu_Proxy.json
+        - name: USDC
+          file: ./abis/USDC.json
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade

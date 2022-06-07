@@ -2,7 +2,8 @@ import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/SeniorPool/SeniorPool"
 import {Fidu_Implementation as FiduContract} from "../../generated/templates/SeniorPool/Fidu_Implementation"
-import {FIDU_ADDRESS} from "../constants"
+import {USDC as UsdcContract} from "../../generated/templates/SeniorPool/USDC"
+import {FIDU_ADDRESS, USDC_CONTRACT_ADDRESS} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
 import {getStakingRewards} from "./staking_rewards"
 
@@ -68,6 +69,7 @@ const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
+  const usdc_contract = UsdcContract.bind(Address.fromString(USDC_CONTRACT_ADDRESS))
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
@@ -86,6 +88,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.balance = balance
   poolStatus.sharePrice = sharePrice
   poolStatus.rawBalance = rawBalance
+  poolStatus.usdcBalance = usdc_contract.balanceOf(seniorPoolAddress)
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
   poolStatus.save()
