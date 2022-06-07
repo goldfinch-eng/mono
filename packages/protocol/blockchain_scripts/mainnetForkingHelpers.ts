@@ -1,46 +1,39 @@
-import BN from "bn.js"
+import {assertNonNullable} from "@goldfinch-eng/utils"
+import {Contract, Signer} from "ethers"
+import hre from "hardhat"
+import {mergeABIs} from "hardhat-deploy/dist/src/utils"
+import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
-  isTestEnv,
-  updateConfig,
-  OWNER_ROLE,
-  SAFE_CONFIG,
-  MAINNET_CHAIN_ID,
-  DepList,
-  Ticker,
-  AddressString,
-  getSignerForAddress,
+  assertIsChainId,
   ChainId,
   CHAIN_NAME_BY_ID,
-  getERC20Address,
-  currentChainId,
-  assertIsChainId,
-  assertIsTicker,
   ContractDeployer,
+  DepList,
+  fixProvider,
+  getERC20Address,
   getEthersContract,
   getProtocolOwner,
-  fixProvider,
+  getSignerForAddress,
   isMainnetForking,
+  isTestEnv,
+  MAINNET_CHAIN_ID,
+  OWNER_ROLE,
+  SAFE_CONFIG,
+  updateConfig,
 } from "../blockchain_scripts/deployHelpers"
-import _ from "lodash"
 import {CONFIG_KEYS} from "./configKeys"
-import hre from "hardhat"
-import {Contract} from "ethers"
-import {DeploymentsExtension} from "hardhat-deploy/types"
-import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {Signer} from "ethers"
-import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
-const {ethers, artifacts} = hre
-const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
-const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
-
-import {mergeABIs} from "hardhat-deploy/dist/src/utils"
-import {FormatTypes} from "ethers/lib/utils"
-import {Logger} from "./types"
 import {
   openzeppelin_assertIsValidImplementation,
   openzeppelin_assertIsValidUpgrade,
   openzeppelin_saveDeploymentManifest,
 } from "./deployHelpers/openzeppelin-upgrade-validation"
+import {Logger} from "./types"
+const {ethers, artifacts} = hre
+const MAINNET_GOVERNANCE_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
+const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
+const MAINNET_WARBLER_LABS_MULTISIG = "0x229Db88850B319BD4cA751490F3176F511823372"
+const MAINNET_GF_DEPLOYER = "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f"
+const MAINNET_CREDIT_DESK = "0xD52dc1615c843c30F2e4668E101c0938e6007220"
 
 async function getProxyImplAddress(proxyContract: Contract) {
   if (!proxyContract) {
@@ -307,8 +300,11 @@ export async function overrideUsdcDomainSeparator() {
 }
 
 export {
-  MAINNET_MULTISIG,
+  MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_UNDERWRITER,
+  MAINNET_WARBLER_LABS_MULTISIG,
+  MAINNET_GF_DEPLOYER,
+  MAINNET_CREDIT_DESK,
   getExistingContracts,
   upgradeContracts,
   getCurrentlyDeployedContracts,

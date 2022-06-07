@@ -36,7 +36,7 @@ import {
   assertUnreachable,
   genExhaustiveTuple,
 } from "@goldfinch-eng/utils"
-import {getExistingContracts, MAINNET_MULTISIG} from "../mainnetForkingHelpers"
+import {getExistingContracts, MAINNET_GOVERNANCE_MULTISIG} from "../mainnetForkingHelpers"
 
 import {ContractDeployer} from "./contractDeployer"
 import {ContractUpgrader} from "./contractUpgrader"
@@ -423,7 +423,7 @@ async function getExistingAddress(contractName: string): Promise<string> {
     existingAddress = deployment?.address
   }
   if (!existingAddress && isMainnetForking()) {
-    const mainnetContracts = await getExistingContracts([contractName], MAINNET_MULTISIG)
+    const mainnetContracts = await getExistingContracts([contractName], MAINNET_GOVERNANCE_MULTISIG)
     existingAddress = mainnetContracts[contractName]?.ExistingContract?.address
   }
   if (!existingAddress) {

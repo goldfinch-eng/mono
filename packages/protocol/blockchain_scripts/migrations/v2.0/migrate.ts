@@ -16,7 +16,7 @@ import {
 } from "../../deployHelpers"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
 import {
-  MAINNET_MULTISIG,
+  MAINNET_GOVERNANCE_MULTISIG,
   upgradeContracts,
   getExistingContracts,
   getAllExistingContracts,
@@ -252,20 +252,20 @@ async function handleNewDeployments(migrator) {
 async function givePermsToMigrator({pool, creditDesk, goldfinchFactory, fidu, migrator, oldConfig}) {
   // Give owner roles to the migrator
   if (isMainnetForking()) {
-    await fidu.grantRole(MINTER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await fidu.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await fidu.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await fidu.grantRole(MINTER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await fidu.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await fidu.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await creditDesk.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await creditDesk.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await creditDesk.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await creditDesk.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await pool.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await pool.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await pool.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await pool.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await goldfinchFactory.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await goldfinchFactory.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await goldfinchFactory.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await goldfinchFactory.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await oldConfig.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await oldConfig.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
   } else {
     console.log("--------Do a multisend tx----------")
     console.log("-----------------------------------")

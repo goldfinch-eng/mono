@@ -11,7 +11,7 @@ import {
   getTruffleContract,
   getEthersContract,
 } from "../../blockchain_scripts/deployHelpers"
-import {MAINNET_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_GOVERNANCE_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 
@@ -114,11 +114,11 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Ensure the multisig has funds for various transactions
   const ownerAccount = await getSignerForAddress(owner)
   assertNonNullable(ownerAccount)
-  await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("10.0")})
+  await ownerAccount.sendTransaction({to: MAINNET_GOVERNANCE_MULTISIG, value: ethers.utils.parseEther("10.0")})
 
-  await impersonateAccount(hre, MAINNET_MULTISIG)
+  await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)
 
-  const mainnetMultisigSigner = ethers.provider.getSigner(MAINNET_MULTISIG)
+  const mainnetMultisigSigner = ethers.provider.getSigner(MAINNET_GOVERNANCE_MULTISIG)
   const contractNames = ["SeniorPool", "Fidu", "GoldfinchFactory", "GoldfinchConfig", "Go"]
   const existingContracts = await getExistingContracts(contractNames, mainnetMultisigSigner)
 
@@ -264,9 +264,9 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, pool.address, usdcVal(100000), [owner])
     await pool.deposit(TRANCHES.Junior, usdcVal(2000))
     await bwrCon.lockJuniorCapital(pool.address, {from: bwr})
-    await pool.grantRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+    await pool.grantRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
     await pool.deposit(TRANCHES.Senior, usdcVal(8000))
-    await pool.revokeRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+    await pool.revokeRole(await pool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
   }
 
   beforeEach(async function () {
@@ -306,7 +306,7 @@ describe("mainnet forking tests", async function () {
     curvePool = await artifacts.require("ICurveLP").at(curveAddress)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, bwr, person3])
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
-    await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_MULTISIG})
+    await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_GOVERNANCE_MULTISIG})
     await setupSeniorPool()
   })
 
@@ -317,7 +317,7 @@ describe("mainnet forking tests", async function () {
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
       ;({tranchedPool} = await createPoolWithCreditLine({
-        people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+        people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
         goldfinchFactory,
         usdc,
       }))
@@ -452,7 +452,7 @@ describe("mainnet forking tests", async function () {
       oneSplit = await IOneSplit.at(MAINNET_ONE_SPLIT_ADDRESS)
       bwrCon = await createBorrowerContract()
       ;({tranchedPool, creditLine: cl} = await createPoolWithCreditLine({
-        people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+        people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
         goldfinchFactory,
         usdc,
       }))
@@ -521,7 +521,7 @@ describe("mainnet forking tests", async function () {
       beforeEach(async function () {
         this.timeout(TEST_TIMEOUT)
         ;({tranchedPool: tranchedPool2, creditLine: cl2} = await createPoolWithCreditLine({
-          people: {owner: MAINNET_MULTISIG, borrower: bwrCon.address},
+          people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower: bwrCon.address},
           goldfinchFactory,
           usdc,
         }))
@@ -583,7 +583,7 @@ describe("mainnet forking tests", async function () {
 
         borrower = bwr
         ;({tranchedPool} = await createPoolWithCreditLine({
-          people: {owner: MAINNET_MULTISIG, borrower},
+          people: {owner: MAINNET_GOVERNANCE_MULTISIG, borrower},
           goldfinchFactory,
           limit,
           interestApr,
@@ -1228,7 +1228,7 @@ describe("mainnet forking tests", async function () {
         const [, , , maybeUser] = await hre.getUnnamedAccounts()
         unGoListedUser = asNonNullable(maybeUser)
         ;({tranchedPool} = await createPoolWithCreditLine({
-          people: {borrower: bwr, owner: MAINNET_MULTISIG},
+          people: {borrower: bwr, owner: MAINNET_GOVERNANCE_MULTISIG},
           usdc,
           goldfinchFactory,
         }))
@@ -1268,7 +1268,7 @@ describe("mainnet forking tests", async function () {
         goListedUser = asNonNullable(maybeUser)
         borrower = asNonNullable(maybeBorrower)
         ;({tranchedPool} = await createPoolWithCreditLine({
-          people: {borrower, owner: MAINNET_MULTISIG},
+          people: {borrower, owner: MAINNET_GOVERNANCE_MULTISIG},
           usdc,
           goldfinchFactory,
         }))
@@ -1434,7 +1434,7 @@ describe("mainnet forking tests", async function () {
           // eslint-disable-next-line @typescript-eslint/no-extra-semi
           ;({tranchedPool} = await createPoolWithCreditLine({
             people: {
-              owner: MAINNET_MULTISIG,
+              owner: MAINNET_GOVERNANCE_MULTISIG,
               borrower: person3,
             },
             usdc,
@@ -1445,11 +1445,11 @@ describe("mainnet forking tests", async function () {
           await erc20Approve(usdc, tranchedPool.address, MAX_UINT, [bwr, owner])
           await erc20Approve(usdc, bwrCon.address, MAX_UINT, [bwr, owner])
           await tranchedPool.deposit(TRANCHES.Junior, usdcVal(100), {from: owner})
-          await tranchedPool.lockJuniorCapital({from: MAINNET_MULTISIG})
-          await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.lockJuniorCapital({from: MAINNET_GOVERNANCE_MULTISIG})
+          await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(300), {from: owner})
-          await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
-          await tranchedPool.lockPool({from: MAINNET_MULTISIG})
+          await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
+          await tranchedPool.lockPool({from: MAINNET_GOVERNANCE_MULTISIG})
         })
 
         describe("when I try to withdraw", async () => {
@@ -1467,7 +1467,7 @@ describe("mainnet forking tests", async function () {
           // eslint-disable-next-line @typescript-eslint/no-extra-semi
           ;({tranchedPool} = await createPoolWithCreditLine({
             people: {
-              owner: MAINNET_MULTISIG,
+              owner: MAINNET_GOVERNANCE_MULTISIG,
               borrower: bwr,
             },
             usdc,
@@ -1480,9 +1480,9 @@ describe("mainnet forking tests", async function () {
           const depositMadeEvent = asNonNullable(logs[0])
           backerTokenId = depositMadeEvent.args.tokenId
           await tranchedPool.lockJuniorCapital({from: bwr})
-          await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(7_500), {from: owner})
-          await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_MULTISIG})
+          await tranchedPool.revokeRole(await tranchedPool.SENIOR_ROLE(), owner, {from: MAINNET_GOVERNANCE_MULTISIG})
           await tranchedPool.lockPool({from: bwr})
         })
 
