@@ -24,6 +24,10 @@ From the `packages/subgraph` dir:
 
 **NOTE:** By default, the deployed cluster will be open to all IP addresses on the internet, on all ports exposed by the Docker containers defined in `docker-compose.yml`. If you care about more security than this -- which we would if we were running this as a production service -- we'd want to use [overlays](https://docs.docker.com/cloud/ecs-integration/#tuning-the-cloudformation-template) in our `docker-compose.yml` file to configure the rules of the security groups created by AWS CloudFormation.
 
+#### Viewing your Docker contexts
+
+`docker context ls`
+
 ### Destroying a cluster
 
 From the `packages/subgraph` dir:
