@@ -285,7 +285,7 @@ function imageUrl({tokenId}: {tokenId: number}): string {
  * This endpoint has routing, so a valid request would be `/poolTokenMetadata/<token-id>`.
  */
 export const poolTokenMetadata = genRequestHandler({
-  requireAuth: false,
+  requireAuth: "none",
   cors: false,
   handler: async (req, res): Promise<Response> => {
     const pathComponents = req.path.split("/")
@@ -313,7 +313,7 @@ export const poolTokenMetadata = genRequestHandler({
  * This endpoint has routing, so a valid request would be `/poolTokenImage/<token-id>`.
  */
 export const poolTokenImage = genRequestHandler({
-  requireAuth: false,
+  requireAuth: "none",
   cors: false,
   handler: async (req, res): Promise<Response> => {
     const pathComponents = req.path.split("/")
