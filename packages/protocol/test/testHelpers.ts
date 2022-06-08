@@ -27,11 +27,9 @@ import {
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
   PoolInstance,
-  PoolTokensInstance,
   SeniorPoolInstance,
   CreditLineInstance,
   TranchedPoolInstance,
-  TransferRestrictedVaultInstance,
   GFIInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
@@ -270,7 +268,6 @@ async function deployAllContracts(
   goldfinchFactory: GoldfinchFactoryInstance
   poolTokens: TestPoolTokensInstance
   tranchedPool: TranchedPoolInstance
-  transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: TestStakingRewardsInstance
   backerRewards: TestBackerRewardsInstance
@@ -303,10 +300,6 @@ async function deployAllContracts(
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
   const poolTokens = await getDeployedAsTruffleContract<TestPoolTokensInstance>(deployments, "PoolTokens")
   const tranchedPool = await getDeployedAsTruffleContract<TranchedPoolInstance>(deployments, "TranchedPool")
-  const transferRestrictedVault = await getDeployedAsTruffleContract<TransferRestrictedVaultInstance>(
-    deployments,
-    "TransferRestrictedVault"
-  )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
@@ -373,7 +366,6 @@ async function deployAllContracts(
     goldfinchFactory,
     poolTokens,
     tranchedPool,
-    transferRestrictedVault,
     gfi,
     stakingRewards,
     communityRewards,
