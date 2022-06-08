@@ -104,7 +104,7 @@ async function parseTranchedPool(
 
   // TODO Add these values to the subgraph, and then use them, and remove these web3 calls.
   const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
-    tranchedPool.isMultipleDrawdownsCompatible
+    tranchedPool.isMultipleSlicesCompatible
       ? [
           tranchedPool.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock?.number || "latest"),
           tranchedPool.contract.readOnly.methods.fundableAt().call(undefined, currentBlock?.number || "latest"),

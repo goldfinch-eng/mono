@@ -43,9 +43,17 @@ import {getBalanceAsOf, getPoolEventAmount, mapEventsToTx} from "./events"
 import {fiduFromAtomic, fiduInDollars, fiduToDollarsAtomic, FIDU_DECIMALS} from "./fidu"
 import {gfiFromAtomic, gfiInDollars, GFILoaded, gfiToDollarsAtomic, GFI_DECIMALS} from "./gfi"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
-import {getMetadataStore} from "./tranchedPool"
+import {getMetadataStore, TRANCHES} from "./tranchedPool"
 import {UserLoaded, UserStakingRewardsLoaded} from "./user"
-import {fetchDataFromAttributes, getPoolEvents, INTEREST_DECIMALS, ONE_YEAR_SECONDS, USDC_DECIMALS} from "./utils"
+import {
+  fetchDataFromAttributes,
+  getPoolEvents,
+  INTEREST_DECIMALS,
+  ONE_YEAR_SECONDS,
+  SECONDS_PER_DAY,
+  USDC_DECIMALS,
+  getIsMultipleSlicesCompatible,
+} from "./utils"
 
 class Pool {
   goldfinchProtocol: GoldfinchProtocol
@@ -377,7 +385,7 @@ async function fetchSeniorPoolData(
   let cumulativeWritedowns = await getCumulativeWritedowns(pool, currentBlock)
   let cumulativeDrawdowns = await getCumulativeDrawdowns(pool, currentBlock, tranchedPoolAddresses)
   let poolEvents = await getAllPoolEvents(pool, currentBlock)
-  let estimatedTotalInterest = await getEstimatedTotalInterest(pool, currentBlock, tranchedPoolAddresses)
+  let estimatedTotalInterest = await getEstimatedTotalSeniorPoolInterest(pool, currentBlock, tranchedPoolAddresses)
   let estimatedApy = estimatedTotalInterest.dividedBy(totalPoolAssets)
   const currentEarnRatePerYear = stakingRewards.info.value.currentEarnRate.multipliedBy(ONE_YEAR_SECONDS)
   const estimatedApyFromGfi = gfiToDollarsAtomic(currentEarnRatePerYear, gfi.info.value.price)
@@ -674,7 +682,7 @@ export function remainingCapacity(this: SeniorPoolData, maxPoolCapacity: BigNumb
 /**
  * Returns the amount of interest that the senior pool will accrue from tranched pools
  */
-async function getEstimatedTotalInterest(
+async function getEstimatedTotalSeniorPoolInterest(
   pool: SeniorPool,
   currentBlock: BlockInfo,
   tranchedPoolAddresses: string[]
@@ -684,33 +692,87 @@ async function getEstimatedTotalInterest(
     protocol.getContract<TranchedPool>("TranchedPool", address)
   )
   const poolMetadata = await getMetadataStore(pool.chain)
-  const protocolFee = new BigNumber("0.1")
+  const protocolFeePercentage = new BigNumber("0.1")
 
-  const getEstimatedInterestForPool = async (pool: Web3IO<TranchedPool>) => {
+  const getEstimatedSeniorPoolInterestForTranchedPool = async (pool: Web3IO<TranchedPool>) => {
+    const address = pool.readOnly.options.address.toLowerCase()
+
     const creditLineAddress = await pool.readOnly.methods.creditLine().call(undefined, currentBlock.number)
     const creditLine = await buildCreditLineReadOnly(creditLineAddress)
+
+    const termEndTime = new BigNumber(await creditLine.methods.termEndTime().call(undefined, currentBlock.number))
+    const termInDays = new BigNumber(await creditLine.methods.termInDays().call(undefined, currentBlock.number))
+    const termStartTime = termEndTime.gt(0)
+      ? termEndTime.minus(termInDays.multipliedBy(SECONDS_PER_DAY))
+      : new BigNumber(0)
+    const isMultipleSlicesCompatible = getIsMultipleSlicesCompatible(termStartTime)
+
+    const isV1Pool = poolMetadata[address]?.v1StyleDeal === true
 
     const balance = new BigNumber(await creditLine.methods.balance().call(undefined, currentBlock.number))
     const interestApr = new BigNumber(
       await creditLine.methods.interestApr().call(undefined, currentBlock.number)
     ).dividedBy(INTEREST_DECIMALS.toString())
-    const juniorFeePercentage = new BigNumber(
-      await pool.readOnly.methods.juniorFeePercent().call(undefined, currentBlock.number)
-    ).dividedBy("100")
+    const juniorFeePercentage = isV1Pool
+      ? new BigNumber(0)
+      : new BigNumber(await pool.readOnly.methods.juniorFeePercent().call(undefined, currentBlock.number)).dividedBy(
+          "100"
+        )
 
-    const address = pool.readOnly.options.address.toLowerCase()
-    const isV1Pool = poolMetadata[address]?.v1StyleDeal === true
-    const seniorPoolPercentageOfInterest = new BigNumber("1")
-      // dont include the junior fee percentage in v1 pools
-      .minus(isV1Pool ? new BigNumber("0") : juniorFeePercentage)
-      .minus(protocolFee)
+    const totalInterest = balance.multipliedBy(interestApr)
 
-    return balance.multipliedBy(interestApr).multipliedBy(seniorPoolPercentageOfInterest)
+    let seniorPoolPercentageOfPrincipal: BigNumber
+    if (isV1Pool) {
+      seniorPoolPercentageOfPrincipal = new BigNumber(1)
+    } else {
+      let totalJuniorDeposits: BigNumber
+      let totalSeniorDeposits: BigNumber
+      if (isMultipleSlicesCompatible) {
+        totalJuniorDeposits = new BigNumber(
+          await pool.readOnly.methods.totalJuniorDeposits().call(undefined, currentBlock.number)
+        )
+
+        const numSlices = Number(await pool.readOnly.methods.numSlices().call(undefined, currentBlock.number))
+        totalSeniorDeposits = new BigNumber(0)
+        for (let i = 0; i < numSlices; i++) {
+          totalSeniorDeposits = totalSeniorDeposits.plus(
+            new BigNumber(
+              (await pool.readOnly.methods.poolSlices(i).call(undefined, currentBlock.number)).seniorTranche[1]
+            )
+          )
+        }
+      } else {
+        const juniorTranche = await pool.readOnly.methods
+          .getTranche(TRANCHES.Junior)
+          .call(undefined, currentBlock.number)
+        totalJuniorDeposits = new BigNumber(juniorTranche[1])
+        const seniorTranche = await pool.readOnly.methods
+          .getTranche(TRANCHES.Senior)
+          .call(undefined, currentBlock.number)
+        totalSeniorDeposits = new BigNumber(seniorTranche[1])
+      }
+
+      seniorPoolPercentageOfPrincipal = totalSeniorDeposits.dividedBy(totalSeniorDeposits.plus(totalJuniorDeposits))
+
+      if (
+        !seniorPoolPercentageOfPrincipal.eq(new BigNumber("0.8")) &&
+        !seniorPoolPercentageOfPrincipal.eq(new BigNumber("0.75"))
+      ) {
+        throw new Error("Unexpected implicit leverage ratio.")
+      }
+    }
+
+    const seniorPoolGrossInterest = totalInterest.multipliedBy(seniorPoolPercentageOfPrincipal)
+    const seniorPoolNetInterest = seniorPoolGrossInterest
+      .minus(seniorPoolGrossInterest.multipliedBy(juniorFeePercentage))
+      .minus(seniorPoolGrossInterest.multipliedBy(protocolFeePercentage))
+
+    return seniorPoolNetInterest
   }
 
-  const estimatedInterestPerPool = await Promise.all(tranchedPools.map((x) => getEstimatedInterestForPool(x)))
+  const estimatedPerPool = await Promise.all(tranchedPools.map((x) => getEstimatedSeniorPoolInterestForTranchedPool(x)))
 
-  return BigNumber.sum.apply(null, estimatedInterestPerPool)
+  return BigNumber.sum.apply(null, estimatedPerPool)
 }
 
 /**

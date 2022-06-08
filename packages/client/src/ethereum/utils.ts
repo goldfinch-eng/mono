@@ -17,6 +17,10 @@ import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 import {getCachedPastEvents} from "./GoldfinchProtocol"
 
+const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
+export const getIsMultipleSlicesCompatible = (termStartTime: BigNumber) =>
+  termStartTime.eq(0) || termStartTime.toNumber() >= V2_2_MIGRATION_TIME
+
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
 const USDC_DECIMALS = decimals
