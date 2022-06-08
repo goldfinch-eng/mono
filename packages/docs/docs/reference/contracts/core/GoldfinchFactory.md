@@ -113,12 +113,6 @@ Allows anyone to create a new TranchedPool for a single borrower
 function createMigratedPool(address _borrower, uint256 _juniorFeePercent, uint256 _limit, uint256 _interestApr, uint256 _paymentPeriodInDays, uint256 _termInDays, uint256 _lateFeeApr, uint256 _principalGracePeriodInDays, uint256 _fundableAt, uint256[] _allowedUIDTypes) external returns (address pool)
 ```
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
 ### _deployMinimal
 
 ```solidity
