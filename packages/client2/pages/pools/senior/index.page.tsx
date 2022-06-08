@@ -99,13 +99,6 @@ export default function SeniorPoolPage() {
       <div className="flex flex-col items-stretch gap-10 xl:grid xl:grid-cols-12">
         <div className="xl:relative xl:col-start-9 xl:col-end-13">
           <div className="flex flex-col items-stretch gap-8 xl:sticky xl:top-12">
-            {seniorPool && fiatPerGfi ? (
-              <SeniorPoolSupplyPanel
-                seniorPool={seniorPool}
-                user={user}
-                fiatPerGfi={fiatPerGfi}
-              />
-            ) : null}
             {data && shouldShowWithdrawal && (
               <SeniorPoolWithDrawalPanel
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
@@ -114,6 +107,14 @@ export default function SeniorPoolPage() {
                 seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
               />
             )}
+
+            {seniorPool && fiatPerGfi ? (
+              <SeniorPoolSupplyPanel
+                seniorPool={seniorPool}
+                user={user}
+                fiatPerGfi={fiatPerGfi}
+              />
+            ) : null}
           </div>
         </div>
         <div className="xl:col-start-1 xl:col-end-9 xl:row-start-1">
