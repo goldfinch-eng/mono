@@ -31,16 +31,14 @@ interface SeniorPoolWithdrawalPanelProps {
   fiduBalance?: CryptoAmount;
   stakedPositions?: SeniorPoolWithdrawalPanelPositionFieldsFragment[];
   seniorPoolSharePrice: BigNumber;
+  seniorPoolLiquidity: BigNumber;
 }
-
-// TODO Max button on withdraw. Should this try to express in FIDU? High level of precision?
-// TODO Validation on withdraw amount
-// TODO limit this by the amount of liquidity in the senior pool
 
 export function SeniorPoolWithDrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
   stakedPositions = [],
+  seniorPoolLiquidity,
 }: SeniorPoolWithdrawalPanelProps) {
   const unstakedBalanceUsdc = sharesToUsdc(
     fiduBalance.amount,
@@ -53,10 +51,12 @@ export function SeniorPoolWithDrawalPanel({
     ),
     seniorPoolSharePrice
   );
-  const availableToWithdrawUsdc = {
-    token: SupportedCrypto.Usdc,
-    amount: unstakedBalanceUsdc.amount.add(stakedBalanceUsdc.amount),
-  };
+  const unstakedPlusStaked = unstakedBalanceUsdc.amount.add(
+    stakedBalanceUsdc.amount
+  );
+  const maxWithdrawable = unstakedPlusStaked.gt(seniorPoolLiquidity)
+    ? seniorPoolLiquidity
+    : unstakedPlusStaked;
 
   const seniorPoolContract = useContract("SeniorPool");
   const stakingRewardsContract = useContract("StakingRewards");
@@ -67,6 +67,7 @@ export function SeniorPoolWithDrawalPanel({
     handleSubmit,
     formState: { errors, isSubmitting, isSubmitSuccessful },
     reset,
+    setValue,
   } = useForm<{ amount: string }>();
 
   const handler = handleSubmit(async (data) => {
@@ -175,11 +176,31 @@ export function SeniorPoolWithDrawalPanel({
     }
   }, [isSubmitSuccessful, reset]);
 
+  const handleMax = () => {
+    setValue(
+      "amount",
+      utils.formatUnits(maxWithdrawable, USDC_DECIMALS).toString()
+    );
+  };
+
+  const validateAmount = async (value: string) => {
+    const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
+    if (valueAsUsdc.lte(BigNumber.from(0))) {
+      return "Amount must be greater than 0";
+    }
+    if (valueAsUsdc.gt(maxWithdrawable)) {
+      return "Amount exceeds what is available to withdraw";
+    }
+  };
+
   return (
     <div className="col rounded-xl bg-sunrise-01 p-5 text-white">
       <div className="mb-3 text-sm">Available to withdraw</div>
       <div className="mb-9 flex items-center gap-3 text-5xl">
-        {formatCrypto(availableToWithdrawUsdc, { includeSymbol: true })}
+        {formatCrypto(
+          { token: SupportedCrypto.Usdc, amount: maxWithdrawable },
+          { includeSymbol: true }
+        )}
         <Icon name="Usdc" size="sm" />
       </div>
       <form onSubmit={handler}>
@@ -190,9 +211,10 @@ export function SeniorPoolWithDrawalPanel({
             control={control}
             textSize="xl"
             colorScheme="dark"
-            rules={{ required: "Required" }}
+            rules={{ required: "Required", validate: validateAmount }}
             labelClassName="!mb-3 text-sm"
             errorMessage={errors?.amount?.message}
+            onMaxClick={handleMax}
           />
         </div>
         <div className="mb-3 text-sm">

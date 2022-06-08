@@ -50,7 +50,7 @@ export function DollarInput({
           mask: Number,
           thousandsSeparator: ",",
           lazy: false,
-          scale: 2,
+          scale: 6,
           radix: ".",
         },
       }}

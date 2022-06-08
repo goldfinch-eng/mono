@@ -49,6 +49,7 @@ gql`
       latestPoolStatus {
         id
         sharePrice
+        usdcBalance
       }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
@@ -110,6 +111,7 @@ export default function SeniorPoolPage() {
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
                 seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 stakedPositions={user?.seniorPoolStakedPositions}
+                seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
               />
             )}
           </div>
