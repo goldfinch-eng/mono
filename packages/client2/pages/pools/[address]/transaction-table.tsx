@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
-import { Icon, ShimmerLines, Table } from "@/components/design-system";
+import { Link, ShimmerLines, Table } from "@/components/design-system";
 import { Identicon } from "@/components/identicon";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -92,7 +92,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         <div key={`${transaction.id}-user`}>{user}</div>,
         <div key={`${transaction.id}-category`}>
           {transaction.category === TransactionCategory.TranchedPoolDeposit
-            ? "Deposit"
+            ? "Supply"
             : transaction.category ===
               TransactionCategory.TranchedPoolWithdrawal
             ? "Withdrawal"
@@ -108,16 +108,17 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
             { includeSymbol: true }
           )}
         </div>,
-        <a
+        <div key={`${transaction.id}-date`}>{format(date, "MMMM d, y")}</div>,
+        <Link
           href={`https://etherscan.io/tx/${transaction.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-end gap-3 hover:underline"
-          key={`${transaction.id}-timestamp`}
+          className="text-sand-400"
+          key={`${transaction.id}-link`}
+          iconRight="ArrowTopRight"
         >
-          {format(date, "MMMM d, y")}
-          <Icon name="ArrowTopRight" size="sm" />
-        </a>,
+          Tx
+        </Link>,
       ];
     }) ?? [];
 
@@ -140,7 +141,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
     </div>
   ) : (
     <Table
-      headings={["User", "Category", "Amount", "Date"]}
+      headings={["User", "Category", "Amount", "Date", "Link"]}
       hideHeadings
       rows={rows}
       onScrollBottom={onScrollBottom}
