@@ -44,7 +44,7 @@ export function Table({
       <div className="max-h-96 overflow-auto">
         <table
           className={clsx(
-            "min-w-full table-fixed border-collapse text-sm",
+            "min-w-full table-fixed border-collapse whitespace-nowrap text-sm",
             className
           )}
         >

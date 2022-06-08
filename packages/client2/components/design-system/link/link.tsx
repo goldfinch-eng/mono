@@ -2,6 +2,8 @@ import clsx from "clsx";
 import NextLink, { LinkProps as NextLinkProps } from "next/link";
 import { AnchorHTMLAttributes } from "react";
 
+import { IconNameType, Icon } from "../icon";
+
 interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   /**
    * Content within the link. Limited to strings only
@@ -16,6 +18,7 @@ interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
    */
   nextLinkProps?: NextLinkProps;
   className?: string;
+  iconRight?: IconNameType;
 }
 
 export function Link({
@@ -23,12 +26,20 @@ export function Link({
   href,
   nextLinkProps,
   className,
+  iconRight,
   ...rest
 }: LinkProps) {
   return (
     <NextLink passHref {...nextLinkProps} href={href}>
-      <a className={clsx("underline hover:no-underline", className)} {...rest}>
+      <a
+        className={clsx(
+          "inline-flex items-center gap-1 underline hover:no-underline",
+          className
+        )}
+        {...rest}
+      >
         {children}
+        {iconRight ? <Icon name={iconRight} size="sm" /> : null}
       </a>
     </NextLink>
   );

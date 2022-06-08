@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
-import { Icon, Link, Table } from "@/components/design-system";
+import { Link, Table } from "@/components/design-system";
+import { Identicon } from "@/components/identicon";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -14,13 +15,23 @@ import {
 gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
     transactions(
-      where: { category_in: [TRANCHED_POOL_DRAWDOWN, TRANCHED_POOL_REPAYMENT] }
+      where: {
+        category_in: [
+          TRANCHED_POOL_DRAWDOWN
+          TRANCHED_POOL_REPAYMENT
+          SENIOR_POOL_DEPOSIT
+          SENIOR_POOL_WITHDRAWAL
+        ]
+      }
       orderBy: timestamp
       orderDirection: desc
       first: $first
       skip: $skip
     ) {
       id
+      user {
+        id
+      }
       timestamp
       amount
       category
@@ -28,6 +39,10 @@ gql`
         id
         name @client
         icon @client
+        borrower @client {
+          name
+          logo
+        }
       }
     }
   }
@@ -45,43 +60,70 @@ export function RecentRepaymentsTable() {
       const transactionAmount = formatCrypto(
         {
           token: SupportedCrypto.Usdc,
-          amount:
-            transaction.category === TransactionCategory.TranchedPoolDrawdown
-              ? transaction.amount.mul(-1)
-              : transaction.amount,
+          amount: transaction.amount,
         },
         { includeSymbol: true }
       );
 
       return [
         <div key={`${transaction.id}-user`} className="flex items-center gap-2">
-          <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
-            {transaction.tranchedPool?.icon ? (
-              <Image
-                src={transaction.tranchedPool.icon as string}
-                layout="fill"
-                sizes="24px"
-                alt=""
-              />
-            ) : null}
-          </div>
-          <Link href={`/pools/${transaction.tranchedPool?.id}`}>
-            {transaction.tranchedPool?.name ?? "Unnamed Pool"}
-          </Link>
+          {transaction.category === TransactionCategory.TranchedPoolDrawdown ||
+          transaction.category === TransactionCategory.TranchedPoolRepayment ? (
+            <>
+              <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
+                <Image
+                  src={transaction.tranchedPool?.icon as string}
+                  layout="fill"
+                  sizes="24px"
+                  alt=""
+                />
+              </div>
+              <div>{transaction.tranchedPool?.borrower.name}</div>
+            </>
+          ) : (
+            <>
+              <Identicon className="h-6 w-6" account={transaction.user.id} />
+              <div>
+                {transaction.user.id.substring(0, 6)}...
+                {transaction.user.id.substring(transaction.user.id.length - 4)}
+              </div>
+            </>
+          )}
+        </div>,
+        <div key={`${transaction.id}-category`}>
+          {transaction.category === TransactionCategory.SeniorPoolDeposit
+            ? "Supply"
+            : transaction.category === TransactionCategory.SeniorPoolWithdrawal
+            ? "Withdrawal"
+            : transaction.category === TransactionCategory.TranchedPoolDrawdown
+            ? "Drawdown"
+            : transaction.category === TransactionCategory.TranchedPoolRepayment
+            ? "Repayment"
+            : null}
         </div>,
         <div key={`${transaction.id}-amount`} className="text-right">
           {transactionAmount}
         </div>,
-        <a
+        <div key={`${transaction.id}-date`} className="text-right">
+          {format(date, "MMMM d, y")}
+        </div>,
+        transaction.tranchedPool ? (
+          <Link
+            href={`/pools/${transaction.tranchedPool.id}`}
+            iconRight="ArrowTopRight"
+          >
+            Pool
+          </Link>
+        ) : null,
+        <Link
           href={`https://etherscan.io/tx/${transaction.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-end gap-3 hover:underline"
-          key={`${transaction.id}-timestamp`}
+          key={`${transaction.id}-tx`}
+          iconRight="ArrowTopRight"
         >
-          {format(date, "MMMM d, y")}
-          <Icon name="ArrowTopRight" size="sm" />
-        </a>,
+          Tx
+        </Link>,
       ];
     }) ?? [];
 
@@ -98,14 +140,21 @@ export function RecentRepaymentsTable() {
 
   return (
     <div>
-      <h2 className="mb-8 text-3xl">Recent Borrower Transactions</h2>
+      <h2 className="mb-8 text-3xl">Recent Transactions</h2>
       {error ? (
         <div className="text-clay-500">
           Unable to fetch recent transactions. {error}
         </div>
       ) : (
         <Table
-          headings={["Borrower", "Amount", "Date"]}
+          headings={[
+            "User",
+            "Category",
+            "Amount",
+            "Date",
+            "Pool",
+            "Transaction",
+          ]}
           hideHeadings
           rows={transactions}
           onScrollBottom={onScrollBottom}

@@ -81,7 +81,7 @@
 
   .pool-layout {
     @apply grid gap-10;
-    grid-template-columns: 1fr;
+    grid-template-columns: 100%;
     grid-template-areas:
       "heading"
       "widgets"
