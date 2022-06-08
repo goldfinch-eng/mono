@@ -275,11 +275,6 @@ class GfiRewardOnInterest {
   }
 }
 
-const tranchedPoolBlacklist = [
-  "0x6b42b1a43abe9598052bb8c21fd34c46c9fbcb8b", // Bogus tranched pool with an enormous limit that skews rewards
-  "0xa49506632ce8ec826b0190262b89a800353675ec", // Another bogus pool
-]
-
 export function calculateApyFromGfiForAllPools(now: BigInt): void {
   const backerRewards = getBackerRewards()
   // Bail out early if the backer rewards parameters aren't populated yet
@@ -292,10 +287,6 @@ export function calculateApyFromGfiForAllPools(now: BigInt): void {
   for (let i = 0; i < tranchedPoolList.length; i++) {
     const tranchedPool = TranchedPool.load(tranchedPoolList[i])
     if (!tranchedPool) {
-      continue
-    }
-    // There's a bogus tranched pool out in the wild that satisfies the requirements for rewards and has a ridiculous number-warping payout. It has to be excluded
-    if (tranchedPoolBlacklist.includes(tranchedPool.id)) {
       continue
     }
     const creditLine = CreditLine.load(tranchedPool.creditLine)
