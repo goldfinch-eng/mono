@@ -48,7 +48,7 @@ gql`
   }
 `;
 
-export function RecentRepaymentsTable() {
+export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
   const { data, error, fetchMore } = useBorrowerTransactionsQuery({
     variables: { first: 20, skip: 0 },
@@ -111,6 +111,7 @@ export function RecentRepaymentsTable() {
           <Link
             href={`/pools/${transaction.tranchedPool.id}`}
             iconRight="ArrowTopRight"
+            className="text-sand-400"
           >
             Pool
           </Link>
@@ -121,6 +122,7 @@ export function RecentRepaymentsTable() {
           rel="noopener noreferrer"
           key={`${transaction.id}-tx`}
           iconRight="ArrowTopRight"
+          className="text-sand-400"
         >
           Tx
         </Link>,

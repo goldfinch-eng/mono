@@ -17,7 +17,6 @@ import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import goldfinchYellow from "./goldfinch-yellow.png";
-import { RecentRepaymentsTable } from "./recent-repayments-table";
 import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
@@ -28,6 +27,7 @@ import {
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
 } from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
+import { TransactionTable } from "./transaction-table";
 import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
 gql`
@@ -174,7 +174,7 @@ export default function SeniorPoolPage() {
                       distributions.
                     </li>
                   </ul>
-                  <RecentRepaymentsTable />
+                  <TransactionTable />
                 </TabContent>
                 <TabContent>
                   <h2 className="mb-8 text-3xl">How It Works</h2>
