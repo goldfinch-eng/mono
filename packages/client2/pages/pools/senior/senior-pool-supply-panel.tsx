@@ -71,7 +71,9 @@ export function SeniorPoolSupplyPanel({
     handleSubmit,
     reset,
     setValue,
-  } = useForm<{ supply: string; isStaking: string }>();
+  } = useForm<{ supply: string; isStaking: boolean }>({
+    defaultValues: { isStaking: true },
+  });
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
   const seniorPoolContract = useContract("SeniorPool");
