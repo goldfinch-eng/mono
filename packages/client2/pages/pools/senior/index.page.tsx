@@ -28,6 +28,7 @@ import {
   SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
 } from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
+import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
 gql`
   ${SENIOR_POOL_STATUS_FIELDS}
@@ -115,6 +116,19 @@ export default function SeniorPoolPage() {
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
                 user={user}
+                fiatPerGfi={fiatPerGfi}
+              />
+            ) : null}
+
+            {data?.viewer.fiduBalance?.amount.gt(0) &&
+            seniorPool &&
+            fiatPerGfi ? (
+              <UnstakedFiduBanner
+                fiduBalance={data.viewer.fiduBalance}
+                sharePrice={seniorPool?.latestPoolStatus.sharePrice}
+                estimatedApyFromGfiRaw={
+                  seniorPool?.latestPoolStatus.estimatedApy
+                }
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}
