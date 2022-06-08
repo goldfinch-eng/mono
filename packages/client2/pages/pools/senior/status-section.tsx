@@ -25,7 +25,7 @@ export function StatusSection({ seniorPool }: StatusSectionProps) {
   return (
     <div>
       <h2 className="mb-8 font-sans text-3xl">Pool Status</h2>
-      <div className="flex gap-14">
+      <div className="flex flex-wrap gap-14">
         <Stat
           label="Total Pool Balance"
           value={formatCrypto(

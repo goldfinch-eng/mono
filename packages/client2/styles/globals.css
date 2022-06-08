@@ -78,6 +78,23 @@
         "icon title2 data1 data2 chip";
     }
   }
+
+  .pool-layout {
+    @apply grid gap-10;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "heading"
+      "widgets"
+      "info";
+  }
+  @media screen(lg) {
+    .pool-layout {
+      grid-template-columns: 2fr 1fr;
+      grid-template-areas:
+        "heading widgets"
+        "info widgets";
+    }
+  }
 }
 
 @layer utilities {

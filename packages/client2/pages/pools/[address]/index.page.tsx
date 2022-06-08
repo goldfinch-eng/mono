@@ -217,30 +217,33 @@ export default function PoolPage() {
         </SubnavPortal>
       )}
 
-      <div className="mb-10 flex flex-col-reverse sm:mb-8 sm:flex-row sm:justify-between">
-        <div>
-          <Breadcrumb label={tranchedPool?.name} image={tranchedPool?.icon} />
-        </div>
-        <div className="mb-6 flex justify-center sm:mb-0">
-          <Button
-            variant="rounded"
-            colorScheme="secondary"
-            className="mr-2"
-            onClick={share}
-          >
-            Share
-          </Button>
-          <Button
-            variant="rounded"
-            colorScheme="secondary"
-            iconRight="ArrowTopRight"
-          >
-            Contract
-          </Button>
-        </div>
-      </div>
-      <div className="grid gap-10 md:grid-flow-col md:grid-cols-12">
-        <div className="order-1 md:col-span-7 lg:col-span-8">
+      <div className="pool-layout">
+        <div style={{ gridArea: "heading" }}>
+          <div className="mb-10 flex flex-col-reverse sm:mb-8 sm:flex-row sm:justify-between">
+            <div>
+              <Breadcrumb
+                label={tranchedPool?.name}
+                image={tranchedPool?.icon}
+              />
+            </div>
+            <div className="mb-6 flex justify-center sm:mb-0">
+              <Button
+                variant="rounded"
+                colorScheme="secondary"
+                className="mr-2"
+                onClick={share}
+              >
+                Share
+              </Button>
+              <Button
+                variant="rounded"
+                colorScheme="secondary"
+                iconRight="ArrowTopRight"
+              >
+                Contract
+              </Button>
+            </div>
+          </div>
           <Heading
             level={1}
             className="mb-5 text-center font-serif text-sand-800 sm:mb-3 md:text-left"
@@ -420,7 +423,39 @@ export default function PoolPage() {
           </div>
         </div>
 
-        <div className="order-3  md:order-2 md:col-span-7 lg:col-span-8">
+        <div className="relative" style={{ gridArea: "widgets" }}>
+          {tranchedPool && seniorPool && fiatPerGfi ? (
+            <div className="flex flex-col items-stretch gap-8 lg:sticky lg:top-12">
+              {poolStatus === PoolStatus.Full && (
+                <RepaymentProgressPanel tranchedPool={tranchedPool} />
+              )}
+
+              {data?.user && data?.user.tokens.length > 0 ? (
+                <WithdrawalPanel
+                  tranchedPoolAddress={tranchedPool.id}
+                  poolTokens={data.user.tokens}
+                />
+              ) : null}
+
+              {poolStatus === PoolStatus.Open && (
+                <SupplyPanel
+                  tranchedPool={tranchedPool}
+                  user={user}
+                  fiatPerGfi={fiatPerGfi}
+                  seniorPoolApyFromGfiRaw={
+                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+                  }
+                />
+              )}
+
+              {poolStatus === PoolStatus.ComingSoon && (
+                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{ gridArea: "info" }}>
           <TabGroup>
             <TabList>
               <TabButton>Deal Overview</TabButton>
@@ -483,38 +518,6 @@ export default function PoolPage() {
               </TabContent>
             </TabPanels>
           </TabGroup>
-        </div>
-
-        <div className="relative order-2 md:order-3 md:col-span-5 md:row-span-2 lg:col-span-4">
-          {tranchedPool && seniorPool && fiatPerGfi ? (
-            <div className="sticky top-12 space-y-8">
-              {poolStatus === PoolStatus.Full && (
-                <RepaymentProgressPanel tranchedPool={tranchedPool} />
-              )}
-
-              {data?.user && data?.user.tokens.length > 0 ? (
-                <WithdrawalPanel
-                  tranchedPoolAddress={tranchedPool.id}
-                  poolTokens={data.user.tokens}
-                />
-              ) : null}
-
-              {poolStatus === PoolStatus.Open && (
-                <SupplyPanel
-                  tranchedPool={tranchedPool}
-                  user={user}
-                  fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={
-                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                  }
-                />
-              )}
-
-              {poolStatus === PoolStatus.ComingSoon && (
-                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-              )}
-            </div>
-          ) : null}
         </div>
       </div>
     </>

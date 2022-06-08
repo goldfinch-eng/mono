@@ -90,15 +90,18 @@ export default function SeniorPoolPage() {
           expandedContent="This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements."
         />
       </BannerPortal>
-      <div className="mb-6 flex justify-center lg:justify-start">
-        <Breadcrumb label="Goldfinch" image={goldfinchYellow.src} />
-      </div>
-      <Heading className="mb-12 text-center lg:text-left" level={1}>
-        Senior Pool
-      </Heading>
-      <div className="flex flex-col items-stretch gap-10 xl:grid xl:grid-cols-12">
-        <div className="xl:relative xl:col-start-9 xl:col-end-13">
-          <div className="flex flex-col items-stretch gap-8 xl:sticky xl:top-12">
+
+      <div className="pool-layout">
+        <div style={{ gridArea: "heading" }}>
+          <div className="mb-6 flex justify-center lg:justify-start">
+            <Breadcrumb label="Goldfinch" image={goldfinchYellow.src} />
+          </div>
+          <Heading className="text-center lg:text-left" level={1}>
+            Senior Pool
+          </Heading>
+        </div>
+        <div className="relative" style={{ gridArea: "widgets" }}>
+          <div className="flex flex-col items-stretch gap-8 lg:sticky lg:top-12">
             {data && shouldShowWithdrawal && (
               <SeniorPoolWithDrawalPanel
                 fiduBalance={data.viewer.fiduBalance ?? undefined}
@@ -117,7 +120,7 @@ export default function SeniorPoolPage() {
             ) : null}
           </div>
         </div>
-        <div className="xl:col-start-1 xl:col-end-9 xl:row-start-1">
+        <div style={{ gridArea: "info" }}>
           {error ? (
             <HelperText isError>
               There was a problem fetching data on the senior pool. Shown data

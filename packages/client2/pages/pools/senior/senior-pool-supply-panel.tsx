@@ -179,7 +179,7 @@ export function SeniorPoolSupplyPanel({
   };
 
   return (
-    <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row xl:flex-col">
+    <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row lg:flex-col">
       <div
         data-id="top-half"
         className="flex flex-grow basis-0 flex-col items-start"
