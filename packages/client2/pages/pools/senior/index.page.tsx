@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { BigNumber } from "ethers";
 
 import {
   Banner,
@@ -22,20 +23,35 @@ import {
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
   SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS,
 } from "./senior-pool-supply-panel";
+import {
+  SeniorPoolWithDrawalPanel,
+  SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS,
+} from "./senior-pool-withdrawal-panel";
 import { StatusSection, SENIOR_POOL_STATUS_FIELDS } from "./status-section";
+import { UnstakedFiduBanner } from "./unstaked-fidu-panel";
 
 gql`
   ${SENIOR_POOL_STATUS_FIELDS}
 
   ${SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS}
   ${SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS}
+
+  ${SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS}
   query SeniorPoolPage($userId: ID!) {
     user(id: $userId) {
       id
       ...SeniorPoolSupplyPanelUserFields
+      seniorPoolStakedPositions {
+        ...SeniorPoolWithdrawalPanelPositionFields
+      }
     }
     seniorPools(first: 1) {
       id
+      latestPoolStatus {
+        id
+        sharePrice
+        usdcBalance
+      }
       ...SeniorPoolStatusFields
       ...SeniorPoolSupplyPanelPoolFields
     }
@@ -43,6 +59,12 @@ gql`
       price {
         amount
         symbol
+      }
+    }
+    viewer @client {
+      fiduBalance {
+        token
+        amount
       }
     }
   }
@@ -57,7 +79,10 @@ export default function SeniorPoolPage() {
   const seniorPool = data?.seniorPools[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice?.price.amount;
-
+  const shouldShowWithdrawal =
+    (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
+      user?.seniorPoolStakedPositions?.length !== 0) &&
+    seniorPool?.latestPoolStatus.sharePrice;
   return (
     <>
       <BannerPortal>
@@ -66,15 +91,27 @@ export default function SeniorPoolPage() {
           expandedContent="This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements."
         />
       </BannerPortal>
-      <div className="mb-6 flex justify-center lg:justify-start">
-        <Breadcrumb label="Goldfinch" image={goldfinchYellow.src} />
-      </div>
-      <Heading className="mb-12 text-center lg:text-left" level={1}>
-        Senior Pool
-      </Heading>
-      <div className="flex flex-col items-stretch gap-10 xl:grid xl:grid-cols-12">
-        <div className="xl:relative xl:col-start-9 xl:col-end-13">
-          <div className="flex flex-col items-stretch gap-8 xl:sticky xl:top-12">
+
+      <div className="pool-layout">
+        <div style={{ gridArea: "heading" }}>
+          <div className="mb-6 flex justify-center lg:justify-start">
+            <Breadcrumb label="Goldfinch" image={goldfinchYellow.src} />
+          </div>
+          <Heading className="text-center lg:text-left" level={1}>
+            Senior Pool
+          </Heading>
+        </div>
+        <div className="relative" style={{ gridArea: "widgets" }}>
+          <div className="flex flex-col items-stretch gap-8 lg:sticky lg:top-12">
+            {data && shouldShowWithdrawal && (
+              <SeniorPoolWithDrawalPanel
+                fiduBalance={data.viewer.fiduBalance ?? undefined}
+                seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                stakedPositions={user?.seniorPoolStakedPositions}
+                seniorPoolLiquidity={seniorPool.latestPoolStatus.usdcBalance}
+              />
+            )}
+
             {seniorPool && fiatPerGfi ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
@@ -82,9 +119,22 @@ export default function SeniorPoolPage() {
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}
+
+            {data?.viewer.fiduBalance?.amount.gt(0) &&
+            seniorPool &&
+            fiatPerGfi ? (
+              <UnstakedFiduBanner
+                fiduBalance={data.viewer.fiduBalance}
+                sharePrice={seniorPool?.latestPoolStatus.sharePrice}
+                estimatedApyFromGfiRaw={
+                  seniorPool?.latestPoolStatus.estimatedApy
+                }
+                fiatPerGfi={fiatPerGfi}
+              />
+            ) : null}
           </div>
         </div>
-        <div className="xl:col-start-1 xl:col-end-9 xl:row-start-1">
+        <div style={{ gridArea: "info" }}>
           {error ? (
             <HelperText isError>
               There was a problem fetching data on the senior pool. Shown data

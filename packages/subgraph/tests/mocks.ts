@@ -9,6 +9,7 @@ import {
   FIDU_ADDRESS,
   OLD_FIXED_LEVERAGE_RATIO_ADDRESS,
   CONFIG_KEYS_ADDRESSES,
+  USDC_CONTRACT_ADDRESS,
 } from "../src/constants"
 
 export function mockTranchedPoolMultipleSlicesCalls(
@@ -312,6 +313,10 @@ export function mockUpdatePoolStatusCalls(seniorPoolAddress: string): void {
 
   createMockedFunction(Address.fromString(FIDU_ADDRESS), "totalSupply", "totalSupply():(uint256)")
     .withArgs([])
+    .returns([amount])
+
+  createMockedFunction(Address.fromString(USDC_CONTRACT_ADDRESS), "balanceOf", "balanceOf(address):(uint256)")
+    .withArgs([ethereum.Value.fromAddress(Address.fromString(seniorPoolAddress))])
     .returns([amount])
 }
 
