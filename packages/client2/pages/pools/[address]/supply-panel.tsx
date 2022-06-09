@@ -91,9 +91,11 @@ export default function SupplyPanel({
   seniorPoolSharePrice,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
-  const { account, provider, chainId } = useWallet();
+  const { account, provider } = useWallet();
   const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
   const usdcContract = useContract("USDC");
+  const zapperContract = useContract("Zapper");
+  const stakingRewardsContract = useContract("StakingRewards");
 
   const isUserVerified =
     user?.isGoListed ||
@@ -146,18 +148,15 @@ export default function SupplyPanel({
   };
 
   const onSubmit = async (data: SupplyForm) => {
-    if (
-      !usdcContract ||
-      !tranchedPoolContract ||
-      !provider ||
-      !account ||
-      !chainId
-    ) {
+    if (!usdcContract || !provider || !account) {
       throw new Error("Wallet not connected properly");
     }
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
     if (data.source === "wallet") {
+      if (!tranchedPoolContract) {
+        throw new Error("Wallet not connected properly");
+      }
       const now = (await provider.getBlock("latest")).timestamp;
       const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
       const signature = await generateErc20PermitSignature({
@@ -180,6 +179,35 @@ export default function SupplyPanel({
       await toastTransaction({
         transaction,
         pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+      });
+    } else {
+      if (!zapperContract || !stakingRewardsContract) {
+        throw new Error("Wallet not connected properly");
+      }
+
+      const stakedPositionId = BigNumber.from(data.source.split("-")[1]);
+      const tranche = BigNumber.from(2); // TODO this is really lazy. With multi-sliced pools this needs to be dynamic
+
+      const isAlreadyApproved = await stakingRewardsContract.isApprovedForAll(
+        account,
+        zapperContract.address
+      );
+      if (!isAlreadyApproved) {
+        const approval = await stakingRewardsContract.setApprovalForAll(
+          zapperContract.address,
+          true
+        );
+        await approval.wait();
+      }
+      const transaction = zapperContract.zapStakeToTranchedPool(
+        stakedPositionId,
+        tranchedPoolAddress,
+        tranche,
+        value
+      );
+      await toastTransaction({
+        transaction,
+        pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
       });
     }
     await apolloClient.refetchQueries({ include: "active" });
@@ -343,7 +371,7 @@ export default function SupplyPanel({
             colorScheme="dark"
             textSize="xl"
             labelClassName="!text-sm !mb-3"
-            className="mb-4"
+            className={availableSources.length > 1 ? "mb-4" : "hidden"}
           />
           <DollarInput
             control={control}
