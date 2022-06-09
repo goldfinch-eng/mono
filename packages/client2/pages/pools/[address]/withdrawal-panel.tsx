@@ -32,6 +32,8 @@ export const WITHDRAWAL_PANEL_ZAP_FIELDS = gql`
     }
     poolToken {
       id
+      principalRedeemable
+      interestRedeemable
     }
   }
 `;
@@ -56,7 +58,10 @@ export function WithdrawalPanel({
     BigNumber.from(0)
   );
   const totalZapped = zaps.reduce(
-    (prev, current) => current.amount.add(prev),
+    (prev, current) =>
+      prev
+        .add(current.poolToken.principalRedeemable)
+        .add(current.poolToken.interestRedeemable),
     BigNumber.from(0)
   );
   const totalWithdrawable = totalPrincipalRedeemable
@@ -178,7 +183,12 @@ export function WithdrawalPanel({
     ];
     const seniorPoolStakedPositions = zaps.map((zap, index) => ({
       label: `Senior Pool Capital ${index + 1} \u00b7 ${formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: zap.amount },
+        {
+          token: SupportedCrypto.Usdc,
+          amount: zap.poolToken.principalRedeemable.add(
+            zap.poolToken.interestRedeemable
+          ),
+        },
         { includeSymbol: true }
       )}`,
       value: `seniorPool-${zap.poolToken.id}`,
