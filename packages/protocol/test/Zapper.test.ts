@@ -105,7 +105,6 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   await stakingRewards.loadRewards(totalRewards)
 
   await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
-  await stakingRewards.setVestingSchedule(SECONDS_PER_YEAR)
 
   // Set up a TranchedPool
   const limit = usdcVal(1_000_000)

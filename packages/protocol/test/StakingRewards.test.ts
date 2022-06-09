@@ -248,9 +248,6 @@ describe("StakingRewards", function () {
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
 
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
-
       // Reset the effective multiplier for the Curve to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
 
@@ -723,9 +720,6 @@ describe("StakingRewards", function () {
 
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     it("deposits a FIDU-only position into Curve", async () => {
@@ -863,9 +857,6 @@ describe("StakingRewards", function () {
 
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     it("deposits a FIDU-only position into Curve and stakes resulting tokens", async () => {
@@ -1012,9 +1003,6 @@ describe("StakingRewards", function () {
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
-
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     it("transfers staked tokens to sender", async () => {
@@ -1074,41 +1062,6 @@ describe("StakingRewards", function () {
       expect(unstakedEvent.args.user).to.equal(investor)
       expect(unstakedEvent.args.tokenId).to.bignumber.equal(tokenId)
       expect(unstakedEvent.args.amount).to.bignumber.equal(fiduAmount)
-    })
-
-    context("position is vesting", async () => {
-      beforeEach(async function () {
-        // Enable vesting
-        await stakingRewards.setVestingSchedule(yearInSeconds)
-      })
-
-      it("slashes unvested rewards by the percent withdrawn", async () => {
-        await stake({amount: bigVal(100), from: anotherUser})
-        const tokenId = await stake({amount: bigVal(100), from: investor})
-
-        await advanceTime({seconds: halfYearInSeconds})
-
-        // Unstake 90% of position
-        await stakingRewards.unstake(tokenId, bigVal(90), {from: investor})
-
-        // 50% vested with 1/2 pool ownership, should be able to claim a quarter of rewards disbursed
-        const grantedRewardsInFirstHalf = rewardRate.mul(halfYearInSeconds).div(new BN(2))
-        const vestedRewardsInFirstHalf = grantedRewardsInFirstHalf.div(new BN(2))
-        await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
-          [() => gfi.balanceOf(investor), {byCloseTo: vestedRewardsInFirstHalf}],
-        ])
-
-        await advanceTime({seconds: halfYearInSeconds})
-
-        // 10% of unvested rewards from the first half year should still be claimable
-        // In addition, rewards accrued from the remaining 100 staked tokens for the second half year should be claimable
-        const unvestedFromFirstHalf = grantedRewardsInFirstHalf.sub(vestedRewardsInFirstHalf).div(new BN(10))
-        const newRewards = rewardRate.mul(halfYearInSeconds).div(new BN(11))
-        const expectedRewardsInSecondHalf = unvestedFromFirstHalf.add(newRewards)
-        await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
-          [() => gfi.balanceOf(investor), {byCloseTo: expectedRewardsInSecondHalf}],
-        ])
-      })
     })
 
     context("for an old position with unsafeEffectiveMultiplier = 0", async () => {
@@ -1179,27 +1132,6 @@ describe("StakingRewards", function () {
         await expectAction(() => stakingRewards.unstake(tokenId, fiduAmount, {from: owner})).toChange([
           [() => fidu.balanceOf(owner), {by: fiduAmount}],
           [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
-        ])
-      })
-
-      it("can unstake without slashing unvested grant", async () => {
-        // Enable vesting
-        await stakingRewards.setVestingSchedule(yearInSeconds)
-
-        const tokenId = await stake({amount: fiduAmount, from: investor})
-        await stakingRewards.approve(owner, tokenId, {from: investor})
-
-        await advanceTime({seconds: halfYearInSeconds})
-
-        await stakingRewards.unstake(tokenId, fiduAmount, {from: owner})
-
-        await advanceTime({seconds: halfYearInSeconds})
-
-        // All rewards in first half, including unvested, should be claimable by the
-        // end of the vesting schedule, since no slashing has occurred
-        const grantedRewardsInFirstHalf = rewardRate.mul(halfYearInSeconds)
-        await expectAction(() => stakingRewards.getReward(tokenId, {from: investor})).toChange([
-          [() => gfi.balanceOf(investor), {byCloseTo: grantedRewardsInFirstHalf}],
         ])
       })
     })
@@ -1303,9 +1235,6 @@ describe("StakingRewards", function () {
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
-
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
 
       // Set up stakes
       firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
@@ -1497,9 +1426,6 @@ describe("StakingRewards", function () {
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
-
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     it("unstakes fidu and withdraws from the senior pool", async () => {
@@ -1634,9 +1560,6 @@ describe("StakingRewards", function () {
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
-
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     it("unstakes fidu and withdraws from the senior pool", async () => {
@@ -1771,9 +1694,6 @@ describe("StakingRewards", function () {
 
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
-
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
 
       // Set up stakes
       firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
@@ -1989,9 +1909,6 @@ describe("StakingRewards", function () {
       totalRewards = rewardRate.mul(yearInSeconds)
       await mintRewards(totalRewards)
 
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
-
       // Set up stakes
       firstTokenAmount = fiduAmount.mul(new BN(3)).div(new BN(4))
       firstToken = await stake({amount: firstTokenAmount, from: investor})
@@ -2174,9 +2091,6 @@ describe("StakingRewards", function () {
 
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     it("transfers rewards to the user", async () => {
@@ -2520,31 +2434,6 @@ describe("StakingRewards", function () {
     })
   })
 
-  describe("vesting", async () => {
-    beforeEach(async function () {
-      // Mint a small, fixed amount that limits reward disbursement
-      // so we can test the vesting
-      await mintRewards("100000")
-    })
-
-    it("vests linearly over a year", async () => {
-      // Stake fidu
-      const tokenId = await stake({amount: fiduAmount, from: investor})
-
-      await advanceTime({seconds: halfYearInSeconds})
-
-      await stakingRewards.getReward(tokenId, {from: investor})
-      let gfiBalance = await gfi.balanceOf(investor)
-      expect(gfiBalance).to.bignumber.equal("50000")
-
-      await advanceTime({seconds: halfYearInSeconds})
-
-      await stakingRewards.getReward(tokenId, {from: investor})
-      gfiBalance = await gfi.balanceOf(investor)
-      expect(gfiBalance).to.bignumber.equal("100000")
-    })
-  })
-
   describe("setEffectiveMultiplier", async () => {
     beforeEach(async () => {
       // Mint rewards for a full year
@@ -2553,9 +2442,6 @@ describe("StakingRewards", function () {
 
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
@@ -2586,9 +2472,6 @@ describe("StakingRewards", function () {
 
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
@@ -2754,9 +2637,6 @@ describe("StakingRewards", function () {
       totalRewards = maxRate.mul(yearInSeconds)
 
       await mintRewards(totalRewards)
-
-      // Disable vesting
-      await stakingRewards.setVestingSchedule(new BN(0))
     })
 
     context("staked supply is below maxRateAtPercent", async () => {
@@ -2886,9 +2766,6 @@ describe("StakingRewards", function () {
 
         // Fix the reward rate to make testing easier
         await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-        // Disable vesting, to make testing base staking functionality easier
-        await stakingRewards.setVestingSchedule(new BN(0))
       })
 
       it("does not affect rewards", async () => {
@@ -3046,40 +2923,6 @@ describe("StakingRewards", function () {
     })
   })
 
-  describe("setVestingSchedule", async () => {
-    it("sets vesting parameters", async () => {
-      const vestingLength = halfYearInSeconds
-      await stakingRewards.setVestingSchedule(vestingLength)
-
-      expect(await stakingRewards.vestingLength()).to.bignumber.equal(vestingLength)
-    })
-
-    it("emits an event", async () => {
-      const newVestingLength = halfYearInSeconds
-      const tx = await stakingRewards.setVestingSchedule(newVestingLength, {from: owner})
-
-      expectEvent(tx, "VestingScheduleUpdated", {
-        who: owner,
-        vestingLength: newVestingLength,
-      })
-    })
-
-    it("checkpoints rewards", async () => {
-      const vestingLength = halfYearInSeconds
-      await stakingRewards.setVestingSchedule(vestingLength)
-
-      const t = await time.latest()
-      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
-    })
-
-    context("user is not admin", async () => {
-      it("reverts", async () => {
-        const vestingLength = halfYearInSeconds
-        await expect(stakingRewards.setVestingSchedule(vestingLength, {from: anotherUser})).to.be.rejectedWith(/AD/)
-      })
-    })
-  })
-
   describe("getBaseTokenExchangeRate", async () => {
     beforeEach(async () => {
       await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
@@ -3137,9 +2980,6 @@ describe("StakingRewards", function () {
 
       // Fix the reward rate to make testing easier
       await stakingRewards.setRewardsParameters(targetCapacity, maxRate, maxRate, minRateAtPercent, maxRateAtPercent)
-
-      // Disable vesting, to make testing base staking functionality easier
-      await stakingRewards.setVestingSchedule(new BN(0))
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)

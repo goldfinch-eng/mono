@@ -41,7 +41,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   struct StakedPosition {
     // @notice Staked amount denominated in `stakingToken().decimals()`
     uint256 amount;
-    // @notice Struct describing rewards owed with vesting
+    // @notice Struct describing rewards owed
+    // @dev For legacy vesting rewards, this tracks the vesting schedule and disbursement.
+    //   For non-vesting rewards (`endTime` of 0), this tracks the disbursement.
     StakingRewardsVesting.Rewards rewards;
     // @notice Multiplier applied to staked amount when locking up position
     // @dev UNUSED (definition kept for storage slot)
@@ -118,7 +120,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///  Represented with `MULTIPLIER_DECIMALS`.
   uint256 public minRateAtPercent;
 
-  /// @notice The duration in seconds over which rewards vest
+  /// @notice The duration in seconds over which legacy rewards vest. New positions have no vesting
+  ///  and earn rewards immediately.
+  /// @dev UNUSED (definition kept for storage slot)
   uint256 public vestingLength;
 
   /// @dev Supply of staked tokens, denominated in `stakingToken().decimals()`
@@ -255,7 +259,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   }
 
   /// @notice Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
-  ///   account vesting schedule.
+  ///   account vesting schedule for legacy positions.
   /// @return rewards Amount of rewards denominated in `rewardsToken()`
   function claimableRewards(uint256 tokenId) public view returns (uint256 rewards) {
     return positions[tokenId].rewards.claimable();
@@ -371,7 +375,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /// @notice Stake `stakingToken()` to earn rewards. When you call this function, you'll receive an
   ///   an NFT representing your staked position. You can present your NFT to `getReward` or `unstake`
-  ///   to claim rewards or unstake your tokens respectively. Rewards vest over a schedule.
+  ///   to claim rewards or unstake your tokens respectively.
   /// @dev This function checkpoints rewards.
   /// @param amount The amount of `stakingToken()` to stake
   /// @param positionType The type of the staked position
@@ -581,7 +585,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
         totalPreviouslyVested: 0,
         totalClaimed: 0,
         startTime: block.timestamp,
-        endTime: block.timestamp.add(vestingLength)
+        endTime: 0
       }),
       unsafeBaseTokenExchangeRate: baseTokenExchangeRate,
       unsafeEffectiveMultiplier: effectiveMultiplier,
@@ -612,8 +616,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   //==============================================================
 
   /// @notice Unstake an amount of `stakingToken()` associated with a given position and transfer to msg.sender.
-  ///   Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
-  ///
+  ///   Any remaining staked amount will continue to accrue rewards.
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
@@ -785,15 +788,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     );
     position.amount = prevAmount.sub(amount);
 
-    // Slash unvested rewards. If this method is being called by the Zapper, then unvested rewards are not slashed.
-    // This exception is made so that users who wish to move their funds across the protocol are not penalized for
-    // doing so.
-    // See https://gov.goldfinch.finance/t/gip-03-no-cost-forfeit-to-swap-fidu-into-backer-nfts/784
-    if (!isZapper()) {
-      uint256 slashingPercentage = amount.mul(StakingRewardsVesting.PERCENTAGE_DECIMALS).div(prevAmount);
-      position.rewards.slash(slashingPercentage);
-    }
-
     emit Unstaked(msg.sender, tokenId, amount, position.positionType);
   }
 
@@ -808,7 +802,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
-  ///   users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
+  ///   users an option to get on a higher multiplier without needing to unstake.
   /// @dev This will also checkpoint their rewards up to the current time.
   function updatePositionEffectiveMultiplier(uint256 tokenId)
     external
@@ -916,11 +910,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     effectiveMultipliers[positionType] = multiplier;
     emit EffectiveMultiplierUpdated(_msgSender(), positionType, multiplier);
-  }
-
-  function setVestingSchedule(uint256 _vestingLength) external onlyAdmin updateReward(0) {
-    vestingLength = _vestingLength;
-    emit VestingScheduleUpdated(msg.sender, vestingLength);
   }
 
   /* ========== MODIFIERS ========== */
