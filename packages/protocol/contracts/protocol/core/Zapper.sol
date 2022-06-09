@@ -41,7 +41,8 @@ contract Zapper is BaseUpgradeablePausable {
   ///   unvested rewards or paying a withdrawal fee
   /// @dev The minted pool token is held by this contract until either `claimZap` or
   ///   `unzap` is called
-  /// @param tokenId A staking position token ID
+  /// @param tokenId A staking position token ID. The owner MUST perform an ERC721 approval
+  ///   for the Zapper address before calling this function.
   /// @param tranchedPool A TranchedPool in which to deposit
   /// @param tranche The tranche ID of tranchedPool in which to deposit
   /// @param usdcAmount The amount in USDC to zap from StakingRewards into the TranchedPool
