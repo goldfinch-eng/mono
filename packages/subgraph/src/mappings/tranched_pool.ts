@@ -18,6 +18,7 @@ import {
   initOrUpdateTranchedPool,
   updateTranchedPoolLeverageRatio,
 } from "../entities/tranched_pool"
+import {createZapMaybe, deleteZapMaybe} from "../entities/zapper"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -35,6 +36,8 @@ export function handleDepositMade(event: DepositMade): void {
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
   transaction.save()
+
+  createZapMaybe(event)
 }
 
 export function handleDrawdownsPaused(event: DrawdownsPaused): void {
@@ -58,6 +61,8 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
   transaction.save()
+
+  deleteZapMaybe(event)
 }
 
 export function handleTrancheLocked(event: TrancheLocked): void {

@@ -292,3 +292,15 @@ type Transaction @entity(immutable: true) {
   amount: BigInt!
   tranchedPool: TranchedPool
 }
+
+type Zap @entity {
+  """
+  Note that the ID of a Zap is the same as the ID of the (tranched) pool token it's tied to. Makes it easy to find a Zap corresponding to a pool token.
+  """
+  id: ID!
+  amount: BigInt!
+  user: User!
+  seniorPoolStakedPosition: SeniorPoolStakedPosition!
+  poolToken: TranchedPoolToken!
+  tranchedPool: TranchedPool!
+}

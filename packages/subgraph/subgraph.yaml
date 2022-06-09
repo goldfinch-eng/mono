@@ -343,7 +343,8 @@ templates:
         - User
         - TranchedPool
         - TranchedPoolToken
-        - TranchedPoolBorrowerTransaction
+        - Transaction
+        - Zap
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -373,6 +374,8 @@ templates:
           file: ./abis/FixedLeverageRatioStrategy.json
         - name: BackerRewards
           file: ./abis/BackerRewards.json
+        - name: Zapper
+          file: ./abis/Zapper.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
