@@ -86,6 +86,7 @@ type User @entity {
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
   tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
+  zaps: [Zap!]! @derivedFrom(field: "user")
 
   isNonUsIndividual: Boolean!
   isUsAccreditedIndividual: Boolean!

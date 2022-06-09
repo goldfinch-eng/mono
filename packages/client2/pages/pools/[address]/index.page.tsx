@@ -48,6 +48,7 @@ import { TransactionTable } from "./transaction-table";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
+  WITHDRAWAL_PANEL_ZAP_FIELDS,
 } from "./withdrawal-panel";
 
 gql`
@@ -55,6 +56,7 @@ gql`
   ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${WITHDRAWAL_PANEL_ZAP_FIELDS}
   ${REPAYMENT_PROGRESS_PANEL_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
   query SingleTranchedPoolData(
@@ -112,6 +114,9 @@ gql`
       ...SupplyPanelUserFields
       tokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
+      }
+      zaps(where: { tranchedPool: $tranchedPoolAddress }) {
+        ...WithdrawalPanelZapFields
       }
     }
   }
@@ -435,6 +440,7 @@ export default function PoolPage() {
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tokens}
+                  zaps={data.user.zaps}
                 />
               ) : null}
 
