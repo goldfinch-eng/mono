@@ -98,6 +98,7 @@ gql`
       latestPoolStatus {
         id
         estimatedApyFromGfiRaw
+        sharePrice
       }
     }
     gfiPrice(fiat: USD) @client {
@@ -445,6 +446,7 @@ export default function PoolPage() {
                   seniorPoolApyFromGfiRaw={
                     seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
                   }
+                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 />
               )}
 
