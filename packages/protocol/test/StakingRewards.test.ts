@@ -1161,7 +1161,9 @@ describe("StakingRewards", function () {
       await mintRewards(totalRewards)
     })
 
-    it("can only be called by zapper", async () => {
+    it("can only be called by approved user or owner", async () => {
+      await stake({amount: fiduAmount.div(new BN(2)), from: investor})
+
       await expect(stakingRewards.addToStake(1, bigVal(100), {from: anotherUser})).to.be.rejectedWith(/AD/)
     })
 
@@ -1180,6 +1182,90 @@ describe("StakingRewards", function () {
     })
 
     it("adds to stake without affecting vesting schedule", async () => {
+      await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+
+      let tokenId
+      {
+        const receipt = await stakingRewards.stakeWithVesting(
+          investor,
+          investor,
+          fiduAmount.div(new BN(2)),
+          StakedPositionType.Fidu,
+          {
+            from: investor,
+          }
+        )
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+        tokenId = stakedEvent.args.tokenId
+      }
+
+      await expectAction(() =>
+        stakingRewards.addToStake(tokenId, fiduAmount.div(new BN(2)), {from: investor})
+      ).toChange([
+        // It adds to the tokenId's position
+        [async () => ((await stakingRewards.positions(tokenId)) as any).amount, {by: fiduAmount.div(new BN(2))}],
+        // It increases totalStakedSupply
+        [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.div(new BN(2))}],
+      ])
+
+      // It checkpoints rewards
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("adds to stake without affecting vesting schedule (zapper)", async () => {
+      let tokenId
+      {
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+        const receipt = await stakingRewards.stakeWithVesting(investor, investor, fiduAmount, StakedPositionType.Fidu, {
+          from: investor,
+        })
+        const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
+        tokenId = stakedEvent.args.tokenId
+      }
+
+      await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+      const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+      const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+      const ownerFiduAmount = depositEvent.args.shares
+
+      // It reverts if Zapper is not approved
+      await expect(stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})).to.be.rejectedWith(/AD/)
+
+      await erc20Approve(fidu, stakingRewards.address, ownerFiduAmount, [owner])
+      await stakingRewards.approve(owner, tokenId, {from: investor})
+
+      await expectAction(() => stakingRewards.addToStake(tokenId, ownerFiduAmount, {from: owner})).toChange([
+        // It adds to the tokenId's position
+        [async () => ((await stakingRewards.positions(tokenId)) as any).amount, {by: ownerFiduAmount}],
+        // It increases totalStakedSupply
+        [() => stakingRewards.totalStakedSupply(), {by: ownerFiduAmount}],
+      ])
+
+      // It checkpoints rewards
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("adds to stake for non-vesting positions", async () => {
+      const tokenId = await stake({amount: fiduAmount.div(new BN(2)), from: investor})
+
+      await fidu.approve(stakingRewards.address, fiduAmount.div(new BN(2)), {from: investor})
+      await expectAction(() =>
+        stakingRewards.addToStake(tokenId, fiduAmount.div(new BN(2)), {from: investor})
+      ).toChange([
+        // It adds to the tokenId's position
+        [async () => ((await stakingRewards.positions(tokenId)) as any).amount, {by: fiduAmount.div(new BN(2))}],
+        // It increases totalStakedSupply
+        [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.div(new BN(2))}],
+      ])
+
+      // It checkpoints rewards
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
+    it("adds to stake for non-vesting positions (zapper)", async () => {
       const tokenId = await stake({amount: fiduAmount.div(new BN(2)), from: investor})
 
       await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])

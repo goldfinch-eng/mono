@@ -727,12 +727,10 @@ Claim rewards for a given staked position
 function addToStake(uint256 tokenId, uint256 amount) external
 ```
 
-Add to an existing position without affecting vesting schedule
+Add &#x60;amount&#x60; to an existing FIDU position (&#x60;tokenId&#x60;)
 
-_This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
-  function enables the Zapper to unwind &quot;in-progress&quot; positions initiated by &#x60;Zapper.zapStakeToTranchedPool&#x60;.
-  That is, funds that were moved from this contract into a TranchedPool can be &quot;unwound&quot; back to their original
-  staked position by the Zapper as part of &#x60;Zapper.unzapToStakingRewards&#x60;._
+_For non-zapper cases, it is not recommended to call this for vesting positions, as any additions
+  will be vested. It is optimal to create a new non-vesting position and earn more rewards there._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

@@ -844,20 +844,20 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     }
   }
 
-  /// @notice Add to an existing position without affecting vesting schedule
-  /// @dev This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
-  ///   function enables the Zapper to unwind "in-progress" positions initiated by `Zapper.zapStakeToTranchedPool`.
-  ///   That is, funds that were moved from this contract into a TranchedPool can be "unwound" back to their original
-  ///   staked position by the Zapper as part of `Zapper.unzapToStakingRewards`.
+  /// @notice Add `amount` to an existing FIDU position (`tokenId`)
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be added to tokenId's position
+  /// @dev For non-zapper cases, it is not recommended to call this for vesting positions, as any additions
+  ///   will be vested. It is optimal to create a new non-vesting position and earn more rewards there.
   function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
     /// @dev AD: Access denied
-    require(isZapper() && _isApprovedOrOwner(msg.sender, tokenId), "AD");
-    /// @dev PT: Position type is incorrect for this action
-    require(positions[tokenId].positionType == StakedPositionType.Fidu, "PT");
+    require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
 
     StakedPosition storage position = positions[tokenId];
+
+    /// @dev PT: Position type is incorrect for this action
+    require(position.positionType == StakedPositionType.Fidu, "PT");
+
     position.amount = position.amount.add(amount);
 
     totalStakedSupply = totalStakedSupply.add(
