@@ -374,6 +374,7 @@ export const poolTokenImage = genRequestHandler({
       .leading(1.45)
       .dx(16)
 
+    res.set("Content-Type", "image/svg+xml")
     return res.status(200).send(draw.svg())
   },
 })
