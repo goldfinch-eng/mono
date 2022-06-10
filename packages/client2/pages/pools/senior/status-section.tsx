@@ -35,7 +35,7 @@ export function StatusSection({ seniorPool }: StatusSectionProps) {
             },
             { includeSymbol: true }
           )}
-          tooltip="Lorem ipsum"
+          tooltip="The total value of USDC currently invested in the Senior Pool."
         />
         <Stat
           label="Loans Outstanding"
@@ -46,13 +46,13 @@ export function StatusSection({ seniorPool }: StatusSectionProps) {
             },
             { includeSymbol: true }
           )}
-          tooltip="Lorem ipsum"
+          tooltip="The total value of Senior Pool capital currently deployed in outstanding Borrower Pools across the protocol."
         />
         {/* TODO use the real default rate. Needs to be properly calculated on subgraph */}
         <Stat
           label="Default Rate"
           value={formatPercent(0)}
-          tooltip="Lorem ipsum"
+          tooltip="The total default rate across all Borrower Pools on the Goldfinch protocol."
         />
       </div>
     </div>

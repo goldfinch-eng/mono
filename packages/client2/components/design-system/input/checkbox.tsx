@@ -1,9 +1,9 @@
 import clsx from "clsx";
-import { forwardRef, InputHTMLAttributes } from "react";
+import { forwardRef, InputHTMLAttributes, ReactNode } from "react";
 
 interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  hideLabel?: boolean;
+  labelDecoration?: ReactNode;
   labelClassName?: string;
   id?: string;
   colorScheme?: "light" | "dark";
@@ -14,6 +14,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   function Checkbox(
     {
       label,
+      labelDecoration,
       labelClassName,
       id,
       name,
@@ -64,9 +65,12 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             />
           </svg>
         </div>
-        <label htmlFor={_id} className={clsx("ml-3", labelClassName)}>
-          {label}
-        </label>
+        <div className="flex items-center gap-1">
+          <label htmlFor={_id} className={clsx("ml-3", labelClassName)}>
+            {label}
+          </label>
+          {labelDecoration}
+        </div>
       </div>
     );
   }

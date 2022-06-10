@@ -187,8 +187,8 @@ export function SeniorPoolSupplyPanel({
         className="flex flex-grow basis-0 flex-col items-start"
       >
         <div className="mb-3 flex items-center gap-2">
-          <span className="text-sm">Est. APY</span>
-          <InfoIconTooltip content="Placeholder: This APY includes the base USDC interest rate offered by the Senior Pool, as well as the GFI rewards from staking in the Senior Pool." />
+          <span className="text-sm">Total est. APY</span>
+          <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
         </div>
         <div className="mb-8 text-6xl">
           {formatPercent(seniorPoolApyUsdc.addUnsafe(seniorPoolApyFromGfiFiat))}
@@ -197,12 +197,12 @@ export function SeniorPoolSupplyPanel({
           <thead>
             <tr>
               <th scope="col" className="w-1/2 pb-3 font-normal">
-                Est APY Breakdown
+                Est. APY breakdown
               </th>
               <th scope="col" className="w-1/2 pb-3 font-normal">
                 <div className="flex items-center justify-end gap-2">
-                  <span>Est Return</span>
-                  <InfoIconTooltip content="Lorem ipsum" />
+                  <span>Est. return</span>
+                  <InfoIconTooltip content="The current estimated annual return on investment in the Senior Pool, based on the supply amount entered below. The USDC returns, sourced from Borrowers' repayments to their Pools, are based on the Senior Pool's current usage and balance. The GFI returns are based on the Pool's estimated GFI Investor Rewards." />
                 </div>
               </th>
             </tr>
@@ -272,6 +272,9 @@ export function SeniorPoolSupplyPanel({
             label={`Stake to earn GFI (${formatPercent(
               seniorPoolApyFromGfiFiat
             )})`}
+            labelDecoration={
+              <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this deposit transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
+            }
             colorScheme="dark"
             className="mb-3"
           />
