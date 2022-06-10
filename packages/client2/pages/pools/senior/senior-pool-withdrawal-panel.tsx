@@ -138,9 +138,10 @@ export function SeniorPoolWithDrawalPanel({
       }
       if (!forfeitedGfi.isZero()) {
         const confirmation = await confirmDialog(
-          `To withdraw this amount, two transactions must be made. First to withdraw your unstaked position, then to withdraw your staked position(s). As a result of withdrawing this amount, you will forfeit ${formatCrypto(
-            { token: SupportedCrypto.Gfi, amount: forfeitedGfi }
-          )} GFI from your staking rewards.`
+          `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position. As a result of withdrawing this amount, you will forfeit ${formatCrypto(
+            { token: SupportedCrypto.Gfi, amount: forfeitedGfi },
+            { includeToken: true }
+          )} of your FIDU staking rewards.`
         );
         if (!confirmation) {
           throw new Error("User backed out");
