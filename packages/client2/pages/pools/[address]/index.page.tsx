@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import {
   Breadcrumb,
   Button,
-  Chip,
   Stat,
   TabButton,
   TabContent,
@@ -124,15 +123,6 @@ gql`
     }
   }
 `;
-
-// Dummy data
-const tags = [
-  "Latin America",
-  "Women-Owned Businesses",
-  "Secured Loan",
-  "Ethical Supply Chain",
-  "Small Businesses",
-];
 
 export default function PoolPage() {
   const {
@@ -263,12 +253,6 @@ export default function PoolPage() {
               <ShimmerLines truncateFirstLine={false} lines={2} />
             )}
           </Heading>
-
-          <div className="mb-8 flex flex-wrap justify-center gap-1 sm:mb-12 sm:justify-start">
-            {tags.map((t) => (
-              <Chip key={`tag-${t}`}>{t}</Chip>
-            ))}
-          </div>
 
           {error ? (
             <HelperText isError className="mb-2">
