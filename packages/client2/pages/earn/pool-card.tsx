@@ -203,9 +203,11 @@ export function TranchedPoolCard({
     fiatPerGfi
   );
 
-  const totalApyWithGfi = tranchedPool.estimatedJuniorApy
-    .addUnsafe(apyFromGfiFiat)
-    .addUnsafe(seniorPoolApyFromGfiFiat);
+  const totalApyWithGfi = tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+    ? tranchedPool.estimatedJuniorApy
+    : tranchedPool.estimatedJuniorApy
+        .addUnsafe(apyFromGfiFiat)
+        .addUnsafe(seniorPoolApyFromGfiFiat);
 
   return (
     <PoolCard
@@ -231,7 +233,13 @@ export function TranchedPoolCard({
             </div>
             <div className="flex justify-between">
               <div>LP rewards match GFI APY</div>
-              <div>{formatPercent(seniorPoolApyFromGfiFiat)}</div>
+              <div>
+                {formatPercent(
+                  tranchedPool.estimatedJuniorApyFromGfiRaw.isZero()
+                    ? 0
+                    : seniorPoolApyFromGfiFiat
+                )}
+              </div>
             </div>
             <hr className="border-t border-sand-300" />
             <div className="flex justify-between">
