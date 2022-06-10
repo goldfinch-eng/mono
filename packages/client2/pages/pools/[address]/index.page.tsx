@@ -439,7 +439,8 @@ export default function PoolPage() {
                 <RepaymentProgressPanel tranchedPool={tranchedPool} />
               )}
 
-              {data?.user && data?.user.tokens.length > 0 ? (
+              {data?.user &&
+              (data?.user.tokens.length > 0 || data?.user.zaps.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tokens}
