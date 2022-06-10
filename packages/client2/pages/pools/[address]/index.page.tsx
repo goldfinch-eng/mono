@@ -145,15 +145,6 @@ export default function PoolPage() {
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
-  function share() {
-    if (window && navigator && navigator.share) {
-      navigator.share({
-        title: data?.tranchedPool?.name || "Goldfinch",
-        url: window.location.href,
-      });
-    }
-  }
-
   if (error) {
     return (
       <div className="text-2xl">
@@ -226,14 +217,6 @@ export default function PoolPage() {
               />
             </div>
             <div className="mb-6 flex justify-center sm:mb-0">
-              <Button
-                variant="rounded"
-                colorScheme="secondary"
-                className="mr-2"
-                onClick={share}
-              >
-                Share
-              </Button>
               <Button
                 variant="rounded"
                 colorScheme="secondary"
