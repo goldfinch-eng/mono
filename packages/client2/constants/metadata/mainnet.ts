@@ -17,7 +17,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     category: "Africa multi-sector loans",
     icon: caurisLogo.src,
     dataroom:
-      "https://www.notion.so/goldfinchfinance/Cauris-Borrower-Pool-3-Overview-2a127e4075a5406abe3c9c5a6868b08d",
+      "https://goldfinchfinance.notion.site/Africa-Innovation-Enterprise-Pool-via-Cauris-2a127e4075a5406abe3c9c5a6868b08d",
     agreement: "https://docsend.com/view/428qxv8dq7uhgj8j/d/ej5z3qnrdb59wzaz",
     launchTime: 1651590000,
     description:
@@ -34,7 +34,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     category: "LATAM asset-backed multi-sector loans",
     icon: addemLogo.src,
     dataroom:
-      "https://www.notion.so/goldfinchfinance/Addem-Capital-Borrower-Pool-Overview-4530f7c83ddb4fb39d6f8b44ddcead64",
+      "https://goldfinchfinance.notion.site/Addem-Capital-Borrower-Pool-Overview-4530f7c83ddb4fb39d6f8b44ddcead64",
     agreement:
       "https://addemcapital.docsend.com/view/rwchikv6dxnpa5wa/d/fcbpk9yde3a73pnb",
     launchTime: 1650466800,
@@ -71,6 +71,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     category: "Global multi-sector loans",
     icon: lendeastLogo.src,
     agreement: "https://lendeast.docsend.com/view/s/i395ds3s3gsxkrcc",
+    dataroom: "https://lendeast.docsend.com/view/s/i395ds3s3gsxkrcc",
     launchTime: 1647529200,
     description:
       "Proceeds will be used for additional funding via existing Lend East Credit Facilities to our portfolio companies and funding of new alternate lending platforms in Emerging Asia. All Lend East Credit Facilities are senior secured loans to high growth, tech forward Alternate Lenders who are backed by marquee equity investors like Ant Financial, Sequoia Capital, DST Global, Sinar Mas, Quona Capital & Arbor Ventures.\n\nEvery facility is structured to provide a healthy risk adjusted return to investors while ensuring capital preservation. Typical guardrails include excess portfolio cover (1.2x - 1.5x of the investment), established seniority over equity & other debt capital on the balance sheet and corporate guarantees from Holding Companies.",
@@ -90,6 +91,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Cauris is a mission driven company that applies advanced technology to solve financial inclusion issues while providing high risk adjusted returns to its investors.\n\nWe aim to give 100 million more people access to capital. We believe that access to credit is key to empowering individuals and enabling economic growth. We use a combination of strong underwriting, legal protections and advanced analytics to secure our debt investments in our fintechs clients.\n\nThis pool will be dedicated to backing African fintechs in their quest to provide access to financial services to millions of customers. We will be investing in companies providing consumer lending products, SME, Trade and equipment financings. Our investments will include senior secured loans to companies such as:\n\n• Ramani (https://www.ramani.io/), a supply chain financing company operating in Tanzanian\n• Jetstream (https://jetstreamafrica.com/), a trade finance company operating in Ghana and Nigeria\n• Asaak (https://www.asaak.com/), an equipment financing company providing motorcycle financing to boda bodas (motorcycle taxis) in Uganda\n• Gozem (https://gozem.co/en/), on-demand transportation, delivery and cashless payment solutions provider operating in Francophone West and Central Africa",
     icon: caurisLogo.src,
     agreement: "https://docsend.com/view/s/hbhpdkjv63kgwi47",
+    dataroom: "https://docsend.com/view/s/hbhpdkjv63kgwi47",
     launchTime: 1645027200,
   },
   "0x00c27fc71b159a346e179b4a1608a0865e8a7470": {
@@ -98,6 +100,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     category: "Global multi-sector loans",
     icon: stratosLogo.src,
     agreement: "https://docsend.com/view/s/fntuciz53snd43ki",
+    dataroom: "https://docsend.com/view/s/fntuciz53snd43ki",
     launchTime: 1644595200,
     description:
       "Proceeds will be used for additional fundings via existing Stratos Credit Facilities to Three Colts, Rezi and Braavo. All current Stratos Credit Facilities are senior secured loans to U.S. domiciled borrowers, and also include covenants for additional downside protection. The asset-backed Rezi and Braavo credit facilities are secured by cash flow generating assets, and the Three Colts credit facility is secured by all assets of the cash flow positive company.",
@@ -115,6 +118,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
     icon: almavestLogo.src,
     agreement: "https://docsend.com/view/vcxfarda3vn72mxz/d/sc6a39p3my8k3uw8",
+    dataroom: "https://docsend.com/view/vcxfarda3vn72mxz/d/sc6a39p3my8k3uw8",
     launchTime: 1644249600,
   },
   "0x1d596d28a7923a22aa013b0e7082bba23daa656b": {
@@ -125,6 +129,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
     icon: almavestLogo.src,
     agreement: "https://docsend.com/view/r9dpyy8wqxp2n5td/d/k87sbpm4ny3s23y6",
+    dataroom: "https://docsend.com/view/r9dpyy8wqxp2n5td/d/k87sbpm4ny3s23y6",
   },
   "0xc9bdd0d3b80cc6efe79a82d850f44ec9b55387ae": {
     borrower: "cauris",
@@ -256,6 +261,8 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     icon: almavestLogo.src,
     agreement:
       "https://s3.us-west-2.amazonaws.com/secure.notion-static.com/a22b60ac-89b7-4184-a6ba-3ed16c45ab8f/ALMA_Goldfinch_Protocol_Loan_Agreement_FINAL_%288-30-21%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAT73L2G45O3KS52Y5%2F20210831%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20210831T000715Z&X-Amz-Expires=86400&X-Amz-Signature=01c8b63f01e46afb753c4f37ba75836b0743fa8e82ce94fbf32aefbbad367e6a&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22ALMA%2520Goldfinch%2520Protocol%2520Loan%2520Agreement%2520FINAL%2520%288-30-21%29.pdf%22",
+    dataroom:
+      "https://almavest.notion.site/ALMAVEST-BASKET-3-FULL-d65cbcc7cfab4c7ebd6763471fc2a024",
   },
   "0xe6c30756136e07eb5268c3232efbfbe645c1ba5a": {
     borrower: "almavest",

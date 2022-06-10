@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import {
   Breadcrumb,
   Button,
-  Chip,
   Stat,
   TabButton,
   TabContent,
@@ -125,15 +124,6 @@ gql`
   }
 `;
 
-// Dummy data
-const tags = [
-  "Latin America",
-  "Women-Owned Businesses",
-  "Secured Loan",
-  "Ethical Supply Chain",
-  "Small Businesses",
-];
-
 export default function PoolPage() {
   const {
     query: { address },
@@ -154,15 +144,6 @@ export default function PoolPage() {
   const seniorPool = data?.seniorPools?.[0];
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
-
-  function share() {
-    if (window && navigator && navigator.share) {
-      navigator.share({
-        title: data?.tranchedPool?.name || "Goldfinch",
-        url: window.location.href,
-      });
-    }
-  }
 
   if (error) {
     return (
@@ -228,30 +209,26 @@ export default function PoolPage() {
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
-          <div className="mb-10 flex flex-col-reverse sm:mb-8 sm:flex-row sm:justify-between">
+          <div className="mb-10 flex flex-wrap justify-between sm:mb-8">
             <div>
               <Breadcrumb
                 label={tranchedPool?.name}
                 image={tranchedPool?.icon}
               />
             </div>
-            <div className="mb-6 flex justify-center sm:mb-0">
-              <Button
-                variant="rounded"
-                colorScheme="secondary"
-                className="mr-2"
-                onClick={share}
-              >
-                Share
-              </Button>
+            {tranchedPool ? (
               <Button
                 variant="rounded"
                 colorScheme="secondary"
                 iconRight="ArrowTopRight"
+                as="a"
+                href={`https://etherscan.io/address/${tranchedPool.id}`}
+                target="_blank"
+                rel="noopener"
               >
                 Contract
               </Button>
-            </div>
+            ) : null}
           </div>
           <Heading
             level={1}
@@ -263,12 +240,6 @@ export default function PoolPage() {
               <ShimmerLines truncateFirstLine={false} lines={2} />
             )}
           </Heading>
-
-          <div className="mb-8 flex flex-wrap justify-center gap-1 sm:mb-12 sm:justify-start">
-            {tags.map((t) => (
-              <Chip key={`tag-${t}`}>{t}</Chip>
-            ))}
-          </div>
 
           {error ? (
             <HelperText isError className="mb-2">
@@ -486,12 +457,12 @@ export default function PoolPage() {
                   {tranchedPool?.description}
                 </Paragraph>
 
-                {tranchedPool ? (
+                {tranchedPool?.dataroom ? (
                   <Button
                     as="a"
                     variant="rounded"
                     iconRight="ArrowTopRight"
-                    href={tranchedPool.dataroom ?? ""}
+                    href={tranchedPool.dataroom}
                     target="_blank"
                     rel="noreferrer"
                     size="lg"

@@ -11,6 +11,7 @@ import {
   TabButton,
   TabPanels,
   TabContent,
+  Button,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
@@ -94,8 +95,21 @@ export default function SeniorPoolPage() {
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
-          <div className="mb-6 flex justify-center lg:justify-start">
+          <div className="mb-6 flex flex-wrap justify-between">
             <Breadcrumb label="Goldfinch" image={goldfinchYellow.src} />
+            {seniorPool ? (
+              <Button
+                variant="rounded"
+                colorScheme="secondary"
+                iconRight="ArrowTopRight"
+                as="a"
+                href={`https://etherscan.io/address/${seniorPool.id}`}
+                target="_blank"
+                rel="noopener"
+              >
+                Contract
+              </Button>
+            ) : null}
           </div>
           <Heading className="text-center lg:text-left" level={1}>
             Senior Pool
