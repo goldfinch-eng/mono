@@ -216,15 +216,19 @@ export default function PoolPage() {
                 image={tranchedPool?.icon}
               />
             </div>
-            <div className="mb-6 flex justify-center sm:mb-0">
+            {tranchedPool ? (
               <Button
                 variant="rounded"
                 colorScheme="secondary"
                 iconRight="ArrowTopRight"
+                as="a"
+                href={`https://etherscan.io/address/${tranchedPool.id}`}
+                target="_blank"
+                rel="noopener"
               >
                 Contract
               </Button>
-            </div>
+            ) : null}
           </div>
           <Heading
             level={1}
