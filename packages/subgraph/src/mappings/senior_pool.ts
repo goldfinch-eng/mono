@@ -16,7 +16,7 @@ export function handleDepositMade(event: DepositMade): void {
   updatePoolStatus(event.address)
   handleDeposit(event)
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "SENIOR_POOL_DEPOSIT"
   transaction.user = event.params.capitalProvider.toHexString()
   transaction.amount = event.params.amount
@@ -54,7 +54,7 @@ export function handleReserveFundsCollected(event: ReserveFundsCollected): void 
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   updatePoolStatus(event.address)
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "SENIOR_POOL_WITHDRAWAL"
   transaction.user = event.params.capitalProvider.toHexString()
   transaction.amount = event.params.userAmount

@@ -1,6 +1,6 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -10,20 +10,25 @@ import {
   InfoIconTooltip,
   Input,
   Link,
+  Select,
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
 import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
-import { formatPercent, formatFiat } from "@/lib/format";
+import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
   SupportedFiat,
   SupplyPanelTranchedPoolFieldsFragment,
   SupplyPanelUserFieldsFragment,
 } from "@/lib/graphql/generated";
-import { canUserParticipateInPool, computeApyFromGfiInFiat } from "@/lib/pools";
+import {
+  canUserParticipateInPool,
+  computeApyFromGfiInFiat,
+  sharesToUsdc,
+} from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { abbreviateAddress, useWallet } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
   fragment SupplyPanelTranchedPoolFields on TranchedPool {
@@ -46,6 +51,11 @@ export const SUPPLY_PANEL_USER_FIELDS = gql`
     isUsNonAccreditedIndividual
     isNonUsIndividual
     isGoListed
+    # Need this for zapping
+    seniorPoolStakedPositions {
+      id
+      amount
+    }
   }
 `;
 
@@ -54,11 +64,16 @@ interface SupplyPanelProps {
   user: SupplyPanelUserFieldsFragment | null;
   fiatPerGfi: number;
   seniorPoolApyFromGfiRaw: FixedNumber;
+  /**
+   * This is necessary for zapping functionality. Senior pool staked position amounts are measured in FIDU, but we need to show the amounts to users in USDC.
+   */
+  seniorPoolSharePrice: BigNumber;
 }
 
 interface SupplyForm {
   supply: string;
   backerName: string;
+  source: string;
 }
 
 export default function SupplyPanel({
@@ -73,11 +88,14 @@ export default function SupplyPanel({
   user,
   fiatPerGfi,
   seniorPoolApyFromGfiRaw,
+  seniorPoolSharePrice,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
-  const { account, provider, chainId } = useWallet();
+  const { account, provider } = useWallet();
   const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
   const usdcContract = useContract("USDC");
+  const zapperContract = useContract("Zapper");
+  const stakingRewardsContract = useContract("StakingRewards");
 
   const isUserVerified =
     user?.isGoListed ||
@@ -99,7 +117,7 @@ export default function SupplyPanel({
     formState: { isSubmitting, errors, isSubmitSuccessful },
     setValue,
     reset,
-  } = useForm<SupplyForm>();
+  } = useForm<SupplyForm>({ defaultValues: { source: "wallet" } });
 
   const handleMax = async () => {
     if (!account || !usdcContract) {
@@ -130,41 +148,68 @@ export default function SupplyPanel({
   };
 
   const onSubmit = async (data: SupplyForm) => {
-    if (
-      !usdcContract ||
-      !tranchedPoolContract ||
-      !provider ||
-      !account ||
-      !chainId
-    ) {
+    if (!usdcContract || !provider || !account) {
       throw new Error("Wallet not connected properly");
     }
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
-    const now = (await provider.getBlock("latest")).timestamp;
-    const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+    if (data.source === "wallet") {
+      if (!tranchedPoolContract) {
+        throw new Error("Wallet not connected properly");
+      }
+      const now = (await provider.getBlock("latest")).timestamp;
+      const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+      const signature = await generateErc20PermitSignature({
+        erc20TokenContract: usdcContract,
+        provider,
+        owner: account,
+        spender: tranchedPoolAddress,
+        value,
+        deadline,
+      });
 
-    const signature = await generateErc20PermitSignature({
-      erc20TokenContract: usdcContract,
-      provider,
-      owner: account,
-      spender: tranchedPoolAddress,
-      value,
-      deadline,
-    });
+      const transaction = tranchedPoolContract.depositWithPermit(
+        TRANCHES.Junior,
+        value,
+        deadline,
+        signature.v,
+        signature.r,
+        signature.s
+      );
+      await toastTransaction({
+        transaction,
+        pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+      });
+    } else {
+      if (!zapperContract || !stakingRewardsContract) {
+        throw new Error("Wallet not connected properly");
+      }
 
-    const transaction = tranchedPoolContract.depositWithPermit(
-      TRANCHES.Junior,
-      value,
-      deadline,
-      signature.v,
-      signature.r,
-      signature.s
-    );
-    await toastTransaction({
-      transaction,
-      pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
-    });
+      const stakedPositionId = BigNumber.from(data.source.split("-")[1]);
+      const tranche = BigNumber.from(2); // TODO this is really lazy. With multi-sliced pools this needs to be dynamic
+
+      const isAlreadyApproved = await stakingRewardsContract.isApprovedForAll(
+        account,
+        zapperContract.address
+      );
+      if (!isAlreadyApproved) {
+        const approval = await stakingRewardsContract.setApprovalForAll(
+          zapperContract.address,
+          true
+        );
+        await approval.wait();
+      }
+      const transaction = zapperContract.zapStakeToTranchedPool(
+        stakedPositionId,
+        tranchedPoolAddress,
+        tranche,
+        value
+      );
+      await toastTransaction({
+        transaction,
+        pendingPrompt: `Zapping your senior pool position to ${tranchedPoolAddress}.`,
+      });
+    }
     await apolloClient.refetchQueries({ include: "active" });
   };
 
@@ -184,6 +229,25 @@ export default function SupplyPanel({
     fiatPerGfi
   );
   const totalApyFromGfi = fiatApyFromGfi.addUnsafe(seniorPoolApyFromGfiFiat);
+
+  const availableSources = useMemo(() => {
+    const walletOption = [
+      {
+        label: `Wallet \u00b7 ${abbreviateAddress(account ?? "")}`,
+        value: "wallet",
+      },
+    ];
+    const zappableOptions = user?.seniorPoolStakedPositions
+      ? user.seniorPoolStakedPositions.map((s, index) => ({
+          label: `Senior Pool Position ${index + 1} \u00b7 ${formatCrypto(
+            sharesToUsdc(s.amount, seniorPoolSharePrice),
+            { includeSymbol: true }
+          )}`,
+          value: `seniorPool-${s.id}`,
+        }))
+      : [];
+    return walletOption.concat(zappableOptions);
+  }, [user, account, seniorPoolSharePrice]);
 
   return (
     <div className="rounded-xl bg-sunrise-02 p-5 text-white">
@@ -299,43 +363,50 @@ export default function SupplyPanel({
         </Button>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="mb-4">
-            <DollarInput
-              control={control}
-              name="supply"
-              label="Supply amount"
-              labelDecoration={
-                <span className="text-xs opacity-60">
-                  {account.substring(0, 6)}...
-                  {account.substring(account.length - 4)}
-                </span>
-              }
-              rules={{ required: "Required", validate: validateMaximumAmount }}
-              colorScheme="dark"
-              textSize="xl"
-              onMaxClick={handleMax}
-              labelClassName="!text-sm !mb-3"
-              errorMessage={errors?.supply?.message}
-            />
-          </div>
-          <div className="mb-3">
-            <Input
-              {...register("backerName", { required: "Required" })}
-              label="Full legal name"
-              labelDecoration={
-                <InfoIconTooltip
-                  size="sm"
-                  placement="top"
-                  content="Lorem ipsum. Your full name is required for reasons"
-                />
-              }
-              placeholder="First and last name"
-              colorScheme="dark"
-              textSize="xl"
-              labelClassName="!text-sm !mb-3"
-              errorMessage={errors?.backerName?.message}
-            />
-          </div>
+          <Select
+            control={control}
+            name="source"
+            label="Source"
+            options={availableSources}
+            colorScheme="dark"
+            textSize="xl"
+            labelClassName="!text-sm !mb-3"
+            className={availableSources.length > 1 ? "mb-4" : "hidden"}
+          />
+          <DollarInput
+            control={control}
+            name="supply"
+            label="Supply amount"
+            labelDecoration={
+              <span className="text-xs opacity-60">
+                {abbreviateAddress(account)}
+              </span>
+            }
+            rules={{ required: "Required", validate: validateMaximumAmount }}
+            colorScheme="dark"
+            textSize="xl"
+            onMaxClick={handleMax}
+            className="mb-4"
+            labelClassName="!text-sm !mb-3"
+            errorMessage={errors?.supply?.message}
+          />
+          <Input
+            {...register("backerName", { required: "Required" })}
+            label="Full legal name"
+            labelDecoration={
+              <InfoIconTooltip
+                size="sm"
+                placement="top"
+                content="Lorem ipsum. Your full name is required for reasons"
+              />
+            }
+            placeholder="First and last name"
+            colorScheme="dark"
+            textSize="xl"
+            className="mb-3"
+            labelClassName="!text-sm !mb-3"
+            errorMessage={errors?.backerName?.message}
+          />
           <div className="mb-3 text-xs">
             By entering my name and clicking “Supply” below, I hereby agree and
             acknowledge that (i) I am electronically signing and becoming a

@@ -40,6 +40,7 @@ const mainnetContracts = mainnetDeployments["1"].mainnet.contracts;
     UniqueIdentity: contracts.UniqueIdentity.address,
     Go: contracts.Go.address,
     StakingRewards: contracts.StakingRewards.address,
+    Zapper: contracts.Zapper.address,
   };
   const pathname = path.resolve(__dirname, relativePath);
   fs.writeFileSync(pathname, JSON.stringify(addresses, null, 2));

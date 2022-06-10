@@ -86,6 +86,7 @@ type User @entity {
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
   tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
+  zaps: [Zap!]! @derivedFrom(field: "user")
 
   isNonUsIndividual: Boolean!
   isUsAccreditedIndividual: Boolean!
@@ -291,4 +292,16 @@ type Transaction @entity(immutable: true) {
   blockNumber: Int!
   amount: BigInt!
   tranchedPool: TranchedPool
+}
+
+type Zap @entity {
+  """
+  Note that the ID of a Zap is the same as the ID of the (tranched) pool token it's tied to. Makes it easy to find a Zap corresponding to a pool token.
+  """
+  id: ID!
+  amount: BigInt!
+  user: User!
+  seniorPoolStakedPosition: SeniorPoolStakedPosition!
+  poolToken: TranchedPoolToken!
+  tranchedPool: TranchedPool!
 }

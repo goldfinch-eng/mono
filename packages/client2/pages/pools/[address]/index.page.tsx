@@ -48,6 +48,7 @@ import { TransactionTable } from "./transaction-table";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
+  WITHDRAWAL_PANEL_ZAP_FIELDS,
 } from "./withdrawal-panel";
 
 gql`
@@ -55,6 +56,7 @@ gql`
   ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${WITHDRAWAL_PANEL_ZAP_FIELDS}
   ${REPAYMENT_PROGRESS_PANEL_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
   query SingleTranchedPoolData(
@@ -77,8 +79,8 @@ gql`
       fundableAt
       isPaused
       numBackers
-      seniorTranches {
-        principalDeposited
+      juniorTranches {
+        lockedUntil
       }
       juniorDeposited
       creditLine {
@@ -98,6 +100,7 @@ gql`
       latestPoolStatus {
         id
         estimatedApyFromGfiRaw
+        sharePrice
       }
     }
     gfiPrice(fiat: USD) @client {
@@ -112,6 +115,12 @@ gql`
       tokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
       }
+      zaps(where: { tranchedPool: $tranchedPoolAddress }) {
+        ...WithdrawalPanelZapFields
+      }
+    }
+    currentBlock @client {
+      timestamp
     }
   }
 `;
@@ -430,10 +439,18 @@ export default function PoolPage() {
                 <RepaymentProgressPanel tranchedPool={tranchedPool} />
               )}
 
-              {data?.user && data?.user.tokens.length > 0 ? (
+              {data?.user &&
+              (data?.user.tokens.length > 0 || data?.user.zaps.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tokens}
+                  zaps={data.user.zaps}
+                  isPoolLocked={
+                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
+                    BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
+                      tranchedPool.juniorTranches[0].lockedUntil
+                    )
+                  }
                 />
               ) : null}
 
@@ -445,6 +462,7 @@ export default function PoolPage() {
                   seniorPoolApyFromGfiRaw={
                     seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
                   }
+                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                 />
               )}
 

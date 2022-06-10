@@ -11,6 +11,7 @@ import {
   StakingRewards__factory,
   TranchedPool__factory,
   UniqueIdentity__factory,
+  Zapper__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -23,6 +24,7 @@ const supportedContracts = {
   Fidu: Fidu__factory.connect,
   UniqueIdentity: UniqueIdentity__factory.connect,
   StakingRewards: StakingRewards__factory.connect,
+  Zapper: Zapper__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

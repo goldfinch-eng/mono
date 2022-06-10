@@ -35,7 +35,7 @@ export function handleTransferSingle(event: TransferSingle): void {
     }
   }
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.user = receivingUser.id
   transaction.category = "UID_MINTED"
   transaction.timestamp = event.block.timestamp.toI32()

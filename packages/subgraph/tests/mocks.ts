@@ -1,4 +1,4 @@
-import {Address, BigInt, ethereum} from "@graphprotocol/graph-ts"
+import {Address, BigInt, Bytes, ethereum} from "@graphprotocol/graph-ts"
 import {createMockedFunction} from "matchstick-as/assembly/index"
 import {
   CONFIG_KEYS_NUMBERS,
@@ -188,6 +188,32 @@ export function mockTranchedPoolCalls(
   createMockedFunction(tranchedPoolAddress, "getAllowedUIDTypes", "getAllowedUIDTypes():(uint256[])")
     .withArgs([])
     .returns([ethereum.Value.fromI32Array([0, 1, 3, 4])])
+
+  createMockedFunction(Address.fromString(SENIOR_POOL_ADDRESS), "ZAPPER_ROLE", "ZAPPER_ROLE():(bytes32)")
+    .withArgs([])
+    .returns([
+      ethereum.Value.fromFixedBytes(
+        Bytes.fromHexString("0xd624b04b6a86de88625cc0780256b85157c5a615db56d1357e0a97a30fde2767")
+      ),
+    ])
+
+  createMockedFunction(Address.fromString(SENIOR_POOL_ADDRESS), "hasRole", "hasRole(bytes32,address):(bool)")
+    .withArgs([
+      ethereum.Value.fromFixedBytes(
+        Bytes.fromHexString("0xd624b04b6a86de88625cc0780256b85157c5a615db56d1357e0a97a30fde2767")
+      ),
+      ethereum.Value.fromAddress(Address.fromString("0x1111111111111111111111111111111111111111")),
+    ])
+    .returns([ethereum.Value.fromBoolean(false)])
+
+  createMockedFunction(Address.fromString(SENIOR_POOL_ADDRESS), "hasRole", "hasRole(bytes32,address):(bool)")
+    .withArgs([
+      ethereum.Value.fromFixedBytes(
+        Bytes.fromHexString("0xd624b04b6a86de88625cc0780256b85157c5a615db56d1357e0a97a30fde2767")
+      ),
+      ethereum.Value.fromAddress(Address.fromString("0x1000000000000000000000000000000000000000")),
+    ])
+    .returns([ethereum.Value.fromBoolean(false)])
 }
 
 export function mockCreditLineContractCalls(

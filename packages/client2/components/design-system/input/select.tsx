@@ -144,7 +144,10 @@ export function Select({
           )}
         >
           <span
-            className={clsx("trucate", !selectedOption ? "opacity-50" : null)}
+            className={clsx(
+              "max-w-[90%] truncate",
+              !selectedOption ? "opacity-50" : null
+            )}
           >
             {selectedOption?.label ?? placeholder}
           </span>
@@ -173,7 +176,7 @@ export function Select({
                 key={option.value}
                 value={option}
                 className={clsx(
-                  "cursor-pointer p-3 first:rounded-t last:rounded-b",
+                  "cursor-pointer px-3 py-1.5 first:rounded-t first:pt-3 last:rounded-b last:pb-3",
                   colorScheme === "light"
                     ? "hover:bg-sand-200"
                     : colorScheme === "dark"

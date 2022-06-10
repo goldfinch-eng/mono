@@ -18,6 +18,7 @@ import {
   initOrUpdateTranchedPool,
   updateTranchedPoolLeverageRatio,
 } from "../entities/tranched_pool"
+import {createZapMaybe, deleteZapMaybe} from "../entities/zapper"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -27,7 +28,7 @@ export function handleCreditLineMigrated(event: CreditLineMigrated): void {
 export function handleDepositMade(event: DepositMade): void {
   handleDeposit(event)
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "TRANCHED_POOL_DEPOSIT"
   transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
@@ -35,6 +36,8 @@ export function handleDepositMade(event: DepositMade): void {
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
   transaction.save()
+
+  createZapMaybe(event)
 }
 
 export function handleDrawdownsPaused(event: DrawdownsPaused): void {
@@ -50,7 +53,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackers(event.address)
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "TRANCHED_POOL_WITHDRAWAL"
   transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
@@ -58,6 +61,8 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
   transaction.save()
+
+  deleteZapMaybe(event)
 }
 
 export function handleTrancheLocked(event: TrancheLocked): void {
@@ -84,7 +89,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackers(event.address)
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "TRANCHED_POOL_DRAWDOWN"
   transaction.user = event.params.borrower.toHexString()
   transaction.tranchedPool = event.address.toHexString()
@@ -102,7 +107,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackersRewardsClaimable(event.address, event.block.timestamp)
 
-  const transaction = new Transaction(event.transaction.hash)
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "TRANCHED_POOL_REPAYMENT"
   transaction.user = event.params.payer.toHexString()
   transaction.tranchedPool = event.address.toHexString()
