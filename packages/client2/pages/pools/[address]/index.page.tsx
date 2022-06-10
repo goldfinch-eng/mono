@@ -453,12 +453,12 @@ export default function PoolPage() {
                   {tranchedPool?.description}
                 </Paragraph>
 
-                {tranchedPool ? (
+                {tranchedPool?.dataroom ? (
                   <Button
                     as="a"
                     variant="rounded"
                     iconRight="ArrowTopRight"
-                    href={tranchedPool.dataroom ?? ""}
+                    href={tranchedPool.dataroom}
                     target="_blank"
                     rel="noreferrer"
                     size="lg"
