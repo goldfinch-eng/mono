@@ -89,7 +89,9 @@
   }
   @media screen(lg) {
     .pool-layout {
-      grid-template-columns: 1fr 35%;
+      grid-template-columns: calc(65% - theme(spacing.5)) calc(
+          35% - theme(spacing.5)
+        );
       grid-template-areas:
         "heading widgets"
         "info widgets";
