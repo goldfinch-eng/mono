@@ -62,9 +62,15 @@ type Viewer {
   fiduBalance: CryptoAmount
 }
 
+type BlockInfo {
+  number: Int!
+  timestamp: Int!
+}
+
 extend type Query {
   viewer: Viewer!
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
+  currentBlock: BlockInfo
 }

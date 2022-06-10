@@ -42,12 +42,14 @@ interface WithdrawalPanelProps {
   tranchedPoolAddress: string;
   poolTokens: WithdrawalPanelPoolTokenFieldsFragment[];
   zaps: WithdrawalPanelZapFieldsFragment[];
+  isPoolLocked: boolean;
 }
 
 export function WithdrawalPanel({
   tranchedPoolAddress,
   poolTokens,
   zaps,
+  isPoolLocked,
 }: WithdrawalPanelProps) {
   const totalPrincipalRedeemable = poolTokens.reduce(
     (prev, current) => current.principalRedeemable.add(prev),
@@ -84,10 +86,10 @@ export function WithdrawalPanel({
   const apolloClient = useApolloClient();
 
   const handler = handleSubmit(async (data) => {
+    if (!tranchedPoolContract || !zapperContract) {
+      throw new Error("Wallet not connected properly");
+    }
     if (data.destination === "wallet") {
-      if (!tranchedPoolContract) {
-        throw new Error("Wallet not connected properly");
-      }
       const usdcToWithdraw = utils.parseUnits(data.amount, USDC_DECIMALS);
       let transaction;
       if (
@@ -130,18 +132,28 @@ export function WithdrawalPanel({
         successPrompt: `Withdrawal from pool ${tranchedPoolAddress} succeeded.`,
       });
     } else {
-      if (!zapperContract) {
-        throw new Error("Wallet not connected properly");
-      }
       const poolTokenId = BigNumber.from(data.destination.split("-")[1]);
-      const transaction = zapperContract.unzapToStakingRewards(poolTokenId);
-      await toastTransaction({
-        transaction,
-        pendingPrompt:
-          "Submitted transaction to move capital back to senior pool stake",
-        successPrompt:
-          "Successfully returned capital back to senior pool stake",
-      });
+      if (isPoolLocked) {
+        const transaction = zapperContract
+          .claimTranchedPoolZap(poolTokenId)
+          .then(() => tranchedPoolContract.withdrawMax(poolTokenId));
+        await toastTransaction({
+          transaction,
+          pendingPrompt:
+            "Transferring pool token to your ownership and withdrawing...",
+          successPrompt:
+            "Successfully transferred pool token to you and withdrew",
+        });
+      } else {
+        const transaction = zapperContract.unzapToStakingRewards(poolTokenId);
+        await toastTransaction({
+          transaction,
+          pendingPrompt:
+            "Submitted transaction to move capital back to senior pool stake",
+          successPrompt:
+            "Successfully returned capital back to senior pool stake",
+        });
+      }
     }
     await apolloClient.refetchQueries({ include: "active" });
   });

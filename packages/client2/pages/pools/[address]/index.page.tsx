@@ -79,8 +79,8 @@ gql`
       fundableAt
       isPaused
       numBackers
-      seniorTranches {
-        principalDeposited
+      juniorTranches {
+        lockedUntil
       }
       juniorDeposited
       creditLine {
@@ -118,6 +118,9 @@ gql`
       zaps(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelZapFields
       }
+    }
+    currentBlock @client {
+      timestamp
     }
   }
 `;
@@ -441,6 +444,12 @@ export default function PoolPage() {
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tokens}
                   zaps={data.user.zaps}
+                  isPoolLocked={
+                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
+                    BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
+                      tranchedPool.juniorTranches[0].lockedUntil
+                    )
+                  }
                 />
               ) : null}
 

@@ -8,6 +8,7 @@ import {
   SupportedFiat,
   Viewer,
   CryptoAmount,
+  BlockInfo,
 } from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
@@ -64,7 +65,7 @@ export const resolvers: Resolvers = {
         price: { __typename: "FiatAmount", symbol: fiat, amount },
       };
     },
-    async viewer(): Promise<Viewer | null> {
+    async viewer(): Promise<Viewer> {
       const provider = await getProvider();
       if (!provider) {
         return {
@@ -77,6 +78,18 @@ export const resolvers: Resolvers = {
       return {
         __typename: "Viewer",
         account,
+      };
+    },
+    async currentBlock(): Promise<BlockInfo | null> {
+      const provider = await getProvider();
+      if (!provider) {
+        return null;
+      }
+      const currentBlock = await provider.getBlock("latest");
+      return {
+        __typename: "BlockInfo",
+        number: currentBlock.number,
+        timestamp: currentBlock.timestamp,
       };
     },
   },
