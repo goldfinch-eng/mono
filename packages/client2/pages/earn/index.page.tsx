@@ -87,8 +87,9 @@ export default function EarnPage() {
         Senior Pool
       </Heading>
       <Paragraph className="mb-8">
-        The simple, lower risk, lower return option. Capital is automatically
-        diversified across Borrower pools, and protected by Backer capital.
+        The simple option for automtically diversified yields. Capital is
+        distributed across Borrower Pools, and is protected by Backer capital
+        for lower-risk investment.
       </Paragraph>
       <div className="mb-12">
         {!seniorPool || !fiatPerGfi ? (
@@ -108,8 +109,8 @@ export default function EarnPage() {
             apyTooltipContent={
               <div>
                 <div className="mb-4">
-                  Includes the senior pool yield from allocating to borrower
-                  pools, plus GFI distributions.
+                  The Senior Pool&apos;s total current estimated APY, including
+                  the current USDC APY and est. GFI rewards APY.
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -155,9 +156,8 @@ export default function EarnPage() {
         Borrower Pools
       </Heading>
       <Paragraph className="mb-8">
-        The more active, higher risk, higher return option. Earn higher APYs by
-        vetting borrowers and supplying first-loss capital directly to
-        individual pools.
+        The more active option for higher yields. Earn higher APYs by vetting
+        Borrowers and supplying first-loss capital directly to individual Pools.
       </Paragraph>
       <div className="flex flex-col space-y-4">
         {seniorPool && tranchedPools && fiatPerGfi

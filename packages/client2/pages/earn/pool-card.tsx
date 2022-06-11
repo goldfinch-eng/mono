@@ -219,8 +219,8 @@ export function TranchedPoolCard({
       apyTooltipContent={
         <div>
           <div className="mb-4">
-            Includes the senior pool yield from allocating to borrower pools,
-            plus GFI distributions.
+            The Pool&apos;s total estimated APY, including the Pool&apos;s USDC
+            APY and est. GFI rewards APY.
           </div>
           <div className="space-y-2">
             <div className="flex justify-between">

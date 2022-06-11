@@ -8,6 +8,7 @@ import {
   confirmDialog,
   DollarInput,
   Icon,
+  InfoIconTooltip,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
@@ -65,7 +66,7 @@ export function SeniorPoolWithDrawalPanel({
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting, isSubmitSuccessful },
+    formState: { errors, isSubmitting, isSubmitSuccessful, isDirty },
     reset,
     setValue,
   } = useForm<{ amount: string }>();
@@ -137,9 +138,10 @@ export function SeniorPoolWithDrawalPanel({
       }
       if (!forfeitedGfi.isZero()) {
         const confirmation = await confirmDialog(
-          `To withdraw this amount, two transactions must be made. First to withdraw your unstaked position, then to withdraw your staked position(s). As a result of withdrawing this amount, you will forfeit ${formatCrypto(
-            { token: SupportedCrypto.Gfi, amount: forfeitedGfi }
-          )} GFI from your staking rewards.`
+          `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position. As a result of withdrawing this amount, you will forfeit ${formatCrypto(
+            { token: SupportedCrypto.Gfi, amount: forfeitedGfi },
+            { includeToken: true }
+          )} of your FIDU staking rewards.`
         );
         if (!confirmation) {
           throw new Error("User backed out");
@@ -195,19 +197,39 @@ export function SeniorPoolWithDrawalPanel({
 
   return (
     <div className="col rounded-xl bg-sunrise-01 p-5 text-white">
-      <div className="mb-3 text-sm">Available to withdraw</div>
-      <div className="mb-9 flex items-center gap-3 text-5xl">
-        {formatCrypto(
-          { token: SupportedCrypto.Usdc, amount: maxWithdrawable },
-          { includeSymbol: true }
-        )}
-        <Icon name="Usdc" size="sm" />
+      <div className="mb-6">
+        <div className="mb-3 flex items-center gap-1 text-sm">
+          <div>Available to withdraw</div>
+          <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
+        </div>
+        <div className="flex items-center gap-3 text-5xl">
+          {formatCrypto(
+            { token: SupportedCrypto.Usdc, amount: maxWithdrawable },
+            { includeSymbol: true }
+          )}
+          <Icon name="Usdc" size="sm" />
+        </div>
+      </div>
+      <div className="mb-9">
+        <div className="mb-2 flex items-center gap-2 text-sm">
+          <div>Your senior pool position</div>
+          <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-xl">
+            {formatCrypto(
+              { token: SupportedCrypto.Usdc, amount: unstakedPlusStaked },
+              { includeSymbol: true }
+            )}
+          </div>
+          <Icon name="Usdc" size="sm" />
+        </div>
       </div>
       <form onSubmit={handler}>
         <div className="mb-3">
           <DollarInput
             name="amount"
-            label="Amount"
+            label="Withdrawal amount"
             control={control}
             textSize="xl"
             colorScheme="dark"
@@ -225,7 +247,7 @@ export function SeniorPoolWithDrawalPanel({
           size="xl"
           className="block w-full"
           isLoading={isSubmitting}
-          disabled={Object.keys(errors).length !== 0}
+          disabled={Object.keys(errors).length !== 0 || !isDirty}
           type="submit"
         >
           Withdraw
