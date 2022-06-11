@@ -108,3 +108,31 @@ export async function fetchUniqueIdentitySigner(
   } = JSON.parse(response.result);
   return parsedBody;
 }
+
+export async function postKYCDetails(
+  account: string,
+  signature: string,
+  signatureBlockNum: number,
+  kycDetails: {
+    entity: string;
+    residency: string;
+    idIssuer?: string;
+    accredited?: string;
+  }
+) {
+  const url = `${API_BASE_URL}/setUserKYCData`;
+  const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
+  const response = await fetch(url, {
+    headers: { ...auth, "Content-Type": "application/json" },
+    method: "POST",
+    body: JSON.stringify(kycDetails),
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not set KYC data");
+  }
+
+  const result: { status: string } = await response.json();
+
+  return result;
+}

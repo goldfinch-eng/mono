@@ -30,7 +30,7 @@ export const kycStatus = genRequestHandler({
   cors: true,
   handler: async (_, res: Response, verificationResult: SignatureVerificationSuccessResult): Promise<Response> => {
     const address = verificationResult.address
-    const payload = {address: address, status: "unknown", countryCode: null}
+    const payload = {address: address, status: "unknown", countryCode: null, residency: ""}
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
@@ -38,7 +38,9 @@ export const kycStatus = genRequestHandler({
     if (user.exists) {
       payload.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
       payload.countryCode = user.data()?.countryCode
+      payload.residency = user.data()?.kyc?.residency
     }
+
     return res.status(200).send(payload)
   },
 })

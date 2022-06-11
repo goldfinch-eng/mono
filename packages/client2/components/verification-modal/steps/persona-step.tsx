@@ -4,9 +4,11 @@ import { useWizard } from "react-use-wizard";
 
 import { Button } from "@/components/design-system";
 import { PERSONA_CONFIG } from "@/constants";
+import { postKYCDetails } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
+import { useVerificationFlowContext } from "../verification-flow-context";
 import personaLogo from "./persona-logo.png";
 import { StepTemplate } from "./step-template";
 
@@ -15,9 +17,24 @@ export function PersonaStep() {
   const [isPersonaLoading, setIsPersonaLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { goToStep } = useWizard();
+  const { entity, residency, idIssuer, accredited, signature } =
+    useVerificationFlowContext();
 
   const beginPersonaInquiry = async () => {
     setIsPersonaLoading(true);
+
+    // Send KYC details and continue opening Persona
+    if (account && signature && entity && residency) {
+      postKYCDetails(
+        account,
+        signature?.signature,
+        signature?.signatureBlockNum,
+        { entity, residency, idIssuer, accredited }
+      ).catch(() => {
+        throw new Error("Could not save KYC details");
+      });
+    }
+
     const Persona = await import("persona");
     const client = new Persona.Client({
       templateId: PERSONA_CONFIG.templateId,
