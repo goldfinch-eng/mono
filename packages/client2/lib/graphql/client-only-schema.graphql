@@ -27,6 +27,10 @@ extend type TranchedPool {
   borrower: Borrower!
 }
 
+extend type CreditLine {
+  isLate: Boolean
+}
+
 enum SupportedFiat {
   USD
 }
