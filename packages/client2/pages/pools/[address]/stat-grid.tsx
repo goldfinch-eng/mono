@@ -19,6 +19,7 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
   fragment TranchedPoolStatGridFields on TranchedPool {
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
+    principalAmountRepaid
     creditLine {
       id
       isLate @client
@@ -96,7 +97,12 @@ export function StatGrid({
   const principalOutstandingStat = (
     <Stat
       label="Principal outstanding"
-      value="TODO"
+      value={formatCrypto({
+        token: SupportedCrypto.Usdc,
+        amount: tranchedPool.creditLine.limit.sub(
+          tranchedPool.principalAmountRepaid
+        ),
+      })}
       tooltip="The total amount of principal remaining for the Borrower to repay to this Pool over its payment term."
     />
   );
