@@ -27,7 +27,7 @@ export const TRANCHED_POOL_STAT_GRID_FIELDS = gql`
       paymentPeriodInDays
       termEndTime
       nextDueTime
-      limit
+      maxLimit
     }
   }
 `;
@@ -99,7 +99,7 @@ export function StatGrid({
       label="Principal outstanding"
       value={formatCrypto({
         token: SupportedCrypto.Usdc,
-        amount: tranchedPool.creditLine.limit.sub(
+        amount: tranchedPool.creditLine.maxLimit.sub(
           tranchedPool.principalAmountRepaid
         ),
       })}
@@ -142,7 +142,7 @@ export function StatGrid({
       label="Pool limit"
       value={formatCrypto({
         token: SupportedCrypto.Usdc,
-        amount: tranchedPool.creditLine.limit,
+        amount: tranchedPool.creditLine.maxLimit,
       })}
       tooltip="The total funds that the Borrower can drawdown from this Pool."
     />
