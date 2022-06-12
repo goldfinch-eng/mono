@@ -103,10 +103,10 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
             : null}
         </div>,
         <div key={`${transaction.id}-amount`}>
-          {formatCrypto(
-            { token: SupportedCrypto.Usdc, amount: transaction.amount },
-            { includeSymbol: true }
-          )}
+          {formatCrypto({
+            token: SupportedCrypto.Usdc,
+            amount: transaction.amount,
+          })}
         </div>,
         <div key={`${transaction.id}-date`}>{format(date, "MMMM d, y")}</div>,
         <Link

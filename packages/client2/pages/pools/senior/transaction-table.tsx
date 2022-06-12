@@ -57,13 +57,10 @@ export function TransactionTable() {
   const transactions =
     data?.transactions.map((transaction) => {
       const date = new Date(transaction.timestamp * 1000);
-      const transactionAmount = formatCrypto(
-        {
-          token: SupportedCrypto.Usdc,
-          amount: transaction.amount,
-        },
-        { includeSymbol: true }
-      );
+      const transactionAmount = formatCrypto({
+        token: SupportedCrypto.Usdc,
+        amount: transaction.amount,
+      });
 
       return [
         <div key={`${transaction.id}-user`} className="flex items-center gap-2">

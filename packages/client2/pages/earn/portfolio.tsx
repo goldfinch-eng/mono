@@ -27,7 +27,7 @@ export function Portfolio({
       <div>
         <div className="mb-5 text-lg text-sand-700">Portfolio Balance</div>
         <div className="font-serif text-5xl font-semibold text-sand-800">
-          {formatCrypto(unstakedSeniorPoolBalance, { includeSymbol: true })}
+          {formatCrypto(unstakedSeniorPoolBalance)}
         </div>
         <div>420.69%</div>
       </div>

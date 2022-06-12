@@ -134,10 +134,10 @@ export function StatGrid({
   const limitStat = (
     <Stat
       label="Pool limit"
-      value={formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: tranchedPool.creditLine.limit },
-        { includeSymbol: true }
-      )}
+      value={formatCrypto({
+        token: SupportedCrypto.Usdc,
+        amount: tranchedPool.creditLine.limit,
+      })}
       tooltip="The total funds that the Borrower can drawdown from this Pool."
     />
   );

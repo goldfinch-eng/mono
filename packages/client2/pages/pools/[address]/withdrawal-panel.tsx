@@ -183,26 +183,20 @@ export function WithdrawalPanel({
   const availableDestinations = useMemo(() => {
     const wallet = [
       {
-        label: `Wallet \u00b7 ${formatCrypto(
-          {
-            token: SupportedCrypto.Usdc,
-            amount: totalPrincipalRedeemable.add(totalInterestRedeemable),
-          },
-          { includeSymbol: true }
-        )}`,
+        label: `Wallet \u00b7 ${formatCrypto({
+          token: SupportedCrypto.Usdc,
+          amount: totalPrincipalRedeemable.add(totalInterestRedeemable),
+        })}`,
         value: "wallet",
       },
     ];
     const seniorPoolStakedPositions = zaps.map((zap, index) => ({
-      label: `Senior Pool Capital ${index + 1} \u00b7 ${formatCrypto(
-        {
-          token: SupportedCrypto.Usdc,
-          amount: zap.poolToken.principalRedeemable.add(
-            zap.poolToken.interestRedeemable
-          ),
-        },
-        { includeSymbol: true }
-      )}`,
+      label: `Senior Pool Capital ${index + 1} \u00b7 ${formatCrypto({
+        token: SupportedCrypto.Usdc,
+        amount: zap.poolToken.principalRedeemable.add(
+          zap.poolToken.interestRedeemable
+        ),
+      })}`,
       value: `seniorPool-${zap.poolToken.id}`,
     }));
     return wallet.concat(seniorPoolStakedPositions);
@@ -212,13 +206,10 @@ export function WithdrawalPanel({
     <div className="col rounded-xl bg-sunrise-01 p-5 text-white">
       <div className="mb-3 text-sm">Available to withdraw</div>
       <div className="mb-9 flex items-center gap-3 text-5xl">
-        {formatCrypto(
-          {
-            token: SupportedCrypto.Usdc,
-            amount: totalWithdrawable,
-          },
-          { includeSymbol: true }
-        )}
+        {formatCrypto({
+          token: SupportedCrypto.Usdc,
+          amount: totalWithdrawable,
+        })}
         <Icon name="Usdc" size="sm" />
       </div>
       <form onSubmit={handler}>

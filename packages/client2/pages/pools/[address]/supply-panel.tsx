@@ -240,8 +240,7 @@ export default function SupplyPanel({
     const zappableOptions = user?.seniorPoolStakedPositions
       ? user.seniorPoolStakedPositions.map((s, index) => ({
           label: `Senior Pool Position ${index + 1} \u00b7 ${formatCrypto(
-            sharesToUsdc(s.amount, seniorPoolSharePrice),
-            { includeSymbol: true }
+            sharesToUsdc(s.amount, seniorPoolSharePrice)
           )}`,
           value: `seniorPool-${s.id}`,
         }))

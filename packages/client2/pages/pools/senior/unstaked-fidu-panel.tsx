@@ -30,9 +30,8 @@ export function UnstakedFiduBanner({
       </div>
       <div className="mb-5">
         You have {formatCrypto(fiduBalance, { includeToken: true })} (
-        {formatCrypto(usdcValue, { includeSymbol: true })}) that is not staked.
-        Stake your FIDU to earn an additional {formatPercent(fiatApyFromGfi)}{" "}
-        APY in GFI.
+        {formatCrypto(usdcValue)}) that is not staked. Stake your FIDU to earn
+        an additional {formatPercent(fiatApyFromGfi)} APY in GFI.
       </div>
       <Button
         as="a"
