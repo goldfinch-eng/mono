@@ -1,4 +1,4 @@
-import {Transaction, User} from "../../generated/schema"
+import {TranchedPool, Transaction, User} from "../../generated/schema"
 import {
   CreditLineMigrated,
   DepositMade,
@@ -106,6 +106,11 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackersRewardsClaimable(event.address, event.block.timestamp)
+
+  const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
+  tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)
+  tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interestAmount)
+  tranchedPool.save()
 
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.category = "TRANCHED_POOL_REPAYMENT"

@@ -226,15 +226,16 @@ type TranchedPool @entity {
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
-  juniorPrincipalAmountRepaid: BigInt!
-  principalAmountRepaid: BigInt!
-  """
-  Totals the amounts from all repayment transactions on this pool
-  """
-  totalAmountRepaid: BigInt!
   allowedUidTypes: [UidType!]!
 
   transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
+
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
+  """
+  Includes principal amount and compounded interest over the entire loan term.
+  """
+  totalAmountOwed: BigInt!
 }
 
 type TranchedPoolToken @entity {

@@ -33,9 +33,7 @@ import { useWallet } from "@/lib/wallet";
 import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
-import RepaymentProgressPanel, {
-  REPAYMENT_PROGRESS_PANEL_FIELDS,
-} from "./repayment-progress-panel";
+import RepaymentProgressPanel from "./repayment-progress-panel";
 import { StatGrid, TRANCHED_POOL_STAT_GRID_FIELDS } from "./stat-grid";
 import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
@@ -90,6 +88,9 @@ gql`
         paymentPeriodInDays
         nextDueTime
       }
+      totalAmountOwed
+      principalAmountRepaid
+      interestAmountRepaid
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
       ...BorrowerProfileFields
@@ -139,7 +140,6 @@ export default function PoolPage() {
     },
     returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
-  console.log({ error });
 
   const tranchedPool = data?.tranchedPool;
   const seniorPool = data?.seniorPools?.[0];
@@ -292,6 +292,16 @@ export default function PoolPage() {
                       tranchedPool.juniorTranches[0].lockedUntil
                     )
                   }
+                />
+              ) : null}
+
+              {tranchedPool &&
+              (poolStatus === PoolStatus.Full ||
+                poolStatus === PoolStatus.Repaid) ? (
+                <RepaymentProgressPanel
+                  poolStatus={poolStatus}
+                  tranchedPool={tranchedPool}
+                  userPoolTokens={user?.tokens ?? []}
                 />
               ) : null}
 

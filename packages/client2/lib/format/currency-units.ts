@@ -69,7 +69,7 @@ export function formatCrypto(
   options?: FormatCryptoOptions
 ): string {
   const defaultOptions: FormatCryptoOptions = {
-    includeSymbol: false,
+    includeSymbol: true,
     includeToken: false,
   };
   const { includeSymbol, includeToken } = { ...defaultOptions, ...options };

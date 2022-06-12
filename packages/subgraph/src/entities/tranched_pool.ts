@@ -8,7 +8,7 @@ import {
 } from "../../generated/schema"
 import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
-import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
+import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
@@ -23,9 +23,8 @@ import {
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
 } from "./helpers"
-import {bigDecimalToBigInt, bigIntMin, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
-import {BackerRewards} from "../../generated/templates/BackerRewards/BackerRewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
@@ -228,6 +227,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.estimatedJuniorApy = estimateJuniorAPY(tranchedPool)
+  tranchedPool.totalAmountOwed = calculateTotalAmountOwed(creditLine)
   tranchedPool.save()
 
   if (isCreating) {
@@ -434,4 +434,16 @@ export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, ti
   }
   tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
   tranchedPool.save()
+}
+
+function calculateTotalAmountOwed(creditLine: CreditLine): BigInt {
+  const principal = creditLine.limit.toBigDecimal()
+  const interestRate = creditLine.interestAprDecimal
+  const numPayments = ceil(creditLine.termInDays.divDecimal(creditLine.paymentPeriodInDays.toBigDecimal())).toI32()
+  const paymentsPerYear = BigInt.fromI32(365).divDecimal(creditLine.paymentPeriodInDays.toBigDecimal())
+  let power = BigDecimal.fromString("1")
+  for (let i = 0; i < numPayments; i++) {
+    power = power.times(BigDecimal.fromString("1").plus(interestRate.div(paymentsPerYear)))
+  }
+  return ceil(principal.times(power))
 }
