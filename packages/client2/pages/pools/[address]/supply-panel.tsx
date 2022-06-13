@@ -418,9 +418,13 @@ export default function SupplyPanel({
             Supply
           </Button>
           {!canUserParticipate ? (
-            <p className="text-white">
-              You are not allowed to participate in this pool.
-            </p>
+            <div className="flex items-center justify-center gap-3 text-sm text-white">
+              <Icon size="md" name="Exclamation" />
+              <div>
+                Sorry, you are not eligible to participate in this pool because
+                you are either unverified or do not have a suitable UID.
+              </div>
+            </div>
           ) : null}
         </form>
       )}

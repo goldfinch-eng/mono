@@ -297,10 +297,13 @@ export function SeniorPoolSupplyPanel({
           Supply
         </Button>
         {!canUserParticipate ? (
-          <p className="mt-2 text-white">
-            Sorry, you are not allowed to participate in this pool because you
-            are either unverified or do not have a suitable UID.
-          </p>
+          <div className="mt-2 flex items-center justify-center gap-3 text-sm text-white">
+            <Icon size="md" name="Exclamation" />
+            <div>
+              Sorry, you are not eligible to participate in this pool because
+              you are either unverified or do not have a suitable UID.
+            </div>
+          </div>
         ) : null}
       </form>
     </div>
