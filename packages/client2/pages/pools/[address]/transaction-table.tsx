@@ -3,7 +3,12 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
-import { Link, ShimmerLines, Table } from "@/components/design-system";
+import {
+  GoldfinchLogo,
+  Link,
+  ShimmerLines,
+  Table,
+} from "@/components/design-system";
 import { Identicon } from "@/components/identicon";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -74,6 +79,12 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
             </div>
             <span>{borrower.name}</span>
           </div>
+        ) : transaction.category ===
+          TransactionCategory.SeniorPoolRedemption ? (
+          <div className="flex items-center gap-2">
+            <GoldfinchLogo className="h-6 w-6" />
+            Senior Pool
+          </div>
         ) : (
           <div className="flex items-center gap-2">
             <Identicon
@@ -101,6 +112,8 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
             ? "Repayment"
             : transaction.category === TransactionCategory.TranchedPoolDrawdown
             ? "Drawdown"
+            : transaction.category === TransactionCategory.SeniorPoolRedemption
+            ? "Auto Transfer"
             : null}
         </div>,
         <div key={`${transaction.id}-amount`}>

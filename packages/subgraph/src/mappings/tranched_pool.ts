@@ -1,3 +1,4 @@
+import {Address} from "@graphprotocol/graph-ts"
 import {TranchedPool, Transaction, User} from "../../generated/schema"
 import {
   CreditLineMigrated,
@@ -11,6 +12,7 @@ import {
   DrawdownMade,
   PaymentApplied,
 } from "../../generated/templates/TranchedPool/TranchedPool"
+import {SENIOR_POOL_ADDRESS} from "../constants"
 import {updateAllPoolBackers, updateAllPoolBackersRewardsClaimable} from "../entities/pool_backer"
 import {
   handleDeposit,
@@ -56,8 +58,13 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.transactionHash = event.transaction.hash
-  transaction.category = "TRANCHED_POOL_WITHDRAWAL"
   transaction.user = event.params.owner.toHexString()
+  // The senior pool periodically redeems its share of a pool, we want to identify this special event
+  if (event.params.owner.equals(Address.fromString(SENIOR_POOL_ADDRESS))) {
+    transaction.category = "SENIOR_POOL_REDEMPTION"
+  } else {
+    transaction.category = "TRANCHED_POOL_WITHDRAWAL"
+  }
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
   transaction.timestamp = event.block.timestamp.toI32()
