@@ -48,7 +48,7 @@ async function _contractExplicitOwnerVerifier(contract: Contract, expectedOwner:
   let contractIssue = false
 
   const owner = (await contract.owner()).toLowerCase()
-  if (owner == expectedOwner.toLowerCase()) {
+  if (owner === expectedOwner.toLowerCase()) {
     console.log(`Contract has explicit \`owner\` as expected: ${getProtocolAddressDescription(expectedOwner)}`)
   } else {
     contractIssue = true
@@ -78,7 +78,7 @@ async function _contractNoExplicitOwnerVerifier(contract: Contract): Promise<Ver
   if (contractHasExplicitOwner) {
     console.error(`[CRITICAL] Expected contract not to have explicit \`owner\`, but it does: ${owner}`)
   } else {
-    console.error("Contract has no explicit `owner`, as expected.")
+    console.log("Contract has no explicit `owner`, as expected.")
   }
 
   return {ok: !contractHasExplicitOwner}
@@ -171,7 +171,7 @@ async function _contractRoleMemberVerifier(
         .fill("")
         .map((_, i) => contract.getRoleMember(config.role, i))
     )
-  ).map((owner: string) => owner.toLowerCase())
+  ).map((member: string) => member.toLowerCase())
   const expectedMembers = config.expectedMembers.map((expectedMember: string) => expectedMember.toLowerCase())
 
   const membersAsExpected = intersection(expectedMembers, members)
