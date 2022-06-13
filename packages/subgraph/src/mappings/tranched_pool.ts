@@ -29,6 +29,7 @@ export function handleDepositMade(event: DepositMade): void {
   handleDeposit(event)
 
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
   transaction.category = "TRANCHED_POOL_DEPOSIT"
   transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
@@ -54,6 +55,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   updateAllPoolBackers(event.address)
 
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
   transaction.category = "TRANCHED_POOL_WITHDRAWAL"
   transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
@@ -90,6 +92,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updateAllPoolBackers(event.address)
 
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
   transaction.category = "TRANCHED_POOL_DRAWDOWN"
   transaction.user = event.params.borrower.toHexString()
   transaction.tranchedPool = event.address.toHexString()
@@ -113,6 +116,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.save()
 
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
   transaction.category = "TRANCHED_POOL_REPAYMENT"
   transaction.user = event.params.payer.toHexString()
   transaction.tranchedPool = event.address.toHexString()

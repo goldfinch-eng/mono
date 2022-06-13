@@ -29,6 +29,7 @@ gql`
       skip: $skip
     ) {
       id
+      transactionHash
       user {
         id
       }
@@ -114,7 +115,7 @@ export function TransactionTable() {
           </Link>
         ) : null,
         <Link
-          href={`https://etherscan.io/tx/${transaction.id}`}
+          href={`https://etherscan.io/tx/${transaction.transactionHash}`}
           target="_blank"
           rel="noopener noreferrer"
           key={`${transaction.id}-tx`}

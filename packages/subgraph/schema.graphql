@@ -284,9 +284,10 @@ enum TransactionCategory {
 
 type Transaction @entity(immutable: true) {
   """
-  This is the transaction hash
+  This is a concatenation of transaction hash with log index. One transaction can result in more than one of this entity.
   """
   id: Bytes!
+  transactionHash: Bytes!
   category: TransactionCategory!
   user: User!
   timestamp: Int!

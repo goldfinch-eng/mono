@@ -6,12 +6,15 @@ import {
   HelperText,
   Icon,
   InfoIconTooltip,
+  Link,
 } from "@/components/design-system";
 import { GFI_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
+  SupportedCrypto,
   SupportedFiat,
+  TransactionCategory,
   useCurrentUserWalletInfoQuery,
 } from "@/lib/graphql/generated";
 import { openVerificationModal } from "@/lib/state/actions";
@@ -44,6 +47,13 @@ gql`
       isUsNonAccreditedIndividual
       isNonUsIndividual
       isGoListed
+
+      transactions(orderBy: timestamp, orderDirection: desc, first: 5) {
+        id
+        transactionHash
+        category
+        amount
+      }
     }
   }
 `;
@@ -179,7 +189,53 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       ) : null}
       <div>
         <div className="mb-4 text-lg font-semibold">Recent Transactions</div>
-        <div>TODO</div>
+        <div>
+          {user && user.transactions.length !== 0 ? (
+            <table className="w-full text-sm">
+              <tbody>
+                {user?.transactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="text-left">
+                      {transaction.amount && !transaction.amount.isZero()
+                        ? `${formatCrypto({
+                            token: SupportedCrypto.Usdc,
+                            amount: transaction.amount,
+                          })} `
+                        : null}
+                      {transaction.category ===
+                      TransactionCategory.SeniorPoolDeposit
+                        ? "Senior Pool Supply"
+                        : TransactionCategory.SeniorPoolWithdrawal
+                        ? "Senior Pool Withdrawal"
+                        : TransactionCategory.TranchedPoolDeposit
+                        ? "Borrower Pool Supply"
+                        : TransactionCategory.TranchedPoolWithdrawal
+                        ? "Borrower Pool Withdraw"
+                        : TransactionCategory.TranchedPoolDrawdown
+                        ? "Drawdown"
+                        : TransactionCategory.TranchedPoolRepayment
+                        ? "Repayment"
+                        : TransactionCategory.UidMinted
+                        ? "Mint UID"
+                        : null}
+                    </td>
+                    <td className="text-right">
+                      <Link
+                        href={`https://etherscan.io/tx/${transaction.transactionHash}`}
+                        iconRight="ArrowTopRight"
+                        className="text-sand-400"
+                      >
+                        Tx
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            "No recent activity"
+          )}
+        </div>
       </div>
       <div className="flex justify-between">
         <Button
