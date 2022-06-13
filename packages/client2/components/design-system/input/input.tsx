@@ -99,7 +99,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     >
       <div
         className={clsx(
-          "mb-1.5 flex w-full items-center justify-between gap-4 leading-none",
+          "mb-1.5 flex w-full items-end justify-between gap-4 leading-none",
           hideLabel && "sr-only",
           labelClassName
         )}
