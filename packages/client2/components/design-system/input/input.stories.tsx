@@ -58,6 +58,7 @@ export const SelectStory: ComponentStory<typeof Select> = (args) => {
     handleSubmit,
     watch,
     formState: { errors },
+    reset,
   } = useForm<{
     petfood: string;
   }>(); // You can set { defaultValues: { petfood: "tlc" } } here if you want a default value
@@ -89,6 +90,10 @@ export const SelectStory: ComponentStory<typeof Select> = (args) => {
         placeholder="Choose a pet food..."
       />
       <button type="submit">Submit</button>
+      <br />
+      <button type="button" onClick={() => reset()}>
+        Reset
+      </button>
     </form>
   );
 };

@@ -1,6 +1,6 @@
 import { Listbox, Transition } from "@headlessui/react";
 import clsx from "clsx";
-import { Fragment, ReactNode, useState } from "react";
+import { Fragment, ReactNode } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 
 import { HelperText, Icon } from "@/components/design-system";
@@ -71,9 +71,7 @@ export function Select({
 }: SelectProps) {
   const isError = !!errorMessage;
   const { field } = useController(controlProps);
-  const [selectedOption, setSelectedOption] = useState<Option | null>(
-    () => options.find((o) => o.value === field.value) ?? null
-  );
+  const selectedOption = options.find((o) => o.value === field.value) ?? null;
   return (
     <div
       className={clsx(
@@ -95,10 +93,7 @@ export function Select({
     >
       <Listbox
         value={selectedOption}
-        onChange={(selected) => {
-          setSelectedOption(selected);
-          field.onChange(selected?.value);
-        }}
+        onChange={(selected: Option | null) => field.onChange(selected?.value)}
         as="div"
         className="relative self-stretch"
       >
