@@ -442,7 +442,7 @@ async function _verifyContractsOwnership(
   return {ok: !anyIssue}
 }
 
-export async function verifyContractsOwnership(): Promise<void> {
+export default async function verifyContractsOwnership(): Promise<void> {
   const protocolContractsResult = await verifyProtocolContractsOwnership()
   const borrowerContractsResult = await verifyBorrowerContractsOwnership()
 
@@ -460,5 +460,3 @@ if (require.main === module) {
       process.exit(1)
     })
 }
-
-export default verifyContractsOwnership
