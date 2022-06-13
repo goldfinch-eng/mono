@@ -240,8 +240,7 @@ export default function SupplyPanel({
     const zappableOptions = user?.seniorPoolStakedPositions
       ? user.seniorPoolStakedPositions.map((s, index) => ({
           label: `Senior Pool Position ${index + 1} \u00b7 ${formatCrypto(
-            sharesToUsdc(s.amount, seniorPoolSharePrice),
-            { includeSymbol: true }
+            sharesToUsdc(s.amount, seniorPoolSharePrice)
           )}`,
           value: `seniorPool-${s.id}`,
         }))
@@ -252,16 +251,11 @@ export default function SupplyPanel({
   return (
     <div className="rounded-xl bg-sunrise-02 p-5 text-white">
       <div className="mb-3 flex flex-row justify-between">
-        <span className="text-sm">Est APY</span>
+        <span className="text-sm">Est. APY</span>
         <span className="opacity-60">
           <InfoIconTooltip
             size="sm"
-            content={
-              <div className="max-w-xs">
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                Officia culpa possimus accusantium cumque suscipit.
-              </div>
-            }
+            content="The pool's total estimated APY, including the USDC APY and est. GFI rewards APY."
           />
         </span>
       </div>
@@ -274,21 +268,15 @@ export default function SupplyPanel({
         <thead>
           <tr>
             <th className="w-1/2 pb-3 text-left text-sm font-normal">
-              Est APY breakdown
+              Est. APY breakdown
             </th>
             <th className="w-1/2 pb-3 text-left text-sm font-normal">
               <div className="flex items-center justify-between">
-                <span>Est return</span>
+                <span>Est. return</span>
                 <span className="opacity-60">
                   <InfoIconTooltip
                     size="sm"
-                    content={
-                      <div className="max-w-xs">
-                        Lorem ipsum dolor sit amet, consectetur adipisicing
-                        elit. Officia culpa possimus accusantium cumque
-                        suscipit.
-                      </div>
-                    }
+                    content="The estimated annual return on investment based on the supply amount entered below. The USDC returns are based on the fixed-rate USDC APY defined by the Borrower Pool's financing terms. The GFI returns are based on the Pool's estimated GFI rewards APY, including Investor Rewards and the Backer Bonus."
                   />
                 </span>
               </div>
@@ -397,7 +385,7 @@ export default function SupplyPanel({
               <InfoIconTooltip
                 size="sm"
                 placement="top"
-                content="Lorem ipsum. Your full name is required for reasons"
+                content="Your full name as it appears on your government-issued identification. This should be the same as your full legal name used to register your UID."
               />
             }
             placeholder="First and last name"

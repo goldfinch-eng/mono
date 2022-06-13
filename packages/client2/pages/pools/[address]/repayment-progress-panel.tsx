@@ -1,108 +1,236 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
-import { format } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { InfoIconTooltip, Icon } from "@/components/design-system";
-import { formatCrypto, formatPercent } from "@/lib/format";
+import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
   RepaymentProgressPanelTranchedPoolFieldsFragment,
+  RepaymentProgressPanelPoolTokenFieldsFragment,
 } from "@/lib/graphql/generated";
+import { PoolStatus } from "@/lib/pools";
 
 export const REPAYMENT_PROGRESS_PANEL_FIELDS = gql`
   fragment RepaymentProgressPanelTranchedPoolFields on TranchedPool {
-    id
-    estimatedJuniorApy
-    totalAmountRepaid
+    totalAmountOwed
+    principalAmountRepaid
+    interestAmountRepaid
     creditLine {
-      nextDueTime
+      limit
     }
   }
 `;
 
+export const REPAYMENT_PROGRESS_PANEL_POOL_TOKEN_FIELDS = gql`
+  fragment RepaymentProgressPanelPoolTokenFields on TranchedPoolToken {
+    principalAmount
+  }
+`;
+
 interface RepaymentProgressPanelProps {
+  poolStatus: PoolStatus.Full | PoolStatus.Repaid;
   tranchedPool: RepaymentProgressPanelTranchedPoolFieldsFragment;
-  userInvestment?: BigNumber;
+  userPoolTokens: RepaymentProgressPanelPoolTokenFieldsFragment[];
 }
 
 export default function RepaymentProgressPanel({
+  poolStatus,
   tranchedPool,
+  userPoolTokens,
 }: RepaymentProgressPanelProps) {
-  return (
-    <div className="rounded-xl border border-sand-200">
-      <div className="p-5">
-        <div>
-          <LittleHeading tooltipContent="Total amount repaid by the borrower, including interest.">
-            Total amount repaid
-          </LittleHeading>
-          <div className="mb-2 flex items-center justify-between">
-            <BigText icon="Usdc">
-              {formatCrypto(
-                {
-                  token: SupportedCrypto.Usdc,
-                  amount: tranchedPool.totalAmountRepaid,
-                },
-                { includeSymbol: true }
-              )}
-            </BigText>
-            <div className="text-xl">
-              {formatPercent(tranchedPool.estimatedJuniorApy)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <hr className="border-t border-sand-200" />
-
-      <div className="p-5">
-        <LittleHeading>Next repayment date</LittleHeading>
-        <BigText>
-          {format(
-            tranchedPool.creditLine.nextDueTime.toNumber() * 1000,
-            "MMM d, y"
-          )}
-        </BigText>
-      </div>
-    </div>
+  const totalRepaid = tranchedPool.principalAmountRepaid.add(
+    tranchedPool.interestAmountRepaid
   );
-}
-
-function LittleHeading({
-  children,
-  tooltipContent,
-  className,
-}: {
-  children: string;
-  tooltipContent?: string;
-  className?: string;
-}) {
+  const userHasPosition = userPoolTokens.length > 0;
+  const userPositionRatio =
+    userPoolTokens.reduce(
+      (prev, current) => prev + current.principalAmount.toNumber(),
+      0
+    ) / tranchedPool.creditLine.limit.toNumber();
+  const principalOutstanding = tranchedPool.creditLine.limit.sub(
+    tranchedPool.principalAmountRepaid
+  );
+  const interestOutstanding =
+    tranchedPool.totalAmountOwed.sub(principalOutstanding);
   return (
-    <div
-      className={clsx(
-        "mb-2 flex items-center justify-between gap-3 text-sand-700",
-        className
-      )}
-    >
-      <div className="text-sm">{children}</div>
-      {tooltipContent ? (
-        <InfoIconTooltip size="sm" content={tooltipContent} placement="top" />
+    <div className="rounded-xl border border-sand-200 p-5">
+      {userHasPosition ? (
+        <div>
+          <PanelHeading
+            heading="Remaining position outstanding"
+            tooltip="The total value of your investment that remains for the Borrower to repay to you over the course of the Pool's payment term, including interest and principal repayments."
+            value={formatCrypto({
+              token: SupportedCrypto.Usdc,
+              amount: multiplyByFraction(
+                tranchedPool.totalAmountOwed,
+                userPositionRatio
+              ),
+            })}
+          />
+          <MiniTable
+            rows={[
+              [
+                "Principal",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: multiplyByFraction(
+                    principalOutstanding,
+                    userPositionRatio
+                  ),
+                }),
+              ],
+              [
+                "Interest",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: multiplyByFraction(
+                    interestOutstanding,
+                    userPositionRatio
+                  ),
+                }),
+              ],
+              [
+                "Total",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: multiplyByFraction(
+                    tranchedPool.totalAmountOwed,
+                    userPositionRatio
+                  ),
+                }),
+              ],
+            ]}
+          />
+        </div>
+      ) : poolStatus === PoolStatus.Full ? (
+        <div>
+          <PanelHeading
+            heading="Total loan amount outstanding"
+            tooltip="The total amount of USDC remaining for the Borrower to repay to this Pool over its payment term, including interest and principal repayments."
+            value={formatCrypto({
+              token: SupportedCrypto.Usdc,
+              amount: tranchedPool.totalAmountOwed,
+            })}
+          />
+          <MiniTable
+            rows={[
+              [
+                "Principal",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: principalOutstanding,
+                }),
+              ],
+              [
+                "Interest",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: interestOutstanding,
+                }),
+              ],
+              [
+                "Total",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: tranchedPool.totalAmountOwed,
+                }),
+              ],
+            ]}
+          />
+        </div>
+      ) : poolStatus === PoolStatus.Repaid ? (
+        <div>
+          <PanelHeading
+            heading="Total USDC repaid"
+            tooltip="The total amount of of USDC that the Borrower repaid to this Pool over its payment term, including interest and principal repayments."
+            value={formatCrypto({
+              token: SupportedCrypto.Usdc,
+              amount: totalRepaid,
+            })}
+          />
+          <MiniTable
+            rows={[
+              [
+                "Principal",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: tranchedPool.principalAmountRepaid,
+                }),
+              ],
+              [
+                "Interest",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: tranchedPool.interestAmountRepaid,
+                }),
+              ],
+              [
+                "Total",
+                formatCrypto({
+                  token: SupportedCrypto.Usdc,
+                  amount: totalRepaid,
+                }),
+              ],
+            ]}
+          />
+        </div>
       ) : null}
     </div>
   );
 }
 
-function BigText({
-  children,
-  icon,
+function PanelHeading({
+  heading,
+  tooltip,
+  value,
 }: {
-  children: string;
-  icon?: "Usdc" | "Gfi";
+  heading: string;
+  tooltip: string;
+  value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 text-3xl">
-      {children}
-      {icon ? <Icon name={icon} size="sm" /> : null}
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+        {heading}
+        <InfoIconTooltip content={tooltip} size="sm" />
+      </div>
+      <div className="flex items-center gap-2 text-3xl">
+        {value}
+        <Icon name="Usdc" size="md" />
+      </div>
     </div>
   );
+}
+
+function MiniTable({ rows }: { rows: [string, string][] }) {
+  return (
+    <table className="mt-6 w-full border-collapse">
+      <tbody>
+        {rows.map((row, index) => (
+          <tr
+            key={index}
+            className={clsx(index === rows.length - 1 ? "font-semibold" : null)}
+          >
+            <th
+              scope="row"
+              className={clsx(
+                "border border-sand-200 py-2 px-4 text-left",
+                index === rows.length - 1 ? "font-semibold" : "font-normal"
+              )}
+            >
+              {row[0]}
+            </th>
+            <td className="border border-sand-200 py-2 px-4 text-right">
+              {row[1]}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function multiplyByFraction(n: BigNumber, m: number): BigNumber {
+  return BigNumber.from(Math.trunc(n.toNumber() * m));
 }

@@ -3,7 +3,13 @@ import { BigNumber, utils } from "ethers";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 
-import { Icon, Button, DollarInput, Select } from "@/components/design-system";
+import {
+  Icon,
+  Button,
+  DollarInput,
+  Select,
+  InfoIconTooltip,
+} from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
@@ -183,26 +189,20 @@ export function WithdrawalPanel({
   const availableDestinations = useMemo(() => {
     const wallet = [
       {
-        label: `Wallet \u00b7 ${formatCrypto(
-          {
-            token: SupportedCrypto.Usdc,
-            amount: totalPrincipalRedeemable.add(totalInterestRedeemable),
-          },
-          { includeSymbol: true }
-        )}`,
+        label: `Wallet \u00b7 ${formatCrypto({
+          token: SupportedCrypto.Usdc,
+          amount: totalPrincipalRedeemable.add(totalInterestRedeemable),
+        })}`,
         value: "wallet",
       },
     ];
     const seniorPoolStakedPositions = zaps.map((zap, index) => ({
-      label: `Senior Pool Capital ${index + 1} \u00b7 ${formatCrypto(
-        {
-          token: SupportedCrypto.Usdc,
-          amount: zap.poolToken.principalRedeemable.add(
-            zap.poolToken.interestRedeemable
-          ),
-        },
-        { includeSymbol: true }
-      )}`,
+      label: `Senior Pool Capital ${index + 1} \u00b7 ${formatCrypto({
+        token: SupportedCrypto.Usdc,
+        amount: zap.poolToken.principalRedeemable.add(
+          zap.poolToken.interestRedeemable
+        ),
+      })}`,
       value: `seniorPool-${zap.poolToken.id}`,
     }));
     return wallet.concat(seniorPoolStakedPositions);
@@ -210,15 +210,18 @@ export function WithdrawalPanel({
 
   return (
     <div className="col rounded-xl bg-sunrise-01 p-5 text-white">
-      <div className="mb-3 text-sm">Available to withdraw</div>
+      <div className="mb-3 flex justify-between text-sm">
+        Available to withdraw
+        <InfoIconTooltip
+          content="Your USDC funds that are currently available to be withdrawn from this Pool."
+          size="sm"
+        />
+      </div>
       <div className="mb-9 flex items-center gap-3 text-5xl">
-        {formatCrypto(
-          {
-            token: SupportedCrypto.Usdc,
-            amount: totalWithdrawable,
-          },
-          { includeSymbol: true }
-        )}
+        {formatCrypto({
+          token: SupportedCrypto.Usdc,
+          amount: totalWithdrawable,
+        })}
         <Icon name="Usdc" size="sm" />
       </div>
       <form onSubmit={handler}>
@@ -253,6 +256,13 @@ export function WithdrawalPanel({
         >
           Withdraw
         </Button>
+        <div className="mt-3 flex items-center justify-center gap-2 text-sm text-sand-700">
+          <InfoIconTooltip
+            size="sm"
+            content="While this Pool is still open for Backer investments, you can instantly withdraw any amount of the funds you have already deposited. Once the Pool is has reached its Pool limit for funding and is closed for further investment, you will only be able to withdraw your share of the Pool's interest and principal repayments."
+          />
+          You can withdraw capital until the pool is closed.
+        </div>
       </form>
     </div>
   );

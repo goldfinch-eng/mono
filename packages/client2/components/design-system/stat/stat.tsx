@@ -18,14 +18,9 @@ interface StatProps {
    * Optional tooltip to display with an info icon
    */
   tooltip?: ReactNode;
-
-  /**
-   * Controls the font size of the content
-   */
-  size?: "md" | "lg";
 }
 
-export function Stat({ label, value, tooltip, size = "md" }: StatProps) {
+export function Stat({ label, value, tooltip }: StatProps) {
   return (
     <div>
       <div className="mb-3 flex items-center text-sm text-sand-600">
@@ -37,12 +32,7 @@ export function Stat({ label, value, tooltip, size = "md" }: StatProps) {
           />
         )}
       </div>
-      <div
-        className={clsx(
-          "font-medium text-sand-700",
-          size === "lg" ? "text-4xl" : "text-2xl"
-        )}
-      >
+      <div className="text-xl font-medium text-sand-700 md:text-2xl">
         {value}
       </div>
     </div>

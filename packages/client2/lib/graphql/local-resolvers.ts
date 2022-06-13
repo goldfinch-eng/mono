@@ -9,6 +9,7 @@ import {
   Viewer,
   CryptoAmount,
   BlockInfo,
+  CreditLine,
 } from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
@@ -151,6 +152,29 @@ export const resolvers: Resolvers = {
         token: SupportedCrypto.Fidu,
         amount: fiduBalance,
       };
+    },
+  },
+  CreditLine: {
+    async isLate(creditLine: CreditLine): Promise<boolean | null> {
+      const provider = await getProvider();
+      if (!provider) {
+        return null;
+      }
+      if (!creditLine.id) {
+        throw new Error("CreditLine ID unavailable when querying isLate");
+      }
+      const chainId = await provider.getSigner().getChainId();
+      const creditLineContract = getContract({
+        name: "CreditLine",
+        address: creditLine.id,
+        provider,
+        chainId,
+      });
+      try {
+        return await creditLineContract.isLate();
+      } catch (e) {
+        return null;
+      }
     },
   },
 };

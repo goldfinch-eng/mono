@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import {
   Breadcrumb,
   Button,
-  Stat,
   TabButton,
   TabContent,
   TabGroup,
@@ -20,7 +19,6 @@ import {
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
   useSingleTranchedPoolDataQuery,
@@ -28,7 +26,6 @@ import {
 import {
   PoolStatus,
   getTranchedPoolStatus,
-  computeApyFromGfiInFiat,
   TRANCHED_POOL_STATUS_FIELDS,
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
@@ -36,9 +33,8 @@ import { useWallet } from "@/lib/wallet";
 import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
 import ComingSoonPanel from "./coming-soon-panel";
 import FundingBar from "./funding-bar";
-import RepaymentProgressPanel, {
-  REPAYMENT_PROGRESS_PANEL_FIELDS,
-} from "./repayment-progress-panel";
+import RepaymentProgressPanel from "./repayment-progress-panel";
+import { StatGrid, TRANCHED_POOL_STAT_GRID_FIELDS } from "./stat-grid";
 import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
@@ -52,11 +48,11 @@ import {
 
 gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
+  ${TRANCHED_POOL_STAT_GRID_FIELDS}
   ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${WITHDRAWAL_PANEL_ZAP_FIELDS}
-  ${REPAYMENT_PROGRESS_PANEL_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
@@ -86,12 +82,17 @@ gql`
         id
         limit
         maxLimit
-        paymentPeriodInDays
+        id
+        isLate @client
         termInDays
+        paymentPeriodInDays
+        nextDueTime
       }
+      totalAmountOwed
+      principalAmountRepaid
+      interestAmountRepaid
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
-      ...RepaymentProgressPanelTranchedPoolFields
       ...BorrowerProfileFields
     }
     seniorPools(first: 1) {
@@ -248,168 +249,37 @@ export default function PoolPage() {
             </HelperText>
           ) : null}
 
-          <div className="grid-cols-3 rounded-lg border border-eggplant-50 sm:grid md:mb-15">
-            {tranchedPool &&
-            fiatPerGfi &&
-            poolStatus === PoolStatus.ComingSoon ? (
-              <>
-                <div className="border-b border-eggplant-50 p-5 md:border-r md:border-b-0">
-                  <Stat
-                    label="Total est. APY"
-                    value={formatPercent(
-                      tranchedPool.estimatedJuniorApy.addUnsafe(
-                        computeApyFromGfiInFiat(
-                          tranchedPool.estimatedJuniorApyFromGfiRaw,
-                          fiatPerGfi
-                        )
-                      )
-                    )}
-                    tooltip={
-                      <div>
-                        <div className="mb-4 text-xl font-bold">
-                          Total Estimated APY
-                        </div>
-                        <div>
-                          Lorem ipsum dolor, sit amet consectetur adipisicing
-                          elit. Distinctio earum pariatur quod. Voluptatem
-                          mollitia doloribus.
-                        </div>
-                      </div>
+          {poolStatus === PoolStatus.Open ? (
+            <FundingBar
+              goal={
+                tranchedPool?.creditLine.maxLimit
+                  ? {
+                      token: SupportedCrypto.Usdc,
+                      amount: tranchedPool.creditLine.maxLimit,
                     }
-                  />
-                </div>
+                  : undefined
+              }
+              backerSupply={backerSupply}
+              seniorSupply={seniorSupply}
+            />
+          ) : null}
 
-                <div className="border-b border-eggplant-50 p-5 md:border-r md:border-b-0">
-                  <Stat
-                    label="Est $USDC APY"
-                    value={formatPercent(tranchedPool.estimatedJuniorApy)}
-                    tooltip={
-                      <div>
-                        <div className="mb-4 text-xl font-bold">
-                          Estimated $USDC APY
-                        </div>
-                        <div>
-                          Lorem ipsum dolor, sit amet consectetur adipisicing
-                          elit. Distinctio earum pariatur quod. Voluptatem
-                          mollitia doloribus.
-                        </div>
-                      </div>
-                    }
-                  />
-                </div>
-
-                <div className="border-eggplant-50 p-5">
-                  <Stat
-                    label="Est $GFI APY"
-                    value={formatPercent(
-                      computeApyFromGfiInFiat(
-                        tranchedPool.estimatedJuniorApyFromGfiRaw,
-                        fiatPerGfi
-                      )
-                    )}
-                    tooltip={
-                      <div>
-                        <div className="mb-4 text-xl font-bold">
-                          Estimated $GFI APY
-                        </div>
-                        <div>
-                          Lorem ipsum dolor, sit amet consectetur adipisicing
-                          elit. Distinctio earum pariatur quod. Voluptatem
-                          mollitia doloribus.
-                        </div>
-                      </div>
-                    }
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="col-span-3 border-b border-eggplant-50 p-5">
-                <FundingBar
-                  goal={
-                    tranchedPool?.creditLine.maxLimit
-                      ? {
-                          token: SupportedCrypto.Usdc,
-                          amount: tranchedPool.creditLine.maxLimit,
-                        }
-                      : undefined
-                  }
-                  backerSupply={backerSupply}
-                  seniorSupply={seniorSupply}
-                />
-              </div>
-            )}
-
-            <div className="border-b border-eggplant-50 p-5 md:border-b-0 md:border-r">
-              <Stat
-                label="Drawdown cap"
-                value={
-                  tranchedPool
-                    ? formatCrypto({
-                        token: SupportedCrypto.Usdc,
-                        amount: !tranchedPool.creditLine.limit.eq(
-                          BigNumber.from("0")
-                        )
-                          ? tranchedPool.creditLine.limit
-                          : tranchedPool.creditLine.maxLimit,
-                      })
-                    : null
-                }
-                tooltip={
-                  <div>
-                    <div className="mb-4 text-xl font-bold">Drawdown cap</div>
-                    <div>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Distinctio earum pariatur quod. Voluptatem mollitia
-                      doloribus.
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-            <div className="border-b border-eggplant-50 p-5 md:border-b-0 md:border-r">
-              <Stat
-                label="Payment Term"
-                value={tranchedPool?.creditLine?.termInDays.toString()}
-                tooltip={
-                  <div>
-                    <div className="mb-4 text-xl font-bold">Payment Term</div>
-                    <div>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Distinctio earum pariatur quod. Voluptatem mollitia
-                      doloribus.
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-            <div className="p-5">
-              <Stat
-                label="Payment frequency"
-                value={`${tranchedPool?.creditLine?.paymentPeriodInDays.toString()} days`}
-                tooltip={
-                  <div>
-                    <div className="mb-4 text-xl font-bold">
-                      Payment frequency
-                    </div>
-                    <div>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Distinctio earum pariatur quod. Voluptatem mollitia
-                      doloribus.
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-          </div>
+          {poolStatus && tranchedPool && seniorPool && fiatPerGfi ? (
+            <StatGrid
+              className="mt-8"
+              poolStatus={poolStatus}
+              tranchedPool={tranchedPool}
+              seniorPoolApyFromGfiRaw={
+                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+              }
+              fiatPerGfi={fiatPerGfi}
+            />
+          ) : null}
         </div>
 
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8 lg:sticky lg:top-12">
-              {poolStatus === PoolStatus.Full && (
-                <RepaymentProgressPanel tranchedPool={tranchedPool} />
-              )}
-
               {data?.user &&
               (data?.user.tokens.length > 0 || data?.user.zaps.length > 0) ? (
                 <WithdrawalPanel
@@ -422,6 +292,16 @@ export default function PoolPage() {
                       tranchedPool.juniorTranches[0].lockedUntil
                     )
                   }
+                />
+              ) : null}
+
+              {tranchedPool &&
+              (poolStatus === PoolStatus.Full ||
+                poolStatus === PoolStatus.Repaid) ? (
+                <RepaymentProgressPanel
+                  poolStatus={poolStatus}
+                  tranchedPool={tranchedPool}
+                  userPoolTokens={user?.tokens ?? []}
                 />
               ) : null}
 

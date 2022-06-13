@@ -111,7 +111,7 @@ export default function FundingBar({
       <div className="flex items-center justify-end text-sm text-sand-600">
         Goal{" "}
         <span className="ml-3 inline-block text-base font-medium text-sand-700">
-          {formatCrypto(goal, { includeSymbol: true })}
+          {formatCrypto(goal)}
         </span>
       </div>
     </div>

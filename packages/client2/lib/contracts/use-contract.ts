@@ -12,6 +12,7 @@ import {
   TranchedPool__factory,
   UniqueIdentity__factory,
   Zapper__factory,
+  CreditLine__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -25,6 +26,7 @@ const supportedContracts = {
   UniqueIdentity: UniqueIdentity__factory.connect,
   StakingRewards: StakingRewards__factory.connect,
   Zapper: Zapper__factory.connect,
+  CreditLine: CreditLine__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;
