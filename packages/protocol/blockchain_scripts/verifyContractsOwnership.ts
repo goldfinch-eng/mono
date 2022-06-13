@@ -250,12 +250,10 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
         return {ok: noExplicitOwnerResult.ok && rolesBasedNotConfiguredResult.ok}
       } else if (name.endsWith("_Proxy")) {
         // Confirm that contract has expected explicit `owner`.
-        let explicitOwnerResult: VerificationResult
-        if (name === "UniqueIdentity_Proxy") {
-          explicitOwnerResult = await _contractExplicitOwnerVerifier(contract, MAINNET_WARBLER_LABS_MULTISIG)
-        } else {
-          explicitOwnerResult = await _contractExplicitOwnerVerifier(contract, MAINNET_GOVERNANCE_MULTISIG)
-        }
+        const explicitOwnerResult = await _contractExplicitOwnerVerifier(
+          contract,
+          name === "UniqueIdentity_Proxy" ? MAINNET_WARBLER_LABS_MULTISIG : MAINNET_GOVERNANCE_MULTISIG
+        )
 
         // Confirm that contract does not have role-based access control.
         const rolesBasedNotConfiguredResult = await _contractRoleBasedAccessControlNotConfiguredVerifier(contract)
