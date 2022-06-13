@@ -178,6 +178,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
               </div>
             </div>
             <InfoIconTooltip
+              size="sm"
               content={
                 user.isUsNonAccreditedIndividual
                   ? "Limited eligibility means that you will not be able to participate in loans on Goldfinch, but you may participate in governance."
