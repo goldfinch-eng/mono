@@ -1,6 +1,6 @@
 import { useApolloClient, gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -20,6 +20,7 @@ import {
   SupportedFiat,
   SupplyPanelTranchedPoolFieldsFragment,
   SupplyPanelUserFieldsFragment,
+  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import {
   canUserParticipateInPool,
@@ -220,6 +221,39 @@ export default function SupplyPanel({
   }, [isSubmitSuccessful, reset]);
 
   const supplyValue = watch("supply");
+  const selectedSource = watch("source");
+  const [availableBalance, setAvailableBalance] = useState<string | null>(null);
+  useEffect(() => {
+    if (!usdcContract || !account) {
+      return;
+    }
+    if (selectedSource === "wallet") {
+      usdcContract
+        .balanceOf(account)
+        .then((balance) =>
+          setAvailableBalance(
+            formatCrypto(
+              { token: SupportedCrypto.Usdc, amount: balance },
+              { includeToken: true }
+            )
+          )
+        );
+    } else if (selectedSource.startsWith("seniorPool")) {
+      const id = selectedSource.split("-")[1];
+      const seniorPoolPosition = user?.seniorPoolStakedPositions.find(
+        (s) => s.id === id
+      );
+      if (!seniorPoolPosition) {
+        return;
+      }
+      setAvailableBalance(
+        formatCrypto(
+          sharesToUsdc(seniorPoolPosition.amount, seniorPoolSharePrice),
+          { includeToken: true }
+        )
+      );
+    }
+  }, [selectedSource, usdcContract, account, user, seniorPoolSharePrice]);
   const fiatApyFromGfi = computeApyFromGfiInFiat(
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi
@@ -366,9 +400,7 @@ export default function SupplyPanel({
             name="supply"
             label="Supply amount"
             labelDecoration={
-              <span className="text-xs opacity-60">
-                {abbreviateAddress(account)}
-              </span>
+              <span className="text-xs">Balance: {availableBalance}</span>
             }
             rules={{ required: "Required", validate: validateMaximumAmount }}
             colorScheme="dark"

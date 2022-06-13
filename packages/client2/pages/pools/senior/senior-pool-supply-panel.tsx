@@ -1,6 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -13,10 +13,11 @@ import {
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
-import { formatFiat, formatPercent } from "@/lib/format";
+import { formatCrypto, formatFiat, formatPercent } from "@/lib/format";
 import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
   SeniorPoolSupplyPanelUserFieldsFragment,
+  SupportedCrypto,
   SupportedFiat,
   UidType,
 } from "@/lib/graphql/generated";
@@ -180,6 +181,23 @@ export function SeniorPoolSupplyPanel({
     }
   };
 
+  const [availableBalance, setAvailableBalance] = useState<string | null>(null);
+  useEffect(() => {
+    if (!account || !usdcContract) {
+      return;
+    }
+    usdcContract
+      .balanceOf(account)
+      .then((balance) =>
+        setAvailableBalance(
+          formatCrypto(
+            { token: SupportedCrypto.Usdc, amount: balance },
+            { includeToken: true }
+          )
+        )
+      );
+  }, [account, usdcContract]);
+
   return (
     <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row lg:flex-col">
       <div
@@ -262,6 +280,9 @@ export function SeniorPoolSupplyPanel({
             colorScheme="dark"
             textSize="xl"
             labelClassName="!text-sm !mb-3"
+            labelDecoration={
+              <span className="text-xs">Balance: {availableBalance}</span>
+            }
             className="mb-4"
             onMaxClick={handleMax}
             errorMessage={errors?.supply?.message}
