@@ -219,6 +219,7 @@ function _getRoleBasedAccessControlledContractExpectedOwners(name: string): stri
       case "TranchedPool":
       case "CreditLine":
       case "MigratedTranchedPool":
+      case "Borrower":
         return []
       case "V2Migrator":
         return [MAINNET_GOVERNANCE_MULTISIG, MAINNET_GF_DEPLOYER]
@@ -248,8 +249,13 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
 
         return {ok: noExplicitOwnerResult.ok && rolesBasedNotConfiguredResult.ok}
       } else if (name.endsWith("_Proxy")) {
-        // Confirm that contract has explicit Governance `owner`.
-        const explicitOwnerResult = await _contractExplicitOwnerVerifier(contract, MAINNET_GOVERNANCE_MULTISIG)
+        // Confirm that contract has expected explicit `owner`.
+        let explicitOwnerResult: VerificationResult
+        if (name === "UniqueIdentity_Proxy") {
+          explicitOwnerResult = await _contractExplicitOwnerVerifier(contract, MAINNET_WARBLER_LABS_MULTISIG)
+        } else {
+          explicitOwnerResult = await _contractExplicitOwnerVerifier(contract, MAINNET_GOVERNANCE_MULTISIG)
+        }
 
         // Confirm that contract does not have role-based access control.
         const rolesBasedNotConfiguredResult = await _contractRoleBasedAccessControlNotConfiguredVerifier(contract)
