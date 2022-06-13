@@ -1,16 +1,16 @@
-import {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} from "../../test/testHelpers"
+import {asNonNullable, assertNonNullable, debug} from "@goldfinch-eng/utils"
 import hre from "hardhat"
-const {artifacts, web3, getChainId} = hre
-const IV1CreditLine = artifacts.require("IV1CreditLine")
-import {MAINNET_MULTISIG} from "../mainnetForkingHelpers"
+import {BLOCKS_PER_DAY, BN, SECONDS_PER_DAY} from "../../test/testHelpers"
 import {
+  getContract,
+  isMainnetForking,
   MAINNET_CHAIN_ID,
   RINKEBY_CHAIN_ID,
   TRUFFLE_CONTRACT_PROVIDER,
-  isMainnetForking,
-  getContract,
 } from "../deployHelpers"
-import {asNonNullable, assertNonNullable, debug} from "@goldfinch-eng/utils"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../mainnetForkingHelpers"
+const {artifacts, web3, getChainId} = hre
+const IV1CreditLine = artifacts.require("IV1CreditLine")
 
 interface BorrowerMetadata {
   addresses: string[]
@@ -141,7 +141,7 @@ async function migrateClToV2(clAddress, borrowerContract, pool, creditDesk) {
     data.interestAccruedAsOf,
     data.lastFullPaymentTime,
     data.totalInterestPaid,
-    {from: MAINNET_MULTISIG}
+    {from: MAINNET_GOVERNANCE_MULTISIG}
   )
 }
 

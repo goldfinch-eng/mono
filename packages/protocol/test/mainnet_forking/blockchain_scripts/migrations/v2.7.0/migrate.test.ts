@@ -1,5 +1,5 @@
+import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import hre, {deployments, getNamedAccounts} from "hardhat"
-import {assertIsString, assertNonNullable} from "packages/utils/src/type"
 import {
   getEthersContract,
   getProtocolOwner,
@@ -9,11 +9,12 @@ import {
   OWNER_ROLE,
   TRANCHES,
 } from "packages/protocol/blockchain_scripts/deployHelpers"
-import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
+import {assertIsString, assertNonNullable} from "packages/utils/src/type"
 
-import * as migrate270 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.7.0/migrate"
-import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
+import {MAINNET_GOVERNANCE_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
+import * as migrate270 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.7.0/migrate"
+import {advanceTime, mochaEach} from "@goldfinch-eng/protocol/test/testHelpers"
 import {
   BackerRewards,
   Borrower,
@@ -23,10 +24,9 @@ import {
   StakingRewards,
   TranchedPool,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import {MAINNET_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
-import BN from "bn.js"
-import {advanceTime, mochaEach} from "@goldfinch-eng/protocol/test/testHelpers"
 import {ERC20Instance} from "@goldfinch-eng/protocol/typechain/truffle"
+import BN from "bn.js"
+import {TEST_TIMEOUT} from "../../../MainnetForking.test"
 
 const setupTest = deployments.createFixture(async () => {
   await deployments.fixture("base_deploy", {keepExistingDeployments: true})
@@ -231,7 +231,7 @@ describe("v2.7.0", async function () {
           const royaltyInfo = await poolTokens.royaltyInfo(tokenId, salePrice.toString())
 
           const expectedRoyaltyAmount = salePrice.mul(new BN(FIFTY_BASIS_POINTS)).div(new BN(String(1e18)))
-          expect(royaltyInfo[0]).to.eq(MAINNET_MULTISIG)
+          expect(royaltyInfo[0]).to.eq(MAINNET_GOVERNANCE_MULTISIG)
           expect(royaltyInfo[1].toString()).to.eq(expectedRoyaltyAmount.toString())
           // Royalty amount should be 0.5e18 since sale price is 100e18
           expect(royaltyInfo[1].toString()).to.eq(String(5e17))
@@ -239,7 +239,7 @@ describe("v2.7.0", async function () {
 
         it("sets goldfinch multisig as royalty receiver", async () => {
           const royaltyParams = await poolTokens.royaltyParams()
-          expect(royaltyParams.receiver).to.eq(MAINNET_MULTISIG)
+          expect(royaltyParams.receiver).to.eq(MAINNET_GOVERNANCE_MULTISIG)
         })
       })
     })
