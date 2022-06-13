@@ -23,11 +23,6 @@ contract FixedLeverageRatioStrategy is LeverageRatioStrategy {
     config = _config;
   }
 
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
   function getLeverageRatio(ITranchedPool pool) public view override returns (uint256) {
     return config.getLeverageRatio();
   }

@@ -90,6 +90,7 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.CreditLineImplementation));
   }
 
+  /// @dev deprecated because we no longer use GSN
   function trustedForwarderAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TrustedForwarder));
   }

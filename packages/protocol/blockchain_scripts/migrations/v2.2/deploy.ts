@@ -27,7 +27,7 @@ import {
 } from "@goldfinch-eng/protocol/typechain/ethers"
 import {GFIInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../configKeys"
-import poolMetadata from "@goldfinch-eng/client/config/pool-metadata/mainnet.json"
+import poolMetadata from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {Contract} from "ethers"
 import {promises as fs} from "fs"
 import path from "path"

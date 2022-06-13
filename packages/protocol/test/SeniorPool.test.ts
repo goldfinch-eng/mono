@@ -230,31 +230,6 @@ describe("SeniorPool", () => {
     })
   })
 
-  describe("updateGoldfinchConfig", () => {
-    describe("setting it", async () => {
-      it("should allow the owner to set it", async () => {
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
-        return expectAction(() => seniorPool.updateGoldfinchConfig({from: owner})).toChange([
-          [() => seniorPool.config(), {to: person2, bignumber: false}],
-        ])
-      })
-      it("should disallow non-owner to set", async () => {
-        return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
-      })
-
-      it("should emit an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-        const tx = await seniorPool.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-  })
-
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
@@ -500,36 +475,6 @@ describe("SeniorPool", () => {
       await makeWithdraw(person2, new BN("123"))
       const sharesAfter = await getBalance(person2, fidu)
       expect(sharesAfter.toNumber()).to.equal(0)
-    })
-  })
-
-  describe("hard limits", async () => {
-    describe("totalFundsLimit", async () => {
-      describe("once it's set", async () => {
-        const limit = new BN(5000)
-        const testSetup = deployments.createFixture(async () => {
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(USDC_DECIMALS))
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(new BN(2)).mul(USDC_DECIMALS))
-        })
-
-        beforeEach(async () => {
-          await testSetup()
-        })
-
-        it("should accept deposits before the limit is reached", async () => {
-          return expect(makeDeposit(person2, new BN(1000).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should accept everything right up to the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should fail if you're over the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /put the senior pool over the total limit/
-          )
-        })
-      })
     })
   })
 

@@ -27,12 +27,9 @@ import {
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
   PoolInstance,
-  PoolTokensInstance,
   SeniorPoolInstance,
   CreditLineInstance,
-  TestForwarderInstance,
   TranchedPoolInstance,
-  TransferRestrictedVaultInstance,
   GFIInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
@@ -43,6 +40,7 @@ import {
   ZapperInstance,
   TestFiduUSDCCurveLPInstance,
   TestStakingRewardsInstance,
+  TestPoolTokensInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
@@ -244,9 +242,6 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
 }
 
 export type DeployAllContractsOptions = {
-  deployForwarder?: {
-    fromAccount: string
-  }
   deployMerkleDistributor?: {
     fromAccount: string
     root: string
@@ -271,10 +266,8 @@ async function deployAllContracts(
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
   goldfinchFactory: GoldfinchFactoryInstance
-  forwarder: TestForwarderInstance | null
-  poolTokens: PoolTokensInstance
+  poolTokens: TestPoolTokensInstance
   tranchedPool: TranchedPoolInstance
-  transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: TestStakingRewardsInstance
   backerRewards: TestBackerRewardsInstance
@@ -305,19 +298,8 @@ async function deployAllContracts(
   )
   const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
-  const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
-  let forwarder: TestForwarderInstance | null = null
-  if (options.deployForwarder) {
-    await deployments.deploy("TestForwarder", {from: options.deployForwarder.fromAccount, gasLimit: 4000000})
-    forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
-    assertNonNullable(forwarder)
-    await forwarder.registerDomainSeparator("Defender", "1")
-  }
+  const poolTokens = await getDeployedAsTruffleContract<TestPoolTokensInstance>(deployments, "PoolTokens")
   const tranchedPool = await getDeployedAsTruffleContract<TranchedPoolInstance>(deployments, "TranchedPool")
-  const transferRestrictedVault = await getDeployedAsTruffleContract<TransferRestrictedVaultInstance>(
-    deployments,
-    "TransferRestrictedVault"
-  )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
@@ -382,10 +364,8 @@ async function deployAllContracts(
     fiduUSDCCurveLP,
     goldfinchConfig,
     goldfinchFactory,
-    forwarder,
     poolTokens,
     tranchedPool,
-    transferRestrictedVault,
     gfi,
     stakingRewards,
     communityRewards,

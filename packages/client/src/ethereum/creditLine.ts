@@ -2,7 +2,13 @@ import getWeb3 from "../web3"
 import moment from "moment"
 import BigNumber from "bignumber.js"
 import {Ticker, usdcFromAtomic, usdcToAtomic} from "./erc20"
-import {fetchDataFromAttributes, INTEREST_DECIMALS, SECONDS_PER_YEAR, SECONDS_PER_DAY} from "./utils"
+import {
+  fetchDataFromAttributes,
+  INTEREST_DECIMALS,
+  SECONDS_PER_YEAR,
+  SECONDS_PER_DAY,
+  getIsMultipleSlicesCompatible,
+} from "./utils"
 import {BlockInfo, croppedAddress, roundUpPenny} from "../utils"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {CreditLine as CreditlineContract} from "@goldfinch-eng/protocol/typechain/web3/CreditLine"
@@ -165,14 +171,13 @@ class CreditLine extends BaseCreditLine {
     this.availableCredit = BigNumber.min(this.limit, this.limit.minus(this.balance).plus(collectedForPrincipal))
   }
 
-  get isMultipleDrawdownsCompatible(): boolean {
-    const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
-    return this.termStartTime.eq(0) || this.termStartTime.toNumber() >= V2_2_MIGRATION_TIME
+  get isMultipleSlicesCompatible(): boolean {
+    return getIsMultipleSlicesCompatible(this.termStartTime)
   }
 
   async _getMaxLimit(currentBlock: BlockInfo): Promise<BigNumber> {
     // maxLimit is not available on older versions of the creditline, so fall back to limit in that case
-    if (!this.isMultipleDrawdownsCompatible) {
+    if (!this.isMultipleSlicesCompatible) {
       return this.currentLimit
     } else {
       const maxLimit = await this.creditLine.readOnly.methods.maxLimit().call(undefined, currentBlock.number)

@@ -131,14 +131,6 @@ const SAFE_CONFIG: Record<SafeConfigChainId, {safeAddress: AddressString; execut
   },
 }
 
-// WARNING: BE EXTREMELY CAREFUL WITH THESE ADDRESSES
-// A malicious trusted forwarder means handling over full control of the contract (it can spoof msg.sender)
-// https://docs.opengsn.org/contracts/addresses.html
-const TRUSTED_FORWARDER_CONFIG: {[chainId: string]: string} = {
-  1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD", // Mainnet
-  4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74", // Rinkeby
-}
-
 export const ZAPPER_ROLE = web3.utils.keccak256("ZAPPER_ROLE")
 export const OWNER_ROLE = web3.utils.keccak256("OWNER_ROLE")
 export const PAUSER_ROLE = web3.utils.keccak256("PAUSER_ROLE")
@@ -313,9 +305,6 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   await updateConfig(config, "address", CONFIG_KEYS.ProtocolAdmin, multisigAddress, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.OneInch, MAINNET_ONE_SPLIT_ADDRESS, {logger})
   await updateConfig(config, "address", CONFIG_KEYS.CUSDCContract, MAINNET_CUSDC_ADDRESS, {logger})
-  if (TRUSTED_FORWARDER_CONFIG[chainId]) {
-    await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, TRUSTED_FORWARDER_CONFIG[chainId], {logger})
-  }
   await (await config.setTreasuryReserve(multisigAddress)).wait()
 }
 
@@ -509,7 +498,6 @@ export {
   RINKEBY_CHAIN_ID,
   LOCAL_CHAIN_ID,
   SAFE_CONFIG,
-  TRUSTED_FORWARDER_CONFIG,
   isTestEnv,
   isMainnetForking,
   isMainnet,

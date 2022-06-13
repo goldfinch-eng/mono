@@ -7,10 +7,28 @@ https://etherscan.io/address/0x57686612C601Cb5213b01AA8e80AfEb24BBd01df
 PoolTokens is an ERC721 compliant contract, which can represent
  junior tranche or senior tranche shares of any of the borrower pools.
 
-### OWNER_ROLE
+### _INTERFACE_ID_ERC721
 
 ```solidity
-bytes32 OWNER_ROLE
+bytes4 _INTERFACE_ID_ERC721
+```
+
+### _INTERFACE_ID_ERC721_METADATA
+
+```solidity
+bytes4 _INTERFACE_ID_ERC721_METADATA
+```
+
+### _INTERFACE_ID_ERC721_ENUMERABLE
+
+```solidity
+bytes4 _INTERFACE_ID_ERC721_ENUMERABLE
+```
+
+### _INTERFACE_ID_ERC165
+
+```solidity
+bytes4 _INTERFACE_ID_ERC165
 ```
 
 ### config
@@ -41,6 +59,12 @@ mapping(uint256 &#x3D;&gt; struct IPoolTokens.TokenInfo) tokens
 mapping(address &#x3D;&gt; struct PoolTokens.PoolInfo) pools
 ```
 
+### royaltyParams
+
+```solidity
+struct ConfigurableRoyaltyStandard.RoyaltyParams royaltyParams
+```
+
 ### TokenMinted
 
 ```solidity
@@ -69,6 +93,12 @@ event TokenBurned(address owner, address pool, uint256 tokenId)
 
 ```solidity
 event GoldfinchConfigUpdated(address who, address configAddress)
+```
+
+### RoyaltyParamsSet
+
+```solidity
+event RoyaltyParamsSet(address sender, address newReceiver, uint256 newRoyaltyPercent)
 ```
 
 ### __initialize__
@@ -216,24 +246,46 @@ function _validPool(address poolAddress) internal view virtual returns (bool)
 function _getTokenInfo(uint256 tokenId) internal view returns (struct IPoolTokens.TokenInfo)
 ```
 
-### updateGoldfinchConfig
+### royaltyInfo
 
 ```solidity
-function updateGoldfinchConfig() external
+function royaltyInfo(uint256 _tokenId, uint256 _salePrice) external view returns (address, uint256)
 ```
 
-Migrates to a new goldfinch config address
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _tokenId | uint256 | The NFT asset queried for royalty information |
+| _salePrice | uint256 | The sale price of the NFT asset specified by _tokenId |
 
-### onlyAdmin
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | address | receiver Address that should receive royalties |
+| [1] | uint256 | royaltyAmount The royalty payment amount for _salePrice |
+
+### setRoyaltyParams
 
 ```solidity
-modifier onlyAdmin()
+function setRoyaltyParams(address newReceiver, uint256 newRoyaltyPercent) external
 ```
 
-### isAdmin
+Set royalty params used in &#x60;royaltyInfo&#x60;. This function is only callable by
+  an address with &#x60;OWNER_ROLE&#x60;.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newReceiver | address | The new address which should receive royalties. See &#x60;receiver&#x60;. |
+| newRoyaltyPercent | uint256 | The new percent of &#x60;salePrice&#x60; that should be taken for royalties.   See &#x60;royaltyPercent&#x60;. |
+
+### setBaseURI
 
 ```solidity
-function isAdmin() public view returns (bool)
+function setBaseURI(string baseURI_) external
+```
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 id) public view returns (bool)
 ```
 
 ### onlyGoldfinchFactory

@@ -449,7 +449,7 @@ The amount of rewards currently being earned per second, for a given position. T
 ### stake
 
 ```solidity
-function stake(uint256 amount, enum StakingRewards.StakedPositionType positionType) external
+function stake(uint256 amount, enum StakingRewards.StakedPositionType positionType) external returns (uint256)
 ```
 
 Stake &#x60;stakingToken()&#x60; to earn rewards. When you call this function, you&#x27;ll receive an
@@ -463,10 +463,14 @@ _This function checkpoints rewards._
 | amount | uint256 | The amount of &#x60;stakingToken()&#x60; to stake |
 | positionType | enum StakingRewards.StakedPositionType | The type of the staked position |
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | Id of the NFT representing the staked position |
+
 ### depositAndStake
 
 ```solidity
-function depositAndStake(uint256 usdcAmount) public
+function depositAndStake(uint256 usdcAmount) public returns (uint256)
 ```
 
 Deposit to SeniorPool and stake your shares in the same transaction.
@@ -478,7 +482,7 @@ Deposit to SeniorPool and stake your shares in the same transaction.
 ### depositWithPermitAndStake
 
 ```solidity
-function depositWithPermitAndStake(uint256 usdcAmount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external
+function depositWithPermitAndStake(uint256 usdcAmount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external returns (uint256)
 ```
 
 Identical to &#x60;depositAndStake&#x60;, except it allows for a signature to be passed that permits
@@ -602,7 +606,6 @@ function unstake(uint256 tokenId, uint256 amount) public
 
 Unstake an amount of &#x60;stakingToken()&#x60; associated with a given position and transfer to msg.sender.
   Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
-  Positions that are still locked cannot be unstaked until the position&#x27;s lockedUntil time has passed.
 
 _This function checkpoints rewards_
 
@@ -632,12 +635,6 @@ _This function checkpoints rewards_
 function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) external
 ```
 
-### _unstakeAndWithdraw
-
-```solidity
-function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal returns (uint256 usdcAmountReceived, uint256 fiduUsed)
-```
-
 ### unstakeAndWithdrawMultiple
 
 ```solidity
@@ -650,16 +647,22 @@ function unstakeAndWithdrawMultiple(uint256[] tokenIds, uint256[] usdcAmounts) e
 function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external
 ```
 
-### _unstakeAndWithdrawInFidu
-
-```solidity
-function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal returns (uint256 usdcReceivedAmount)
-```
-
 ### unstakeAndWithdrawMultipleInFidu
 
 ```solidity
 function unstakeAndWithdrawMultipleInFidu(uint256[] tokenIds, uint256[] fiduAmounts) external
+```
+
+### _unstakeAndWithdraw
+
+```solidity
+function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal returns (uint256 usdcAmountReceived, uint256 fiduUsed)
+```
+
+### _unstakeAndWithdrawInFidu
+
+```solidity
+function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal returns (uint256 usdcReceivedAmount)
 ```
 
 ### _unstake
@@ -667,6 +670,19 @@ function unstakeAndWithdrawMultipleInFidu(uint256[] tokenIds, uint256[] fiduAmou
 ```solidity
 function _unstake(uint256 tokenId, uint256 amount) internal
 ```
+
+Unstake an amount from a single position
+
+_This function does NOT checkpoint rewards; the caller of this function is responsible
+  for ensuring that rewards are properly checkpointed before invocation.
+This function does NOT transfer staked tokens back to the user; the caller of this
+  function is responsible for ensuring that tokens are transferred back to the
+  owner if necessary._
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | uint256 | The token ID |
+| amount | uint256 | The amount of of &#x60;stakingToken()&#x60; to be unstaked from the position |
 
 ### kick
 

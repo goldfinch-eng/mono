@@ -4,7 +4,6 @@ import {BORROWER_CREATED_EVENT, POOL_CREATED_EVENT} from "../types/events"
 import {Web3IO} from "../types/web3"
 import {BlockInfo} from "../utils"
 import {CreditLine} from "./creditLine"
-import {submitGaslessTransaction} from "./gasless"
 import {ERC20, Ticker} from "./erc20"
 import {GoldfinchProtocol} from "./GoldfinchProtocol"
 import {getOneInchContract, OneInchExpectedReturn} from "./oneInch"
@@ -130,18 +129,12 @@ class BorrowerInterface {
     )
   }
 
-  get shouldUseGasless(): boolean {
-    return process.env.REACT_APP_DISABLE_GASLESS !== "true" && (window as any).disableGasless !== true
-  }
-
   drawdown(creditLineAddress: string, drawdownAmount: string, sendToAddress: string) {
     sendToAddress = sendToAddress || this.userAddress
-    return this.submit(
-      this.borrowerContract.userWallet.methods.drawdown(
-        this.getPoolAddress(creditLineAddress),
-        drawdownAmount,
-        sendToAddress
-      )
+    return this.borrowerContract.userWallet.methods.drawdown(
+      this.getPoolAddress(creditLineAddress),
+      drawdownAmount,
+      sendToAddress
     )
   }
 
@@ -153,22 +146,20 @@ class BorrowerInterface {
       sendToAddress,
       toToken
     )
-    return this.submit(unsentAction)
+    return unsentAction
   }
 
   pay(creditLineAddress: string, amount: string) {
-    return this.submit(this.borrowerContract.userWallet.methods.pay(this.getPoolAddress(creditLineAddress), amount))
+    return this.borrowerContract.userWallet.methods.pay(this.getPoolAddress(creditLineAddress), amount)
   }
 
   payInFull(creditLineAddress: string, amount: string) {
-    return this.submit(
-      this.borrowerContract.userWallet.methods.payInFull(this.getPoolAddress(creditLineAddress), amount)
-    )
+    return this.borrowerContract.userWallet.methods.payInFull(this.getPoolAddress(creditLineAddress), amount)
   }
 
   payMultiple(creditLines: string[], amounts: string[]) {
     let poolAddresses = creditLines.map((a) => this.getPoolAddress(a))
-    return this.submit(this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amounts))
+    return this.borrowerContract.userWallet.methods.payMultiple(poolAddresses, amounts)
   }
 
   payWithSwapOnOneInch(
@@ -178,14 +169,12 @@ class BorrowerInterface {
     fromToken: string,
     quote: OneInchExpectedReturn
   ) {
-    return this.submit(
-      this.borrowerContract.userWallet.methods.payWithSwapOnOneInch(
-        this.getPoolAddress(creditLineAddress),
-        amount,
-        fromToken,
-        minAmount,
-        quote.distribution
-      )
+    return this.borrowerContract.userWallet.methods.payWithSwapOnOneInch(
+      this.getPoolAddress(creditLineAddress),
+      amount,
+      fromToken,
+      minAmount,
+      quote.distribution
     )
   }
 
@@ -196,14 +185,12 @@ class BorrowerInterface {
     fromToken: string,
     quote: OneInchExpectedReturn
   ) {
-    return this.submit(
-      this.borrowerContract.userWallet.methods.payMultipleWithSwapOnOneInch(
-        creditLines.map((a) => this.getPoolAddress(a)),
-        amounts,
-        originAmount,
-        fromToken,
-        quote.distribution
-      )
+    return this.borrowerContract.userWallet.methods.payMultipleWithSwapOnOneInch(
+      creditLines.map(this.getPoolAddress),
+      amounts,
+      originAmount,
+      fromToken,
+      quote.distribution
     )
   }
 
@@ -231,16 +218,6 @@ class BorrowerInterface {
 
   withinOnePercent(amount): string {
     return new BigNumber(amount).times(new BigNumber(99)).idiv(new BigNumber(100)).toString()
-  }
-
-  submit(unsentAction: NonPayableTransactionObject<void>): SubmittedBorrowerTx {
-    if (this.shouldUseGasless) {
-      // This needs to be a function, otherwise the initial Promise.resolve in useSendFromUser will try to
-      // resolve (and therefore initialize the signing request) before updating the network widget
-      return () => submitGaslessTransaction(this.borrowerAddress, unsentAction)
-    } else {
-      return unsentAction
-    }
   }
 }
 

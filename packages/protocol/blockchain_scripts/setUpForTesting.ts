@@ -80,7 +80,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
   const {gf_deployer} = await getNamedAccounts()
   const protocol_owner = await getProtocolOwner()
-  const deployer = new ContractDeployer(logger, hre)
   assertIsString(protocol_owner)
   assertIsString(gf_deployer)
   const protocolOwnerSigner = ethers.provider.getSigner(protocol_owner)
@@ -151,7 +150,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   await impersonateAccount(hre, protocol_owner)
-  await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
   let go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
@@ -512,7 +510,7 @@ async function writePoolMetadata({
   const NDAUrl = "https://example.com"
   const status = [false, true, undefined]
 
-  const metadataPath = "../../packages/client/config/pool-metadata/localhost.json"
+  const metadataPath = "../../packages/pools/metadata/localhost.json"
   const metadataPathForClient2 = "../../packages/client2/constants/metadata/localhost.json"
   let metadata: any
   try {
@@ -674,26 +672,4 @@ async function createPoolForBorrower({
     logger(`Deposited ${depositAmount} into ${pool.address} via ${depositor}`)
   }
   return pool
-}
-
-async function setupTestForwarder(
-  deployer: ContractDeployer,
-  config: GoldfinchConfig,
-  getOrNull: any,
-  protocol_owner: string
-) {
-  // Don't create a new one if we already have a trusted forwarder set.
-  if (await config.getAddress(CONFIG_KEYS.TrustedForwarder)) {
-    return
-  }
-  const forwarder = await deployer.deploy("TestForwarder", {
-    from: protocol_owner,
-    gasLimit: 4_000_000,
-  })
-  logger(`Created Forwarder at ${forwarder.address}`)
-
-  assertNonNullable(forwarder)
-  await forwarder.registerDomainSeparator("Defender", "1")
-
-  await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, forwarder.address, {logger})
 }
