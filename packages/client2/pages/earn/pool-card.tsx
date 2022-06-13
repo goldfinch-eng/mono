@@ -83,7 +83,7 @@ export function PoolCard({
               : poolStatus === PoolStatus.ComingSoon
               ? "blue"
               : poolStatus === PoolStatus.Repaid
-              ? "purple"
+              ? "green"
               : "white"
           }
         >

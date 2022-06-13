@@ -7,7 +7,7 @@ interface MarqueeProps {
    * Supply children as an array of strings if you wish to have multiple segments equally spaced apart. Otherwise, just use a plain string.
    */
   children: string | string[];
-  colorScheme?: "blue" | "purple" | "yellow";
+  colorScheme?: "blue" | "purple" | "yellow" | "green";
 }
 
 export function Marquee({
@@ -50,6 +50,8 @@ export function Marquee({
           ? "bg-sunrise-02 text-white"
           : colorScheme === "yellow"
           ? "bg-gradient-to-t from-[#F2EDC2] to-[#F1D26E] text-eggplant-800"
+          : colorScheme === "green"
+          ? "bg-gradient-to-t from-grass-500 to-grass-600 text-white"
           : null,
         className
       )}
