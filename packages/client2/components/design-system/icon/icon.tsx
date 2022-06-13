@@ -8,6 +8,7 @@ import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
 import Discord from "./svg/discord.svg";
+import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
 import Link from "./svg/link.svg";
@@ -25,6 +26,8 @@ export const iconManifest = {
   ArrowUp,
   Checkmark,
   ChevronDown,
+  Discord,
+  Exclamation,
   Gfi,
   InfoCircle,
   Link,
@@ -34,7 +37,6 @@ export const iconManifest = {
   Usdc,
   Wallet,
   X,
-  Discord,
 };
 
 export type IconNameType = keyof typeof iconManifest;
@@ -69,7 +71,7 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
     <IconComponent
       aria-hidden="true"
       ref={ref}
-      className={clsx(sizeToClassName(size), "inline", className)}
+      className={clsx(sizeToClassName(size), "inline shrink-0", className)}
     />
   );
 });
