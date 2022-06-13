@@ -26,6 +26,7 @@ gql`
       skip: $skip
     ) {
       id
+      transactionHash
       user {
         id
       }
@@ -110,7 +111,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         </div>,
         <div key={`${transaction.id}-date`}>{format(date, "MMMM d, y")}</div>,
         <Link
-          href={`https://etherscan.io/tx/${transaction.id}`}
+          href={`https://etherscan.io/tx/${transaction.transactionHash}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sand-400"
