@@ -1,0 +1,24 @@
+{
+  "name": "@goldfinch-eng/pools",
+  "version": "0.0.0",
+  "description": "Metadata about Goldfinch Backer pools",
+  "author": "Mark Hudnall <me@markhudnall.com>",
+  "homepage": "https://github.com/warbler-labs/mono#readme",
+  "license": "MIT",
+  "directories": {
+    "lib": "metadata"
+  },
+  "files": [
+    "metadata"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/warbler-labs/mono.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/warbler-labs/mono/issues"
+  }
+}

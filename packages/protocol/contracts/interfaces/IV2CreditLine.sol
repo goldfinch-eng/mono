@@ -60,6 +60,4 @@ abstract contract IV2CreditLine is ICreditLine {
   function setLastFullPaymentTime(uint256 newLastFullPaymentTime) external virtual;
 
   function setLateFeeApr(uint256 newLateFeeApr) external virtual;
-
-  function updateGoldfinchConfig() external virtual;
 }

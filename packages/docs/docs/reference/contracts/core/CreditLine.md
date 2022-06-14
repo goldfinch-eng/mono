@@ -148,14 +148,6 @@ Does not move any money
 | ---- | ---- | ----------- |
 | amount | uint256 | The amount in USDC that has been drawndown |
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
-Migrates to a new goldfinch config address
-
 ### setLateFeeApr
 
 ```solidity

@@ -237,12 +237,6 @@ function _collectInterestAndPrincipal(address from, uint256 interest, uint256 pr
 function _sweepFromCompound() internal
 ```
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
 ### fiduMantissa
 
 ```solidity

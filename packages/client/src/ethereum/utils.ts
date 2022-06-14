@@ -17,6 +17,10 @@ import {reduceToKnown} from "./events"
 import {Pool, SeniorPool} from "./pool"
 import {getCachedPastEvents} from "./GoldfinchProtocol"
 
+const V2_2_MIGRATION_TIME = new Date(2022, 1, 4).getTime() / 1000
+export const getIsMultipleSlicesCompatible = (termStartTime: BigNumber) =>
+  termStartTime.eq(0) || termStartTime.toNumber() >= V2_2_MIGRATION_TIME
+
 const decimalPlaces = 6
 const decimals = new BN(String(10 ** decimalPlaces))
 const USDC_DECIMALS = decimals
@@ -48,12 +52,6 @@ const BUSD_ADDRESSES = {
 
 const CURVE_LP_TOKEN_ADDRESSES = {
   [MAINNET]: "0x42ec68ca5c2c80036044f3eead675447ab3a8065",
-}
-
-const FORWARDER_ADDRESSES = {
-  31337: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD",
-  4: "0x956868751Cc565507B3B58E53a6f9f41B56bed74",
-  1: "0xa530F85085C6FE2f866E7FdB716849714a89f4CD",
 }
 
 const ONE_INCH_ADDRESSES = {
@@ -372,7 +370,6 @@ export {
   USDT_ADDRESSES,
   BUSD_ADDRESSES,
   CURVE_LP_TOKEN_ADDRESSES,
-  FORWARDER_ADDRESSES,
   MAX_UINT,
   USDC_DECIMALS,
   INTEREST_DECIMALS,

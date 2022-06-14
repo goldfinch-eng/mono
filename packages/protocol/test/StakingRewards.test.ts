@@ -47,13 +47,6 @@ import {DepositedToCurve, UnstakedMultiple} from "../typechain/truffle/TestStaki
 
 const MULTIPLIER_DECIMALS = new BN(String(1e18))
 
-// Typechain doesn't generate types for solidity enums, so redefining here
-enum LockupPeriod {
-  SixMonths,
-  TwelveMonths,
-  TwentyFourMonths,
-}
-
 async function quoteFiduToUSDC({
   fiduAmount,
   seniorPool,
@@ -98,12 +91,6 @@ describe("StakingRewards", function () {
   const yearInSeconds = new BN(365 * 24 * 60 * 60)
   const halfYearInSeconds = yearInSeconds.div(new BN(2))
 
-  const lockupPeriodToDuration = {
-    [LockupPeriod.SixMonths]: halfYearInSeconds,
-    [LockupPeriod.TwelveMonths]: yearInSeconds,
-    [LockupPeriod.TwentyFourMonths]: yearInSeconds.mul(new BN(2)),
-  }
-
   async function stake({
     from,
     amount,
@@ -116,6 +103,9 @@ describe("StakingRewards", function () {
     await fidu.approve(stakingRewards.address, amount, {from})
     await fiduUSDCCurveLP.approve(stakingRewards.address, amount, {from})
 
+    // .call(...) first to get the output of the transaction. This does not write to the chain
+    // so the subsequent call is exactly the same.
+    const tokenId = await stakingRewards.stake.call(amount, positionType, {from})
     const receipt = await stakingRewards.stake(amount, positionType, {from})
     const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
 
@@ -126,6 +116,8 @@ describe("StakingRewards", function () {
       await stakingRewards.getBaseTokenExchangeRate(positionType)
     )
     expect(stakedEvent.args.user).to.equal(from)
+
+    expect(stakedEvent.args.tokenId).to.bignumber.equal(tokenId)
 
     return stakedEvent.args.tokenId
   }
@@ -267,6 +259,15 @@ describe("StakingRewards", function () {
     })
 
     context("for a FIDU position", async () => {
+      it("returns a token id", async () => {
+        const startSupply = await stakingRewards._tokenIdTracker()
+
+        await fidu.approve(stakingRewards.address, fiduAmount, {from: investor})
+        const tokenId = await stakingRewards.stake.call(fiduAmount, StakedPositionType.Fidu, {from: investor})
+
+        expect(tokenId).to.bignumber.equal(startSupply.add(new BN(1)))
+      })
+
       it("stakes and mints a position token", async () => {
         // Have anotherUser stake
         await stake({amount: anotherUserFiduAmount, from: anotherUser})
@@ -370,6 +371,15 @@ describe("StakingRewards", function () {
     })
 
     context("for a Curve LP position", async () => {
+      it("returns a token id", async () => {
+        const startSupply = await stakingRewards._tokenIdTracker()
+
+        await fiduUSDCCurveLP.approve(stakingRewards.address, curveLPAmount, {from: investor})
+        const tokenId = await stakingRewards.stake.call(curveLPAmount, StakedPositionType.CurveLP, {from: investor})
+
+        expect(tokenId).to.bignumber.equal(new BN(startSupply).add(new BN(1)))
+      })
+
       it("stakes and mints a position token", async () => {
         // Have anotherUser stake
         await stake({amount: anotherUserFiduAmount, from: anotherUser})
@@ -524,12 +534,23 @@ describe("StakingRewards", function () {
   })
 
   describe("depositAndStake", async () => {
+    it("returns a token id", async () => {
+      const amount = usdcVal(1000)
+      const startSupply = await stakingRewards._tokenIdTracker()
+
+      await usdc.approve(stakingRewards.address, amount, {from: investor})
+      const tokenId = await stakingRewards.depositAndStake.call(amount, {from: investor})
+
+      expect(tokenId).to.bignumber.equal(new BN(startSupply).add(new BN(1)))
+    })
+
     it("deposits into senior pool and stakes resulting shares", async () => {
       const amount = usdcVal(1000)
       const balanceBefore = await usdc.balanceOf(investor)
       const seniorPoolAssetsBefore = await seniorPool.assets()
 
       await usdc.approve(stakingRewards.address, amount, {from: investor})
+      const returnedTokenId = await stakingRewards.depositAndStake.call(amount, {from: investor})
       const receipt = await stakingRewards.depositAndStake(amount, {from: investor})
       const stakedEvent = getFirstLog<Staked>(decodeLogs(receipt.receipt.rawLogs, stakingRewards, "Staked"))
       const depositedAndStakedEvent = getFirstLog<DepositedAndStaked>(
@@ -546,6 +567,7 @@ describe("StakingRewards", function () {
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.bignumber.equal(returnedTokenId)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -568,6 +590,33 @@ describe("StakingRewards", function () {
   })
 
   describe("depositWithPermitAndStake", async () => {
+    it("returns a token id", async () => {
+      const amount = usdcVal(1000)
+      const startSupply = await stakingRewards._tokenIdTracker()
+
+      const nonce = await (usdc as any).nonces(investor)
+      const deadline = MAX_UINT
+
+      // Create signature for permit
+      const digest = await getApprovalDigest({
+        token: usdc,
+        owner: investor,
+        spender: stakingRewards.address,
+        value: amount,
+        nonce,
+        deadline,
+      })
+      const wallet = await getWallet(investor)
+      assertNonNullable(wallet)
+      const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+      const tokenId = await stakingRewards.depositWithPermitAndStake.call(amount, deadline, v, r as any, s as any, {
+        from: investor,
+      })
+
+      expect(tokenId).to.bignumber.equal(new BN(startSupply).add(new BN(1)))
+    })
+
     it("deposits into senior pool using permit and stakes resulting shares", async () => {
       const nonce = await (usdc as any).nonces(investor)
       const deadline = MAX_UINT
@@ -589,6 +638,16 @@ describe("StakingRewards", function () {
       const balanceBefore = await usdc.balanceOf(investor)
       const seniorPoolAssetsBefore = await seniorPool.assets()
 
+      const returnedTokenId = await stakingRewards.depositWithPermitAndStake.call(
+        amount,
+        deadline,
+        v,
+        r as any,
+        s as any,
+        {
+          from: investor,
+        }
+      )
       const receipt = await stakingRewards.depositWithPermitAndStake(amount, deadline, v, r as any, s as any, {
         from: investor,
       })
@@ -607,6 +666,7 @@ describe("StakingRewards", function () {
       expect(depositedAndStakedEvent.args.depositedAmount).to.bignumber.equal(amount)
       expect(depositedAndStakedEvent.args.tokenId).to.equal(tokenId)
       expect(depositedAndStakedEvent.args.amount).to.bignumber.equal(stakedEvent.args.amount)
+      expect(depositedAndStakedEvent.args.tokenId).to.bignumber.equal(returnedTokenId)
 
       // Verify deposit worked
       expect(await usdc.balanceOf(investor)).to.bignumber.equal(balanceBefore.sub(amount))
@@ -994,6 +1054,17 @@ describe("StakingRewards", function () {
       ])
     })
 
+    it("checkpoints rewards before unstaking", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      await advanceTime({seconds: 10000})
+
+      await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
     it("emits an Unstaked event", async () => {
       const tokenId = await stake({amount: fiduAmount, from: investor})
       const receipt = await stakingRewards.unstake(tokenId, fiduAmount, {from: investor})
@@ -1314,6 +1385,17 @@ describe("StakingRewards", function () {
       ).to.be.rejectedWith(/IA/)
     })
 
+    it("checkpoints rewards before unstaking", async () => {
+      await stakingRewards.unstakeMultiple([firstToken, thirdToken], [firstTokenAmount, thirdTokenAmount], {
+        from: investor,
+      })
+
+      await advanceTime({seconds: 10000})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
     it("emits an UnstakedMultiple event", async () => {
       const receipt = await stakingRewards.unstakeMultiple(
         [firstToken, thirdToken],
@@ -1446,6 +1528,18 @@ describe("StakingRewards", function () {
       await expect(stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})).to.be.rejected
     })
 
+    it("checkpoints rewards before unstaking", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      const withdrawAmount = fiduAmount.div(new BN(2))
+      await stakingRewards.unstakeAndWithdrawInFidu(tokenId, withdrawAmount, {from: investor})
+
+      await advanceTime({seconds: 10000})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
+    })
+
     it("emits an UnstakedAndWithdrew event", async () => {
       const tokenId = await stake({amount: fiduAmount, from: investor})
 
@@ -1569,6 +1663,18 @@ describe("StakingRewards", function () {
         [() => stakingRewards.totalStakedSupply(), {by: withdrawAmount.neg()}],
       ])
       await expect(stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})).to.be.rejected
+    })
+
+    it("checkpoints rewards before unstaking", async () => {
+      const tokenId = await stake({amount: fiduAmount, from: investor})
+
+      const withdrawAmount = fiduAmount.div(new BN(2))
+      const withdrawAmountInUsdc = await quoteFiduToUSDC({seniorPool, fiduAmount: withdrawAmount})
+
+      await stakingRewards.unstakeAndWithdraw(tokenId, withdrawAmountInUsdc, {from: investor})
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
     it("emits an UnstakedAndWithdrew event", async () => {
@@ -1704,6 +1810,20 @@ describe("StakingRewards", function () {
           {from: investor}
         )
       ).to.be.rejected
+    })
+
+    it("checkpoints rewards before unstaking", async () => {
+      const firstTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: firstTokenAmount})
+      const secondTokenWithdrawAmount = await quoteFiduToUSDC({seniorPool, fiduAmount: secondTokenAmount})
+
+      await stakingRewards.unstakeAndWithdrawMultiple(
+        [firstToken, secondToken],
+        [firstTokenWithdrawAmount, secondTokenWithdrawAmount],
+        {from: investor}
+      )
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
     it("emits an UnstakedAndWithdrewMultiple event", async () => {
@@ -1907,6 +2027,17 @@ describe("StakingRewards", function () {
           {from: investor}
         )
       ).to.be.rejected
+    })
+
+    it("checkpoints rewards before unstaking", async () => {
+      await stakingRewards.unstakeAndWithdrawMultipleInFidu(
+        [firstToken, secondToken],
+        [firstTokenAmount, secondTokenAmount],
+        {from: investor}
+      )
+
+      const t = await time.latest()
+      expect(await stakingRewards.lastUpdateTime()).to.bignumber.equal(t)
     })
 
     it("emits an UnstakedAndWithdrewMultiple event", async () => {

@@ -57,10 +57,10 @@ async function getMetadataStore(networkId: string): Promise<MetadataStore> {
   try {
     let metadataStore: MetadataStore = {}
 
-    let loadedStore = await import(`../../config/pool-metadata/${networkId}.json`)
+    let loadedStore = await import(`@goldfinch-eng/pools/metadata/${networkId}.json`)
     // If mainnet-forking, merge local metadata with mainnet
     if (isMainnetForking()) {
-      let mainnetMetadata = await import("../../config/pool-metadata/mainnet.json")
+      let mainnetMetadata = await import("@goldfinch-eng/pools/metadata/mainnet.json")
       loadedStore = _.merge(loadedStore, mainnetMetadata)
     }
 
@@ -221,7 +221,7 @@ class TranchedPool {
       await this.goldfinchProtocol.getConfigNumber(CONFIG_KEYS.ReserveDenominator, currentBlock)
     )
     let pool = this.goldfinchProtocol.getContract<SeniorPoolContract>("SeniorPool")
-    if (this.isMultipleDrawdownsCompatible) {
+    if (this.isMultipleSlicesCompatible) {
       const estimateInvestment = await pool.readOnly.methods
         .estimateInvestment(this.address)
         .call(undefined, currentBlock.number)
@@ -248,7 +248,7 @@ class TranchedPool {
     this.drawdownsPaused = await this.contract.readOnly.methods.drawdownsPaused().call(undefined, currentBlock.number)
 
     const [totalDeployed, fundableAt, numTranchesPerSlice] = await Promise.all(
-      this.isMultipleDrawdownsCompatible
+      this.isMultipleSlicesCompatible
         ? [
             this.contract.readOnly.methods.totalDeployed().call(undefined, currentBlock.number),
             this.contract.readOnly.methods.fundableAt().call(undefined, currentBlock.number),
@@ -291,8 +291,8 @@ class TranchedPool {
     return this.creditLine.balance.isZero() && this.creditLine.termEndTime.gt(0)
   }
 
-  get isMultipleDrawdownsCompatible(): boolean {
-    return this.creditLine.isMultipleDrawdownsCompatible
+  get isMultipleSlicesCompatible(): boolean {
+    return this.creditLine.isMultipleSlicesCompatible
   }
 
   estimateJuniorAPY(leverageRatio: BigNumber): BigNumber {

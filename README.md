@@ -52,7 +52,6 @@ Both options will start several processes, including your local blockchain and f
   ```
   ALCHEMY_API_KEY={your alchemy api key}
   TEST_USER={your metamask address}
-  ALLOWED_SENDERS={your metamask address}`
   ```
 
 - If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
@@ -62,9 +61,6 @@ Both options will start several processes, including your local blockchain and f
 Changes to the frontend should be automatically hotloaded using react-refresh.
 
 Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running your start command.
-
-#### Other ways to run
-* `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
 
 ***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
 by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
@@ -77,10 +73,20 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
   * [`protocol/`](./packages/protocol) (`@goldfinch-eng/protocol`): Solidity smart contracts and tests.
   * [`client/`](./packages/client) (`@goldfinch-eng/client`): Web3 frontend using React.
   * [`functions/`](./packages/functions) (`@goldfinch-eng/functions`): Google cloud functions to support KYC and other server-side functionality.
-  * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
+  * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
   * [`docs/`](./packages/docs) (`@goldfinch-eng/docs`): Static site of protocol documentation.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
+
+### Adding a new packages
+
+1. Create the package with lerna:
+
+```sh
+npx lerna create package-name
+```
+
+2. (optional), If this is a typescript package being used from another typescript pacakge, add the new package name to the root `tsconfig.json`.
 
 ### Tenderly debugging
 We have the ability to debug/profile local transactions via [Tenderly](Tenderly.co). To do this, get hold of a transaction hash and then run:
@@ -107,13 +113,6 @@ Pick up the transaction hash from the output of the test and run export as above
 
 ### Security
 - See the [`SECURITY.MD`](./SECURITY.MD)
-
-### Gasless transactions
-
-To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
-the sender and receiving contract (e.g. it's a known borrower interacting with our borrower contracts, we don't want to subsidize any arbitrary transaction).
-We use [Defender Relay](https://docs.openzeppelin.com/defender/relay) to do this. For local development, we mimic this by running a local server that executes the gasless logic.
-We've configured webpack to proxy to this server when running `npm run start` for local development. If you're having problems with gasless transactions, make sure you've added your address to `.env.local`'s `ALLOWED_SENDERS`.
 
 ### Testing
 - Run `npm test` to run tests for all packages.

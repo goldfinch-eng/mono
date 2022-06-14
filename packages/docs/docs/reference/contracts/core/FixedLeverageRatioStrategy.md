@@ -22,12 +22,6 @@ event GoldfinchConfigUpdated(address who, address configAddress)
 function initialize(address owner, contract GoldfinchConfig _config) public
 ```
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
 ### getLeverageRatio
 
 ```solidity

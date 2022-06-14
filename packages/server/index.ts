@@ -9,13 +9,13 @@ New routes: be sure to update the webpack proxy
 packages/client/config-overrides.js
 
 */
-import {assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
+import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
 import express from "express"
 import cors from "cors"
-import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
+import {uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {
@@ -39,13 +39,8 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-assertNonNullable(
-  process.env.RELAY_SERVER_PORT,
-  "RELAY_SERVER_PORT must be passed as an envvar when running the development server"
-)
-const port = process.env.RELAY_SERVER_PORT
+const PORT = 4000
 
-app.post("/relay", relayHandler)
 app.post("/uniqueIdentitySigner", uniqueIdentitySignerHandler)
 
 app.post("/fundWithWhales", async (req, res) => {
@@ -198,6 +193,6 @@ app.post("/kycStatus", async (req, res) => {
   return res.status(200).send({status: "success"})
 })
 
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`)
+app.listen(PORT, () => {
+  console.log(`App listening at http://localhost:${PORT}`)
 })

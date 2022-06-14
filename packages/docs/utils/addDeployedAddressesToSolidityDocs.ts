@@ -62,7 +62,7 @@ if (!isDeploymentsJson(deploymentsJson)) {
   throw new Error("Unexpected deployments json.")
 }
 
-const pathToMainnetTranchedPoolsJson = "../client/config/pool-metadata/mainnet.json"
+const pathToMainnetTranchedPoolsJson = "../pools/metadata/mainnet.json"
 const mainnetTranchedPoolsJson = JSON.parse(fs.readFileSync(pathToMainnetTranchedPoolsJson, fileOptions))
 
 if (!isMainnetTranchedPoolsJson(mainnetTranchedPoolsJson)) {
