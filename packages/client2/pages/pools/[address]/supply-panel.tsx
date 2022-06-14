@@ -26,6 +26,7 @@ import {
   canUserParticipateInPool,
   computeApyFromGfiInFiat,
   sharesToUsdc,
+  signAgreement,
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
@@ -152,6 +153,8 @@ export default function SupplyPanel({
     if (!usdcContract || !provider || !account) {
       throw new Error("Wallet not connected properly");
     }
+
+    await signAgreement(account, data.backerName, tranchedPoolAddress);
 
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
     if (data.source === "wallet") {

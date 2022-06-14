@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { API_BASE_URL } from "@/constants";
 import {
   SupportedCrypto,
   TranchedPoolStatusFieldsFragment,
@@ -143,4 +144,35 @@ export function canUserParticipateInPool(
     return true;
   }
   return false;
+}
+
+export async function signAgreement(
+  account: string,
+  fullName: string,
+  pool: string
+) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/signAgreement`, {
+      method: "POST",
+      headers: {
+        "x-goldfinch-address": account,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ fullName, pool }),
+    });
+    if (!response.ok) {
+      const responseBody = await response.json();
+      throw new Error(`Unable to sign agreement. ${responseBody.error}`);
+    }
+  } catch (e) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `Could not sign agreement for pool. Message: ${
+          (e as Error).message
+        }. Ignoring this because it's not production.`
+      );
+    } else {
+      throw e;
+    }
+  }
 }
