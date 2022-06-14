@@ -50,9 +50,9 @@ const addresses = {
   StakingRewards: contracts.StakingRewards.address,
   Zapper: contracts.Zapper.address,
 };
-const code = `export const CONTRACT_ADDRESSES = {${desiredChainId}: ${JSON.stringify(
-  addresses
-)}}`;
+const code = `export const CONTRACT_ADDRESSES: {
+  [chaindId: number]: Record<string, string>;
+} = {${desiredChainId}: ${JSON.stringify(addresses)}}`;
 fs.writeFileSync(
   path.resolve(__dirname, contractAddressFileRelativePath),
   prettier.format(code, { parser: "typescript" })
