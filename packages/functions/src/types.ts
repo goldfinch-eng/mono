@@ -1,8 +1,23 @@
 import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 
+/**
+ * Types of authentication on our cloud functions:
+ *
+ * signature
+ *  Address in the x-goldfinch-address header must match the signer of
+ *  the payload in the x-goldfinch-signature header
+ *
+ * signatureWithAllowList
+ *  Meet all the requirements for `signature` auth AND the address in
+ *  x-goldfinch-address must be in the `signerAllowList`
+ *
+ * none
+ *  No auth required
+ */
+
 export type RequestHandlerConfig =
   | {
-      requireAuth: true
+      requireAuth: "signature"
       cors: boolean
       handler: (
         req: Request,
@@ -11,7 +26,17 @@ export type RequestHandlerConfig =
       ) => Promise<Response>
     }
   | {
-      requireAuth: false
+      requireAuth: "signatureWithAllowList"
+      signerAllowList: Array<string>
+      cors: boolean
+      handler: (
+        req: Request,
+        res: Response,
+        signatureVerificationResult: SignatureVerificationSuccessResult,
+      ) => Promise<Response>
+    }
+  | {
+      requireAuth: "none"
       cors: boolean
       handler: (req: Request, res: Response) => Promise<Response>
     }

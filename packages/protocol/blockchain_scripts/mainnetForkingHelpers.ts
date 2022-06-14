@@ -1,4 +1,3 @@
-import BN from "bn.js"
 import {
   isTestEnv,
   updateConfig,
@@ -6,15 +5,11 @@ import {
   SAFE_CONFIG,
   MAINNET_CHAIN_ID,
   DepList,
-  Ticker,
-  AddressString,
   getSignerForAddress,
   ChainId,
   CHAIN_NAME_BY_ID,
   getERC20Address,
-  currentChainId,
   assertIsChainId,
-  assertIsTicker,
   ContractDeployer,
   getEthersContract,
   getProtocolOwner,
@@ -26,15 +21,13 @@ import {CONFIG_KEYS} from "./configKeys"
 import hre from "hardhat"
 import {Contract} from "ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
-import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {Signer} from "ethers"
-import {assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
+import {assertNonNullable} from "@goldfinch-eng/utils"
 const {ethers, artifacts} = hre
 const MAINNET_MULTISIG = "0xBEb28978B2c755155f20fd3d09Cb37e300A6981f"
 const MAINNET_UNDERWRITER = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
 
 import {mergeABIs} from "hardhat-deploy/dist/src/utils"
-import {FormatTypes} from "ethers/lib/utils"
 import {Logger} from "./types"
 import {
   openzeppelin_assertIsValidImplementation,
@@ -57,7 +50,6 @@ async function upgradeContracts({
   signer,
   deployFrom,
   deployer,
-  deployTestForwarder = false,
   logger = console.log,
 }: {
   contractsToUpgrade: string[]
@@ -65,7 +57,6 @@ async function upgradeContracts({
   signer: string | Signer
   deployFrom: any
   deployer: ContractDeployer
-  deployTestForwarder?: boolean
   logger: Logger
 }): Promise<UpgradedContracts> {
   logger("Deploying accountant")
@@ -74,13 +65,6 @@ async function upgradeContracts({
     gasLimit: 4000000,
     args: [],
   })
-
-  if (deployTestForwarder) {
-    logger("Deploying test forwarder")
-    // Ensure a test forwarder is available. Using the test forwarder instead of the real forwarder on mainnet
-    // gives us the ability to debug the forwarded transactions.
-    await deployer.deploy("TestForwarder", {from: deployFrom, gasLimit: 4000000, args: []})
-  }
 
   const dependencies: DepList = {
     CreditLine: {["Accountant"]: accountantDeployResult.address},
@@ -209,41 +193,6 @@ async function getExistingContracts(
   return contracts
 }
 
-async function performPostUpgradeMigration(upgradedContracts: any, deployments: DeploymentsExtension) {
-  const deployed = await deployments.getOrNull("TestForwarder")
-  assertNonNullable(deployed)
-  const forwarder = await ethers.getContractAt(deployed.abi, "0xa530F85085C6FE2f866E7FdB716849714a89f4CD")
-  await forwarder.registerDomainSeparator("Defender", "1")
-  await migrateToNewConfig(upgradedContracts, [
-    "CreditDesk",
-    "CreditLine",
-    "Fidu",
-    "FixedLeverageRatioStrategy",
-    "Go",
-    "MigratedTranchedPool",
-    "Pool",
-    "PoolTokens",
-    "SeniorPool",
-  ])
-}
-
-export async function migrateToNewConfig(upgradedContracts: any, contractsToUpgrade: string[]) {
-  const newConfig = upgradedContracts.GoldfinchConfig.UpgradedContract
-  const existingConfig = upgradedContracts.GoldfinchConfig.ExistingContract
-  const safeAddress = SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
-  if (!(await newConfig.hasRole(OWNER_ROLE, safeAddress))) {
-    await (await newConfig.initialize(safeAddress)).wait()
-  }
-  await newConfig.initializeFromOtherConfig(existingConfig.address)
-  await updateConfig(existingConfig, "address", CONFIG_KEYS.GoldfinchConfig, newConfig.address)
-
-  await Promise.all(
-    contractsToUpgrade.map(async (contract) => {
-      await (await upgradedContracts[contract].UpgradedContract.updateGoldfinchConfig()).wait()
-    })
-  )
-}
-
 type ContractInfo = {
   address: string
   abi: {}[]
@@ -312,6 +261,5 @@ export {
   getExistingContracts,
   upgradeContracts,
   getCurrentlyDeployedContracts,
-  performPostUpgradeMigration,
   getAllExistingContracts,
 }

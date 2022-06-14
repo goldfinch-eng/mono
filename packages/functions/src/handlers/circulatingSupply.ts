@@ -50,7 +50,7 @@ export const calculateUnlockedCustodyGFI = function ({
  * Calculates circulating supply of GFI. The response is given in GFI rather than atomic units.
  */
 export const circulatingSupply = genRequestHandler({
-  requireAuth: false,
+  requireAuth: "none",
   cors: false,
   handler: async (_, res): Promise<Response> => {
     const provider = getBlockchain("https://app.goldfinch.finance")

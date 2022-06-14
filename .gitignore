@@ -78,7 +78,6 @@ artifacts/
 
 notes.txt
 
-autotasks/relayer/dist
 **/*/client/config/protocol-local.json
 **/*/client/config/pool-metadata/localhost.json
 **/*/deployments/localhost_31337

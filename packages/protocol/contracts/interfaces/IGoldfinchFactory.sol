@@ -29,6 +29,4 @@ interface IGoldfinchFactory {
     uint256 _lateFeeApr,
     uint256[] calldata _allowedUIDTypes
   ) external returns (address);
-
-  function updateGoldfinchConfig() external;
 }

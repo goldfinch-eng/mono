@@ -118,14 +118,6 @@ now considered available for allocation in another grant.
 function setTokenLaunchTimeInSeconds(uint256 _tokenLaunchTimeInSeconds) external
 ```
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
-updates current config
-
 ### grant
 
 ```solidity

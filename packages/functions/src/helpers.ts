@@ -8,6 +8,7 @@ import * as functions from "firebase-functions"
 import {getConfig} from "./db"
 import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 import _ from "lodash"
+import {assertUnreachable} from "@goldfinch-eng/utils"
 
 // Make sure to keep the structure of this message in sync with the frontend.
 const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
@@ -123,6 +124,24 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
+/**
+ * Verifies that the signature provided in the `x-goldfinch-signature` header is a valid message
+ * signed by the address provided in the `x-goldfinch-address` header. Also verifies that this
+ * signature has not expired, per the provided `x-goldfinch-signature-block-num` header -- which is
+ * critical so that signatures can't confer privileges forever.
+ *
+ * This form of authentication is meant to support requests that we want only the end user, who
+ * controls the private key behind the address, to be able to perform.
+ *
+ * If verification fails then the `res` property of the response object provides the status and reason
+ * for the failure. If verification succeeds then the `res` property of the response object will be
+ * undefined and the `address` property of the response object will be the address for which the
+ * the verification succeeded.
+ *
+ * @param {Request} req The request being handled.
+ * @param {Response} res The response to the request.
+ * @return {Promise<SignatureVerificationResult>}
+ */
 const verifySignature = async (req: Request, res: Response): Promise<SignatureVerificationResult> => {
   const addressHeader = req.headers["x-goldfinch-address"]
   const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
@@ -164,7 +183,12 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
 
   // Don't allow signatures signed for the future.
   if (currentBlock.number < signatureBlockNum) {
-    return {res: res.status(401).send({error: "Unexpected signature block number."}), address: undefined}
+    return {
+      res: res
+        .status(401)
+        .send({error: `Unexpected signature block number: ${currentBlock.number} < ${signatureBlockNum}`}),
+      address: undefined,
+    }
   }
 
   const signatureBlock = await blockchain.getBlock(signatureBlockNum)
@@ -173,11 +197,50 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
 
   // Don't allow signatures more than a day old.
   if (signatureTime + ONE_DAY_SECONDS < now) {
-    console.error("Signature expired", {signatureTime, now})
+    console.error(`Signature expired: ${signatureTime} + ${ONE_DAY_SECONDS} < ${now}`)
     return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
   }
 
   return {res: undefined, address}
+}
+
+/**
+ * Verifies a signature in the same manner as `verifySignature` with the additional
+ * constraint that the signer must be present in the `allowedSigners` list
+ *
+ * @param {Request} req The request being handled.
+ * @param {Response} res The response to the request.
+ * @param {Array<string>} allowedSigners the list of allowed signers
+ * @return {Promise<VerificationResult>}
+ */
+const verifySignatureAndAllowList = async (
+  req: Request,
+  res: Response,
+  allowedSigners: Array<string>,
+): Promise<SignatureVerificationResult> => {
+  if (allowedSigners.length === 0) {
+    return {res: res.status(500).send({error: "Allow list should not be empty"}), address: undefined}
+  }
+
+  const signatureVerification = await verifySignature(req, res)
+
+  if (signatureVerification.res) {
+    return signatureVerification
+  }
+
+  // Checksum all the addresses to disambiguate
+  const signerAddress = ethers.utils.getAddress(signatureVerification.address)
+  allowedSigners = allowedSigners.map(ethers.utils.getAddress)
+
+  const signerProhibited = allowedSigners.indexOf(signerAddress) === -1
+  if (signerProhibited) {
+    return {
+      res: res.status(403).send({error: `Signer ${signerAddress} not allowed to call this function`}),
+      address: undefined,
+    }
+  }
+
+  return {res: undefined, address: signerAddress}
 }
 
 export const genRequestHandler = (config: RequestHandlerConfig): functions.HttpsFunction => {
@@ -192,15 +255,17 @@ export const genRequestHandler = (config: RequestHandlerConfig): functions.Https
         }
       }
 
-      if (config.requireAuth) {
+      const authType = config.requireAuth
+      if (authType === "signature") {
         const verificationResult = await verifySignature(req, res)
-        if (verificationResult.res) {
-          return verificationResult.res
-        }
-
-        return config.handler(req, res, verificationResult)
-      } else {
+        return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
+      } else if (authType === "signatureWithAllowList") {
+        const verificationResult = await verifySignatureAndAllowList(req, res, config.signerAllowList)
+        return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
+      } else if (authType === "none") {
         return config.handler(req, res)
+      } else {
+        assertUnreachable(authType)
       }
     }),
   )

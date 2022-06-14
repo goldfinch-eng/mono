@@ -98,9 +98,3 @@ function fiduMantissa() internal pure returns (uint256)
 function usdcMantissa() internal pure returns (uint256)
 ```
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
