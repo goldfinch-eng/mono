@@ -6,12 +6,16 @@ $sand-dark: #d6d1cc;
 $sand: #e4e0dd;
 $sand-light: #f1efed;
 $sand-xlight: #f8f6f4;
+$sand-100: #f5f5f4;
+$sand-700: #44403c;
+$sand-900: #1c1917;
 
 $purp-dark: #483e5e;
 $purp: #675b81;
 $purp-light: #897da3;
 $purp-xlight: #ada5bf;
 $purp-xxlight: #d1ccdb;
+$eggplant-600: #584c72;
 
 $blue-dark: #67afd7;
 $blue: #75c1eb;
@@ -19,20 +23,20 @@ $blue-light: #96d3f5;
 $blue-xlight: #b6e4fe;
 $blue-xxlight: #ddeffa;
 
-$green-xlight: #D1E1CA;
+$green-xlight: #d1e1ca;
 $green-dark: #618850;
 
 $red-xlight: #fae6de;
 $red: #e4af98;
 $red-dark: #cc937a;
-$red-xdark: #B07680;
-$red-xxdark: #91525E;
+$red-xdark: #b07680;
+$red-xxdark: #91525e;
 
-$yellow-xxxdark: #C27909;
-$yellow-dark: #F6D8A9;
-$yellow: #F2E1C7;
+$yellow-xxxdark: #c27909;
+$yellow-dark: #f6d8a9;
+$yellow: #f2e1c7;
 
-$green: #7FA370;
+$green: #7fa370;
 
 // Type
 $sans-size-xxs: 12px;
@@ -50,6 +54,9 @@ $screen-s: 350px;
 $screen-m: 600px;
 $screen-l: 900px;
 $screen-xl: 1050px;
+
+$screen-phone-l: 640px;
+$screen-tablet: 768px;
 
 $content-max-width: 750px;
 $nav-width: 180px;
