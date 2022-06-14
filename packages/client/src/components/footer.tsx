@@ -1,6 +1,5 @@
 import React from "react"
 import {NavLink} from "react-router-dom"
-import {iconImmunefi, iconNexusMutual} from "./icons"
 
 const footerNavItems = [
   {label: "Terms", href: "/terms"},
