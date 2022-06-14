@@ -6,7 +6,7 @@ import closeIcon from "../images/x.svg"
 import menuIcon from "../images/menu.svg"
 
 export const NAV_ITEMS = [
-  {label: "Earn", href: "/earn"},
+  {label: "Earn", href: "https://beta.app.goldfinch.finance/earn"},
   {label: "Borrow", href: "/borrow"},
   {label: "GFI", href: "/gfi"},
   {label: "Stake", href: "/stake"},
@@ -35,11 +35,17 @@ export default function Nav({children}: {children: ReactNode}) {
       </div>
 
       <div className="main-nav-links">
-        {NAV_ITEMS.map(({label, href}) => (
-          <NavLink key={`${label}-${href}`} to={href}>
-            {label}
-          </NavLink>
-        ))}
+        {NAV_ITEMS.map(({label, href}) => {
+          return href.indexOf("beta") >= 0 ? (
+            <NavLink key={`${label}-${href}`} to={href}>
+              {label}
+            </NavLink>
+          ) : (
+            <a key={`${label}-${href}`} href={href}>
+              {label}
+            </a>
+          )
+        })}
       </div>
 
       <div className="main-nav-wallet">{children}</div>
@@ -64,11 +70,17 @@ export default function Nav({children}: {children: ReactNode}) {
             </NavLink>
           </div>
 
-          {NAV_ITEMS.map(({label, href}) => (
-            <NavLink key={`${label}-${href}`} to={href}>
-              {label}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map(({label, href}) => {
+            return href.indexOf("beta") >= 0 ? (
+              <NavLink key={`${label}-${href}`} to={href}>
+                {label}
+              </NavLink>
+            ) : (
+              <a key={`${label}-${href}`} href={href}>
+                {label}
+              </a>
+            )
+          })}
         </div>
       </div>
     </div>
