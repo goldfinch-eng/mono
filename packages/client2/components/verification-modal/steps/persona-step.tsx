@@ -17,8 +17,7 @@ export function PersonaStep() {
   const [isPersonaLoading, setIsPersonaLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const { goToStep } = useWizard();
-  const { entity, residency, idIssuer, accredited, signature } =
-    useVerificationFlowContext();
+  const { entity, residency, signature } = useVerificationFlowContext();
 
   const beginPersonaInquiry = async () => {
     setIsPersonaLoading(true);
@@ -27,9 +26,9 @@ export function PersonaStep() {
     if (account && signature && entity && residency) {
       postKYCDetails(
         account,
-        signature?.signature,
-        signature?.signatureBlockNum,
-        { entity, residency, idIssuer, accredited }
+        signature.signature,
+        signature.signatureBlockNum,
+        residency
       ).catch(() => {
         throw new Error("Could not save KYC details");
       });

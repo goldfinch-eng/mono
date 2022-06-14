@@ -113,19 +113,14 @@ export async function postKYCDetails(
   account: string,
   signature: string,
   signatureBlockNum: number,
-  kycDetails: {
-    entity: string;
-    residency: string;
-    idIssuer?: string;
-    accredited?: string;
-  }
+  residency: string
 ) {
   const url = `${API_BASE_URL}/setUserKYCData`;
   const auth = convertSignatureToAuth(account, signature, signatureBlockNum);
   const response = await fetch(url, {
     headers: { ...auth, "Content-Type": "application/json" },
     method: "POST",
-    body: JSON.stringify(kycDetails),
+    body: JSON.stringify({ residency }),
   });
 
   if (!response.ok) {
