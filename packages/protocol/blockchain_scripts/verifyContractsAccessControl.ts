@@ -234,8 +234,8 @@ function _getRoleBasedAccessControlledContractExpectedOwners(name: string): stri
 async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
   const allDeployedContractNames = Object.keys(await deployments.all())
 
-  return _verifyContractsOwnership(
-    "protocol contracts",
+  return _verifyContractsAccessControl(
+    "ownership of protocol contracts",
     allDeployedContractNames,
     async (name: string): Promise<VerificationResult> => {
       const contract = await getDeployedContract(deployments, name)
@@ -366,10 +366,8 @@ const borrowerNameByBorrowerContractExpectedOwnerAddress = {
 async function verifyBorrowerContractsOwnership() {
   const tranchedPoolAddresses = Object.keys(mainnetTranchedPoolsJson)
 
-  // TODO Verify who has LOCKER_ROLE on each tranched pool.
-
-  return _verifyContractsOwnership(
-    "borrower contract corresponding to tranched pool",
+  return _verifyContractsAccessControl(
+    "ownership of borrower contract corresponding to tranched pool",
     tranchedPoolAddresses,
     async (tranchedPoolAddress: string): Promise<VerificationResult> => {
       const borrowerContractAddress = borrowerContractAddressByTranchedPoolAddress[tranchedPoolAddress]
@@ -409,7 +407,7 @@ async function verifyBorrowerContractsOwnership() {
   )
 }
 
-async function _verifyContractsOwnership(
+async function _verifyContractsAccessControl(
   description: string,
   keys: string[],
   verifier: (key: string) => Promise<VerificationResult>,
@@ -447,7 +445,7 @@ export default async function verifyContractsOwnership(): Promise<void> {
   const borrowerContractsResult = await verifyBorrowerContractsOwnership()
 
   if (!protocolContractsResult.ok || !borrowerContractsResult.ok) {
-    throw new Error("Found ownership issues!")
+    throw new Error("Found access control issues!")
   }
 }
 
