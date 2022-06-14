@@ -30,7 +30,7 @@ From the `packages/subgraph` dir:
 
 ### Destroying a cluster
 
-From the `packages/subgraph` dir:
+To take down a cluster, from the `packages/subgraph` dir:
 
 1. Use your ECS context:
   ```
@@ -41,3 +41,7 @@ From the `packages/subgraph` dir:
   ```
   docker compose --env-file beta-subgraph/.env.beta-subgraph down
   ```
+
+NOTE: Taking down a cluster does NOT automatically destroy its volumes (cf. https://docs.docker.com/cloud/ecs-integration/#volumes)! To destroy the cluster's volumes, so that the next time you bring up the cluster it does not retain any of the old cluster's data, you must destroy the volumes too.
+
+List the volumes on ECS using `docker volume ls`, then run `docker volume rm $FILESYSTEM_ID` where `$FILESYSTEM_ID` is the id of the Elastic File System used as the Docker volume.

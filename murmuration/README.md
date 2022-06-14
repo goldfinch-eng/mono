@@ -64,8 +64,10 @@ Once you've SSH'ed into an instance, you can see what Docker processes are runni
 
 ```
 gcloud --project=goldfinch-frontends-dev compute ssh $INSTANCE_NAME --zone=us-central1-a --command="docker cp $CONTAINER_ID:/goldfinch-protocol/packages/protocol/deployments/all_dev.json ."
+
 gcloud --project=goldfinch-frontends-dev compute scp --zone=us-central1-a $YOUR_USERNAME@$INSTANCE_NAME:~/all_dev.json .
 ```
+where you can obtain $CONTAINER_ID by SSHing into the instance and running `docker ps`.
 
 ## Local
 
