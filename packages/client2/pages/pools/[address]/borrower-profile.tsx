@@ -98,17 +98,21 @@ export function BorrowerProfile({
         </div>
       </div>
       <div className="mb-20">{bio}</div>
-      <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-      <ul className="list-outside list-disc pl-5">
-        {highlights.map((item, idx) => (
-          <li
-            key={`pool-highlight-${name}-${idx}`}
-            className="whitespace-pre-wrap py-1"
-          >
-            {item}
-          </li>
-        ))}
-      </ul>
+      {highlights ? (
+        <>
+          <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
+          <ul className="list-outside list-disc pl-5">
+            {highlights.map((item, idx) => (
+              <li
+                key={`pool-highlight-${name}-${idx}`}
+                className="whitespace-pre-wrap py-1"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </div>
   );
 }

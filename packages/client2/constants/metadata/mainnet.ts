@@ -56,7 +56,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "https://almavest.notion.site/ALMA-BASKET-7-Pool-Overview-dd4ae721d6ea4c1fad9b17ba8abdd3ac",
     launchTime: 1649343600,
     description:
-      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines and other markets.\n\nThe security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.\n\nIn addition, ALMA is helping Goldfinch to improve the climate impacts of DeFi by offsetting the carbon footprint of all ALMA Borrower Pool contracts for this, from the date they are created through the entire loan term on the Ethereum blockchain, effectively making this a carbon neutral DeFi pool.",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses. This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares. In addition, ALMA is helping Goldfinch to improve the climate impacts of DeFi by offsetting the carbon footprint of all ALMA Borrower Pool contracts for this, from the date they are created through the entire loan term on the Ethereum blockchain, effectively making this a carbon neutral DeFi pool.",
     highlights: [
       "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
       "JuanchoTePresta, a fintech Colombian lender that targets employees, gig workers, and students with on-demand loans, with 60% women customers.",
@@ -115,7 +115,13 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Almavest Basket #6",
     category: "Global multi-sector loans",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines, and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.",
+    highlights: [
+      "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
+      "Upwards, a consumer lender which, through its mobile app, offers personal loans to salaried employees  in India",
+      "Impact Water which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
+      "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
+    ],
     icon: almavestLogo.src,
     agreement: "https://docsend.com/view/vcxfarda3vn72mxz/d/sc6a39p3my8k3uw8",
     dataroom: "https://docsend.com/view/vcxfarda3vn72mxz/d/sc6a39p3my8k3uw8",
@@ -126,7 +132,13 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Almavest Basket #5",
     category: "Global multi-sector loans",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines, and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.",
+    highlights: [
+      "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
+      "Upwards, a consumer lender which, through its mobile app, offers personal loans to salaried employees  in India",
+      "Impact Water which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
+      "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
+    ],
     icon: almavestLogo.src,
     agreement: "https://docsend.com/view/r9dpyy8wqxp2n5td/d/k87sbpm4ny3s23y6",
     dataroom: "https://docsend.com/view/r9dpyy8wqxp2n5td/d/k87sbpm4ny3s23y6",
@@ -241,7 +253,13 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Almavest Basket #1",
     category: "Global, multi-sector loans",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Selfin - an SME lender in India, Upwards - an consumer lender in India, Impact Water - a company that provides safe drinking water systems in Africa, and Greenway - an Indian company that makes ‘clean cookstoves’ for low-income households globally.",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines, and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.",
+    highlights: [
+      "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
+      "Upwards, a consumer lender which, through its mobile app, offers personal loans to salaried employees  in India",
+      "Impact Water which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
+      "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
+    ],
     icon: almavestLogo.src,
   },
   "0xe32c22e4d95cae1fb805c60c9e0026ed57971bcf": {
@@ -249,7 +267,10 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Almavest Basket #2",
     category: "Global, multi-sector loans",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Adelantos - an asset financier providing loans secured on mobile phones across LatAm.",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines, and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.",
+    highlights: [
+      "Adelantos, a Panama-based fintech lender that provides loans secured by mobile phones to individuals across LatAm",
+    ],
     icon: almavestLogo.src,
   },
   "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": {
@@ -257,7 +278,13 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Almavest Basket #3",
     category: "Global, multi-sector loans",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines, and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.",
+    highlights: [
+      "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
+      "Upwards, a consumer lender which, through its mobile app, offers personal loans to salaried employees  in India",
+      "Impact Water which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
+      "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
+    ],
     icon: almavestLogo.src,
     agreement:
       "https://s3.us-west-2.amazonaws.com/secure.notion-static.com/a22b60ac-89b7-4184-a6ba-3ed16c45ab8f/ALMA_Goldfinch_Protocol_Loan_Agreement_FINAL_%288-30-21%29.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAT73L2G45O3KS52Y5%2F20210831%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20210831T000715Z&X-Amz-Expires=86400&X-Amz-Signature=01c8b63f01e46afb753c4f37ba75836b0743fa8e82ce94fbf32aefbbad367e6a&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22ALMA%2520Goldfinch%2520Protocol%2520Loan%2520Agreement%2520FINAL%2520%288-30-21%29.pdf%22",
@@ -269,7 +296,13 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Almavest Basket #4",
     category: "Global, multi-sector loans",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This facility will be utilized by Almavest to invest in a) inclusive lenders (which pledge pools of underlying microfinance, small business, or other loans as collateral); and b) carbon reduction project developers (which pledge carbon offsets or receivables from their sale as collateral).",
+      "Proceeds will be used to expand ALMA's pan-regional debt platform across our three investment areas of focus: inclusive lenders, carbon reduction project developers, and diverse social impact businesses.  This includes active pipeline deals in India, Egypt, Indonesia, Colombia, Spain, Philippines, and other markets. The security we take on our loans to borrowers includes overcollateralized loan portfolios, carbon credit purchase agreements, corporate, personal, and/or sovereign guarantees, cash collateral, and pledges of company shares.",
+    highlights: [
+      "Selfin, an Indian lender that provides small, medium-term loans to MSMEs in India through a distribution network of financial advisors.",
+      "Upwards, a consumer lender which, through its mobile app, offers personal loans to salaried employees  in India",
+      "Impact Water which supplies over 30,000 schools across central and eastern Africa with systems that avoid burning fuel to make water safe and potable",
+      "Greenway Appliances, a leading clean cookstove supplier and distributor, with hundreds of thousands of rural customers in India and Africa",
+    ],
     icon: almavestLogo.src,
   },
   "0xc13465ce9ae3aa184eb536f04fdc3f54d2def277": {
@@ -277,7 +310,12 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
     name: "Oya, via Almavest",
     category: "SMB loans in Africa",
     description:
-      "Almavest provides debt capital to high-performing companies in a variety of sectors globally. This loan was used to provide debt capital to Oya - an asset financier providing loans helping small and medium sized business across Africa scale up.",
+      "Proceeds from this pool will be used to provide financing to Oya Group via the credit fund, Almavest. Oya is a Ghana-based micro-lender with a 10+ year track record that supports the growth of small businesses across Africa by providing quick, and convenient access to credit. Oya operates across Africa with subsidiaries in Tanzania, Uganda, Liberia, and Sierra Leone.",
+    highlights: [
+      "Oya provides loans to MSME borrowers, focusing on small business traders, drivers, and local institutions to support their working capital and small asset financing needs",
+      "Oya has to an engaged customer base, with 60% of customers borrowing every 2 - 3 months",
+      "The company's borrowers are 82% female, and made up mostly of young individuals, with 66% of customers between the ages of 26 and 55.",
+    ],
     icon: almavestLogo.src,
   },
 };
