@@ -1,3 +1,5 @@
+import { DESIRED_CHAIN_ID } from "@/constants";
+
 export const RPC_URLS: { [chainId: number]: string } =
   process.env.NODE_ENV === "production"
     ? {
@@ -8,6 +10,4 @@ export const RPC_URLS: { [chainId: number]: string } =
         31337: "http://localhost:8545",
       };
 
-export const ALLOWED_CHAIN_IDS = Object.keys(RPC_URLS).map((chainId) =>
-  parseInt(chainId)
-);
+export const ALLOWED_CHAIN_IDS = [DESIRED_CHAIN_ID];

@@ -3,6 +3,13 @@ export * from "./metadata/borrowers";
 
 export { default as POOL_METADATA } from "./metadata/index";
 
+export const DESIRED_CHAIN_ID = parseInt(
+  process.env.NEXT_PUBLIC_DESIRED_CHAIN_ID as string
+);
+if (isNaN(DESIRED_CHAIN_ID)) {
+  throw new Error("Desired chain ID is not defined properly in env vars");
+}
+
 export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;

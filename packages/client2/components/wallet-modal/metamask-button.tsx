@@ -1,4 +1,5 @@
 import { Spinner } from "@/components/design-system";
+import { DESIRED_CHAIN_ID } from "@/constants";
 import { metaMask, metaMaskHooks } from "@/lib/wallet/connectors/metamask";
 
 import MetaMaskLogo from "./metamask-logo.svg";
@@ -8,7 +9,7 @@ export function MetaMaskButton() {
   const isActive = metaMaskHooks.useIsActive();
   const isActivating = metaMaskHooks.useIsActivating();
   const handleConnectMetaMask = () => {
-    metaMask.activate();
+    metaMask.activate(DESIRED_CHAIN_ID);
   };
   return (
     <ProviderButton

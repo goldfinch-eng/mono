@@ -1,4 +1,5 @@
 import { Spinner } from "@/components/design-system";
+import { DESIRED_CHAIN_ID } from "@/constants";
 import {
   walletConnect,
   walletConnectHooks,
@@ -9,7 +10,7 @@ import WalletConnectLogo from "./walletconnect-logo.svg";
 
 export function WalletConnectButton() {
   const handleConnection = () => {
-    walletConnect.activate();
+    walletConnect.activate(DESIRED_CHAIN_ID);
   };
   const isActive = walletConnectHooks.useIsActive();
   const isActivating = walletConnectHooks.useIsActivating();

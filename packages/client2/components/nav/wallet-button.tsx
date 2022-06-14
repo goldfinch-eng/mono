@@ -6,9 +6,21 @@ import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, isActivating } = useWallet();
+  const { account, isActivating, error } = useWallet();
 
-  return account ? (
+  return error ? (
+    <Button
+      variant="rounded"
+      className="h-10 text-clay-500"
+      iconRight="Exclamation"
+      colorScheme="secondary"
+      disabled
+    >
+      {error.name === "ChainIdNotAllowedError"
+        ? "Wrong network"
+        : "Wallet error"}
+    </Button>
+  ) : account ? (
     <Popover
       placement="bottom-end"
       content={({ close }) => <WalletStatus onWalletDisconnect={close} />}
