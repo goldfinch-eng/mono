@@ -1,14 +1,7 @@
-import localhostMetadata from "./metadata/localhost.json";
-import { mainnetMetadata } from "./metadata/mainnet";
-import type { PoolMetadata } from "./metadata/types";
-
 export * from "./contract-addresses";
 export * from "./metadata/borrowers";
 
-export const POOL_METADATA =
-  process.env.NEXT_PUBLIC_POOL_METADATA_NETWORK === "mainnet"
-    ? mainnetMetadata
-    : (localhostMetadata as Record<string, PoolMetadata>);
+export { default as POOL_METADATA } from "./metadata/index";
 
 export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
