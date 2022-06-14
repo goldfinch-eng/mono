@@ -6,7 +6,7 @@ import difference from "lodash/difference"
 import every from "lodash/every"
 import mapKeys from "lodash/mapKeys"
 import {assertNonEmptyString, assertNonNullable, isNonEmptyString, isPlainObject} from "../../utils/src/type"
-import {getDeployedContract, OWNER_ROLE} from "./deployHelpers"
+import {getDeployedContract, LOCKER_ROLE, OWNER_ROLE} from "./deployHelpers"
 import {
   MAINNET_CREDIT_DESK,
   MAINNET_GF_DEPLOYER,
@@ -43,6 +43,9 @@ type VerificationResult = {
   ok: boolean
 }
 
+/**
+ * Verifies that the `contract` has an explicit `owner()`, whose value is equal to `expectedOwner`.
+ */
 async function _contractExplicitOwnerVerifier(contract: Contract, expectedOwner: string): Promise<VerificationResult> {
   console.log("")
   let contractIssue = false
@@ -61,6 +64,10 @@ async function _contractExplicitOwnerVerifier(contract: Contract, expectedOwner:
 
   return {ok: !contractIssue}
 }
+
+/**
+ * Verifies that the `contract` does not have an explicit `owner()`.
+ */
 async function _contractNoExplicitOwnerVerifier(contract: Contract): Promise<VerificationResult> {
   console.log("")
   let contractHasExplicitOwner = false
@@ -84,23 +91,31 @@ async function _contractNoExplicitOwnerVerifier(contract: Contract): Promise<Ver
   return {ok: !contractHasExplicitOwner}
 }
 
-async function _contractRoleBasedAccessControlConfiguredVerifier(contract: Contract): Promise<VerificationResult> {
+/**
+ * Verifies that the provided `role` is configured such that its admin role is the contract's `OWNER_ROLE` or its
+ * `DEFAULT_ADMIN_ROLE`, and in case of the latter, that this `DEFAULT_ADMIN_ROLE` is not held by anyone.
+ */
+async function _contractRoleBasedAccessControlConfiguredVerifier(
+  contract: Contract,
+  roleDescription: string,
+  role: string
+): Promise<VerificationResult> {
   console.log("")
   let contractIssue = false
 
   const OWNER_ROLE = await contract.OWNER_ROLE()
   const DEFAULT_ADMIN_ROLE = await contract.DEFAULT_ADMIN_ROLE()
 
-  const adminRoleOfOwnerRole = await contract.getRoleAdmin(OWNER_ROLE)
-  if (adminRoleOfOwnerRole === OWNER_ROLE) {
-    console.log("Admin role of OWNER_ROLE is itself.")
-  } else if (adminRoleOfOwnerRole === DEFAULT_ADMIN_ROLE) {
+  const adminRoleOfRole = await contract.getRoleAdmin(role)
+  if (adminRoleOfRole === OWNER_ROLE) {
+    console.log(`Admin role of ${roleDescription} is ${role === OWNER_ROLE ? "itself" : "OWNER_ROLE"}.`)
+  } else if (adminRoleOfRole === DEFAULT_ADMIN_ROLE) {
     if (DEFAULT_ADMIN_ROLE === ZERO_BYTES32) {
-      console.log("Admin role of OWNER_ROLE is zero-bytes DEFAULT_ADMIN_ROLE.")
+      console.log(`Admin role of ${roleDescription} is zero-bytes DEFAULT_ADMIN_ROLE.`)
     } else {
       contractIssue = true
       console.error(
-        `[CRITICAL] Admin role of OWNER_ROLE is some non-zero-bytes DEFAULT_ADMIN_ROLE: ${DEFAULT_ADMIN_ROLE}`
+        `[CRITICAL] Admin role of ${roleDescription} is some non-zero-bytes DEFAULT_ADMIN_ROLE: ${DEFAULT_ADMIN_ROLE}`
       )
     }
 
@@ -120,11 +135,16 @@ async function _contractRoleBasedAccessControlConfiguredVerifier(contract: Contr
     }
   } else {
     contractIssue = true
-    console.error(`[CRITICAL] Admin role of OWNER_ROLE is a different role: ${adminRoleOfOwnerRole}`)
+    console.error(`[CRITICAL] Admin role of OWNER_ROLE is a different role: ${adminRoleOfRole}`)
   }
 
   return {ok: !contractIssue}
 }
+
+/**
+ * Verifies that the `contract` does not have `OWNER_ROLE()` or `DEFAULT_ADMIN_ROLE()`, from which we infer that
+ * it does not use roles-based access control.
+ */
 async function _contractRoleBasedAccessControlNotConfiguredVerifier(contract: Contract): Promise<VerificationResult> {
   console.log("")
   let contractHasRoleBasedAccessControl = false
@@ -156,6 +176,11 @@ async function _contractRoleBasedAccessControlNotConfiguredVerifier(contract: Co
   return {ok: !contractHasRoleBasedAccessControl}
 }
 
+/**
+ * Verifies that the `contract` has role-based access control configured for the provided `config` -- that is,
+ * that the `config.role` has all and only the `config.expectedMembers` as its members (i.e. the addresses that
+ * hold that role).
+ */
 async function _contractRoleMemberVerifier(
   contract: Contract,
   config: MemberVerificationConfig,
@@ -264,8 +289,14 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
         const noExplicitOwnerResult = await _contractNoExplicitOwnerVerifier(contract)
 
         // Confirm that the roles-based access control has been configured so that OWNER_ROLE does
-        // indeed "own" the contract.
-        const rolesBaseConfiguredResult = await _contractRoleBasedAccessControlConfiguredVerifier(contract)
+        // indeed "own" the contract, in the sense that the role is not owned / controlled by some
+        // other role.
+        const OWNER_ROLE = await contract.OWNER_ROLE()
+        const rolesBaseConfiguredResult = await _contractRoleBasedAccessControlConfiguredVerifier(
+          contract,
+          "OWNER_ROLE",
+          OWNER_ROLE
+        )
 
         // Confirm who has the OWNER_ROLE.
         const expectedOwners = _getRoleBasedAccessControlledContractExpectedOwners(name)
@@ -297,7 +328,7 @@ const isMainnetTranchedPoolsJson = (json: unknown): json is MainnetTranchedPools
 }
 
 const fileOptions: {encoding: BufferEncoding} = {encoding: "utf8"}
-const pathToMainnetTranchedPoolsJson = "../client/config/pool-metadata/mainnet.json"
+const pathToMainnetTranchedPoolsJson = "../pools/metadata/mainnet.json"
 const _mainnetTranchedPoolsJson = JSON.parse(fs.readFileSync(pathToMainnetTranchedPoolsJson, fileOptions))
 
 if (!isMainnetTranchedPoolsJson(_mainnetTranchedPoolsJson)) {
@@ -363,6 +394,32 @@ const borrowerNameByBorrowerContractExpectedOwnerAddress = {
   "0xef1a2cbbfe289ba586db860cfe360058ac3944e7": "Addem Capital",
 }
 
+const expectedLockersBesidesBorrowerContractByTranchedPoolAddress = {
+  "0xd43a4f3041069c6178b99d55295b00d0db955bb5": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x1e73b5c1a3570b362d46ae9bf429b25c05e514a7": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x3634855ec1beaf6f9be0f7d2f67fc9cb5f4eeea4": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x9e8b9182abba7b4c188c979bc8f4c79f7f4c90d3": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x8bbd80f88e662e56b918c353da635e210ece93c6": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x2107ade0e536b8b0b85cca5e0c0c3f66e58c053c": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x1cc90f7bb292dab6fa4398f3763681cfe497db97": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x67df471eacd82c3dbc95604618ff2a1f6b14b8a1": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xe32c22e4d95cae1fb805c60c9e0026ed57971bcf": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xefeb69edf6b6999b0e3f2fa856a2acf3bdea4ab5": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xc13465ce9ae3aa184eb536f04fdc3f54d2def277": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xe6c30756136e07eb5268c3232efbfbe645c1ba5a": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x1d596d28a7923a22aa013b0e7082bba23daa656b": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x418749e294cabce5a714efccc22a8aade6f9db57": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xaa2ccc5547f64c5dffd0a624eb4af2543a67ba65": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xf74ea34ac88862b7ff419e60e476be2651433e68": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xc9bdd0d3b80cc6efe79a82d850f44ec9b55387ae": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xd09a57127bc40d680be7cb061c2a6629fe71abef": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x00c27fc71b159a346e179b4a1608a0865e8a7470": [MAINNET_GOVERNANCE_MULTISIG],
+  "0xb26b42dd5771689d0a7faeea32825ff9710b9c11": [MAINNET_GOVERNANCE_MULTISIG],
+  "0x89d7c618a4eef3065da8ad684859a547548e6169": [MAINNET_GOVERNANCE_MULTISIG],
+}
+
 async function verifyBorrowerContractsOwnership() {
   const tranchedPoolAddresses = Object.keys(mainnetTranchedPoolsJson)
 
@@ -375,7 +432,12 @@ async function verifyBorrowerContractsOwnership() {
 
       const borrowerContract = await ethers.getContractAt("Borrower", borrowerContractAddress)
 
-      const rolesBasedConfiguredResult = await _contractRoleBasedAccessControlConfiguredVerifier(borrowerContract)
+      const OWNER_ROLE = await borrowerContract.OWNER_ROLE()
+      const rolesBasedConfiguredResult = await _contractRoleBasedAccessControlConfiguredVerifier(
+        borrowerContract,
+        "OWNER_ROLE",
+        OWNER_ROLE
+      )
 
       const expectedOwner = expectedBorrowerContractOwnerByContractAddress[borrowerContractAddress]
       assertNonEmptyString(expectedOwner)
@@ -407,6 +469,77 @@ async function verifyBorrowerContractsOwnership() {
   )
 }
 
+async function verifyTranchedPoolContractsLocker() {
+  const tranchedPoolAddresses = Object.keys(mainnetTranchedPoolsJson)
+
+  return _verifyContractsAccessControl(
+    "locker of tranched pools",
+    tranchedPoolAddresses,
+    async (tranchedPoolAddress: string): Promise<VerificationResult> => {
+      const tranchedPoolContract = await ethers.getContractAt("TranchedPool", tranchedPoolAddress)
+
+      // Verify that Governance has the TranchedPool contract's OWNER_ROLE.
+      const expectedOwners = [MAINNET_GOVERNANCE_MULTISIG]
+      const ownerRoleResult = await _contractRoleMemberVerifier(
+        tranchedPoolContract,
+        {
+          roleDescription: "OWNER_ROLE",
+          role: OWNER_ROLE,
+          expectedMembers: expectedOwners,
+        },
+        (expectedOwner): string => {
+          const borrowerName = borrowerNameByBorrowerContractExpectedOwnerAddress[expectedOwner]
+          if (borrowerName) {
+            return borrowerName
+          } else {
+            return getProtocolAddressDescription(expectedOwner)
+          }
+        }
+      )
+
+      // Verify that the TranchedPool contract's LOCKER_ROLE has as its admin role the OWNER_ROLE (or
+      // else the DEFAULT_ADMIN_ROLE and that no one has this).
+      const LOCKER_ROLE = await tranchedPoolContract.LOCKER_ROLE()
+      const rolesBasedConfiguredResult = await _contractRoleBasedAccessControlConfiguredVerifier(
+        tranchedPoolContract,
+        "LOCKER_ROLE",
+        LOCKER_ROLE
+      )
+
+      // Verify who holds the LOCKER_ROLE on the TranchedPool contract.
+
+      const borrowerContractAddress = borrowerContractAddressByTranchedPoolAddress[tranchedPoolAddress]
+      assertNonNullable(borrowerContractAddress)
+      const otherExpectedLockers = expectedLockersBesidesBorrowerContractByTranchedPoolAddress[tranchedPoolAddress]
+      assertNonNullable(otherExpectedLockers)
+
+      const expectedLockers = [borrowerContractAddress, ...otherExpectedLockers]
+      const lockerRoleResult = await _contractRoleMemberVerifier(
+        tranchedPoolContract,
+        {
+          roleDescription: "LOCKER_ROLE",
+          role: LOCKER_ROLE,
+          expectedMembers: expectedLockers,
+        },
+        (expectedLocker): string => {
+          if (borrowerContractAddressByTranchedPoolAddress[tranchedPoolAddress] === expectedLocker) {
+            return "Borrower contract"
+          } else {
+            return getProtocolAddressDescription(expectedLocker)
+          }
+        }
+      )
+
+      return {ok: rolesBasedConfiguredResult.ok && ownerRoleResult.ok && lockerRoleResult.ok}
+    },
+    (tranchedPoolAddress: string): string => {
+      const info = mainnetTranchedPoolsJson[tranchedPoolAddress]
+      assertNonNullable(info)
+      return info.name
+    }
+  )
+}
+
 async function _verifyContractsAccessControl(
   description: string,
   keys: string[],
@@ -415,7 +548,7 @@ async function _verifyContractsAccessControl(
 ): Promise<VerificationResult> {
   console.log("")
   console.log("#########################################")
-  console.log(`Verifying ownership of ${description}`)
+  console.log(`Verifying ${description}`)
   console.log("#########################################")
 
   let anyIssue = false
@@ -440,18 +573,19 @@ async function _verifyContractsAccessControl(
   return {ok: !anyIssue}
 }
 
-export default async function verifyContractsOwnership(): Promise<void> {
+export default async function verifyContractsAccessControl(): Promise<void> {
   const protocolContractsResult = await verifyProtocolContractsOwnership()
   const borrowerContractsResult = await verifyBorrowerContractsOwnership()
+  const tranchedPoolContractsResult = await verifyTranchedPoolContractsLocker()
 
-  if (!protocolContractsResult.ok || !borrowerContractsResult.ok) {
+  if (!protocolContractsResult.ok || !borrowerContractsResult.ok || !tranchedPoolContractsResult.ok) {
     throw new Error("Found access control issues!")
   }
 }
 
 if (require.main === module) {
   // If this is run as a script, then call main. If it's imported (for tests), this block will not run
-  verifyContractsOwnership()
+  verifyContractsAccessControl()
     .then(() => process.exit(0))
     .catch((error) => {
       console.error(error)

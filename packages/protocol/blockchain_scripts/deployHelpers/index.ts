@@ -140,6 +140,7 @@ export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_S
 export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
 export const SIGNER_ROLE = web3.utils.keccak256("SIGNER_ROLE")
+export const LOCKER_ROLE = web3.utils.keccak256("LOCKER_ROLE")
 
 export enum StakedPositionType {
   Fidu,
