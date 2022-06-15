@@ -32,6 +32,7 @@ import { useWallet } from "@/lib/wallet";
 
 import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
 import ComingSoonPanel from "./coming-soon-panel";
+import DealTermsTable from "./deal-terms-table";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
 import { StatGrid, TRANCHED_POOL_STAT_GRID_FIELDS } from "./stat-grid";
@@ -87,6 +88,8 @@ gql`
         termInDays
         paymentPeriodInDays
         nextDueTime
+        interestAprDecimal
+        borrower
       }
       totalAmountOwed
       principalAmountRepaid
@@ -233,7 +236,7 @@ export default function PoolPage() {
           </div>
           <Heading
             level={1}
-            className="mb-5 text-center font-serif text-sand-800 sm:mb-3 md:text-left"
+            className="mb-5 text-center text-sand-800 sm:mb-3 md:text-left"
           >
             {tranchedPool ? (
               tranchedPool.name
@@ -352,10 +355,7 @@ export default function PoolPage() {
                   </Button>
                 ) : null}
 
-                <Heading
-                  level={4}
-                  className="mb-4 font-sans !text-lg !font-semibold"
-                >
+                <Heading level={4} className="mb-4 !text-lg">
                   Highlights
                 </Heading>
                 <ul className="mb-8 list-outside list-disc pl-5">
@@ -370,15 +370,16 @@ export default function PoolPage() {
                     </li>
                   ))}
                 </ul>
-                <Heading
-                  level={4}
-                  className="mb-4 font-sans !text-lg !font-semibold"
-                >
+                <Heading level={4} className="mb-4 !text-lg">
                   Recent Activity
                 </Heading>
                 {tranchedPool ? (
-                  <TransactionTable tranchedPoolId={tranchedPool.id} />
+                  <div className="mb-16">
+                    <TransactionTable tranchedPoolId={tranchedPool.id} />
+                  </div>
                 ) : null}
+
+                <DealTermsTable tranchedPool={tranchedPool} />
               </TabContent>
               <TabContent>
                 {tranchedPool ? (

@@ -22,7 +22,8 @@ export function Heading({ level, as, className, ...rest }: HeadingProps) {
   return (
     <Component
       className={clsx(
-        "font-serif tracking-[0.02rem] text-sand-800",
+        level === 1 || level === 2 ? "font-serif" : "font-sans",
+        "tracking-[0.02rem] text-sand-800",
         level === 1 ? "font-bold" : "font-semibold",
         fontSizeClass,
         className
