@@ -10,7 +10,6 @@ export const BORROWER_PROFILE_FIELDS = gql`
     borrower @client {
       name
       logo
-      headerColor
       orgType
       website
       linkedIn
@@ -23,16 +22,7 @@ export const BORROWER_PROFILE_FIELDS = gql`
 
 export function BorrowerProfile({
   tranchedPool: {
-    borrower: {
-      name,
-      logo,
-      headerColor,
-      website,
-      linkedIn,
-      twitter,
-      bio,
-      highlights,
-    },
+    borrower: { name, logo, website, linkedIn, twitter, bio, highlights },
   },
 }: {
   tranchedPool: BorrowerProfileFieldsFragment;
@@ -42,15 +32,13 @@ export function BorrowerProfile({
       <div className="mb-8 items-center justify-between lg:flex">
         <div className="mb-3 flex items-center">
           {logo && (
-            <div
-              className="mr-3 h-8 w-8 overflow-hidden rounded-full"
-              style={{ backgroundColor: headerColor }}
-            >
+            <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full">
               <Image
                 src={logo}
-                alt={name || ""}
+                alt={name}
                 className="block h-full w-full object-contain object-center"
                 layout="fill"
+                sizes="32px"
               />
             </div>
           )}
