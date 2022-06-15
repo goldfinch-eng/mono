@@ -29,8 +29,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
         <AppWideModals />
 
-        {process.env.NEXT_PUBLIC_ENV === "local" ||
-        process.env.NEXT_PUBLIC_ENV === "staging" ? (
+        {process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost" ||
+        process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration" ? (
           <DevToolsPanel />
         ) : null}
       </ApolloProvider>
