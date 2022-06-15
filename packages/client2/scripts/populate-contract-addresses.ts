@@ -7,37 +7,36 @@ const nextEnv = require("@next/env");
 const prettier = require("prettier");
 
 const env = nextEnv.loadEnvConfig(".");
+const networkName = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME as string;
+console.log(`Gathering contract addresses for network ${networkName}`);
+let contracts: Record<string, { address: string }>;
+let chainId: number;
+if (networkName === "mainnet") {
+  const mainnetDeployments = JSON.parse(
+    fs
+      .readFileSync(
+        path.resolve(__dirname, "../../protocol/deployments/all.json")
+      )
+      .toString()
+  );
+  contracts = mainnetDeployments["1"].mainnet.contracts;
+  chainId = 1;
+} else if (networkName === "localhost") {
+  const localDeployments = JSON.parse(
+    fs
+      .readFileSync(
+        path.resolve(__dirname, "../../protocol/deployments/all_dev.json")
+      )
+      .toString()
+  );
+  contracts = localDeployments["31337"].localhost.contracts;
+  chainId = 31337;
+} else {
+  throw new Error(`Unrecognized network name ${networkName}`);
+}
 
-console.log("Gathering local and mainnet contract addresses...");
-const localDeployments = JSON.parse(
-  fs
-    .readFileSync(
-      path.resolve(__dirname, "../../protocol/deployments/all_dev.json")
-    )
-    .toString()
-);
-const localContracts = localDeployments["31337"].localhost.contracts;
-const mainnetDeployments = JSON.parse(
-  fs
-    .readFileSync(
-      path.resolve(__dirname, "../../protocol/deployments/all.json")
-    )
-    .toString()
-);
-const mainnetContracts = mainnetDeployments["1"].mainnet.contracts;
-
-const desiredChainId = env.combinedEnv.NEXT_PUBLIC_DESIRED_CHAIN_ID as string;
 const contractAddressFileRelativePath =
   "../constants/contract-addresses/index.ts";
-const contracts =
-  desiredChainId === "1"
-    ? mainnetContracts
-    : desiredChainId === "31337"
-    ? localContracts
-    : null;
-if (contracts === null) {
-  throw new Error(`Invalid desired chain id: ${desiredChainId}.`);
-}
 const addresses = {
   USDC:
     contracts.TestERC20?.address ??
@@ -52,10 +51,10 @@ const addresses = {
 };
 const code = `export const CONTRACT_ADDRESSES: {
   [chaindId: number]: Record<string, string>;
-} = {${desiredChainId}: ${JSON.stringify(addresses)}}`;
+} = {${chainId}: ${JSON.stringify(addresses)}}`;
 fs.writeFileSync(
   path.resolve(__dirname, contractAddressFileRelativePath),
   prettier.format(code, { parser: "typescript" })
 );
 
-console.log("Finished gathering local and mainnet contract addresses");
+console.log(`Finished gathering contract addresses for network ${networkName}`);
