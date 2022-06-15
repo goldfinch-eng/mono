@@ -40,7 +40,7 @@ export function BorrowerProfile({
   return (
     <div>
       <div className="mb-8 items-center justify-between lg:flex">
-        <div className="flex items-center">
+        <div className="mb-3 flex items-center">
           {logo && (
             <div
               className="mr-3 h-8 w-8 overflow-hidden rounded-full"
@@ -49,13 +49,13 @@ export function BorrowerProfile({
               <Image
                 src={logo}
                 alt={name || ""}
-                className="mr-3 block h-full w-full object-contain object-center"
+                className="block h-full w-full object-contain object-center"
                 layout="fill"
               />
             </div>
           )}
 
-          <h2 className="mb-3 text-3xl lg:mb-0">{name}</h2>
+          <h2 className="text-3xl lg:mb-0">{name}</h2>
         </div>
         <div className="flex gap-2">
           <Chip
