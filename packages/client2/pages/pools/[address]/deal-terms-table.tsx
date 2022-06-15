@@ -40,11 +40,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Interest Rate
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The Pool&apos;s fixed interest rate APR.
-                  </div>
-                }
+                content="The Pool's fixed interest rate APR."
               />
             </div>
           </th>
@@ -58,12 +54,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Drawdown cap
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The total funds that the Borrower can drawdown from this
-                    Pool.
-                  </div>
-                }
+                content="The total funds that the Borrower can drawdown from this Pool."
               />
             </div>
           </th>
@@ -80,11 +71,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Payment frequency
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    Frequency of interest and principal payments.
-                  </div>
-                }
+                content="Frequency of interest and principal payments."
               />
             </div>
           </th>
@@ -98,11 +85,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Payment term
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The length of time until the full principal is due.
-                  </div>
-                }
+                content="The length of time until the full principal is due."
               />
             </div>
           </th>
@@ -116,14 +99,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Default interest rate
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    An additional interest rate paid by the Borrower if they are
-                    late on their payments following a 30 day grace period. The
-                    total interest rate a Borrower in default pays = interest
-                    rate + default interest rate.
-                  </div>
-                }
+                content="An additional interest rate paid by the Borrower if they are late on their payments following a 30 day grace period. The total interest rate a Borrower in default pays = interest rate + default interest rate."
               />
             </div>
           </th>
@@ -135,18 +111,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Current leverage ratio
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The leverage of senior tranche to junior tranche capital in
-                    this Pool. Senior tranche capital is automatically allocated
-                    by Goldfinch&apos;s Senior Pool, according to the
-                    protocol&apos;s leverage model. Junior tranche capital is
-                    provided directly by Backer deposits. A current leverage
-                    ratio of 4x means that for every $1 of junior capital
-                    deposited by Backers, $4 of senior capital will be allocated
-                    by the Senior Pool.
-                  </div>
-                }
+                content="The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer deposits. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool."
               />
             </div>
           </th>
@@ -160,11 +125,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Opening date
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The date that the Pool will be open for Backer investments.
-                  </div>
-                }
+                content="The date that the Pool will be open for Backer investments."
               />
             </div>
           </th>
@@ -178,11 +139,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Contract address
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The Ethereum address for this Borrower Pool smart contract.
-                  </div>
-                }
+                content="The Ethereum address for this Borrower Pool smart contract."
               />
             </div>
           </th>
@@ -194,11 +151,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
               Borrower address
               <InfoIconTooltip
                 size="sm"
-                content={
-                  <div className="max-w-xs">
-                    The Ethereum address associated with this Borrower.
-                  </div>
-                }
+                content="The Ethereum address associated with this Borrower."
               />
             </div>
           </th>
