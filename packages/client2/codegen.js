@@ -13,10 +13,20 @@
 
 const nextEnv = require("@next/env");
 const env = nextEnv.loadEnvConfig(".");
+const graphQlApiUrl =
+  env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL ||
+  env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch"
+    : env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:8000/subgraphs/name/goldfinch-subgraph"
+    : null;
+if (!graphQlApiUrl) {
+  throw new Error("Could not determine GraphQL API URL");
+}
 
 module.exports = {
   schema: [
-    env.combinedEnv.NEXT_PUBLIC_GRAPHQL_URL, // ./lib/graphql/schema.json in case of emergency (see above note)
+    graphQlApiUrl, // ./lib/graphql/schema.json in case of emergency (see above note)
     "./lib/graphql/client-only-schema.graphql",
   ],
   documents: [
