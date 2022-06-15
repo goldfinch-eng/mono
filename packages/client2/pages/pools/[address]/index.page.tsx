@@ -89,6 +89,7 @@ gql`
         paymentPeriodInDays
         nextDueTime
         interestAprDecimal
+        borrower
       }
       totalAmountOwed
       principalAmountRepaid

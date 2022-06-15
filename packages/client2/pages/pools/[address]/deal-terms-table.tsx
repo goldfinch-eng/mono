@@ -23,6 +23,7 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
       maxLimit
       paymentPeriodInDays
       termInDays
+      borrower
     }
   }
 `;
@@ -112,7 +113,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
             [
               "Borrower address",
               "The Ethereum address associated with this Borrower.",
-              "0x",
+              tranchedPool.creditLine.borrower,
             ],
           ]}
         />

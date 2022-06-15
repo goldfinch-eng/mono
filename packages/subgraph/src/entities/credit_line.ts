@@ -21,6 +21,7 @@ export function initOrUpdateCreditLine(address: Address, timestamp: BigInt): Cre
   }
   let contract = CreditLineContract.bind(address)
 
+  creditLine.borrower = contract.borrower()
   creditLine.balance = contract.balance()
   creditLine.interestApr = contract.interestApr()
   creditLine.interestAccruedAsOf = contract.interestAccruedAsOf()

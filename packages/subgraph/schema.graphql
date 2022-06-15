@@ -149,6 +149,7 @@ type PoolBacker @entity {
 
 type CreditLine @entity {
   id: ID!
+  borrower: Bytes!
   tranchedPool: TranchedPool!
   limit: BigInt!
   maxLimit: BigInt!
