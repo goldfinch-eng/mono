@@ -42,7 +42,7 @@ function Step1() {
       </div>
       <div>We&apos;re making some big changes around here!</div>
       <div>
-        ✨ You should notice site performance improments and a new look + feel
+        ✨ You should notice site performance improvements and a new look + feel
         for the Earn, Senior Pool, and Borrower Pool pages.
       </div>
     </div>
