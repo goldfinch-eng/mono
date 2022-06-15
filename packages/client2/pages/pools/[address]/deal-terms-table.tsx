@@ -1,14 +1,29 @@
+import { gql } from "@apollo/client";
 import { format } from "date-fns";
 
 import { InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
-  SingleTranchedPoolDataQuery,
+  DealTermsTableFieldsFragment,
 } from "@/lib/graphql/generated";
 
+export const DEAL_TERMS_TABLE_FIELDS = gql`
+  fragment DealTermsTableFields on TranchedPool {
+    id
+    estimatedLeverageRatio
+    fundableAt
+    creditLine {
+      interestAprDecimal
+      maxLimit
+      paymentPeriodInDays
+      termInDays
+    }
+  }
+`;
+
 interface DealTermsProps {
-  tranchedPool: SingleTranchedPoolDataQuery["tranchedPool"];
+  tranchedPool: DealTermsTableFieldsFragment;
 }
 
 export default function DealTermsTable({ tranchedPool }: DealTermsProps) {

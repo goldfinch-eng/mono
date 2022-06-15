@@ -90,7 +90,6 @@ gql`
         paymentPeriodInDays
         nextDueTime
         interestAprDecimal
-        termStartTime
       }
       totalAmountOwed
       principalAmountRepaid
@@ -420,7 +419,7 @@ export default function PoolPage() {
                   ) : null}
                 </div>
                 {tranchedPool ? (
-                  <DealTermsTable tranchedPool={data.tranchedPool} />
+                  <DealTermsTable tranchedPool={tranchedPool} />
                 ) : null}
               </TabContent>
               <TabContent>
