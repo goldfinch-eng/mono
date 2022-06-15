@@ -16,6 +16,7 @@ import {
   HelperText,
   Marquee,
   Banner,
+  InfoIconTooltip,
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
@@ -32,6 +33,7 @@ import { useWallet } from "@/lib/wallet";
 
 import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
 import ComingSoonPanel from "./coming-soon-panel";
+import DealTermsTable from "./deal-terms-table";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
 import { StatGrid, TRANCHED_POOL_STAT_GRID_FIELDS } from "./stat-grid";
@@ -87,6 +89,8 @@ gql`
         termInDays
         paymentPeriodInDays
         nextDueTime
+        interestAprDecimal
+        termStartTime
       }
       totalAmountOwed
       principalAmountRepaid
@@ -377,7 +381,46 @@ export default function PoolPage() {
                   Recent Activity
                 </Heading>
                 {tranchedPool ? (
-                  <TransactionTable tranchedPoolId={tranchedPool.id} />
+                  <div className="mb-16">
+                    <TransactionTable tranchedPoolId={tranchedPool.id} />
+                  </div>
+                ) : null}
+
+                <div className="mb-8 flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Heading
+                      level={4}
+                      className="font-sans !text-lg !font-semibold"
+                    >
+                      Deal Terms
+                    </Heading>
+                    <InfoIconTooltip
+                      size="sm"
+                      content={
+                        <div className="max-w-xs">
+                          The Borrower&apos;s proposed terms for the Pool,
+                          including the loan&apos;s basic timeframe and
+                          conditions.
+                        </div>
+                      }
+                    />
+                  </div>
+                  {tranchedPool ? (
+                    <Button
+                      variant="rounded"
+                      colorScheme="secondary"
+                      iconRight="ArrowTopRight"
+                      as="a"
+                      href={`https://etherscan.io/address/${tranchedPool.id}`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Contract
+                    </Button>
+                  ) : null}
+                </div>
+                {tranchedPool ? (
+                  <DealTermsTable tranchedPool={data.tranchedPool} />
                 ) : null}
               </TabContent>
               <TabContent>

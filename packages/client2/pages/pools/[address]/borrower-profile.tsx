@@ -27,7 +27,6 @@ export function BorrowerProfile({
       name,
       logo,
       headerColor,
-      orgType,
       website,
       linkedIn,
       twitter,
@@ -40,27 +39,29 @@ export function BorrowerProfile({
 }) {
   return (
     <div>
-      <div
-        className="mb-8 flex h-60 items-center justify-center"
-        style={{ backgroundColor: headerColor }}
-      >
-        <div className="relative h-20 w-20 overflow-hidden rounded-full">
-          <Image
-            src={logo}
-            alt={`${name} logo`}
-            objectFit="contain"
-            layout="fill"
-            sizes="80px"
-          />
-        </div>
-      </div>
       <div className="mb-8 items-center justify-between lg:flex">
-        <div className="mb-4 items-center justify-start gap-10 lg:mb-0 lg:flex">
+        <div className="flex items-center">
+          {logo && (
+            <div
+              className="mr-3 h-8 w-8 overflow-hidden rounded-full"
+              style={{ backgroundColor: headerColor }}
+            >
+              <Image
+                src={logo}
+                alt={name || ""}
+                className="mr-3 block h-full w-full object-contain object-center"
+                layout="fill"
+              />
+            </div>
+          )}
+
           <h2 className="mb-3 text-3xl lg:mb-0">{name}</h2>
-          <div className="text-xs font-medium">{orgType}</div>
         </div>
         <div className="flex gap-2">
-          <Chip className="relative flex items-center sm:gap-2">
+          <Chip
+            className="relative flex items-center sm:gap-2"
+            colorScheme="sand"
+          >
             <Icon name="Link" size="sm" />
             <a
               className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
@@ -71,7 +72,10 @@ export function BorrowerProfile({
               <span className="sr-only sm:not-sr-only">Website</span>
             </a>
           </Chip>
-          <Chip className="relative flex items-center sm:gap-2">
+          <Chip
+            className="relative flex items-center sm:gap-2"
+            colorScheme="sand"
+          >
             <Icon name="LinkedIn" size="sm" />
             <a
               className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
@@ -83,7 +87,10 @@ export function BorrowerProfile({
             </a>
           </Chip>
           {twitter ? (
-            <Chip className="relative flex items-center sm:gap-2">
+            <Chip
+              className="relative flex items-center sm:gap-2"
+              colorScheme="sand"
+            >
               <Icon name="Twitter" size="sm" />
               <a
                 className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
