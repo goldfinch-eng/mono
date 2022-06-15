@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/design-system";
 import { SERVER_URL } from "@/constants";
+import { openVerificationModal } from "@/lib/state/actions";
 
 export default function DevToolsButtons({
   account,
@@ -128,6 +129,12 @@ export default function DevToolsButtons({
         <div className="px-2">
           <Button size="lg" disabled={true}>
             Set User Address
+          </Button>
+        </div>
+
+        <div className="px-2">
+          <Button size="lg" onClick={() => openVerificationModal()}>
+            Begin verification flow
           </Button>
         </div>
       </div>

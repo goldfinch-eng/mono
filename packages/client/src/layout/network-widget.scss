@@ -8,7 +8,7 @@
 .network-widget-button {
   background: $sand-light;
   border: 1px solid $sand-dark;
-  border-radius: 10px;
+  border-radius: 9999px;
   color: $purp-dark;
   display: flex;
   align-items: center;
@@ -309,7 +309,7 @@
     .spinner {
       height: 12px;
       width: 12px;
-    } 
+    }
   }
 
   .small-network-message {
@@ -331,7 +331,7 @@
   .tx-status-indicator {
     height: 12px;
     width: 12px;
-  
+
     svg {
       height: 12px;
       width: 12px;
