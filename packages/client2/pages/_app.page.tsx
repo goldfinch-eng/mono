@@ -29,7 +29,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
         <AppWideModals />
 
-        {process.env.NEXT_PUBLIC_ENV === "local" && <DevToolsPanel />}
+        {process.env.NEXT_PUBLIC_ENV === "local" ||
+        process.env.NEXT_PUBLIC_ENV === "staging" ? (
+          <DevToolsPanel />
+        ) : null}
       </ApolloProvider>
     </WalletProvider>
   );

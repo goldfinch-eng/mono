@@ -28,6 +28,15 @@ export default localhostMetadata as Record<string, PoolMetadata>;
 `;
 
   fs.writeFileSync(path.resolve(__dirname, metadataIndexRelativePath), code);
+} else if (metadataNetwork === "murmuration") {
+  console.log("Connecting app to metadata from murmuration");
+  const code = `import murmurationMetadata from "./murmuration.json";
+import type { PoolMetadata } from "./types";
+
+export default murmurationMetadata as Record<string, PoolMetadata>;
+`;
+
+  fs.writeFileSync(path.resolve(__dirname, metadataIndexRelativePath), code);
 } else {
   throw new Error(`Unknown metadata network: ${metadataNetwork}`);
 }
