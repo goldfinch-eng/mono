@@ -14,11 +14,13 @@ export function WalletConnectButton() {
   };
   const isActive = walletConnectHooks.useIsActive();
   const isActivating = walletConnectHooks.useIsActivating();
+  const error = walletConnectHooks.useError();
 
   return (
     <ProviderButton
       disabled={isActive || isActivating}
       onClick={handleConnection}
+      errorMessage={error?.message}
     >
       {`WalletConnect${isActive ? " (Connected)" : ""}`}
       {isActivating ? (

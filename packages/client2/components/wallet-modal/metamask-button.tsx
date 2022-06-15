@@ -8,6 +8,7 @@ import { ProviderButton } from "./provider-button";
 export function MetaMaskButton() {
   const isActive = metaMaskHooks.useIsActive();
   const isActivating = metaMaskHooks.useIsActivating();
+  const error = metaMaskHooks.useError();
   const handleConnectMetaMask = () => {
     metaMask.activate(DESIRED_CHAIN_ID);
   };
@@ -15,6 +16,7 @@ export function MetaMaskButton() {
     <ProviderButton
       disabled={isActive || isActivating}
       onClick={handleConnectMetaMask}
+      errorMessage={error?.message}
     >
       {`MetaMask${isActive ? " (Connected)" : ""}`}
       {isActivating ? (

@@ -13,6 +13,7 @@ import { ProviderButton } from "./provider-button";
 export function CoinbaseWalletButton() {
   const isActive = coinbaseWalletHooks.useIsActive();
   const isActivating = coinbaseWalletHooks.useIsActivating();
+  const error = coinbaseWalletHooks.useError();
   const handleConnectCoinbaseWallet = () => {
     coinbaseWallet.activate(DESIRED_CHAIN_ID);
   };
@@ -20,10 +21,11 @@ export function CoinbaseWalletButton() {
     <ProviderButton
       disabled={isActive || isActivating}
       onClick={handleConnectCoinbaseWallet}
+      errorMessage={error?.message}
     >
       {`Coinbase Wallet${isActive ? " (Connected)" : ""}`}
       {isActivating ? (
-        <Spinner className="!h-10 !w-10 text-[#f6851b]" />
+        <Spinner className="!h-10 !w-10 text-[#3f99fc]" />
       ) : (
         <Image
           src={coinbaseWalletLogo}
