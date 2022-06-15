@@ -12,8 +12,6 @@ interface DealTermsProps {
 }
 
 export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
-  console.log(tranchedPool);
-
   if (!tranchedPool) return <></>;
 
   const openingDate = new Date(tranchedPool.fundableAt.toNumber() * 1000);
