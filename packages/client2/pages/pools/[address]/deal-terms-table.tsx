@@ -124,20 +124,22 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
 
 function Table({ rows }: { rows: [string, string, string][] }) {
   return (
-    <table className="w-full border-collapse border border-sand-200 text-sand-600">
-      <tbody>
-        {rows.map(([heading, tooltip, value], index) => (
-          <tr key={index} className="border border-sand-200">
-            <th scope="row" className="p-5 font-medium">
-              <div className="flex items-center justify-between">
-                <div>{heading}</div>
-                <InfoIconTooltip size="sm" content={tooltip} />
-              </div>
-            </th>
-            <td className="p-5">{value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="overflow-auto">
+      <table className="w-full border-collapse whitespace-nowrap border border-sand-200 text-sand-600">
+        <tbody>
+          {rows.map(([heading, tooltip, value], index) => (
+            <tr key={index} className="border border-sand-200">
+              <th scope="row" className="p-5 font-medium">
+                <div className="flex items-center justify-between">
+                  <div>{heading}</div>
+                  <InfoIconTooltip size="sm" content={tooltip} />
+                </div>
+              </th>
+              <td className="p-5">{value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
