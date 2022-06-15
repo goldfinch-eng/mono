@@ -16,6 +16,7 @@ export async function getProvider(): Promise<Web3Provider | null> {
       // ! This will probably go away when this issue is fixed: https://github.com/NoahZinsmeister/web3-react/issues/544
       try {
         const web3Provider = new ethers.providers.Web3Provider(
+          // @ts-expect-error CoinbaseWalletProvider apparently has types that don't fully overlap. It's probably just a type issue, seems OK at runtime.
           connector.provider
         );
         await web3Provider.getSigner().getAddress();
