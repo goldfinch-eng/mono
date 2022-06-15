@@ -16,7 +16,6 @@ import {
   HelperText,
   Marquee,
   Banner,
-  InfoIconTooltip,
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
@@ -236,7 +235,7 @@ export default function PoolPage() {
           </div>
           <Heading
             level={1}
-            className="mb-5 text-center font-serif text-sand-800 sm:mb-3 md:text-left"
+            className="mb-5 text-center text-sand-800 sm:mb-3 md:text-left"
           >
             {tranchedPool ? (
               tranchedPool.name
@@ -355,10 +354,7 @@ export default function PoolPage() {
                   </Button>
                 ) : null}
 
-                <Heading
-                  level={4}
-                  className="mb-4 font-sans !text-lg !font-semibold"
-                >
+                <Heading level={4} className="mb-4 !text-lg">
                   Highlights
                 </Heading>
                 <ul className="mb-8 list-outside list-disc pl-5">
@@ -373,10 +369,7 @@ export default function PoolPage() {
                     </li>
                   ))}
                 </ul>
-                <Heading
-                  level={4}
-                  className="mb-4 font-sans !text-lg !font-semibold"
-                >
+                <Heading level={4} className="mb-4 !text-lg">
                   Recent Activity
                 </Heading>
                 {tranchedPool ? (
@@ -385,42 +378,7 @@ export default function PoolPage() {
                   </div>
                 ) : null}
 
-                <div className="mb-8 flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <Heading
-                      level={4}
-                      className="font-sans !text-lg !font-semibold"
-                    >
-                      Deal Terms
-                    </Heading>
-                    <InfoIconTooltip
-                      size="sm"
-                      content={
-                        <div className="max-w-xs">
-                          The Borrower&apos;s proposed terms for the Pool,
-                          including the loan&apos;s basic timeframe and
-                          conditions.
-                        </div>
-                      }
-                    />
-                  </div>
-                  {tranchedPool ? (
-                    <Button
-                      variant="rounded"
-                      colorScheme="secondary"
-                      iconRight="ArrowTopRight"
-                      as="a"
-                      href={`https://etherscan.io/address/${tranchedPool.id}`}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      Contract
-                    </Button>
-                  ) : null}
-                </div>
-                {tranchedPool ? (
-                  <DealTermsTable tranchedPool={tranchedPool} />
-                ) : null}
+                <DealTermsTable tranchedPool={tranchedPool} />
               </TabContent>
               <TabContent>
                 {tranchedPool ? (
