@@ -21,6 +21,7 @@ import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
 import {
   SupportedCrypto,
+  UidType,
   useSingleTranchedPoolDataQuery,
 } from "@/lib/graphql/generated";
 import {
@@ -172,16 +173,57 @@ export default function PoolPage() {
         }
       : undefined;
 
+  // https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
+  let initialBannerContent = "";
+  let expandedBannerContent = "";
+  const poolSupportsUs =
+    tranchedPool?.allowedUidTypes.includes(UidType.UsAccreditedIndividual) ||
+    tranchedPool?.allowedUidTypes.includes(UidType.UsEntity);
+  const noUid =
+    !user?.isNonUsEntity &&
+    !user?.isNonUsIndividual &&
+    !user?.isUsAccreditedIndividual &&
+    !user?.isUsEntity &&
+    !user?.isUsNonAccreditedIndividual;
+  const uidIsUs =
+    user?.isUsAccreditedIndividual ||
+    user?.isUsEntity ||
+    user?.isUsNonAccreditedIndividual;
+  const uidIsNonUs = user?.isNonUsEntity || user?.isNonUsIndividual;
+  if (poolSupportsUs && noUid) {
+    initialBannerContent =
+      "This offering is only available to non-U.S. persons or U.S. accredited investors.";
+    expandedBannerContent =
+      "Eligibility to participate in this offering is determined by your (i) investor accreditation status and (ii) your residency. This offering has not been registered under the U.S. Securities Act of 1933 (”Securities Act”), as amended, and may not be offered or sold to a U.S. person that is not an accredited investor, absent registration or an applicable exemption from the registration requirements. Log in with your address and claim your UID to see if you're eligible to participate.";
+  } else if (poolSupportsUs && uidIsUs) {
+    initialBannerContent =
+      "This offering is only available to U.S. accredited investors.";
+    expandedBannerContent =
+      "This offering is only available to U.S. accredited investors. This offering has not been registered under the U.S. Securities Act of 1933 (”Securities Act”), as amended, or under the securities laws of certain states. This offering may not be offered, sold or otherwise transferred, pledged or hypothecated except as permitted under the Securities Act and applicable state securities laws pursuant to an effective registration statement or an exemption therefrom.";
+  } else if (poolSupportsUs && uidIsNonUs) {
+    initialBannerContent =
+      "This offering is only available to non-U.S. persons.";
+    expandedBannerContent =
+      "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
+  } else if (!poolSupportsUs) {
+    initialBannerContent =
+      "This offering is only available to non-U.S. persons.";
+    expandedBannerContent =
+      "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
+  }
+
   return (
     <>
       <SEO title={tranchedPool?.name} />
 
-      <BannerPortal>
-        <Banner
-          initialContent="This offering is only available to non-U.S. persons"
-          expandedContent="This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements."
-        />
-      </BannerPortal>
+      {initialBannerContent && expandedBannerContent ? (
+        <BannerPortal>
+          <Banner
+            initialContent={initialBannerContent}
+            expandedContent={expandedBannerContent}
+          />
+        </BannerPortal>
+      ) : null}
 
       {poolStatus && (
         <SubnavPortal>

@@ -33,7 +33,7 @@ export function Banner({
       {({ open }) => (
         <div className="mx-auto max-w-7xl">
           <Disclosure.Button className="flex w-full justify-between py-6">
-            <div className={clsx(open ? "opacity-70" : null)}>
+            <div className={clsx("text-left", open ? "opacity-70" : null)}>
               {initialContent}
             </div>
             <Icon
