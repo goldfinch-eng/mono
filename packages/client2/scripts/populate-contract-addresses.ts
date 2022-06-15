@@ -31,6 +31,19 @@ if (networkName === "mainnet") {
   );
   contracts = localDeployments["31337"].localhost.contracts;
   chainId = 31337;
+} else if (networkName === "murmuration") {
+  const murmurationDeployments = JSON.parse(
+    fs
+      .readFileSync(
+        path.resolve(
+          __dirname,
+          "../constants/contract-addresses/all_murmuration.json"
+        )
+      )
+      .toString()
+  );
+  contracts = murmurationDeployments["31337"].localhost.contracts;
+  chainId = 31337;
 } else {
   throw new Error(`Unrecognized network name ${networkName}`);
 }
