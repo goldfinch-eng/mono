@@ -45,3 +45,10 @@ lib/graphql/schema.json
 
 # typechain types for smart contracts
 types/ethers-contracts
+
+# auto-generated files for connecting app to metadata
+constants/metadata/index.ts
+constants/metadata/localhost.json
+
+# auto-generated file for feeding the app deployed contract addresses
+constants/contract-addresses/index.ts

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npm run gen-contract-types && npm run codegen",
+    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npm run gen-contract-types && npm run codegen",
     "dev": "next dev",
-    "prebuild": "npm run gen-contract-types && npm run codegen",
+    "prebuild": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npm run gen-contract-types && npm run codegen",
     "build": "next build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build",
