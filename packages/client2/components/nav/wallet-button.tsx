@@ -14,7 +14,6 @@ export function WalletButton() {
       className="h-10 text-clay-500"
       iconRight="Exclamation"
       colorScheme="secondary"
-      disabled
     >
       {error.name === "ChainIdNotAllowedError"
         ? "Wrong network"
