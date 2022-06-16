@@ -303,7 +303,7 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
         const ownerRoleResult = await _contractRoleMemberVerifier(
           contract,
           {roleDescription: "OWNER_ROLE", role: OWNER_ROLE, expectedMembers: expectedOwners},
-          (expectedOwner: string): string => getProtocolAddressDescription(expectedOwner)
+          getProtocolAddressDescription
         )
 
         return {ok: noExplicitOwnerResult.ok && rolesBaseConfiguredResult.ok && ownerRoleResult.ok}
