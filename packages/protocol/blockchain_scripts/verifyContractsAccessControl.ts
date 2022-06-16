@@ -1,12 +1,12 @@
 import {constants as ethersConstants, Contract} from "ethers"
 import fs from "fs"
 import {deployments, ethers} from "hardhat"
-import intersection from "lodash/intersection"
 import difference from "lodash/difference"
 import every from "lodash/every"
+import intersection from "lodash/intersection"
 import mapKeys from "lodash/mapKeys"
 import {assertNonEmptyString, assertNonNullable, isNonEmptyString, isPlainObject} from "../../utils/src/type"
-import {getDeployedContract, LOCKER_ROLE, OWNER_ROLE} from "./deployHelpers"
+import {getDeployedContract, OWNER_ROLE} from "./deployHelpers"
 import {
   MAINNET_CREDIT_DESK,
   MAINNET_GF_DEPLOYER,
@@ -16,14 +16,14 @@ import {
 
 const ZERO_BYTES32 = ethersConstants.HashZero
 
-const expectedProtocolContractNamesWithoutAnyOwnership: Record<string, true> = {
-  Accountant: true,
-  BackerMerkleDistributor: true,
-  ConfigOptions: true,
-  MerkleDistributor: true,
-  TestForwarder: true,
-  TranchingLogic: true,
-}
+const expectedProtocolContractNamesWithoutAnyOwnership = new Set([
+  "Accountant",
+  "BackerMerkleDistributor",
+  "ConfigOptions",
+  "MerkleDistributor",
+  "TestForwarder",
+  "TranchingLogic",
+])
 
 const _protocolAddressDescriptionByLowercaseAddress = {
   [MAINNET_GOVERNANCE_MULTISIG.toLowerCase()]: "Governance multi-sig",
@@ -265,7 +265,7 @@ async function verifyProtocolContractsOwnership(): Promise<VerificationResult> {
     async (name: string): Promise<VerificationResult> => {
       const contract = await getDeployedContract(deployments, name)
 
-      if (name in expectedProtocolContractNamesWithoutAnyOwnership) {
+      if (expectedProtocolContractNamesWithoutAnyOwnership.has(name)) {
         // Confirm that contract has no explicit `owner`.
         const noExplicitOwnerResult = await _contractNoExplicitOwnerVerifier(contract)
 
