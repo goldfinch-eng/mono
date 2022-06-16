@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0 --export-all deployments/all_dev.json",
-    "start:murmuration": "HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
-    "start:murmuration:liquidity-mining": "HARDHAT_FORK= MURMURATION=yes npm run start",
+    "start:murmuration": "HARDHAT_FORK= MURMURATION=yes npm run start",
     "test": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test $(find test/ -name '*.test.ts' | grep -v mainnet_forking) --show-stack-traces",
     "test:unfiltered": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test --show-stack-traces",
     "test:mainnet-forking": "NODE_OPTIONS=--unhandled-rejections=strict HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test $(find test/mainnet_forking/ -name '*.test.ts') --show-stack-traces",
@@ -18,8 +17,6 @@
     "lint:fix": "eslint --resolve-plugins-relative-to=. . --fix && prettier . --write && solhint 'contracts/**/*.sol' --fix",
     "docs": "npx hardhat docgen",
     "verify": "env-cmd -f ../../.env.local npx hardhat etherscan-verify --api-key $ETHERSCAN_API_KEY --solc-input --network",
-    "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
-    "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
     "autotask-update": "node autotasks/deployAutoTasks.js",
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.ts --network localhost",
     "generate-manifest": "npx hardhat run ./blockchain_scripts/deployHelpers/generateHardhatUpgradesManifest.ts --network mainnet",
