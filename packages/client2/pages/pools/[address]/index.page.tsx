@@ -378,9 +378,13 @@ export default function PoolPage() {
             <TabPanels>
               <TabContent>
                 <h2 className="mb-8 text-3xl">Deal Overview</h2>
-                <Paragraph className="mb-8 whitespace-pre-wrap">
-                  {tranchedPool?.description}
-                </Paragraph>
+                {tranchedPool ? (
+                  <Paragraph className="mb-8 whitespace-pre-wrap">
+                    {tranchedPool.description}
+                  </Paragraph>
+                ) : (
+                  <ShimmerLines lines={3} />
+                )}
 
                 {tranchedPool?.dataroom ? (
                   <Button
@@ -397,21 +401,26 @@ export default function PoolPage() {
                   </Button>
                 ) : null}
 
-                <Heading level={4} className="mb-4 !text-lg">
-                  Highlights
-                </Heading>
-                <ul className="mb-8 list-outside list-disc pl-5">
-                  {tranchedPool?.highlights?.map((item, idx) => (
-                    <li
-                      key={`pool-highlight-${address}-${idx}`}
-                      className="py-1"
-                    >
-                      <Paragraph className="whitespace-pre-wrap">
-                        {item}
-                      </Paragraph>
-                    </li>
-                  ))}
-                </ul>
+                {tranchedPool?.highlights ? (
+                  <>
+                    <Heading level={4} className="mb-4 !text-lg">
+                      Highlights
+                    </Heading>
+                    <ul className="mb-8 list-outside list-disc pl-5">
+                      {tranchedPool?.highlights?.map((item, idx) => (
+                        <li
+                          key={`pool-highlight-${address}-${idx}`}
+                          className="py-1"
+                        >
+                          <Paragraph className="whitespace-pre-wrap">
+                            {item}
+                          </Paragraph>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+
                 <Heading level={4} className="mb-4 !text-lg">
                   Recent Activity
                 </Heading>
