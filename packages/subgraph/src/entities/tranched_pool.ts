@@ -178,7 +178,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
   tranchedPool.version = version
   tranchedPool.totalDeployed = totalDeployed
-  tranchedPool.fundableAt = fundableAt
+  tranchedPool.createdAt = poolContract.createdAt()
+  tranchedPool.fundableAt = fundableAt.isZero() ? tranchedPool.createdAt : fundableAt
 
   const creditLineAddress = poolContract.creditLine().toHexString()
   const creditLine = getOrInitCreditLine(Address.fromString(creditLineAddress), timestamp)
@@ -192,7 +193,6 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   if (isCreating) {
     tranchedPool.backers = []
     tranchedPool.tokens = []
-    tranchedPool.createdAt = timestamp
     tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
   }
   tranchedPool.remainingJuniorCapacity = limit
@@ -350,11 +350,8 @@ function getApproximateRepaymentSchedule(tranchedPool: TranchedPool, now: BigInt
   if (creditLine.termStartTime != BigInt.zero() && creditLine.termEndTime != BigInt.zero()) {
     startTime = creditLine.termStartTime
     endTime = creditLine.termEndTime
-  } else if (tranchedPool.fundableAt != BigInt.zero()) {
-    startTime = tranchedPool.fundableAt.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
-    endTime = startTime.plus(SECONDS_PER_DAY.times(creditLine.termInDays))
   } else {
-    startTime = tranchedPool.createdAt.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
+    startTime = tranchedPool.fundableAt.plus(SECONDS_PER_DAY.times(BigInt.fromString("7")))
     endTime = startTime.plus(SECONDS_PER_DAY.times(creditLine.termInDays))
   }
 
