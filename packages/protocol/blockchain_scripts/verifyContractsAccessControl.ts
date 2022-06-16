@@ -104,11 +104,6 @@ async function _contractRoleBasedAccessControlConfiguredVerifier(
   console.log("")
   let contractIssue = false
 
-  const hasAccessControlInterface = await contract.supportsInterface(IAccessControlInterface)
-  if (!hasAccessControlInterface) {
-    throw new Error("Expected contract to support role-based access control interface.")
-  }
-
   const OWNER_ROLE = await contract.OWNER_ROLE()
   const DEFAULT_ADMIN_ROLE = await contract.DEFAULT_ADMIN_ROLE()
 
