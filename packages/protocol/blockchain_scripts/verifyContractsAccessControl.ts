@@ -1,5 +1,4 @@
 import {constants as ethersConstants, Contract} from "ethers"
-import fs from "fs"
 import {deployments, ethers} from "hardhat"
 import difference from "lodash/difference"
 import every from "lodash/every"
@@ -13,6 +12,7 @@ import {
   MAINNET_GOVERNANCE_MULTISIG,
   MAINNET_WARBLER_LABS_MULTISIG,
 } from "./mainnetForkingHelpers"
+import _mainnetTranchedPoolsJson from "@goldfinch-eng/pools/metadata/mainnet.json"
 
 const ZERO_BYTES32 = ethersConstants.HashZero
 
@@ -326,10 +326,6 @@ const isMainnetTranchedPoolsJson = (json: unknown): json is MainnetTranchedPools
     })
   )
 }
-
-const fileOptions: {encoding: BufferEncoding} = {encoding: "utf8"}
-const pathToMainnetTranchedPoolsJson = "../pools/metadata/mainnet.json"
-const _mainnetTranchedPoolsJson = JSON.parse(fs.readFileSync(pathToMainnetTranchedPoolsJson, fileOptions))
 
 if (!isMainnetTranchedPoolsJson(_mainnetTranchedPoolsJson)) {
   throw new Error("Unexpected mainnet tranched pools json.")
