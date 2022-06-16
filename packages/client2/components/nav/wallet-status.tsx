@@ -206,17 +206,22 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                       {transaction.category ===
                       TransactionCategory.SeniorPoolDeposit
                         ? "Senior Pool Supply"
-                        : TransactionCategory.SeniorPoolWithdrawal
+                        : transaction.category ===
+                          TransactionCategory.SeniorPoolWithdrawal
                         ? "Senior Pool Withdrawal"
-                        : TransactionCategory.TranchedPoolDeposit
+                        : transaction.category ===
+                          TransactionCategory.TranchedPoolDeposit
                         ? "Borrower Pool Supply"
-                        : TransactionCategory.TranchedPoolWithdrawal
+                        : transaction.category ===
+                          TransactionCategory.TranchedPoolWithdrawal
                         ? "Borrower Pool Withdraw"
-                        : TransactionCategory.TranchedPoolDrawdown
+                        : transaction.category ===
+                          TransactionCategory.TranchedPoolDrawdown
                         ? "Drawdown"
-                        : TransactionCategory.TranchedPoolRepayment
+                        : transaction.category ===
+                          TransactionCategory.TranchedPoolRepayment
                         ? "Repayment"
-                        : TransactionCategory.UidMinted
+                        : transaction.category === TransactionCategory.UidMinted
                         ? "Mint UID"
                         : null}
                     </td>

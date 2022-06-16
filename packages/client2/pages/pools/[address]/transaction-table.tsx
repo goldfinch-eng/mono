@@ -153,6 +153,8 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
     <div className="text-clay-500">
       There was an error fetching transactions: {error.message}
     </div>
+  ) : rows.length === 0 ? (
+    <div>No recent activity</div>
   ) : (
     <Table
       headings={["User", "Category", "Amount", "Date", "Link"]}
