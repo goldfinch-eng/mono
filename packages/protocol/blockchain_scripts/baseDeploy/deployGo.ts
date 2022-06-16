@@ -1,15 +1,9 @@
-import {Go, GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {UniqueIdentityInstance, TestUniqueIdentityInstance, GoInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {Deployed} from "../baseDeploy"
 import {CONFIG_KEYS} from "../configKeys"
-import {
-  ContractDeployer,
-  getProtocolOwner,
-  getContract,
-  TRUFFLE_CONTRACT_PROVIDER,
-  getEthersContract,
-} from "../deployHelpers"
+import {ContractDeployer, getProtocolOwner, getEthersContract, getTruffleContract} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
 
 const logger = console.log
@@ -44,7 +38,7 @@ export async function deployGo(
       },
     },
   })
-  const contract = await getContract<Go, GoInstance>(contractName, TRUFFLE_CONTRACT_PROVIDER, {
+  const contract = await getTruffleContract<GoInstance>(contractName, {
     at: go.address,
   })
 

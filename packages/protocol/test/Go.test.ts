@@ -3,15 +3,7 @@ import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {getCurrentTimestamp, SECONDS_PER_DAY, ZERO_ADDRESS} from "./testHelpers"
-import {
-  getContract,
-  getTruffleContract,
-  GO_LISTER_ROLE,
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  TRUFFLE_CONTRACT_PROVIDER,
-} from "../blockchain_scripts/deployHelpers"
-import {Go, StakingRewards} from "../typechain/ethers"
+import {getTruffleContract, GO_LISTER_ROLE, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {
   GoInstance,
   GoldfinchConfigInstance,
@@ -43,7 +35,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     from: uninitializedGoDeployer,
     gasLimit: 4000000,
   })
-  const uninitializedGo = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER, {
+  const uninitializedGo = await getTruffleContract<GoInstance>("Go", {
     at: uninitializedGoDeployResult.address,
   })
 
@@ -291,10 +283,7 @@ describe("Go", () => {
         const uidTokenId = await uniqueIdentity.ID_TYPE_0()
         await uniqueIdentity.setSupportedUIDTypes([], [])
         expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(0))
-        const stakingRewardsContract = await getContract<StakingRewards, StakingRewardsInstance>(
-          "StakingRewards",
-          TRUFFLE_CONTRACT_PROVIDER
-        )
+        const stakingRewardsContract = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
         await expect(go.goSeniorPool(stakingRewardsContract.address)).to.be.fulfilled
       })
 

@@ -1,16 +1,9 @@
 import {toEthers} from "@goldfinch-eng/protocol/test/testHelpers"
-import {UniqueIdentity, TestUniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
+import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {UniqueIdentityInstance, TestUniqueIdentityInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {Deployed} from "../baseDeploy"
-import {
-  ContractDeployer,
-  getContract,
-  getProtocolOwner,
-  isTestEnv,
-  SIGNER_ROLE,
-  TRUFFLE_CONTRACT_PROVIDER,
-} from "../deployHelpers"
+import {ContractDeployer, getProtocolOwner, getTruffleContract, isTestEnv, SIGNER_ROLE} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
 import {UNIQUE_IDENTITY_METADATA_URI} from "../uniqueIdentity/constants"
 
@@ -44,10 +37,9 @@ export async function deployUniqueIdentity({
       },
     },
   })
-  const truffleContract = await getContract<
-    UniqueIdentity | TestUniqueIdentity,
-    UniqueIdentityInstance | TestUniqueIdentityInstance
-  >(contractName, TRUFFLE_CONTRACT_PROVIDER, {at: uniqueIdentity.address})
+  const truffleContract = await getTruffleContract<UniqueIdentityInstance | TestUniqueIdentityInstance>(contractName, {
+    at: uniqueIdentity.address,
+  })
   const ethersContract = (await toEthers<UniqueIdentity>(truffleContract)).connect(await getProtocolOwner())
 
   await deployEffects.add({

@@ -12,8 +12,6 @@ import {
   interestAprAsBN,
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
-  getContract,
-  TRUFFLE_CONTRACT_PROVIDER,
   OWNER_ROLE,
   getTruffleContract,
 } from "../blockchain_scripts/deployHelpers"
@@ -43,7 +41,6 @@ import {
   TestPoolTokensInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -304,10 +301,7 @@ async function deployAllContracts(
   const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
-  const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
-    "CommunityRewards",
-    TRUFFLE_CONTRACT_PROVIDER
-  )
+  const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards")
   let merkleDistributor: MerkleDistributorInstance | null = null
   if (options.deployMerkleDistributor) {
     await deployments.deploy("MerkleDistributor", {
@@ -315,10 +309,7 @@ async function deployAllContracts(
       from: options.deployMerkleDistributor.fromAccount,
       gasLimit: 4000000,
     })
-    merkleDistributor = await getContract<MerkleDistributor, MerkleDistributorInstance>(
-      "MerkleDistributor",
-      TRUFFLE_CONTRACT_PROVIDER
-    )
+    merkleDistributor = await getTruffleContract<MerkleDistributorInstance>("MerkleDistributor")
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
 
@@ -339,17 +330,11 @@ async function deployAllContracts(
         },
       },
     })
-    merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
-      "MerkleDirectDistributor",
-      TRUFFLE_CONTRACT_PROVIDER
-    )
+    merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
   }
 
-  const uniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
-    "TestUniqueIdentity",
-    TRUFFLE_CONTRACT_PROVIDER
-  )
-  const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
+  const uniqueIdentity = await getTruffleContract<TestUniqueIdentityInstance>("TestUniqueIdentity")
+  const go = await getTruffleContract<GoInstance>("Go")
 
   const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 

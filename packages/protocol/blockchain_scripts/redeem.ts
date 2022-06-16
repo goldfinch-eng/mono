@@ -1,15 +1,14 @@
 import * as dotenv from "dotenv"
 dotenv.config({path: ".env.local"})
-import {fromAtomic, getContract, TRUFFLE_CONTRACT_PROVIDER} from "./deployHelpers"
+import {fromAtomic, getTruffleContract} from "./deployHelpers"
 import {SeniorPoolInstance, PoolTokensInstance, TranchedPoolInstance} from "../typechain/truffle"
 import {default as DefenderProposer} from "./DefenderProposer"
 import hre from "hardhat"
-import {PoolTokens, SeniorPool, TranchedPool} from "../typechain/ethers"
 import {assertError} from "@goldfinch-eng/utils"
 
 async function main() {
-  const seniorPool = await getContract<SeniorPool, SeniorPoolInstance>("SeniorPool", TRUFFLE_CONTRACT_PROVIDER)
-  const poolTokens = await getContract<PoolTokens, PoolTokensInstance>("PoolTokens", TRUFFLE_CONTRACT_PROVIDER)
+  const seniorPool = await getTruffleContract<SeniorPoolInstance>("SeniorPool")
+  const poolTokens = await getTruffleContract<PoolTokensInstance>("PoolTokens")
   const {getChainId} = hre
   const chainId = await getChainId()
   const poolProposer = new RedeemTranchedPoolProposer({hre, logger: console.log, chainId})
@@ -24,11 +23,7 @@ async function main() {
   for (const event of events) {
     const tokenId = event.returnValues.tokenId
     const poolAddress = event.returnValues.pool
-    const tranchedPool = await getContract<TranchedPool, TranchedPoolInstance>(
-      "TranchedPool",
-      TRUFFLE_CONTRACT_PROVIDER,
-      {at: poolAddress}
-    )
+    const tranchedPool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: poolAddress})
     let interest
     let principal
 

@@ -356,20 +356,6 @@ function getDefenderClient() {
   return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 
-const ETHERS_CONTRACT_PROVIDER = "ethers"
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-type ETHERS_CONTRACT_PROVIDER = typeof ETHERS_CONTRACT_PROVIDER
-const TRUFFLE_CONTRACT_PROVIDER = "truffle"
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-type TRUFFLE_CONTRACT_PROVIDER = typeof TRUFFLE_CONTRACT_PROVIDER
-type ContractProvider = ETHERS_CONTRACT_PROVIDER | TRUFFLE_CONTRACT_PROVIDER
-
-type ProvidedContract<
-  P extends ContractProvider,
-  E,
-  T extends Truffle.ContractInstance
-> = P extends TRUFFLE_CONTRACT_PROVIDER ? T : P extends ETHERS_CONTRACT_PROVIDER ? E : never
-
 type GetContractOptions = {
   at?: string
   from?: string
@@ -379,41 +365,29 @@ export async function getEthersContract<T extends BaseContract | Contract = Cont
   contractName: string,
   opts: GetContractOptions = {}
 ): Promise<T> {
-  return await getContract<T, never, ETHERS_CONTRACT_PROVIDER>(contractName, ETHERS_CONTRACT_PROVIDER, opts)
+  if (!opts.at) {
+    opts.at = await getExistingAddress(contractName)
+  }
+  const at = opts.at
+  const from = opts.from || (await getProtocolOwner())
+  const abi = await artifacts.require(contractName).abi
+  const contract = await ethers.getContractAt(abi, at)
+  const signer = await ethers.getSigner(from)
+  return contract.connect(signer) as unknown as T
 }
 
 export async function getTruffleContract<T extends Truffle.ContractInstance = Truffle.ContractInstance>(
   contractName: string,
   opts: GetContractOptions = {}
 ): Promise<T> {
-  return await getContract<never, T, TRUFFLE_CONTRACT_PROVIDER>(contractName, TRUFFLE_CONTRACT_PROVIDER, opts)
-}
-
-async function getContract<
-  E,
-  T extends Truffle.ContractInstance,
-  P extends ContractProvider = TRUFFLE_CONTRACT_PROVIDER
->(contractName: string, as: P, opts: GetContractOptions = {}): Promise<ProvidedContract<P, E, T>> {
   if (!opts.at) {
     opts.at = await getExistingAddress(contractName)
   }
   const at = opts.at
   const from = opts.from || (await getProtocolOwner())
-  switch (as) {
-    case ETHERS_CONTRACT_PROVIDER: {
-      const abi = await artifacts.require(contractName).abi
-      const contract = await ethers.getContractAt(abi, at)
-      const signer = await ethers.getSigner(from)
-      return contract.connect(signer) as unknown as ProvidedContract<P, E, T>
-    }
-    case TRUFFLE_CONTRACT_PROVIDER: {
-      const contract = await artifacts.require(contractName)
-      contract.defaults({from})
-      return contract.at(at) as unknown as ProvidedContract<P, E, T>
-    }
-    default:
-      assertUnreachable(as)
-  }
+  const contract = await artifacts.require(contractName)
+  contract.defaults({from})
+  return contract.at(at) as unknown as T
 }
 
 async function getExistingAddress(contractName: string): Promise<string> {
@@ -518,10 +492,7 @@ export {
   deployContractUpgrade,
   setInitialConfigVals,
   TRANCHES,
-  getContract,
   GetContractOptions,
-  ETHERS_CONTRACT_PROVIDER,
-  TRUFFLE_CONTRACT_PROVIDER,
   getProtocolOwner,
   currentChainId,
   TICKERS,

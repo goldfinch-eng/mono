@@ -13,6 +13,7 @@ import {
   TRUFFLE_CONTRACT_PROVIDER,
   assertIsChainId,
   ContractDeployer,
+  getTruffleContract,
 } from "../../deployHelpers"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
 import {
@@ -47,7 +48,7 @@ async function main() {
       // JUST FOR TESTING
       const protocolOwner = await getProtocolOwner()
       const chainId = await getChainId()
-      const pool = await getContract("Pool", TRUFFLE_CONTRACT_PROVIDER)
+      const pool = await getTruffleContract("Pool")
       const defender = new DefenderUpgrader({hre, logger: console.log, chainId})
       await defender.send({
         method: "assets",
@@ -102,13 +103,13 @@ async function prepareMigration() {
 async function deployAndMigrateToV2() {
   const {gf_deployer} = await getNamedAccounts()
   assertNonNullable(gf_deployer)
-  const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+  const migrator = await getTruffleContract("V2Migrator", {from: gf_deployer})
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
   const existingPool = (await getExistingContracts(["Pool"], gf_deployer, chainId)).Pool
   assertNonNullable(existingPool)
   const existingPoolAddress = existingPool.ExistingContract.address
-  const goldfinchConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER)
+  const goldfinchConfig = await getTruffleContract("GoldfinchConfig")
   if (!(await existingPool.ExistingContract.paused())) {
     console.log("Migrating phase 1")
     await migrator.migratePhase1(goldfinchConfig.address)
@@ -150,7 +151,7 @@ async function closingOutTheMigration(goldfinchConfigAddress, migrator) {
 
 async function addEveryoneToTheGoList(goldfinchConfigAddress, migrator) {
   const chunkedGoList = _.chunk(goList, 375)
-  const config = await getContract("GoldfinchConfig")
+  const config = await getTruffleContract("GoldfinchConfig")
   for (let i = 0; i < chunkedGoList.length; i++) {
     console.log("Trying adding chunk", i, "to the goList")
     const chunk = chunkedGoList[i]
@@ -218,7 +219,7 @@ async function handleNewDeployments(migrator) {
     deployer,
     false
   )
-  const newConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+  const newConfig = await getTruffleContract("GoldfinchConfig", {from: gf_deployer})
   // Set the deployer, governance, and migrator as owners of the config. This gets revoked later.
   if (!(await newConfig.hasRole(GO_LISTER_ROLE, migrator.address))) {
     console.log("Initializing the new config...")
@@ -324,7 +325,7 @@ async function deployMigrator(hre, {config}) {
   console.log("Deploying the migrator...")
   const protocolOwner = await getProtocolOwner()
   await deploy(contractName, {from: gf_deployer})
-  const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+  const migrator = await getTruffleContract("V2Migrator", {from: gf_deployer})
   if (!(await migrator.hasRole(OWNER_ROLE, protocolOwner))) {
     console.log("Initializing the migrator...")
     await migrator.initialize(gf_deployer, config.address)

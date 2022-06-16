@@ -1,7 +1,7 @@
 import {DefenderUpgrader} from "./defenderUpgrader.js"
 import hre from "hardhat"
 const {artifacts} = hre
-import {getContract, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID, TRUFFLE_CONTRACT_PROVIDER} from "../deployHelpers"
+import {getTruffleContract, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID} from "../deployHelpers"
 import MethodMissing from "method-missing"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import _ from "lodash"
@@ -48,7 +48,7 @@ class DefenderWrapper extends MethodMissing {
     this.hre = hre
     this.chainId = chainId
     this.contractName = contractName
-    this.contract = await getContract(contractName, TRUFFLE_CONTRACT_PROVIDER, opts)
+    this.contract = await getTruffleContract(contractName, opts)
     this.defender = new DefenderUpgrader({hre, logger, chainId})
     return this
   }
