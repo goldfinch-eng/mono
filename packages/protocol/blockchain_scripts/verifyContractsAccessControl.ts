@@ -135,7 +135,7 @@ async function _contractRoleBasedAccessControlConfiguredVerifier(
     }
   } else {
     contractIssue = true
-    console.error(`[CRITICAL] Admin role of OWNER_ROLE is a different role: ${adminRoleOfRole}`)
+    console.error(`[CRITICAL] Admin role of ${roleDescription} is a different role: ${adminRoleOfRole}`)
   }
 
   return {ok: !contractIssue}
