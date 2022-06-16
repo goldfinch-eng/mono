@@ -142,23 +142,12 @@ async function _contractRoleBasedAccessControlConfiguredVerifier(
   return {ok: !contractIssue}
 }
 
-const IAccessControlInterface = "0x7965db0b"
-
 /**
  * Verifies that the `contract` does not have `OWNER_ROLE()` or `DEFAULT_ADMIN_ROLE()`, from which we infer that
  * it does not use roles-based access control.
  */
 async function _contractRoleBasedAccessControlNotConfiguredVerifier(contract: Contract): Promise<VerificationResult> {
   console.log("")
-
-  let hasAccessControlInterface = false
-  try {
-    hasAccessControlInterface = await contract.supportsInterface(IAccessControlInterface)
-  } catch (err: unknown) {
-    if ((err as any).message !== "contract.supportsInterface is not a function") {
-      throw new Error("Unexpected error reading supportsInterface.")
-    }
-  }
 
   let hasOwnerRole = false
   try {
@@ -180,7 +169,7 @@ async function _contractRoleBasedAccessControlNotConfiguredVerifier(contract: Co
     }
   }
 
-  const hasRoleBasedAccessControlIndicators = [hasAccessControlInterface, hasOwnerRole, hasDefaultAdminRole]
+  const hasRoleBasedAccessControlIndicators = [hasOwnerRole, hasDefaultAdminRole]
   const hasRoleBasedAccessControl = some(hasRoleBasedAccessControlIndicators)
   if (hasRoleBasedAccessControl) {
     if (!every(hasRoleBasedAccessControlIndicators)) {
