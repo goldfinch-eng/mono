@@ -35,7 +35,8 @@ test("handlePoolCreated creates a new Tranched pool record", () => {
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "backers", "[]")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "tokens", "[]")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "version", VERSION_BEFORE_V2_2)
-  assert.fieldEquals("TranchedPool", tranchedPoolAddress, "fundableAt", "0")
+  assert.fieldEquals("TranchedPool", tranchedPoolAddress, "fundableAt", "1")
+  assert.fieldEquals("TranchedPool", tranchedPoolAddress, "createdAt", "1")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "totalDeployed", "0")
 
   const seniorPoolTrancheId = `${Address.fromString(tranchedPoolAddress).toHexString()}-1`

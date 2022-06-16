@@ -24,6 +24,9 @@ export function mockTranchedPoolMultipleSlicesCalls(
   createMockedFunction(tranchedPoolAddress, "totalDeployed", "totalDeployed():(uint256)")
     .withArgs([])
     .returns([ethereum.Value.fromI32(1)])
+  createMockedFunction(tranchedPoolAddress, "createdAt", "createdAt():(uint256)")
+    .withArgs([])
+    .returns([ethereum.Value.fromI32(1)])
   createMockedFunction(tranchedPoolAddress, "fundableAt", "fundableAt():(uint256)")
     .withArgs([])
     .returns([ethereum.Value.fromI32(1)])
@@ -214,6 +217,10 @@ export function mockTranchedPoolCalls(
       ethereum.Value.fromAddress(Address.fromString("0x1000000000000000000000000000000000000000")),
     ])
     .returns([ethereum.Value.fromBoolean(false)])
+
+  createMockedFunction(tranchedPoolAddress, "createdAt", "createdAt():(uint256)")
+    .withArgs([])
+    .returns([ethereum.Value.fromI32(1)])
 }
 
 export function mockCreditLineContractCalls(
