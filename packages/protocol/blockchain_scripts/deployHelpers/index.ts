@@ -23,7 +23,6 @@ const INTEREST_DECIMALS = new BN(String(1e18))
 const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY
 const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
 import {AdminClient} from "defender-admin-client"
-import PROTOCOL_CONFIG from "../../protocol_config.json"
 import {CONFIG_KEYS} from "../configKeys"
 import {GoldfinchConfig} from "../../typechain/ethers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -268,16 +267,29 @@ async function setInitialConfigVals(config: GoldfinchConfig, logger = function (
   const {protocol_owner} = await hre.getNamedAccounts()
   assertIsString(protocol_owner)
 
-  const transactionLimit = new BN(PROTOCOL_CONFIG.transactionLimit).mul(USDCDecimals)
-  const totalFundsLimit = new BN(PROTOCOL_CONFIG.totalFundsLimit).mul(USDCDecimals)
-  const maxUnderwriterLimit = new BN(PROTOCOL_CONFIG.maxUnderwriterLimit).mul(USDCDecimals)
-  const reserveDenominator = new BN(PROTOCOL_CONFIG.reserveDenominator)
-  const withdrawFeeDenominator = new BN(PROTOCOL_CONFIG.withdrawFeeDenominator)
-  const latenessGracePeriodIndays = new BN(PROTOCOL_CONFIG.latenessGracePeriodInDays)
-  const latenessMaxDays = new BN(PROTOCOL_CONFIG.latenessMaxDays)
-  const drawdownPeriodInSeconds = new BN(PROTOCOL_CONFIG.drawdownPeriodInSeconds)
-  const transferPeriodRestrictionInDays = new BN(PROTOCOL_CONFIG.transferRestrictionPeriodInDays)
-  const leverageRatio = new BN(PROTOCOL_CONFIG.leverageRatio)
+  const initialProtocolConfig = {
+    totalFundsLimit: 2000000,
+    transactionLimit: 500000,
+    maxUnderwriterLimit: 2000000,
+    reserveDenominator: 10,
+    withdrawFeeDenominator: 200,
+    latenessGracePeriodInDays: 30,
+    latenessMaxDays: 120,
+    drawdownPeriodInSeconds: 86400,
+    transferRestrictionPeriodInDays: 365,
+    leverageRatio: "4000000000000000000",
+  }
+
+  const transactionLimit = new BN(initialProtocolConfig.transactionLimit).mul(USDCDecimals)
+  const totalFundsLimit = new BN(initialProtocolConfig.totalFundsLimit).mul(USDCDecimals)
+  const maxUnderwriterLimit = new BN(initialProtocolConfig.maxUnderwriterLimit).mul(USDCDecimals)
+  const reserveDenominator = new BN(initialProtocolConfig.reserveDenominator)
+  const withdrawFeeDenominator = new BN(initialProtocolConfig.withdrawFeeDenominator)
+  const latenessGracePeriodIndays = new BN(initialProtocolConfig.latenessGracePeriodInDays)
+  const latenessMaxDays = new BN(initialProtocolConfig.latenessMaxDays)
+  const drawdownPeriodInSeconds = new BN(initialProtocolConfig.drawdownPeriodInSeconds)
+  const transferPeriodRestrictionInDays = new BN(initialProtocolConfig.transferRestrictionPeriodInDays)
+  const leverageRatio = new BN(initialProtocolConfig.leverageRatio)
 
   logger("Updating the config vals...")
   await updateConfig(config, "number", CONFIG_KEYS.TransactionLimit, String(transactionLimit), {logger})

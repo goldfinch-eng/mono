@@ -17,8 +17,6 @@
     "lint:fix": "eslint --resolve-plugins-relative-to=. . --fix && prettier . --write && solhint 'contracts/**/*.sol' --fix",
     "docs": "npx hardhat docgen",
     "verify": "env-cmd -f ../../.env.local npx hardhat etherscan-verify --api-key $ETHERSCAN_API_KEY --solc-input --network",
-    "update-configs": "npx hardhat run ./blockchain_scripts/updateConfigs.js --network",
-    "upgrade-multisig": "npx hardhat run ./blockchain_scripts/upgrade.js --network",
     "autotask-update": "node autotasks/deployAutoTasks.js",
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.ts --network localhost",
     "generate-manifest": "npx hardhat run ./blockchain_scripts/deployHelpers/generateHardhatUpgradesManifest.ts --network mainnet",
