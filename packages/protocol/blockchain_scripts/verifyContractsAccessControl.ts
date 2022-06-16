@@ -13,6 +13,7 @@ import {
   MAINNET_WARBLER_LABS_MULTISIG,
 } from "./mainnetForkingHelpers"
 import _mainnetTranchedPoolsJson from "@goldfinch-eng/pools/metadata/mainnet.json"
+import some from "lodash/some"
 
 const ZERO_BYTES32 = ethersConstants.HashZero
 
@@ -141,39 +142,57 @@ async function _contractRoleBasedAccessControlConfiguredVerifier(
   return {ok: !contractIssue}
 }
 
+const IAccessControlInterface = "0x7965db0b"
+
 /**
  * Verifies that the `contract` does not have `OWNER_ROLE()` or `DEFAULT_ADMIN_ROLE()`, from which we infer that
  * it does not use roles-based access control.
  */
 async function _contractRoleBasedAccessControlNotConfiguredVerifier(contract: Contract): Promise<VerificationResult> {
   console.log("")
-  let contractHasRoleBasedAccessControl = false
 
+  let hasAccessControlInterface = false
+  try {
+    hasAccessControlInterface = await contract.supportsInterface(IAccessControlInterface)
+  } catch (err: unknown) {
+    if ((err as any).message !== "contract.supportsInterface is not a function") {
+      throw new Error("Unexpected error reading supportsInterface.")
+    }
+  }
+
+  let hasOwnerRole = false
   try {
     await contract.OWNER_ROLE()
-    contractHasRoleBasedAccessControl = true
+    hasOwnerRole = true
   } catch (err: unknown) {
     if ((err as any).message !== "contract.OWNER_ROLE is not a function") {
       throw new Error("Unexpected error reading OWNER_ROLE.")
     }
   }
 
+  let hasDefaultAdminRole = false
   try {
     await contract.DEFAULT_ADMIN_ROLE()
-    contractHasRoleBasedAccessControl = true
+    hasDefaultAdminRole = true
   } catch (err: unknown) {
     if ((err as any).message !== "contract.DEFAULT_ADMIN_ROLE is not a function") {
       throw new Error("Unexpected error reading DEFAULT_ADMIN_ROLE.")
     }
   }
 
-  if (contractHasRoleBasedAccessControl) {
+  const hasRoleBasedAccessControlIndicators = [hasAccessControlInterface, hasOwnerRole, hasDefaultAdminRole]
+  const hasRoleBasedAccessControl = some(hasRoleBasedAccessControlIndicators)
+  if (hasRoleBasedAccessControl) {
+    if (!every(hasRoleBasedAccessControlIndicators)) {
+      throw new Error("Expected contract to have all or none of indicators of role-based access control.")
+    }
+
     console.error("[CRITICAL] Expected contract not to have role-based access control, but it does.")
   } else {
     console.log("Contract has no role-based access control, as expected.")
   }
 
-  return {ok: !contractHasRoleBasedAccessControl}
+  return {ok: !hasRoleBasedAccessControl}
 }
 
 /**
