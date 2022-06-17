@@ -75,6 +75,7 @@ describe("UID", () => {
         fetchKYCFunction = fetchStubbedKycStatus({
           status: "approved",
           countryCode: "US",
+          residency: "us",
         })
       })
 
@@ -135,6 +136,7 @@ describe("UID", () => {
         fetchKYCFunction = fetchStubbedKycStatus({
           status: "approved",
           countryCode: "CA",
+          residency: "non-us",
         })
       })
 
@@ -195,6 +197,7 @@ describe("UID", () => {
         fetchKYCFunction = fetchStubbedKycStatus({
           status: "approved",
           countryCode: "US",
+          residency: "us",
         })
       })
 
@@ -259,6 +262,7 @@ describe("UID", () => {
         fetchKYCFunction = fetchStubbedKycStatus({
           status: "approved",
           countryCode: "CA",
+          residency: "non-us",
         })
       })
 
@@ -321,6 +325,7 @@ describe("UID", () => {
         fetchKYCFunction = fetchStubbedKycStatus({
           status: "approved",
           countryCode: "CA",
+          residency: "non-us",
         })
       })
 

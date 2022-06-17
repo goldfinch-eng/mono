@@ -30,6 +30,7 @@ function fetchStubbedKycStatus(kyc: KYC): FetchKYCFunction {
 const fetchElligibleKycStatus: FetchKYCFunction = fetchStubbedKycStatus({
   status: "approved",
   countryCode: "CA",
+  residency: "non-us",
 })
 
 describe("unique-identity-signer", () => {
@@ -105,6 +106,7 @@ describe("unique-identity-signer", () => {
           fetchKYCFunction = fetchStubbedKycStatus({
             status: "approved",
             countryCode: "",
+            residency: "",
           })
         })
 
@@ -132,6 +134,7 @@ describe("unique-identity-signer", () => {
           fetchKYCFunction = fetchStubbedKycStatus({
             status: "failed",
             countryCode: "CA",
+            residency: "non-us",
           })
         })
 
@@ -161,6 +164,7 @@ describe("unique-identity-signer", () => {
           fetchKYCFunction = fetchStubbedKycStatus({
             status: "approved",
             countryCode: "US",
+            residency: "us",
           })
         })
 

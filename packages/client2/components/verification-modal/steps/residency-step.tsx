@@ -30,7 +30,7 @@ export function ResidencyStep() {
             goToStep(VerificationFlowSteps.Accredited);
           }}
         >
-          United States
+          Within the United States
         </BigButton>
       </div>
     </StepTemplate>

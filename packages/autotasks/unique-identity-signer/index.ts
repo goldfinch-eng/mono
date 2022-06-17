@@ -16,9 +16,11 @@ const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 export interface KYC {
   status: "unknown" | "approved" | "failed"
   countryCode: string
+  residency?: string
 }
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
-const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
+const isKYC = (obj: unknown): obj is KYC =>
+  isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode) && isString(obj.residency)
 
 const API_URLS = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -112,7 +114,7 @@ export async function main({
       throw new Error("fetchKYCStatus failed")
     }
 
-    if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
+    if (kycStatus.status !== "approved" || kycStatus.countryCode === "" || !kycStatus.residency) {
       throw new Error("Does not meet mint requirements")
     }
   }

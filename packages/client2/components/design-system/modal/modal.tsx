@@ -29,6 +29,10 @@ export interface ModalProps {
    * Gives a screen-reader accessible description to this modal.
    */
   description?: string;
+  /**
+   * Adds a divider between the modal's title and content
+   */
+  divider?: boolean;
 }
 
 export function Modal({
@@ -38,6 +42,7 @@ export function Modal({
   size = "md",
   title,
   description,
+  divider = false,
 }: ModalProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -80,7 +85,12 @@ export function Modal({
                 : null
             )}
           >
-            <div className="mb-2 flex items-start justify-between gap-12 px-6">
+            <div
+              className={clsx(
+                "flex items-start justify-between gap-12 px-6",
+                divider ? "border-b border-b-sand-100 pb-6" : null
+              )}
+            >
               <div>
                 <Dialog.Title className={"text-lg font-semibold"}>
                   {title}

@@ -23,13 +23,17 @@ export default function DevToolsKYC({
   const handleKYCForm = handleSubmit(async (data) => {
     setLoading(true);
 
-    await fetch(`${SERVER_URL}/kycStatus`, {
+    const response = await fetch(`${SERVER_URL}/kycStatus`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ address: account, ...data }),
     });
 
     setLoading(false);
+
+    if (!response.ok) {
+      throw new Error("Could not set KYC status");
+    }
   });
 
   return (
