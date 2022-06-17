@@ -113,6 +113,17 @@ export function isV1StyleDeal(address: Address): boolean {
   return false
 }
 
+export function getCreatedAtOverride(address: Address): BigInt | null {
+  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
+  if (poolMetadata != null) {
+    const createdAt = poolMetadata.toObject().get("createdAt")
+    if (createdAt != null) {
+      return createdAt.toBigInt()
+    }
+  }
+  return null
+}
+
 export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string): BigDecimal {
   const tranchedPool = TranchedPool.load(tranchedPoolId)
   if (!tranchedPool) {

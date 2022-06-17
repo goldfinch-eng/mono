@@ -22,6 +22,7 @@ import {
   getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
+  getCreatedAtOverride,
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
@@ -178,7 +179,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)
   tranchedPool.version = version
   tranchedPool.totalDeployed = totalDeployed
-  tranchedPool.createdAt = poolContract.createdAt()
+  const createdAtOverride = getCreatedAtOverride(address)
+  tranchedPool.createdAt = createdAtOverride ? createdAtOverride : poolContract.createdAt()
   tranchedPool.fundableAt = fundableAt.isZero() ? tranchedPool.createdAt : fundableAt
 
   const creditLineAddress = poolContract.creditLine().toHexString()
