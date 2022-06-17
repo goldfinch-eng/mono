@@ -296,11 +296,21 @@ export function SeniorPoolSupplyPanel({
           Verify my identity
         </Button>
       ) : !canUserParticipate ? (
-        <div className="mt-2 flex items-center justify-center gap-3 text-sm text-white">
-          <Icon size="md" name="Exclamation" />
-          <div>
-            Sorry, you are not eligible to participate in this pool because you
-            do not have a suitable UID.
+        <div>
+          <Button
+            disabled
+            className="block w-full"
+            size="xl"
+            colorScheme="secondary"
+          >
+            Supply
+          </Button>
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white">
+            <Icon size="md" name="Exclamation" />
+            <div>
+              Sorry, you are not eligible to participate in the senior pool
+              because you do not have a suitable UID.
+            </div>
           </div>
         </div>
       ) : (
