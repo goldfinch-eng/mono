@@ -19,6 +19,11 @@ const ONE_DAY_SECONDS = 60 * 60 * 24
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: Request, res: Response) => {
+  if (process.env.MURMURATION === "yes") {
+    res.set("Access-Control-Allow-Origin", "*")
+    res.set("Access-Control-Allow-Headers", "*")
+    return
+  }
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   const origin = req.headers.origin || ""
   if (originAllowed(allowedOrigins, origin)) {
