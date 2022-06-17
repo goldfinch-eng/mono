@@ -23,6 +23,15 @@ Managing global app state is a strongly-felt need for any non-trivial app. One o
 After some debate, we decided to use Apollo for the purpose of global app state management in addition to its use as a graphQL client. The biggest advantage of this is:
 - We can use a graphQL to interface with Apollo and get a full view of local and remote state. As application developers, we only have to use **one single API for all of the app's data**. Developers do not have to wonder "should this new piece of data be part of Redux's responsibility, or Apollo's?" It is simply always Apollo, which reduces cognitive load and simplifies decisions. We've also eliminated a potential class of bug by choosing to just use Apollo: cross-cutting issues from making Apollo and Redux work together.
 
+## Running locally
+
+The easiest way to get the app running locally is by configuring it to consume mainnet data. Start by copying `.env.example` to your own `.env.local` file, and setting `NEXT_PUBLIC_NETWORK_NAME=mainnet`. This will configure the app to consume data from a mainnet subgraph, and use mainnet contract addresses for everything.
+
+Running the app against a local chain is possible as well, but you need to set up a local subgraph for it. We do this by running a subgraph inside a Docker container.
+1. In `packages/protocol`, run `npm run start` to start up a local chain. Wait for this to finish initializing.
+2. In `packages/subgraph`, run `npm run start-local`. This will bring up a subgraph in Docker. When Docker is up, run `npm run create-local` then `npm run deploy-local`
+3. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `npm run dev`.
+
 ## Guidelines and Conventions
 
 ### Directory structure
