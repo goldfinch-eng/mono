@@ -63,8 +63,8 @@ class Pool {
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
-    this.contract = goldfinchProtocol.getContract<PoolContract>("Pool")
-    this.address = goldfinchProtocol.getAddress("Pool")
+    this.contract = goldfinchProtocol.getContract<PoolContract>("Pool", undefined, true)
+    this.address = goldfinchProtocol.getAddress("Pool", true)
     this.chain = goldfinchProtocol.networkId
   }
 }

@@ -414,7 +414,7 @@ function App() {
       const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       const goldfinchConfigData = await refreshGoldfinchConfigData(goldfinchConfigContract, currentBlock)
 
-      const creditDeskContract = protocol.getContract<CreditDesk>("CreditDesk")
+      const creditDeskContract = protocol.getContract<CreditDesk>("CreditDesk", undefined, true)
 
       setCurrentBlock(currentBlock)
       setUSDC(usdc)
