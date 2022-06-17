@@ -1,4 +1,4 @@
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {CreditDesk} from "./@types/legacy/CreditDesk"
 
 import {assertWithLoadedInfo} from "../../types/loadable"
 

@@ -1,7 +1,7 @@
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {ICurveLP as CurveContract} from "@goldfinch-eng/protocol/typechain/web3/ICurveLP"
-import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
+import {Pool as PoolContract} from "../@types/legacy/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"

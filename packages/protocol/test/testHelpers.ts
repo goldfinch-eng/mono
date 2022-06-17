@@ -18,13 +18,11 @@ import {
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
-  CreditDeskInstance,
   ERC20Instance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
-  PoolInstance,
   SeniorPoolInstance,
   CreditLineInstance,
   TranchedPoolInstance,
@@ -253,12 +251,10 @@ async function deployAllContracts(
   deployments: DeploymentsExtension,
   options: DeployAllContractsOptions = {}
 ): Promise<{
-  pool: PoolInstance
   seniorPool: SeniorPoolInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
   seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
-  creditDesk: CreditDeskInstance
   fidu: FiduInstance
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
@@ -276,7 +272,6 @@ async function deployAllContracts(
   zapper: ZapperInstance
 }> {
   await deployments.fixture("base_deploy")
-  const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
@@ -287,7 +282,6 @@ async function deployAllContracts(
     "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
-  const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
   const fiduUSDCCurveLP = await getDeployedAsTruffleContract<TestFiduUSDCCurveLPInstance>(
     deployments,
@@ -339,12 +333,10 @@ async function deployAllContracts(
   const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 
   return {
-    pool,
     seniorPool,
     seniorPoolFixedStrategy,
     seniorPoolDynamicStrategy,
     usdc,
-    creditDesk,
     fidu,
     fiduUSDCCurveLP,
     goldfinchConfig,

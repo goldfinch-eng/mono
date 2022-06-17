@@ -1,4 +1,4 @@
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {CreditDesk} from "./@types/legacy/CreditDesk"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import {assertUnreachable} from "@goldfinch-eng/utils/src/type"

@@ -1,5 +1,5 @@
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {CreditDesk} from "./@types/legacy/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import * as Sentry from "@sentry/react"
 import React, {useEffect, useState} from "react"
