@@ -375,7 +375,7 @@ export default function SupplyPanel({
           size="xl"
           colorScheme="secondary"
         >
-          Connect Wallet
+          Connect wallet
         </Button>
       ) : !isUserVerified ? (
         <Button
@@ -386,6 +386,14 @@ export default function SupplyPanel({
         >
           Verify my identity
         </Button>
+      ) : !canUserParticipate ? (
+        <div className="mt-2 flex items-center justify-center gap-3 text-sm text-white">
+          <Icon size="md" name="Exclamation" />
+          <div>
+            Sorry, you are not eligible to participate in this pool because you
+            do not have a suitable UID.
+          </div>
+        </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <Select
@@ -444,7 +452,7 @@ export default function SupplyPanel({
           </div>
           <Button
             className="block w-full"
-            disabled={Object.keys(errors).length !== 0 || !canUserParticipate}
+            disabled={Object.keys(errors).length !== 0}
             size="xl"
             colorScheme="secondary"
             type="submit"
@@ -452,15 +460,6 @@ export default function SupplyPanel({
           >
             Supply
           </Button>
-          {!canUserParticipate ? (
-            <div className="flex items-center justify-center gap-3 text-sm text-white">
-              <Icon size="md" name="Exclamation" />
-              <div>
-                Sorry, you are not eligible to participate in this pool because
-                you are either unverified or do not have a suitable UID.
-              </div>
-            </div>
-          ) : null}
         </form>
       )}
     </div>
