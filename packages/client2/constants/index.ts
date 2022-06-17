@@ -30,7 +30,7 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "http://localhost:5001/goldfinch-frontends-dev/us-central1"
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration"
-    ? "https://murmuration.goldfinch.finance"
+    ? "https://murmuration.goldfinch.finance/_gcloudfunctions"
     : "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net";
 
 type PersonaConfig = {
