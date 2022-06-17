@@ -22,6 +22,7 @@ import {
   UidType,
 } from "@/lib/graphql/generated";
 import { canUserParticipateInPool, computeApyFromGfiInFiat } from "@/lib/pools";
+import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
@@ -146,6 +147,13 @@ export function SeniorPoolSupplyPanel({
     }
   }, [isSubmitSuccessful, reset]);
 
+  const isUserVerified =
+    user?.isGoListed ||
+    user?.isUsEntity ||
+    user?.isNonUsEntity ||
+    user?.isUsAccreditedIndividual ||
+    user?.isUsNonAccreditedIndividual ||
+    user?.isNonUsIndividual;
   const canUserParticipate = !user
     ? false
     : canUserParticipateInPool(
@@ -204,7 +212,7 @@ export function SeniorPoolSupplyPanel({
         data-id="top-half"
         className="flex flex-grow basis-0 flex-col items-start"
       >
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex w-full items-center justify-between gap-2">
           <span className="text-sm">Total est. APY</span>
           <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
         </div>
@@ -233,13 +241,14 @@ export function SeniorPoolSupplyPanel({
               <td className="border border-[#674C69] p-3">
                 <div className="flex items-center justify-end gap-2">
                   <span>
-                    {formatFiat({
-                      symbol: SupportedFiat.Usd,
-                      amount: supplyValue
-                        ? parseFloat(supplyValue) *
-                          seniorPoolApyUsdc.toUnsafeFloat()
-                        : 0,
-                    })}
+                    {supplyValue
+                      ? formatFiat({
+                          symbol: SupportedFiat.Usd,
+                          amount:
+                            parseFloat(supplyValue) *
+                            seniorPoolApyUsdc.toUnsafeFloat(),
+                        })
+                      : "USDC"}
                   </span>
                   <Icon name="Usdc" aria-label="USDC logo" size="md" />
                 </div>
@@ -252,13 +261,14 @@ export function SeniorPoolSupplyPanel({
               <td className="border border-[#674C69] p-3">
                 <div className="flex items-center justify-end gap-2">
                   <span>
-                    {formatFiat({
-                      symbol: SupportedFiat.Usd,
-                      amount: supplyValue
-                        ? parseFloat(supplyValue) *
-                          seniorPoolApyFromGfiFiat.toUnsafeFloat()
-                        : 0,
-                    })}
+                    {supplyValue
+                      ? formatFiat({
+                          symbol: SupportedFiat.Usd,
+                          amount:
+                            parseFloat(supplyValue) *
+                            seniorPoolApyFromGfiFiat.toUnsafeFloat(),
+                        })
+                      : "GFI"}
                   </span>
                   <Icon name="Gfi" aria-label="GFI logo" size="md" />
                 </div>
@@ -267,66 +277,95 @@ export function SeniorPoolSupplyPanel({
           </tbody>
         </table>
       </div>
-      <form
-        data-id="bottom-half"
-        className="flex flex-grow basis-0 flex-col justify-between"
-        onSubmit={onSubmit}
-      >
-        <div>
-          <DollarInput
-            control={control}
-            name="supply"
-            label="Supply amount"
-            colorScheme="dark"
-            textSize="xl"
-            labelClassName="!text-sm !mb-3"
-            labelDecoration={
-              <span className="text-xs">Balance: {availableBalance}</span>
-            }
-            className="mb-4"
-            onMaxClick={handleMax}
-            errorMessage={errors?.supply?.message}
-            rules={{ required: "Required", validate: validateMaximumAmount }}
-          />
-          <Checkbox
-            {...register("isStaking")}
-            label={`Stake to earn GFI (${formatPercent(
-              seniorPoolApyFromGfiFiat
-            )})`}
-            labelDecoration={
-              <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this deposit transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
-            }
-            colorScheme="dark"
-            className="mb-3"
-          />
-          {/* TODO senior pool agreement page */}
-          <div className="mb-4 text-xs">
-            By clicking “Supply” below, I hereby agree to the{" "}
-            <Link href="/senior-pool-agreement">Senior Pool Agreement</Link>.
-            Please note the protocol deducts a 0.50% fee upon withdrawal for
-            protocol reserves.
-          </div>
-        </div>
+      {!account ? (
         <Button
           className="block w-full"
-          disabled={Object.keys(errors).length !== 0 || !canUserParticipate}
+          onClick={openWalletModal}
           size="xl"
           colorScheme="secondary"
-          type="submit"
-          isLoading={isSubmitting}
         >
-          Supply
+          Connect wallet
         </Button>
-        {!canUserParticipate ? (
-          <div className="mt-2 flex items-center justify-center gap-3 text-sm text-white">
+      ) : !isUserVerified ? (
+        <Button
+          className="block w-full"
+          onClick={openVerificationModal}
+          size="xl"
+          colorScheme="secondary"
+        >
+          Verify my identity
+        </Button>
+      ) : !canUserParticipate ? (
+        <div>
+          <Button
+            disabled
+            className="block w-full"
+            size="xl"
+            colorScheme="secondary"
+          >
+            Supply
+          </Button>
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white">
             <Icon size="md" name="Exclamation" />
             <div>
-              Sorry, you are not eligible to participate in this pool because
-              you are either unverified or do not have a suitable UID.
+              Sorry, you are not eligible to participate in the senior pool
+              because you do not have a suitable UID.
             </div>
           </div>
-        ) : null}
-      </form>
+        </div>
+      ) : (
+        <form
+          data-id="bottom-half"
+          className="flex flex-grow basis-0 flex-col justify-between"
+          onSubmit={onSubmit}
+        >
+          <div>
+            <DollarInput
+              control={control}
+              name="supply"
+              label="Supply amount"
+              colorScheme="dark"
+              textSize="xl"
+              labelClassName="!text-sm !mb-3"
+              labelDecoration={
+                <span className="text-xs">Balance: {availableBalance}</span>
+              }
+              className="mb-4"
+              onMaxClick={handleMax}
+              errorMessage={errors?.supply?.message}
+              rules={{ required: "Required", validate: validateMaximumAmount }}
+            />
+            <Checkbox
+              {...register("isStaking")}
+              label={`Stake to earn GFI (${formatPercent(
+                seniorPoolApyFromGfiFiat
+              )})`}
+              labelDecoration={
+                <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this deposit transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
+              }
+              colorScheme="dark"
+              className="mb-3"
+            />
+            {/* TODO senior pool agreement page */}
+            <div className="mb-4 text-xs">
+              By clicking “Supply” below, I hereby agree to the{" "}
+              <Link href="/senior-pool-agreement">Senior Pool Agreement</Link>.
+              Please note the protocol deducts a 0.50% fee upon withdrawal for
+              protocol reserves.
+            </div>
+          </div>
+          <Button
+            className="block w-full"
+            disabled={Object.keys(errors).length !== 0}
+            size="xl"
+            colorScheme="secondary"
+            type="submit"
+            isLoading={isSubmitting}
+          >
+            Supply
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

@@ -157,7 +157,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="text-sm">
-                {user.isUsAccreditedIndividual
+                {user.isUsNonAccreditedIndividual
                   ? "U.S. Non-accredited Individual"
                   : user.isNonUsIndividual
                   ? "Non-U.S. Individual"

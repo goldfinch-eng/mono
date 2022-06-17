@@ -65,7 +65,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             />
           </svg>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex w-full items-center justify-between gap-1">
           <label htmlFor={_id} className={clsx("ml-3", labelClassName)}>
             {label}
           </label>

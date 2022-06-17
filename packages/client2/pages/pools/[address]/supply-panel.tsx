@@ -289,12 +289,10 @@ export default function SupplyPanel({
     <div className="rounded-xl bg-sunrise-02 p-5 text-white">
       <div className="mb-3 flex flex-row justify-between">
         <span className="text-sm">Est. APY</span>
-        <span className="opacity-60">
-          <InfoIconTooltip
-            size="sm"
-            content="The pool's total estimated APY, including the USDC APY and est. GFI rewards APY."
-          />
-        </span>
+        <InfoIconTooltip
+          size="sm"
+          content="The pool's total estimated APY, including the USDC APY and est. GFI rewards APY."
+        />
       </div>
 
       <div className="mb-8 text-6xl font-medium">
@@ -308,14 +306,12 @@ export default function SupplyPanel({
               Est. APY breakdown
             </th>
             <th className="w-1/2 pb-3 text-left text-sm font-normal">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-end gap-2">
                 <span>Est. return</span>
-                <span className="opacity-60">
-                  <InfoIconTooltip
-                    size="sm"
-                    content="The estimated annual return on investment based on the supply amount entered below. The USDC returns are based on the fixed-rate USDC APY defined by the Borrower Pool's financing terms. The GFI returns are based on the Pool's estimated GFI rewards APY, including Investor Rewards and the Backer Bonus."
-                  />
-                </span>
+                <InfoIconTooltip
+                  size="sm"
+                  content="The estimated annual return on investment based on the supply amount entered below. The USDC returns are based on the fixed-rate USDC APY defined by the Borrower Pool's financing terms. The GFI returns are based on the Pool's estimated GFI rewards APY, including Investor Rewards and the Backer Bonus."
+                />
               </div>
             </th>
           </tr>
@@ -328,13 +324,14 @@ export default function SupplyPanel({
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
-                  {formatFiat({
-                    symbol: SupportedFiat.Usd,
-                    amount: supplyValue
-                      ? parseFloat(supplyValue) *
-                        estimatedJuniorApy.toUnsafeFloat()
-                      : 0,
-                  })}
+                  {supplyValue
+                    ? formatFiat({
+                        symbol: SupportedFiat.Usd,
+                        amount:
+                          parseFloat(supplyValue) *
+                          estimatedJuniorApy.toUnsafeFloat(),
+                      })
+                    : "USDC"}
                 </span>
                 <Icon name="Usdc" aria-label="USDC logo" size="md" />
               </div>
@@ -347,13 +344,14 @@ export default function SupplyPanel({
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
-                  {formatFiat({
-                    symbol: SupportedFiat.Usd,
-                    amount: supplyValue
-                      ? parseFloat(supplyValue) *
-                        totalApyFromGfi.toUnsafeFloat()
-                      : 0,
-                  })}
+                  {supplyValue
+                    ? formatFiat({
+                        symbol: SupportedFiat.Usd,
+                        amount:
+                          parseFloat(supplyValue) *
+                          totalApyFromGfi.toUnsafeFloat(),
+                      })
+                    : "GFI"}
                 </span>
                 <Tooltip
                   content="This return is estimated based on the current value of GFI in US dollars."
@@ -375,7 +373,7 @@ export default function SupplyPanel({
           size="xl"
           colorScheme="secondary"
         >
-          Connect Wallet
+          Connect wallet
         </Button>
       ) : !isUserVerified ? (
         <Button
@@ -386,6 +384,24 @@ export default function SupplyPanel({
         >
           Verify my identity
         </Button>
+      ) : !canUserParticipate ? (
+        <div>
+          <Button
+            disabled
+            className="block w-full"
+            size="xl"
+            colorScheme="secondary"
+          >
+            Supply
+          </Button>
+          <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white">
+            <Icon size="md" name="Exclamation" />
+            <div>
+              Sorry, you are not eligible to participate in this pool because
+              you do not have a suitable UID.
+            </div>
+          </div>
+        </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <Select
@@ -444,7 +460,7 @@ export default function SupplyPanel({
           </div>
           <Button
             className="block w-full"
-            disabled={Object.keys(errors).length !== 0 || !canUserParticipate}
+            disabled={Object.keys(errors).length !== 0}
             size="xl"
             colorScheme="secondary"
             type="submit"
@@ -452,15 +468,6 @@ export default function SupplyPanel({
           >
             Supply
           </Button>
-          {!canUserParticipate ? (
-            <div className="flex items-center justify-center gap-3 text-sm text-white">
-              <Icon size="md" name="Exclamation" />
-              <div>
-                Sorry, you are not eligible to participate in this pool because
-                you are either unverified or do not have a suitable UID.
-              </div>
-            </div>
-          ) : null}
         </form>
       )}
     </div>
