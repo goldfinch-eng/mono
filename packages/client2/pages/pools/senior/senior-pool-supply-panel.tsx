@@ -241,13 +241,14 @@ export function SeniorPoolSupplyPanel({
               <td className="border border-[#674C69] p-3">
                 <div className="flex items-center justify-end gap-2">
                   <span>
-                    {formatFiat({
-                      symbol: SupportedFiat.Usd,
-                      amount: supplyValue
-                        ? parseFloat(supplyValue) *
-                          seniorPoolApyUsdc.toUnsafeFloat()
-                        : 0,
-                    })}
+                    {supplyValue
+                      ? formatFiat({
+                          symbol: SupportedFiat.Usd,
+                          amount:
+                            parseFloat(supplyValue) *
+                            seniorPoolApyUsdc.toUnsafeFloat(),
+                        })
+                      : "USDC"}
                   </span>
                   <Icon name="Usdc" aria-label="USDC logo" size="md" />
                 </div>
@@ -260,13 +261,14 @@ export function SeniorPoolSupplyPanel({
               <td className="border border-[#674C69] p-3">
                 <div className="flex items-center justify-end gap-2">
                   <span>
-                    {formatFiat({
-                      symbol: SupportedFiat.Usd,
-                      amount: supplyValue
-                        ? parseFloat(supplyValue) *
-                          seniorPoolApyFromGfiFiat.toUnsafeFloat()
-                        : 0,
-                    })}
+                    {supplyValue
+                      ? formatFiat({
+                          symbol: SupportedFiat.Usd,
+                          amount:
+                            parseFloat(supplyValue) *
+                            seniorPoolApyFromGfiFiat.toUnsafeFloat(),
+                        })
+                      : "GFI"}
                   </span>
                   <Icon name="Gfi" aria-label="GFI logo" size="md" />
                 </div>

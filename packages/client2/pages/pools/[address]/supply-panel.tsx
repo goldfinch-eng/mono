@@ -324,13 +324,14 @@ export default function SupplyPanel({
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
-                  {formatFiat({
-                    symbol: SupportedFiat.Usd,
-                    amount: supplyValue
-                      ? parseFloat(supplyValue) *
-                        estimatedJuniorApy.toUnsafeFloat()
-                      : 0,
-                  })}
+                  {supplyValue
+                    ? formatFiat({
+                        symbol: SupportedFiat.Usd,
+                        amount:
+                          parseFloat(supplyValue) *
+                          estimatedJuniorApy.toUnsafeFloat(),
+                      })
+                    : "USDC"}
                 </span>
                 <Icon name="Usdc" aria-label="USDC logo" size="md" />
               </div>
@@ -343,13 +344,14 @@ export default function SupplyPanel({
             <td className="border border-[#674C69] p-3 text-right text-xl">
               <div className="flex w-full items-center justify-end">
                 <span className="mr-2">
-                  {formatFiat({
-                    symbol: SupportedFiat.Usd,
-                    amount: supplyValue
-                      ? parseFloat(supplyValue) *
-                        totalApyFromGfi.toUnsafeFloat()
-                      : 0,
-                  })}
+                  {supplyValue
+                    ? formatFiat({
+                        symbol: SupportedFiat.Usd,
+                        amount:
+                          parseFloat(supplyValue) *
+                          totalApyFromGfi.toUnsafeFloat(),
+                      })
+                    : "GFI"}
                 </span>
                 <Tooltip
                   content="This return is estimated based on the current value of GFI in US dollars."
