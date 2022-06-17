@@ -212,7 +212,7 @@ export function SeniorPoolSupplyPanel({
         data-id="top-half"
         className="flex flex-grow basis-0 flex-col items-start"
       >
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex w-full items-center justify-between gap-2">
           <span className="text-sm">Total est. APY</span>
           <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
         </div>

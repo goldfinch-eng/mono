@@ -185,7 +185,7 @@ export function Tooltip({
 }
 
 export function InfoIconTooltip({
-  size = "text",
+  size = "sm",
   ...props
 }: Omit<InfoIconTooltipProps, "children" | "useWrapper">) {
   return (

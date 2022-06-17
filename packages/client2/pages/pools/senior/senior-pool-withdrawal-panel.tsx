@@ -198,7 +198,7 @@ export function SeniorPoolWithDrawalPanel({
   return (
     <div className="col rounded-xl bg-sunrise-01 p-5 text-white">
       <div className="mb-6">
-        <div className="mb-3 flex items-center gap-1 text-sm">
+        <div className="mb-3 flex items-center justify-between gap-1 text-sm">
           <div>Available to withdraw</div>
           <InfoIconTooltip content="Your USDC funds that are currently available to be withdrawn from the Senior Pool. It is possible that when a Liquidity Provider wants to withdraw, the Senior Pool may not have sufficient USDC because it is currently deployed in outstanding Borrower Pools across the protocol. In this event, the amount available to withdraw will reflect what can currently be withdrawn, and you may return to withdraw more of your position when new capital enters the Senior Pool through Borrower repayments or new Liquidity Provider investments." />
         </div>
@@ -211,7 +211,7 @@ export function SeniorPoolWithDrawalPanel({
         </div>
       </div>
       <div className="mb-9">
-        <div className="mb-2 flex items-center gap-2 text-sm">
+        <div className="mb-2 flex items-center justify-between gap-2 text-sm">
           <div>Your senior pool position</div>
           <InfoIconTooltip content="The total value of your investment position in the Senior Pool, including funds available to withdraw and funds currently deployed in outstanding Borrower Pools across the protocol." />
         </div>
