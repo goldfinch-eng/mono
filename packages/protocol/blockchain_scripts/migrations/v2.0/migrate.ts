@@ -16,12 +16,10 @@ import {
   getTruffleContract,
 } from "../../deployHelpers"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
-import {
-  MAINNET_MULTISIG,
-  upgradeContracts,
-  getExistingContracts,
-  getAllExistingContracts,
-} from "../../mainnetForkingHelpers"
+import {MAINNET_MULTISIG} from "../../mainnetForkingHelpers"
+import {getAllExistingContracts} from "../../deployHelpers/getAllExistingContracts"
+import {getExistingContracts} from "../../deployHelpers/getExistingContracts"
+import {upgradeContracts} from "../../deployHelpers/upgradeContracts"
 import {getChainId, artifacts} from "hardhat"
 import _ from "lodash"
 import {decodeLogs} from "../../../test/testHelpers"

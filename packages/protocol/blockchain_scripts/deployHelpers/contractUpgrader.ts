@@ -1,7 +1,8 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {ContractDeployer, currentChainId} from "./"
-import {getExistingContracts, upgradeContracts, UpgradedContracts} from "../mainnetForkingHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
+import {ContractDeployer, currentChainId} from "./"
+import {getExistingContracts} from "./getExistingContracts"
+import {UpgradedContracts, upgradeContracts} from "./upgradeContracts"
 import {Logger} from "../types"
 
 export class ContractUpgrader {
