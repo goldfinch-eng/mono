@@ -21,6 +21,7 @@
     "advance-time": "npx hardhat run ./blockchain_scripts/advanceTime.ts --network localhost",
     "generate-manifest": "npx hardhat run ./blockchain_scripts/deployHelpers/generateHardhatUpgradesManifest.ts --network mainnet",
     "pool-admin": "npx hardhat run ./blockchain_scripts/tranchedPoolAdmin.ts --network",
+    "verify-contracts-access-control": "npx hardhat run ./blockchain_scripts/verifyContractsAccessControl.ts --network mainnet",
     "tsc": "tsc",
     "pre-push": "",
     "_generate-merkle-distributor-grants:local": "node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateGrantsFromTemplate -i ./blockchain_scripts/merkle/merkleDistributor/grants.dev.template.json -o ./blockchain_scripts/merkle/merkleDistributor/grants.dev.json",

@@ -2,7 +2,7 @@ import {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} from "../../../test/testHelpers"
 import hre from "hardhat"
 const {artifacts, web3, getChainId} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")
-import {MAINNET_MULTISIG} from "../../mainnetForkingHelpers"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../../mainnetForkingHelpers"
 import {MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID, isMainnetForking} from "../../deployHelpers"
 import {asNonNullable, assertNonNullable, debug} from "@goldfinch-eng/utils"
 import {getTruffleContract} from "../../deployHelpers"
@@ -136,7 +136,7 @@ async function migrateClToV2(clAddress, borrowerContract, pool, creditDesk) {
     data.interestAccruedAsOf,
     data.lastFullPaymentTime,
     data.totalInterestPaid,
-    {from: MAINNET_MULTISIG}
+    {from: MAINNET_GOVERNANCE_MULTISIG}
   )
 }
 
