@@ -15,15 +15,11 @@ import {
   OWNER_ROLE,
   PAUSER_ROLE,
 } from "../../deployHelpers"
-import {
-  getAllExistingContracts,
-  getExistingContracts,
-  MAINNET_GOVERNANCE_MULTISIG,
-  upgradeContracts,
-} from "../../mainnetForkingHelpers"
-import deployV2 from "./deployV2"
+import {getAllExistingContracts} from "../../deployHelpers/getAllExistingContracts"
+import {getExistingContracts} from "../../deployHelpers/getExistingContracts"
+import {upgradeContracts} from "../../deployHelpers/upgradeContracts"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../../mainnetForkingHelpers"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
-const {getNamedAccounts} = hre
 const goList: any[] = []
 
 async function main() {

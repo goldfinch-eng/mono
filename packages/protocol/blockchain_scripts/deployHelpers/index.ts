@@ -9,10 +9,22 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../typechain/truffle/types.d.ts" />
 
-import {ethers, getChainId, getNamedAccounts} from "hardhat"
-type Ethers = typeof ethers
-import hre, {web3, artifacts} from "hardhat"
+import {
+  asNonNullable,
+  AssertionError,
+  assertIsString,
+  assertNonNullable,
+  genExhaustiveTuple,
+} from "@goldfinch-eng/utils"
 import BN from "bn.js"
+import {BaseContract, Contract, Signer} from "ethers"
+import hre, {artifacts, ethers, getChainId, getNamedAccounts, web3} from "hardhat"
+import {DeploymentsExtension} from "hardhat-deploy/types"
+import {GoldfinchConfig} from "../../typechain/ethers"
+import {CONFIG_KEYS} from "../configKeys"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../mainnetForkingHelpers"
+import {getExistingContracts} from "./getExistingContracts"
+type Ethers = typeof ethers
 const USDCDecimals = new BN(String(1e6))
 const FIDU_DECIMALS = new BN(String(1e18))
 const GFI_DECIMALS = new BN(String(1e18))
@@ -20,22 +32,6 @@ const STAKING_REWARDS_MULTIPLIER_DECIMALS = new BN(String(1e18))
 const ETHDecimals = new BN(String(1e18))
 const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
-const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY
-const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
-import {AdminClient} from "defender-admin-client"
-import {CONFIG_KEYS} from "../configKeys"
-import {GoldfinchConfig} from "../../typechain/ethers"
-import {DeploymentsExtension} from "hardhat-deploy/types"
-import {Contract, BaseContract, Signer} from "ethers"
-import {
-  asNonNullable,
-  AssertionError,
-  assertIsString,
-  assertNonNullable,
-  assertUnreachable,
-  genExhaustiveTuple,
-} from "@goldfinch-eng/utils"
-import {getExistingContracts, MAINNET_GOVERNANCE_MULTISIG} from "../mainnetForkingHelpers"
 
 import {ContractDeployer} from "./contractDeployer"
 import {ContractUpgrader} from "./contractUpgrader"
@@ -218,46 +214,6 @@ async function getDeployedContract<T extends Contract = Contract>(
   return (await ethers.getContractAt(abi, deployment.address, signer)) as T
 }
 
-export type DepList = {[contractName: string]: {[contractName: string]: string}}
-async function deployContractUpgrade(
-  contractName: string,
-  dependencies: DepList,
-  from: string,
-  deployments: DeploymentsExtension,
-  ethers: Ethers
-) {
-  const {deploy} = deployments
-
-  let contractNameToLookUp = contractName
-  if (contractName === "GoldfinchFactory") {
-    contractNameToLookUp = "CreditLineFactory"
-  }
-  const contract = await getDeployedContract(deployments, contractNameToLookUp)
-  const contractProxy = await getDeployedContract(deployments, `${contractNameToLookUp}_Proxy`)
-  // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.0/contracts/proxy/TransparentUpgradeableProxy.sol#L81
-  const implStorageLocation = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
-  let currentImpl = await ethers.provider.getStorageAt(contractProxy.address, implStorageLocation)
-  currentImpl = ethers.utils.hexStripZeros(currentImpl)
-
-  const implName = `${contractName}_Implementation`
-
-  const deployResult = await deploy(implName, {
-    from: from,
-    gasLimit: 4000000,
-    args: [],
-    contract: contractName,
-    libraries: dependencies[contractName],
-  })
-  return {
-    name: contractName,
-    implementationName: implName,
-    contract: contract,
-    proxy: contractProxy,
-    currentImplementation: currentImpl,
-    newImplementation: deployResult.address,
-  }
-}
-
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 async function setInitialConfigVals(config: GoldfinchConfig, logger = function (_: any) {}) {
   let chainId = await hre.getChainId()
@@ -349,12 +305,6 @@ function fromAtomic(amount: BN, decimals = USDCDecimals): string {
 
 function toAtomic(amount: BN, decimals = USDCDecimals): string {
   return new BN(String(amount)).mul(decimals).toString(10)
-}
-
-function getDefenderClient() {
-  assertNonNullable(DEFENDER_API_KEY, "DEFENDER_API_KEY is null. It must be set as an envvar")
-  assertNonNullable(DEFENDER_API_SECRET, "DEFENDER_API_SECRET is null. It must be set as an envvar")
-  return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
 }
 
 type GetContractOptions = {
@@ -489,8 +439,6 @@ export {
   isMainnetForking,
   isMainnet,
   interestAprAsBN,
-  getDefenderClient,
-  deployContractUpgrade,
   setInitialConfigVals,
   TRANCHES,
   GetContractOptions,

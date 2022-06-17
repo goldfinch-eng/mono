@@ -11,7 +11,8 @@ import {
   getTruffleContract,
   getEthersContract,
 } from "../../blockchain_scripts/deployHelpers"
-import {MAINNET_GOVERNANCE_MULTISIG, getExistingContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate270 from "../../blockchain_scripts/migrations/v2.7.0/migrate"
