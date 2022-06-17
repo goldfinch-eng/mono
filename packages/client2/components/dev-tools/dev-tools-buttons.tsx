@@ -26,7 +26,7 @@ export default function DevToolsButtons({
               setDisabled(true);
               setLoading("setup");
 
-              await fetch(`${SERVER_URL}/setupForTesting`, {
+              const response = await fetch(`${SERVER_URL}/setupForTesting`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -36,6 +36,10 @@ export default function DevToolsButtons({
 
               setDisabled(false);
               setLoading(null);
+
+              if (!response.ok) {
+                throw new Error("Could not complete testing setup");
+              }
             }}
           >
             Setup for Testing
@@ -51,7 +55,7 @@ export default function DevToolsButtons({
               setDisabled(true);
               setLoading("fund");
 
-              fetch(`${SERVER_URL}/fundWithWhales`, {
+              const response = await fetch(`${SERVER_URL}/fundWithWhales`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -61,6 +65,10 @@ export default function DevToolsButtons({
 
               setDisabled(false);
               setLoading(null);
+
+              if (!response.ok) {
+                throw new Error("Could not fund with whales");
+              }
             }}
           >
             Fund With Whales
@@ -76,13 +84,17 @@ export default function DevToolsButtons({
               setDisabled(true);
               setLoading("advance1");
 
-              fetch(`${SERVER_URL}/advanceTimeOneDay`, {
+              const response = await fetch(`${SERVER_URL}/advanceTimeOneDay`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
               });
 
               setDisabled(false);
               setLoading(null);
+
+              if (!response.ok) {
+                throw new Error("Could not advance time");
+              }
             }}
           >
             Advance - 1 Day
@@ -98,13 +110,20 @@ export default function DevToolsButtons({
               setDisabled(true);
               setLoading("advance30");
 
-              fetch(`${SERVER_URL}/advanceTimeThirtyDays`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              });
+              const response = await fetch(
+                `${SERVER_URL}/advanceTimeThirtyDays`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                }
+              );
 
               setDisabled(false);
               setLoading(null);
+
+              if (!response.ok) {
+                throw new Error("Could not advance time");
+              }
             }}
           >
             Advance - 30 Days

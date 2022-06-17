@@ -10,6 +10,7 @@ interface StepTemplateProps {
   heading?: string;
   headingTooltip?: string;
   headingClassName?: string;
+  subheading?: string;
   children: ReactNode;
   includePrivacyStatement?: boolean;
   footer?: ReactNode;
@@ -19,6 +20,7 @@ export function StepTemplate({
   heading,
   headingTooltip,
   headingClassName,
+  subheading,
   children,
   includePrivacyStatement = true,
   footer,
@@ -30,8 +32,9 @@ export function StepTemplate({
         {heading ? (
           <div
             className={clsx(
-              "mb-8 flex items-center gap-2",
-              !headingTooltip ? "justify-center" : null
+              "flex items-center gap-2",
+              !headingTooltip ? "justify-center" : null,
+              subheading ? "mb-3" : "mb-8"
             )}
           >
             <h4
@@ -47,10 +50,18 @@ export function StepTemplate({
             ) : null}
           </div>
         ) : null}
+
+        {subheading ? (
+          <p className="mb-8 text-justify text-xs text-sand-500">
+            {subheading}
+          </p>
+        ) : null}
+
         <div className="grow">{children}</div>
+
         {includePrivacyStatement ? <PrivacyStatement className="mt-8" /> : null}
       </div>
-      <div className="mt-9 flex gap-3">
+      <div className="-mx-6 mt-9 flex gap-3 border-t border-t-sand-100 px-6 pt-6">
         {footer ? (
           footer
         ) : (

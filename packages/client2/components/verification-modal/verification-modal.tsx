@@ -28,6 +28,7 @@ export function VerificationModal({ isOpen, onClose }: VerificationModalProps) {
       title="Verify your identity"
       isOpen={isOpen}
       onClose={onClose}
+      divider={true}
     >
       <div
         style={{ minHeight: "400px", display: "flex", flexDirection: "column" }}

@@ -15,15 +15,6 @@ export function EntityStep() {
     >
       <div className="flex h-full flex-col gap-3">
         <BigButton
-          selected={entity === "individual"}
-          onClick={() => {
-            setEntity("individual");
-            goToStep(VerificationFlowSteps.Residence);
-          }}
-        >
-          An individual (myself)
-        </BigButton>
-        <BigButton
           selected={entity === "entity"}
           onClick={() => {
             setEntity("entity");
@@ -31,6 +22,15 @@ export function EntityStep() {
           }}
         >
           A business or entity
+        </BigButton>
+        <BigButton
+          selected={entity === "individual"}
+          onClick={() => {
+            setEntity("individual");
+            goToStep(VerificationFlowSteps.Residence);
+          }}
+        >
+          An individual (myself)
         </BigButton>
       </div>
     </StepTemplate>

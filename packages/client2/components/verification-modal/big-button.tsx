@@ -20,7 +20,7 @@ export function BigButton({
       type="button"
       onClick={onClick}
       className={clsx(
-        "flex items-center justify-between rounded-[10px] border border-sand-300 bg-white p-6 text-left hover:bg-sand-100",
+        "flex items-center justify-between rounded-[10px] border border-sand-100 bg-white p-4 text-left shadow-sand-300 hover:border-sand-200 hover:shadow",
         className
       )}
     >

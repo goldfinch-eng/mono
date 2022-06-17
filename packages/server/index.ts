@@ -158,11 +158,11 @@ app.post("/kycStatus", async (req, res) => {
   const {address, countryCode, kycStatus} = req.body
   const db = getDb(admin.firestore())
   const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+  const residency = countryCode.toLowerCase() === "us" ? "us" : "non-us"
 
   try {
     await db.runTransaction(async (t: firestore.Transaction) => {
       const doc = await t.get(userRef)
-      console.log(doc.data())
 
       if (doc.exists) {
         t.update(userRef, {
@@ -171,6 +171,9 @@ app.post("/kycStatus", async (req, res) => {
             status: kycStatus,
           },
           countryCode: countryCode,
+          kyc: {
+            residency,
+          },
           updatedAt: Date.now(),
         })
       } else {
@@ -181,6 +184,9 @@ app.post("/kycStatus", async (req, res) => {
             status: kycStatus,
           },
           countryCode: countryCode,
+          kyc: {
+            residency,
+          },
           updatedAt: Date.now(),
         })
       }
