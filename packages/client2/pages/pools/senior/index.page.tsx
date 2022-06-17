@@ -77,9 +77,9 @@ export default function SeniorPoolPage() {
   const fiatPerGfi = data?.gfiPrice?.price.amount;
   const shouldShowWithdrawal =
     account &&
+    seniorPool?.latestPoolStatus.sharePrice &&
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
-      user?.seniorPoolStakedPositions.length !== 0) &&
-    seniorPool?.latestPoolStatus.sharePrice;
+      (user && user.seniorPoolStakedPositions.length > 0));
 
   // https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
