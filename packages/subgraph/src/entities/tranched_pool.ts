@@ -195,11 +195,13 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   if (isCreating) {
     tranchedPool.backers = []
     tranchedPool.tokens = []
-    tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
+    // V1 style deals do not have a leverage ratio because all capital came from the senior pool
+    tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
   }
-  tranchedPool.remainingJuniorCapacity = limit
-    .minus(tranchedPool.juniorDeposited.times(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1))))
-    .div(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)))
+
+  tranchedPool.remainingJuniorCapacity = tranchedPool.estimatedLeverageRatio ? limit
+    .minus(tranchedPool.juniorDeposited.times(tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1))))
+    .div(tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1))) : BigInt.zero()
   if (tranchedPool.remainingJuniorCapacity.lt(BigInt.zero())) {
     tranchedPool.remainingJuniorCapacity = BigInt.zero()
   }
@@ -413,8 +415,13 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
     if (!creditLine) {
       throw new Error("Unable to load creditLine from summedRewardsByTranchedPool")
     }
+
+    let divisor: BigDecimal = BigDecimal.fromString("1")
+    if (tranchedPool.estimatedLeverageRatio !== null) {
+      divisor = tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1)).toBigDecimal()
+    }
     const juniorPrincipalDollars = creditLine.maxLimit
-      .divDecimal(tranchedPool.estimatedLeverageRatio.plus(BigInt.fromI32(1)).toBigDecimal())
+      .divDecimal(divisor)
       .div(USDC_DECIMALS.toBigDecimal())
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
     const perPrincipalDollar = reward.div(juniorPrincipalDollars)
@@ -431,7 +438,7 @@ export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, ti
   if (!tranchedPool) {
     return
   }
-  tranchedPool.estimatedLeverageRatio = getLeverageRatio(timestamp)
+  tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
   tranchedPool.save()
 }
 

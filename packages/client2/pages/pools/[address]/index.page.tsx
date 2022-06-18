@@ -91,6 +91,7 @@ gql`
         nextDueTime
         interestAprDecimal
         borrower
+        lateFeeApr
       }
       totalAmountOwed
       principalAmountRepaid
@@ -166,7 +167,7 @@ export default function PoolPage() {
       }
     : undefined;
   const seniorSupply =
-    backerSupply && tranchedPool
+    backerSupply && tranchedPool?.estimatedLeverageRatio
       ? {
           token: SupportedCrypto.Usdc,
           amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),

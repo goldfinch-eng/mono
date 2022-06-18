@@ -45,6 +45,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "The debt facilities Addem Capital structure will be used to fund self-liquidating assets where Addem has complete traceability and control of all the cash flows pledged as the source of payment, which positions them at the best risk-to-return ratio in Mexico and LATAM.",
       "Addem fund these structures' senior and mezzanine tranches with an interest rate ranging between 18 - 22% in MXN for unsubordinated lines and 24 - 35 % for subordinated ones.",
     ],
+    lateFeeApr: 0.18
   },
   "0x759f097f3153f5d62ff1c2d82ba78b6350f223e3": {
     borrower: "almavest",
@@ -109,6 +110,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Rezi is an institutional-scale residential lease broker, making a market in multifamily leases. Rezi enters into master-leases with multifamily landlords at a discount to the sum of the expected tenant rent payments, and then sub-leases residential units included in its master-leases to individual tenants.",
       "Braavo is a data-driven accounts receivable financing platform that provides scalable funding solutions to mobile app businesses, largely on the Apple App Store and Google Play.",
     ],
+    lateFeeApr: 0.13
   },
   "0x418749e294cabce5a714efccc22a8aade6f9db57": {
     borrower: "almavest",
@@ -174,6 +176,7 @@ export const mainnetMetadata: Record<string, PoolMetadata> = {
       "Tugende have financed over $50M worth of income-generating assets with loan loss rates under 1%",
     ],
     icon: tugendeLogo.src,
+    lateFeeApr: 0.02
   },
   "0xd798d527f770ad920bb50680dbc202bb0a1dafd6": {
     borrower: "quickcheck",

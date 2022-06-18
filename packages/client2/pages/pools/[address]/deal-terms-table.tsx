@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
+import { FixedNumber } from "ethers";
 
 import {
   Button,
@@ -7,11 +8,13 @@ import {
   InfoIconTooltip,
   ShimmerLines,
 } from "@/components/design-system";
+import { POOL_METADATA } from "@/constants";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
   DealTermsTableFieldsFragment,
 } from "@/lib/graphql/generated";
+
 
 export const DEAL_TERMS_TABLE_FIELDS = gql`
   fragment DealTermsTableFields on TranchedPool {
@@ -24,12 +27,24 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
       paymentPeriodInDays
       termInDays
       borrower
+      lateFeeApr
     }
   }
 `;
 
 interface DealTermsProps {
   tranchedPool?: DealTermsTableFieldsFragment | null;
+}
+
+function getLateFeeApr(tranchedPool: DealTermsTableFieldsFragment): FixedNumber {
+  // Override the on-chain lateFeeApr value if there is a hardcoded lateFeeApr in
+  // POOL_METADATA because some credit lines were incorrectly initialized with a
+  // lateFeeApr of 0
+  if (POOL_METADATA[tranchedPool.id].lateFeeApr) {
+    return FixedNumber.fromString(`${POOL_METADATA[tranchedPool.id].lateFeeApr}`)
+  } else {
+    return tranchedPool.creditLine.lateFeeApr
+  }
 }
 
 export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
@@ -90,12 +105,12 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
             [
               "Default interest rate",
               "An additional interest rate paid by the Borrower if they are late on their payments following a 30 day grace period. The total interest rate a Borrower in default pays = interest rate + default interest rate.",
-              formatPercent(0.1),
+              formatPercent(getLateFeeApr(tranchedPool)),
             ],
             [
               "Current leverage ratio",
               "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer deposits. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
-              tranchedPool.estimatedLeverageRatio.toString(),
+              tranchedPool.estimatedLeverageRatio ? tranchedPool.estimatedLeverageRatio.toString() : "N/A",
             ],
             [
               "Opening date",

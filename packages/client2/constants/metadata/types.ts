@@ -8,4 +8,5 @@ export interface PoolMetadata {
   agreement?: string;
   launchTime?: number;
   borrower: string;
+  lateFeeApr?: number;
 }

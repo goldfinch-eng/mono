@@ -242,6 +242,7 @@ export function mockCreditLineContractCalls(
   const lastFullPaymentTime = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("1637515148"))
   const isLate = ethereum.Value.fromBoolean(false)
   const borrower = ethereum.Value.fromAddress(Address.fromString("0xd750033cd9ab91ead99074f671bbcbce0ffd91a8"))
+  const lateFeeApr = ethereum.Value.fromUnsignedBigInt(BigInt.fromString("0"))
 
   createMockedFunction(creditLineAddress, "balance", "balance():(uint256)").withArgs([]).returns([balance])
   createMockedFunction(creditLineAddress, "interestApr", "interestApr():(uint256)").withArgs([]).returns([interestApr])
@@ -266,6 +267,7 @@ export function mockCreditLineContractCalls(
     .returns([lastFullPaymentTime])
   createMockedFunction(creditLineAddress, "isLate", "isLate():(bool)").withArgs([]).returns([isLate])
   createMockedFunction(creditLineAddress, "borrower", "borrower():(address)").withArgs([]).returns([borrower])
+  createMockedFunction(creditLineAddress, "lateFeeApr", "lateFeeApr():(uint256)").withArgs([]).returns([lateFeeApr])
 
   if (v2_2) {
     createMockedFunction(creditLineAddress, "maxLimit", "maxLimit():(uint256)").withArgs([]).returns([maxLimit])

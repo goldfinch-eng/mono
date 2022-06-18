@@ -167,6 +167,7 @@ type CreditLine @entity {
   termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
   version: TranchedPoolCreditLineVersion!
+  lateFeeApr: BigDecimal!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
@@ -197,7 +198,7 @@ type TranchedPool @entity {
   estimatedJuniorApy: BigDecimal!
   estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
-  estimatedLeverageRatio: BigInt!
+  estimatedLeverageRatio: BigInt
   remainingCapacity: BigInt!
   """
   Note that this is just an estimate based on the fixed leverage ratio. If leverage ratio was not fixed, it would be much harder to estimate the remaining junior capacity

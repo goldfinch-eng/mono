@@ -16,6 +16,7 @@ import {VERSION_BEFORE_V2_2} from "../utils"
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
 const ONE = BigInt.fromString("1")
+const ZERO = BigInt.fromString("0")
 const ONE_HUNDRED = BigDecimal.fromString("100")
 
 export function fiduFromAtomic(amount: BigInt): BigInt {
@@ -171,8 +172,9 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   }
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
-  let seniorFraction = leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
-  let juniorFraction = ONE.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
+  // A missing leverage ratio implies this was a v1 style deal and the senior pool supplied all the capital
+  let seniorFraction = leverageRatio ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal()) : ONE.toBigDecimal()
+  let juniorFraction = leverageRatio ? ONE.divDecimal(ONE.plus(leverageRatio).toBigDecimal()) : ZERO.toBigDecimal()
   let interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
   let juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
   let reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)
