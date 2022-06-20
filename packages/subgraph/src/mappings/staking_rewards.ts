@@ -5,8 +5,10 @@ import {
   StakingRewards,
   Unstaked,
   Transfer,
+  DepositedAndStaked,
 } from "../../generated/templates/StakingRewards/StakingRewards"
 
+import {createTransactionFromEvent} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
 import {updateStakedSeniorPoolBalance} from "../entities/user"
 
@@ -55,4 +57,11 @@ export function handleTransfer(event: Transfer): void {
   }
 
   stakedPosition.save()
+}
+
+export function handleDepositedAndStaked(event: DepositedAndStaked): void {
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE")
+  transaction.amount = event.params.depositedAmount
+  transaction.user = event.params.user.toHexString()
+  transaction.save()
 }
