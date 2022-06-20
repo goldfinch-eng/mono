@@ -53,7 +53,7 @@ export function DevToolsPanel(): JSX.Element {
               }}
             />
           )}
-          {panel === "kyc" && <DevToolsKYC account={account} />}
+          {panel === "kyc" && <DevToolsKYC />}
         </div>
       )}
     </>
