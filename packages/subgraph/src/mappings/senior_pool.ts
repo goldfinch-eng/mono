@@ -1,4 +1,3 @@
-import {Transaction} from "../../generated/schema"
 import {
   DepositMade,
   InterestCollected,
@@ -9,6 +8,7 @@ import {
   ReserveFundsCollected,
   WithdrawalMade,
 } from "../../generated/templates/SeniorPool/SeniorPool"
+import {createTransactionFromEvent} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
 import {handleDeposit} from "../entities/user"
 
@@ -16,13 +16,9 @@ export function handleDepositMade(event: DepositMade): void {
   updatePoolStatus(event.address)
   handleDeposit(event)
 
-  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
-  transaction.transactionHash = event.transaction.hash
-  transaction.category = "SENIOR_POOL_DEPOSIT"
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT")
   transaction.user = event.params.capitalProvider.toHexString()
   transaction.amount = event.params.amount
-  transaction.timestamp = event.block.timestamp.toI32()
-  transaction.blockNumber = event.block.number.toI32()
   transaction.save()
 }
 
@@ -55,12 +51,8 @@ export function handleReserveFundsCollected(event: ReserveFundsCollected): void 
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   updatePoolStatus(event.address)
 
-  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
-  transaction.transactionHash = event.transaction.hash
-  transaction.category = "SENIOR_POOL_WITHDRAWAL"
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL")
   transaction.user = event.params.capitalProvider.toHexString()
   transaction.amount = event.params.userAmount
-  transaction.timestamp = event.block.timestamp.toI32()
-  transaction.blockNumber = event.block.number.toI32()
   transaction.save()
 }
