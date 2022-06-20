@@ -193,6 +193,7 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
 
 export function createTransactionFromEvent(event: ethereum.Event, category: string): Transaction {
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
   transaction.category = category
