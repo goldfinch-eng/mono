@@ -191,6 +191,12 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   return netJuniorInterest.div(juniorTranche).times(ONE_HUNDRED)
 }
 
+/**
+ * A helper function that creates a Transaction entity from an Ethereum event. Does not save the entity, you must call .save() yourself, after you add any additional properties.
+ * @param event Ethereum event to process. Can be any event.
+ * @param category The category to assign to this. Must conform to the TransactionCategory enum.
+ * @returns Instance of a Transaction entity.
+ */
 export function createTransactionFromEvent(event: ethereum.Event, category: string): Transaction {
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.transactionHash = event.transaction.hash
