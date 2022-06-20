@@ -15,7 +15,17 @@
     "gen-contract-types": "typechain --target=ethers-v5 \"abis/*.json\"",
     "codegen": "graphql-codegen",
     "codegen-introspection": "graphql-codegen --config codegen-introspection.js",
-    "typecheck": "npx tsc --noEmit"
+    "typecheck": "npx tsc --noEmit",
+    "pre-commit": "lint-staged && npm run typecheck"
+  },
+  "lint-staged": {
+    "*.(js(x)?|ts(x)?)": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.md(x)?": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@apollo/client": "^3.5.10",
@@ -77,6 +87,7 @@
     "eslint-config-next": "12.1.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-storybook": "^0.5.7",
+    "lint-staged": "^13.0.2",
     "postcss": "^8.4.7",
     "prettier": "^2.5.1",
     "prettier-plugin-tailwindcss": "^0.1.8",
