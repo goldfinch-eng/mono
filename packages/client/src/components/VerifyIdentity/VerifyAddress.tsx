@@ -191,7 +191,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </label>
           <div className="value-option">
             <input
-              {...register("countrySelection", {required: true})}
+              {...(register("accreditedIndividual", {required: true}) as any)}
               name="countrySelection"
               type="radio"
               id="value-type-us"
@@ -203,7 +203,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </div>
           <div className="value-option">
             <input
-              {...register("countrySelection", {required: true})}
+              {...(register("accreditedIndividual", {required: true}) as any)}
               name="countrySelection"
               type="radio"
               id="value-type-not-us"
@@ -218,7 +218,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </label>
           <div className="value-option">
             <input
-              {...register("individualOrEntity", {required: true})}
+              {...(register("accreditedIndividual", {required: true}) as any)}
               name="individualOrEntity"
               type="radio"
               id="value-type-individual"
@@ -230,7 +230,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </div>
           <div className="value-option">
             <input
-              {...register("individualOrEntity", {required: true})}
+              {...(register("accreditedIndividual", {required: true}) as any)}
               name="individualOrEntity"
               type="radio"
               id="value-type-entity"
@@ -251,7 +251,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
                   type="radio"
                   id="value-type-accredited"
                   value="value-type-accredited"
-                  {...register("accreditedIndividual", {required: true})}
+                  {...(register("accreditedIndividual", {required: true}) as any)}
                   ref={(ref) => register(ref)}
                 />
                 <div className="radio-check"></div>
@@ -263,7 +263,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
                   type="radio"
                   id="value-type-not-accredited"
                   value="value-type-not-accredited"
-                  {...register("accreditedIndividual", {required: true})}
+                  {...(register("accreditedIndividual", {required: true}) as any)}
                   ref={(ref) => register(ref)}
                 />
                 <div className="radio-check"></div>

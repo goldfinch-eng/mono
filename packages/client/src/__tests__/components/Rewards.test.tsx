@@ -873,7 +873,7 @@ describe("Rewards list and detail", () => {
     })
 
     // Mock GFI price request.
-    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
       const url = input.toString()
       if (url === COINGECKO_API_GFI_PRICE_URL) {
         return Promise.resolve({
@@ -988,7 +988,7 @@ describe("Rewards list and detail", () => {
 
   describe("GFI Price", () => {
     it("shows empty value when request to Coingecko and fallback fail", async () => {
-      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
           return Promise.reject("Request failed")
@@ -1014,7 +1014,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("shows empty value when JSON parsing fails", async () => {
-      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
           return Promise.resolve({
@@ -1046,7 +1046,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("shows empty value when GFI price is undefined", async () => {
-      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
           return Promise.resolve({
@@ -1089,7 +1089,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("shows empty value if the request returns an unexpected object", async () => {
-      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
           return Promise.resolve({
@@ -1144,7 +1144,7 @@ describe("Rewards list and detail", () => {
     })
 
     it("uses GFI price if the fallback request returns as expected", async () => {
-      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+      jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
         const url = input.toString()
         if (url === COINGECKO_API_GFI_PRICE_URL) {
           return Promise.reject("Request failed")
