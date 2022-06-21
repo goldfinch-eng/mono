@@ -73,6 +73,7 @@ export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensProxyAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
 export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
 export const LOCALHOST_USDC_ADDRESS = "${deployedUsdcAddress}"
+export const LOCALHOST_STAKING_REWARDS_ADDRESS = "${deployedStakingRewardsProxyAddress}"
 `
 
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))

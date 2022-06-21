@@ -3,9 +3,8 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
-import { GoldfinchLogo, Link, Table } from "@/components/design-system";
+import { Link, Table } from "@/components/design-system";
 import { Identicon } from "@/components/identicon";
-import { CONTRACT_ADDRESSES } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -22,7 +21,9 @@ gql`
           TRANCHED_POOL_DRAWDOWN
           TRANCHED_POOL_REPAYMENT
           SENIOR_POOL_DEPOSIT
+          SENIOR_POOL_DEPOSIT_AND_STAKE
           SENIOR_POOL_WITHDRAWAL
+          SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
         ]
       }
       orderBy: timestamp
@@ -64,9 +65,6 @@ export function TransactionTable() {
         token: SupportedCrypto.Usdc,
         amount: transaction.amount,
       });
-      const isStakingRewards =
-        transaction.user.id.toLowerCase() ===
-        CONTRACT_ADDRESSES["StakingRewards"].toLowerCase();
 
       return [
         <div key={`${transaction.id}-user`} className="flex items-center gap-2">
@@ -83,11 +81,6 @@ export function TransactionTable() {
               </div>
               <div>{transaction.tranchedPool?.borrower.name}</div>
             </>
-          ) : isStakingRewards ? (
-            <>
-              <GoldfinchLogo className="h-6 w-6 shrink-0" />
-              <div>Staking Rewards</div>
-            </>
           ) : (
             <>
               <Identicon className="h-6 w-6" account={transaction.user.id} />
@@ -95,16 +88,8 @@ export function TransactionTable() {
             </>
           )}
         </div>,
-        <div key={`${transaction.id}-category`}>
-          {transaction.category === TransactionCategory.SeniorPoolDeposit
-            ? "Supply"
-            : transaction.category === TransactionCategory.SeniorPoolWithdrawal
-            ? "Withdrawal"
-            : transaction.category === TransactionCategory.TranchedPoolDrawdown
-            ? "Drawdown"
-            : transaction.category === TransactionCategory.TranchedPoolRepayment
-            ? "Repayment"
-            : null}
+        <div key={`${transaction.id}-category`} className="text-left">
+          {getTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`} className="text-right">
           {transactionAmount}
@@ -169,4 +154,25 @@ export function TransactionTable() {
       )}
     </div>
   );
+}
+
+function getTransactionLabel(transaction: {
+  category: TransactionCategory;
+}): string {
+  switch (transaction.category) {
+    case TransactionCategory.SeniorPoolDeposit:
+      return "Supply";
+    case TransactionCategory.SeniorPoolDepositAndStake:
+      return "Supply and Stake";
+    case TransactionCategory.SeniorPoolWithdrawal:
+      return "Withdrawal";
+    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+      return "Unstake and Withdraw";
+    case TransactionCategory.TranchedPoolRepayment:
+      return "Repayment";
+    case TransactionCategory.TranchedPoolDrawdown:
+      return "Drawdown";
+    default:
+      return "Transaction";
+  }
 }

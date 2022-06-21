@@ -6,6 +6,7 @@ import {
   Unstaked,
   Transfer,
   DepositedAndStaked,
+  UnstakedAndWithdrew,
 } from "../../generated/templates/StakingRewards/StakingRewards"
 
 import {createTransactionFromEvent} from "../entities/helpers"
@@ -62,6 +63,13 @@ export function handleTransfer(event: Transfer): void {
 export function handleDepositedAndStaked(event: DepositedAndStaked): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE")
   transaction.amount = event.params.depositedAmount
+  transaction.user = event.params.user.toHexString()
+  transaction.save()
+}
+
+export function handleUnstakedAndWithdrew(event: UnstakedAndWithdrew): void {
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL")
+  transaction.amount = event.params.usdcReceivedAmount
   transaction.user = event.params.user.toHexString()
   transaction.save()
 }

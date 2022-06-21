@@ -266,6 +266,8 @@ function getTransactionLabel(transaction: {
       return "Senior Pool Supply and Stake";
     case TransactionCategory.SeniorPoolWithdrawal:
       return "Senior Pool Withdrawal";
+    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+      return "Senior Pool Unstake and Withdraw";
     case TransactionCategory.TranchedPoolDeposit:
       return "Borrower Pool Supply";
     case TransactionCategory.TranchedPoolWithdrawal:
