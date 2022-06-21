@@ -31,6 +31,8 @@ export function Breadcrumb({ image, label, link }: BreadcrumbProps) {
             alt={label || ""}
             className="mr-3 block h-full w-full object-contain object-center"
             layout="fill"
+            sizes="32px"
+            objectFit="cover"
           />
         )}
       </div>

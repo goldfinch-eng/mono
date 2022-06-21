@@ -4,7 +4,6 @@ import { FixedNumber } from "ethers";
 
 import {
   Button,
-  Heading,
   InfoIconTooltip,
   ShimmerLines,
 } from "@/components/design-system";
@@ -14,7 +13,6 @@ import {
   SupportedCrypto,
   DealTermsTableFieldsFragment,
 } from "@/lib/graphql/generated";
-
 
 export const DEAL_TERMS_TABLE_FIELDS = gql`
   fragment DealTermsTableFields on TranchedPool {
@@ -36,25 +34,27 @@ interface DealTermsProps {
   tranchedPool?: DealTermsTableFieldsFragment | null;
 }
 
-function getLateFeeApr(tranchedPool: DealTermsTableFieldsFragment): FixedNumber {
+function getLateFeeApr(
+  tranchedPool: DealTermsTableFieldsFragment
+): FixedNumber {
   // Override the on-chain lateFeeApr value if there is a hardcoded lateFeeApr in
   // POOL_METADATA because some credit lines were incorrectly initialized with a
   // lateFeeApr of 0
   if (POOL_METADATA[tranchedPool.id].lateFeeApr) {
-    return FixedNumber.fromString(`${POOL_METADATA[tranchedPool.id].lateFeeApr}`)
+    return FixedNumber.fromString(
+      `${POOL_METADATA[tranchedPool.id].lateFeeApr}`
+    );
   } else {
-    return tranchedPool.creditLine.lateFeeApr
+    return tranchedPool.creditLine.lateFeeApr;
   }
 }
 
 export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <Heading level={4} className="!text-lg">
-            Deal Terms
-          </Heading>
+          <h2 className="text-xl font-semibold">Deal Terms</h2>
           <InfoIconTooltip
             size="sm"
             content="The Borrower's proposed terms for the Pool, including the loan's basic timeframe and conditions."
@@ -110,7 +110,9 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
             [
               "Current leverage ratio",
               "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer deposits. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
-              tranchedPool.estimatedLeverageRatio ? tranchedPool.estimatedLeverageRatio.toString() : "N/A",
+              tranchedPool.estimatedLeverageRatio
+                ? tranchedPool.estimatedLeverageRatio.toString()
+                : "N/A",
             ],
             [
               "Opening date",

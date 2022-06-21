@@ -132,7 +132,7 @@ export function TransactionTable() {
 
   return (
     <div>
-      <h3 className="mb-4 text-lg font-semibold">Recent activity</h3>
+      <h2 className="mb-4 text-xl font-semibold">Recent activity</h2>
       {error ? (
         <div className="text-clay-500">
           Unable to fetch recent transactions. {error}
