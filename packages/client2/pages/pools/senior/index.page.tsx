@@ -7,12 +7,12 @@ import {
   Heading,
   HelperText,
   Button,
+  goldfinchLogoWhiteBgPngUrl,
 } from "@/components/design-system";
 import { BannerPortal } from "@/components/layout";
 import { useSeniorPoolPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
-import goldfinchYellow from "./goldfinch-yellow.png";
 import {
   SeniorPoolSupplyPanel,
   SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS,
@@ -126,7 +126,7 @@ export default function SeniorPoolPage() {
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
           <div className="mb-6 flex flex-wrap justify-between">
-            <Breadcrumb label="Goldfinch" image={goldfinchYellow.src} />
+            <Breadcrumb label="Goldfinch" image={goldfinchLogoWhiteBgPngUrl} />
             {seniorPool ? (
               <Button
                 variant="rounded"
