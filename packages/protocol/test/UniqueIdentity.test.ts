@@ -5,15 +5,8 @@ import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {constants as ethersConstants} from "ethers"
 import hre from "hardhat"
-import {
-  getContract,
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  SIGNER_ROLE,
-  TRUFFLE_CONTRACT_PROVIDER,
-} from "../blockchain_scripts/deployHelpers"
+import {getTruffleContract, OWNER_ROLE, PAUSER_ROLE, SIGNER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {UNIQUE_IDENTITY_METADATA_URI} from "../blockchain_scripts/uniqueIdentity/constants"
-import {TestUniqueIdentity} from "../typechain/ethers"
 import {TestUniqueIdentityInstance} from "../typechain/truffle/TestUniqueIdentity"
 import {
   BurnParams,
@@ -44,13 +37,9 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     from: uninitializedUniqueIdentityDeployer,
     gasLimit: 4000000,
   })
-  const uninitializedUniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
-    "TestUniqueIdentity",
-    TRUFFLE_CONTRACT_PROVIDER,
-    {
-      at: uninitializedUniqueIdentityDeployResult.address,
-    }
-  )
+  const uninitializedUniqueIdentity = await getTruffleContract<TestUniqueIdentityInstance>("TestUniqueIdentity", {
+    at: uninitializedUniqueIdentityDeployResult.address,
+  })
 
   return {
     owner,
