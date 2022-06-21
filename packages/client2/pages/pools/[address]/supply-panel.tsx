@@ -129,7 +129,13 @@ export default function SupplyPanel({
     const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
       ? userUsdcBalance
       : remainingJuniorCapacity;
-    setValue("supply", utils.formatUnits(maxAvailable, USDC_DECIMALS));
+    setValue(
+      "supply",
+      formatCrypto(
+        { token: SupportedCrypto.Usdc, amount: maxAvailable },
+        { includeSymbol: false }
+      )
+    );
   };
 
   const validateMaximumAmount = async (value: string) => {
