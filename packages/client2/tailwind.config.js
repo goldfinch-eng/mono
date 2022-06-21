@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const colors = require("tailwindcss/colors");
 const defaultTheme = require("tailwindcss/defaultTheme");
 
@@ -99,7 +100,7 @@ module.exports = {
       },
       animation: {
         "background-oscillate-slow": "background-oscillate 4s ease-in infinite",
-        marquee: "marquee 20s linear infinite",
+        marquee: "marquee 30s linear infinite",
       },
       backgroundImage: {
         "sunrise-01":
@@ -118,7 +119,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography')
-  ],
+  plugins: [require("@tailwindcss/typography")],
 };
