@@ -1,8 +1,8 @@
-import {GoldfinchConfig, CommunityRewards} from "@goldfinch-eng/protocol/typechain/ethers"
+import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 import {CommunityRewardsInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import {Deployed, TOKEN_LAUNCH_TIME_IN_SECONDS} from "../baseDeploy"
-import {ContractDeployer, getProtocolOwner, getContract, TRUFFLE_CONTRACT_PROVIDER} from "../deployHelpers"
+import {ContractDeployer, getProtocolOwner, getTruffleContract} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
 
 const logger = console.log
@@ -36,11 +36,7 @@ export async function deployCommunityRewards(
       },
     },
   })
-  const contract = await getContract<CommunityRewards, CommunityRewardsInstance>(
-    contractName,
-    TRUFFLE_CONTRACT_PROVIDER,
-    {at: communityRewards.address}
-  )
+  const contract = await getTruffleContract<CommunityRewardsInstance>(contractName, {at: communityRewards.address})
 
   return {name: contractName, contract}
 }

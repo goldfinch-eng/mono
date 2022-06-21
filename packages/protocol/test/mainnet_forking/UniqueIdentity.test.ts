@@ -10,7 +10,7 @@ import {assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
-import {MAINNET_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 const {deployments, web3} = hre
 
 const TEST_TIMEOUT = 180000 // 3 mins
@@ -25,7 +25,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   // Ensure the multisig has funds for various transactions
   const ownerAccount = await getSignerForAddress(owner)
   assertNonNullable(ownerAccount)
-  await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("10.0")})
+  await ownerAccount.sendTransaction({to: MAINNET_GOVERNANCE_MULTISIG, value: ethers.utils.parseEther("10.0")})
 
   const uniqueIdentity = await getDeployedAsTruffleContract<UniqueIdentityInstance>(deployments, "UniqueIdentity")
   const ethersUniqueIdentity = await toEthers<UniqueIdentity>(uniqueIdentity)
@@ -60,7 +60,7 @@ describe("UID", () => {
     ;[owner, person3] = accounts
     ;({uniqueIdentity, signer, ethersUniqueIdentity, network} = await setupTest())
 
-    await impersonateAccount(hre, MAINNET_MULTISIG)
+    await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)
     await fundWithWhales(["USDC", "BUSD", "USDT"], [owner, person3])
 
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})

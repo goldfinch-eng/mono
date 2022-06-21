@@ -1,5 +1,15 @@
+import {assertNonNullable} from "@goldfinch-eng/utils"
 import {AdminClient} from "defender-admin-client"
-import {ChainId, ChainName, CHAIN_NAME_BY_ID, getDefenderClient, SAFE_CONFIG} from "./deployHelpers"
+import {ChainId, ChainName, CHAIN_NAME_BY_ID, SAFE_CONFIG} from "./deployHelpers"
+
+const DEFENDER_API_KEY = process.env.DEFENDER_API_KEY
+const DEFENDER_API_SECRET = process.env.DEFENDER_API_SECRET
+
+function getDefenderClient() {
+  assertNonNullable(DEFENDER_API_KEY, "DEFENDER_API_KEY is null. It must be set as an envvar")
+  assertNonNullable(DEFENDER_API_SECRET, "DEFENDER_API_SECRET is null. It must be set as an envvar")
+  return new AdminClient({apiKey: DEFENDER_API_KEY, apiSecret: DEFENDER_API_SECRET})
+}
 
 export default abstract class DefenderProposer {
   hre: any

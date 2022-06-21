@@ -1,0 +1,135 @@
+import {isTestEnv, ContractDeployer, getEthersContract, getProtocolOwner, fixProvider, isMainnetForking} from "./"
+import hre, {ethers} from "hardhat"
+import {Contract, Signer} from "ethers"
+import {assertNonNullable} from "@goldfinch-eng/utils"
+import {Logger} from "../types"
+import {
+  openzeppelin_assertIsValidImplementation,
+  openzeppelin_assertIsValidUpgrade,
+  openzeppelin_saveDeploymentManifest,
+} from "./openzeppelin-upgrade-validation"
+import {ExistingContracts} from "./getExistingContracts"
+import {mergeABIs} from "hardhat-deploy/dist/src/utils"
+
+export type DepList = {[contractName: string]: {[contractName: string]: string}}
+
+export type ContractHolder = {
+  ProxyContract: Contract
+  ExistingContract: Contract
+  ExistingImplAddress: string
+  UpgradedContract: Contract
+  UpgradedImplAddress: string
+}
+
+export type UpgradedContracts = {
+  [contractName: string]: ContractHolder
+}
+
+/**
+ * Rewrite a proxy upgrade in the deployments directory. hardhat-deploy creates 3 different deployment files for a proxied contract:
+ *
+ *   - Contract_Proxy.json. Proxy ABI.
+ *   - Contract_Implementation.json. Implementation ABI.
+ *   - Contract.json. Combined Proxy and Implementation ABI.
+ *
+ * When using `hre.deployments.deploy` with the `proxy` key, hardhat-deploy will write out the combined ABI. But since
+ * we use a multisig to change the proxy's implementation, only the implementation ABI is written out by hardhat-deploy.
+ * Work around this by rewriting the combined ABI ourselves.
+ */
+export async function rewriteUpgradedDeployment(deploymentName: string) {
+  const implDeployment = await hre.deployments.get(`${deploymentName}_Implementation`)
+  const proxyDeployment = await hre.deployments.get(`${deploymentName}_Proxy`)
+
+  const mergedABI = mergeABIs([implDeployment.abi, proxyDeployment.abi], {
+    check: false,
+    skipSupportsInterface: false,
+  })
+
+  const deployment = await hre.deployments.get(deploymentName)
+  deployment.abi = mergedABI
+  deployment.implementation = implDeployment.address
+  await hre.deployments.save(deploymentName, deployment)
+}
+
+export async function upgradeContracts({
+  contractsToUpgrade = [],
+  contracts,
+  signer,
+  deployFrom,
+  deployer,
+  logger = console.log,
+}: {
+  contractsToUpgrade: string[]
+  contracts: ExistingContracts
+  signer: string | Signer
+  deployFrom: any
+  deployer: ContractDeployer
+  logger: Logger
+}): Promise<UpgradedContracts> {
+  logger("Deploying accountant")
+  const accountantDeployResult = await deployer.deployLibrary("Accountant", {
+    from: deployFrom,
+    gasLimit: 4000000,
+    args: [],
+  })
+
+  const dependencies: DepList = {
+    CreditLine: {["Accountant"]: accountantDeployResult.address},
+    SeniorPool: {["Accountant"]: accountantDeployResult.address},
+    GoldfinchFactory: {["Accountant"]: accountantDeployResult.address},
+  }
+
+  const upgradedContracts: UpgradedContracts = {}
+  for (const contractName of contractsToUpgrade) {
+    const contract = contracts[contractName]
+    assertNonNullable(contract)
+
+    let contractToDeploy = contractName
+    if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
+      contractToDeploy = `Test${contractName}`
+    }
+
+    logger("📡 Trying to deploy", contractToDeploy)
+    const ethersSigner = typeof signer === "string" ? await ethers.getSigner(signer) : signer
+    await deployer.deploy(contractToDeploy, {
+      from: deployFrom,
+      proxy: {
+        owner: await getProtocolOwner(),
+      },
+      libraries: dependencies[contractName],
+    })
+
+    logger("Assert valid implementation and upgrade", contractToDeploy)
+    const proxyDeployment = await hre.deployments.get(`${contractToDeploy}`)
+    const implDeployment = await hre.deployments.get(`${contractToDeploy}_Implementation`)
+    await openzeppelin_assertIsValidImplementation(implDeployment)
+    // To upgrade the manifest:
+    //  1. run `npm run generate-manifest` on main
+    //  2. checkout your branch
+    //  3. copy/paste it to .openzeppelin/unknown-*.json
+    //  4. run `npm run generate-manifest` again
+    await openzeppelin_assertIsValidUpgrade(fixProvider(hre.network.provider), proxyDeployment.address, implDeployment)
+
+    const upgradedContract = (await getEthersContract(contractToDeploy, {at: implDeployment.address})).connect(
+      ethersSigner
+    )
+    // Get a contract object with the latest ABI, attached to the signer
+    const upgradedImplAddress = upgradedContract.address
+
+    upgradedContracts[contractName] = {
+      ...contract,
+      UpgradedContract: upgradedContract,
+      UpgradedImplAddress: upgradedImplAddress,
+    }
+
+    // We don't want to re-write the upgrade manifest and deployments manifest
+    // when we deploy during a mainnet forking test. If we did, we would be
+    // checking if the upgrade was safe with the last thing that we deployed,
+    // not what's currently on mainnet
+    if (!isMainnetForking()) {
+      await rewriteUpgradedDeployment(contractName)
+      await openzeppelin_saveDeploymentManifest(fixProvider(hre.network.provider), proxyDeployment, implDeployment)
+    }
+  }
+  return upgradedContracts
+}

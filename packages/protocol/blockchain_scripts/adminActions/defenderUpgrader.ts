@@ -1,37 +1,7 @@
-import {HardhatRuntimeEnvironment} from "hardhat/types"
-
-import {SAFE_CONFIG, getDefenderClient, CHAIN_NAME_BY_ID, ChainId, AddressString, ChainName} from "../deployHelpers"
-import {AdminClient} from "defender-admin-client"
 import {Network} from "defender-base-client"
+import DefenderProposer from "../DefenderProposer"
 
-class DefenderUpgrader {
-  hre: HardhatRuntimeEnvironment
-  logger: typeof console.log
-  chainId: ChainId
-  network: ChainName
-  client: AdminClient
-  safeAddress: AddressString
-  goldfinchUnderwriter: string
-
-  constructor({hre, logger, chainId}) {
-    this.hre = hre
-    this.logger = logger
-    this.chainId = chainId
-    this.network = CHAIN_NAME_BY_ID[chainId]
-    this.client = getDefenderClient()
-    const safe = SAFE_CONFIG[chainId]
-    this.goldfinchUnderwriter = "0x79ea65C834EC137170E1aA40A42b9C80df9c0Bb4"
-    if (!safe) {
-      throw new Error(`No safe address found for chain id: ${chainId}`)
-    } else {
-      this.safeAddress = safe.safeAddress
-    }
-  }
-
-  defenderUrl(contractAddress) {
-    return `https://defender.openzeppelin.com/#/admin/contracts/${this.network}-${contractAddress}`
-  }
-
+class DefenderUpgrader extends DefenderProposer {
   async send({
     method,
     contract,

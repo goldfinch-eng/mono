@@ -30,7 +30,8 @@ import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
-import {getExistingContracts, MAINNET_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {JsonRpcSigner} from "@goldfinch-eng/autotasks/node_modules/@ethersproject/providers/lib"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 const {deployments, web3} = hre
@@ -569,11 +570,11 @@ async function setupResources({deployments}: {deployments: DeploymentsExtension}
   // Ensure the multisig has funds for various transactions
   const ownerAccount = await getSignerForAddress(owner)
   assertNonNullable(ownerAccount)
-  await ownerAccount.sendTransaction({to: MAINNET_MULTISIG, value: ethers.utils.parseEther("10.0")})
+  await ownerAccount.sendTransaction({to: MAINNET_GOVERNANCE_MULTISIG, value: ethers.utils.parseEther("10.0")})
 
   // Impersonate multisig
-  await impersonateAccount(hre, MAINNET_MULTISIG)
-  const mainnetMultisigSigner = ethers.provider.getSigner(MAINNET_MULTISIG)
+  await impersonateAccount(hre, MAINNET_GOVERNANCE_MULTISIG)
+  const mainnetMultisigSigner = ethers.provider.getSigner(MAINNET_GOVERNANCE_MULTISIG)
 
   // Set up Goldfinch contracts
   const goldfinchContracts = await setupGoldfinchResources(mainnetMultisigSigner)
@@ -642,7 +643,7 @@ async function setupExternalResources(): Promise<ExternalResources> {
 async function fundOwnerAccountAndGoList(resources: TestResources) {
   const {legacyGoldfinchConfig, owner, bwr} = resources
 
-  await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr], {from: MAINNET_MULTISIG})
+  await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr], {from: MAINNET_GOVERNANCE_MULTISIG})
 }
 
 async function setupSeniorPool(resources: TestResources) {
@@ -651,8 +652,8 @@ async function setupSeniorPool(resources: TestResources) {
   await fundWithWhales(["USDC"], [owner], 10000)
 
   // Increase the Senior Pool limit so we can perform large deposits
-  await goldfinchConfig.setNumber(1, new BN(400000000000000), {from: MAINNET_MULTISIG})
-  await legacyGoldfinchConfig.setNumber(1, new BN(400000000000000), {from: MAINNET_MULTISIG})
+  await goldfinchConfig.setNumber(1, new BN(400000000000000), {from: MAINNET_GOVERNANCE_MULTISIG})
+  await legacyGoldfinchConfig.setNumber(1, new BN(400000000000000), {from: MAINNET_GOVERNANCE_MULTISIG})
 
   await erc20Approve(usdc, seniorPool.address, MAX_UINT, [owner])
   await seniorPool.deposit(usdcVal(10000), {from: owner})

@@ -1,4 +1,3 @@
-import {TestERC20} from "@goldfinch-eng/protocol/typechain/ethers"
 import {TestERC20Instance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import BN from "bn.js"
@@ -10,9 +9,8 @@ import {
   getUSDCAddress,
   getProtocolOwner,
   USDCDecimals,
-  getContract,
-  TRUFFLE_CONTRACT_PROVIDER,
   updateConfig,
+  getTruffleContract,
 } from "../deployHelpers"
 
 const logger = console.log
@@ -34,7 +32,7 @@ export async function getOrDeployUSDC(deployer: ContractDeployer, config) {
     })
     usdcAddress = fakeUSDC.address
     await (
-      await getContract<TestERC20, TestERC20Instance>("TestERC20", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+      await getTruffleContract<TestERC20Instance>("TestERC20", {from: gf_deployer})
     ).transfer(protocolOwner, String(new BN(10000000).mul(USDCDecimals)))
   }
   await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
