@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
+import { formatDistanceToNowStrict } from "date-fns";
 import { BigNumber } from "ethers";
 
 import { InfoIconTooltip, Icon } from "@/components/design-system";
@@ -18,6 +19,7 @@ export const REPAYMENT_PROGRESS_PANEL_FIELDS = gql`
     interestAmountRepaid
     creditLine {
       limit
+      termEndTime
     }
   }
 `;
@@ -53,6 +55,11 @@ export default function RepaymentProgressPanel({
   );
   const interestOutstanding =
     tranchedPool.totalAmountOwed.sub(principalOutstanding);
+  const remainingInterestTime = formatDistanceToNowStrict(
+    tranchedPool.creditLine.termEndTime.toNumber() * 1000,
+    { unit: "month" }
+  );
+
   return (
     <div className="rounded-xl border border-sand-200 p-5">
       {userHasPosition ? (
@@ -81,7 +88,7 @@ export default function RepaymentProgressPanel({
                 }),
               ],
               [
-                "Interest",
+                `Interest (${remainingInterestTime})`,
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
                   amount: multiplyByFraction(
@@ -123,7 +130,7 @@ export default function RepaymentProgressPanel({
                 }),
               ],
               [
-                "Interest",
+                `Interest (${remainingInterestTime})`,
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
                   amount: interestOutstanding,
