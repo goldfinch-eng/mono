@@ -3,14 +3,16 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
-import { Link, Table } from "@/components/design-system";
+import { GoldfinchLogo, Link, Table } from "@/components/design-system";
 import { Identicon } from "@/components/identicon";
+import { CONTRACT_ADDRESSES } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
   TransactionCategory,
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
+import { abbreviateAddress } from "@/lib/wallet";
 
 gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
@@ -62,6 +64,9 @@ export function TransactionTable() {
         token: SupportedCrypto.Usdc,
         amount: transaction.amount,
       });
+      const isStakingRewards =
+        transaction.user.id.toLowerCase() ===
+        CONTRACT_ADDRESSES["StakingRewards"].toLowerCase();
 
       return [
         <div key={`${transaction.id}-user`} className="flex items-center gap-2">
@@ -78,13 +83,15 @@ export function TransactionTable() {
               </div>
               <div>{transaction.tranchedPool?.borrower.name}</div>
             </>
+          ) : isStakingRewards ? (
+            <>
+              <GoldfinchLogo className="h-6 w-6 shrink-0" />
+              <div>Staking Rewards</div>
+            </>
           ) : (
             <>
               <Identicon className="h-6 w-6" account={transaction.user.id} />
-              <div>
-                {transaction.user.id.substring(0, 6)}...
-                {transaction.user.id.substring(transaction.user.id.length - 4)}
-              </div>
+              <div>{abbreviateAddress(transaction.user.id)}</div>
             </>
           )}
         </div>,
