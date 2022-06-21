@@ -122,10 +122,10 @@ export default function SupplyPanel({
   } = useForm<SupplyForm>({ defaultValues: { source: "wallet" } });
 
   const handleMax = async () => {
-    if (!account || !usdcContract) {
+    if (!account || !usdcContract || !availableBalance) {
       return;
     }
-    const userUsdcBalance = await usdcContract.balanceOf(account);
+    const userUsdcBalance = availableBalance;
     const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
       ? userUsdcBalance
       : remainingJuniorCapacity;
@@ -225,7 +225,9 @@ export default function SupplyPanel({
 
   const supplyValue = watch("supply");
   const selectedSource = watch("source");
-  const [availableBalance, setAvailableBalance] = useState<string | null>(null);
+  const [availableBalance, setAvailableBalance] = useState<BigNumber | null>(
+    null
+  );
   useEffect(() => {
     if (!usdcContract || !account) {
       return;
@@ -233,14 +235,7 @@ export default function SupplyPanel({
     if (selectedSource === "wallet") {
       usdcContract
         .balanceOf(account)
-        .then((balance) =>
-          setAvailableBalance(
-            formatCrypto(
-              { token: SupportedCrypto.Usdc, amount: balance },
-              { includeToken: true }
-            )
-          )
-        );
+        .then((balance) => setAvailableBalance(balance));
     } else if (selectedSource.startsWith("seniorPool")) {
       const id = selectedSource.split("-")[1];
       const seniorPoolPosition = user?.seniorPoolStakedPositions.find(
@@ -250,10 +245,7 @@ export default function SupplyPanel({
         return;
       }
       setAvailableBalance(
-        formatCrypto(
-          sharesToUsdc(seniorPoolPosition.amount, seniorPoolSharePrice),
-          { includeToken: true }
-        )
+        sharesToUsdc(seniorPoolPosition.amount, seniorPoolSharePrice).amount
       );
     }
   }, [selectedSource, usdcContract, account, user, seniorPoolSharePrice]);
@@ -419,7 +411,15 @@ export default function SupplyPanel({
             name="supply"
             label="Supply amount"
             labelDecoration={
-              <span className="text-xs">Balance: {availableBalance}</span>
+              availableBalance !== null ? (
+                <span className="text-xs">
+                  Balance:{" "}
+                  {formatCrypto(
+                    { token: SupportedCrypto.Usdc, amount: availableBalance },
+                    { includeToken: true }
+                  )}
+                </span>
+              ) : null
             }
             rules={{ required: "Required", validate: validateMaximumAmount }}
             colorScheme="dark"
