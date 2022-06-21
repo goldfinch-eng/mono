@@ -10,7 +10,6 @@ const env = nextEnv.loadEnvConfig(".");
 const networkName = env.combinedEnv.NEXT_PUBLIC_NETWORK_NAME as string;
 console.log(`Gathering contract addresses for network ${networkName}`);
 let contracts: Record<string, { address: string }>;
-let chainId: number;
 if (networkName === "mainnet") {
   const mainnetDeployments = JSON.parse(
     fs
@@ -20,7 +19,6 @@ if (networkName === "mainnet") {
       .toString()
   );
   contracts = mainnetDeployments["1"].mainnet.contracts;
-  chainId = 1;
 } else if (networkName === "localhost") {
   const localDeployments = JSON.parse(
     fs
@@ -30,7 +28,6 @@ if (networkName === "mainnet") {
       .toString()
   );
   contracts = localDeployments["31337"].localhost.contracts;
-  chainId = 31337;
 } else if (networkName === "murmuration") {
   const murmurationDeployments = JSON.parse(
     fs
@@ -43,7 +40,6 @@ if (networkName === "mainnet") {
       .toString()
   );
   contracts = murmurationDeployments["31337"].localhost.contracts;
-  chainId = 31337;
 } else {
   throw new Error(`Unrecognized network name ${networkName}`);
 }
@@ -62,9 +58,9 @@ const addresses = {
   StakingRewards: contracts.StakingRewards.address,
   Zapper: contracts.Zapper.address,
 };
-const code = `export const CONTRACT_ADDRESSES: {
-  [chaindId: number]: Record<string, string>;
-} = {${chainId}: ${JSON.stringify(addresses)}}`;
+const code = `// For network: ${networkName}
+export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};
+`;
 fs.writeFileSync(
   path.resolve(__dirname, contractAddressFileRelativePath),
   prettier.format(code, { parser: "typescript" })

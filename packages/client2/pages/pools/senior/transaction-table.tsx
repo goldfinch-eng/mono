@@ -11,6 +11,7 @@ import {
   TransactionCategory,
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
+import { abbreviateAddress } from "@/lib/wallet";
 
 gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
@@ -20,7 +21,9 @@ gql`
           TRANCHED_POOL_DRAWDOWN
           TRANCHED_POOL_REPAYMENT
           SENIOR_POOL_DEPOSIT
+          SENIOR_POOL_DEPOSIT_AND_STAKE
           SENIOR_POOL_WITHDRAWAL
+          SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
         ]
       }
       orderBy: timestamp
@@ -81,23 +84,12 @@ export function TransactionTable() {
           ) : (
             <>
               <Identicon className="h-6 w-6" account={transaction.user.id} />
-              <div>
-                {transaction.user.id.substring(0, 6)}...
-                {transaction.user.id.substring(transaction.user.id.length - 4)}
-              </div>
+              <div>{abbreviateAddress(transaction.user.id)}</div>
             </>
           )}
         </div>,
-        <div key={`${transaction.id}-category`}>
-          {transaction.category === TransactionCategory.SeniorPoolDeposit
-            ? "Supply"
-            : transaction.category === TransactionCategory.SeniorPoolWithdrawal
-            ? "Withdrawal"
-            : transaction.category === TransactionCategory.TranchedPoolDrawdown
-            ? "Drawdown"
-            : transaction.category === TransactionCategory.TranchedPoolRepayment
-            ? "Repayment"
-            : null}
+        <div key={`${transaction.id}-category`} className="text-left">
+          {getTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`} className="text-right">
           {transactionAmount}
@@ -162,4 +154,25 @@ export function TransactionTable() {
       )}
     </div>
   );
+}
+
+function getTransactionLabel(transaction: {
+  category: TransactionCategory;
+}): string {
+  switch (transaction.category) {
+    case TransactionCategory.SeniorPoolDeposit:
+      return "Supply";
+    case TransactionCategory.SeniorPoolDepositAndStake:
+      return "Supply and Stake";
+    case TransactionCategory.SeniorPoolWithdrawal:
+      return "Withdrawal";
+    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+      return "Unstake and Withdraw";
+    case TransactionCategory.TranchedPoolRepayment:
+      return "Repayment";
+    case TransactionCategory.TranchedPoolDrawdown:
+      return "Drawdown";
+    default:
+      return "Transaction";
+  }
 }

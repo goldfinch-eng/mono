@@ -1,5 +1,5 @@
-import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
-import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine} from "../../generated/schema"
+import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
+import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
@@ -173,7 +173,9 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
   // A missing leverage ratio implies this was a v1 style deal and the senior pool supplied all the capital
-  let seniorFraction = leverageRatio ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal()) : ONE.toBigDecimal()
+  let seniorFraction = leverageRatio
+    ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
+    : ONE.toBigDecimal()
   let juniorFraction = leverageRatio ? ONE.divDecimal(ONE.plus(leverageRatio).toBigDecimal()) : ZERO.toBigDecimal()
   let interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
   let juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
@@ -187,4 +189,19 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   let netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
   let juniorTranche = balance.toBigDecimal().times(juniorFraction)
   return netJuniorInterest.div(juniorTranche).times(ONE_HUNDRED)
+}
+
+/**
+ * A helper function that creates a Transaction entity from an Ethereum event. Does not save the entity, you must call .save() yourself, after you add any additional properties.
+ * @param event Ethereum event to process. Can be any event.
+ * @param category The category to assign to this. Must conform to the TransactionCategory enum.
+ * @returns Instance of a Transaction entity.
+ */
+export function createTransactionFromEvent(event: ethereum.Event, category: string): Transaction {
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
+  transaction.timestamp = event.block.timestamp.toI32()
+  transaction.blockNumber = event.block.number.toI32()
+  transaction.category = category
+  return transaction
 }

@@ -46,7 +46,8 @@ export function getContract<T extends SupportedContractName>({
   provider: Provider | Signer;
   address?: string;
 }): Contract<T> {
-  const _address = address ?? CONTRACT_ADDRESSES[chainId][name];
+  const _address =
+    address ?? CONTRACT_ADDRESSES[name as keyof typeof CONTRACT_ADDRESSES];
   if (!_address) {
     throw new Error(
       `Unable to find address for contract ${name} on chainId ${chainId}`

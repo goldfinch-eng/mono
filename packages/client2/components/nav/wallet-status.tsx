@@ -203,27 +203,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                             amount: transaction.amount,
                           })} `
                         : null}
-                      {transaction.category ===
-                      TransactionCategory.SeniorPoolDeposit
-                        ? "Senior Pool Supply"
-                        : transaction.category ===
-                          TransactionCategory.SeniorPoolWithdrawal
-                        ? "Senior Pool Withdrawal"
-                        : transaction.category ===
-                          TransactionCategory.TranchedPoolDeposit
-                        ? "Borrower Pool Supply"
-                        : transaction.category ===
-                          TransactionCategory.TranchedPoolWithdrawal
-                        ? "Borrower Pool Withdraw"
-                        : transaction.category ===
-                          TransactionCategory.TranchedPoolDrawdown
-                        ? "Drawdown"
-                        : transaction.category ===
-                          TransactionCategory.TranchedPoolRepayment
-                        ? "Repayment"
-                        : transaction.category === TransactionCategory.UidMinted
-                        ? "Mint UID"
-                        : null}
+                      {getTransactionLabel(transaction)}
                     </td>
                     <td className="text-right">
                       <Link
@@ -274,4 +254,31 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       </div>
     </div>
   );
+}
+
+function getTransactionLabel(transaction: {
+  category: TransactionCategory;
+}): string {
+  switch (transaction.category) {
+    case TransactionCategory.SeniorPoolDeposit:
+      return "Senior Pool Supply";
+    case TransactionCategory.SeniorPoolDepositAndStake:
+      return "Senior Pool Supply and Stake";
+    case TransactionCategory.SeniorPoolWithdrawal:
+      return "Senior Pool Withdrawal";
+    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+      return "Senior Pool Unstake and Withdraw";
+    case TransactionCategory.TranchedPoolDeposit:
+      return "Borrower Pool Supply";
+    case TransactionCategory.TranchedPoolWithdrawal:
+      return "Borrower Pool Withdrawal";
+    case TransactionCategory.TranchedPoolRepayment:
+      return "Repayment";
+    case TransactionCategory.TranchedPoolDrawdown:
+      return "Drawdown";
+    case TransactionCategory.UidMinted:
+      return "Mint UID";
+    default:
+      return "";
+  }
 }
