@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
-import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { EPSILON, FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
   SupportedCrypto,
@@ -175,4 +175,14 @@ export async function signAgreement(
       throw e;
     }
   }
+}
+
+/**
+ * A utility function that tells you if n1 is within one epsilon of n2. This means that the n1 is "reasonably close" to n2.
+ * For use in sticky situations where the user has to enter an imprecise amount.
+ * @param n1
+ * @param n2
+ */
+export function withinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
+  return n2.sub(EPSILON).lte(n1) && n1.lte(n2.add(EPSILON));
 }
