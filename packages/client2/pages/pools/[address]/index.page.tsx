@@ -11,7 +11,6 @@ import {
   TabList,
   TabPanels,
   Heading,
-  Paragraph,
   ShimmerLines,
   HelperText,
   Marquee,
@@ -378,14 +377,16 @@ export default function PoolPage() {
             </TabList>
             <TabPanels>
               <TabContent>
-                <h2 className="mb-8 text-3xl">Deal Overview</h2>
-                {tranchedPool ? (
-                  <Paragraph className="mb-8 whitespace-pre-wrap">
-                    {tranchedPool.description}
-                  </Paragraph>
-                ) : (
-                  <ShimmerLines lines={3} />
-                )}
+                <div className="mb-8">
+                  <h2 className="mb-4 text-3xl">Deal Overview</h2>
+                  {tranchedPool ? (
+                    <p className="whitespace-pre-wrap text-xl">
+                      {tranchedPool.description}
+                    </p>
+                  ) : (
+                    <ShimmerLines lines={3} />
+                  )}
+                </div>
 
                 {tranchedPool?.dataroom ? (
                   <Button
@@ -396,40 +397,36 @@ export default function PoolPage() {
                     target="_blank"
                     rel="noreferrer"
                     size="lg"
-                    className="mb-20 block"
+                    className="mb-8 block"
                   >
                     Dataroom
                   </Button>
                 ) : null}
 
                 {tranchedPool?.highlights ? (
-                  <>
-                    <Heading level={4} className="mb-4 !text-lg">
-                      Highlights
-                    </Heading>
-                    <ul className="mb-8 list-outside list-disc pl-5">
+                  <div className="mb-8">
+                    <h3 className="mb-4 text-xl font-semibold">Highlights</h3>
+                    <ul className="list-outside list-disc pl-5">
                       {tranchedPool?.highlights?.map((item, idx) => (
                         <li
                           key={`pool-highlight-${address}-${idx}`}
                           className="py-1"
                         >
-                          <Paragraph className="whitespace-pre-wrap">
-                            {item}
-                          </Paragraph>
+                          {item}
                         </li>
                       ))}
                     </ul>
-                  </>
-                ) : null}
-
-                <Heading level={4} className="mb-4 !text-lg">
-                  Recent Activity
-                </Heading>
-                {tranchedPool ? (
-                  <div className="mb-16">
-                    <TransactionTable tranchedPoolId={tranchedPool.id} />
                   </div>
                 ) : null}
+
+                <div className="mb-8">
+                  <h2 className="mb-4 text-xl font-semibold">
+                    Recent Activity
+                  </h2>
+                  {tranchedPool ? (
+                    <TransactionTable tranchedPoolId={tranchedPool.id} />
+                  ) : null}
+                </div>
 
                 <DealTermsTable tranchedPool={tranchedPool} />
               </TabContent>

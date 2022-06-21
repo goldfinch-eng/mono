@@ -142,7 +142,7 @@ export default function SeniorPoolPage() {
             ) : null}
           </div>
           <Heading className="text-center lg:text-left" level={1}>
-            Senior Pool
+            Goldfinch Senior Pool
           </Heading>
         </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
@@ -185,16 +185,20 @@ export default function SeniorPoolPage() {
               may be outdated.
             </HelperText>
           ) : null}
-          {seniorPool ? <StatusSection seniorPool={seniorPool} /> : null}
-          <div className="mb-8 mt-14">
-            <h2 className="mb-8 text-3xl">Overview</h2>
-            <p className="mb-8 text-2xl font-light">
+          {seniorPool ? (
+            <StatusSection className="mb-8" seniorPool={seniorPool} />
+          ) : null}
+          <div className="mb-8">
+            <h2 className="mb-4 text-3xl">Overview</h2>
+            <p className="text-xl">
               The Senior Pool is the simple, lower risk, lower return option on
               Goldfinch. Capital is automatically diversified across Borrower
               pools, and protected by Backer capital.
             </p>
-            <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-            <ul className="mb-8 list-outside list-disc pl-5 text-lg">
+          </div>
+          <div className="mb-8">
+            <h3 className="mb-4 text-xl font-semibold">Highlights</h3>
+            <ul className="list-outside list-disc pl-5">
               <li>
                 Earn passive yield. Capital is automatically deployed across a
                 diverse portfolio of Borrowers that are vetted by Backers.
@@ -209,19 +213,19 @@ export default function SeniorPoolPage() {
                 plus GFI from liquidity mining distributions.
               </li>
             </ul>
-            <div className="mb-10">
-              <Button
-                as="a"
-                size="lg"
-                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
-                iconRight="ArrowTopRight"
-                variant="rounded"
-              >
-                How it Works
-              </Button>
-            </div>
-            <TransactionTable />
           </div>
+          <div className="mb-8">
+            <Button
+              as="a"
+              size="lg"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
+              iconRight="ArrowTopRight"
+              variant="rounded"
+            >
+              How it Works
+            </Button>
+          </div>
+          <TransactionTable />
         </div>
       </div>
     </>
