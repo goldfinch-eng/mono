@@ -79,7 +79,9 @@ export default function SeniorPoolPage() {
     account &&
     seniorPool?.latestPoolStatus.sharePrice &&
     (data?.viewer.fiduBalance?.amount.gt(BigNumber.from(0)) ||
-      (user && user.seniorPoolStakedPositions.length > 0));
+      (user &&
+        user.seniorPoolStakedPositions.length > 0 &&
+        user.seniorPoolStakedPositions.some((s) => s.amount.gt(0))));
 
   // https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
