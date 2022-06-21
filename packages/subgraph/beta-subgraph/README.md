@@ -2,9 +2,9 @@
 
 This subdirectory contains info related to provisioning and deploying a version of our subgraph on AWS ECS, using the [Docker Compose integration with ECS](https://docs.docker.com/cloud/ecs-integration/). We call this the "beta" subgraph as it's intended to support the https://beta.app.goldfinch.finance app. This subgraph is configured to index from the Tenderly fork whose RPC url is defined in `.env.beta-subgraph`.
 
-## Deployment on ECS
+## ECS provisioning
 
-### Creating a cluster
+### Creating an ECS cluster
 
 From the `packages/subgraph` dir:
 
@@ -31,14 +31,14 @@ From the `packages/subgraph` dir:
       - To identify which Target Group corresponds to the graph-node's port 8000, see the load balancer's existing TCP:8000 listener.
   3. Add a CNAME record to `goldfinch.finance`'s DNS records, mapping host `beta.subgraph.goldfinch.finance` to the DNS name of the load balancer (e.g. `subgr-LoadB-DUDQKWD7I4P6-34481d98d3426d4c.elb.us-east-1.amazonaws.com`).
 
-### Deploying to a cluster
+### Deploying to an ECS cluster
 
 1. You can update an existing cluster with the same command used for creating the cluster:
   ```
   docker compose --env-file beta-subgraph/.env.beta-subgraph up
   ```
 
-### Destroying a cluster
+### Destroying an ECS cluster
 
 To take down a cluster, from the `packages/subgraph` dir:
 
@@ -52,6 +52,16 @@ To take down a cluster, from the `packages/subgraph` dir:
   ```
 3. Delete the CNAME record for `beta.subgraph.goldfinch.finance` from `goldfinch.finance`'s DNS records. (This is ideal; though I suspect AWS's load balancers do not reuse DNS names as they seem to contain some randomness/uniquely-identifyingness.)
 
-NOTE: Taking down a cluster does NOT automatically destroy its volumes (cf. https://docs.docker.com/cloud/ecs-integration/#volumes)! To destroy the cluster's volumes, so that the next time you bring up the cluster it does not retain any of the old cluster's data, you must destroy the volumes too.
+NOTE: Taking down a cluster does NOT automatically destroy its volumes (cf. https://docs.docker.com/cloud/ecs-integration/#volumes)! To destroy the cluster's volumes, so that the next time you bring up the cluster it does not retain any of the old cluster's data, you must destroy the volumes too:
 
-List the volumes on ECS using `docker volume ls`, then run `docker volume rm $FILESYSTEM_ID` where `$FILESYSTEM_ID` is the id of the Elastic File System used as the Docker volume.
+- List the volumes on ECS using `docker volume ls`, then run `docker volume rm $FILESYSTEM_ID` where `$FILESYSTEM_ID` is the id of the Elastic File System used as the Docker volume.
+
+## Creating the subgraph on ECS
+
+1. Ensure that `all_dev.json` in `packages/protocol/deployments` corresponds to the chain the subgraph will be indexing.
+  - For example, if the subgraph is going to index the Murmuration chain, then this `all_dev.json` file should be extracted from the Murmuration instance. The `murmuration/README.md` provides commands for doing this.
+1. `cd packages/subgraph`
+1. `npx ts-node ./scripts/setup-subgraph-manifest-local.ts`
+1. `npx graph create --node $LOAD_BALANCER_URL:8020 goldfinch-subgraph` where `$LOAD_BALANCER_URL` is the url of the load balancer created by the ECS cluster.
+1. `npx graph codegen`
+1. `npx graph deploy --node $LOAD_BALANCER_URL:8020 --ipfs $LOAD_BALANCER_URL:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml`
