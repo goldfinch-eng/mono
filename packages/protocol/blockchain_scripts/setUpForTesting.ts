@@ -569,7 +569,7 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logge
   for (const erc20 of erc20s) {
     const {contract} = erc20
     const decimals = ten.pow(new BN(await contract.decimals()))
-    await contract.transfer(userToFund, String(new BN(1000000).mul(decimals)))
+    await contract.transfer(userToFund, String(new BN(250000).mul(decimals)))
   }
 }
 
