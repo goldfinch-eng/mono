@@ -1,5 +1,3 @@
-import { utils } from "ethers";
-
 export * from "./contract-addresses";
 export * from "./metadata/borrowers";
 
@@ -21,8 +19,6 @@ export const DESIRED_CHAIN_ID =
 export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
-
-export const EPSILON = utils.parseUnits("1", 4);
 
 export const TRANCHES = {
   Senior: 1,

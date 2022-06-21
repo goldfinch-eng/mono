@@ -18,7 +18,7 @@ import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc, usdcToShares, withinEpsilon } from "@/lib/pools";
+import { sharesToUsdc, usdcToShares, usdcWithinEpsilon } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
@@ -68,7 +68,7 @@ export function SeniorPoolWithDrawalPanel({
     }
     const sharePrice = await seniorPoolContract.sharePrice(); // ensures that share price is as up-to-date as possible by fetching it when withdrawal is performed.
     let withdrawAmountUsdc = utils.parseUnits(data.amount, USDC_DECIMALS);
-    if (withinEpsilon(withdrawAmountUsdc, maxWithdrawableUsdc)) {
+    if (usdcWithinEpsilon(withdrawAmountUsdc, maxWithdrawableUsdc)) {
       withdrawAmountUsdc = maxWithdrawableUsdc;
     }
     const withdrawAmountFidu =
@@ -191,7 +191,7 @@ export function SeniorPoolWithDrawalPanel({
     }
     if (
       valueAsUsdc.gt(maxWithdrawableUsdc) &&
-      !withinEpsilon(valueAsUsdc, maxWithdrawableUsdc)
+      !usdcWithinEpsilon(valueAsUsdc, maxWithdrawableUsdc)
     ) {
       return "Amount exceeds what is available to withdraw";
     }
