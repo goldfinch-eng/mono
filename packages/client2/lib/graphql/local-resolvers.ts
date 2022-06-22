@@ -1,6 +1,7 @@
 import { Resolvers } from "@apollo/client";
 
 import { getContract } from "../contracts";
+import { getGeolocation } from "../location";
 import { getProvider } from "../wallet";
 import {
   GfiPrice,
@@ -10,6 +11,7 @@ import {
   CryptoAmount,
   BlockInfo,
   CreditLine,
+  Geolocation,
 } from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
@@ -151,6 +153,14 @@ export const resolvers: Resolvers = {
         __typename: "CryptoAmount",
         token: SupportedCrypto.Fidu,
         amount: fiduBalance,
+      };
+    },
+    async geolocation(): Promise<Geolocation> {
+      const location = await getGeolocation();
+
+      return {
+        __typename: "Geolocation",
+        ...location,
       };
     },
   },

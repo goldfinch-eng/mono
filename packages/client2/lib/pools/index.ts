@@ -1,7 +1,12 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
-import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
+import {
+  FIDU_DECIMALS,
+  USDC_DECIMALS,
+  SENIOR_POOL_AGREEMENT_NON_US,
+  SENIOR_POOL_AGREEMENT_US,
+} from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
   SupportedCrypto,
@@ -186,4 +191,24 @@ export async function signAgreement(
 export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
   const epsilon = utils.parseUnits("1", 4);
   return n2.sub(epsilon).lte(n1) && n1.lte(n2.add(epsilon));
+}
+
+/**
+ * Returns the legal link for the senior pool agreement
+ * @param user The eligibility fields for the user
+ * @returns The route for the agreement
+ */
+export function getSeniorPoolLegalLink(
+  user: UserEligibilityFieldsFragment | null,
+  country?: string | null
+) {
+  if (
+    (user || {}).isUsEntity ||
+    (user || {}).isUsAccreditedIndividual ||
+    country === "US"
+  ) {
+    return SENIOR_POOL_AGREEMENT_US;
+  }
+
+  return SENIOR_POOL_AGREEMENT_NON_US;
 }

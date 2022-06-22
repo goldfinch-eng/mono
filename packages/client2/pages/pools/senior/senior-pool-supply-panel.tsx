@@ -20,8 +20,13 @@ import {
   SupportedCrypto,
   SupportedFiat,
   UidType,
+  useCurrentViewerLocationQuery,
 } from "@/lib/graphql/generated";
-import { canUserParticipateInPool, computeApyFromGfiInFiat } from "@/lib/pools";
+import {
+  canUserParticipateInPool,
+  computeApyFromGfiInFiat,
+  getSeniorPoolLegalLink,
+} from "@/lib/pools";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
@@ -45,6 +50,16 @@ export const SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS = gql`
     isUsNonAccreditedIndividual
     isNonUsIndividual
     isGoListed
+  }
+`;
+
+gql`
+  query CurrentViewerLocation {
+    viewer @client {
+      geolocation {
+        country
+      }
+    }
   }
 `;
 
@@ -206,6 +221,14 @@ export function SeniorPoolSupplyPanel({
       );
   }, [account, usdcContract]);
 
+  const { data: locationData, error: locationError } =
+    useCurrentViewerLocationQuery();
+
+  const legalLink = getSeniorPoolLegalLink(
+    user,
+    locationData?.viewer.geolocation?.country
+  );
+
   return (
     <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row lg:flex-col">
       <div
@@ -349,9 +372,9 @@ export function SeniorPoolSupplyPanel({
             {/* TODO senior pool agreement page */}
             <div className="mb-4 text-xs">
               By clicking “Supply” below, I hereby agree to the{" "}
-              <Link href="/senior-pool-agreement">Senior Pool Agreement</Link>.
-              Please note the protocol deducts a 0.50% fee upon withdrawal for
-              protocol reserves.
+              <Link href={legalLink}>Senior Pool Agreement</Link>. Please note
+              the protocol deducts a 0.50% fee upon withdrawal for protocol
+              reserves.
             </div>
           </div>
           <Button
