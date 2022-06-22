@@ -1,11 +1,16 @@
+const oldClientOrigin =
+  process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration"
+    ? "https://murmuration.goldfinch.finance"
+    : "https://app.goldfinch.finance";
+
 export const NAV_ITEMS = [
   { label: "Earn", href: "/earn" },
-  { label: "Borrow", href: "https://murmuration.goldfinch.finance/borrow" },
-  { label: "GFI", href: "https://murmuration.goldfinch.finance/gfi" },
-  { label: "Stake", href: "https://murmuration.goldfinch.finance/stake" },
+  { label: "Borrow", href: `${oldClientOrigin}/borrow` },
+  { label: "GFI", href: `${oldClientOrigin}/gfi` },
+  { label: "Stake", href: `${oldClientOrigin}/stake` },
   {
     label: "Transactions",
-    href: "https://murmuration.goldfinch.finance/transactions",
+    href: `${oldClientOrigin}/transactions`,
   },
 ];
 
