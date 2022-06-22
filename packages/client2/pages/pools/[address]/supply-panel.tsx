@@ -23,6 +23,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import {
+  approveErc20IfRequired,
   canUserParticipateInPool,
   computeApyFromGfiInFiat,
   sharesToUsdc,
@@ -30,7 +31,11 @@ import {
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { abbreviateAddress, useWallet } from "@/lib/wallet";
+import {
+  abbreviateAddress,
+  isSmartContractWallet,
+  useWallet,
+} from "@/lib/wallet";
 
 export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
   fragment SupplyPanelTranchedPoolFields on TranchedPool {
@@ -167,29 +172,42 @@ export default function SupplyPanel({
       if (!tranchedPoolContract) {
         throw new Error("Wallet not connected properly");
       }
-      const now = (await provider.getBlock("latest")).timestamp;
-      const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
-      const signature = await generateErc20PermitSignature({
-        erc20TokenContract: usdcContract,
-        provider,
-        owner: account,
-        spender: tranchedPoolAddress,
-        value,
-        deadline,
-      });
+      if (await isSmartContractWallet(account, provider)) {
+        await approveErc20IfRequired({
+          account,
+          spender: tranchedPoolAddress,
+          amount: value,
+          erc20Contract: usdcContract,
+        });
+        await toastTransaction({
+          transaction: tranchedPoolContract.deposit(TRANCHES.Junior, value),
+          pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+        });
+      } else {
+        const now = (await provider.getBlock("latest")).timestamp;
+        const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+        const signature = await generateErc20PermitSignature({
+          erc20TokenContract: usdcContract,
+          provider,
+          owner: account,
+          spender: tranchedPoolAddress,
+          value,
+          deadline,
+        });
 
-      const transaction = tranchedPoolContract.depositWithPermit(
-        TRANCHES.Junior,
-        value,
-        deadline,
-        signature.v,
-        signature.r,
-        signature.s
-      );
-      await toastTransaction({
-        transaction,
-        pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
-      });
+        const transaction = tranchedPoolContract.depositWithPermit(
+          TRANCHES.Junior,
+          value,
+          deadline,
+          signature.v,
+          signature.r,
+          signature.s
+        );
+        await toastTransaction({
+          transaction,
+          pendingPrompt: `Deposit submitted for pool ${tranchedPoolAddress}.`,
+        });
+      }
     } else {
       if (!zapperContract || !stakingRewardsContract) {
         throw new Error("Wallet not connected properly");

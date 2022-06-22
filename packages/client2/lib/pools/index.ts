@@ -9,6 +9,9 @@ import {
   UserEligibilityFieldsFragment,
   UidType,
 } from "@/lib/graphql/generated";
+import { Erc20 } from "@/types/ethers-contracts";
+
+import { toastTransaction } from "../toast";
 
 /**
  * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
@@ -186,4 +189,30 @@ export async function signAgreement(
 export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
   const epsilon = utils.parseUnits("1", 4);
   return n2.sub(epsilon).lte(n1) && n1.lte(n2.add(epsilon));
+}
+
+/**
+ * Utility function that will perform an ERC20 approval if it's necessary, and will toast messages for this approval too.
+ */
+export async function approveErc20IfRequired({
+  account,
+  spender,
+  amount,
+  erc20Contract,
+}: {
+  account: string;
+  spender: string;
+  amount: BigNumber;
+  erc20Contract: Erc20;
+}) {
+  const allowance = await erc20Contract.allowance(account, spender);
+  const isApprovalRequired = allowance.lt(amount);
+  if (isApprovalRequired) {
+    await toastTransaction({
+      transaction: erc20Contract.approve(spender, amount),
+      pendingPrompt: "Awaiting approval to spend tokens.",
+      successPrompt: "Successfully approved spending.",
+      errorPrompt: "Failed to approved spending",
+    });
+  }
 }
