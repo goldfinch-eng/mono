@@ -7,6 +7,7 @@ import { Link, GoldfinchLogo, Icon } from "@/components/design-system";
 
 import { MobileNav } from "./mobile-nav";
 import { NAV_ITEMS } from "./nav-items";
+import { SecondaryMenu } from "./secondary-menu";
 import { WalletButton } from "./wallet-button";
 
 export function Nav() {
@@ -36,8 +37,9 @@ export function Nav() {
           ))}
         </nav>
 
-        <div className="flex flex-1 flex-row justify-end self-center py-4">
+        <div className="flex flex-1 flex-row justify-end gap-3 self-center py-4">
           <WalletButton />
+          <SecondaryMenu />
         </div>
       </div>
       <MobileNav
