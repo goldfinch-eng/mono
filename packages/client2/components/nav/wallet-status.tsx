@@ -210,6 +210,8 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                         href={`https://etherscan.io/tx/${transaction.transactionHash}`}
                         iconRight="ArrowTopRight"
                         className="text-sand-400"
+                        target="_blank"
+                        rel="noopener"
                       >
                         Tx
                       </Link>
