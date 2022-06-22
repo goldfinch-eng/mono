@@ -191,7 +191,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </label>
           <div className="value-option">
             <input
-              {...(register("accreditedIndividual", {required: true}) as any)}
+              {...(register("countrySelection", {required: true}) as any)}
               name="countrySelection"
               type="radio"
               id="value-type-us"
@@ -203,7 +203,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </div>
           <div className="value-option">
             <input
-              {...(register("accreditedIndividual", {required: true}) as any)}
+              {...(register("countrySelection", {required: true}) as any)}
               name="countrySelection"
               type="radio"
               id="value-type-not-us"
@@ -218,7 +218,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </label>
           <div className="value-option">
             <input
-              {...(register("accreditedIndividual", {required: true}) as any)}
+              {...(register("individualOrEntity", {required: true}) as any)}
               name="individualOrEntity"
               type="radio"
               id="value-type-individual"
@@ -230,7 +230,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </div>
           <div className="value-option">
             <input
-              {...(register("accreditedIndividual", {required: true}) as any)}
+              {...(register("individualOrEntity", {required: true}) as any)}
               name="individualOrEntity"
               type="radio"
               id="value-type-entity"
