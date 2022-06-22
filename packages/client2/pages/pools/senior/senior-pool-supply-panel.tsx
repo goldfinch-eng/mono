@@ -251,8 +251,6 @@ export function SeniorPoolSupplyPanel({
       );
   }, [account, usdcContract]);
 
-  const showUsSeniorPoolAgreement = isUsUser(user, viewer.geolocation.country);
-
   return (
     <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row lg:flex-col">
       <div
@@ -398,7 +396,7 @@ export function SeniorPoolSupplyPanel({
               By clicking “Supply” below, I hereby agree to the{" "}
               <Link
                 href={
-                  showUsSeniorPoolAgreement
+                  isUsUser(user, viewer.geolocation.country)
                     ? "/senior-pool-agreement-us"
                     : "/senior-pool-agreement-non-us"
                 }
