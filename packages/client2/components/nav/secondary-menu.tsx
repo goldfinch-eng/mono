@@ -1,13 +1,17 @@
-import { Popover, Icon } from "@/components/design-system";
+import { Popover, Icon, IconButton } from "@/components/design-system";
 
 import { SECONDARY_MENU_ITEMS } from "./nav-items";
 
 export function SecondaryMenu() {
   return (
     <Popover placement="bottom-end" content={() => <SecondaryMenuContent />}>
-      <button className="flex self-center rounded-full bg-sand-100 p-2 text-sand-700 hover:bg-sand-200 hover:text-sand-900 active:bg-sand-300 active:text-sand-900">
-        <Icon name="Dots" />
-      </button>
+      <IconButton
+        icon="DotsHorizontal"
+        label="More links"
+        variant="rounded"
+        colorScheme="secondary"
+        className="w-10"
+      />
     </Popover>
   );
 }
