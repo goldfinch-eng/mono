@@ -10,7 +10,7 @@ import "../core/GoldfinchConfig.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "../../interfaces/IBorrower.sol";
-import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
+import "../../external/BaseRelayRecipient.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
 /**

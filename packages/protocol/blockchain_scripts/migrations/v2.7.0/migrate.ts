@@ -102,7 +102,7 @@ export async function main() {
   console.log(backerStakingRewardsParams)
 
   const backerStakingRewardsInitTxs = await Promise.all(
-    Object.entries(backerStakingRewardsParams).map(async ([address, params]) => {
+    Object.entries(backerStakingRewardsParams).map(async ([address, params]: [string, any]) => {
       return backerRewards.populateTransaction.forceInitializeStakingRewardsPoolInfo(
         address,
         params.fiduSharePriceAtDrawdown,

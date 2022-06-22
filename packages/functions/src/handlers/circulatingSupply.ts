@@ -54,7 +54,7 @@ export const circulatingSupply = genRequestHandler({
   cors: false,
   handler: async (_, res): Promise<Response> => {
     const provider = getBlockchain("https://app.goldfinch.finance")
-    const gfi = new ethers.Contract(GFI_DEPLOYMENT.address, GFI_DEPLOYMENT.abi, provider) as GFI
+    const gfi = new ethers.Contract(GFI_DEPLOYMENT.address, GFI_DEPLOYMENT.abi, provider) as unknown as GFI
 
     const totalSupply = new BigNumber((await gfi.totalSupply()).toString()).dividedBy(1e18)
     const cbCustodyBalance = new BigNumber(55_122_810)

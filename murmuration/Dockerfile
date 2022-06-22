@@ -1,7 +1,7 @@
 # Dockerfile for building the `https://murmuration.goldfinch.finance` application
 # deployed to Google Compute Engine.
 
-FROM node:14.19.0
+FROM node:16.15.1
 
 RUN wget https://github.com/ethereum/solidity/releases/download/v0.6.8/solc-static-linux -O /bin/solc && chmod +x /bin/solc
 

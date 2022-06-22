@@ -30,7 +30,7 @@ jobs:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
-      - image: cimg/node:14.19.0
+      - image: cimg/node:16.15.1
     resource_class: large
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
@@ -92,7 +92,7 @@ jobs:
 
   test:
     docker:
-      - image: cimg/node:14.19.0
+      - image: cimg/node:16.15.1
     parallelism: 4
     steps:
       - checkout
@@ -119,7 +119,7 @@ jobs:
 
   mainnet_forking:
     docker:
-      - image: cimg/node:14.19.0
+      - image: cimg/node:16.15.1
     parallelism: 2
     steps:
       - checkout
