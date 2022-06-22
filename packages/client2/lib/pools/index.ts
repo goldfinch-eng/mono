@@ -192,6 +192,24 @@ export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
 }
 
 /**
+ * Utility function to determine if a user is in the US or not. Needs to consume a User fragment and a Geolocation (from Vieweer)
+ * @param user User object, must conform to fragment requirements (same as user eligibility for a pool)
+ * @param countryCode String representing the user's country code, as returned from viewer.geolocation.
+ * @returns True if the user should be considered a US user, false otherwise
+ */
+export function isUsUser(
+  user: UserEligibilityFieldsFragment | null,
+  countryCode: string
+) {
+  if (user && (user.isUsAccreditedIndividual || user.isUsEntity)) {
+    return true;
+  } else if (countryCode === "US") {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Utility function that will perform an ERC20 approval if it's necessary, and will toast messages for this approval too.
  */
 export async function approveErc20IfRequired({

@@ -59,11 +59,23 @@ type CryptoAmount {
   amount: BigInt!
 }
 
+type Geolocation {
+  ip: String!
+  city: String!
+  region: String!
+  country: String!
+  loc: String!
+  org: String!
+  postal: String!
+  timezone: String!
+}
+
 type Viewer {
   account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
+  geolocation: Geolocation!
 }
 
 type BlockInfo {
