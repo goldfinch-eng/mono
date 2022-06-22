@@ -221,8 +221,7 @@ export function SeniorPoolSupplyPanel({
       );
   }, [account, usdcContract]);
 
-  const { data: locationData, error: locationError } =
-    useCurrentViewerLocationQuery();
+  const { data: locationData } = useCurrentViewerLocationQuery();
 
   const legalLink = getSeniorPoolLegalLink(
     user,
