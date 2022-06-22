@@ -9,8 +9,8 @@ interface GeolocationData {
   timezone: string;
 }
 
-export async function getGeolocation(): Promise<GeolocationData> {
-  if (process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost") {
+export async function fetchViewerGeolocation(): Promise<GeolocationData> {
+  if (process.env.NODE_ENV !== "production") {
     return Promise.resolve({
       ip: "123.456.789.0",
       city: "Oakland",

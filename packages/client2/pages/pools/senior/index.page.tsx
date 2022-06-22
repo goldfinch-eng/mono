@@ -62,6 +62,9 @@ gql`
         token
         amount
       }
+      geolocation {
+        country
+      }
     }
   }
 `;
@@ -149,10 +152,11 @@ export default function SeniorPoolPage() {
         </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
           <div className="flex flex-col items-stretch gap-8">
-            {seniorPool && fiatPerGfi ? (
+            {seniorPool && fiatPerGfi && data?.viewer ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
                 user={user}
+                viewer={data.viewer}
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}

@@ -1,12 +1,7 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
-import {
-  FIDU_DECIMALS,
-  USDC_DECIMALS,
-  SENIOR_POOL_AGREEMENT_NON_US,
-  SENIOR_POOL_AGREEMENT_US,
-} from "@/constants";
+import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
   SupportedCrypto,
@@ -197,23 +192,21 @@ export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
 }
 
 /**
- * Returns the legal link for the senior pool agreement
- * @param user The eligibility fields for the user
- * @returns The route for the agreement
+ * Utility function to determine if a user is in the US or not. Needs to consume a User fragment and a Geolocation (from Vieweer)
+ * @param user User object, must conform to fragment requirements (same as user eligibility for a pool)
+ * @param countryCode String representing the user's country code, as returned from viewer.geolocation.
+ * @returns True if the user should be considered a US user, false otherwise
  */
-export function getSeniorPoolLegalLink(
+export function isUsUser(
   user: UserEligibilityFieldsFragment | null,
-  country?: string | null
+  countryCode: string
 ) {
-  if (
-    (user || {}).isUsEntity ||
-    (user || {}).isUsAccreditedIndividual ||
-    country === "US"
-  ) {
-    return SENIOR_POOL_AGREEMENT_US;
+  if (user && (user.isUsAccreditedIndividual || user.isUsEntity)) {
+    return true;
+  } else if (countryCode === "US") {
+    return true;
   }
-
-  return SENIOR_POOL_AGREEMENT_NON_US;
+  return false;
 }
 
 /**

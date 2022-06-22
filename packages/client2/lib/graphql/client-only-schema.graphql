@@ -60,14 +60,14 @@ type CryptoAmount {
 }
 
 type Geolocation {
-  ip: String
-  city: String
-  region: String
-  country: String
-  loc: String
-  org: String
-  postal: String
-  timezone: String
+  ip: String!
+  city: String!
+  region: String!
+  country: String!
+  loc: String!
+  org: String!
+  postal: String!
+  timezone: String!
 }
 
 type Viewer {
@@ -75,7 +75,7 @@ type Viewer {
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
-  geolocation: Geolocation
+  geolocation: Geolocation!
 }
 
 type BlockInfo {

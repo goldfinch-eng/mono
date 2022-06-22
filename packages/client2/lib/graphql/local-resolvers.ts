@@ -1,7 +1,7 @@
 import { Resolvers } from "@apollo/client";
 
 import { getContract } from "../contracts";
-import { getGeolocation } from "../location";
+import { fetchViewerGeolocation } from "../geolocation";
 import { getProvider } from "../wallet";
 import {
   GfiPrice,
@@ -68,7 +68,7 @@ export const resolvers: Resolvers = {
         price: { __typename: "FiatAmount", symbol: fiat, amount },
       };
     },
-    async viewer(): Promise<Viewer> {
+    async viewer(): Promise<Partial<Viewer>> {
       const provider = await getProvider();
       if (!provider) {
         return {
@@ -156,7 +156,7 @@ export const resolvers: Resolvers = {
       };
     },
     async geolocation(): Promise<Geolocation> {
-      const location = await getGeolocation();
+      const location = await fetchViewerGeolocation();
 
       return {
         __typename: "Geolocation",
