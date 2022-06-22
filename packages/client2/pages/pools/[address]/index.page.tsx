@@ -324,7 +324,7 @@ export default function PoolPage() {
 
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
-            <div className="flex flex-col items-stretch gap-8 lg:top-12">
+            <div className="flex flex-col items-stretch gap-8">
               {poolStatus === PoolStatus.Open && (
                 <SupplyPanel
                   tranchedPool={tranchedPool}

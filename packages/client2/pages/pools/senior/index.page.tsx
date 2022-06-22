@@ -148,7 +148,7 @@ export default function SeniorPoolPage() {
           </Heading>
         </div>
         <div className="relative" style={{ gridArea: "widgets" }}>
-          <div className="flex flex-col items-stretch gap-8 lg:top-12">
+          <div className="flex flex-col items-stretch gap-8">
             {seniorPool && fiatPerGfi ? (
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
