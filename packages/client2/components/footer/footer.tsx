@@ -1,8 +1,8 @@
-import clsx from "clsx";
-
 import { Icon, Link } from "@/components/design-system";
 
 const footerNavItems = [
+  { label: "About", href: "https://goldfinch.finance" },
+  { label: "Newsletter", href: "https://goldfinch.substack.com/" },
   { label: "Terms", href: "/terms" },
   { label: "Privacy", href: "/privacy" },
 ];
@@ -12,12 +12,12 @@ export function Footer() {
     <footer>
       <div className="mx-auto max-w-screen-xl px-6 py-6 md:px-10">
         <div className="sm:flex sm:items-center sm:justify-between">
-          <nav className="flex justify-center text-sm sm:justify-start">
-            {footerNavItems.map((item, i) => (
+          <nav className="flex justify-center gap-4 text-sm font-medium sm:justify-start">
+            {footerNavItems.map((item) => (
               <Link
                 key={`footer-link-${item.label}`}
                 href={item.href}
-                className={clsx("no-underline", i !== 0 ? "ml-4" : "")}
+                className="no-underline"
               >
                 {item.label}
               </Link>
