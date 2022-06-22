@@ -18,7 +18,7 @@ import {
   SeniorPoolWithdrawalPanelPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc, usdcToShares } from "@/lib/pools";
+import { sharesToUsdc, usdcToShares, usdcWithinEpsilon } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
@@ -41,23 +41,14 @@ export function SeniorPoolWithDrawalPanel({
   stakedPositions = [],
   seniorPoolLiquidity,
 }: SeniorPoolWithdrawalPanelProps) {
-  const unstakedBalanceUsdc = sharesToUsdc(
-    fiduBalance.amount,
+  const totalUserFidu = sumTotalShares(fiduBalance, stakedPositions);
+  const totalSharesUsdc = sharesToUsdc(
+    totalUserFidu,
     seniorPoolSharePrice
-  );
-  const stakedBalanceUsdc = sharesToUsdc(
-    stakedPositions.reduce(
-      (previous, current) => previous.add(current.amount),
-      BigNumber.from(0)
-    ),
-    seniorPoolSharePrice
-  );
-  const unstakedPlusStaked = unstakedBalanceUsdc.amount.add(
-    stakedBalanceUsdc.amount
-  );
-  const maxWithdrawable = unstakedPlusStaked.gt(seniorPoolLiquidity)
+  ).amount;
+  const maxWithdrawableUsdc = totalSharesUsdc.gt(seniorPoolLiquidity)
     ? seniorPoolLiquidity
-    : unstakedPlusStaked;
+    : totalSharesUsdc;
 
   const seniorPoolContract = useContract("SeniorPool");
   const stakingRewardsContract = useContract("StakingRewards");
@@ -76,12 +67,17 @@ export function SeniorPoolWithDrawalPanel({
       return;
     }
     const sharePrice = await seniorPoolContract.sharePrice(); // ensures that share price is as up-to-date as possible by fetching it when withdrawal is performed.
-    const withdrawAmountUsdc = utils.parseUnits(data.amount, USDC_DECIMALS);
-    const withdrawAmountFidu = usdcToShares(withdrawAmountUsdc, sharePrice);
-    if (withdrawAmountFidu.amount.lte(fiduBalance.amount)) {
-      const transaction = seniorPoolContract.withdrawInFidu(
-        withdrawAmountFidu.amount
-      );
+    let withdrawAmountUsdc = utils.parseUnits(data.amount, USDC_DECIMALS);
+    if (usdcWithinEpsilon(withdrawAmountUsdc, maxWithdrawableUsdc)) {
+      withdrawAmountUsdc = maxWithdrawableUsdc;
+    }
+    const withdrawAmountFidu =
+      withdrawAmountUsdc.eq(maxWithdrawableUsdc) &&
+      maxWithdrawableUsdc.lte(seniorPoolLiquidity)
+        ? totalUserFidu
+        : usdcToShares(withdrawAmountUsdc, sharePrice).amount;
+    if (withdrawAmountFidu.lte(fiduBalance.amount)) {
+      const transaction = seniorPoolContract.withdrawInFidu(withdrawAmountFidu);
       await toastTransaction({ transaction });
       await apolloClient.refetchQueries({ include: "active" });
     } else {
@@ -106,7 +102,7 @@ export function SeniorPoolWithDrawalPanel({
       detailedPositions.sort((a, b) =>
         b.details.rewards.endTime.sub(a.details.rewards.endTime).toNumber()
       );
-      let remainingWithdrawalAmount = withdrawAmountFidu.amount.sub(
+      let remainingWithdrawalAmount = withdrawAmountFidu.sub(
         unstakedWithdrawalPortion
       );
       let forfeitedGfi = BigNumber.from(0);
@@ -181,7 +177,10 @@ export function SeniorPoolWithDrawalPanel({
   const handleMax = () => {
     setValue(
       "amount",
-      utils.formatUnits(maxWithdrawable, USDC_DECIMALS).toString()
+      formatCrypto(
+        { token: SupportedCrypto.Usdc, amount: maxWithdrawableUsdc },
+        { includeSymbol: false }
+      )
     );
   };
 
@@ -190,7 +189,10 @@ export function SeniorPoolWithDrawalPanel({
     if (valueAsUsdc.lte(BigNumber.from(0))) {
       return "Amount must be greater than 0";
     }
-    if (valueAsUsdc.gt(maxWithdrawable)) {
+    if (
+      valueAsUsdc.gt(maxWithdrawableUsdc) &&
+      !usdcWithinEpsilon(valueAsUsdc, maxWithdrawableUsdc)
+    ) {
       return "Amount exceeds what is available to withdraw";
     }
   };
@@ -205,7 +207,7 @@ export function SeniorPoolWithDrawalPanel({
         <div className="flex items-center gap-3 text-5xl">
           {formatCrypto({
             token: SupportedCrypto.Usdc,
-            amount: maxWithdrawable,
+            amount: maxWithdrawableUsdc,
           })}
           <Icon name="Usdc" size="sm" />
         </div>
@@ -219,7 +221,7 @@ export function SeniorPoolWithDrawalPanel({
           <div className="text-xl">
             {formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: unstakedPlusStaked,
+              amount: totalSharesUsdc,
             })}
           </div>
           <Icon name="Usdc" size="sm" />
@@ -255,4 +257,18 @@ export function SeniorPoolWithDrawalPanel({
       </form>
     </div>
   );
+}
+
+function sumTotalShares(
+  unstaked: CryptoAmount,
+  staked: SeniorPoolWithdrawalPanelPositionFieldsFragment[]
+): BigNumber {
+  if (unstaked.token !== SupportedCrypto.Fidu) {
+    throw new Error("Unstaked is not a CryptoAmount in FIDU");
+  }
+  const totalStaked = staked.reduce(
+    (previous, current) => previous.add(current.amount),
+    BigNumber.from(0)
+  );
+  return unstaked.amount.add(totalStaked);
 }

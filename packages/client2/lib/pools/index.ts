@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
@@ -175,4 +175,15 @@ export async function signAgreement(
       throw e;
     }
   }
+}
+
+/**
+ * A utility function that tells you if n1 is within one epsilon of n2. This means that the n1 is "reasonably close" to n2. "Reasonably close" is relative to USDC amounts.
+ * For use in sticky situations where the user has to enter an imprecise amount.
+ * @param n1
+ * @param n2
+ */
+export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
+  const epsilon = utils.parseUnits("1", 4);
+  return n2.sub(epsilon).lte(n1) && n1.lte(n2.add(epsilon));
 }
