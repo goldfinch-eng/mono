@@ -23,13 +23,14 @@ import {
   useCurrentViewerLocationQuery,
 } from "@/lib/graphql/generated";
 import {
+  approveErc20IfRequired,
   canUserParticipateInPool,
   computeApyFromGfiInFiat,
   getSeniorPoolLegalLink,
 } from "@/lib/pools";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { useWallet } from "@/lib/wallet";
+import { isSmartContractWallet, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -109,50 +110,79 @@ export function SeniorPoolSupplyPanel({
       return;
     }
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
-    const now = (await provider.getBlock("latest")).timestamp;
-    const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
 
-    if (data.isStaking) {
-      const signature = await generateErc20PermitSignature({
-        erc20TokenContract: usdcContract,
-        provider,
-        owner: account,
-        spender: stakingRewardsContract.address,
-        value,
-        deadline,
-      });
-      const transaction = stakingRewardsContract.depositWithPermitAndStake(
-        value,
-        deadline,
-        signature.v,
-        signature.r,
-        signature.s
-      );
-      await toastTransaction({
-        transaction,
-        pendingPrompt: `Deposit and stake submitted for senior pool.`,
-      });
+    // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
+    if (await isSmartContractWallet(account, provider)) {
+      if (data.isStaking) {
+        await approveErc20IfRequired({
+          account,
+          spender: stakingRewardsContract.address,
+          amount: value,
+          erc20Contract: usdcContract,
+        });
+        await toastTransaction({
+          transaction: stakingRewardsContract.depositAndStake(value),
+          pendingPrompt: "Deposit and stake to senior pool submitted.",
+        });
+      } else {
+        await approveErc20IfRequired({
+          account,
+          spender: seniorPoolContract.address,
+          amount: value,
+          erc20Contract: usdcContract,
+        });
+        await toastTransaction({
+          transaction: seniorPoolContract.deposit(value),
+          pendingPrompt: "Deposit into senior pool submitted",
+        });
+      }
     } else {
-      const signature = await generateErc20PermitSignature({
-        erc20TokenContract: usdcContract,
-        provider,
-        owner: account,
-        spender: seniorPoolContract.address,
-        value,
-        deadline,
-      });
-      const transaction = seniorPoolContract.depositWithPermit(
-        value,
-        deadline,
-        signature.v,
-        signature.r,
-        signature.s
-      );
-      await toastTransaction({
-        transaction,
-        pendingPrompt: `Deposit submitted for senior pool.`,
-      });
+      const now = (await provider.getBlock("latest")).timestamp;
+      const deadline = BigNumber.from(now + 3600); // deadline is 1 hour from now
+
+      if (data.isStaking) {
+        const signature = await generateErc20PermitSignature({
+          erc20TokenContract: usdcContract,
+          provider,
+          owner: account,
+          spender: stakingRewardsContract.address,
+          value,
+          deadline,
+        });
+        const transaction = stakingRewardsContract.depositWithPermitAndStake(
+          value,
+          deadline,
+          signature.v,
+          signature.r,
+          signature.s
+        );
+        await toastTransaction({
+          transaction,
+          pendingPrompt: `Deposit and stake submitted for senior pool.`,
+        });
+      } else {
+        const signature = await generateErc20PermitSignature({
+          erc20TokenContract: usdcContract,
+          provider,
+          owner: account,
+          spender: seniorPoolContract.address,
+          value,
+          deadline,
+        });
+        const transaction = seniorPoolContract.depositWithPermit(
+          value,
+          deadline,
+          signature.v,
+          signature.r,
+          signature.s
+        );
+        await toastTransaction({
+          transaction,
+          pendingPrompt: `Deposit submitted for senior pool.`,
+        });
+      }
     }
+
     await apolloClient.refetchQueries({ include: "active" });
   });
 

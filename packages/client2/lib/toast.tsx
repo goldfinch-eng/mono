@@ -41,7 +41,11 @@ export async function toastTransaction({
               <div>
                 {pendingPrompt ? pendingPrompt : "Transaction submitted."} View
                 it on{" "}
-                <Link href={`https://etherscan.io/tx/${transactionHash}`}>
+                <Link
+                  href={`https://etherscan.io/tx/${transactionHash}`}
+                  target="_blank"
+                  rel="noopener"
+                >
                   etherscan.io
                 </Link>
                 .
@@ -55,7 +59,11 @@ export async function toastTransaction({
               <div>
                 {successPrompt ? successPrompt : "Transaction succeeded."} View
                 it on{" "}
-                <Link href={`https://etherscan.io/tx/${transactionHash}`}>
+                <Link
+                  href={`https://etherscan.io/tx/${transactionHash}`}
+                  target="_blank"
+                  rel="noopener"
+                >
                   etherscan.io
                 </Link>
                 .
@@ -69,7 +77,11 @@ export async function toastTransaction({
               <div>
                 {errorPrompt ? errorPrompt : `Transaction failed.`} Error
                 message: {data.message}. View it on{" "}
-                <Link href={`https://etherscan.io/tx/${transactionHash}`}>
+                <Link
+                  href={`https://etherscan.io/tx/${transactionHash}`}
+                  target="_blank"
+                  rel="noopener"
+                >
                   etherscan.io
                 </Link>
                 .

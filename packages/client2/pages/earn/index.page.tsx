@@ -74,7 +74,11 @@ export default function EarnPage() {
 
   return (
     <div>
-      <Heading level={1} className="mb-12 text-center lg:text-left">
+      <Heading
+        as="h1"
+        level={2}
+        className="mb-12 text-center !text-5xl md:!text-6xl lg:text-left"
+      >
         Pools
       </Heading>
       {error ? (
@@ -83,15 +87,19 @@ export default function EarnPage() {
           outdated.
         </HelperText>
       ) : null}
-      <Heading level={2} className="mb-3">
+      <Heading
+        as="h2"
+        level={4}
+        className="mb-3 !font-serif !text-[2.5rem] !font-bold"
+      >
         Senior Pool
       </Heading>
-      <Paragraph className="mb-8">
+      <Paragraph className="mb-8 !text-lg">
         The simple option for automtically diversified yields. Capital is
         distributed across Borrower Pools, and is protected by Backer capital
         for lower-risk investment.
       </Paragraph>
-      <div className="mb-12">
+      <div className="mb-15">
         {!seniorPool || !fiatPerGfi ? (
           <PoolCardPlaceholder />
         ) : (
@@ -152,10 +160,10 @@ export default function EarnPage() {
           />
         )}
       </div>
-      <Heading level={2} className="mb-3">
+      <Heading level={2} className="mb-3 !font-serif !text-[2.5rem] !font-bold">
         Borrower Pools
       </Heading>
-      <Paragraph className="mb-8">
+      <Paragraph className="mb-8 !text-lg">
         The more active option for higher yields. Earn higher APYs by vetting
         Borrowers and supplying first-loss capital directly to individual Pools.
       </Paragraph>
