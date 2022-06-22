@@ -8,6 +8,7 @@ import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
 import Discord from "./svg/discord.svg";
+import Dots from "./svg/dots.svg";
 import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
@@ -27,6 +28,7 @@ export const iconManifest = {
   Checkmark,
   ChevronDown,
   Discord,
+  Dots,
   Exclamation,
   Gfi,
   InfoCircle,
