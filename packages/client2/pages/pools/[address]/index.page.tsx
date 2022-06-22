@@ -324,7 +324,19 @@ export default function PoolPage() {
 
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
-            <div className="flex flex-col items-stretch gap-8 lg:sticky lg:top-12">
+            <div className="flex flex-col items-stretch gap-8 lg:top-12">
+              {poolStatus === PoolStatus.Open && (
+                <SupplyPanel
+                  tranchedPool={tranchedPool}
+                  user={user}
+                  fiatPerGfi={fiatPerGfi}
+                  seniorPoolApyFromGfiRaw={
+                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+                  }
+                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                />
+              )}
+
               {data?.user &&
               (data?.user.tokens.length > 0 || data?.user.zaps.length > 0) ? (
                 <WithdrawalPanel
@@ -349,18 +361,6 @@ export default function PoolPage() {
                   userPoolTokens={user?.tokens ?? []}
                 />
               ) : null}
-
-              {poolStatus === PoolStatus.Open && (
-                <SupplyPanel
-                  tranchedPool={tranchedPool}
-                  user={user}
-                  fiatPerGfi={fiatPerGfi}
-                  seniorPoolApyFromGfiRaw={
-                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
-                  }
-                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
-                />
-              )}
 
               {poolStatus === PoolStatus.ComingSoon && (
                 <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
