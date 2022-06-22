@@ -42,7 +42,7 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
         })}
         tooltip="The total value of Senior Pool capital currently deployed in outstanding Borrower Pools across the protocol."
       />
-      {/* TODO use the real default rate. Needs to be properly calculated on subgraph */}
+      {/* TODO use the real default rate. Needs to be properly calculated on subgraph https://linear.app/goldfinch/issue/GFI-765/calculate-senior-pool-default-rate-in-subgraph */}
       <Stat
         label="Default Rate"
         value={formatPercent(0)}
