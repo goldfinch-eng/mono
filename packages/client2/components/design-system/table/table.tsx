@@ -44,7 +44,7 @@ export function Table({
       <div className="max-h-96 overflow-auto">
         <table
           className={clsx(
-            "min-w-full table-fixed border-collapse whitespace-nowrap text-sm",
+            "mb-10 min-w-full table-fixed border-collapse whitespace-nowrap text-sm",
             className
           )}
         >
@@ -83,7 +83,7 @@ export function Table({
       <div
         className="pointer-events-none absolute top-0 left-0 h-full w-full"
         style={{
-          background: "linear-gradient(to bottom, rgba(0, 0, 0, 0) 75%, white)",
+          background: "linear-gradient(to bottom, rgba(0, 0, 0, 0) 80%, white)",
         }}
       />
     </div>

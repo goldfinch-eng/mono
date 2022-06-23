@@ -52,6 +52,13 @@ gql`
   }
 `;
 
+// Transaction categories that take money out of the senior pool
+const subtractiveTransactionCategories = [
+  TransactionCategory.SeniorPoolWithdrawal,
+  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
+  TransactionCategory.TranchedPoolDrawdown,
+];
+
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
   const { data, error, fetchMore } = useBorrowerTransactionsQuery({
@@ -61,10 +68,14 @@ export function TransactionTable() {
   const transactions =
     data?.transactions.map((transaction) => {
       const date = new Date(transaction.timestamp * 1000);
-      const transactionAmount = formatCrypto({
-        token: SupportedCrypto.Usdc,
-        amount: transaction.amount,
-      });
+      const transactionAmount =
+        (subtractiveTransactionCategories.includes(transaction.category)
+          ? "-"
+          : "+") +
+        formatCrypto({
+          token: SupportedCrypto.Usdc,
+          amount: transaction.amount,
+        });
 
       return [
         <div key={`${transaction.id}-user`} className="flex items-center gap-2">
