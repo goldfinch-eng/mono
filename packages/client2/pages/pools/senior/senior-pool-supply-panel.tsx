@@ -386,7 +386,7 @@ export function SeniorPoolSupplyPanel({
                 seniorPoolApyFromGfiFiat
               )})`}
               labelDecoration={
-                <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this deposit transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
+                <InfoIconTooltip content="Liquidity Providers can earn GFI by staking the FIDU they receive from supplying USDC to the Senior Pool. Selecting this box will automatically stake the FIDU you receive for this supply transaction. GFI tokens are granted at a variable est. APY rate, which is based on a target pool balance set by Governance." />
               }
               colorScheme="dark"
               className="mb-3"

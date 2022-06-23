@@ -81,7 +81,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
           rows={[
             [
               "Interest Rate",
-              "The Pool's fixed interest rate APR.",
+              "The fixed interest rate APR paid by the Borrower to the Pool.",
               formatPercent(tranchedPool.creditLine.interestAprDecimal),
             ],
             [
@@ -104,12 +104,12 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
             ],
             [
               "Default interest rate",
-              "An additional interest rate paid by the Borrower if they are late on their payments following a 30 day grace period. The total interest rate a Borrower in default pays = interest rate + default interest rate.",
+              "An additional interest rate paid by the Borrower if they are late on their payments following the grace period. The total interest rate a Borrower in default pays =  interest rate + default interest rate.",
               formatPercent(getLateFeeApr(tranchedPool)),
             ],
             [
               "Current leverage ratio",
-              "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer deposits. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
+              "The leverage of senior tranche to junior tranche capital in this Pool. Senior tranche capital is automatically allocated by Goldfinch's Senior Pool, according to the protocol's leverage model. Junior tranche capital is provided directly by Backer investments. A current leverage ratio of 4x means that for every $1 of junior capital deposited by Backers, $4 of senior capital will be allocated by the Senior Pool.",
               tranchedPool.estimatedLeverageRatio
                 ? tranchedPool.estimatedLeverageRatio.toString()
                 : "N/A",
