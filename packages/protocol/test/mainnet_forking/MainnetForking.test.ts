@@ -15,7 +15,7 @@ import {MAINNET_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate270 from "../../blockchain_scripts/migrations/v2.7.0/migrate"
+import * as migrate280 from "../../blockchain_scripts/migrations/v2.8.0/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -44,6 +44,9 @@ import {
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
+  usdcToFidu,
+  fiduToUSDC,
+  FIDU_DECIMALS,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -185,7 +188,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate270.main()
+  await migrate280.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -1323,6 +1326,44 @@ describe("mainnet forking tests", async function () {
           const stakedEvent = asNonNullable(logs[0])
           const tokenId = stakedEvent?.args.tokenId
           await expect(stakingRewards.unstake(tokenId, depositAmount, {from: goListedUser})).to.be.fulfilled
+        })
+      })
+
+      describe("when the senior pool has swept funds to compound", async () => {
+        let tokenId
+        beforeEach(async () => {
+          await erc20Approve(usdc, stakingRewards.address, MAX_UINT, [goListedUser])
+          await erc20Approve(usdc, zapper.address, MAX_UINT, [goListedUser])
+          await erc20Approve(fidu, stakingRewards.address, MAX_UINT, [goListedUser])
+          await erc20Approve(usdc, seniorPool.address, MAX_UINT, [owner])
+          await seniorPool.deposit(usdcVal(100_000), {from: owner})
+          await seniorPool.sweepToCompound({from: await getProtocolOwner()})
+
+          await advanceTime({days: 30})
+
+          const tx = await expect(stakingRewards.depositAndStake(usdcVal(10_000), {from: goListedUser})).to.be.fulfilled
+          const stakedEvent = decodeAndGetFirstLog<Staked>(tx.receipt.rawLogs, stakingRewards, "Staked")
+          tokenId = stakedEvent.args.tokenId
+          await erc721Approve(stakingRewards, zapper.address, tokenId, [goListedUser])
+        })
+
+        describe("when I zapStakeToTranchedPool", () => {
+          it("adds the fidu difference back to my staked position", async () => {
+            const stakedPositionBefore = new BN((await stakingRewards.getPosition(tokenId)).amount)
+            const totalSharesBefore = await fidu.totalSupply()
+
+            await expectAction(async () =>
+              zapper.zapStakeToTranchedPool(tokenId, tranchedPool.address, TRANCHES.Junior, usdcVal(10_000), {
+                from: goListedUser,
+              })
+            ).toChange([[async () => fidu.balanceOf(zapper.address), {unchanged: true}]])
+
+            const totalSharesAfter = await fidu.totalSupply()
+            const sharesBurned = totalSharesBefore.sub(totalSharesAfter)
+            const stakedPositionAfter = new BN((await stakingRewards.getPosition(tokenId)).amount)
+
+            expect(stakedPositionBefore.sub(stakedPositionAfter)).to.bignumber.equal(sharesBurned)
+          })
         })
       })
 

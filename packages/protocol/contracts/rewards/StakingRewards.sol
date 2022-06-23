@@ -19,7 +19,7 @@ import "../protocol/core/BaseUpgradeablePausable.sol";
 import "../library/StakingRewardsVesting.sol";
 
 // solhint-disable-next-line max-states-count
-contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe {
+contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, ReentrancyGuardUpgradeSafe, IStakingRewards {
   using SafeMath for uint256;
   using SafeERC20 for IERC20withDec;
   using SafeERC20 for IERC20;
@@ -31,36 +31,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     SixMonths,
     TwelveMonths,
     TwentyFourMonths
-  }
-
-  enum StakedPositionType {
-    Fidu,
-    CurveLP
-  }
-
-  struct StakedPosition {
-    // @notice Staked amount denominated in `stakingToken().decimals()`
-    uint256 amount;
-    // @notice Struct describing rewards owed
-    // @dev For legacy vesting rewards, this tracks the vesting schedule and disbursement.
-    //   For non-vesting rewards (`endTime` of 0), this tracks the disbursement.
-    StakingRewardsVesting.Rewards rewards;
-    // @notice Multiplier applied to staked amount when locking up position
-    // @dev UNUSED (definition kept for storage slot)
-    uint256 leverageMultiplier;
-    // @notice Time in seconds after which position can be unstaked
-    // @dev UNUSED (definition kept for storage slot)
-    uint256 lockedUntil;
-    // @notice Type of the staked position
-    StakedPositionType positionType;
-    // @notice Multiplier applied to staked amount to denominate in `baseStakingToken().decimals()`
-    // @dev This field should not be used directly; it may be 0 for staked positions created prior to GIP-1.
-    //  If you need this field, use `safeEffectiveMultiplier()`, which correctly handles old staked positions.
-    uint256 unsafeEffectiveMultiplier;
-    // @notice Exchange rate applied to staked amount to denominate in `baseStakingToken().decimals()`
-    // @dev This field should not be used directly; it may be 0 for staked positions created prior to GIP-1.
-    //  If you need this field, use `safeBaseTokenExchangeRate()`, which correctly handles old staked positions.
-    uint256 unsafeBaseTokenExchangeRate;
   }
 
   /* ========== EVENTS =================== */
@@ -91,10 +61,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   GoldfinchConfig public config;
 
   /// @notice The block timestamp when rewards were last checkpointed
-  uint256 public lastUpdateTime;
+  uint256 public override lastUpdateTime;
 
   /// @notice Accumulated rewards per token at the last checkpoint
-  uint256 public accumulatedRewardsPerToken;
+  uint256 public override accumulatedRewardsPerToken;
 
   /// @notice Total rewards available for disbursement at the last checkpoint, denominated in `rewardsToken()`
   uint256 public rewardsAvailable;
@@ -173,12 +143,16 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
   /* ========== VIEWS ========== */
 
+  function getPosition(uint256 tokenId) external view override returns (StakedPosition memory position) {
+    return positions[tokenId];
+  }
+
   /// @notice Returns the staked balance of a given position token.
   /// @dev The value returned is the bare amount, not the effective amount. The bare amount represents
   ///   the number of tokens the user has staked for a given position.
   /// @param tokenId A staking position token ID
   /// @return Amount of staked tokens denominated in `stakingToken().decimals()`
-  function stakedBalanceOf(uint256 tokenId) external view returns (uint256) {
+  function stakedBalanceOf(uint256 tokenId) external view override returns (uint256) {
     return positions[tokenId].amount;
   }
 
@@ -447,7 +421,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     address nftRecipient,
     uint256 fiduAmount,
     uint256 usdcAmount
-  ) public nonReentrant whenNotPaused updateReward(0) {
+  ) public override nonReentrant whenNotPaused updateReward(0) {
     // Add liquidity to Curve. The Curve LP tokens will be minted under StakingRewards
     uint256 curveLPTokens = _depositToCurve(msg.sender, address(this), fiduAmount, usdcAmount);
 
@@ -620,7 +594,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev This function checkpoints rewards
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be unstaked from the position
-  function unstake(uint256 tokenId, uint256 amount) public nonReentrant whenNotPaused {
+  function unstake(uint256 tokenId, uint256 amount) public override nonReentrant whenNotPaused {
     // Checkpoint rewards
     _updateReward(tokenId);
     // Unstake
@@ -799,7 +773,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   ///   multiplier will be reset to 1x.
   /// @dev This will also checkpoint their rewards up to the current time.
   // solhint-disable-next-line no-empty-blocks
-  function kick(uint256 tokenId) external nonReentrant whenNotPaused updateReward(tokenId) {}
+  function kick(uint256 tokenId) external override nonReentrant whenNotPaused updateReward(tokenId) {}
 
   /// @notice Updates a user's effective multiplier to the prevailing multiplier. This function gives
   ///   users an option to get on a higher multiplier without needing to unstake.
@@ -847,9 +821,13 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @notice Add `amount` to an existing FIDU position (`tokenId`)
   /// @param tokenId A staking position token ID
   /// @param amount Amount of `stakingToken()` to be added to tokenId's position
-  /// @dev For non-zapper cases, it is not recommended to call this for vesting positions, as any additions
-  ///   will be vested. It is optimal to create a new non-vesting position and earn more rewards there.
-  function addToStake(uint256 tokenId, uint256 amount) external nonReentrant whenNotPaused updateReward(tokenId) {
+  function addToStake(uint256 tokenId, uint256 amount)
+    external
+    override
+    nonReentrant
+    whenNotPaused
+    updateReward(tokenId)
+  {
     /// @dev AD: Access denied
     require(_isApprovedOrOwner(msg.sender, tokenId), "AD");
 

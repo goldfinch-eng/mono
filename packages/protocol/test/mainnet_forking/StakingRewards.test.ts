@@ -98,7 +98,7 @@ describe("StakingRewards", () => {
 
       it("continues vesting as before", async () => {
         // Found by running this test against mainnet (without upgrades)
-        const nonUpgraded30DayDelta = new BN("88695460690792362119")
+        const nonUpgraded30DayDelta = new BN("125356265607692285551")
 
         await stakingRewards.getReward(tokenId, {from: account})
         const balanceBefore = await gfi.balanceOf(account)
@@ -183,7 +183,7 @@ describe("StakingRewards", () => {
 
       it("continues vesting as before", async () => {
         // Found by running this test against mainnet (without upgrades)
-        const nonUpgraded30DayDelta = new BN("2762229560199827529")
+        const nonUpgraded30DayDelta = new BN("3020072188107133398")
 
         await stakingRewards.getReward(tokenId, {from: account})
         const balanceBefore = await gfi.balanceOf(account)
