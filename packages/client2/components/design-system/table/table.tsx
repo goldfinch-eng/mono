@@ -23,7 +23,7 @@ export function Table({
 }: TableProps) {
   const scrollBottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (onScrollBottom) {
+    if (onScrollBottom && scrollBottomRef.current) {
       const observer = new IntersectionObserver(
         ([target]) => {
           if (target.isIntersecting) {
@@ -32,10 +32,8 @@ export function Table({
         },
         { root: null, rootMargin: "20px", threshold: 0 }
       );
-      if (scrollBottomRef.current) {
-        observer.observe(scrollBottomRef.current);
-        return () => observer.disconnect();
-      }
+      observer.observe(scrollBottomRef.current);
+      return () => observer.disconnect();
     }
   }, [onScrollBottom]);
 
