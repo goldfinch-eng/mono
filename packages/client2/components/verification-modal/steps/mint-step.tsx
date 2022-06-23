@@ -1,13 +1,13 @@
 import { useApolloClient } from "@apollo/client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { closeVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { wait } from "@/lib/utils";
+import { usePoller } from "@/lib/utils";
 import {
   fetchUniqueIdentitySigner,
   getUIDLabelFromType,
@@ -27,60 +27,44 @@ export function MintStep() {
   const apolloClient = useApolloClient();
 
   // TODO there's probably a better way to express the local state here
-  const [isPolling, setIsPolling] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const [isMinted, setIsMinted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [mintingParameters, setMintingParameters] =
-    useState<{ id: number; expiresAt: number; signature: string }>();
+  const [mintingParameters, setMintingParameters] = useState<{
+    id: number;
+    expiresAt: number;
+    signature: string;
+  }>();
 
-  useEffect(() => {
-    if (provider && account && signature) {
-      const asyncEffect = async () => {
-        setIsPolling(true);
-        try {
-          let signer: Awaited<
-            ReturnType<typeof fetchUniqueIdentitySigner>
-          > | null = null;
-          let numAttempts = 0;
-          const maxPollAttempts = 10;
-          while (numAttempts < maxPollAttempts) {
-            numAttempts += 1;
-            try {
-              signer = await fetchUniqueIdentitySigner(
-                account,
-                signature.signature,
-                signature.signatureBlockNum
-              );
-              setMintingParameters({
-                id: signer.idVersion,
-                expiresAt: signer.expiresAt,
-                signature: signer.signature,
-              });
-              break;
-            } catch (e) {
-              await wait(5000);
-              continue;
-            }
-          }
-          setIsPolling(false);
-          if (numAttempts === maxPollAttempts) {
-            setErrorMessage("Unable to verify eligibility to mint.");
-          }
-        } catch (e) {
-          setIsPolling(false);
-          setErrorMessage((e as Error).message);
-        }
-      };
-      asyncEffect();
-    } else {
-      setIsPolling(false);
-      setErrorMessage(undefined);
-      setMintingParameters(undefined);
-      setIsMinting(false);
-      setIsMinted(false);
+  const poller = useCallback(async () => {
+    if (!account || !signature) {
+      return "CONTINUE_POLLING";
     }
-  }, [provider, account, signature]);
+    try {
+      const signer = await fetchUniqueIdentitySigner(
+        account,
+        signature.signature,
+        signature.signatureBlockNum
+      );
+      setMintingParameters({
+        id: signer.idVersion,
+        expiresAt: signer.expiresAt,
+        signature: signer.signature,
+      });
+      return "FINISH_POLLING";
+    } catch (e) {
+      return "CONTINUE_POLLING";
+    }
+  }, [account, signature]);
+  const onMaxPoll = useCallback(
+    () => setErrorMessage("Unable to verify eligibility to mint."),
+    []
+  );
+  const { isPolling } = usePoller({
+    callback: poller,
+    delay: 5000,
+    onMaxPoll,
+  });
 
   const handleMint = async () => {
     if (!mintingParameters || !uidContract || !provider) {
