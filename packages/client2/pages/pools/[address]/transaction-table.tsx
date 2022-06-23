@@ -16,6 +16,7 @@ import {
   TransactionCategory,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
+import { abbreviateAddress } from "@/lib/wallet";
 
 gql`
   query TranchedPoolTransactionTable(
@@ -52,6 +53,12 @@ gql`
 interface TransactionTableProps {
   tranchedPoolId: string;
 }
+
+const subtractiveTransactionCategories = [
+  TransactionCategory.TranchedPoolWithdrawal,
+  TransactionCategory.TranchedPoolDrawdown,
+  TransactionCategory.SeniorPoolRedemption,
+];
 
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
@@ -91,18 +98,24 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
               account={transaction.user.id}
               className="h-6 w-6 shrink-0"
             />
-            <span>
-              {transaction.user.id.substring(0, 6)}...
-              {transaction.user.id.substring(transaction.user.id.length - 4)}
-            </span>
+            <span>{abbreviateAddress(transaction.user.id)}</span>
           </div>
         );
+
+      const amount =
+        (subtractiveTransactionCategories.includes(transaction.category)
+          ? "-"
+          : "+") +
+        formatCrypto({
+          token: SupportedCrypto.Usdc,
+          amount: transaction.amount,
+        });
 
       const date = new Date(transaction.timestamp * 1000);
 
       return [
         <div key={`${transaction.id}-user`}>{user}</div>,
-        <div key={`${transaction.id}-category`}>
+        <div key={`${transaction.id}-category`} className="text-left">
           {transaction.category === TransactionCategory.TranchedPoolDeposit
             ? "Supply"
             : transaction.category ===
@@ -116,12 +129,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
             ? "Auto Transfer"
             : null}
         </div>,
-        <div key={`${transaction.id}-amount`}>
-          {formatCrypto({
-            token: SupportedCrypto.Usdc,
-            amount: transaction.amount,
-          })}
-        </div>,
+        <div key={`${transaction.id}-amount`}>{amount}</div>,
         <div key={`${transaction.id}-date`}>{format(date, "MMMM d, y")}</div>,
         <Link
           href={`https://etherscan.io/tx/${transaction.transactionHash}`}
