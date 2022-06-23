@@ -38,8 +38,8 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-    - run: npx lerna bootstrap --ci
-    - run: npm run build
+    - run: npx lerna bootstrap --ci --scope @goldfinch-eng/autotasks --include-dependencies
+    - run: npx lerna run build --stream --scope @goldfinch-eng/autotasks --include-dependencies
     - run: npx lerna run test --stream --scope @goldfinch-eng/autotasks
     - name: deploy-autotasks
       env:
@@ -92,8 +92,8 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-    - run: npx lerna bootstrap --ci
-    - run: npm run build
+    - run: npx lerna bootstrap --ci --scope @goldfinch-eng/client --include-dependencies
+    - run: npx lerna run build --stream --scope @goldfinch-eng/client --include-dependencies
     - run: npx lerna run test --stream --scope @goldfinch-eng/client
 
   subgraph:
@@ -115,8 +115,8 @@ jobs:
         # npm cache files are stored in `~/.npm` on Linux/macOS
         path: ~/.npm
         key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-    - run: npx lerna bootstrap --ci
-    - run: npm run build
+    - run: npx lerna bootstrap --ci --scope @goldfinch-eng/subgraph --include-dependencies
+    - run: npx lerna run build --stream --scope @goldfinch-eng/subgraph --include-dependencies
     - run: npx lerna run test --stream --scope @goldfinch-eng/subgraph
 
   functions:
@@ -157,8 +157,8 @@ jobs:
         with:
           path: ~/.cache/firebase/emulators
           key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-      - run: npx lerna bootstrap --ci
-      - run: npm run build
+      - run: npx lerna bootstrap --ci --scope @goldfinch-eng/functions --include-dependencies
+      - run: npx lerna run build --stream --scope @goldfinch-eng/functions --include-dependencies
       - run: npx lerna run ci_test --stream --scope @goldfinch-eng/functions
       - name: deploy-dev
         env:
