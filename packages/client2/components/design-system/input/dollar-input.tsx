@@ -2,6 +2,8 @@ import { ComponentProps } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { IMaskMixin } from "react-imask";
 
+import { USDC_DECIMALS } from "@/constants";
+
 import { Input } from "./input";
 
 const MaskedInput = IMaskMixin(({ inputRef, ...props }) => {
@@ -50,7 +52,7 @@ export function DollarInput({
           mask: Number,
           thousandsSeparator: ",",
           lazy: false,
-          scale: 6, // Chose 6 to match the level of precision of USDC
+          scale: USDC_DECIMALS,
           radix: ".",
         },
       }}
