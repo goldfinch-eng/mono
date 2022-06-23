@@ -11,6 +11,7 @@ import {
   TransactionCategory,
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
+import { getShortTransactionLabel } from "@/lib/pools";
 import { abbreviateAddress } from "@/lib/wallet";
 
 gql`
@@ -100,7 +101,7 @@ export function TransactionTable() {
           )}
         </div>,
         <div key={`${transaction.id}-category`} className="text-left">
-          {getTransactionLabel(transaction)}
+          {getShortTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`} className="text-right">
           {transactionAmount}
@@ -165,25 +166,4 @@ export function TransactionTable() {
       )}
     </div>
   );
-}
-
-function getTransactionLabel(transaction: {
-  category: TransactionCategory;
-}): string {
-  switch (transaction.category) {
-    case TransactionCategory.SeniorPoolDeposit:
-      return "Supply";
-    case TransactionCategory.SeniorPoolDepositAndStake:
-      return "Supply and Stake";
-    case TransactionCategory.SeniorPoolWithdrawal:
-      return "Withdrawal";
-    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
-      return "Unstake and Withdraw";
-    case TransactionCategory.TranchedPoolRepayment:
-      return "Repayment";
-    case TransactionCategory.TranchedPoolDrawdown:
-      return "Drawdown";
-    default:
-      return "Transaction";
-  }
 }

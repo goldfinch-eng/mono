@@ -14,9 +14,9 @@ import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
   SupportedCrypto,
   SupportedFiat,
-  TransactionCategory,
   useCurrentUserWalletInfoQuery,
 } from "@/lib/graphql/generated";
+import { getTransactionLabel } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
@@ -256,31 +256,4 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       </div>
     </div>
   );
-}
-
-function getTransactionLabel(transaction: {
-  category: TransactionCategory;
-}): string {
-  switch (transaction.category) {
-    case TransactionCategory.SeniorPoolDeposit:
-      return "Senior Pool Supply";
-    case TransactionCategory.SeniorPoolDepositAndStake:
-      return "Senior Pool Supply and Stake";
-    case TransactionCategory.SeniorPoolWithdrawal:
-      return "Senior Pool Withdrawal";
-    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
-      return "Senior Pool Unstake and Withdraw";
-    case TransactionCategory.TranchedPoolDeposit:
-      return "Borrower Pool Supply";
-    case TransactionCategory.TranchedPoolWithdrawal:
-      return "Borrower Pool Withdrawal";
-    case TransactionCategory.TranchedPoolRepayment:
-      return "Repayment";
-    case TransactionCategory.TranchedPoolDrawdown:
-      return "Drawdown";
-    case TransactionCategory.UidMinted:
-      return "Mint UID";
-    default:
-      return "";
-  }
 }

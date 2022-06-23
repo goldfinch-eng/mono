@@ -16,6 +16,7 @@ import {
   TransactionCategory,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
+import { getShortTransactionLabel } from "@/lib/pools";
 import { abbreviateAddress } from "@/lib/wallet";
 
 gql`
@@ -116,18 +117,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
       return [
         <div key={`${transaction.id}-user`}>{user}</div>,
         <div key={`${transaction.id}-category`} className="text-left">
-          {transaction.category === TransactionCategory.TranchedPoolDeposit
-            ? "Supply"
-            : transaction.category ===
-              TransactionCategory.TranchedPoolWithdrawal
-            ? "Withdrawal"
-            : transaction.category === TransactionCategory.TranchedPoolRepayment
-            ? "Repayment"
-            : transaction.category === TransactionCategory.TranchedPoolDrawdown
-            ? "Drawdown"
-            : transaction.category === TransactionCategory.SeniorPoolRedemption
-            ? "Auto Transfer"
-            : null}
+          {getShortTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`}>{amount}</div>,
         <div key={`${transaction.id}-date`}>{format(date, "MMMM d, y")}</div>,

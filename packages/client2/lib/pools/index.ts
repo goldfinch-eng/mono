@@ -8,6 +8,7 @@ import {
   TranchedPoolStatusFieldsFragment,
   UserEligibilityFieldsFragment,
   UidType,
+  TransactionCategory,
 } from "@/lib/graphql/generated";
 import { Erc20 } from "@/types/ethers-contracts";
 
@@ -233,4 +234,49 @@ export async function approveErc20IfRequired({
       errorPrompt: "Failed to approved spending",
     });
   }
+}
+
+const transactionLabels: Record<TransactionCategory, string> = {
+  [TransactionCategory.SeniorPoolDeposit]: "Senior Pool Supply",
+  [TransactionCategory.SeniorPoolDepositAndStake]:
+    "Senior Pool Supply and Stake",
+  [TransactionCategory.SeniorPoolWithdrawal]: "Senior Pool Withdrawal",
+  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]:
+    "Senior Pool Unstake and Withdraw",
+  [TransactionCategory.SeniorPoolRedemption]: "Senior Pool Auto Transfer",
+  [TransactionCategory.TranchedPoolDeposit]: "Borrower Pool Supply",
+  [TransactionCategory.TranchedPoolWithdrawal]: "Borrower Pool Withdrawal",
+  [TransactionCategory.TranchedPoolRepayment]: "Repayment",
+  [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
+  [TransactionCategory.UidMinted]: "Mint UID",
+};
+
+export function getTransactionLabel(transaction: {
+  category: TransactionCategory;
+}): string {
+  return transactionLabels[transaction.category];
+}
+
+const shortTransactionLabels: Record<TransactionCategory, string> = {
+  [TransactionCategory.SeniorPoolDeposit]: "Supply",
+  [TransactionCategory.SeniorPoolDepositAndStake]: "Supply and Stake",
+  [TransactionCategory.SeniorPoolWithdrawal]: "Withdrawal",
+  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "Unstake and Withdraw",
+  [TransactionCategory.SeniorPoolRedemption]: "Auto Transfer",
+  [TransactionCategory.TranchedPoolDeposit]: "Supply",
+  [TransactionCategory.TranchedPoolWithdrawal]: "Withdrawal",
+  [TransactionCategory.TranchedPoolRepayment]: "Repayment",
+  [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
+  [TransactionCategory.UidMinted]: "Mint UID",
+};
+
+/**
+ * Less descriptive but more brief than regular getTransactionLabel(). Use this only when it's appropriate in context.
+ * @param transaction Transaction object
+ * @returns Short label describing the transaction
+ */
+export function getShortTransactionLabel(transaction: {
+  category: TransactionCategory;
+}): string {
+  return shortTransactionLabels[transaction.category];
 }
