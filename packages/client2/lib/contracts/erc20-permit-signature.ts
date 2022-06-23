@@ -38,11 +38,12 @@ export async function generateErc20PermitSignature({
   value,
   deadline,
 }: Args) {
+  const name = await erc20TokenContract.name();
   const chainId = provider.network.chainId;
   const domain = {
-    name: await erc20TokenContract.name(),
-    version: chainId === 1 ? "2" : "1",
-    chainId: chainId,
+    name,
+    version: chainId === 1 && name === "USD Coin" ? "2" : "1", // we don't have the `version()` function on our fake USDC contract in dev, hence the conditional here
+    chainId,
     verifyingContract: erc20TokenContract.address,
   };
   const EIP712_DOMAIN_TYPE = [
