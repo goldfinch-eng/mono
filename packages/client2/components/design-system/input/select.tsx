@@ -158,7 +158,7 @@ export function Select({
         >
           <Listbox.Options
             className={clsx(
-              "absolute z-10 mt-0.5 min-w-full origin-top rounded border shadow-lg",
+              "absolute z-10 mt-0.5 min-w-full origin-top rounded border drop-shadow-lg",
               colorScheme === "light"
                 ? "border-sand-200 bg-white"
                 : colorScheme === "dark"
