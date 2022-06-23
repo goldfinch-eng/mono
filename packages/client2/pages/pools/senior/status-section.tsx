@@ -40,13 +40,13 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
           token: SupportedCrypto.Usdc,
           amount: seniorPool.latestPoolStatus.totalLoansOutstanding,
         })}
-        tooltip="The total value of Senior Pool capital currently deployed in outstanding Borrower Pools across the protocol."
+        tooltip="The total value of Senior Pool capital currently deployed in active Borrower Pools across the protocol."
       />
       {/* TODO use the real default rate. Needs to be properly calculated on subgraph https://linear.app/goldfinch/issue/GFI-765/calculate-senior-pool-default-rate-in-subgraph */}
       <Stat
         label="Default Rate"
         value={formatPercent(0)}
-        tooltip="The total default rate across all Borrower Pools on the Goldfinch protocol."
+        tooltip="The total default rate across all Borrower Pools on the Goldfinch protocol, calculated as the current total writedown value divided by the total loan value."
       />
     </div>
   );

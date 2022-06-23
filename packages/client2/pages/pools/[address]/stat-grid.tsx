@@ -64,14 +64,14 @@ export function StatGrid({
     <Stat
       label="Total est. APY"
       value={formatPercent(totalEstApy)}
-      tooltip="The Pool's total estimated APY, including the USDC APY and est. GFI rewards APY."
+      tooltip="The Pool's total estimated APY, including the USDC APY and est. GFI rewards APY net protocol fees."
     />
   );
   const usdcApyStat = (
     <Stat
       label="USDC APY"
       value={formatPercent(tranchedPool.estimatedJuniorApy)}
-      tooltip="The fixed-rate USDC APY defined by the Borrower Pool's financing terms."
+      tooltip="The fixed-rate USDC APY defined by the Borrower Pool's financing terms and interest allocation from the Senior Tranche."
     />
   );
   const gfiApyStat = (
@@ -91,7 +91,7 @@ export function StatGrid({
           ? "Late"
           : "Current"
       }
-      tooltip="The current status of the Borrower's repayments to this Pool. A status of Current means that the Borrower is up-to-date on their principal and interest payments to this Pool. A status of Default means that the Borrower has been late on their principal and interest payments to this Pool for more than 30 days."
+      tooltip="The current status of the Borrower's repayments to this Pool. A status of Current means that the Borrower is up-to-date on their principal and interest payments to this Pool. A status of Default means that the Borrower has been late on their principal and interest payments to this Pool beyond the grace period."
     />
   );
   const principalOutstandingStat = (
@@ -110,7 +110,7 @@ export function StatGrid({
     <Stat
       label="Payment frequency"
       value={`${tranchedPool.creditLine.paymentPeriodInDays.toString()} days`}
-      tooltip="Frequency of interest and principal payments."
+      tooltip="Frequency of interest payments."
     />
   );
   const nextPaymentStat = (
