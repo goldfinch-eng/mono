@@ -33,6 +33,7 @@ export function handleTransferSingle(event: TransferSingle): void {
     } else if (uidType.equals(BigInt.fromI32(4))) {
       sendingUser.isNonUsEntity = false
     }
+    sendingUser.save()
   }
 
   const transaction = createTransactionFromEvent(event, "UID_MINTED")
