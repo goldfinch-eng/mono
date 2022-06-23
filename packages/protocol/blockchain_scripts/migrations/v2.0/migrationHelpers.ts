@@ -1,16 +1,11 @@
-import {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} from "../../test/testHelpers"
+import {SECONDS_PER_DAY, BLOCKS_PER_DAY, BN} from "../../../test/testHelpers"
 import hre from "hardhat"
 const {artifacts, web3, getChainId} = hre
 const IV1CreditLine = artifacts.require("IV1CreditLine")
-import {MAINNET_MULTISIG} from "../mainnetForkingHelpers"
-import {
-  MAINNET_CHAIN_ID,
-  RINKEBY_CHAIN_ID,
-  TRUFFLE_CONTRACT_PROVIDER,
-  isMainnetForking,
-  getContract,
-} from "../deployHelpers"
+import {MAINNET_MULTISIG} from "../../mainnetForkingHelpers"
+import {MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID, isMainnetForking} from "../../deployHelpers"
 import {asNonNullable, assertNonNullable, debug} from "@goldfinch-eng/utils"
+import {getTruffleContract} from "../../deployHelpers"
 
 interface BorrowerMetadata {
   addresses: string[]
@@ -246,7 +241,7 @@ async function calculateTotalPaid(pool, creditLine) {
   // I verified this appears to return the right amounts, based on events
   // received for the quick check creditline, cross checked with
   // https://docs.google.com/spreadsheets/d/1trna25FAnzBtTDnWoBC9-JMZ-PRn-I87jNc7o9KLrto/edit#gid=0
-  const otherPool = await getContract("Pool", TRUFFLE_CONTRACT_PROVIDER, {at: pool.address})
+  const otherPool = await getTruffleContract("Pool", {at: pool.address})
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   const web3Pool = new web3.eth.Contract(otherPool.abi, pool.address)
   const info = asNonNullable(borrowerCreditlines[chainId])[creditLine]

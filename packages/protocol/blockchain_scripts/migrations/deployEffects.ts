@@ -17,7 +17,7 @@ import {
   MAINNET_CHAIN_ID,
   SAFE_CONFIG,
 } from "../deployHelpers"
-import {UpgradedContracts} from "../mainnetForkingHelpers"
+import {UpgradedContracts} from "../deployHelpers/upgradeContracts"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {DefenderUpgrader} from "../adminActions/defenderUpgrader"
 import {PopulatedTransaction} from "@ethersproject/contracts"

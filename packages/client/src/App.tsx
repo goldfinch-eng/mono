@@ -1,5 +1,5 @@
 import {ApolloClient, ApolloProvider, NormalizedCacheObject} from "@apollo/client"
-import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
+import {CreditDesk} from "./@types/legacy/CreditDesk"
 import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/web3/GoldfinchConfig"
 import * as Sentry from "@sentry/react"
 import React, {useEffect, useState} from "react"
@@ -414,7 +414,7 @@ function App() {
       const goldfinchConfigContract = protocol.getContract<GoldfinchConfig>("GoldfinchConfig")
       const goldfinchConfigData = await refreshGoldfinchConfigData(goldfinchConfigContract, currentBlock)
 
-      const creditDeskContract = protocol.getContract<CreditDesk>("CreditDesk")
+      const creditDeskContract = protocol.getContract<CreditDesk>("CreditDesk", undefined, true)
 
       setCurrentBlock(currentBlock)
       setUSDC(usdc)

@@ -29,12 +29,12 @@ describe("Borrower", async () => {
     reserve
 
   const setupTest = deployments.createFixture(async () => {
-    const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory} = await deployBaseFixture({})
+    const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory} = await deployBaseFixture({})
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower, person3])
     await goldfinchConfig.bulkAddToGoList([owner, borrower, person3, underwriter, reserve])
-    // Some housekeeping so we have a usable creditDesk for tests, and a seniorPool with funds
+    // Some housekeeping so we have a usable setup for tests
     await erc20Transfer(usdc, [borrower], usdcVal(1000), owner)
     await seniorPool.deposit(String(usdcVal(90)), {from: borrower})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
@@ -55,7 +55,6 @@ describe("Borrower", async () => {
     return {
       seniorPool,
       usdc,
-      creditDesk,
       fidu,
       goldfinchConfig,
       goldfinchFactory,
