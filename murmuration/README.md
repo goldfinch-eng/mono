@@ -62,6 +62,8 @@ Once you've SSH'ed into an instance, you can see what Docker processes are runni
 
 ### Copying `all_dev.json` from the Murmuration instance to your local machine
 
+This step is necessary in order for you to get all of the deployed contract addresses on Murmuration. Subgraph setup scripts will read from this file for deployments, so it's necessary if you wish to deploy a subgraph that indexes Murmuration.
+
 ```
 gcloud --project=goldfinch-frontends-dev compute ssh $INSTANCE_NAME --zone=us-central1-a --command="docker cp $CONTAINER_ID:/goldfinch-protocol/packages/protocol/deployments/all_dev.json ."
 
