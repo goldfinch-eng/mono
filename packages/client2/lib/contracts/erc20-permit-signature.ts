@@ -38,7 +38,10 @@ export async function generateErc20PermitSignature({
   value,
   deadline,
 }: Args) {
-  const name = await erc20TokenContract.name();
+  const [name, nonce] = await Promise.all([
+    erc20TokenContract.name(),
+    erc20TokenContract.nonces(owner),
+  ]);
   const chainId = provider.network.chainId;
   const domain = {
     name,
@@ -53,7 +56,6 @@ export async function generateErc20PermitSignature({
     { name: "verifyingContract", type: "address" },
   ];
 
-  const nonce = await erc20TokenContract.nonces(owner);
   const message = {
     owner,
     spender,
