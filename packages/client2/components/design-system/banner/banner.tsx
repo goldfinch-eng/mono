@@ -32,13 +32,13 @@ export function Banner({
     >
       {({ open }) => (
         <div className="mx-auto max-w-7xl">
-          <Disclosure.Button className="flex w-full justify-between py-6">
+          <Disclosure.Button className="flex w-full items-center justify-between py-4 text-xs">
             <div className={clsx("text-left", open ? "opacity-70" : null)}>
               {initialContent}
             </div>
             <Icon
               name="ChevronDown"
-              size="md"
+              size="sm"
               className={clsx(
                 "transition-transform duration-200",
                 open ? "rotate-180" : null
@@ -87,10 +87,13 @@ export function Banner({
             leaveTo="transition opacity-0"
           >
             <Disclosure.Panel>
-              <div className="transition-[max-height]" ref={transitionRef}>
+              <div
+                className="text-xs transition-[max-height]"
+                ref={transitionRef}
+              >
                 {expandedContent}
                 {/* this looks silly but it's necessary in order to make this contribute to the parent div's scrollHeight (which must be accurate for animation) */}
-                <div className="pb-6" />
+                <div className="pb-4" />
               </div>
             </Disclosure.Panel>
           </Transition>
