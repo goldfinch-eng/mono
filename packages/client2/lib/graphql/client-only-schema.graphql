@@ -60,14 +60,7 @@ type CryptoAmount {
 }
 
 type Geolocation {
-  ip: String!
-  city: String!
-  region: String!
   country: String!
-  loc: String!
-  org: String!
-  postal: String!
-  timezone: String!
 }
 
 type Viewer {
