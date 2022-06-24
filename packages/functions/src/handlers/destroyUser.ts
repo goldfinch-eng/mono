@@ -1,10 +1,12 @@
 import * as Sentry from "@sentry/serverless"
 import * as admin from "firebase-admin"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {assertNonNullable} from "@goldfinch-eng/utils"
 import {getDb, getDestroyedUsers, getUsers} from "../db"
 import {genRequestHandler} from "../helpers"
+import {ethers} from "ethers"
 import firestore = admin.firestore
+
+const validUidTypes = new Set([...Array(11).keys()])
 
 // This is the address of the Unique Identity Signer, a relayer on
 // Defender. It has the SIGNER_ROLE on UniqueIdentity and therefore
@@ -13,7 +15,7 @@ const UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS = "0x125cde169191c6c6c5e71c4a814bb7
 
 // This is an address for which we have a valid signature, used for
 // unit testing
-const UNIT_TESTING_SIGNER = "0xb5c52599dFc7F9858F948f003362A7f4B5E678A5"
+const UNIT_TESTING_SIGNER = "0xc34461018f970d343d5a25e4Ed28C4ddE6dcCc3F"
 
 /**
  * Throw when the destroyUser function is called on a user whose persona status is
@@ -26,22 +28,51 @@ class InvalidPersonaStatusError extends Error {
   }
 }
 
+type DecodedPlaintext = {
+  addressToDestroy: string
+  burnedUidType: number
+}
+
+/**
+ * Parse the encoded plaintext. It's expected to be an address (addressToBurn) and uint8
+ * (burnedUidType) encoded via defaultAbiCode.encode(...)
+ * @param {string} message the abi encoded plaintext
+ * @return {DecodedPlaintext} decoded plaintext
+ */
+const parsePlaintext = (message: string): DecodedPlaintext => {
+  console.log(`Decoding plaintext ${message}`)
+  const [addressToDestroy, burnedUidType] = ethers.utils.defaultAbiCoder.decode(["address", "uint8"], message, false)
+  if (!validUidTypes.has(burnedUidType)) {
+    throw new Error(`burnedUidType ${burnedUidType} is not a valid uid type`)
+  }
+  return {
+    addressToDestroy,
+    burnedUidType,
+  }
+}
+
 export const destroyUser = genRequestHandler({
   requireAuth: "signatureWithAllowList",
+  signatureMaxAge: 60 * 5, // 5 minutes
+  fallbackOnMissingPlaintext: false,
   signerAllowList:
     process.env.NODE_ENV === "test"
       ? [UNIT_TESTING_SIGNER, UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS]
       : [UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS],
   cors: false,
-  handler: async (req, res): Promise<Response> => {
+  handler: async (_, res, verificationResult): Promise<Response> => {
     console.log("destroyUser start")
 
-    const addressToDestroy = req.body.addressToDestroy
-    const burnedUidType = req.body.burnedUidType
-    console.log(`Recording UID burn of type ${burnedUidType} for address ${addressToDestroy}`)
+    let addressToDestroy: string
+    let burnedUidType: number
+    try {
+      ;({addressToDestroy, burnedUidType} = parsePlaintext(verificationResult.plaintext))
+    } catch (e) {
+      console.error(e)
+      return res.status(400).send({status: "error", message: "Bad plaintext"})
+    }
 
-    assertNonNullable(addressToDestroy)
-    assertNonNullable(burnedUidType)
+    console.log(`Recording UID burn of type ${burnedUidType} for address ${addressToDestroy}`)
 
     // Having verified the request, we can set the Sentry user context accordingly.
     Sentry.setUser({id: addressToDestroy})
@@ -76,7 +107,7 @@ export const destroyUser = genRequestHandler({
         // Build document data for destroyedUsers entry
         const newDeletion = {
           countryCode: user.data()?.countryCode,
-          burnedUidType,
+          burnedUidType: burnedUidType.toString(),
           persona: {
             id: personaData.id,
             status: personaData.status,

@@ -92,6 +92,7 @@ class AuthenticatedGoldfinchClient extends BaseGoldfinchClient implements Goldfi
       "x-goldfinch-address": address,
       "x-goldfinch-signature": signature,
       "x-goldfinch-signature-block-num": this.session.signatureBlockNum.toString(),
+      "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${this.session.signatureBlockNum}`,
     }
   }
 

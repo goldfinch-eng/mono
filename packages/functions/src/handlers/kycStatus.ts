@@ -27,6 +27,8 @@ const userStatusFromPersonaStatus = (personaStatus: string): "unknown" | "approv
 
 export const kycStatus = genRequestHandler({
   requireAuth: "signature",
+  signatureMaxAge: 60 * 60 * 24, // 1 day
+  fallbackOnMissingPlaintext: true,
   cors: true,
   handler: async (_, res: Response, verificationResult: SignatureVerificationSuccessResult): Promise<Response> => {
     const address = verificationResult.address
