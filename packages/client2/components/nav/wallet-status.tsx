@@ -97,7 +97,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       {!loading && shouldShowVerificationPrompt ? (
         <div>
           <div className="mb-4 text-lg font-semibold">Verify your identity</div>
-          <div className="mb-2">
+          <div className="mb-3">
             We need to verify your identity and issue a Goldfinch UID to
             participate.
           </div>
