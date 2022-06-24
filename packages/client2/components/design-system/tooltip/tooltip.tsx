@@ -196,7 +196,11 @@ export function InfoIconTooltip({
 }: InfoIconTooltipProps) {
   return (
     <Tooltip useWrapper {...props}>
-      <Icon name="InfoCircle" size={size} className={className} />
+      <Icon
+        name="InfoCircle"
+        size={size}
+        className={clsx(className, "text-sand-400")}
+      />
     </Tooltip>
   );
 }
