@@ -1,12 +1,11 @@
 import { gql } from "@apollo/client";
-import clsx from "clsx";
 import {
   format as formatDate,
   formatDistanceStrict as formatDateDistance,
 } from "date-fns";
 import { FixedNumber } from "ethers";
 
-import { Stat } from "@/components/design-system";
+import { Stat, StatGrid as StGr } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -159,42 +158,28 @@ export function StatGrid({
   );
 
   return (
-    <div
-      className={clsx(
-        className,
-        "grid gap-6",
-        poolStatus === PoolStatus.Full || poolStatus === PoolStatus.Repaid
-          ? "grid-cols-2 sm:grid-cols-4"
-          : "grid-cols-2 xs:grid-cols-3"
-      )}
-    >
-      {poolStatus === PoolStatus.Full || poolStatus === PoolStatus.Repaid ? (
-        <>
-          {totalEstApyStat}
-          {usdcApyStat}
-          {gfiApyStat}
-          {repaymentStatusStat}
-          {principalOutstandingStat}
-          {paymentFrequencyStat}
-          {nextPaymentStat}
-          {finalRepaymentStat}
-        </>
-      ) : poolStatus === PoolStatus.Open ? (
-        <>
-          {limitStat}
-          {paymentTermStat}
-          {paymentFrequencyStat}
-        </>
-      ) : (
-        <>
-          {totalEstApyStat}
-          {usdcApyStat}
-          {gfiApyStat}
-          {limitStat}
-          {paymentTermStat}
-          {paymentFrequencyStat}
-        </>
-      )}
-    </div>
+    <StGr className={className}>
+      {poolStatus === PoolStatus.Full || poolStatus === PoolStatus.Repaid
+        ? [
+            totalEstApyStat,
+            usdcApyStat,
+            gfiApyStat,
+            repaymentStatusStat,
+            principalOutstandingStat,
+            paymentFrequencyStat,
+            nextPaymentStat,
+            finalRepaymentStat,
+          ]
+        : poolStatus === PoolStatus.Open
+        ? [limitStat, paymentTermStat, paymentFrequencyStat]
+        : [
+            totalEstApyStat,
+            usdcApyStat,
+            gfiApyStat,
+            limitStat,
+            paymentTermStat,
+            paymentFrequencyStat,
+          ]}
+    </StGr>
   );
 }

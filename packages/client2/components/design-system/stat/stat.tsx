@@ -18,13 +18,11 @@ interface StatProps {
    * Optional tooltip to display with an info icon
    */
   tooltip?: ReactNode;
-
-  className?: string;
 }
 
-export function Stat({ label, value, tooltip, className }: StatProps) {
+export function Stat({ label, value, tooltip }: StatProps) {
   return (
-    <div className={className}>
+    <div className="bg-white p-4">
       <div className="mb-3 flex items-center text-sm text-sand-600">
         <span className={clsx(tooltip ? "mr-2" : "")}>{label}</span>
         {tooltip && <InfoIconTooltip size="sm" content={tooltip} />}

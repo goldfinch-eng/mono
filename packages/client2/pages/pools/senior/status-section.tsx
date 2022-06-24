@@ -1,7 +1,6 @@
 import { gql } from "@apollo/client";
-import clsx from "clsx";
 
-import { Stat } from "@/components/design-system";
+import { Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SeniorPoolStatusFieldsFragment,
@@ -25,7 +24,7 @@ interface StatusSectionProps {
 
 export function StatusSection({ seniorPool, className }: StatusSectionProps) {
   return (
-    <div className={clsx(className, "flex flex-wrap gap-14")}>
+    <StatGrid className={className}>
       <Stat
         label="Total Pool Balance"
         value={formatCrypto({
@@ -48,6 +47,6 @@ export function StatusSection({ seniorPool, className }: StatusSectionProps) {
         value={formatPercent(0)}
         tooltip="The total default rate across all Borrower Pools on the Goldfinch protocol, calculated as the current total writedown value divided by the total loan value."
       />
-    </div>
+    </StatGrid>
   );
 }
