@@ -18,6 +18,8 @@ import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 export type RequestHandlerConfig =
   | {
       requireAuth: "signature"
+      signatureMaxAge: number // Age in seconds after which the signature becomes invalid
+      fallbackOnMissingPlaintext: boolean
       cors: boolean
       handler: (
         req: Request,
@@ -27,6 +29,8 @@ export type RequestHandlerConfig =
     }
   | {
       requireAuth: "signatureWithAllowList"
+      signatureMaxAge: number // Age in seconds after which the signature becomes invalid
+      fallbackOnMissingPlaintext: boolean
       signerAllowList: Array<string>
       cors: boolean
       handler: (
@@ -48,5 +52,6 @@ export type SignatureVerificationFailureResult = {
 export type SignatureVerificationSuccessResult = {
   res: undefined
   address: string
+  plaintext: string
 }
 export type SignatureVerificationResult = SignatureVerificationFailureResult | SignatureVerificationSuccessResult

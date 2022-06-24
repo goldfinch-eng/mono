@@ -20,4 +20,4 @@
   # Concurrency is set to 2 as Netlify empirically has issues bootstrapping with high concurrency and will fail with various errors.
   # To make up for the lower concurrency, ignore the subgraph and server which are not required to build the client (and use build-netlify which
   # skips building those packages)
-  command = "CI= && npx lerna bootstrap --ci --concurrency=2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server && npm run build-netlify"
+  command = "CI= && npx lerna bootstrap --ci --scope @goldfinch-eng/client --include-dependencies && npx lerna run --scope @goldfinch-eng/client build --include-dependencies --stream"

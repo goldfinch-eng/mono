@@ -6,7 +6,7 @@ const {ethers} = hre
 import {Block} from "@ethersproject/abstract-provider"
 import {getDeployedContract, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {TranchedPool} from "../typechain/ethers"
-import {getAgreements, getUsers} from "@goldfinch-eng/functions/db"
+import {getAgreements, getUsers} from "./helpers/db"
 
 import admin from "firebase-admin"
 import {assertNonNullable} from "@goldfinch-eng/utils"
