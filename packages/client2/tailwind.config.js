@@ -100,7 +100,7 @@ module.exports = {
       },
       animation: {
         "background-oscillate-slow": "background-oscillate 4s ease-in infinite",
-        marquee: "marquee 30s linear infinite",
+        marquee: "marquee 60s linear infinite",
       },
       backgroundImage: {
         "sunrise-01":

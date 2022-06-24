@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
       <Nav />
       <div className="relative">
         <div id={bannerId} />
-        <div id={subnavId} className="sticky top-0 z-10" />
+        <div id={subnavId} />
         <div className="px-5">
           <div className="mx-auto min-h-full max-w-7xl py-14">{children}</div>
         </div>

@@ -253,6 +253,8 @@ export default function PoolPage() {
               ? "Repaid"
               : "Paused"}
           </Marquee>
+          {/* gives the illusion of rounded corners on the top of the page */}
+          <div className="-mt-3 h-3 rounded-t-xl bg-white" />
         </SubnavPortal>
       )}
 
