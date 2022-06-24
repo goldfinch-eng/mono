@@ -125,6 +125,10 @@ export default function SeniorPoolPage() {
             initialContent={initialBannerContent}
             expandedContent={expandedBannerContent}
           />
+          {/* gives the illusion of rounded corners on the page */}
+          <div className="bg-sky-500">
+            <div className="h-3 rounded-t-xl bg-white" />
+          </div>
         </BannerPortal>
       ) : null}
 
