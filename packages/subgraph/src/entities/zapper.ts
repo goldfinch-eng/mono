@@ -6,7 +6,7 @@ import {
   DepositMade as TranchedPoolDepositMade,
   WithdrawalMade as TranchedPoolWithdrawalMade,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import {Transfer as PoolTokenTransfer} from "../../generated/templates/PoolTokens/PoolTokens"
+import {Transfer as PoolTokenTransfer} from "../../generated/PoolTokensProxy/PoolTokens"
 
 import {SENIOR_POOL_ADDRESS} from "../constants"
 

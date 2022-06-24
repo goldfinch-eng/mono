@@ -1,5 +1,5 @@
 import {Address, BigInt} from "@graphprotocol/graph-ts"
-import {Transfer} from "../../generated/templates/PoolTokens/PoolTokens"
+import {Transfer} from "../../generated/PoolTokensProxy/PoolTokens"
 import {TranchedPool, TranchedPoolToken} from "../../generated/schema"
 import {PoolTokens as PoolTokensContract} from "../../generated/templates/PoolTokens/PoolTokens"
 import {POOL_TOKENS_ADDRESS} from "../constants"
