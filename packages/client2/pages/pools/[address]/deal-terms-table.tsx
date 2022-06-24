@@ -151,9 +151,11 @@ function Table({ rows }: { rows: [string, string, string][] }) {
               <th scope="row" className="bg-sand-50 p-5 font-medium">
                 <div className="flex items-center justify-between">
                   <div className="text-sand-600">{heading}</div>
-                  <div className="flex text-sand-400">
-                    <InfoIconTooltip size="sm" content={tooltip} />
-                  </div>
+                  <InfoIconTooltip
+                    size="sm"
+                    content={tooltip}
+                    className="text-sand-400"
+                  />
                 </div>
               </th>
               <td className="p-5">{value}</td>

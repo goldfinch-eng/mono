@@ -46,13 +46,6 @@ interface TooltipProps {
   placement?: Placement;
 }
 
-interface InfoIconTooltipProps extends TooltipProps {
-  /**
-   * The size of the icon: "xs" | "sm" | "md" | "lg" | "text"
-   */
-  size?: IconSizeType;
-}
-
 export function Tooltip({
   children,
   useWrapper = false,
@@ -184,13 +177,26 @@ export function Tooltip({
   );
 }
 
+interface InfoIconTooltipProps
+  extends Omit<TooltipProps, "children" | "useWrapper"> {
+  /**
+   * The size of the icon: "xs" | "sm" | "md" | "lg" | "text"
+   */
+  size?: IconSizeType;
+  /**
+   * Class goes on the info icon
+   */
+  className?: string;
+}
+
 export function InfoIconTooltip({
   size = "sm",
+  className,
   ...props
-}: Omit<InfoIconTooltipProps, "children" | "useWrapper">) {
+}: InfoIconTooltipProps) {
   return (
     <Tooltip useWrapper {...props}>
-      <Icon name="InfoCircle" size={size} />
+      <Icon name="InfoCircle" size={size} className={className} />
     </Tooltip>
   );
 }
