@@ -113,7 +113,7 @@ export default function RepaymentProgressPanel({
       ) : poolStatus === PoolStatus.Full ? (
         <div>
           <PanelHeading
-            heading="Total loan amount outstanding"
+            heading="Total remaining principal and interest"
             tooltip="The total amount of USDC remaining for the Borrower to repay to this Pool over its payment term, including interest and principal repayments."
             value={formatCrypto({
               token: SupportedCrypto.Usdc,
