@@ -7,6 +7,8 @@ import * as admin from "firebase-admin"
 export const setUserKYCData = genRequestHandler({
   requireAuth: "signature",
   cors: true,
+  signatureMaxAge: 60 * 5, // 5 minutes
+  fallbackOnMissingPlaintext: true,
   handler: async (req, res: Response, verificationResult: SignatureVerificationSuccessResult): Promise<Response> => {
     const address = verificationResult.address.toLowerCase()
 
