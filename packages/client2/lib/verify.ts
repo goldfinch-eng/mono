@@ -7,7 +7,14 @@ interface IKYCStatus {
   countryCode: string;
 }
 
-function getSignedMessage(blockNumber: number): string {
+/**
+ * The plaintext that is expected for the /kycStatus cloud function's
+ * signature verification. This is also the message presented to the
+ * user in their preferred wallet extension (e.g. Metamask) when we
+ * request their signature before initiating the kyc process.
+ * @param blockNumber current block number of the currently selected chain
+ */
+function getSignaturePlaintext(blockNumber: number): string {
   return `Sign in to Goldfinch: ${blockNumber}`;
 }
 
@@ -18,7 +25,9 @@ export async function getSignatureForKyc(provider: Web3Provider) {
     const currentBlock = await provider.getBlock(blockNumber);
     const currentBlockTimestamp = currentBlock.timestamp;
 
-    const signature = await signer.signMessage(getSignedMessage(blockNumber));
+    const signature = await signer.signMessage(
+      getSignaturePlaintext(blockNumber)
+    );
 
     return {
       signature,
@@ -35,9 +44,11 @@ function convertSignatureToAuth(
   signature: string,
   signatureBlockNum: number
 ) {
+  const plaintext = getSignaturePlaintext(signatureBlockNum);
   return {
     "x-goldfinch-address": account,
     "x-goldfinch-signature": signature,
+    "x-goldfinch-signature-plaintext": plaintext,
     "x-goldfinch-signature-block-num": signatureBlockNum.toString(),
   };
 }
