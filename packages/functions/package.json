@@ -10,7 +10,6 @@
     "start": "npm run serve",
     "start:local": "CHAIN_IDENTIFIER=http://localhost:8545 npm run serve",
     "start:murmuration": "MURMURATION=yes npm run start",
-    "start:murmuration:liquidity-mining": "MURMURATION=yes npm run start",
     "logs": "firebase functions:log",
     "test": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx firebase emulators:exec --project=dev \"mocha --require ts-node/register 'test/**/*'\"",
     "ci_test": "COMMIT_ID_FOR_TEST=$GITHUB_SHA npm test",
