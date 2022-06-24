@@ -120,7 +120,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
           {getShortTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`}>{amount}</div>,
-        <div key={`${transaction.id}-date`}>{format(date, "MMMM d, y")}</div>,
+        <div key={`${transaction.id}-date`}>{format(date, "MMM d, y")}</div>,
         <Link
           href={`https://etherscan.io/tx/${transaction.transactionHash}`}
           target="_blank"

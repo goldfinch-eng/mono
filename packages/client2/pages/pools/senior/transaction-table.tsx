@@ -107,7 +107,7 @@ export function TransactionTable() {
           {transactionAmount}
         </div>,
         <div key={`${transaction.id}-date`} className="text-right">
-          {format(date, "MMMM d, y")}
+          {format(date, "MMM d, y")}
         </div>,
         transaction.tranchedPool ? (
           <Link
