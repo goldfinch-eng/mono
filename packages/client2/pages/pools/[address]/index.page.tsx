@@ -35,7 +35,10 @@ import ComingSoonPanel from "./coming-soon-panel";
 import DealTermsTable from "./deal-terms-table";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
-import { StatGrid, TRANCHED_POOL_STAT_GRID_FIELDS } from "./stat-grid";
+import {
+  StatusSection,
+  TRANCHED_POOL_STAT_GRID_FIELDS,
+} from "./status-section";
 import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
@@ -310,7 +313,7 @@ export default function PoolPage() {
           ) : null}
 
           {poolStatus && tranchedPool && seniorPool && fiatPerGfi ? (
-            <StatGrid
+            <StatusSection
               className="mt-8"
               poolStatus={poolStatus}
               tranchedPool={tranchedPool}

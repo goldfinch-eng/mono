@@ -5,7 +5,7 @@ import {
 } from "date-fns";
 import { FixedNumber } from "ethers";
 
-import { Stat, StatGrid as StGr } from "@/components/design-system";
+import { Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -39,7 +39,7 @@ interface StatGridProps {
   className?: string;
 }
 
-export function StatGrid({
+export function StatusSection({
   poolStatus,
   tranchedPool,
   seniorPoolApyFromGfiRaw,
@@ -158,7 +158,7 @@ export function StatGrid({
   );
 
   return (
-    <StGr className={className}>
+    <StatGrid className={className}>
       {poolStatus === PoolStatus.Full || poolStatus === PoolStatus.Repaid
         ? [
             totalEstApyStat,
@@ -180,6 +180,6 @@ export function StatGrid({
             paymentTermStat,
             paymentFrequencyStat,
           ]}
-    </StGr>
+    </StatGrid>
   );
 }
