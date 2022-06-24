@@ -53,12 +53,14 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">Deal Terms</h2>
-          <InfoIconTooltip
-            size="sm"
-            content="The Borrower's proposed terms for the Pool, including the loan's basic timeframe and conditions."
-          />
+          <div className="flex text-sand-400">
+            <InfoIconTooltip
+              size="sm"
+              content="The Borrower's proposed terms for the Pool, including the loan's basic timeframe and conditions."
+            />
+          </div>
         </div>
         {tranchedPool ? (
           <Button
@@ -146,10 +148,12 @@ function Table({ rows }: { rows: [string, string, string][] }) {
         <tbody>
           {rows.map(([heading, tooltip, value], index) => (
             <tr key={index} className="border border-sand-200">
-              <th scope="row" className="p-5 font-medium">
+              <th scope="row" className="bg-sand-50 p-5 font-medium">
                 <div className="flex items-center justify-between">
-                  <div>{heading}</div>
-                  <InfoIconTooltip size="sm" content={tooltip} />
+                  <div className="text-sand-600">{heading}</div>
+                  <div className="flex text-sand-400">
+                    <InfoIconTooltip size="sm" content={tooltip} />
+                  </div>
                 </div>
               </th>
               <td className="p-5">{value}</td>
