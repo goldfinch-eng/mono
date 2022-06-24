@@ -32,66 +32,62 @@ export async function toastTransaction({
     const promise = submittedTransaction
       .wait()
       .then((receipt) => waitForSubgraphBlock(receipt.blockNumber));
-    return toast.promise(
-      promise,
-      {
-        pending: {
-          render() {
-            return (
-              <div>
-                {pendingPrompt ? pendingPrompt : "Transaction submitted."} View
-                it on{" "}
-                <Link
-                  href={`https://etherscan.io/tx/${transactionHash}`}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  etherscan.io
-                </Link>
-                .
-              </div>
-            );
-          },
-        },
-        success: {
-          render() {
-            return (
-              <div>
-                {successPrompt ? successPrompt : "Transaction succeeded."} View
-                it on{" "}
-                <Link
-                  href={`https://etherscan.io/tx/${transactionHash}`}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  etherscan.io
-                </Link>
-                .
-              </div>
-            );
-          },
-        },
-        error: {
-          render({ data }: { data: { message: string } }) {
-            return (
-              <div>
-                {errorPrompt ? errorPrompt : `Transaction failed.`} Error
-                message: {data.message}. View it on{" "}
-                <Link
-                  href={`https://etherscan.io/tx/${transactionHash}`}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  etherscan.io
-                </Link>
-                .
-              </div>
-            );
-          },
+    return toast.promise(promise, {
+      pending: {
+        render() {
+          return (
+            <div>
+              {pendingPrompt ? pendingPrompt : "Transaction submitted."} View it
+              on{" "}
+              <Link
+                href={`https://etherscan.io/tx/${transactionHash}`}
+                target="_blank"
+                rel="noopener"
+              >
+                etherscan.io
+              </Link>
+              .
+            </div>
+          );
         },
       },
-      { autoClose: false }
-    );
+      success: {
+        render() {
+          return (
+            <div>
+              {successPrompt ? successPrompt : "Transaction succeeded."} View it
+              on{" "}
+              <Link
+                href={`https://etherscan.io/tx/${transactionHash}`}
+                target="_blank"
+                rel="noopener"
+              >
+                etherscan.io
+              </Link>
+              .
+            </div>
+          );
+        },
+      },
+      error: {
+        render({ data }: { data: { message: string } }) {
+          return (
+            <div>
+              {errorPrompt ? errorPrompt : `Transaction failed.`} Error message:{" "}
+              {data.message}. View it on{" "}
+              <Link
+                href={`https://etherscan.io/tx/${transactionHash}`}
+                target="_blank"
+                rel="noopener"
+              >
+                etherscan.io
+              </Link>
+              .
+            </div>
+          );
+        },
+      },
+    });
   } catch (error) {
     const errorMessage =
       (error as { data: { message: string } })?.data?.message ??
