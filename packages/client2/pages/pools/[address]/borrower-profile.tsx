@@ -32,7 +32,7 @@ export function BorrowerProfile({
       <div className="mb-8 items-center justify-between lg:flex">
         <div className="mb-3 flex items-center">
           {logo && (
-            <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full">
+            <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200">
               <Image
                 src={logo}
                 alt={name}
