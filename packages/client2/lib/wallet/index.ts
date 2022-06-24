@@ -14,12 +14,9 @@ export function abbreviateAddress(address: string) {
 }
 
 /**
- * Determines whether or not a given address is a smart contract. Doesn't necessarily confirm whether or not an address is a smart contract wallet application, but that's what we use it for.
+ * Determines whether or not a given address is a smart contract.
  */
-export async function isSmartContractWallet(
-  address: string,
-  provider: Web3Provider
-) {
+export async function isSmartContract(address: string, provider: Web3Provider) {
   const bytecode = await provider.getCode(address);
   return utils.hexStripZeros(bytecode) !== "0x";
 }

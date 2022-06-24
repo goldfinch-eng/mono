@@ -31,11 +31,7 @@ import {
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import {
-  abbreviateAddress,
-  isSmartContractWallet,
-  useWallet,
-} from "@/lib/wallet";
+import { abbreviateAddress, isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
   fragment SupplyPanelTranchedPoolFields on TranchedPool {
@@ -172,7 +168,7 @@ export default function SupplyPanel({
       if (!tranchedPoolContract) {
         throw new Error("Wallet not connected properly");
       }
-      if (await isSmartContractWallet(account, provider)) {
+      if (await isSmartContract(account, provider)) {
         await approveErc20IfRequired({
           account,
           spender: tranchedPoolAddress,

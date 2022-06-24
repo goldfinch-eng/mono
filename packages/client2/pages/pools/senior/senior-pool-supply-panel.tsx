@@ -30,7 +30,7 @@ import {
 } from "@/lib/pools";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
-import { isSmartContractWallet, useWallet } from "@/lib/wallet";
+import { isSmartContract, useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_SUPPLY_PANEL_POOL_FIELDS = gql`
   fragment SeniorPoolSupplyPanelPoolFields on SeniorPool {
@@ -112,7 +112,7 @@ export function SeniorPoolSupplyPanel({
     const value = utils.parseUnits(data.supply, USDC_DECIMALS);
 
     // Smart contract wallets cannot sign a message and therefore can't use depositWithPermit
-    if (await isSmartContractWallet(account, provider)) {
+    if (await isSmartContract(account, provider)) {
       if (data.isStaking) {
         await approveErc20IfRequired({
           account,
