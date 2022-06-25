@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import {
   Button,
   DollarInput,
+  Form,
   Icon,
   InfoIconTooltip,
   Input,
@@ -112,15 +113,10 @@ export default function SupplyPanel({
     ? canUserParticipateInPool(allowedUidTypes, user)
     : false;
 
-  const {
-    handleSubmit,
-    control,
-    watch,
-    register,
-    formState: { isSubmitting, errors, isSubmitSuccessful },
-    setValue,
-    reset,
-  } = useForm<SupplyForm>({ defaultValues: { source: "wallet" } });
+  const rhfMethods = useForm<SupplyForm>({
+    defaultValues: { source: "wallet" },
+  });
+  const { control, watch, register, setValue } = rhfMethods;
 
   const handleMax = async () => {
     if (!account || !usdcContract || !availableBalance) {
@@ -236,12 +232,6 @@ export default function SupplyPanel({
     }
     await apolloClient.refetchQueries({ include: "active" });
   };
-
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      reset();
-    }
-  }, [isSubmitSuccessful, reset]);
 
   const supplyValue = watch("supply");
   const selectedSource = watch("source");
@@ -415,7 +405,7 @@ export default function SupplyPanel({
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
           <Select
             control={control}
             name="source"
@@ -447,7 +437,6 @@ export default function SupplyPanel({
             onMaxClick={handleMax}
             className="mb-4"
             labelClassName="!text-sm !mb-3"
-            errorMessage={errors?.supply?.message}
           />
           <Input
             {...register("backerName", { required: "Required" })}
@@ -464,7 +453,6 @@ export default function SupplyPanel({
             textSize="xl"
             className="mb-3"
             labelClassName="!text-sm !mb-3"
-            errorMessage={errors?.backerName?.message}
           />
           <div className="mb-3 text-xs">
             By entering my name and clicking “Supply” below, I hereby agree and
@@ -480,15 +468,13 @@ export default function SupplyPanel({
           </div>
           <Button
             className="block w-full"
-            disabled={Object.keys(errors).length !== 0}
             size="xl"
             colorScheme="secondary"
             type="submit"
-            isLoading={isSubmitting}
           >
             Supply
           </Button>
-        </form>
+        </Form>
       )}
     </div>
   );

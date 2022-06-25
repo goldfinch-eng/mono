@@ -5,6 +5,7 @@ import React, {
   ReactNode,
   AnchorHTMLAttributes,
 } from "react";
+import { useFormContext } from "react-hook-form";
 
 import { Icon, IconProps, Spinner } from "@/components/design-system";
 
@@ -47,6 +48,8 @@ export const Button = forwardRef<
     colorScheme = "primary",
     iconLeft,
     iconRight,
+    disabled,
+    type,
     isLoading = false,
     className,
     as = "button",
@@ -54,9 +57,22 @@ export const Button = forwardRef<
   },
   ref
 ) {
+  const formContext = useFormContext();
+  let _disabled = disabled;
+  let _isLoading = isLoading;
+  if (formContext !== null && type === "submit") {
+    const {
+      formState: { isDirty, isSubmitting, errors },
+    } = formContext;
+    // Can't use the built-in isValid on formState because that only updates when the mode is set to onChange/onBlur/whatever
+    const isValid = Object.keys(errors).length === 0;
+    _disabled = !isDirty || isSubmitting || !isValid;
+    _isLoading = isSubmitting;
+  }
+
   const Component = as;
-  const spinnerOnLeft = isLoading && iconLeft;
-  const spinnerOnRight = isLoading && !spinnerOnLeft;
+  const spinnerOnLeft = _isLoading && iconLeft;
+  const spinnerOnRight = _isLoading && !spinnerOnLeft;
   return (
     <Component
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,6 +100,8 @@ export const Button = forwardRef<
           : null,
         className
       )}
+      disabled={_disabled}
+      type={type}
       {...rest}
     >
       {spinnerOnLeft ? (
