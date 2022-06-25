@@ -176,7 +176,7 @@ export default function PoolPage() {
         }
       : undefined;
 
-  // https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
+  // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const poolSupportsUs =

@@ -86,7 +86,7 @@ export default function SeniorPoolPage() {
         user.seniorPoolStakedPositions.length > 0 &&
         user.seniorPoolStakedPositions.some((s) => s.amount.gt(0))));
 
-  // https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
+  // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
   let initialBannerContent = "";
   let expandedBannerContent = "";
   const noUid =
