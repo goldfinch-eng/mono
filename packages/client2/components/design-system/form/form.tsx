@@ -9,6 +9,9 @@ type FormProps<FormFields> = Omit<
   "onSubmit"
 > & {
   children: ReactNode;
+  /**
+   * This supposed to be the result of calling useForm() in its entirety
+   */
   rhfMethods: UseFormReturn<FormFields>;
   onSubmit: SubmitHandler<FormFields>;
   className?: string;
