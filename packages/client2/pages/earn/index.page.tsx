@@ -95,7 +95,7 @@ export default function EarnPage() {
         Senior Pool
       </Heading>
       <Paragraph className="mb-8 !text-lg">
-        The simple option for automtically diversified yields. Capital is
+        The simple option for automatically diversified yields. Capital is
         distributed across Borrower Pools, and is protected by Backer capital
         for lower-risk investment.
       </Paragraph>
