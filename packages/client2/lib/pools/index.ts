@@ -193,7 +193,7 @@ export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
 }
 
 /**
- * Utility function to determine if a user is in the US or not. Needs to consume a User fragment and a Geolocation (from Vieweer)
+ * Utility function to determine if a user is in the US or not. Needs to consume a User fragment and a Geolocation (from Viewer)
  * @param user User object, must conform to fragment requirements (same as user eligibility for a pool)
  * @param countryCode String representing the user's country code, as returned from viewer.geolocation.
  * @returns True if the user should be considered a US user, false otherwise
