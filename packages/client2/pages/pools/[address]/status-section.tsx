@@ -61,6 +61,7 @@ export function StatusSection({
 
   const totalEstApyStat = (
     <Stat
+      key="totalEstApyStat"
       label="Total est. APY"
       value={formatPercent(totalEstApy)}
       tooltip="The Pool's total estimated APY, including the USDC APY and est. GFI rewards APY net protocol fees."
@@ -68,6 +69,7 @@ export function StatusSection({
   );
   const usdcApyStat = (
     <Stat
+      key="usdcApyStat"
       label="USDC APY"
       value={formatPercent(tranchedPool.estimatedJuniorApy)}
       tooltip="The fixed-rate USDC APY defined by the Borrower Pool's financing terms and interest allocation from the Senior Tranche."
@@ -75,6 +77,7 @@ export function StatusSection({
   );
   const gfiApyStat = (
     <Stat
+      key="gfiApyStat"
       label="Est. GFI APY"
       value={formatPercent(apyFromGfi)}
       tooltip="The Pool's estimated GFI rewards APY, including Investor Rewards and the Backer Bonus."
@@ -82,6 +85,7 @@ export function StatusSection({
   );
   const repaymentStatusStat = (
     <Stat
+      key="repaymentStatusStat"
       label="Repayment status"
       value={
         poolStatus === PoolStatus.Repaid
@@ -95,6 +99,7 @@ export function StatusSection({
   );
   const principalOutstandingStat = (
     <Stat
+      key="principalOutstandingStat"
       label="Principal outstanding"
       value={formatCrypto({
         token: SupportedCrypto.Usdc,
@@ -107,6 +112,7 @@ export function StatusSection({
   );
   const paymentFrequencyStat = (
     <Stat
+      key="paymentFrequencyStat"
       label="Payment frequency"
       value={`${tranchedPool.creditLine.paymentPeriodInDays.toString()} days`}
       tooltip="Frequency of interest payments."
@@ -114,6 +120,7 @@ export function StatusSection({
   );
   const nextPaymentStat = (
     <Stat
+      key="nextPaymentStat"
       label="Next repayment due"
       value={
         !tranchedPool.creditLine.nextDueTime.isZero()
@@ -128,6 +135,7 @@ export function StatusSection({
   );
   const finalRepaymentStat = (
     <Stat
+      key="finalPaymentStat"
       label="Payment term end"
       value={formatDate(
         new Date(tranchedPool.creditLine.termEndTime.toNumber() * 1000),
@@ -138,6 +146,7 @@ export function StatusSection({
   );
   const limitStat = (
     <Stat
+      key="limitStat"
       label="Pool limit"
       value={formatCrypto({
         token: SupportedCrypto.Usdc,
@@ -148,6 +157,7 @@ export function StatusSection({
   );
   const paymentTermStat = (
     <Stat
+      key="paymentTermStat"
       label="Payment term"
       value={formatDateDistance(
         0,
