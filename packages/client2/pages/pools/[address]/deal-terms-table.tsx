@@ -52,9 +52,9 @@ function getLateFeeApr(
 export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold">Deal Terms</h2>
+          <h2 className="text-lg font-semibold">Deal Terms</h2>
           <div className="flex text-sand-400">
             <InfoIconTooltip
               size="sm"

@@ -198,17 +198,50 @@ export default function SeniorPoolPage() {
           {seniorPool ? (
             <StatusSection className="mb-8" seniorPool={seniorPool} />
           ) : null}
-          <div className="mb-8">
-            <h2 className="mb-4 text-3xl">Overview</h2>
-            <p className="text-xl">
+          <div className="mb-20">
+            <h2 className="mb-8 text-3xl">Overview</h2>
+            <p className="mb-8 text-2xl font-light">
               The Senior Pool is the simple, lower risk, lower return option on
               Goldfinch. Capital is automatically diversified across Borrower
               pools, and protected by Backer capital.
             </p>
+            <Button
+              className="block"
+              as="a"
+              size="lg"
+              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
+              iconRight="ArrowTopRight"
+              variant="rounded"
+            >
+              How it Works
+            </Button>
           </div>
-          <div className="mb-8">
-            <h3 className="mb-4 text-xl font-semibold">Highlights</h3>
-            <ul className="list-outside list-disc pl-5">
+
+          <TransactionTable />
+          <div className="flex gap-2">
+            <Button
+              as="a"
+              href="https://dune.com/goldfinch/goldfinch"
+              colorScheme="secondary"
+              iconRight="ArrowTopRight"
+              variant="rounded"
+            >
+              Dashboard
+            </Button>
+            <Button
+              as="a"
+              href={`https://etherscan.io/address/${seniorPool?.id}`}
+              colorScheme="secondary"
+              iconRight="ArrowTopRight"
+              variant="rounded"
+            >
+              Pool
+            </Button>
+          </div>
+
+          <div className="mt-20">
+            <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
+            <ul className="list-outside list-disc space-y-5 pl-5">
               <li>
                 Earn passive yield. Capital is automatically deployed across a
                 diverse portfolio of Borrowers that are vetted by Backers.
@@ -224,18 +257,6 @@ export default function SeniorPoolPage() {
               </li>
             </ul>
           </div>
-          <div className="mb-8">
-            <Button
-              as="a"
-              size="lg"
-              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/liquidityproviders"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-            >
-              How it Works
-            </Button>
-          </div>
-          <TransactionTable />
         </div>
       </div>
     </>

@@ -382,56 +382,50 @@ export default function PoolPage() {
             </TabList>
             <TabPanels>
               <TabContent>
-                <div className="mb-8">
-                  <h2 className="mb-4 text-3xl">Deal Overview</h2>
+                <div className="mb-20">
+                  <h2 className="mb-8 text-3xl">Deal Overview</h2>
                   {tranchedPool ? (
-                    <p className="whitespace-pre-wrap text-xl">
+                    <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
                       {tranchedPool.description}
                     </p>
                   ) : (
                     <ShimmerLines lines={3} />
                   )}
+                  {tranchedPool?.dataroom ? (
+                    <Button
+                      as="a"
+                      variant="rounded"
+                      iconRight="ArrowTopRight"
+                      href={tranchedPool.dataroom}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="lg"
+                      className="block"
+                    >
+                      Dataroom
+                    </Button>
+                  ) : null}
                 </div>
 
-                {tranchedPool?.dataroom ? (
-                  <Button
-                    as="a"
-                    variant="rounded"
-                    iconRight="ArrowTopRight"
-                    href={tranchedPool.dataroom}
-                    target="_blank"
-                    rel="noreferrer"
-                    size="lg"
-                    className="mb-8 block"
-                  >
-                    Dataroom
-                  </Button>
-                ) : null}
-
-                {tranchedPool?.highlights ? (
-                  <div className="mb-8">
-                    <h3 className="mb-4 text-xl font-semibold">Highlights</h3>
-                    <ul className="list-outside list-disc pl-5">
-                      {tranchedPool?.highlights?.map((item, idx) => (
-                        <li
-                          key={`pool-highlight-${address}-${idx}`}
-                          className="py-1"
-                        >
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <div className="mb-8">
-                  <h2 className="mb-4 text-xl font-semibold">
+                <div className="mb-20">
+                  <h2 className="mb-8 text-lg font-semibold">
                     Recent Activity
                   </h2>
                   {tranchedPool ? (
                     <TransactionTable tranchedPoolId={tranchedPool.id} />
                   ) : null}
                 </div>
+
+                {tranchedPool?.highlights ? (
+                  <div className="mb-20">
+                    <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
+                    <ul className="list-outside list-disc space-y-5 pl-5">
+                      {tranchedPool?.highlights?.map((item, idx) => (
+                        <li key={`pool-highlight-${address}-${idx}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
 
                 <DealTermsTable tranchedPool={tranchedPool} />
               </TabContent>

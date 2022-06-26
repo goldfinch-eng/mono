@@ -96,11 +96,11 @@ export function BorrowerProfile({
       {highlights ? (
         <>
           <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-          <ul className="list-outside list-disc pl-5">
+          <ul className="list-outside list-disc space-y-5 pl-5">
             {highlights.map((item, idx) => (
               <li
                 key={`pool-highlight-${name}-${idx}`}
-                className="whitespace-pre-wrap py-1"
+                className="whitespace-pre-wrap"
               >
                 {item}
               </li>
