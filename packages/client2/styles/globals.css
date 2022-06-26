@@ -80,7 +80,7 @@
   }
 
   .pool-layout {
-    @apply grid gap-10;
+    @apply grid gap-y-12 gap-x-10;
     grid-template-columns: 100%;
     grid-template-rows: auto 1fr;
     grid-template-areas:

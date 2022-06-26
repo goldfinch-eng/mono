@@ -260,7 +260,7 @@ export default function PoolPage() {
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
-          <div className="mb-10 flex flex-wrap justify-between sm:mb-8">
+          <div className="mb-8 flex flex-wrap justify-between sm:mb-8">
             <div>
               <Breadcrumb
                 label={tranchedPool?.name}
@@ -283,7 +283,7 @@ export default function PoolPage() {
           </div>
           <Heading
             level={1}
-            className="mb-5 text-center text-sand-800 sm:mb-3 md:text-left"
+            className="mb-12 text-center text-sand-800 md:text-left"
           >
             {tranchedPool ? (
               tranchedPool.name
@@ -293,7 +293,7 @@ export default function PoolPage() {
           </Heading>
 
           {error ? (
-            <HelperText isError className="mb-2">
+            <HelperText isError>
               There was a problem fetching data on this pool. Shown data may be
               outdated.
             </HelperText>
@@ -316,7 +316,7 @@ export default function PoolPage() {
 
           {poolStatus && tranchedPool && seniorPool && fiatPerGfi ? (
             <StatusSection
-              className="mt-8"
+              className="mt-12"
               poolStatus={poolStatus}
               tranchedPool={tranchedPool}
               seniorPoolApyFromGfiRaw={

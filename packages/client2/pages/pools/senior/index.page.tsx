@@ -134,7 +134,7 @@ export default function SeniorPoolPage() {
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
-          <div className="mb-6 flex flex-wrap justify-between">
+          <div className="mb-8 flex flex-wrap justify-between">
             <Breadcrumb label="Goldfinch" image={goldfinchLogoWhiteBgPngUrl} />
             {seniorPool ? (
               <Button
@@ -196,7 +196,7 @@ export default function SeniorPoolPage() {
             </HelperText>
           ) : null}
           {seniorPool ? (
-            <StatusSection className="mb-8" seniorPool={seniorPool} />
+            <StatusSection className="mb-12" seniorPool={seniorPool} />
           ) : null}
           <div className="mb-20">
             <h2 className="mb-8 text-3xl">Overview</h2>
