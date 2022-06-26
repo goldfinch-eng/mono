@@ -24,14 +24,16 @@ export function ParallelMarketsStep() {
           >
             Back
           </Button>
-          <Link
+          <Button
+            as="a"
             href="https://bridge.parallelmarkets.com/goldfinch"
             target="_blank"
             rel="noopener"
-            className="flex w-full items-center justify-center"
+            className="w-full"
+            iconRight="ArrowTopRight"
           >
             Verify my identity
-          </Link>
+          </Button>
         </>
       }
     >
