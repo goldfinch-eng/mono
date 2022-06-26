@@ -62,11 +62,11 @@ export const Button = forwardRef<
   let _isLoading = isLoading;
   if (formContext !== null && type === "submit") {
     const {
-      formState: { isDirty, isSubmitting, errors },
+      formState: { isSubmitting, errors },
     } = formContext;
     // Can't use the built-in isValid on formState because that only updates when the mode is set to onChange/onBlur/whatever
     const isValid = Object.keys(errors).length === 0;
-    _disabled = !isDirty || isSubmitting || !isValid;
+    _disabled = isSubmitting || !isValid;
     _isLoading = isSubmitting;
   }
 
