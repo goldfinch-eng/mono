@@ -1,6 +1,6 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -9,6 +9,7 @@ import {
   DollarInput,
   Select,
   InfoIconTooltip,
+  Form,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
@@ -51,6 +52,11 @@ interface WithdrawalPanelProps {
   isPoolLocked: boolean;
 }
 
+interface FormFields {
+  amount: string;
+  destination: string;
+}
+
 export function WithdrawalPanel({
   tranchedPoolAddress,
   poolTokens,
@@ -79,19 +85,14 @@ export function WithdrawalPanel({
   const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
   const zapperContract = useContract("Zapper");
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting, isSubmitSuccessful },
-    reset,
-    watch,
-  } = useForm<{ amount: string; destination: string }>({
+  const rhfMethods = useForm<FormFields>({
     defaultValues: { destination: "wallet" },
   });
+  const { control, watch } = rhfMethods;
   const selectedDestination = watch("destination");
   const apolloClient = useApolloClient();
 
-  const handler = handleSubmit(async (data) => {
+  const onSubmit = async (data: FormFields) => {
     if (!tranchedPoolContract || !zapperContract) {
       throw new Error("Wallet not connected properly");
     }
@@ -162,13 +163,7 @@ export function WithdrawalPanel({
       }
     }
     await apolloClient.refetchQueries({ include: "active" });
-  });
-
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      reset();
-    }
-  }, [isSubmitSuccessful, reset]);
+  };
 
   const validateWithdrawalAmount = (value: string) => {
     if (selectedDestination !== "wallet") {
@@ -224,7 +219,7 @@ export function WithdrawalPanel({
         })}
         <Icon name="Usdc" size="sm" />
       </div>
-      <form onSubmit={handler}>
+      <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
         <Select
           control={control}
           options={availableDestinations}
@@ -243,16 +238,14 @@ export function WithdrawalPanel({
           colorScheme="dark"
           rules={{ validate: validateWithdrawalAmount }}
           labelClassName="!mb-3 text-sm"
-          errorMessage={errors?.amount?.message}
           className="mb-3"
           disabled={selectedDestination !== "wallet"}
         />
         <Button
+          type="submit"
           colorScheme="secondary"
           size="xl"
           className="block w-full"
-          isLoading={isSubmitting}
-          disabled={Object.keys(errors).length !== 0}
         >
           Withdraw
         </Button>
@@ -263,7 +256,7 @@ export function WithdrawalPanel({
           />
           You can withdraw capital until the pool is closed.
         </div>
-      </form>
+      </Form>
     </div>
   );
 }
