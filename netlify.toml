@@ -4,6 +4,10 @@
   from = "/*"
   to = "/index.html"
   status = 200
+[[redirects]]
+  from = "/earn"
+  to = "https://beta.app.goldfinch.finance/earn"
+  status = 301
 [[headers]]
   for = "/*"
     [headers.values]
