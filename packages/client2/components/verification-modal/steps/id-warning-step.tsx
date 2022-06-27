@@ -39,10 +39,10 @@ export function IdWarningStep() {
         </div>
         <div className="mb-5">Do you have a Non-U.S. ID?</div>
         <div className="text-xs text-sand-400">
-          If you have a U.S. ID, you are not eligible to participate in certain
-          Goldfinch protocol activities, including lending capital. If you have
-          a Non-U.S. ID you can use for identity verification purposes, you may
-          be eligible to participate.
+          If you have a U.S. ID, you may not be eligible to participate in
+          certain Goldfinch protocol activities, including lending capital. If
+          you have a Non-U.S. ID you can use for identity verification purposes,
+          you may be eligible to participate.
         </div>
       </div>
     </StepTemplate>
