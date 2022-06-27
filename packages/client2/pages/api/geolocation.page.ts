@@ -1,9 +1,7 @@
+import { withSentry } from "@sentry/nextjs";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   let ip;
 
   if (req.headers["x-forwarded-for"]) {
@@ -40,4 +38,6 @@ export default async function handler(
       message: `Failed to get IP info. Error: ${(e as Error).message}`,
     });
   }
-}
+};
+
+export default withSentry(handler);

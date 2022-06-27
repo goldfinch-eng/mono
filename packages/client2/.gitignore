@@ -52,3 +52,5 @@ constants/metadata/localhost.json
 
 # auto-generated file for feeding the app deployed contract addresses
 constants/contract-addresses/index.ts
+# Sentry
+.sentryclirc
