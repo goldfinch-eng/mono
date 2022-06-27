@@ -40,15 +40,11 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /**
    * An element that will render on the right side of the input. Can be used to create things like a "reveal password" button, or a "max" button
    */
-  decoration?: ReactNode;
+  decoration?: IconNameType | ReactNode;
   /**
    * An element that will render on the right side of the label. Can be used to add extra contextual information like a tooltip.
    */
   labelDecoration?: ReactNode;
-  /**
-   * Occupies the same space as `decoration`. Offered as a convenience if you just want a static icon as a decoration.
-   */
-  icon?: IconNameType;
   textSize?: "sm" | "md" | "lg" | "xl";
   colorScheme?: "light" | "dark";
 }
@@ -63,7 +59,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     helperText,
     errorMessage,
     disabled = false,
-    icon,
     decoration,
     labelDecoration,
     inputClassName,
@@ -127,7 +122,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                 ]
               : null,
             disabled && "opacity-50",
-            decoration || icon ? "pr-8" : null,
+            decoration ? "pr-8" : null,
             textSize === "sm"
               ? "py-1.5 px-3"
               : textSize === "md"
@@ -147,15 +142,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           autoComplete={autoComplete}
           {...rest}
         />
-        {decoration ? (
+        {typeof decoration === "string" ? (
+          <Icon
+            name={decoration as IconNameType}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2"
+          />
+        ) : decoration ? (
           <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
             {decoration}
           </div>
-        ) : icon ? (
-          <Icon
-            name={icon}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2"
-          />
         ) : null}
       </div>
       {helperText || errorMessage ? (
