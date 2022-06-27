@@ -8,17 +8,17 @@ interface BreadcrumbProps {
   /**
    * Optional image to show beside the breadcrumb: URL, PNG string, or Static import
    */
-  image?: string | null;
+  image?: string;
 
   /**
    * The title of the breadcrumb
    */
-  label?: string | null;
+  label?: string;
 
   /**
    * Optional link of the breadcrumb
    */
-  link?: string | null;
+  link?: string;
 }
 
 export function Breadcrumb({ image, label, link }: BreadcrumbProps) {

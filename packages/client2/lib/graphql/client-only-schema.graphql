@@ -17,11 +17,11 @@ type Borrower {
 }
 
 extend type TranchedPool {
-  name: String
-  category: String
+  name: String!
+  category: String!
   description: String!
   highlights: [String!]
-  icon: String
+  icon: String!
   agreement: String
   dataroom: String
   borrower: Borrower!
