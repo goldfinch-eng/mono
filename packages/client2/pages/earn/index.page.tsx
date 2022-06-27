@@ -72,10 +72,6 @@ export default function EarnPage() {
   );
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
-  if (typeof window !== "undefined" && Math.random() > 0.5) {
-    throw new Error("Fall down, go boom!");
-  }
-
   return (
     <div>
       <Heading
