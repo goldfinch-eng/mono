@@ -25,8 +25,8 @@
     "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.1.0",
     "ethers": "^5.4.6",
-    "hardhat": "^2.6.3",
-    "hardhat-deploy": "^0.9.1",
+    "hardhat": "^2.9.1",
+    "hardhat-deploy": "0.9.1",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
@@ -51,7 +51,7 @@
     "eslint-plugin-mocha-no-only": "^1.1.1",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "hardhat-deploy": "^0.9.1",
+    "hardhat-deploy": "0.9.1",
     "lint-staged": "^11.1.2",
     "prettier": "^2.3.2",
     "rollup": "^2.56.3",

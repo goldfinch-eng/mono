@@ -9,10 +9,22 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../typechain/truffle/types.d.ts" />
 
-import {ethers, getChainId, getNamedAccounts} from "hardhat"
-type Ethers = typeof ethers
-import hre, {web3, artifacts} from "hardhat"
+import {
+  asNonNullable,
+  AssertionError,
+  assertIsString,
+  assertNonNullable,
+  genExhaustiveTuple,
+} from "@goldfinch-eng/utils"
 import BN from "bn.js"
+import {BaseContract, Contract, Signer} from "ethers"
+import hre, {artifacts, ethers, getChainId, getNamedAccounts, web3} from "hardhat"
+import {DeploymentsExtension} from "hardhat-deploy/types"
+import {GoldfinchConfig} from "../../typechain/ethers"
+import {CONFIG_KEYS} from "../configKeys"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../mainnetForkingHelpers"
+import {getExistingContracts} from "./getExistingContracts"
+type Ethers = typeof ethers
 const USDCDecimals = new BN(String(1e6))
 const FIDU_DECIMALS = new BN(String(1e18))
 const GFI_DECIMALS = new BN(String(1e18))
@@ -20,21 +32,6 @@ const STAKING_REWARDS_MULTIPLIER_DECIMALS = new BN(String(1e18))
 const ETHDecimals = new BN(String(1e18))
 const LEVERAGE_RATIO_DECIMALS = new BN(String(1e18))
 const INTEREST_DECIMALS = new BN(String(1e18))
-import {AdminClient} from "defender-admin-client"
-import {CONFIG_KEYS} from "../configKeys"
-import {GoldfinchConfig} from "../../typechain/ethers"
-import {DeploymentsExtension} from "hardhat-deploy/types"
-import {Contract, BaseContract, Signer} from "ethers"
-import {
-  asNonNullable,
-  AssertionError,
-  assertIsString,
-  assertNonNullable,
-  assertUnreachable,
-  genExhaustiveTuple,
-} from "@goldfinch-eng/utils"
-import {MAINNET_MULTISIG} from "../mainnetForkingHelpers"
-import {getExistingContracts} from "./getExistingContracts"
 
 import {ContractDeployer} from "./contractDeployer"
 import {ContractUpgrader} from "./contractUpgrader"
@@ -138,6 +135,7 @@ export const LEVERAGE_RATIO_SETTER_ROLE = web3.utils.keccak256("LEVERAGE_RATIO_S
 export const REDEEMER_ROLE = web3.utils.keccak256("REDEEMER_ROLE")
 export const DISTRIBUTOR_ROLE = web3.utils.keccak256("DISTRIBUTOR_ROLE")
 export const SIGNER_ROLE = web3.utils.keccak256("SIGNER_ROLE")
+export const LOCKER_ROLE = web3.utils.keccak256("LOCKER_ROLE")
 
 export enum StakedPositionType {
   Fidu,
@@ -351,7 +349,7 @@ async function getExistingAddress(contractName: string): Promise<string> {
     existingAddress = deployment?.address
   }
   if (!existingAddress && isMainnetForking()) {
-    const mainnetContracts = await getExistingContracts([contractName], MAINNET_MULTISIG)
+    const mainnetContracts = await getExistingContracts([contractName], MAINNET_GOVERNANCE_MULTISIG)
     existingAddress = mainnetContracts[contractName]?.ExistingContract?.address
   }
   if (!existingAddress) {

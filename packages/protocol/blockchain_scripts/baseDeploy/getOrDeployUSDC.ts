@@ -33,7 +33,7 @@ export async function getOrDeployUSDC(deployer: ContractDeployer, config) {
     usdcAddress = fakeUSDC.address
     await (
       await getTruffleContract<TestERC20Instance>("TestERC20", {from: gf_deployer})
-    ).transfer(protocolOwner, String(new BN(10000000).mul(USDCDecimals)))
+    ).transfer(protocolOwner, String(new BN(90000000).mul(USDCDecimals)))
   }
   await updateConfig(config, "address", CONFIG_KEYS.USDC, usdcAddress, logger)
   return usdcAddress

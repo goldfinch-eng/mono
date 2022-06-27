@@ -433,12 +433,12 @@ async function calculateCommunityRewards({
     return firstReceive
   })
 
-  const receiveBlockNumbers = _.uniq(Object.values(holderToFirstReceive).map((e) => e.blockNumber))
+  const receiveBlockNumbers = _.uniq(Object.values(holderToFirstReceive).map((e: any) => e.blockNumber))
   console.log(`${receiveBlockNumbers.length} receive blocks for ${Object.keys(holderToFirstReceive).length} receives`)
   const blocks = await getBlocks(receiveBlockNumbers)
 
   // For holdersVesting, add their capped grant to noVestingGrants, and their uncapped grant to vestingGrants
-  for (const [address, qualifyingAmount] of Object.entries(holdersVesting)) {
+  for (const [address, qualifyingAmount] of Object.entries(holdersVesting) as any) {
     const cappedGrantAmount = totalGfiSupplyForCapped
       .multipliedBy(new BigNum(qualifyingAmount.capped.dollarValue))
       .div(totalCappedDollarValue)
@@ -507,7 +507,7 @@ async function calculateCommunityRewards({
   }
 
   // For holdersNoVesting, add both their capped and uncapped as a single grant to noVestingGrants
-  for (const [address, qualifyingAmount] of Object.entries(holdersNoVesting)) {
+  for (const [address, qualifyingAmount] of Object.entries(holdersNoVesting) as any) {
     const uncappedGrantAmount = totalGfiSupplyForUncapped
       .multipliedBy(new BigNum(qualifyingAmount.uncapped.dollarValue))
       .div(totalUncappedDollarValue)

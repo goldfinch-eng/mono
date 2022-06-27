@@ -106,7 +106,7 @@ describe("withdrawal form", () => {
       return getDeployments()
     })
 
-    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
       const url = input.toString()
       if (url === COINGECKO_API_GFI_PRICE_URL) {
         return Promise.resolve({

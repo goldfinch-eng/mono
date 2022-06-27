@@ -99,7 +99,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     GOLDFINCH_CONFIG_DEPLOYMENT.address,
     GOLDFINCH_CONFIG_DEPLOYMENT.abi,
     provider,
-  ) as GoldfinchConfig
+  ) as unknown as GoldfinchConfig
   const latenessGracePeriodInDays = await goldfinchConfig.getNumber(LATENESS_GRACE_PERIOD_CONFIG_KEY)
 
   const graphQlResponse = await sdk.poolTokenMetadata({id: tokenId.toString()})
@@ -128,9 +128,9 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const monthlyInterestPayment = principalAmount.multipliedBy(backerApr).dividedBy(12)
 
   const repayments = tranchedPoolToken.tranchedPool.borrowerTransactions.filter(
-    (tx) => tx.type === TranchedPoolBorrowerTransactionType.PaymentApplied,
+    (tx: any) => tx.type === TranchedPoolBorrowerTransactionType.PaymentApplied,
   )
-  const totalAmountRepaid = BigNumber.sum(...repayments.map((r) => new BigNumber(r.amount.toString())))
+  const totalAmountRepaid = BigNumber.sum(...repayments.map((r: any) => new BigNumber(r.amount.toString())))
 
   const lastFullPaymentTimeInSeconds = new BigNumber(tranchedPool.creditLine.lastFullPaymentTime.toString()).toNumber()
   const latenessGracePeriodInSeconds = new BigNumber(latenessGracePeriodInDays.toString()).toNumber() * secondsInDay

@@ -10,11 +10,6 @@ import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 import _ from "lodash"
 import {assertUnreachable} from "@goldfinch-eng/utils"
 
-// Make sure to keep the structure of this message in sync with the frontend.
-const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
-
-const ONE_DAY_SECONDS = 60 * 60 * 24
-
 // This is not a secret, so it's ok to hardcode this
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
@@ -124,63 +119,74 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
+const extractHeaderValue = (req: Request, headerName: string): string | undefined => {
+  const value = req.headers[headerName]
+  return Array.isArray(value) ? value.join("") : value
+}
+
 /**
- * Verifies that the signature provided in the `x-goldfinch-signature` header is a valid message
- * signed by the address provided in the `x-goldfinch-address` header. Also verifies that this
- * signature has not expired, per the provided `x-goldfinch-signature-block-num` header -- which is
- * critical so that signatures can't confer privileges forever.
+ * Verifies that the signature provided in the `x-goldfinch-signature` header was signed by the
+ * address `x-goldfinch-address` and the plaintext `x-goldfinch-signature-plaintext` is the
+ * message that produced the signature.
+ *
+ * Also verifies that this signature has not expired, per the provided `x-goldfinch-signature-block-num`
+ * header -- which is critical so that signatures can't confer privileges forever.
  *
  * This form of authentication is meant to support requests that we want only the end user, who
  * controls the private key behind the address, to be able to perform.
  *
- * If verification fails then the `res` property of the response object provides the status and reason
- * for the failure. If verification succeeds then the `res` property of the response object will be
- * undefined and the `address` property of the response object will be the address for which the
- * the verification succeeded.
- *
  * @param {Request} req The request being handled.
  * @param {Response} res The response to the request.
- * @return {Promise<SignatureVerificationResult>}
+ * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
+ * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
+ * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
+ * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
+ * @return {Promise<SignatureVerificationResult>} verification result
  */
-const verifySignature = async (req: Request, res: Response): Promise<SignatureVerificationResult> => {
-  const addressHeader = req.headers["x-goldfinch-address"]
-  const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
-  const signatureHeader = req.headers["x-goldfinch-signature"]
-  const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
-  const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
-  const signatureBlockNumStr = Array.isArray(signatureBlockNumHeader)
-    ? signatureBlockNumHeader.join("")
-    : signatureBlockNumHeader
+const verifySignature = async (
+  req: Request,
+  res: Response,
+  signatureMaxAge: number,
+  fallbackOnMissingPlaintext: boolean,
+): Promise<SignatureVerificationResult> => {
+  const address = extractHeaderValue(req, "x-goldfinch-address")
+  const signature = extractHeaderValue(req, "x-goldfinch-signature")
+  const signatureBlockNumStr = extractHeaderValue(req, "x-goldfinch-signature-block-num")
+  let signaturePlaintext = extractHeaderValue(req, "x-goldfinch-signature-plaintext")
 
   if (!address) {
     return {res: res.status(400).send({error: "Address not provided."}), address: undefined}
   }
+
+  Sentry.setUser({id: address, address})
+
   if (!signature) {
     return {res: res.status(400).send({error: "Signature not provided."}), address: undefined}
   }
   if (!signatureBlockNumStr) {
     return {res: res.status(400).send({error: "Signature block number not provided."}), address: undefined}
   }
-
-  Sentry.setUser({id: address, address})
-
   const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
   if (!Number.isInteger(signatureBlockNum)) {
     return {res: res.status(400).send({error: "Invalid signature block number."}), address: undefined}
   }
+  if (!signaturePlaintext) {
+    if (fallbackOnMissingPlaintext) {
+      signaturePlaintext = `Sign in to Goldfinch: ${signatureBlockNum}`
+    } else {
+      return {res: res.status(400).send({error: "Signature plaintext not provided."}), address: undefined}
+    }
+  }
 
-  const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
+  const verifiedAddress = ethers.utils.verifyMessage(signaturePlaintext, signature)
 
-  console.debug(`Received address: ${address}, Verified address: ${verifiedAddress}`)
-
+  console.debug(`address received: ${address}, address verified: ${verifiedAddress}`)
   if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
     return {res: res.status(401).send({error: "Invalid address or signature."}), address: undefined}
   }
-
   const origin = req.headers.origin || ""
   const blockchain = getBlockchain(origin)
   const currentBlock = await blockchain.getBlock("latest")
-
   // Don't allow signatures signed for the future.
   if (currentBlock.number < signatureBlockNum) {
     return {
@@ -190,18 +196,17 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
       address: undefined,
     }
   }
-
   const signatureBlock = await blockchain.getBlock(signatureBlockNum)
   const signatureTime = signatureBlock.timestamp
   const now = currentBlock.timestamp
 
-  // Don't allow signatures more than a day old.
-  if (signatureTime + ONE_DAY_SECONDS < now) {
-    console.error(`Signature expired: ${signatureTime} + ${ONE_DAY_SECONDS} < ${now}`)
+  // Don't allow signatures older than the max allowable age
+  if (signatureTime + signatureMaxAge < now) {
+    console.error(`Signature expired: ${signatureTime} + ${signatureMaxAge} < ${now}`)
     return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
   }
 
-  return {res: undefined, address}
+  return {res: undefined, address, plaintext: signaturePlaintext}
 }
 
 /**
@@ -210,19 +215,25 @@ const verifySignature = async (req: Request, res: Response): Promise<SignatureVe
  *
  * @param {Request} req The request being handled.
  * @param {Response} res The response to the request.
- * @param {Array<string>} allowedSigners the list of allowed signers
- * @return {Promise<VerificationResult>}
+ * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
+ * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
+ * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
+ * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
+ * @param {string[]} allowedSigners the list of allowed signers
+ * @return {Promise<SignatureVerificationResult>} verification result
  */
 const verifySignatureAndAllowList = async (
   req: Request,
   res: Response,
+  signatureMaxAge: number,
+  fallbackOnMissingPlaintext: boolean,
   allowedSigners: Array<string>,
 ): Promise<SignatureVerificationResult> => {
   if (allowedSigners.length === 0) {
     return {res: res.status(500).send({error: "Allow list should not be empty"}), address: undefined}
   }
 
-  const signatureVerification = await verifySignature(req, res)
+  const signatureVerification = await verifySignature(req, res, signatureMaxAge, fallbackOnMissingPlaintext)
 
   if (signatureVerification.res) {
     return signatureVerification
@@ -240,7 +251,7 @@ const verifySignatureAndAllowList = async (
     }
   }
 
-  return {res: undefined, address: signerAddress}
+  return {res: undefined, address: signerAddress, plaintext: signatureVerification.plaintext}
 }
 
 export const genRequestHandler = (config: RequestHandlerConfig): functions.HttpsFunction => {
@@ -257,10 +268,21 @@ export const genRequestHandler = (config: RequestHandlerConfig): functions.Https
 
       const authType = config.requireAuth
       if (authType === "signature") {
-        const verificationResult = await verifySignature(req, res)
+        const verificationResult = await verifySignature(
+          req,
+          res,
+          config.signatureMaxAge,
+          config.fallbackOnMissingPlaintext,
+        )
         return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
       } else if (authType === "signatureWithAllowList") {
-        const verificationResult = await verifySignatureAndAllowList(req, res, config.signerAllowList)
+        const verificationResult = await verifySignatureAndAllowList(
+          req,
+          res,
+          config.signatureMaxAge,
+          config.fallbackOnMissingPlaintext,
+          config.signerAllowList,
+        )
         return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
       } else if (authType === "none") {
         return config.handler(req, res)

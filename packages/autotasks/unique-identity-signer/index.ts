@@ -47,6 +47,8 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
 type Auth = {
   "x-goldfinch-address": any
   "x-goldfinch-signature": any
+  // TODO - once the client is sending this header, uncomment this and update the asAuth function to check for it
+  // "x-goldfinch-signature-plaintext": any
   "x-goldfinch-signature-block-num": any
 }
 

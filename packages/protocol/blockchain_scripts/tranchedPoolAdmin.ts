@@ -2,7 +2,7 @@
 import {INTEREST_DECIMALS, TRANCHES, USDCDecimals} from "./deployHelpers"
 import {ethers} from "hardhat"
 import {CONFIG_KEYS} from "./configKeys"
-import {MAINNET_MULTISIG} from "./mainnetForkingHelpers"
+import {MAINNET_GOVERNANCE_MULTISIG} from "./mainnetForkingHelpers"
 import {Borrower, CreditLine, SeniorPool, TranchedPool} from "../typechain/ethers"
 import {BigNumber} from "bignumber.js"
 import {Signer} from "ethers"
@@ -15,7 +15,7 @@ import {impersonateAccount} from "./helpers/impersonateAccount"
 async function main() {
   let signerAddress: string
   if (process.env.HARDHAT_FORK === "mainnet") {
-    signerAddress = MAINNET_MULTISIG
+    signerAddress = MAINNET_GOVERNANCE_MULTISIG
     await impersonateAccount(hre, signerAddress)
   } else {
     const {protocolOwner} = await getNamedAccounts()
