@@ -106,7 +106,7 @@ describe("unique-identity-signer", () => {
           fetchKYCFunction = fetchStubbedKycStatus({
             status: "approved",
             countryCode: "",
-            residency: "",
+            residency: "us",
           })
         })
 
