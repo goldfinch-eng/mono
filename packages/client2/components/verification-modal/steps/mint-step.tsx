@@ -90,8 +90,9 @@ export function MintStep() {
       await apolloClient.refetchQueries({ include: "active" });
       setIsMinted(true);
     } catch (e) {
-      setIsMinting(false);
       setErrorMessage("Error while minting");
+    } finally {
+      setIsMinting(false);
     }
   };
 
