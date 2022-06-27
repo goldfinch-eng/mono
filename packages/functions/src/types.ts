@@ -13,6 +13,19 @@ import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
  *
  * none
  *  No auth required
+ *
+ * IMPORTANT
+ * Functions using `signature` or `signatureWithAllowList` verification SHOULD
+ * check that the plaintext in the verification result matches the expected
+ * plaintext (the expected plaintext is decided by the function). This check is
+ * necessary to prevent arbitrary signature re-use. The following example illustrates
+ * what is possible if the signature is NOT checked in /kycStatus:
+ * 1. Alice signs a message for a meta txn on OpenSea. The txn and signature are broadcast on the network.
+ * 2. Bob copies Alice's meta txn signature and prehash of the presigned message (i.e. plaintext) for that signature.
+ * 3. Bob sends a request to /kycStatus with x-goldfinch-signature set as Alice's meta txn signature and
+ *    x-goldfinch-signature-plaintext to be the plaintext for that signature.
+ * 4. Using "signature" auth, the signature and plaintext are verified as a message that was signed by Alice.
+ * 5. /kycStatus performs no further checks on the signature and returns Alice's kyc status to Bob.
  */
 
 export type RequestHandlerConfig =

@@ -125,7 +125,7 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
-const extractHeaderValue = (req: Request, headerName: string): string | undefined => {
+export const extractHeaderValue = (req: Request, headerName: string): string | undefined => {
   const value = req.headers[headerName]
   return Array.isArray(value) ? value.join("") : value
 }

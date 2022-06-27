@@ -112,6 +112,19 @@ describe("kycStatus", async () => {
       )
     })
 
+    it("checks the message signed matches the expected message", async () => {
+      const sig = await testWallet.signMessage("Random plaintext")
+      const req = {
+        headers: {
+          "x-goldfinch-address": testAccount.address,
+          "x-goldfinch-signature": sig,
+          "x-goldfinch-signature-plaintext": "Random plaintext",
+          "x-goldfinch-signature-block-num": currentBlockNum,
+        },
+      } as unknown as Request
+      await kycStatus(req, expectResponse(401, {error: "Unexpected signature"}))
+    })
+
     it("checks if the signature block number is present", async () => {
       const sig = await testWallet.signMessage(genPlaintext(currentBlockNum))
       await kycStatus(
