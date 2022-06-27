@@ -26,6 +26,7 @@ test("handlePoolCreated creates a new Tranched pool record", () => {
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "estimatedTotalAssets", "20000000000000")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "estimatedLeverageRatio", "3")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "remainingCapacity", "0")
+  assert.fieldEquals("TranchedPool", tranchedPoolAddress, "remainingJuniorCapacity", "0")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "creditLine", creditLineAddress)
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "isPaused", "false")
   assert.fieldEquals("TranchedPool", tranchedPoolAddress, "juniorFeePercent", "20")
