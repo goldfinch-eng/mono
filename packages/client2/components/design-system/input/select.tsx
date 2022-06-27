@@ -22,7 +22,7 @@ export interface SelectProps extends UseControllerProps<any> {
    */
   hideLabel?: boolean;
   /**
-   * Placeholder shown in the selection when the user has not selected anything and there is no defaultValue set.
+   * Placeholder shown in the selection when the user has not selected anything and there is no defaultValue (as determined by React Hook Fork) set.
    */
   placeholder?: string;
   /**
