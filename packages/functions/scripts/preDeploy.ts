@@ -12,8 +12,10 @@ async function runCommand(args: Array<string>, {cwd}: {cwd: string}): Promise<st
   assertNonNullable(command)
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {cwd})
+    let output = ""
     child.stdout.on("data", (chunk) => {
       console.log("stdout", chunk.toString())
+      output += chunk.toString()
     })
     child.stderr.on("data", (chunk) => {
       console.log("stderr", chunk.toString())
@@ -22,7 +24,7 @@ async function runCommand(args: Array<string>, {cwd}: {cwd: string}): Promise<st
       if (code !== 0) {
         return reject(new Error(code.toString()))
       }
-      return resolve("done")
+      return resolve(output)
     })
   })
 }
@@ -47,7 +49,7 @@ async function main() {
   const packagesDir = path.join(monorepoRoot, "packages")
   const monorepoPackages = await promises.readdir(packagesDir)
 
-  for (let scopedPackageName of goldfinchPackages) {
+  for (const scopedPackageName of goldfinchPackages) {
     const packageName = scopedPackageName.replace("@goldfinch-eng/", "")
     if (monorepoPackages.includes(packageName)) {
       console.log("Packing", packageName)
