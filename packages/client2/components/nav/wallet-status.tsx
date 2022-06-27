@@ -89,15 +89,15 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
     !user?.isGoListed;
 
   return (
-    <div className="w-80 space-y-8">
+    <div className="w-80 divide-y divide-sand-100">
       {error ? (
         <HelperText isError>Error while fetching wallet status</HelperText>
       ) : null}
 
       {!loading && shouldShowVerificationPrompt ? (
-        <div>
+        <div className="py-4 first:pt-0">
           <div className="mb-4 text-lg font-semibold">Verify your identity</div>
-          <div className="mb-3">
+          <div className="mb-3 text-sm">
             We need to verify your identity and issue a Goldfinch UID to
             participate.
           </div>
@@ -111,7 +111,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
           </Button>
         </div>
       ) : null}
-      <div>
+      <div className="py-4 first:pt-0">
         <div className="mb-4 text-lg font-semibold">Balances</div>
         <div className="mb-6 flex items-center justify-between">
           <div className="flex gap-2">
@@ -141,7 +141,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                 formatCrypto(viewer.gfiBalance)
               ) : null}
             </div>
-            <div className="text-xs">
+            <div className="text-xs text-sand-500">
               {loading ? (
                 <Shimmer style={{ width: "12ch" }} />
               ) : gfiBalanceAsFiat ? (
@@ -152,7 +152,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         </div>
       </div>
       {!loading && !shouldShowVerificationPrompt ? (
-        <div>
+        <div className="py-4">
           <div className="mb-4 text-lg font-semibold">Goldfinch UID type</div>
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -188,8 +188,16 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
           </div>
         </div>
       ) : null}
-      <div>
-        <div className="mb-4 text-lg font-semibold">Recent Transactions</div>
+      <div className="py-4">
+        <div className="mb-4 flex items-start justify-between">
+          <div className="text-lg font-semibold">Recent Transactions</div>
+          <Link
+            className="text-sm"
+            href="https://goldfinch.app.finance/transactions"
+          >
+            View all
+          </Link>
+        </div>
         <div>
           {user && user.transactions.length !== 0 ? (
             <table className="w-full text-sm">
@@ -221,13 +229,14 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
               </tbody>
             </table>
           ) : (
-            "No recent activity"
+            <div className="text-sm text-sand-400">No recent activity</div>
           )}
         </div>
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between pt-4">
         <Button
           size="sm"
+          colorScheme="secondary"
           onClick={() => {
             connector.deactivate();
             onWalletDisconnect();
@@ -237,6 +246,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         </Button>
         <Button
           size="sm"
+          colorScheme="secondary"
           disabled={!connector.watchAsset || !gfiContract}
           onClick={() => {
             if (gfiContract) {
