@@ -42,8 +42,8 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
             } else {
               merged.push(incoming);
             }
-            return merged;
           }
+          return merged;
         },
       },
     },
