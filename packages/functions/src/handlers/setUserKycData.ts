@@ -1,6 +1,6 @@
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
-import {genRequestHandler} from "../helpers"
+import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"
 
@@ -10,6 +10,13 @@ export const setUserKYCData = genRequestHandler({
   signatureMaxAge: 60 * 5, // 5 minutes
   fallbackOnMissingPlaintext: true,
   handler: async (req, res: Response, verificationResult: SignatureVerificationSuccessResult): Promise<Response> => {
+    // Verify plaintext matches expected plaintext to prevent the use of an arbitrary signature
+    const blockNum = extractHeaderValue(req, "x-goldfinch-signature-block-num")
+    const expectedPlaintext = `Sign in to Goldfinch: ${blockNum}`
+    if (verificationResult.plaintext !== expectedPlaintext) {
+      return res.status(401).send({error: "Unexpected signature"})
+    }
+
     const address = verificationResult.address.toLowerCase()
 
     const {residency} = req.body
