@@ -16,7 +16,7 @@ const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 export interface KYC {
   status: "unknown" | "approved" | "failed"
   countryCode: string
-  residency?: string
+  residency?: "non-us" | "us"
 }
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
 const isKYC = (obj: unknown): obj is KYC =>
