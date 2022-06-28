@@ -1,4 +1,5 @@
 # Redirect existing client to beta
+/               https://beta.app.goldfinch.finance/earn           302
 /earn           https://beta.app.goldfinch.finance/earn           302
 /pools/senior   https://beta.app.goldfinch.finance/pools/senior   302
 /pools/*        https://beta.app.goldfinch.finance/pools/:splat   302
