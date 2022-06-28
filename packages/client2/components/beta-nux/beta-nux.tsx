@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWizard, Wizard } from "react-use-wizard";
 
-import { Button, Link, Modal } from "@/components/design-system";
+import { Button, GoldfinchLogo, Link, Modal } from "@/components/design-system";
 
 const nuxPrefix = "betaNux";
 const nuxVersion = 1; // Increment this if you wish for the nux to be shown again.
@@ -22,8 +22,16 @@ export function BetaNux() {
     <Modal
       isOpen={isNuxOpen}
       onClose={closeNux}
-      title="From the Goldfinch Team"
+      title={
+        <div className="flex items-center gap-2 text-xs font-medium text-sand-500">
+          <div className="rounded-full bg-sand-100 p-1">
+            <GoldfinchLogo className="h-5 w-5" />
+          </div>
+          From the Goldfinch Team
+        </div>
+      }
       size="xs"
+      divider
     >
       <Wizard footer={<Footer onFinish={closeNux} />}>
         <Step1 />
@@ -36,7 +44,7 @@ export function BetaNux() {
 
 function Step1() {
   return (
-    <div className="flex flex-col gap-5 text-center">
+    <div className="mt-2 flex flex-col gap-5 text-center">
       <div className="text-lg font-medium">
         🎉 Welcome to the Goldfinch 2.0 Beta
       </div>
@@ -51,7 +59,7 @@ function Step1() {
 
 function Step2() {
   return (
-    <div className="flex flex-col gap-5 text-center">
+    <div className="mt-2 flex flex-col gap-5 text-center">
       <div className="text-lg font-medium">👀 Just a Heads Up...</div>
       <div>
         🛠 We&apos;re testing some new things, so the overall look + feel may
@@ -67,7 +75,7 @@ function Step2() {
 
 function Step3() {
   return (
-    <div className="flex flex-col gap-5 text-center">
+    <div className="mt-2 flex flex-col gap-5 text-center">
       <div className="text-lg font-medium">💬 Share Your Feedback</div>
       <div>
         Let us know what you think about the changes: use{" "}
