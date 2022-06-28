@@ -7,6 +7,7 @@ import {
   Button,
   Checkbox,
   DollarInput,
+  Form,
   Icon,
   InfoIconTooltip,
   Link,
@@ -69,6 +70,11 @@ interface SeniorPoolSupplyPanelProps {
   fiatPerGfi: number;
 }
 
+interface FormFields {
+  supply: string;
+  isStaking: boolean;
+}
+
 export function SeniorPoolSupplyPanel({
   seniorPool,
   user,
@@ -81,17 +87,10 @@ export function SeniorPoolSupplyPanel({
     fiatPerGfi
   );
 
-  const {
-    control,
-    register,
-    watch,
-    formState: { errors, isSubmitting, isSubmitSuccessful },
-    handleSubmit,
-    reset,
-    setValue,
-  } = useForm<{ supply: string; isStaking: boolean }>({
+  const rhfMethods = useForm<FormFields>({
     defaultValues: { isStaking: true },
   });
+  const { control, register, watch, setValue } = rhfMethods;
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
   const seniorPoolContract = useContract("SeniorPool");
@@ -99,7 +98,7 @@ export function SeniorPoolSupplyPanel({
   const usdcContract = useContract("USDC");
   const apolloClient = useApolloClient();
 
-  const onSubmit = handleSubmit(async (data) => {
+  const onSubmit = async (data: FormFields) => {
     if (
       !account ||
       !provider ||
@@ -184,13 +183,7 @@ export function SeniorPoolSupplyPanel({
     }
 
     await apolloClient.refetchQueries({ include: "active" });
-  });
-
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      reset();
-    }
-  }, [isSubmitSuccessful, reset]);
+  };
 
   const isUserVerified =
     user?.isGoListed ||
@@ -359,11 +352,7 @@ export function SeniorPoolSupplyPanel({
           </div>
         </div>
       ) : (
-        <form
-          data-id="bottom-half"
-          className="flex flex-grow basis-0 flex-col justify-between"
-          onSubmit={onSubmit}
-        >
+        <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
           <div>
             <DollarInput
               control={control}
@@ -377,7 +366,6 @@ export function SeniorPoolSupplyPanel({
               }
               className="mb-4"
               onMaxClick={handleMax}
-              errorMessage={errors?.supply?.message}
               rules={{ required: "Required", validate: validateMaximumAmount }}
             />
             <Checkbox
@@ -409,15 +397,13 @@ export function SeniorPoolSupplyPanel({
           </div>
           <Button
             className="block w-full"
-            disabled={Object.keys(errors).length !== 0}
             size="xl"
             colorScheme="secondary"
             type="submit"
-            isLoading={isSubmitting}
           >
             Supply
           </Button>
-        </form>
+        </Form>
       )}
     </div>
   );

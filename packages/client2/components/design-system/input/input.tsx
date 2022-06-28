@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { forwardRef, InputHTMLAttributes, ReactNode } from "react";
+import { useFormContext } from "react-hook-form";
 
 import { Icon, IconNameType, HelperText } from "@/components/design-system";
 
@@ -25,7 +26,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    */
   helperText?: string;
   /**
-   * Error message that replaces the `helperText` when supplied
+   * Error message that replaces the `helperText` when supplied. Please note that this component has special behaviour when it appears inside of a `<Form>` component: it will automatically display error messages associated with its `name`
    */
   errorMessage?: string;
   /**
@@ -71,8 +72,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   },
   ref
 ) {
+  const formContext = useFormContext();
+  let _errorMessage = errorMessage;
+  if (formContext !== null) {
+    _errorMessage = formContext.formState.errors[name]?.message;
+  }
+
   const _id = id ?? name;
-  const isError = !!errorMessage;
+  const isError = !!_errorMessage;
   return (
     <div
       className={clsx(
@@ -153,7 +160,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           </div>
         ) : null}
       </div>
-      {helperText || errorMessage ? (
+      {helperText || _errorMessage ? (
         <HelperText
           className={clsx(
             isError
@@ -166,7 +173,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             "mt-1 text-sm leading-none"
           )}
         >
-          {errorMessage ? errorMessage : helperText}
+          {_errorMessage ? _errorMessage : helperText}
         </HelperText>
       ) : null}
     </div>

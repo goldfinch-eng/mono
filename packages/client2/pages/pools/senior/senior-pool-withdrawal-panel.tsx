@@ -1,12 +1,12 @@
 import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
   Button,
   confirmDialog,
   DollarInput,
+  Form,
   Icon,
   InfoIconTooltip,
 } from "@/components/design-system";
@@ -35,6 +35,10 @@ interface SeniorPoolWithdrawalPanelProps {
   seniorPoolLiquidity: BigNumber;
 }
 
+interface FormFields {
+  amount: string;
+}
+
 export function SeniorPoolWithDrawalPanel({
   fiduBalance = { token: SupportedCrypto.Fidu, amount: BigNumber.from(0) },
   seniorPoolSharePrice,
@@ -54,15 +58,10 @@ export function SeniorPoolWithDrawalPanel({
   const stakingRewardsContract = useContract("StakingRewards");
   const apolloClient = useApolloClient();
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting, isSubmitSuccessful, isDirty },
-    reset,
-    setValue,
-  } = useForm<{ amount: string }>();
+  const rhfMethods = useForm<FormFields>();
+  const { control, setValue } = rhfMethods;
 
-  const handler = handleSubmit(async (data) => {
+  const onSubmit = async (data: FormFields) => {
     if (!seniorPoolContract || !stakingRewardsContract) {
       return;
     }
@@ -166,13 +165,7 @@ export function SeniorPoolWithDrawalPanel({
       });
       await apolloClient.refetchQueries({ include: "active" });
     }
-  });
-
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      reset();
-    }
-  }, [isSubmitSuccessful, reset]);
+  };
 
   const handleMax = () => {
     setValue(
@@ -227,7 +220,7 @@ export function SeniorPoolWithDrawalPanel({
           <Icon name="Usdc" size="sm" />
         </div>
       </div>
-      <form onSubmit={handler}>
+      <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
         <div className="mb-3">
           <DollarInput
             name="amount"
@@ -237,7 +230,6 @@ export function SeniorPoolWithDrawalPanel({
             colorScheme="dark"
             rules={{ required: "Required", validate: validateAmount }}
             labelClassName="!mb-3 text-sm"
-            errorMessage={errors?.amount?.message}
             onMaxClick={handleMax}
           />
         </div>
@@ -248,13 +240,11 @@ export function SeniorPoolWithDrawalPanel({
           colorScheme="secondary"
           size="xl"
           className="block w-full"
-          isLoading={isSubmitting}
-          disabled={Object.keys(errors).length !== 0 || !isDirty}
           type="submit"
         >
           Withdraw
         </Button>
-      </form>
+      </Form>
     </div>
   );
 }
