@@ -32,7 +32,7 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
         <CoinbaseWalletButton />
       </div>
       <div className="mt-8 text-center">
-        <Link href="#">I don&apos;t have a wallet</Link>
+        <Link href="https://metamask.io">I don&apos;t have a wallet</Link>
       </div>
     </Modal>
   );
