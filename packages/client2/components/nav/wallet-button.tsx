@@ -1,4 +1,5 @@
 import { Button, Popover } from "@/components/design-system";
+import { DESIRED_CHAIN_ID } from "@/constants";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
@@ -6,7 +7,7 @@ import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, isActivating, error } = useWallet();
+  const { account, isActivating, error, connector } = useWallet();
 
   return error ? (
     <Button
@@ -14,6 +15,11 @@ export function WalletButton() {
       className="h-10 text-clay-500"
       iconRight="Exclamation"
       colorScheme="secondary"
+      onClick={
+        error.name === "ChainIdNotAllowedError"
+          ? () => connector.activate(DESIRED_CHAIN_ID)
+          : openWalletModal
+      }
     >
       {error.name === "ChainIdNotAllowedError"
         ? "Wrong network"
