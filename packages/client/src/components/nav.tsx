@@ -36,7 +36,7 @@ export default function Nav({children}: {children: ReactNode}) {
 
       <div className="main-nav-links">
         {NAV_ITEMS.map(({label, href}) => {
-          return href.indexOf("beta") >= 0 ? (
+          return !href.includes("beta") ? (
             <NavLink key={`${label}-${href}`} to={href}>
               {label}
             </NavLink>
