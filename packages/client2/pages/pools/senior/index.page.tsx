@@ -134,7 +134,7 @@ export default function SeniorPoolPage() {
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
-          <div className="mb-8 flex flex-wrap justify-between">
+          <div className="mb-8 flex flex-wrap justify-between gap-2">
             <Breadcrumb label="Goldfinch" image={goldfinchLogoWhiteBgPngUrl} />
             {seniorPool ? (
               <Button

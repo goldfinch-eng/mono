@@ -260,7 +260,7 @@ export default function PoolPage() {
 
       <div className="pool-layout">
         <div style={{ gridArea: "heading" }}>
-          <div className="mb-8 flex flex-wrap justify-between sm:mb-8">
+          <div className="mb-8 flex flex-wrap justify-between gap-2">
             <div>
               <Breadcrumb
                 label={tranchedPool?.name}
