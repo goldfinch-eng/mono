@@ -136,14 +136,17 @@ export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string
   }
 
   const protocolFee = BigDecimal.fromString("0.1")
-  const balance = creditLine.balance.toBigDecimal()
-  const interestAprDecimal = creditLine.interestAprDecimal
+  const leverageRatio = tranchedPool.estimatedLeverageRatio
+  const seniorFraction = leverageRatio
+    ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
+    : ONE.toBigDecimal()
+  const seniorBalance = creditLine.balance.toBigDecimal().times(seniorFraction)
   const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(ONE_HUNDRED)
   const isV1Pool = tranchedPool.isV1StyleDeal
-  const seniorPoolPercentageOfInterest = BigDecimal.fromString("1")
-    .minus(isV1Pool ? BigDecimal.fromString("0") : juniorFeePercentage)
-    .minus(protocolFee)
-  return balance.times(interestAprDecimal).times(seniorPoolPercentageOfInterest)
+  const seniorPoolPercentageOfInterest = isV1Pool
+    ? BigDecimal.fromString("1").minus(protocolFee)
+    : BigDecimal.fromString("1").minus(juniorFeePercentage).minus(protocolFee)
+  return seniorBalance.times(creditLine.interestAprDecimal).times(seniorPoolPercentageOfInterest)
 }
 
 export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
