@@ -144,7 +144,7 @@ export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string
   const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(ONE_HUNDRED)
   const isV1Pool = tranchedPool.isV1StyleDeal
   const seniorPoolPercentageOfInterest = isV1Pool
-    ? BigDecimal.fromString("1")
+    ? BigDecimal.fromString("1").minus(protocolFee)
     : BigDecimal.fromString("1").minus(juniorFeePercentage).minus(protocolFee)
   return seniorBalance.times(creditLine.interestAprDecimal).times(seniorPoolPercentageOfInterest)
 }
