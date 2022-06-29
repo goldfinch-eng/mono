@@ -80,13 +80,13 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
         })
       : null;
   const user = data?.user;
-  const shouldShowVerificationPrompt =
-    !user?.isUsNonAccreditedIndividual &&
-    !user?.isNonUsIndividual &&
-    !user?.isUsEntity &&
-    !user?.isNonUsEntity &&
-    !user?.isUsAccreditedIndividual &&
-    !user?.isGoListed;
+  const hasUid =
+    user?.isUsNonAccreditedIndividual ||
+    user?.isNonUsIndividual ||
+    user?.isUsEntity ||
+    user?.isNonUsEntity ||
+    user?.isUsAccreditedIndividual;
+  const shouldShowVerificationPrompt = !hasUid && !user?.isGoListed;
 
   return (
     <div className="w-80 divide-y divide-sand-100">
@@ -168,7 +168,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                   : user.isUsAccreditedIndividual
                   ? "U.S. Accredited Individual"
                   : user.isGoListed
-                  ? "Go-listed (UID not required)"
+                  ? "Go-listed"
                   : null}
               </div>
               <div className="text-xs text-sand-500">
@@ -186,6 +186,23 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
               }
             />
           </div>
+          {user.isGoListed && !hasUid ? (
+            <div className="mt-4">
+              <Button
+                className="block w-full"
+                variant="rounded"
+                size="lg"
+                onClick={openVerificationModal}
+              >
+                Claim UID
+              </Button>
+              <div className="mt-3 flex items-center gap-2 text-xs text-sand-400">
+                <Icon name="Exclamation" size="md" />
+                Minting a UID is encouraged (but not required) for go-listed
+                users.
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="py-4">
