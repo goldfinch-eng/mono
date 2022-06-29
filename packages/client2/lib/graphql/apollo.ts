@@ -3,6 +3,7 @@ import { withScalars } from "apollo-link-scalars";
 import { buildClientSchema, IntrospectionQuery } from "graphql";
 
 import localSchema from "./client-only-schema.graphql";
+import { errorLink } from "./error-link";
 import { resolvers } from "./local-resolvers";
 import { nonFatalErrorLink } from "./non-fatal-error-link";
 import introspectionResult from "./schema.json";
@@ -30,7 +31,7 @@ const scalarLink = withScalars({ schema, typesMap });
 export const apolloClient = new ApolloClient({
   cache: new InMemoryCache({ typePolicies }),
   typeDefs: localSchema,
-  link: from([scalarLink, nonFatalErrorLink, httpLink]),
+  link: from([scalarLink, nonFatalErrorLink, errorLink, httpLink]),
   defaultOptions: {
     watchQuery: {
       errorPolicy: "all",
