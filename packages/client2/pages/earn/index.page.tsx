@@ -4,7 +4,6 @@ import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
 import { useEarnPageQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
-import { useWallet } from "@/lib/wallet";
 
 import {
   PoolCard,
@@ -15,7 +14,7 @@ import {
 
 gql`
   ${TRANCHED_POOL_CARD_FIELDS}
-  query EarnPage($userId: ID!, $userAccount: String!) {
+  query EarnPage {
     seniorPools(first: 1) {
       id
       name @client
@@ -39,12 +38,6 @@ gql`
         symbol
       }
     }
-    user(id: $userId) {
-      id
-      seniorPoolDeposits {
-        amount
-      }
-    }
     viewer @client {
       fiduBalance {
         token
@@ -55,14 +48,7 @@ gql`
 `;
 
 export default function EarnPage() {
-  const { account } = useWallet();
-  const { data, error } = useEarnPageQuery({
-    variables: {
-      userId: account?.toLowerCase() ?? "",
-      userAccount: account?.toLowerCase() ?? "",
-    },
-    returnPartialData: true, // PATTERN: allow partial data so when this query re-runs due to `account` being populated, it doesn't wipe out the existing data
-  });
+  const { data, error } = useEarnPageQuery();
 
   const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.estimatedApy
     ? data.seniorPools[0]

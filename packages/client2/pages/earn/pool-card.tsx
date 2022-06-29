@@ -171,11 +171,6 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
       id
       maxLimit
     }
-    # Beware, this is tightly coupled to $userAccount in the parent query
-    backers(where: { user: $userAccount }) {
-      id
-      balance
-    }
     ...TranchedPoolStatusFields
   }
 `;
