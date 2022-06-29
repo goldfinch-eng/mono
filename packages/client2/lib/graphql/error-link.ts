@@ -4,13 +4,18 @@
 import { onError } from "@apollo/client/link/error";
 import * as Sentry from "@sentry/nextjs";
 
-export const errorLink = onError(({ graphQLErrors, networkError }) => {
-  if (graphQLErrors) {
-    graphQLErrors.forEach((graphQLError) => {
-      Sentry.captureException(graphQLError);
-    });
+export const errorLink = onError(
+  ({ graphQLErrors, networkError, operation }) => {
+    if (graphQLErrors) {
+      graphQLErrors.forEach((graphQLError) => {
+        // Strangely, Sentry won't interpret a GraphQLError type as an Error so you can't really use captureException() properly
+        Sentry.captureMessage(
+          `GraphQL error during operation \`${operation.operationName}\`: ${graphQLError.message}`
+        );
+      });
+    }
+    if (networkError) {
+      Sentry.captureException(networkError);
+    }
   }
-  if (networkError) {
-    Sentry.captureException(networkError);
-  }
-});
+);
