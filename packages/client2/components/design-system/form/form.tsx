@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { ReactNode, FormHTMLAttributes, useEffect } from "react";
 import { FormProvider } from "react-hook-form";
 import { UseFormReturn, SubmitHandler } from "react-hook-form/dist/types/form";
@@ -41,6 +42,7 @@ export function Form<FormFields>({
     } catch (error) {
       // @ts-expect-error I'm not sure of a way to make TS accept this
       setError(reservedErrorField, { message: error.message });
+      Sentry.captureException(error);
     }
   });
 
