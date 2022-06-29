@@ -10,7 +10,7 @@ import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 import _ from "lodash"
 import {assertUnreachable} from "@goldfinch-eng/utils"
 
-// This is not a secret, so it's ok to hardcode this
+// This is not a secret, so it's ok to hardcode this.
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: Request, res: Response) => {
