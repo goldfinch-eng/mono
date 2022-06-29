@@ -65,12 +65,13 @@
       line-height: 20px;
       text-decoration: none;
       color: $sand-700;
+      white-space: nowrap;
 
       &:hover {
         border-bottom-color: $eggplant-600;
       }
 
-      &.is-current {
+      &.active {
         color: $sand-900;
         border-bottom-color: $eggplant-600;
       }

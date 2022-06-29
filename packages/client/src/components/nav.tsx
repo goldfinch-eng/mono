@@ -65,9 +65,9 @@ export default function Nav({children}: {children: ReactNode}) {
         </div>
         <div className="mobile-nav-links">
           <div className="mobile-nav-logo">
-            <NavLink to="/">
+            <a href="/">
               <img src={logoPurp} alt="Goldfinch" />
-            </NavLink>
+            </a>
           </div>
 
           {NAV_ITEMS.map(({label, href}) => {
