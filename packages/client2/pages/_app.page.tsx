@@ -9,12 +9,12 @@ import { BetaNux } from "@/components/beta-nux";
 import { DevToolsPanel } from "@/components/dev-tools";
 import { Layout } from "@/components/layout";
 import { apolloClient } from "@/lib/graphql/apollo";
-import { useAppInitialization } from "@/lib/state/app-init";
 import { AppWideModals } from "@/lib/state/app-wide-modals";
 import { WalletProvider } from "@/lib/wallet";
 
+import { AppLevelSideEffects } from "./_app-side-effects";
+
 export default function MyApp({ Component, pageProps }: AppProps) {
-  useAppInitialization();
   return (
     <WalletProvider>
       <ApolloProvider client={apolloClient}>
@@ -35,6 +35,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           <DevToolsPanel />
         ) : null}
         <BetaNux />
+        <AppLevelSideEffects />
       </ApolloProvider>
     </WalletProvider>
   );
