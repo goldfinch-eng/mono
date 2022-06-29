@@ -7,7 +7,5 @@ export interface ParagraphProps extends HTMLAttributes<HTMLHeadingElement> {
 
 export function Paragraph({ as, className, ...rest }: ParagraphProps) {
   const Component = as ?? "p";
-  return (
-    <Component className={clsx("max-w-prose text-base", className)} {...rest} />
-  );
+  return <Component className={clsx("text-base", className)} {...rest} />;
 }

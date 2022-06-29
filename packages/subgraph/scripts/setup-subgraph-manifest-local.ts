@@ -21,6 +21,8 @@ const deployedGfiAddress = localhostContracts.GFI.address
 const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Proxy.address
 const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
+const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
+const deployedUsdcAddress = localhostContracts.TestERC20.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
@@ -49,6 +51,12 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "BackerRewardsProxy":
       dataSource.source.address = deployedBackerRewardsProxyAddress
       break
+    case "UniqueIdentityProxy":
+      dataSource.source.address = deployedUniqueIdentityProxyAddress
+      break
+    case "GoldfinchConfig":
+      dataSource.source.address = deployedGoldfinchConfigAddress
+      break
     default:
       break
   }
@@ -64,6 +72,8 @@ export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolProxyAddress}"
 export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensProxyAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
 export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
+export const LOCALHOST_USDC_ADDRESS = "${deployedUsdcAddress}"
+export const LOCALHOST_STAKING_REWARDS_ADDRESS = "${deployedStakingRewardsProxyAddress}"
 `
 
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))

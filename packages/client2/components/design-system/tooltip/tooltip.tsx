@@ -46,18 +46,11 @@ interface TooltipProps {
   placement?: Placement;
 }
 
-interface InfoIconTooltipProps extends TooltipProps {
-  /**
-   * The size of the icon: "xs" | "sm" | "md" | "lg" | "text"
-   */
-  size?: IconSizeType;
-}
-
 export function Tooltip({
   children,
   useWrapper = false,
   content,
-  placement = "bottom",
+  placement = "top",
 }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef<HTMLDivElement | null>(null);
@@ -113,7 +106,7 @@ export function Tooltip({
     <>
       {useWrapper ? (
         <div
-          className="inline-flex"
+          className="relative inline-flex"
           tabIndex={0}
           {...getReferenceProps({ ref: reference })}
         >
@@ -131,6 +124,7 @@ export function Tooltip({
           {...getFloatingProps({
             ref: floating,
             style: {
+              zIndex: 11,
               position: strategy,
               top: y ?? "",
               left: x ?? "",
@@ -147,8 +141,12 @@ export function Tooltip({
             leaveFrom="transform scale-100 opacity-100"
             leaveTo="transform scale-95 opacity-0"
           >
-            <div className="relative min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
-              {content}
+            <div className="relative min-w-max rounded-md border border-sand-100 bg-white p-3 text-sm drop-shadow-lg">
+              {typeof content === "string" ? (
+                <div className="max-w-[250px]">{content}</div>
+              ) : (
+                content
+              )}
               <div
                 ref={arrowRef}
                 style={{
@@ -179,13 +177,30 @@ export function Tooltip({
   );
 }
 
+interface InfoIconTooltipProps
+  extends Omit<TooltipProps, "children" | "useWrapper"> {
+  /**
+   * The size of the icon: "xs" | "sm" | "md" | "lg" | "text"
+   */
+  size?: IconSizeType;
+  /**
+   * Class goes on the info icon
+   */
+  className?: string;
+}
+
 export function InfoIconTooltip({
-  size = "text",
+  size = "sm",
+  className,
   ...props
-}: Omit<InfoIconTooltipProps, "children" | "useWrapper">) {
+}: InfoIconTooltipProps) {
   return (
     <Tooltip useWrapper {...props}>
-      <Icon name="InfoCircle" size={size} />
+      <Icon
+        name="InfoCircle"
+        size={size}
+        className={clsx(className, "text-sand-400")}
+      />
     </Tooltip>
   );
 }

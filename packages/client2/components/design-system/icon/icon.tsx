@@ -7,8 +7,16 @@ import ArrowTopRight from "./svg/arrow-top-right.svg";
 import ArrowUp from "./svg/arrow-up.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
+import Discord from "./svg/discord.svg";
+import DotsHorizontal from "./svg/dots-horizontal.svg";
+import Exclamation from "./svg/exclamation.svg";
+import Gfi from "./svg/gfi.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
+import Link from "./svg/link.svg";
+import LinkedIn from "./svg/linkedin.svg";
 import Menu from "./svg/menu.svg";
+import Twitter from "./svg/twitter.svg";
+import Usdc from "./svg/usdc.svg";
 import Wallet from "./svg/wallet.svg";
 import X from "./svg/x.svg";
 
@@ -19,8 +27,16 @@ export const iconManifest = {
   ArrowUp,
   Checkmark,
   ChevronDown,
+  Discord,
+  DotsHorizontal,
+  Exclamation,
+  Gfi,
   InfoCircle,
+  Link,
+  LinkedIn,
   Menu,
+  Twitter,
+  Usdc,
   Wallet,
   X,
 };
@@ -57,7 +73,7 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
     <IconComponent
       aria-hidden="true"
       ref={ref}
-      className={clsx(sizeToClassName(size), "inline", className)}
+      className={clsx(sizeToClassName(size), "inline shrink-0", className)}
     />
   );
 });

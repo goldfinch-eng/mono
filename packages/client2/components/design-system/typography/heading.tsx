@@ -11,7 +11,7 @@ const levelToFontSize = {
   4: "text-4xl",
   3: "text-5xl",
   2: "text-6xl",
-  1: "text-7xl",
+  1: "text-5xl md:text-7xl",
 };
 
 export function Heading({ level, as, className, ...rest }: HeadingProps) {
@@ -22,7 +22,9 @@ export function Heading({ level, as, className, ...rest }: HeadingProps) {
   return (
     <Component
       className={clsx(
-        "font-serif font-bold tracking-[0.02rem]",
+        level === 1 || level === 2 ? "font-serif" : "font-sans",
+        "tracking-[0.02rem] text-sand-800",
+        level === 1 ? "font-bold" : "font-semibold",
         fontSizeClass,
         className
       )}

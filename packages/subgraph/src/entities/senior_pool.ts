@@ -2,7 +2,8 @@ import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/SeniorPool/SeniorPool"
 import {Fidu_Implementation as FiduContract} from "../../generated/templates/SeniorPool/Fidu_Implementation"
-import {FIDU_ADDRESS} from "../constants"
+import {USDC as UsdcContract} from "../../generated/templates/SeniorPool/USDC"
+import {FIDU_ADDRESS, USDC_CONTRACT_ADDRESS} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
 import {getStakingRewards} from "./staking_rewards"
 
@@ -10,7 +11,6 @@ export function getOrInitSeniorPool(address: Address): SeniorPool {
   let seniorPool = SeniorPool.load(address.toHexString())
   if (!seniorPool) {
     seniorPool = new SeniorPool(address.toHexString())
-    seniorPool.capitalProviders = []
     seniorPool.investmentsMade = []
 
     const poolStatus = getOrInitSeniorPoolStatus()
@@ -38,6 +38,7 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.cumulativeDrawdowns = new BigInt(0)
     poolStatus.estimatedTotalInterest = BigDecimal.zero()
     poolStatus.estimatedApy = BigDecimal.zero()
+    poolStatus.estimatedApyFromGfiRaw = BigDecimal.zero()
     poolStatus.defaultRate = new BigInt(0)
     poolStatus.tranchedPools = []
     poolStatus.save()
@@ -60,14 +61,6 @@ export function updateEstimatedApyFromGfiRaw(): void {
   }
 }
 
-export function updatePoolCapitalProviders(seniorPoolAddress: Address, userAddress: Address): void {
-  let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
-  let seniorPoolCapitalProviders = seniorPool.capitalProviders
-  seniorPoolCapitalProviders.push(userAddress.toHexString())
-  seniorPool.capitalProviders = seniorPoolCapitalProviders
-  seniorPool.save()
-}
-
 const FIDU_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
 const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroes
 const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
@@ -76,7 +69,7 @@ const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
   let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
-  const stakingRewards = getStakingRewards()
+  const usdc_contract = UsdcContract.bind(Address.fromString(USDC_CONTRACT_ADDRESS))
 
   let contract = SeniorPoolContract.bind(seniorPoolAddress)
   let sharePrice = contract.sharePrice()
@@ -95,6 +88,7 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   poolStatus.balance = balance
   poolStatus.sharePrice = sharePrice
   poolStatus.rawBalance = rawBalance
+  poolStatus.usdcBalance = usdc_contract.balanceOf(seniorPoolAddress)
   poolStatus.totalPoolAssets = totalPoolAssets
   poolStatus.totalPoolAssetsUsdc = totalPoolAssetsUsdc
   poolStatus.save()

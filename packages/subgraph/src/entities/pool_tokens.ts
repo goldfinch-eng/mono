@@ -1,10 +1,11 @@
-import { Address, BigInt } from '@graphprotocol/graph-ts'
-import { Transfer } from "../../generated/PoolTokensProxy/PoolTokens"
-import { TranchedPool, TranchedPoolToken } from "../../generated/schema"
-import { PoolTokens as PoolTokensContract } from '../../generated/templates/PoolTokens/PoolTokens'
-import { POOL_TOKENS_ADDRESS } from '../constants'
-import { updatePoolBacker } from './pool_backer'
-import { getOrInitUser } from './user'
+import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {Transfer} from "../../generated/PoolTokensProxy/PoolTokens"
+import {TranchedPool, TranchedPoolToken} from "../../generated/schema"
+import {PoolTokens as PoolTokensContract} from "../../generated/templates/PoolTokens/PoolTokens"
+import {POOL_TOKENS_ADDRESS} from "../constants"
+import {updatePoolBacker} from "./pool_backer"
+import {getOrInitUser} from "./user"
+import {deleteZapAfterClaimMaybe} from "./zapper"
 
 export function initOrUpdateTranchedPoolToken(tokenId: BigInt): TranchedPoolToken {
   const id = tokenId.toString()
@@ -53,4 +54,6 @@ export function handleTranchedPoolTokenTransfer(event: Transfer): void {
   let poolToken = initOrUpdateTranchedPoolToken(event.params.tokenId)
   updatePoolBacker(event.params.to, Address.fromString(poolToken.tranchedPool))
   updatePoolBacker(event.params.from, Address.fromString(poolToken.tranchedPool))
+
+  deleteZapAfterClaimMaybe(event)
 }

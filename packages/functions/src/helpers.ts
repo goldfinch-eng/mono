@@ -14,6 +14,11 @@ import {assertUnreachable} from "@goldfinch-eng/utils"
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: Request, res: Response) => {
+  if (process.env.MURMURATION === "yes") {
+    res.set("Access-Control-Allow-Origin", "*")
+    res.set("Access-Control-Allow-Headers", "*")
+    return
+  }
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   const origin = req.headers.origin || ""
   if (originAllowed(allowedOrigins, origin)) {
@@ -44,6 +49,7 @@ export const originAllowed = (allowedOrigins: string[], origin: string): boolean
 const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} = {
   "http://localhost:3000": "http://localhost:8545",
   "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
+  "https://beta.app.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
   "https://app.goldfinch.finance": 1,
 }
 const overrideBlockchainIdentifier = (): string | number | undefined => {

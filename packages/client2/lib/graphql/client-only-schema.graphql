@@ -4,50 +4,82 @@ extend type SeniorPool {
   icon: String!
 }
 
-extend type SeniorPoolStatus {
-  """
-  Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field.
-  """
-  estimatedApyFromGfi: BigDecimal!
+type Borrower {
+  name: String!
+  orgType: String!
+  website: String!
+  linkedIn: String!
+  twitter: String
+  logo: String!
+  headerColor: String!
+  bio: String!
+  highlights: [String!]!
 }
 
 extend type TranchedPool {
-  name: String
-  category: String
-  description: String
-  icon: String
+  name: String!
+  category: String!
+  description: String!
+  highlights: [String!]
+  icon: String!
   agreement: String
   dataroom: String
-  poolDescription: String
-  poolHighlights: [String]
-  borrowerDescription: String
-  borrowerHighlights: [String]
-  """
-  Please note that due to the way that apy-from-gfi is calculated, this field has an implicit dependency on the price of GFI, and estimatedJuniorApyFromGfiRaw. They must be present in the cache, so please include them in queries for this field.
-  """
-  estimatedJuniorApyFromGfi: BigDecimal!
+  borrower: Borrower!
 }
 
-type AppUser {
-  account: String
-  usdcBalance: BigInt
-  gfiBalance: BigInt
+extend type CreditLine {
+  isLate: Boolean
 }
 
-type Gfi {
-  price: GfiPrice!
+enum SupportedFiat {
+  USD
+}
+
+type FiatAmount {
+  symbol: SupportedFiat!
+  amount: Float!
+}
+
+type GfiPrice {
+  """
+  Note that the cache ID for this type is price.symbol. Remember to always select it to avoid cache problems
+  """
+  price: FiatAmount!
   lastUpdated: Int!
 }
 
-"""
-Leaves some room to add other fiat currencies in the future
-"""
-type GfiPrice {
-  usd: Float!
+enum SupportedCrypto {
+  USDC
+  GFI
+  FIDU
+}
+
+type CryptoAmount {
+  token: SupportedCrypto!
+  amount: BigInt!
+}
+
+type Geolocation {
+  country: String!
+}
+
+type Viewer {
+  account(format: String): String
+  usdcBalance: CryptoAmount
+  gfiBalance: CryptoAmount
+  fiduBalance: CryptoAmount
+  geolocation: Geolocation!
+}
+
+type BlockInfo {
+  number: Int!
+  timestamp: Int!
 }
 
 extend type Query {
-  currentUser: AppUser!
-  gfi: Gfi
+  viewer: Viewer!
   isWalletModalOpen: Boolean!
+  isVerificationModalOpen: Boolean!
+  gfiPrice(fiat: SupportedFiat!): GfiPrice!
+  currentBlock: BlockInfo
 }

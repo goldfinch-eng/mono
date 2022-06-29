@@ -1,53 +1,42 @@
 footer {
   font-size: $sans-size-xs;
-  padding: 30px 0;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 24px;
 
-  a {
-    color: $sand-xxdark;
-  }
-
-  a:hover {
-    color: $purp;
-  }
-
-  .divider {
-    color: $sand-xxdark;
-    margin: 0 7px;
-  }
-
-  .icon {
-    margin: -3px 2px -1px -2px;
-    vertical-align: middle;
-    width: 18px;
-
-    path{
-      fill: $sand-xxdark;
-    }
-  }
-
-  a:hover .icon path{
-    fill: $purp;
-  }
-
-  .outbound-link{
-    display: block;
-  }
-
-  .section-separator{
-    border-top: 2px solid $sand;
-    display: block;
-    margin: 7px 0 13px;
-    width: 100%;
+  @media screen and (min-width: $screen-tablet) {
+    padding: 24px 40px;
   }
 }
 
-@media only screen and (min-width: $screen-m) {
-  footer {
-    bottom: 0;
-    left: 0;
-    position: fixed;
-    padding: 20px 20px;
-    width: $nav-width;
-    z-index: 10;
+.footer {
+  &-content {
+    nav {
+      display: flex;
+      justify-content: center;
+
+      @media screen and (min-width: $screen-phone-l) {
+        justify-content: flex-start;
+      }
+    }
+
+    @media screen and (min-width: $screen-phone-l) {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    a {
+      font-family: "Inter", sans-serif;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 20px;
+      margin-left: 16px;
+      color: $sand-700;
+
+      &:first-child {
+        margin-left: 0;
+      }
+    }
   }
 }
