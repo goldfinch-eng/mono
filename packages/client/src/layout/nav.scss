@@ -161,12 +161,13 @@
       font-size: 14px;
       line-height: 20px;
       border-bottom: 2px solid transparent;
+      white-space: nowrap;
 
       &:hover {
         border-bottom-color: $eggplant-600;
       }
 
-      &.is-current {
+      &.active {
         color: $sand-900;
         border-bottom-color: $eggplant-600;
       }
