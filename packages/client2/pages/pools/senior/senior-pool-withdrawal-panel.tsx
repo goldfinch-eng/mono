@@ -72,7 +72,7 @@ export function SeniorPoolWithDrawalPanel({
     }
     const withdrawAmountFidu =
       withdrawAmountUsdc.eq(maxWithdrawableUsdc) &&
-      maxWithdrawableUsdc.lte(seniorPoolLiquidity)
+      maxWithdrawableUsdc.lt(seniorPoolLiquidity)
         ? totalUserFidu
         : usdcToShares(withdrawAmountUsdc, sharePrice).amount;
     if (withdrawAmountFidu.lte(fiduBalance.amount)) {
