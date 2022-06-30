@@ -29,6 +29,7 @@ import {
   computeApyFromGfiInFiat,
   sharesToUsdc,
   signAgreement,
+  usdcWithinEpsilon,
 } from "@/lib/pools";
 import { openWalletModal, openVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
@@ -119,7 +120,7 @@ export default function SupplyPanel({
   const { control, watch, register, setValue } = rhfMethods;
 
   const handleMax = async () => {
-    if (!account || !usdcContract || !availableBalance) {
+    if (!account || !usdcContract) {
       return;
     }
     const userUsdcBalance = availableBalance;
@@ -146,8 +147,10 @@ export default function SupplyPanel({
     if (valueAsUsdc.lte(BigNumber.from(0))) {
       return "Must deposit more than 0";
     }
-    const userUsdcBalance = await usdcContract.balanceOf(account);
-    if (valueAsUsdc.gt(userUsdcBalance)) {
+    if (
+      valueAsUsdc.gt(availableBalance) &&
+      !usdcWithinEpsilon(valueAsUsdc, availableBalance)
+    ) {
       return "Amount exceeds USDC balance";
     }
   };
@@ -159,7 +162,12 @@ export default function SupplyPanel({
 
     await signAgreement(account, data.backerName, tranchedPoolAddress);
 
-    const value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    // Ensures the user doesn't leave any dust behind when they choose to supply max
+    let value = utils.parseUnits(data.supply, USDC_DECIMALS);
+    if (usdcWithinEpsilon(value, availableBalance)) {
+      value = availableBalance;
+    }
+
     if (data.source === "wallet") {
       if (!tranchedPoolContract) {
         throw new Error("Wallet not connected properly");
@@ -235,9 +243,7 @@ export default function SupplyPanel({
 
   const supplyValue = watch("supply");
   const selectedSource = watch("source");
-  const [availableBalance, setAvailableBalance] = useState<BigNumber | null>(
-    null
-  );
+  const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
     if (!usdcContract || !account) {
       return;
@@ -421,15 +427,13 @@ export default function SupplyPanel({
             name="supply"
             label="Supply amount"
             labelDecoration={
-              availableBalance !== null ? (
-                <span className="text-xs">
-                  Balance:{" "}
-                  {formatCrypto(
-                    { token: SupportedCrypto.Usdc, amount: availableBalance },
-                    { includeToken: true }
-                  )}
-                </span>
-              ) : null
+              <span className="text-xs">
+                Balance:{" "}
+                {formatCrypto(
+                  { token: SupportedCrypto.Usdc, amount: availableBalance },
+                  { includeToken: true }
+                )}
+              </span>
             }
             rules={{ required: "Required", validate: validateMaximumAmount }}
             colorScheme="dark"
