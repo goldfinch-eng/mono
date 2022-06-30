@@ -40,9 +40,19 @@ export function Form<FormFields>({
     try {
       await onSubmit(data);
     } catch (error) {
+      const message = (error as Error).message;
       // @ts-expect-error I'm not sure of a way to make TS accept this
-      setError(reservedErrorField, { message: error.message });
-      Sentry.captureException(error);
+      setError(reservedErrorField, { message });
+
+      // There's definitely a few errors that shouldn't be sent to Sentry
+      const shouldSendToSentry = !message.includes(
+        "User denied transaction signature"
+      );
+      if (shouldSendToSentry) {
+        Sentry.captureException(
+          new Error(`Caught form submission error: ${message}`)
+        );
+      }
     }
   });
 

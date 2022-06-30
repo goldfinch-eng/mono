@@ -6,11 +6,17 @@ import * as Sentry from "@sentry/nextjs";
 
 export const errorLink = onError(
   ({ graphQLErrors, networkError, operation }) => {
+    // Don't report errors in the MinBlockCheck, it's intended to error
+    if (operation.operationName === "MinBlockCheck") {
+      return;
+    }
     if (graphQLErrors) {
       graphQLErrors.forEach((graphQLError) => {
         // Strangely, Sentry won't interpret a GraphQLError type as an Error so you can't really use captureException() properly
-        Sentry.captureMessage(
-          `GraphQL error during operation \`${operation.operationName}\`: ${graphQLError.message}`
+        Sentry.captureException(
+          new Error(
+            `GraphQL error during operation \`${operation.operationName}\`: ${graphQLError.message}`
+          )
         );
       });
     }
