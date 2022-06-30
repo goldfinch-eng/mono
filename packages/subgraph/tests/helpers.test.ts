@@ -1,7 +1,7 @@
-import { BigDecimal, BigInt, ethereum } from '@graphprotocol/graph-ts'
-import { clearStore, test, assert } from 'matchstick-as/assembly/index'
-import { CreditLine, TranchedPool } from '../generated/schema'
-import { calculateEstimatedInterestForTranchedPool, estimateJuniorAPY } from '../src/entities/helpers'
+import {BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
+import {clearStore, test, assert} from "matchstick-as/assembly/index"
+import {CreditLine, TranchedPool} from "../generated/schema"
+import {calculateEstimatedInterestForTranchedPool, estimateJuniorAPY} from "../src/entities/helpers"
 
 test("estimates junior apy for v1 pool", () => {
   let creditLine = new CreditLine("0x1")
@@ -14,30 +14,26 @@ test("estimates junior apy for v1 pool", () => {
   tranchedPool.isPaused = false
   tranchedPool.save()
 
-  const apy = estimateJuniorAPY(tranchedPool.id)
+  const apy = estimateJuniorAPY(tranchedPool)
   assert.equals(ethereum.Value.fromString("0.05"), ethereum.Value.fromString(apy.toString()))
 
   clearStore()
 })
 
-test("estimates junior apy without credit line", () => {
-  let tranchedPool = new TranchedPool("0xf74ea34ac88862b7ff419e60e476be2651433e68")
-  tranchedPool.isV1StyleDeal = true
-  tranchedPool.isPaused = false
-  tranchedPool.save()
+test(
+  "estimates junior apy without credit line (throws error)",
+  () => {
+    let tranchedPool = new TranchedPool("0xf74ea34ac88862b7ff419e60e476be2651433e68")
+    tranchedPool.isV1StyleDeal = true
+    tranchedPool.isPaused = false
+    tranchedPool.save()
 
-  const apy = estimateJuniorAPY(tranchedPool.id)
-  assert.equals(ethereum.Value.fromString("0"), ethereum.Value.fromString(apy.toString()))
+    estimateJuniorAPY(tranchedPool)
 
-  clearStore()
-})
-
-test("estimates junior apy without tranched pool", () => {
-  const apy = estimateJuniorAPY("0xf74ea34ac88862b7ff419e60e476be2651433e68")
-  assert.equals(ethereum.Value.fromString("0"), ethereum.Value.fromString(apy.toString()))
-
-  clearStore()
-})
+    clearStore()
+  },
+  true
+)
 
 test("estimates junior apy (stratos)", () => {
   let creditLine = new CreditLine("0x1")
@@ -55,7 +51,7 @@ test("estimates junior apy (stratos)", () => {
   tranchedPool.isPaused = false
   tranchedPool.save()
 
-  const apy = estimateJuniorAPY(tranchedPool.id)
+  const apy = estimateJuniorAPY(tranchedPool)
   assert.equals(ethereum.Value.fromString("0.187"), ethereum.Value.fromString(apy.toString()))
 
   clearStore()
@@ -77,7 +73,7 @@ test("estimates junior apy (cauris)", () => {
   tranchedPool.isPaused = false
   tranchedPool.save()
 
-  const apy = estimateJuniorAPY(tranchedPool.id)
+  const apy = estimateJuniorAPY(tranchedPool)
   assert.equals(ethereum.Value.fromString("0.2125"), ethereum.Value.fromString(apy.toString()))
 
   clearStore()
@@ -116,10 +112,7 @@ test("calculateEstimatedInterestForTranchedPool with low balance", () => {
   tranchedPool.save()
 
   const estimatedInterest = calculateEstimatedInterestForTranchedPool(tranchedPool.id)
-  assert.equals(
-    ethereum.Value.fromString("874998917948.4"),
-    ethereum.Value.fromString(estimatedInterest.toString())
-  )
+  assert.equals(ethereum.Value.fromString("874998917948.4"), ethereum.Value.fromString(estimatedInterest.toString()))
 
   clearStore()
 })
@@ -138,10 +131,7 @@ test("calculateEstimatedInterestForTranchedPool with high balance", () => {
   tranchedPool.save()
 
   const estimatedInterest = calculateEstimatedInterestForTranchedPool(tranchedPool.id)
-  assert.equals(
-    ethereum.Value.fromString("1540000000000"),
-    ethereum.Value.fromString(estimatedInterest.toString())
-  )
+  assert.equals(ethereum.Value.fromString("1540000000000"), ethereum.Value.fromString(estimatedInterest.toString()))
 
   clearStore()
 })

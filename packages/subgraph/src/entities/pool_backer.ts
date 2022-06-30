@@ -1,6 +1,9 @@
-import { Address, BigInt, log } from '@graphprotocol/graph-ts'
-import { PoolBacker, TranchedPool, TranchedPoolToken } from "../../generated/schema"
-import { TranchedPool as TranchedPoolContract } from '../../generated/templates/PoolTokens/TranchedPool'
+import {Address, BigInt, log} from "@graphprotocol/graph-ts"
+import {PoolBacker, TranchedPool, TranchedPoolToken} from "../../generated/schema"
+import {TranchedPool as TranchedPoolContract} from "../../generated/templates/PoolTokens/TranchedPool"
+import {BackerRewards as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards"
+import {getGoldfinchConfig} from "./helpers"
+import {CONFIG_KEYS_ADDRESSES} from "../constants"
 
 // Currently, AssemblyScript does not support Closures.
 // Because of that, we need to do some restructuring on the code
@@ -13,15 +16,6 @@ export function getOrInitPoolBacker(poolAddress: Address, userAddress: Address):
     poolBacker = new PoolBacker(id)
     poolBacker.user = userAddress.toHexString()
     poolBacker.tranchedPool = poolAddress.toHexString()
-    poolBacker.principalAmount = new BigInt(0)
-    poolBacker.principalRedeemed = new BigInt(0)
-    poolBacker.interestRedeemed = new BigInt(0)
-    poolBacker.principalAtRisk = new BigInt(0)
-    poolBacker.balance = new BigInt(0)
-    poolBacker.availableToWithdraw = new BigInt(0)
-    poolBacker.unrealizedGains = new BigInt(0)
-    poolBacker.principalRedeemable = new BigInt(0)
-    poolBacker.interestRedeemable = new BigInt(0)
     poolBacker.save()
   }
   return poolBacker
@@ -51,7 +45,7 @@ export function updatePoolBacker(userAddress: Address, tranchedPoolAddress: Addr
   }
 
   let tokens = tranchedPool.tokens
-  if (tokens){
+  if (tokens) {
     for (let i = 0, k = tokens.length; i < k; ++i) {
       let tokenId = assert(tokens[i])
 
@@ -66,7 +60,7 @@ export function updatePoolBacker(userAddress: Address, tranchedPoolAddress: Addr
         const poolContract = TranchedPoolContract.bind(Address.fromString(poolAddressStr))
         let callResult = poolContract.try_availableToWithdraw(BigInt.fromString(tokenId))
         if (callResult.reverted) {
-          log.warning('availableToWithdraw reverted for pool {} and backer {}', [poolAddressStr, currentBackerStr])
+          log.warning("availableToWithdraw reverted for pool {} and backer {}", [poolAddressStr, currentBackerStr])
         } else {
           tokenInfo.interestRedeemable = callResult.value.value0
           tokenInfo.principalRedeemable = callResult.value.value1
@@ -105,5 +99,37 @@ export function updateAllPoolBackers(address: Address): void {
       let poolBacker = assert(PoolBacker.load(backer))
       updatePoolBacker(Address.fromString(poolBacker.user), Address.fromString(tranchedPoolAddress))
     }
+  }
+}
+
+function updatePoolBackerRewardsClaimable(poolBacker: PoolBacker, backerRewardsContract: BackerRewardsContract): void {
+  const tranchedPool = assert(TranchedPool.load(poolBacker.tranchedPool))
+  const poolTokenIds = tranchedPool.tokens
+
+  poolBacker.rewardsClaimable = BigInt.zero()
+  for (let i = 0; i < poolTokenIds.length; i++) {
+    const poolTokenId = poolTokenIds[i]
+    const poolToken = assert(TranchedPoolToken.load(poolTokenId))
+    if (poolToken.user == poolBacker.user) {
+      poolToken.rewardsClaimable = backerRewardsContract.poolTokenClaimableRewards(BigInt.fromString(poolTokenId))
+      poolToken.save()
+      poolBacker.rewardsClaimable = poolBacker.rewardsClaimable.plus(poolToken.rewardsClaimable)
+    }
+  }
+  poolBacker.save()
+}
+
+export function updateAllPoolBackersRewardsClaimable(tranchedPoolAddress: Address, blockTimestamp: BigInt): void {
+  const tranchedPool = assert(TranchedPool.load(tranchedPoolAddress.toHexString()))
+  const poolBackers = tranchedPool.backers
+  const goldfinchConfig = getGoldfinchConfig(blockTimestamp)
+  const backerRewardsContractAddress = goldfinchConfig.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.BackerRewards))
+  if (backerRewardsContractAddress.equals(Address.zero())) {
+    return
+  }
+  const backerRewardsContract = BackerRewardsContract.bind(backerRewardsContractAddress)
+  for (let i = 0; i < poolBackers.length; i++) {
+    const poolBacker = assert(PoolBacker.load(poolBackers[i]))
+    updatePoolBackerRewardsClaimable(poolBacker, backerRewardsContract)
   }
 }

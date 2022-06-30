@@ -3,16 +3,23 @@
  */
 import { useReactiveVar } from "@apollo/client";
 
+import { VerificationModal } from "@/components/verification-modal";
 import { WalletModal } from "@/components/wallet-modal";
 
-import { closeWalletModal } from "./actions";
-import { isWalletModalOpenVar } from "./vars";
+import { closeWalletModal, closeVerificationModal } from "./actions";
+import { isWalletModalOpenVar, isVerificationModalOpenVar } from "./vars";
 
 export function AppWideModals() {
   const isWalletModalOpen = useReactiveVar(isWalletModalOpenVar); // too lazy to write a full graphQL query just to read this from the Apollo cache, so i useReactiveVar on it
+  const isVerificationModalOpen = useReactiveVar(isVerificationModalOpenVar);
+
   return (
     <>
       <WalletModal isOpen={isWalletModalOpen} onClose={closeWalletModal} />
+      <VerificationModal
+        isOpen={isVerificationModalOpen}
+        onClose={closeVerificationModal}
+      />
     </>
   );
 }

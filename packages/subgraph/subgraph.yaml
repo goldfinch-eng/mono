@@ -182,6 +182,50 @@ dataSources:
           handler: handleProxyImplementationUpdated
       file: ./src/mappings/backer_rewards_proxy.ts
 
+  - kind: ethereum/contract
+    name: UniqueIdentityProxy
+    network: mainnet
+    source:
+      address: "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
+      abi: UniqueIdentity_Proxy
+      startBlock: 13494815
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - User
+      abis:
+        - name: UniqueIdentity_Proxy
+          file: ./abis/UniqueIdentity_Proxy.json
+      eventHandlers:
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/unique_identity_proxy.ts
+
+  - kind: ethereum/contract
+    name: GoldfinchConfig
+    network: mainnet
+    source:
+      address: "0x4eb844Ff521B4A964011ac8ecd42d500725C95CC"
+      abi: GoldfinchConfig
+      startBlock: 13096701
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - User
+      abis:
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+      eventHandlers:
+        - event: GoListed(indexed address)
+          handler: handleGoListed
+        - event: NoListed(indexed address)
+          handler: handleNoListed
+      file: ./src/mappings/goldfinch_config.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -209,6 +253,8 @@ templates:
           file: ./abis/Fidu.json
         - name: Fidu_Proxy
           file: ./abis/Fidu_Proxy.json
+        - name: USDC
+          file: ./abis/USDC.json
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade
@@ -297,7 +343,8 @@ templates:
         - User
         - TranchedPool
         - TranchedPoolToken
-        - TranchedPoolBorrowerTransaction
+        - Transaction
+        - Zap
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -325,6 +372,10 @@ templates:
           file: ./abis/SeniorPool.json
         - name: FixedLeverageRatioStrategy
           file: ./abis/FixedLeverageRatioStrategy.json
+        - name: BackerRewards
+          file: ./abis/BackerRewards.json
+        - name: Zapper
+          file: ./abis/Zapper.json
       eventHandlers:
         - event: CreditLineMigrated(indexed address,indexed address)
           handler: handleCreditLineMigrated
@@ -342,8 +393,6 @@ templates:
           handler: handleSliceCreated
         - event: EmergencyShutdown(indexed address)
           handler: handleEmergencyShutdown
-        - event: GoldfinchConfigUpdated(indexed address,address)
-          handler: handleGoldfinchConfigUpdated
         - event: DrawdownMade(indexed address,uint256)
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
@@ -422,6 +471,12 @@ templates:
           handler: handleStaked
         - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
           handler: handleUnstaked
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256)
+          handler: handleDepositedAndStaked
+        - event: UnstakedAndWithdrew(indexed address,uint256,indexed uint256,uint256)
+          handler: handleUnstakedAndWithdrew
 
   - name: BackerRewards
     kind: ethereum/contract
@@ -447,3 +502,24 @@ templates:
           handler: handleSetTotalRewards
         - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
           handler: handleSetMaxInterestDollarsEligible
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleBackerRewardsClaimed
+
+  - name: UniqueIdentity
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: UniqueIdentity
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/unique_identity.ts
+      entities:
+        - User
+      abis:
+        - name: UniqueIdentity
+          file: ./abis/UniqueIdentity.json
+      eventHandlers:
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle

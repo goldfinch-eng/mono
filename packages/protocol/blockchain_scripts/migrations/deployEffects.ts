@@ -34,7 +34,7 @@ import {fundWithWhales} from "../helpers/fundWithWhales"
  */
 export interface DeployEffects {
   add(effects?: Effects): Promise<void>
-  executeDeferred(): Promise<void>
+  executeDeferred(params?: {dryRun?: boolean}): Promise<void>
 }
 
 /**
@@ -78,7 +78,7 @@ export async function changeImplementations({contracts}: {contracts: UpgradedCon
 export abstract class MultisendEffects implements DeployEffects {
   deferredEffects: PopulatedTransaction[] = []
 
-  abstract execute(safeTxs: SafeTransactionDataPartial[]): Promise<void>
+  abstract execute(safeTxs: SafeTransactionDataPartial[], params?: {dryRun?: boolean}): Promise<void>
 
   private toSafeTx(tx: PopulatedTransaction): SafeTransactionDataPartial {
     return {
@@ -88,8 +88,8 @@ export abstract class MultisendEffects implements DeployEffects {
     }
   }
 
-  async runTxs(txs: PopulatedTransaction[]): Promise<void> {
-    await this.execute(txs.map(this.toSafeTx))
+  async runTxs(txs: PopulatedTransaction[], params?: {dryRun?: boolean}): Promise<void> {
+    await this.execute(txs.map(this.toSafeTx), params)
   }
 
   async add(effects?: Effects): Promise<void> {
@@ -106,8 +106,8 @@ export abstract class MultisendEffects implements DeployEffects {
     }
   }
 
-  async executeDeferred(): Promise<void> {
-    await this.runTxs(this.deferredEffects)
+  async executeDeferred(params?: {dryRun?: boolean}): Promise<void> {
+    await this.runTxs(this.deferredEffects, params)
   }
 }
 
@@ -267,8 +267,10 @@ class DefenderMultisendEffects extends MultisendEffects {
     this.description = description ?? "Executing migrator multisend"
   }
 
-  async execute(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
+  async execute(safeTxs: SafeTransactionDataPartial[], params?: {dryRun?: boolean}): Promise<void> {
     await this.logSafeTx(safeTxs)
+
+    if (params?.dryRun) return
 
     const multisendData = encodeMultiSendData(safeTxs.map(standardizeMetaTransactionData))
     const defender = new DefenderUpgrader({hre, logger: console.log, chainId: this.chainId})

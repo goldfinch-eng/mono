@@ -11,10 +11,14 @@ async function runCommand(args: Array<string>, {cwd}: {cwd: string}): Promise<st
   const command = args.shift()
   assertNonNullable(command)
   return new Promise((resolve, reject) => {
-    let output = ""
     const child = spawn(command, args, {cwd})
+    let output = ""
     child.stdout.on("data", (chunk) => {
+      console.log("stdout", chunk.toString())
       output += chunk.toString()
+    })
+    child.stderr.on("data", (chunk) => {
+      console.log("stderr", chunk.toString())
     })
     child.on("close", (code: number) => {
       if (code !== 0) {
@@ -45,17 +49,18 @@ async function main() {
   const packagesDir = path.join(monorepoRoot, "packages")
   const monorepoPackages = await promises.readdir(packagesDir)
 
-  await Promise.all(
-    goldfinchPackages.map(async (scopedPackageName) => {
-      const packageName = scopedPackageName.replace("@goldfinch-eng/", "")
-      if (monorepoPackages.includes(packageName)) {
-        const packed = await runCommand(["npm", "pack", path.join(packagesDir, packageName)], {cwd: packageRoot})
-        packageJson.dependencies[scopedPackageName] = `file:./${packed.trim()}`
-      }
-    }),
-  )
+  for (const scopedPackageName of goldfinchPackages) {
+    const packageName = scopedPackageName.replace("@goldfinch-eng/", "")
+    if (monorepoPackages.includes(packageName)) {
+      console.log("Packing", packageName)
+      const packed = await runCommand(["npm", "pack", path.join(packagesDir, packageName)], {cwd: packageRoot})
+      packageJson.dependencies[scopedPackageName] = `file:./${packed.trim()}`
+      console.log("Done packing", packageName)
+    }
+  }
 
   await promises.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+  console.log("Done writing package.json")
 }
 
 main()
