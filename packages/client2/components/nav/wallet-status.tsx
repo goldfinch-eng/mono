@@ -210,7 +210,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
           <div className="text-lg font-semibold">Recent Transactions</div>
           <Link
             className="text-sm"
-            href="https://goldfinch.app.finance/transactions"
+            href="https://app.goldfinch.finance/transactions"
           >
             View all
           </Link>
