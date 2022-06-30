@@ -13,6 +13,7 @@ import {
   SupportedCrypto,
   DealTermsTableFieldsFragment,
 } from "@/lib/graphql/generated";
+import { PoolStatus } from "@/lib/pools";
 
 export const DEAL_TERMS_TABLE_FIELDS = gql`
   fragment DealTermsTableFields on TranchedPool {
@@ -32,6 +33,7 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
 
 interface DealTermsProps {
   tranchedPool?: DealTermsTableFieldsFragment | null;
+  poolStatus: PoolStatus | null;
 }
 
 function getLateFeeApr(
@@ -49,7 +51,10 @@ function getLateFeeApr(
   }
 }
 
-export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
+export default function DealTermsTable({
+  tranchedPool,
+  poolStatus,
+}: DealTermsProps) {
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -62,7 +67,7 @@ export default function DealTermsTable({ tranchedPool }: DealTermsProps) {
             />
           </div>
         </div>
-        {tranchedPool ? (
+        {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
           <Button
             variant="rounded"
             colorScheme="secondary"

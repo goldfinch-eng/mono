@@ -267,7 +267,7 @@ export default function PoolPage() {
                 image={tranchedPool?.icon}
               />
             </div>
-            {tranchedPool ? (
+            {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
               <Button
                 variant="rounded"
                 colorScheme="secondary"
@@ -427,7 +427,10 @@ export default function PoolPage() {
                   </div>
                 ) : null}
 
-                <DealTermsTable tranchedPool={tranchedPool} />
+                <DealTermsTable
+                  tranchedPool={tranchedPool}
+                  poolStatus={poolStatus}
+                />
               </TabContent>
               <TabContent>
                 {tranchedPool ? (
