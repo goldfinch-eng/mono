@@ -74,6 +74,7 @@ build
 
 bin/
 cache/
+foundry-cache/
 artifacts/
 
 notes.txt

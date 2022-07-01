@@ -11,6 +11,8 @@ import {
 import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
 import "solidity-docgen"
+import {subtask} from "hardhat/config"
+import {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} from "hardhat/builtin-tasks/task-names"
 
 dotenv.config({path: findEnvLocal()})
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
@@ -25,6 +27,17 @@ const ALCHEMY_RINKEBY_API_KEY = process.env.ALCHEMY_RINKEBY_API_KEY
 if (process.env.HARDHAT_FORK) {
   process.env["HARDHAT_DEPLOY_FORK"] = process.env.HARDHAT_FORK
 }
+
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
+  const paths = await runSuper()
+  // to make foundry and hardhat co-exist, we are excluding solidity files meant to be
+  // be used as foundry tests.
+  //
+  // Specifically: foundry uses git submodules to pull in dependencies, but hardhat requires
+  // any imported dependency to have a corresponding node module. We are explicitly making
+  // hardhat not import any foundry file to avoid this issue.
+  return paths.filter((p) => !p.endsWith(".t.sol"))
+})
 
 export default {
   defaultNetwork: "hardhat",
@@ -42,7 +55,7 @@ export default {
       forking: process.env.HARDHAT_FORK
         ? {
             url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 14970689, // Jun-16-2022 01:38:00 AM +UTC
+            blockNumber: 15008143, // Jun-22-2022 02:53:00 PM +UTC
           }
         : undefined,
     },
@@ -65,6 +78,15 @@ export default {
     compilers: [
       {
         version: "0.6.12",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
+        },
+      },
+      {
+        version: "0.7.6",
         settings: {
           optimizer: {
             enabled: true,
@@ -128,7 +150,9 @@ export default {
   },
   contractSizer: {
     runOnCompile: true,
-    strict: process.env.CI !== undefined,
+    // strict: process.env.CI !== undefined,
+    // TODO: uncomment this when size decrease is merged
+    strict: false,
     except: [":Test.*", ":MigratedTranchedPool$"],
   },
   docgen: {

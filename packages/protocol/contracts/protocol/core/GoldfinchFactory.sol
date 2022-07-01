@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./GoldfinchConfig.sol";
@@ -8,6 +8,8 @@ import "./BaseUpgradeablePausable.sol";
 import "../../interfaces/IBorrower.sol";
 import "../../interfaces/ITranchedPool.sol";
 import "./ConfigHelper.sol";
+import {ImplementationRepository} from "./proxy/ImplementationRepository.sol";
+import {UcuProxy} from "./proxy/UcuProxy.sol";
 
 /**
  * @title GoldfinchFactory
@@ -25,25 +27,14 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
   using ConfigHelper for GoldfinchConfig;
 
   event BorrowerCreated(address indexed borrower, address indexed owner);
-  event PoolCreated(address indexed pool, address indexed borrower);
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+  event PoolCreated(ITranchedPool indexed pool, address indexed borrower);
   event CreditLineCreated(address indexed creditLine);
 
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
     __BaseUpgradeablePausable__init(owner);
     config = _config;
-    _performUpgrade();
-  }
-
-  function performUpgrade() external onlyAdmin {
-    _performUpgrade();
-  }
-
-  function _performUpgrade() internal {
-    if (getRoleAdmin(BORROWER_ROLE) != OWNER_ROLE) {
-      _setRoleAdmin(BORROWER_ROLE, OWNER_ROLE);
-    }
+    _setRoleAdmin(BORROWER_ROLE, OWNER_ROLE);
   }
 
   /**
@@ -99,10 +90,16 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     uint256 _principalGracePeriodInDays,
     uint256 _fundableAt,
     uint256[] calldata _allowedUIDTypes
-  ) external onlyAdminOrBorrower returns (address pool) {
-    address tranchedPoolImplAddress = config.tranchedPoolAddress();
-    pool = _deployMinimal(tranchedPoolImplAddress);
-    ITranchedPool(pool).initialize(
+  ) external onlyAdminOrBorrower returns (ITranchedPool) {
+    ITranchedPool pool;
+    // need to enclose in a scope to avoid overflowing stack
+    {
+      ImplementationRepository repo = config.getTranchedPoolImplementationRepository();
+      UcuProxy poolProxy = new UcuProxy(repo, _borrower);
+      pool = ITranchedPool(address(poolProxy));
+    }
+
+    pool.initialize(
       address(config),
       _borrower,
       _juniorFeePercent,
@@ -116,7 +113,7 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
       _allowedUIDTypes
     );
     emit PoolCreated(pool, _borrower);
-    config.getPoolTokens().onPoolCreated(pool);
+    config.getPoolTokens().onPoolCreated(address(pool));
     return pool;
   }
 

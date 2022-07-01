@@ -42,7 +42,7 @@ library ConfigOptions {
     CUSDCContract,
     GoldfinchConfig,
     PoolTokens,
-    TranchedPoolImplementation,
+    TranchedPoolImplementation, // deprecated
     SeniorPool,
     SeniorPoolStrategy,
     MigratedTranchedPoolImplementation,
@@ -51,6 +51,7 @@ library ConfigOptions {
     Go,
     BackerRewards,
     StakingRewards,
-    FiduUSDCCurveLP
+    FiduUSDCCurveLP,
+    TranchedPoolImplementationRepository
   }
 }

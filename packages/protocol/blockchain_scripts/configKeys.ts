@@ -36,6 +36,7 @@ const CONFIG_KEYS_BY_TYPE = {
     BackerRewards: 20,
     StakingRewards: 21,
     FiduUSDCCurveLP: 22,
+    TranchedPoolImplementationRepository: 23,
   },
 }
 

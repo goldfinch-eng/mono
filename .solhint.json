@@ -49,6 +49,21 @@
         "**/CreditLine.sol:CreditLine": {
           "setLimit": []
         },
+        "**/VersionedImplementationRepository.sol:VersionedImplementationRepository": {
+          "getByVersion": [],
+          "hasVersion": []
+        },
+        "**/ImplementationRepository.sol:ImplementationRepository": {
+          "initialize": ["initialize"],
+          "createSet": ["onlyAdmin", "whenNotPaused"],
+          "append": ["onlyAdmin", "whenNotPaused"],
+          "remove": ["onlyAdmin", "whenNotPaused"],
+          "setUpgradeData": ["onlyAdmin", "whenNotPaused"],
+          "has": [],
+          "setExists": [],
+          "currentImplementation": ["whenNotPaused"],
+          "nextImplementationOf": ["whenNotPaused"]
+        },
         "**/V2Migrator.sol:V2Migrator": {
           "upgradeImplementations": []
         },
@@ -72,6 +87,11 @@
           "distributeLosses": [],
           "transferFrom": [],
           "drawdown": []
+        },
+        "**/UcuProxy.sol:UcuProxy": {
+          "upgradeImplementation": ["onlyOwner"],
+          "upgradeToCurrentImplementation": ["onlyOwner"],
+          "transferOwnership": ["onlyOwner"]
         },
         "**/TranchedPool.sol:TranchedPool": {
           "setAllowedUIDTypes": ["onlyLocker"],

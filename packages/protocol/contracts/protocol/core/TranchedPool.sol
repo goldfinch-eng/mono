@@ -3,22 +3,24 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/drafts/IERC20Permit.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/drafts/IERC20Permit.sol";
+import {Math} from "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {SafeMath} from "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 
-import "../../interfaces/ITranchedPool.sol";
-import "../../interfaces/IRequiresUID.sol";
-import "../../interfaces/IERC20withDec.sol";
-import "../../interfaces/IV2CreditLine.sol";
-import "../../interfaces/IPoolTokens.sol";
-import "./GoldfinchConfig.sol";
-import "./BaseUpgradeablePausable.sol";
-import "./ConfigHelper.sol";
-import "../../library/SafeERC20Transfer.sol";
-import "./TranchingLogic.sol";
+import {ITranchedPool} from "../../interfaces/ITranchedPool.sol";
+import {IRequiresUID} from "../../interfaces/IRequiresUID.sol";
+import {IERC20withDec} from "../../interfaces/IERC20withDec.sol";
+import {IV2CreditLine} from "../../interfaces/IV2CreditLine.sol";
+import {IBackerRewards} from "../../interfaces/IBackerRewards.sol";
+import {IPoolTokens} from "../../interfaces/IPoolTokens.sol";
+import {IVersioned} from "../../interfaces/IVersioned.sol";
+import {GoldfinchConfig} from "./GoldfinchConfig.sol";
+import {BaseUpgradeablePausable} from "./BaseUpgradeablePausable.sol";
+import {ConfigHelper} from "./ConfigHelper.sol";
+import {SafeERC20Transfer} from "../../library/SafeERC20Transfer.sol";
+import {TranchingLogic} from "./TranchingLogic.sol";
 
-contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer, IRequiresUID {
+contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transfer, IRequiresUID, IVersioned {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using TranchingLogic for PoolSlice;
@@ -30,6 +32,9 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
   uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
   uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100
   uint256 public constant NUM_TRANCHES_PER_SLICE = 2;
+  uint8 internal constant MAJOR_VERSION = 0;
+  uint8 internal constant MINOR_VERSION = 1;
+  uint8 internal constant PATCH_VERSION = 0;
   uint256 public juniorFeePercent;
   bool public drawdownsPaused;
   uint256[] public allowedUIDTypes;
@@ -806,6 +811,11 @@ contract TranchedPool is BaseUpgradeablePausable, ITranchedPool, SafeERC20Transf
 
   function hasAllowedUID(address sender) public view override returns (bool) {
     return config.getGo().goOnlyIdTypes(sender, allowedUIDTypes);
+  }
+
+  /// @inheritdoc IVersioned
+  function getVersion() external pure override returns (uint8[3] memory version) {
+    (version[0], version[1], version[2]) = (MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
   }
 
   modifier onlyLocker() {

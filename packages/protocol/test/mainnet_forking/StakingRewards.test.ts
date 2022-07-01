@@ -25,7 +25,7 @@ import {
   MAINNET_CHAIN_ID,
   StakedPositionType,
 } from "../../blockchain_scripts/deployHelpers"
-import {UpgradedContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
+import {UpgradedContracts} from "../../blockchain_scripts/deployHelpers/upgradeContracts"
 import {
   changeImplementations,
   getDeployEffects,
@@ -98,7 +98,7 @@ describe("StakingRewards", () => {
 
       it("continues vesting as before", async () => {
         // Found by running this test against mainnet (without upgrades)
-        const nonUpgraded30DayDelta = new BN("125356265607692285551")
+        const nonUpgraded30DayDelta = new BN("142978037577295434945")
 
         await stakingRewards.getReward(tokenId, {from: account})
         const balanceBefore = await gfi.balanceOf(account)
@@ -183,7 +183,7 @@ describe("StakingRewards", () => {
 
       it("continues vesting as before", async () => {
         // Found by running this test against mainnet (without upgrades)
-        const nonUpgraded30DayDelta = new BN("3020072188107133398")
+        const nonUpgraded30DayDelta = new BN("3146439604584523805")
 
         await stakingRewards.getReward(tokenId, {from: account})
         const balanceBefore = await gfi.balanceOf(account)

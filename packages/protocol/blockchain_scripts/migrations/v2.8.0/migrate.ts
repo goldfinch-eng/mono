@@ -1,6 +1,8 @@
 import hre from "hardhat"
-import {ContractDeployer, ContractUpgrader} from "../../deployHelpers"
+import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
+import {deployTranchedPoolImplementationRepository} from "../../baseDeploy/deployTranchedPoolImplementationRepository"
+import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -9,23 +11,40 @@ export async function main() {
     title: "v2.8.0 upgrade",
     description: "https://github.com/warbler-labs/mono/pull/694",
   })
+  const config = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
+  const ucuRepo = await deployTranchedPoolImplementationRepository(deployer, {config, deployEffects})
 
   // Upgrade contracts
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["Zapper", "StakingRewards"],
+    contracts: ["Zapper", "StakingRewards", "GoldfinchFactory"],
   })
 
   // Change implementations
   deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 
-  const deployedContracts = {}
+  const deployedContracts = {ucuRepo}
+
+  // Change implementations
+  deployEffects.add(
+    await changeImplementations({
+      contracts: upgradedContracts,
+    })
+  )
 
   // Execute effects
   await deployEffects.executeDeferred()
   console.log("Finished v2.8.0 deploy")
-
   return {
     upgradedContracts,
     deployedContracts,
   }
+}
+
+if (require.main === module) {
+  main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(error)
+      process.exit(1)
+    })
 }

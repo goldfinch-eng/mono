@@ -25,13 +25,13 @@ import {deployMerkleDistributor} from "./baseDeploy/deployMerkleDistributor"
 import {deployPoolTokens} from "./baseDeploy/deployPoolTokens"
 import {deploySeniorPool} from "./baseDeploy/deploySeniorPool"
 import {deploySeniorPoolStrategies} from "./baseDeploy/deploySeniorPoolStrategies"
-import {deployTranchedPool} from "./baseDeploy/deployTranchedPool"
 import {deployBackerRewards} from "./baseDeploy/deployBackerRewards"
 import {deployConfig} from "./baseDeploy/deployConfig"
 import {deployGo} from "./baseDeploy/deployGo"
 import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
 import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
+import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 
 const logger: Logger = console.log
 
@@ -63,7 +63,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await getOrDeployFiduUSDCCurveLP(deployer, config)
   const fidu = await deployFidu(deployer, config)
   await deployPoolTokens(deployer, {config})
-  await deployTranchedPool(deployer, {config, deployEffects})
+  await deployTranchedPoolImplementationRepository(deployer, {config, deployEffects})
   logger("Granting minter role to Pool")
   const seniorPool = await deploySeniorPool(deployer, {config, fidu})
   await deployBorrower(deployer, {config})
