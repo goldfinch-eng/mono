@@ -49,8 +49,7 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
 type Auth = {
   "x-goldfinch-address": any
   "x-goldfinch-signature": any
-  // TODO - once the client is sending this header, uncomment this and update the asAuth function to check for it
-  // "x-goldfinch-signature-plaintext": any
+  "x-goldfinch-signature-plaintext": any
   "x-goldfinch-signature-block-num": any
 }
 
@@ -61,11 +60,23 @@ export function asAuth(obj: any): Auth {
     throw new Error("auth does not conform")
   }
 
-  if (!("x-goldfinch-address" in obj && "x-goldfinch-signature" in obj && "x-goldfinch-signature-block-num" in obj)) {
+  if (
+    !(
+      "x-goldfinch-address" in obj &&
+      "x-goldfinch-signature" in obj &&
+      "x-goldfinch-signature-block-num" in obj &&
+      "x-goldfinch-signature-plaintext" in obj
+    )
+  ) {
     throw new Error("auth does not conform")
   }
 
-  const auth = _.pick(obj, ["x-goldfinch-address", "x-goldfinch-signature", "x-goldfinch-signature-block-num"])
+  const auth = _.pick(obj, [
+    "x-goldfinch-address",
+    "x-goldfinch-signature",
+    "x-goldfinch-signature-block-num",
+    "x-goldfinch-signature-plaintext",
+  ])
 
   return auth
 }

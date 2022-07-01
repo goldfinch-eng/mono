@@ -88,6 +88,7 @@ describe("UID", () => {
         const auth = {
           "x-goldfinch-address": person3,
           "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
         await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
@@ -149,6 +150,7 @@ describe("UID", () => {
         const auth = {
           "x-goldfinch-address": person3,
           "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
         await uniqueIdentity.setSupportedUIDTypes([nonUSIdType], [true])
@@ -214,6 +216,7 @@ describe("UID", () => {
         const auth = {
           "x-goldfinch-address": address,
           "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
         await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
@@ -278,6 +281,7 @@ describe("UID", () => {
         const auth = {
           "x-goldfinch-address": address,
           "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
         await uniqueIdentity.setSupportedUIDTypes([usEntityIdType], [true])
@@ -341,6 +345,7 @@ describe("UID", () => {
         const auth = {
           "x-goldfinch-address": address,
           "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
           "x-goldfinch-signature-block-num": "fake_block_number",
         }
         await uniqueIdentity.setSupportedUIDTypes([nonUsEntityIdType], [true])

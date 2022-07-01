@@ -76,6 +76,7 @@ describe("unique-identity-signer", () => {
         expect(auth).to.deep.equal({
           "x-goldfinch-address": anotherUser,
           "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
           "x-goldfinch-signature-block-num": "fake_block_number",
         })
         return fetchElligibleKycStatus({auth, chainId})
@@ -85,6 +86,7 @@ describe("unique-identity-signer", () => {
         "x-some-random-header": "test",
         "x-goldfinch-address": anotherUser,
         "x-goldfinch-signature": "test_signature",
+        "x-goldfinch-signature-plaintext": "plaintext",
         "x-goldfinch-signature-block-num": "fake_block_number",
       }
 
@@ -98,6 +100,78 @@ describe("unique-identity-signer", () => {
           fetchKYCStatus: fetchFunction,
         })
       ).to.be.fulfilled
+    })
+
+    describe("auth headers", () => {
+      let auth
+      beforeEach(() => {
+        auth = {
+          "x-goldfinch-address": anotherUser,
+          "x-goldfinch-signature": "test_signature",
+          "x-goldfinch-signature-plaintext": "plaintext",
+          "x-goldfinch-signature-block-num": "fake_block_number",
+        }
+      })
+
+      describe("missing x-goldfinch-signature", () => {
+        it("throws an error", async () => {
+          delete auth["x-goldfinch-signature"]
+          await expect(
+            uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.be.rejectedWith(/auth does not conform/)
+        })
+      })
+
+      describe("missing x-goldfinch-signature-block-num", () => {
+        it("throws an error", async () => {
+          delete auth["x-goldfinch-signature-block-num"]
+          await expect(
+            uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.be.rejectedWith(/auth does not conform/)
+        })
+      })
+
+      describe("missing x-goldfinch-address", () => {
+        it("throws an error", async () => {
+          delete auth["x-goldfinch-address"]
+          await expect(
+            uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.be.rejectedWith(/auth does not conform/)
+        })
+      })
+
+      describe("missing x-goldfinch-signature-plaintext", () => {
+        it("throws an error", async () => {
+          delete auth["x-goldfinch-signature-plaintext"]
+          await expect(
+            uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.be.rejectedWith(/auth does not conform/)
+        })
+      })
     })
 
     describe("KYC is inelligible", () => {
@@ -114,6 +188,7 @@ describe("unique-identity-signer", () => {
           const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
+            "x-goldfinch-signature-plaintext": "plaintext",
             "x-goldfinch-signature-block-num": "fake_block_number",
           }
 
@@ -142,6 +217,7 @@ describe("unique-identity-signer", () => {
           const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
+            "x-goldfinch-signature-plaintext": "plaintext",
             "x-goldfinch-signature-block-num": "fake_block_number",
           }
 
@@ -176,6 +252,7 @@ describe("unique-identity-signer", () => {
             const auth = {
               "x-goldfinch-address": anotherUser,
               "x-goldfinch-signature": "test_signature",
+              "x-goldfinch-signature-plaintext": "plaintext",
               "x-goldfinch-signature-block-num": "fake_block_number",
             }
             await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
@@ -225,6 +302,7 @@ describe("unique-identity-signer", () => {
             const auth = {
               "x-goldfinch-address": anotherUser,
               "x-goldfinch-signature": "test_signature",
+              "x-goldfinch-signature-plaintext": "plaintext",
               "x-goldfinch-signature-block-num": "fake_block_number",
             }
             await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
@@ -274,6 +352,7 @@ describe("unique-identity-signer", () => {
           const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
+            "x-goldfinch-signature-plaintext": "plaintext",
             "x-goldfinch-signature-block-num": "fake_block_number",
           }
           await uniqueIdentity.setSupportedUIDTypes([0], [true])
