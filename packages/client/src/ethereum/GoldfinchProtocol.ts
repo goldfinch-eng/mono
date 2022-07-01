@@ -59,12 +59,12 @@ class GoldfinchProtocol {
     return getERC20(ticker, this)
   }
 
-  getContract<T = Contract>(contractOrAbi: string | any, address?: string, legacy: boolean = false): Web3IO<T> {
+  getContract<T = Contract>(contractOrAbi: string | any, address?: string, legacy?: boolean): Web3IO<T> {
     const web3 = getWeb3()
     const deployments = legacy ? this.legacyDeployments : this.deployments
     let abi = deployments.contracts[contractOrAbi]?.abi
     if (abi) {
-      address = address || this.getAddress(contractOrAbi, legacy)
+      address = address || this.getAddress(contractOrAbi)
     } else {
       abi = contractOrAbi
     }
@@ -75,9 +75,8 @@ class GoldfinchProtocol {
     return {readOnly, userWallet}
   }
 
-  getAddress(contract: string, legacy: boolean = false): string {
-    const deployments = legacy ? this.legacyDeployments : this.deployments
-    return deployments.contracts[contract].address
+  getAddress(contract: string): string {
+    return this.deployments.contracts[contract].address
   }
 
   async getConfigNumber(key: number, currentBlock: BlockInfo): Promise<BigNumber> {

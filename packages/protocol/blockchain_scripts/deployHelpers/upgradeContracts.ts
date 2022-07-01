@@ -85,7 +85,7 @@ export async function upgradeContracts({
     assertNonNullable(contract)
 
     let contractToDeploy = contractName
-    if (isTestEnv() && ["GoldfinchConfig"].includes(contractName)) {
+    if (isTestEnv() && ["Pool", "CreditDesk", "GoldfinchConfig"].includes(contractName)) {
       contractToDeploy = `Test${contractName}`
     }
 

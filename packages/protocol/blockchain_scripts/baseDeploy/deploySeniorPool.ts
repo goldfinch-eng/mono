@@ -1,7 +1,8 @@
 import {SeniorPool} from "@goldfinch-eng/protocol/typechain/ethers"
 import {assertIsString} from "@goldfinch-eng/utils"
+import {grantMinterRoleToPool} from "../baseDeploy"
 import {CONFIG_KEYS} from "../configKeys"
-import {MINTER_ROLE, ContractDeployer, isTestEnv, getProtocolOwner, updateConfig} from "../deployHelpers"
+import {ContractDeployer, isTestEnv, getProtocolOwner, updateConfig} from "../deployHelpers"
 import {DeployOpts} from "../types"
 
 const logger = console.log
@@ -33,9 +34,7 @@ export async function deploySeniorPool(deployer: ContractDeployer, {config, fidu
   await (await config.addToGoList(seniorPool.address)).wait()
   if (fidu) {
     logger(`Granting minter role to ${contractName}`)
-    if (!(await fidu.hasRole(MINTER_ROLE, seniorPool.address))) {
-      await fidu.grantRole(MINTER_ROLE, seniorPool.address)
-    }
+    await grantMinterRoleToPool(fidu, seniorPool)
   }
   return seniorPool
 }

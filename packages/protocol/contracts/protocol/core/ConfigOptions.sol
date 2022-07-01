@@ -26,19 +26,18 @@ library ConfigOptions {
     TransferRestrictionPeriodInDays,
     LeverageRatio
   }
-  /// @dev TrustedForwarder is deprecated because we no longer use GSN. CreditDesk
-  ///   and Pool are deprecated because they are no longer used in the protocol.
+  /// @dev TrustedForwarder is deprecated because we no longer use GSN
   enum Addresses {
-    Pool, // deprecated
+    Pool,
     CreditLineImplementation,
     GoldfinchFactory,
-    CreditDesk, // deprecated
+    CreditDesk,
     Fidu,
     USDC,
     TreasuryReserve,
     ProtocolAdmin,
     OneInch,
-    TrustedForwarder, // deprecated
+    TrustedForwarder,
     CUSDCContract,
     GoldfinchConfig,
     PoolTokens,

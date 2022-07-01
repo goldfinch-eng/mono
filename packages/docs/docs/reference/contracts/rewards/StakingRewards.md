@@ -190,10 +190,7 @@ The percent of &#x60;targetCapacity&#x60; at which the reward rate reaches &#x60
 uint256 vestingLength
 ```
 
-The duration in seconds over which legacy rewards vest. New positions have no vesting
- and earn rewards immediately.
-
-_UNUSED (definition kept for storage slot)_
+The duration in seconds over which rewards vest
 
 ### totalStakedSupply
 
@@ -359,7 +356,7 @@ function claimableRewards(uint256 tokenId) public view returns (uint256 rewards)
 ```
 
 Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
-  account vesting schedule for legacy positions.
+  account vesting schedule.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -457,7 +454,7 @@ function stake(uint256 amount, enum StakingRewards.StakedPositionType positionTy
 
 Stake &#x60;stakingToken()&#x60; to earn rewards. When you call this function, you&#x27;ll receive an
   an NFT representing your staked position. You can present your NFT to &#x60;getReward&#x60; or &#x60;unstake&#x60;
-  to claim rewards or unstake your tokens respectively.
+  to claim rewards or unstake your tokens respectively. Rewards vest over a schedule.
 
 _This function checkpoints rewards._
 
@@ -608,7 +605,7 @@ function unstake(uint256 tokenId, uint256 amount) public
 ```
 
 Unstake an amount of &#x60;stakingToken()&#x60; associated with a given position and transfer to msg.sender.
-  Any remaining staked amount will continue to accrue rewards.
+  Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
 
 _This function checkpoints rewards_
 
@@ -705,7 +702,7 @@ function updatePositionEffectiveMultiplier(uint256 tokenId) external
 ```
 
 Updates a user&#x27;s effective multiplier to the prevailing multiplier. This function gives
-  users an option to get on a higher multiplier without needing to unstake.
+  users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
 
 _This will also checkpoint their rewards up to the current time._
 
@@ -727,10 +724,12 @@ Claim rewards for a given staked position
 function addToStake(uint256 tokenId, uint256 amount) external
 ```
 
-Add &#x60;amount&#x60; to an existing FIDU position (&#x60;tokenId&#x60;)
+Add to an existing position without affecting vesting schedule
 
-_For non-zapper cases, it is not recommended to call this for vesting positions, as any additions
-  will be vested. It is optimal to create a new non-vesting position and earn more rewards there._
+_This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
+  function enables the Zapper to unwind &quot;in-progress&quot; positions initiated by &#x60;Zapper.zapStakeToTranchedPool&#x60;.
+  That is, funds that were moved from this contract into a TranchedPool can be &quot;unwound&quot; back to their original
+  staked position by the Zapper as part of &#x60;Zapper.unzapToStakingRewards&#x60;._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -765,6 +764,12 @@ Set the effective multiplier for a given staked position type. The effective mul
 | ---- | ---- | ----------- |
 | multiplier | uint256 | the new multiplier, denominated in &#x60;MULTIPLIER_DECIMALS&#x60; |
 | positionType | enum StakingRewards.StakedPositionType | the type of the position |
+
+### setVestingSchedule
+
+```solidity
+function setVestingSchedule(uint256 _vestingLength) external
+```
 
 ### updateReward
 

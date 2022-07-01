@@ -48,12 +48,12 @@ describe("Goldfinch", async function () {
   let paymentPeriodInSeconds = SECONDS_PER_DAY.mul(paymentPeriodInDays)
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
-    const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi} =
+    const {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi} =
       await deployBaseFixture()
 
     // Approve transfers for our test accounts
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, underwriter, borrower, investor1, investor2])
-    // Some housekeeping so we have a usable setup for tests
+    // Some housekeeping so we have a usable creditDesk for tests, and a seniorPool with funds
     await erc20Transfer(usdc, [underwriter, investor1, investor2], usdcVal(100000), owner)
     // Add all web3 accounts to the GoList
     await goldfinchConfig.bulkAddToGoList(accounts)
@@ -76,7 +76,7 @@ describe("Goldfinch", async function () {
     await seniorPool.deposit(String(usdcVal(10000)), {from: underwriter})
     // Set the reserve to a separate address for easier separation. The current owner account gets used for many things in tests.
     await goldfinchConfig.setTreasuryReserve(reserve)
-    return {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi}
+    return {seniorPool, usdc, creditDesk, fidu, goldfinchConfig, goldfinchFactory, poolTokens, stakingRewards, gfi}
   })
 
   beforeEach(async () => {

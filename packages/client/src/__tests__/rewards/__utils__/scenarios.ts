@@ -32,7 +32,7 @@ import {
   mockCommunityRewardsContractCalls,
 } from "./mocks"
 import {GoldfinchProtocol} from "../../../ethereum/GoldfinchProtocol"
-import {CreditDesk} from "../../../@types/legacy/CreditDesk"
+import {CreditDesk} from "@goldfinch-eng/protocol/typechain/web3/CreditDesk"
 import omit from "lodash/omit"
 import {MerkleDirectDistributorGrantInfo} from "@goldfinch-eng/protocol/blockchain_scripts/merkle/merkleDirectDistributor/types"
 import BigNumber from "bignumber.js"

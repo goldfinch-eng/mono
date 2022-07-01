@@ -22,9 +22,8 @@ describe("assessor", () => {
     const {protocol_owner} = await getNamedAccounts()
     owner = protocol_owner
 
-    const {seniorPool, usdc, fidu, goldfinchConfig, goldfinchFactory, poolTokens} = await deployAllContracts(
-      deployments
-    )
+    const {seniorPool, usdc, fidu, creditDesk, goldfinchConfig, goldfinchFactory, poolTokens} =
+      await deployAllContracts(deployments)
     // A bit of setup for our test users
     await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner, borrower])
     await goldfinchConfig.bulkAddToGoList([owner, underwriter, borrower])
@@ -38,7 +37,7 @@ describe("assessor", () => {
     await tranchedPool.lockJuniorCapital({from: borrower})
     await seniorPool.invest(tranchedPool.address)
     await tranchedPool.lockPool({from: borrower})
-    return {usdc, seniorPool, fidu, goldfinchConfig, goldfinchFactory, creditLine, tranchedPool, poolTokens}
+    return {usdc, seniorPool, fidu, goldfinchConfig, creditDesk, goldfinchFactory, creditLine, tranchedPool, poolTokens}
   })
 
   async function advanceToTimestamp(timestamp) {

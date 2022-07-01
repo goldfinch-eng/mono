@@ -4,9 +4,11 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./GoldfinchConfig.sol";
+import "../../interfaces/IPool.sol";
 import "../../interfaces/IFidu.sol";
 import "../../interfaces/ISeniorPool.sol";
 import "../../interfaces/ISeniorPoolStrategy.sol";
+import "../../interfaces/ICreditDesk.sol";
 import "../../interfaces/IERC20withDec.sol";
 import "../../interfaces/ICUSDCContract.sol";
 import "../../interfaces/IPoolTokens.sol";
@@ -24,6 +26,10 @@ import "../../interfaces/ICurveLP.sol";
  */
 
 library ConfigHelper {
+  function getPool(GoldfinchConfig config) internal view returns (IPool) {
+    return IPool(poolAddress(config));
+  }
+
   function getSeniorPool(GoldfinchConfig config) internal view returns (ISeniorPool) {
     return ISeniorPool(seniorPoolAddress(config));
   }
@@ -34,6 +40,10 @@ library ConfigHelper {
 
   function getUSDC(GoldfinchConfig config) internal view returns (IERC20withDec) {
     return IERC20withDec(usdcAddress(config));
+  }
+
+  function getCreditDesk(GoldfinchConfig config) internal view returns (ICreditDesk) {
+    return ICreditDesk(creditDeskAddress(config));
   }
 
   function getFidu(GoldfinchConfig config) internal view returns (IFidu) {
@@ -89,6 +99,10 @@ library ConfigHelper {
     return config.getAddress(uint256(ConfigOptions.Addresses.GoldfinchConfig));
   }
 
+  function poolAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.Pool));
+  }
+
   function poolTokensAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.PoolTokens));
   }
@@ -103,6 +117,10 @@ library ConfigHelper {
 
   function seniorPoolStrategyAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.SeniorPoolStrategy));
+  }
+
+  function creditDeskAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.CreditDesk));
   }
 
   function goldfinchFactoryAddress(GoldfinchConfig config) internal view returns (address) {
@@ -131,6 +149,10 @@ library ConfigHelper {
 
   function tranchedPoolAddress(GoldfinchConfig config) internal view returns (address) {
     return config.getAddress(uint256(ConfigOptions.Addresses.TranchedPoolImplementation));
+  }
+
+  function migratedTranchedPoolAddress(GoldfinchConfig config) internal view returns (address) {
+    return config.getAddress(uint256(ConfigOptions.Addresses.MigratedTranchedPoolImplementation));
   }
 
   function reserveAddress(GoldfinchConfig config) internal view returns (address) {

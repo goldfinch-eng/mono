@@ -120,6 +120,38 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
     return pool;
   }
 
+  function createMigratedPool(
+    address _borrower,
+    uint256 _juniorFeePercent,
+    uint256 _limit,
+    uint256 _interestApr,
+    uint256 _paymentPeriodInDays,
+    uint256 _termInDays,
+    uint256 _lateFeeApr,
+    uint256 _principalGracePeriodInDays,
+    uint256 _fundableAt,
+    uint256[] calldata _allowedUIDTypes
+  ) external onlyCreditDesk returns (address pool) {
+    address tranchedPoolImplAddress = config.migratedTranchedPoolAddress();
+    pool = _deployMinimal(tranchedPoolImplAddress);
+    ITranchedPool(pool).initialize(
+      address(config),
+      _borrower,
+      _juniorFeePercent,
+      _limit,
+      _interestApr,
+      _paymentPeriodInDays,
+      _termInDays,
+      _lateFeeApr,
+      _principalGracePeriodInDays,
+      _fundableAt,
+      _allowedUIDTypes
+    );
+    emit PoolCreated(pool, _borrower);
+    config.getPoolTokens().onPoolCreated(pool);
+    return pool;
+  }
+
   // Stolen from:
   // https://github.com/OpenZeppelin/openzeppelin-sdk/blob/master/packages/lib/contracts/upgradeability/ProxyFactory.sol
   function _deployMinimal(address _logic) internal returns (address proxy) {
@@ -141,6 +173,11 @@ contract GoldfinchFactory is BaseUpgradeablePausable {
 
   modifier onlyAdminOrBorrower() {
     require(isAdmin() || isBorrower(), "Must have admin or borrower role to perform this action");
+    _;
+  }
+
+  modifier onlyCreditDesk() {
+    require(msg.sender == config.creditDeskAddress(), "Only the CreditDesk can call this");
     _;
   }
 }
