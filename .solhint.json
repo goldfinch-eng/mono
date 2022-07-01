@@ -196,14 +196,10 @@
           "closeCreditLine": []
         },
         "**/Zapper.sol:*": {
-          "zapStakeToTranchedPool":  ["whenNotPaused", "nonReentrant"],
-          "zapFiduStakeToTranchedPool": ["whenNotPaused", "nonReentrant"],
-          "zapMultipleToTranchedPool": ["whenNotPaused", "nonReentrant"],
-          "unzapMultipleFromTranchedPools": ["whenNotPaused", "nonReentrant"],
-          "claimMultipleTranchedPoolZaps": ["whenNotPaused", "nonReentrant"],
-          "claimTranchedPoolZap":  ["whenNotPaused", "nonReentrant"],
-          "unzapToStakingRewards":  ["whenNotPaused", "nonReentrant"],
-          "zapStakeToCurve": ["whenNotPaused", "nonReentrant"]
+          "zapStakeToTranchedPool":  [],
+          "claimTranchedPoolZap":  [],
+          "unzapToStakingRewards":  [],
+          "zapStakeToCurve": []
         },
         "**/contracts/test/**": {
           "*.*": []

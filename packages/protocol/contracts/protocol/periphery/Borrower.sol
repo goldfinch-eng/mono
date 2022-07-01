@@ -62,7 +62,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Allows a borrower to drawdown on their credit line through a TranchedPool.
+   * @notice Allows a borrower to drawdown on their creditline through the CreditDesk.
    * @param poolAddress The creditline from which they would like to drawdown
    * @param amount The amount, in USDC atomic units, that a borrower wishes to drawdown
    * @param addressToSendTo The address where they would like the funds sent. If the zero address is passed,
@@ -118,7 +118,7 @@ contract Borrower is BaseUpgradeablePausable, BaseRelayRecipient, IBorrower {
   }
 
   /**
-   * @notice Allows a borrower to pay back loans by calling the `pay` function directly on a TranchedPool
+   * @notice Allows a borrower to payback loans by calling the `pay` function directly on the CreditDesk
    * @param poolAddress The credit line to be paid back
    * @param amount The amount, in USDC atomic units, that the borrower wishes to pay
    */

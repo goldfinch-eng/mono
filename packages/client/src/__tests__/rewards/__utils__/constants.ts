@@ -31,30 +31,6 @@ const getAbi = async (contractName: string): Promise<PlainObject[]> => {
   }
 }
 
-let _legacyDeploymentsJson: PlainObject
-
-const getLegacyDeploymentsJson = async () => {
-  if (!_legacyDeploymentsJson) {
-    const json = (await import("@goldfinch-eng/protocol/deployments/legacy-all.json" as any)) as unknown
-    if (isPlainObject(json)) {
-      _legacyDeploymentsJson = json
-    } else {
-      throw new Error("Failed to import deployments json.")
-    }
-  }
-  return _legacyDeploymentsJson
-}
-
-const getLegacyAbi = async (contractName: string): Promise<PlainObject[]> => {
-  const legacyDeploymentsJson = await getLegacyDeploymentsJson()
-  const contract = (legacyDeploymentsJson as any)["31337"].hardhat.contracts[contractName]
-  if (contract && isArrayOfPlainObject(contract.abi)) {
-    return contract.abi
-  } else {
-    throw new Error(`Failed to identify deployment info for contract: ${contractName}`)
-  }
-}
-
 export const getStakingRewardsAbi = () => getAbi("StakingRewards")
 
 export const getMerkleDistributorAbi = () => getAbi("MerkleDistributor")
@@ -75,7 +51,7 @@ export const getSeniorPoolAbi = () => getAbi("SeniorPool")
 
 export const getFiduAbi = () => getAbi("Fidu")
 
-export const getPoolAbi = () => getLegacyAbi("Pool")
+export const getPoolAbi = () => getAbi("Pool")
 
 export const getErc20Abi = () => getAbi("TestERC20")
 

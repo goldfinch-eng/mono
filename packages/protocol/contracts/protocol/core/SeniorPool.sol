@@ -46,9 +46,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     __BaseUpgradeablePausable__init(owner);
 
     config = _config;
-    sharePrice = _fiduMantissa();
-    totalLoansOutstanding = 0;
-    totalWritedowns = 0;
+    // Initialize sharePrice to be identical to the legacy pool. This is in the initializer
+    // because it must only ever happen once.
+    sharePrice = config.getPool().sharePrice();
+    totalLoansOutstanding = config.getCreditDesk().totalLoansOutstanding();
+    totalWritedowns = config.getCreditDesk().totalWritedowns();
 
     IERC20withDec usdc = config.getUSDC();
     // Sanity check the address

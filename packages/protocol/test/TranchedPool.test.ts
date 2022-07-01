@@ -16,8 +16,6 @@ import {
   decodeAndGetFirstLog,
   setupBackerRewards,
   getCurrentTimestamp,
-  mineBlock,
-  bigVal,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -31,14 +29,13 @@ import {DepositMade, TrancheLocked, PaymentApplied, SharePriceUpdated} from "../
 import {
   CreditLineInstance,
   GoldfinchConfigInstance,
+  GoldfinchFactoryInstance,
   PoolTokensInstance,
   TestUniqueIdentityInstance,
   SeniorPoolInstance,
   TranchedPoolInstance,
   BackerRewardsInstance,
   GFIInstance,
-  StakingRewardsInstance,
-  FiduInstance,
 } from "../typechain/truffle"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -92,13 +89,12 @@ describe("TranchedPool", () => {
     usdc,
     uniqueIdentity: TestUniqueIdentityInstance,
     poolTokens: PoolTokensInstance,
-    fidu: FiduInstance,
+    goldfinchFactory: GoldfinchFactoryInstance,
     creditLine: CreditLineInstance,
     treasury,
     backerRewards: BackerRewardsInstance,
     tranchedPool: TranchedPoolInstance,
     gfi: GFIInstance,
-    stakingRewards: StakingRewardsInstance,
     seniorPool: SeniorPoolInstance
   const limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
@@ -111,20 +107,16 @@ describe("TranchedPool", () => {
 
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, fidu, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi, stakingRewards} =
+    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi} =
       await deployBaseFixture())
-
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
-    await setupBackerRewards(gfi, backerRewards, stakingRewards, owner)
+    await setupBackerRewards(gfi, backerRewards, owner)
     await erc20Transfer(usdc, [otherPerson], usdcVal(20000), owner)
     await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [otherPerson])
     await seniorPool.deposit(usdcVal(1000), {from: otherPerson})
-
-    await fidu.approve(stakingRewards.address, bigVal(100), {from: otherPerson})
-    await stakingRewards.stake(bigVal(100), new BN(0), {from: otherPerson})
 
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     const {tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
@@ -1444,7 +1436,6 @@ describe("TranchedPool", () => {
       })
     })
   })
-
   describe("drawdown", async () => {
     describe("when deposits are over the limit", async () => {
       it("does not adjust the limit up", async () => {
@@ -1477,124 +1468,6 @@ describe("TranchedPool", () => {
         await tranchedPool.lockPool({from: borrower})
       })
 
-      describe("first drawdown", () => {
-        it("sets termEndTime", async () => {
-          await tranchedPool.drawdown(usdcVal(1), {from: borrower})
-          const timeAfterFirstDrawdown = await time.latest()
-
-          // Verify term end time was set
-          expect(await creditLine.termEndTime()).to.bignumber.eq(
-            timeAfterFirstDrawdown.add(termInDays.mul(SECONDS_PER_DAY))
-          )
-        })
-
-        describe("subsequent drawdown", () => {
-          describe("when creditLine balance is 0", () => {
-            it("doesn't change termEndTime", async () => {
-              // Drawdown full amount
-              await tranchedPool.drawdown(usdcVal(10), {from: borrower})
-
-              // Advance time by one payment period and make make full payment
-              await advanceTime({days: paymentPeriodInDays})
-              await expectAction(async () => tranchedPool.pay(usdcVal(11), {from: borrower})).toChange([
-                [creditLine.balance, {to: new BN(0)}],
-              ])
-
-              // Drawdown full amount again
-              await expectAction(async () => tranchedPool.drawdown(usdcVal(10), {from: borrower})).toChange([
-                [creditLine.balance, {to: usdcVal(10)}],
-                // Term end time should not have changed
-                [creditLine.termEndTime, {unchanged: true}],
-              ])
-            })
-          })
-
-          describe("when creditLine balance is not 0", () => {
-            it("doesn't change termEndTime", async () => {
-              // Drawdown partial amount
-              await expectAction(async () => tranchedPool.drawdown(usdcVal(5), {from: borrower})).toChange([
-                [creditLine.balance, {to: usdcVal(5)}],
-              ])
-
-              // Drawdown again
-              await expectAction(async () => tranchedPool.drawdown(usdcVal(5), {from: borrower})).toChange([
-                [creditLine.balance, {to: usdcVal(10)}],
-                // term end date should not change
-                [creditLine.termEndTime, {unchanged: true}],
-              ])
-            })
-          })
-        })
-      })
-
-      describe("principal owed", () => {
-        it("should be 0 before term end time", async () => {
-          // Drawdown full amount
-          await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
-            [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
-            [creditLine.balance, {to: usdcVal(10)}],
-          ])
-
-          // Advance to this arbitrarily chosen time. The important thing is it's between
-          // the first drawdown and termEndTime
-          await advanceTime({seconds: paymentPeriodInDays.mul(SECONDS_PER_DAY).add(new BN(1234))})
-
-          // After assessment the principal owed should still be 0
-          expect(await creditLine.principalOwed()).to.bignumber.equal(new BN(0))
-          await expectAction(tranchedPool.assess).toChange([[creditLine.principalOwed, {unchanged: true}]])
-        })
-
-        it("should be full balance after term end time", async () => {
-          // Drawdown full amount
-          await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
-            [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
-            [creditLine.balance, {to: usdcVal(10)}],
-          ])
-
-          // Advance time to term end
-          await advanceTime({days: termInDays})
-
-          // after assessment the principal owed should be the full amount
-          expect(await creditLine.principalOwed()).to.bignumber.equal(new BN(0))
-          await expectAction(tranchedPool.assess).toChange([[creditLine.principalOwed, {to: usdcVal(10)}]])
-        })
-      })
-
-      it("can repay full interest and principal multiple times before termEndTime", async () => {
-        // Drawdown in full and repay multiple times. 5 was chosen arbitrarily.
-        for (let i = 0; i < 5; ++i) {
-          await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
-            [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
-            [creditLine.balance, {to: usdcVal(10)}],
-          ])
-          await advanceTime({days: paymentPeriodInDays})
-          await expectAction(async () => tranchedPool.pay(usdcVal(11), {from: borrower})).toChange([
-            [creditLine.balance, {to: new BN(0)}],
-          ])
-        }
-      })
-
-      it("can still be repayed after term end time", async () => {
-        // Drawdown full amount
-        await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
-          [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
-          [creditLine.balance, {to: usdcVal(10)}],
-        ])
-
-        // Advance to when the end of the loan + some more
-        await advanceTime({days: termInDays.add(new BN(1))})
-        await mineBlock()
-        expect(await time.latest()).to.bignumber.gt(await creditLine.termEndTime())
-
-        // Payback in full after term end time
-        await tranchedPool.assess()
-        await expectAction(async () => tranchedPool.pay(usdcVal(11))).toChange([
-          [creditLine.balance, {to: new BN(0)}],
-          [creditLine.interestOwed, {to: new BN(0)}],
-          [creditLine.principalOwed, {to: new BN(0)}],
-        ])
-      })
-
       describe("validations", async () => {
         it("does not allow drawing down more than the limit", async () => {
           await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Insufficient funds in slice/)
@@ -1610,15 +1483,6 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(5))).to.be.rejectedWith(
             /Cannot drawdown when payments are past due/
           )
-        })
-
-        it("does not allow drawing down after the term end time", async () => {
-          // Drawdown to set the term end time
-          await tranchedPool.drawdown(usdcVal(5), {from: borrower})
-          // Advance to end of term
-          await advanceTime({days: termInDays})
-          // Next drawdown should revert
-          await expect(tranchedPool.drawdown(usdcVal(1), {from: borrower})).to.be.rejectedWith(/After termEndTime/)
         })
       })
 
