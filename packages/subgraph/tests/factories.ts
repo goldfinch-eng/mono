@@ -191,8 +191,8 @@ export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: strin
   const ownerParam = new ethereum.EventParam("owner", defaultOwner)
   const trancheParam = new ethereum.EventParam("tranche", defaultValue)
   const tokenIdParam = new ethereum.EventParam("tokenId", defaultValue)
-  const interestWithdrawnParam = new ethereum.EventParam("interestWithdrawn", defaultValue)
-  const principalWithdrawnParam = new ethereum.EventParam("principalWithdrawn", defaultValue)
+  const interestWithdrawnParam = new ethereum.EventParam("interestWithdrawn", ethereum.Value.fromI32(1))
+  const principalWithdrawnParam = new ethereum.EventParam("principalWithdrawn", ethereum.Value.fromI32(1))
 
   // Order matters:
     // event WithdrawalMade(

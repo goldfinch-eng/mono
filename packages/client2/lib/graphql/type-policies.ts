@@ -1,13 +1,15 @@
 import { FieldReadFunction, InMemoryCacheConfig } from "@apollo/client";
-import { FixedNumber } from "ethers";
 
 import { goldfinchLogoPngUrl } from "@/components/design-system";
-import { POOL_METADATA } from "@/constants";
-import { currentUserVar, gfiVar, isWalletModalOpenVar } from "@/lib/state/vars";
+import { POOL_METADATA, BORROWER_METADATA } from "@/constants";
+import { PoolMetadata } from "@/constants/metadata/types";
+import {
+  isWalletModalOpenVar,
+  isVerificationModalOpenVar,
+} from "@/lib/state/vars";
 
 function readFieldFromMetadata(
-  fieldName: string,
-  fallback: any = null
+  fieldName: keyof PoolMetadata
 ): FieldReadFunction {
   return (_, { readField }) => {
     const id = readField({ fieldName: "id" }) as string;
@@ -17,16 +19,33 @@ function readFieldFromMetadata(
       );
       return;
     }
-    return POOL_METADATA[id]?.[fieldName] ?? fallback;
+    return POOL_METADATA[id]?.[fieldName] ?? null;
   };
 }
 
 export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
   Query: {
     fields: {
-      currentUser: { read: () => currentUserVar() },
-      gfi: { read: () => gfiVar() },
       isWalletModalOpen: { read: () => isWalletModalOpenVar() },
+      isVerificationModalOpen: { read: () => isVerificationModalOpenVar() },
+      transactions: {
+        keyArgs: ["where", "orderBy", "orderDirection"],
+        // merge function reference for offset/limit pagination: https://github.com/apollographql/apollo-client/blob/main/src/utilities/policies/pagination.ts#L33-L49
+        merge(existing, incoming, { args }) {
+          const merged = existing ? existing.slice(0) : [];
+          if (incoming) {
+            if (args) {
+              const { skip = 0 } = args;
+              for (let i = 0; i < incoming.length; ++i) {
+                merged[skip + i] = incoming[i];
+              }
+            } else {
+              merged.push(incoming);
+            }
+          }
+          return merged;
+        },
+      },
     },
   },
   SeniorPool: {
@@ -36,80 +55,34 @@ export const typePolicies: InMemoryCacheConfig["typePolicies"] = {
       icon: { read: () => goldfinchLogoPngUrl },
     },
   },
-  SeniorPoolStatus: {
-    fields: {
-      estimatedApyFromGfi: {
-        read: (_, { readField }) => {
-          const gfiPrice = gfiVar()?.price.usd;
-          if (!gfiPrice) {
-            // It's possible that this warning will come up as a false positive, because gfi is added to the Apollo cache in an asynchronous way. This warning might get played even though the end result is eventually correct.
-            console.warn(
-              "Tried to read estimatedApyFromGfi but gfi was null. Please include gfi in this query."
-            );
-            return null;
-          }
-          const gfiPriceAsFixedNumber = FixedNumber.fromString(
-            gfiPrice.toString()
-          );
-          const estimatedApyFromGfiRaw = readField({
-            fieldName: "estimatedApyFromGfiRaw",
-          });
-          if (!estimatedApyFromGfiRaw) {
-            console.warn(
-              "Tried to read estimatedApyFromGfi but estimatedApyFromGfiRaw was null. Please include estimatedApyFromGfiRaw in this query."
-            );
-            return null;
-          }
-          return gfiPriceAsFixedNumber.mulUnsafe(
-            estimatedApyFromGfiRaw as unknown as FixedNumber
-          );
-        },
-      },
-    },
-  },
   TranchedPool: {
     fields: {
       name: { read: readFieldFromMetadata("name") },
       description: { read: readFieldFromMetadata("description") },
+      highlights: { read: readFieldFromMetadata("highlights") },
       category: { read: readFieldFromMetadata("category") },
       icon: { read: readFieldFromMetadata("icon") },
       agreement: { read: readFieldFromMetadata("agreement") },
       dataroom: { read: readFieldFromMetadata("dataroom") },
-      poolDescription: { read: readFieldFromMetadata("poolDescription") },
-      poolHighlights: { read: readFieldFromMetadata("poolHighlights") },
-      borrowerDescription: {
-        read: readFieldFromMetadata("borrowerDescription"),
-      },
-      borrowerHighlights: { read: readFieldFromMetadata("borrowerHighlights") },
-      estimatedJuniorApyFromGfi: {
+      borrower: {
         read: (_, { readField }) => {
-          // Implementation here is really similar to estimatedApyFromGfi on SeniorPoolStatus
-
-          const gfiPrice = gfiVar()?.price.usd;
-          if (!gfiPrice) {
-            // It's possible that this warning will come up as a false positive, because gfi is added to the Apollo cache in an asynchronous way. This warning might get played even though the end result is eventually correct.
+          const id = readField({ fieldName: "id" }) as string;
+          if (!id) {
             console.warn(
-              "Tried to read estimatedJuniorApyFromGfi but gfi was null. Please include gfi in this query."
+              `Attempted to read the borrower metadata but ID of pool was missing. Please include "id" in this query`
             );
-            return null;
+            return;
           }
-          const gfiPriceAsFixedNumber = FixedNumber.fromString(
-            gfiPrice.toString()
-          );
-          const estimatedJuniorApyFromGfiRaw = readField({
-            fieldName: "estimatedJuniorApyFromGfiRaw",
-          });
-          if (!estimatedJuniorApyFromGfiRaw) {
-            console.warn(
-              "Tried to read estimatedJuniorApyFromGfi but estimatedJuniorApyFromGfiRaw was null. Please include estimatedJuniorApyFromGfiRaw in this query."
-            );
-            return null;
-          }
-          return gfiPriceAsFixedNumber.mulUnsafe(
-            estimatedJuniorApyFromGfiRaw as unknown as FixedNumber
-          );
+          const borrowerKey = POOL_METADATA[id].borrower;
+          return BORROWER_METADATA[borrowerKey];
         },
       },
     },
+  },
+  GfiPrice: {
+    keyFields: ["price", ["symbol"]], // The cache ID of gfiPrice is actually the fiat symbol (like USD or CAD)
+  },
+  Viewer: {
+    keyFields: [], // Viewer is a singleton type representing the current viewer, therefore it shouldn't have key fields
   },
 };

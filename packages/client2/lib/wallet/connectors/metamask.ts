@@ -1,9 +1,9 @@
 import { initializeConnector } from "@web3-react/core";
 import { MetaMask } from "@web3-react/metamask";
 
-import { ALLOWED_CHAIN_IDS } from "../chains";
+import { DESIRED_CHAIN_ID } from "@/constants";
 
 export const [metaMask, metaMaskHooks] = initializeConnector<MetaMask>(
   (actions) => new MetaMask(actions),
-  ALLOWED_CHAIN_IDS
+  [DESIRED_CHAIN_ID]
 );

@@ -6,9 +6,22 @@ Notes
 """
 type SeniorPool @entity {
   id: ID!
-  capitalProviders: [User!]!
   latestPoolStatus: SeniorPoolStatus!
   investmentsMade: [TranchedPool!]!
+}
+
+type SeniorPoolStakedPosition @entity {
+  id: ID!
+  user: User!
+  amount: BigInt!
+  """
+  Beginning of vesting schedule.
+  """
+  startTime: BigInt
+  """
+  End of vesting schedule.
+  """
+  endTime: BigInt
 }
 
 type SeniorPoolStatus @entity {
@@ -19,6 +32,10 @@ type SeniorPoolStatus @entity {
   rawBalance: BigInt!
   compoundBalance: BigInt!
   balance: BigInt!
+  """
+  The actual amount of USDC associated with the Senior Pool contract, can also be thought of as the Senior Pool's liquidity in USDC
+  """
+  usdcBalance: BigInt!
   sharePrice: BigInt!
   totalShares: BigInt!
   totalPoolAssets: BigInt!
@@ -29,22 +46,9 @@ type SeniorPoolStatus @entity {
   cumulativeDrawdowns: BigInt! # TODO requries tranched pool data
   estimatedTotalInterest: BigDecimal!
   estimatedApy: BigDecimal!
-  estimatedApyFromGfiRaw: BigDecimal
+  estimatedApyFromGfiRaw: BigDecimal!
   defaultRate: BigInt! # TODO requires cumulativeDrawdowns
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
-}
-
-type CapitalProviderStatus @entity {
-  id: ID!
-  user: User!
-  numShares: BigInt!
-  availableToWithdraw: BigInt!
-  allowance: BigInt!
-  weightedAverageSharePrice: BigDecimal
-  unrealizedGains: BigDecimal
-  unrealizedGainsPercentage: BigDecimal # TODO conversion issues
-  availableToWithdrawInDollars: BigInt # TODO
-  unrealizedGainsInDollars: BigInt # TODO
 }
 
 type SeniorPoolDeposit @entity {
@@ -68,13 +72,30 @@ enum UserType {
 type User @entity {
   id: ID!
   type: UserType
-  capitalProviderStatus: CapitalProviderStatus
-  goListed: Boolean
-
+  """
+  This includes the amount staked in the senior pool. Doesn't count senior pool shares obtained through a secondary market.
+  """
+  seniorPoolBalance: BigInt!
+  """
+  Amount of FIDU the user has staked
+  """
+  stakedSeniorPoolBalance: BigInt!
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
+  seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
+
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
-  tokens: [TranchedPoolToken!] @derivedFrom(field: "user")
+  tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
+  zaps: [Zap!]! @derivedFrom(field: "user")
+
+  isNonUsIndividual: Boolean!
+  isUsAccreditedIndividual: Boolean!
+  isUsNonAccreditedIndividual: Boolean!
+  isUsEntity: Boolean!
+  isNonUsEntity: Boolean!
+  isGoListed: Boolean!
+
+  transactions: [Transaction!]! @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
@@ -121,10 +142,14 @@ type PoolBacker @entity {
   principalRedeemable: BigInt!
   interestRedeemable: BigInt!
   availableToWithdraw: BigInt!
+
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
 }
 
 type CreditLine @entity {
   id: ID!
+  borrower: Bytes!
   tranchedPool: TranchedPool!
   limit: BigInt!
   maxLimit: BigInt!
@@ -142,6 +167,7 @@ type CreditLine @entity {
   termStartTime: BigInt!
   lastFullPaymentTime: BigInt!
   version: TranchedPoolCreditLineVersion!
+  lateFeeApr: BigDecimal!
   # These fields are marked as nullable as they
   # either require information not yet available on the subgraph,
   # or are not used on the pages we are integrating.
@@ -154,23 +180,17 @@ type CreditLine @entity {
   name: String
 }
 
-enum TranchedPoolBorrowerTransactionType {
-  DRAWDOWN_MADE
-  PAYMENT_APPLIED
-}
-
-type TranchedPoolBorrowerTransaction @entity {
-  id: ID! # Set to transaction hash
-  type: TranchedPoolBorrowerTransactionType!
-  tranchedPool: TranchedPool!
-  amount: BigInt!
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
 enum TranchedPoolCreditLineVersion {
   BEFORE_V2_2
   V2_2
+}
+
+enum UidType {
+  NON_US_INDIVIDUAL
+  US_ACCREDITED_INDIVIDUAL
+  US_NON_ACCREDITED_INDIVIDUAL
+  US_ENTITY
+  NON_US_ENTITY
 }
 
 type TranchedPool @entity {
@@ -178,8 +198,11 @@ type TranchedPool @entity {
   estimatedJuniorApy: BigDecimal!
   estimatedJuniorApyFromGfiRaw: BigDecimal!
   estimatedTotalAssets: BigInt!
-  estimatedLeverageRatio: BigInt!
+  estimatedLeverageRatio: BigInt
   remainingCapacity: BigInt!
+  """
+  Note that this is just an estimate based on the fixed leverage ratio. If leverage ratio was not fixed, it would be much harder to estimate the remaining junior capacity
+  """
   remainingJuniorCapacity: BigInt!
   creditLine: CreditLine!
   isPaused: Boolean!
@@ -190,8 +213,12 @@ type TranchedPool @entity {
   juniorFeePercent: BigInt!
   reserveFeePercent: BigInt!
   totalDeposited: BigInt!
+  juniorDeposited: BigInt!
   totalDeployed: BigInt!
   fundableAt: BigInt!
+  """
+  This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
+  """
   estimatedSeniorPoolContribution: BigInt!
   backers: [PoolBacker!]!
   numBackers: Int!
@@ -199,9 +226,18 @@ type TranchedPool @entity {
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
-  borrowerTransactions: [TranchedPoolBorrowerTransaction!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!
   createdAt: BigInt!
+  allowedUidTypes: [UidType!]!
+
+  transactions: [Transaction!]! @derivedFrom(field: "tranchedPool")
+
+  principalAmountRepaid: BigInt!
+  interestAmountRepaid: BigInt!
+  """
+  Includes principal amount and compounded interest over the entire loan term.
+  """
+  totalAmountOwed: BigInt!
 }
 
 type TranchedPoolToken @entity {
@@ -214,6 +250,9 @@ type TranchedPoolToken @entity {
   interestRedeemed: BigInt!
   interestRedeemable: BigInt!
   principalRedeemable: BigInt!
+
+  rewardsClaimable: BigInt!
+  rewardsClaimed: BigInt!
 }
 
 type StakingRewardsData @entity {
@@ -233,4 +272,43 @@ type BackerRewardsData @entity {
   Note that this value is measured in GFI, not dollars
   """
   maxInterestDollarsEligible: BigInt!
+}
+
+enum TransactionCategory {
+  SENIOR_POOL_DEPOSIT
+  SENIOR_POOL_DEPOSIT_AND_STAKE
+  SENIOR_POOL_WITHDRAWAL
+  SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
+  SENIOR_POOL_REDEMPTION
+  TRANCHED_POOL_DEPOSIT
+  TRANCHED_POOL_WITHDRAWAL
+  TRANCHED_POOL_REPAYMENT
+  TRANCHED_POOL_DRAWDOWN
+  UID_MINTED
+}
+
+type Transaction @entity(immutable: true) {
+  """
+  This is a concatenation of transaction hash with log index. One transaction can result in more than one of this entity.
+  """
+  id: Bytes!
+  transactionHash: Bytes!
+  category: TransactionCategory!
+  user: User!
+  timestamp: Int!
+  blockNumber: Int!
+  amount: BigInt!
+  tranchedPool: TranchedPool
+}
+
+type Zap @entity {
+  """
+  Note that the ID of a Zap is the same as the ID of the (tranched) pool token it's tied to. Makes it easy to find a Zap corresponding to a pool token.
+  """
+  id: ID!
+  amount: BigInt!
+  user: User!
+  seniorPoolStakedPosition: SeniorPoolStakedPosition!
+  poolToken: TranchedPoolToken!
+  tranchedPool: TranchedPool!
 }

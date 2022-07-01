@@ -60,6 +60,17 @@ When viewing the Compute Engine instance group in the Google Cloud console (i.e.
 
 Once you've SSH'ed into an instance, you can see what Docker processes are running via `docker ps`. You can view the logs for a Docker process via `docker logs $CONTAINER_ID`, where `$CONTAINER_ID` is the container id value for the `us.gcr.io/goldfinch-frontends-dev/goldfinch-protocol/murmuration-goldfinch-finance:latest` image shown in the `docker ps` output. These logs are essential for understanding the outcome of the `npm run start:murmuration` command!
 
+### Copying `all_dev.json` from the Murmuration instance to your local machine
+
+This step is necessary in order for you to get all of the deployed contract addresses on Murmuration. Subgraph setup scripts will read from this file for deployments, so it's necessary if you wish to deploy a subgraph that indexes Murmuration.
+
+```
+gcloud --project=goldfinch-frontends-dev compute ssh $INSTANCE_NAME --zone=us-central1-a --command="docker cp $CONTAINER_ID:/goldfinch-protocol/packages/protocol/deployments/all_dev.json ."
+
+gcloud --project=goldfinch-frontends-dev compute scp --zone=us-central1-a $YOUR_USERNAME@$INSTANCE_NAME:~/all_dev.json .
+```
+where you can obtain $CONTAINER_ID by SSHing into the instance and running `docker ps`.
+
 ## Local
 
 To build the Docker image locally, run this command from the repo root: `docker build . -f ./murmuration/Dockerfile -t murmuration:latest`

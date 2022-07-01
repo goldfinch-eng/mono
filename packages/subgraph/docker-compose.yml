@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 services:
   graph-node:
     image: graphprotocol/graph-node
@@ -16,15 +16,30 @@ services:
       postgres_user: graph-node
       postgres_pass: let-me-in
       postgres_db: graph-node
-      ipfs: "ipfs:5001"
-      ethereum: "localhost:http://host.docker.internal:8545"
+      ipfs: ipfs:5002
+      # Cf. https://docs.docker.com/compose/environment-variables/#substitute-environment-variables-in-compose-files
+      ethereum: "${NETWORK}:${ETHEREUM_NODE_RPC_URL}"
       GRAPH_LOG: info
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2048M
   ipfs:
-    image: ipfs/go-ipfs:v0.4.23
+    image: ipfs/js-ipfs:v0.63.2
     ports:
-      - "5002:5001"
+      # We expose port 4002 for the sake of running this container on AWS ECS -- it was the only workable
+      # solution to providing an endpoint that would satisfy the ELB's default health check (request to
+      # path /, requiring a 200 response).
+      - "4002:4002"
+      - "5002:5002"
     volumes:
-      - ./data/ipfs:/data/ipfs
+      - ipfs-data:/data/ipfs
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2048M
   postgres:
     image: postgres
     ports:
@@ -35,4 +50,12 @@ services:
       POSTGRES_PASSWORD: let-me-in
       POSTGRES_DB: graph-node
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2048M
+volumes:
+  ipfs-data:
+  postgres-data:

@@ -60,6 +60,7 @@ export function Popover({
           {...getFloatingProps({
             ref: floating,
             style: {
+              zIndex: 10,
               position: strategy,
               top: y ?? "",
               left: x ?? "",
@@ -76,7 +77,7 @@ export function Popover({
             leaveFrom="transform scale-100 opacity-100"
             leaveTo="transform scale-95 opacity-0"
           >
-            <div className="min-w-max rounded-md border border-sand-100 bg-white p-4 shadow-lg">
+            <div className="min-w-max rounded-md border border-sand-100 bg-white p-4 drop-shadow-lg">
               <FloatingFocusManager context={context} modal={false}>
                 {typeof content === "function"
                   ? content({ close: () => setIsOpen(false) })

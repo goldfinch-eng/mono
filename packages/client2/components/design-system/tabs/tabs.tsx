@@ -29,7 +29,7 @@ export function TabButton({ children }: TabProps) {
 export function TabContent({ children }: TabProps) {
   return (
     <Tab.Panel>
-      <div className="py-12">{children}</div>
+      <div className="pt-12">{children}</div>
     </Tab.Panel>
   );
 }

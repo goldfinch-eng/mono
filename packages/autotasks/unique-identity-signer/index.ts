@@ -16,9 +16,11 @@ const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 export interface KYC {
   status: "unknown" | "approved" | "failed"
   countryCode: string
+  residency?: "non-us" | "us"
 }
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
-const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
+const isKYC = (obj: unknown): obj is KYC =>
+  isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode) && isString(obj.residency)
 
 const API_URLS = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -47,8 +49,7 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
 type Auth = {
   "x-goldfinch-address": any
   "x-goldfinch-signature": any
-  // TODO - once the client is sending this header, uncomment this and update the asAuth function to check for it
-  // "x-goldfinch-signature-plaintext": any
+  "x-goldfinch-signature-plaintext": any
   "x-goldfinch-signature-block-num": any
 }
 
@@ -59,11 +60,23 @@ export function asAuth(obj: any): Auth {
     throw new Error("auth does not conform")
   }
 
-  if (!("x-goldfinch-address" in obj && "x-goldfinch-signature" in obj && "x-goldfinch-signature-block-num" in obj)) {
+  if (
+    !(
+      "x-goldfinch-address" in obj &&
+      "x-goldfinch-signature" in obj &&
+      "x-goldfinch-signature-block-num" in obj &&
+      "x-goldfinch-signature-plaintext" in obj
+    )
+  ) {
     throw new Error("auth does not conform")
   }
 
-  const auth = _.pick(obj, ["x-goldfinch-address", "x-goldfinch-signature", "x-goldfinch-signature-block-num"])
+  const auth = _.pick(obj, [
+    "x-goldfinch-address",
+    "x-goldfinch-signature",
+    "x-goldfinch-signature-block-num",
+    "x-goldfinch-signature-plaintext",
+  ])
 
   return auth
 }
@@ -114,7 +127,7 @@ export async function main({
       throw new Error("fetchKYCStatus failed")
     }
 
-    if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
+    if (kycStatus.status !== "approved" || kycStatus.countryCode === "" || !kycStatus.residency) {
       throw new Error("Does not meet mint requirements")
     }
   }
@@ -133,5 +146,5 @@ export async function main({
   const hashed = keccak256(encoded)
   const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
 
-  return {signature, expiresAt}
+  return {signature, expiresAt, idVersion}
 }

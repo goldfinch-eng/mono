@@ -10,10 +10,15 @@ import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 import _ from "lodash"
 import {assertUnreachable} from "@goldfinch-eng/utils"
 
-// This is not a secret, so it's ok to hardcode this
+// This is not a secret, so it's ok to hardcode this.
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: Request, res: Response) => {
+  if (process.env.MURMURATION === "yes") {
+    res.set("Access-Control-Allow-Origin", "*")
+    res.set("Access-Control-Allow-Headers", "*")
+    return
+  }
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   const origin = req.headers.origin || ""
   if (originAllowed(allowedOrigins, origin)) {
@@ -44,6 +49,7 @@ export const originAllowed = (allowedOrigins: string[], origin: string): boolean
 const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} = {
   "http://localhost:3000": "http://localhost:8545",
   "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
+  "https://beta.app.goldfinch.finance": 1,
   "https://app.goldfinch.finance": 1,
 }
 const overrideBlockchainIdentifier = (): string | number | undefined => {
@@ -119,7 +125,7 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
-const extractHeaderValue = (req: Request, headerName: string): string | undefined => {
+export const extractHeaderValue = (req: Request, headerName: string): string | undefined => {
   const value = req.headers[headerName]
   return Array.isArray(value) ? value.join("") : value
 }
