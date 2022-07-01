@@ -779,8 +779,8 @@ class TranchedPoolBacker {
       )
     )
     allTokenInfos.forEach((tokenInfo, i) => {
-      tokenInfo.interestRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.interestRedeemable)
-      tokenInfo.principalRedeemable = new BigNumber(availableToWithdrawAmounts[i]!.principalRedeemable)
+      tokenInfo.interestRedeemable = new BigNumber(availableToWithdrawAmounts[i]![0])
+      tokenInfo.principalRedeemable = new BigNumber(availableToWithdrawAmounts[i]![1])
     })
     this.interestRedeemable = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.interestRedeemable).concat(zero))
     this.principalRedeemable = BigNumber.sum.apply(null, allTokenInfos.map((t) => t.principalRedeemable).concat(zero))

@@ -111,7 +111,7 @@ describe("Borrower", async () => {
 
       return expect(
         originalBorrowerContract.drawdown(tranchedPool2.address, amount, borrower, {from: originalBorrower})
-      ).to.be.rejectedWith(/Must have locker role/)
+      ).to.be.rejectedWith(/NA/)
     })
 
     describe("address forwarding", async () => {

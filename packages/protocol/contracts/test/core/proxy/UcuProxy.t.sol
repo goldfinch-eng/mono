@@ -48,7 +48,7 @@ contract TestImplementationRepository is Test {
     proxy.upgradeImplementation();
   }
 
-  function testProxyContructorRevertsIfRepoIsNotAContract(Repo _repo) public {
+  function testProxyContructorRevertsIfRepoIsNotAContract(Repo _repo) public notContract(address(_repo)) {
     vm.expectRevert("bad repo");
     new UcuProxy(_repo, proxyOwner);
   }
@@ -257,6 +257,16 @@ contract TestImplementationRepository is Test {
   modifier asFakeContract(address x) {
     vm.assume(x != address(0));
     _asFakeContract(x);
+    _;
+  }
+
+  modifier notContract(address x) {
+    uint32 nBytes;
+    assembly {
+      nBytes := extcodesize(x)
+    }
+
+    vm.assume(nBytes == 0);
     _;
   }
 

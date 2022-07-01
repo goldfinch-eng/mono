@@ -736,9 +736,7 @@ async function getEstimatedTotalSeniorPoolInterest(
         totalSeniorDeposits = new BigNumber(0)
         for (let i = 0; i < numSlices; i++) {
           totalSeniorDeposits = totalSeniorDeposits.plus(
-            new BigNumber(
-              (await pool.readOnly.methods.poolSlices(i).call(undefined, currentBlock.number)).seniorTranche[1]
-            )
+            new BigNumber((await pool.readOnly.methods.poolSlices(i).call(undefined, currentBlock.number))[0][1])
           )
         }
       } else {

@@ -911,7 +911,7 @@ describe("BackerRewards", function () {
         expect(interestOwed4).to.bignumber.equal(new BN(0))
 
         const interestDrawdown = tranchedPool.drawdown(new BN(1), {from: borrower})
-        await expect(interestDrawdown).to.be.rejectedWith(/Insufficient funds in slice/)
+        await expect(interestDrawdown).to.be.rejectedWith(/IF/)
       })
     })
   })

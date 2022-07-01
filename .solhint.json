@@ -206,6 +206,9 @@
           "burn": ["onlySigner"]
         },
         "**/TranchingLogic.sol:*": {
+          "lockTranche":  [],
+          "initializeNextSlice":  [],
+          "applyToAllSlices":  [],
           "applyToAllSeniorTranches":  [],
           "applyToAllJuniorTranches": [],
           "applyToSeniorTranche":  [],
