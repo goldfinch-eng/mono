@@ -1,12 +1,6 @@
-import {
-  TokenBurned,
-  TokenMinted,
-  TokenRedeemed,
-  Transfer,
-} from "../../generated/PoolTokensProxy/PoolTokens"
-import { updatePoolBacker } from "../entities/pool_backer"
-import { handleTranchedPoolTokenTransfer, initOrUpdateTranchedPoolToken } from "../entities/pool_tokens"
-
+import {TokenBurned, TokenMinted, TokenRedeemed, Transfer} from "../../generated/PoolTokensProxy/PoolTokens"
+import {updatePoolBacker} from "../entities/pool_backer"
+import {handleTranchedPoolTokenTransfer, initOrUpdateTranchedPoolToken} from "../entities/pool_tokens"
 
 export function handleTokenBurned(event: TokenBurned): void {
   initOrUpdateTranchedPoolToken(event.params.tokenId)

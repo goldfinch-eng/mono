@@ -1,6 +1,6 @@
 import { Disclosure, Transition } from "@headlessui/react";
 import clsx from "clsx";
-import { ReactNode } from "react";
+import { ReactNode, useRef } from "react";
 
 import { Icon } from "../icon";
 
@@ -24,17 +24,21 @@ export function Banner({
   initialContent,
   expandedContent,
 }: BannerProps) {
+  const transitionRef = useRef<HTMLDivElement>(null);
   return (
-    <Disclosure as="div" className={clsx("w-full text-white", className)}>
+    <Disclosure
+      as="div"
+      className={clsx("w-full bg-sky-500 px-5 text-white", className)}
+    >
       {({ open }) => (
-        <>
-          <Disclosure.Button className="flex w-full justify-between bg-sky-500 py-6 px-16">
-            <div className={clsx(open ? "opacity-70" : null)}>
+        <div className="mx-auto max-w-7xl">
+          <Disclosure.Button className="flex w-full items-center justify-between py-4 text-xs">
+            <div className={clsx("text-left", open ? "opacity-70" : null)}>
               {initialContent}
             </div>
             <Icon
               name="ChevronDown"
-              size="md"
+              size="sm"
               className={clsx(
                 "transition-transform duration-200",
                 open ? "rotate-180" : null
@@ -42,25 +46,58 @@ export function Banner({
             />
           </Disclosure.Button>
           <Transition
-            enter="duration-200 transition origin-top"
-            enterFrom="scale-y-0"
-            enterTo="scale-y-100"
-            leave="duration-200 transition origin-top"
-            leaveFrom="scale-y-100"
-            leaveTo="scale-y-0"
+            beforeEnter={() => {
+              if (!transitionRef.current) {
+                return;
+              }
+              const height = transitionRef.current.scrollHeight;
+              transitionRef.current.style.maxHeight = "0px";
+              transitionRef.current.style.overflow = "hidden";
+              requestAnimationFrame(() => {
+                if (!transitionRef.current) {
+                  return;
+                }
+                transitionRef.current.style.maxHeight = `${height}px`;
+              });
+            }}
+            afterEnter={() => {
+              if (!transitionRef.current) {
+                return;
+              }
+              transitionRef.current.style.maxHeight = "none";
+              transitionRef.current.style.overflow = "visible";
+            }}
+            enterFrom="opacity-0"
+            enterTo="transition opacity-100"
+            beforeLeave={() => {
+              if (!transitionRef.current) {
+                return;
+              }
+              const height = transitionRef.current.scrollHeight;
+              transitionRef.current.style.maxHeight = `${height}px`;
+              requestAnimationFrame(() => {
+                if (!transitionRef.current) {
+                  return;
+                }
+                transitionRef.current.style.maxHeight = "0px";
+                transitionRef.current.style.overflow = "hidden";
+              });
+            }}
+            leaveFrom="opacity-100"
+            leaveTo="transition opacity-0"
           >
-            <Disclosure.Panel className="bg-sky-500 px-16 pb-6">
+            <Disclosure.Panel>
               <div
-                className={clsx(
-                  "transition duration-200",
-                  open ? "opacity-100" : "opacity-0"
-                )}
+                className="text-xs transition-[max-height]"
+                ref={transitionRef}
               >
                 {expandedContent}
+                {/* this looks silly but it's necessary in order to make this contribute to the parent div's scrollHeight (which must be accurate for animation) */}
+                <div className="pb-4" />
               </div>
             </Disclosure.Panel>
           </Transition>
-        </>
+        </div>
       )}
     </Disclosure>
   );

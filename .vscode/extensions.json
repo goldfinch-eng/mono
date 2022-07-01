@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "graphql.vscode-graphql",
+    "aaron-bond.better-comments",
+    "bradlc.vscode-tailwindcss"
+  ]
+}

@@ -5,109 +5,153 @@ import { useRouter } from "next/router";
 import {
   Breadcrumb,
   Button,
-  Chip,
-  Stat,
   TabButton,
   TabContent,
   TabGroup,
   TabList,
   TabPanels,
   Heading,
-  Paragraph,
   ShimmerLines,
   HelperText,
+  Marquee,
+  Banner,
 } from "@/components/design-system";
+import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { usdcFromAtomic } from "@/lib/format";
-import { useSingleTranchedPoolDataQuery } from "@/lib/graphql/generated";
+import {
+  SupportedCrypto,
+  UidType,
+  useSingleTranchedPoolDataQuery,
+} from "@/lib/graphql/generated";
+import {
+  PoolStatus,
+  getTranchedPoolStatus,
+  TRANCHED_POOL_STATUS_FIELDS,
+} from "@/lib/pools";
+import { useWallet } from "@/lib/wallet";
 
+import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
+import ComingSoonPanel from "./coming-soon-panel";
+import DealTermsTable from "./deal-terms-table";
 import FundingBar from "./funding-bar";
-import SupplyPanel from "./supply-panel";
+import RepaymentProgressPanel from "./repayment-progress-panel";
+import {
+  StatusSection,
+  TRANCHED_POOL_STAT_GRID_FIELDS,
+} from "./status-section";
+import SupplyPanel, {
+  SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
+  SUPPLY_PANEL_USER_FIELDS,
+} from "./supply-panel";
+import { TransactionTable } from "./transaction-table";
+import {
+  WithdrawalPanel,
+  WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
+  WITHDRAWAL_PANEL_ZAP_FIELDS,
+} from "./withdrawal-panel";
 
 gql`
-  query SingleTranchedPoolData($id: ID!) {
-    tranchedPool(id: $id) {
+  ${TRANCHED_POOL_STATUS_FIELDS}
+  ${TRANCHED_POOL_STAT_GRID_FIELDS}
+  ${SUPPLY_PANEL_TRANCHED_POOL_FIELDS}
+  ${SUPPLY_PANEL_USER_FIELDS}
+  ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
+  ${WITHDRAWAL_PANEL_ZAP_FIELDS}
+  ${BORROWER_PROFILE_FIELDS}
+  query SingleTranchedPoolData(
+    $tranchedPoolId: ID!
+    $tranchedPoolAddress: String!
+    $userId: ID!
+  ) {
+    tranchedPool(id: $tranchedPoolId) {
       id
       name @client
       category @client
       icon @client
       description @client
+      highlights @client
       agreement @client
       dataroom @client
-      poolDescription @client
-      poolHighlights @client
-      borrowerDescription @client
-      borrowerHighlights @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
-      estimatedJuniorApyFromGfi @client
-      estimatedTotalAssets
       estimatedLeverageRatio
-      remainingCapacity
-      remainingJuniorCapacity
-      juniorFeePercent
-      reserveFeePercent
-      totalDeposited
-      totalDeployed
       fundableAt
-      estimatedSeniorPoolContribution
-      seniorTranches {
-        principalDeposited
-      }
+      isPaused
+      numBackers
       juniorTranches {
-        principalDeposited
+        lockedUntil
       }
+      juniorDeposited
       creditLine {
+        id
         limit
         maxLimit
-        interestApr
-        balance
-        remainingPeriodDueAmount
-        remainingTotalDueAmount
-        availableCredit
-        interestAccruedAsOf
-        paymentPeriodInDays
+        id
+        isLate @client
         termInDays
+        paymentPeriodInDays
         nextDueTime
-        interestOwed
-        termEndTime
-        termStartTime
-        lastFullPaymentTime
-        periodDueAmount
         interestAprDecimal
-        collectedPaymentBalance
-        totalDueAmount
-        dueDate
-        isEligibleForRewards
-        name
+        borrower
+        lateFeeApr
+      }
+      totalAmountOwed
+      principalAmountRepaid
+      interestAmountRepaid
+      ...TranchedPoolStatusFields
+      ...SupplyPanelTranchedPoolFields
+      ...BorrowerProfileFields
+    }
+    seniorPools(first: 1) {
+      id
+      latestPoolStatus {
+        id
+        estimatedApyFromGfiRaw
+        sharePrice
       }
     }
-    gfi @client {
+    gfiPrice(fiat: USD) @client {
       price {
-        usd
+        amount
+        symbol
       }
+    }
+    user(id: $userId) {
+      id
+      ...SupplyPanelUserFields
+      tokens(where: { tranchedPool: $tranchedPoolAddress }) {
+        ...WithdrawalPanelPoolTokenFields
+      }
+      zaps(where: { tranchedPool: $tranchedPoolAddress }) {
+        ...WithdrawalPanelZapFields
+      }
+    }
+    currentBlock @client {
+      timestamp
     }
   }
 `;
-
-// Dummy data
-const tags = [
-  "Latin America",
-  "Women-Owned Businesses",
-  "Secured Loan",
-  "Ethical Supply Chain",
-  "Small Businesses",
-];
 
 export default function PoolPage() {
   const {
     query: { address },
   } = useRouter();
+  const { account } = useWallet();
 
   const { data, error } = useSingleTranchedPoolDataQuery({
     skip: !address,
-    variables: { id: address as string },
+    variables: {
+      tranchedPoolId: address as string,
+      tranchedPoolAddress: address as string,
+      userId: account?.toLowerCase() ?? "",
+    },
+    returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
+
+  const tranchedPool = data?.tranchedPool;
+  const seniorPool = data?.seniorPools?.[0];
+  const user = data?.user ?? null;
+  const fiatPerGfi = data?.gfiPrice.price.amount;
 
   if (error) {
     return (
@@ -117,47 +161,130 @@ export default function PoolPage() {
     );
   }
 
-  const tranchedPool = data?.tranchedPool;
+  const poolStatus = tranchedPool ? getTranchedPoolStatus(tranchedPool) : null;
+  const backerSupply = tranchedPool?.juniorDeposited
+    ? {
+        token: SupportedCrypto.Usdc,
+        amount: tranchedPool.juniorDeposited,
+      }
+    : undefined;
+  const seniorSupply =
+    backerSupply && tranchedPool?.estimatedLeverageRatio
+      ? {
+          token: SupportedCrypto.Usdc,
+          amount: backerSupply.amount.mul(tranchedPool.estimatedLeverageRatio),
+        }
+      : undefined;
 
-  function share() {
-    if (navigator && window) {
-      navigator.share({
-        title: data?.tranchedPool?.name || "Goldfinch",
-        url: window.location.href,
-      });
-    }
+  // Spec for this logic: https://linear.app/goldfinch/issue/GFI-638/as-unverified-user-we-display-this-pool-is-only-for-non-us-persons
+  let initialBannerContent = "";
+  let expandedBannerContent = "";
+  const poolSupportsUs =
+    tranchedPool?.allowedUidTypes.includes(UidType.UsAccreditedIndividual) ||
+    tranchedPool?.allowedUidTypes.includes(UidType.UsEntity);
+  const noUid =
+    !user?.isNonUsEntity &&
+    !user?.isNonUsIndividual &&
+    !user?.isUsAccreditedIndividual &&
+    !user?.isUsEntity &&
+    !user?.isUsNonAccreditedIndividual;
+  const uidIsUs =
+    user?.isUsAccreditedIndividual ||
+    user?.isUsEntity ||
+    user?.isUsNonAccreditedIndividual;
+  const uidIsNonUs = user?.isNonUsEntity || user?.isNonUsIndividual;
+  if (poolSupportsUs && noUid) {
+    initialBannerContent =
+      "This offering is only available to non-U.S. persons or U.S. accredited investors.";
+    expandedBannerContent =
+      "Eligibility to participate in this offering is determined by your (i) investor accreditation status and (ii) your residency. This offering has not been registered under the U.S. Securities Act of 1933 (”Securities Act”), as amended, and may not be offered or sold to a U.S. person that is not an accredited investor, absent registration or an applicable exemption from the registration requirements. Log in with your address and claim your UID to see if you're eligible to participate.";
+  } else if (poolSupportsUs && uidIsUs) {
+    initialBannerContent =
+      "This offering is only available to U.S. accredited investors.";
+    expandedBannerContent =
+      "This offering is only available to U.S. accredited investors. This offering has not been registered under the U.S. Securities Act of 1933 (”Securities Act”), as amended, or under the securities laws of certain states. This offering may not be offered, sold or otherwise transferred, pledged or hypothecated except as permitted under the Securities Act and applicable state securities laws pursuant to an effective registration statement or an exemption therefrom.";
+  } else if (poolSupportsUs && uidIsNonUs) {
+    initialBannerContent =
+      "This offering is only available to non-U.S. persons.";
+    expandedBannerContent =
+      "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
+  } else if (!poolSupportsUs) {
+    initialBannerContent =
+      "This offering is only available to non-U.S. persons.";
+    expandedBannerContent =
+      "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
   }
 
   return (
     <>
       <SEO title={tranchedPool?.name} />
 
-      <div className="mb-8 flex flex-row justify-between">
-        <div>
-          <Breadcrumb label={tranchedPool?.name} image={tranchedPool?.icon} />
-        </div>
-        <div>
-          <Button
-            variant="rounded"
-            colorScheme="secondary"
-            className="mr-2"
-            onClick={share}
-          >
-            Share
-          </Button>
-          <Button
-            variant="rounded"
-            colorScheme="secondary"
-            iconRight="ArrowTopRight"
-          >
-            Contract
-          </Button>
-        </div>
-      </div>
+      {initialBannerContent && expandedBannerContent ? (
+        <BannerPortal>
+          <Banner
+            initialContent={initialBannerContent}
+            expandedContent={expandedBannerContent}
+          />
+        </BannerPortal>
+      ) : null}
 
-      <div className="grid grid-cols-12 gap-10 ">
-        <div className="col-span-8">
-          <Heading level={1} className="mb-3 font-serif text-sand-800">
+      {poolStatus && (
+        <SubnavPortal>
+          <Marquee
+            colorScheme={
+              poolStatus === PoolStatus.Full
+                ? "yellow"
+                : poolStatus === PoolStatus.Open
+                ? "purple"
+                : poolStatus === PoolStatus.ComingSoon
+                ? "blue"
+                : poolStatus === PoolStatus.Repaid
+                ? "green"
+                : "yellow"
+            }
+          >
+            {poolStatus === PoolStatus.Full
+              ? ["Filled", `${tranchedPool?.numBackers} Backers`]
+              : poolStatus === PoolStatus.Open
+              ? ["Open", `${tranchedPool?.numBackers} Backers`]
+              : poolStatus === PoolStatus.ComingSoon
+              ? "Coming Soon"
+              : poolStatus === PoolStatus.Repaid
+              ? "Repaid"
+              : "Paused"}
+          </Marquee>
+          {/* gives the illusion of rounded corners on the top of the page */}
+          <div className="-mt-3 h-3 rounded-t-xl bg-white" />
+        </SubnavPortal>
+      )}
+
+      <div className="pool-layout">
+        <div style={{ gridArea: "heading" }}>
+          <div className="mb-8 flex flex-wrap justify-between gap-2">
+            <div>
+              <Breadcrumb
+                label={tranchedPool?.name}
+                image={tranchedPool?.icon}
+              />
+            </div>
+            {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
+              <Button
+                variant="rounded"
+                colorScheme="secondary"
+                iconRight="ArrowTopRight"
+                as="a"
+                href={`https://etherscan.io/address/${tranchedPool.id}`}
+                target="_blank"
+                rel="noopener"
+              >
+                Contract
+              </Button>
+            ) : null}
+          </div>
+          <Heading
+            level={1}
+            className="mb-12 text-center text-sand-800 md:text-left"
+          >
             {tranchedPool ? (
               tranchedPool.name
             ) : (
@@ -165,163 +292,153 @@ export default function PoolPage() {
             )}
           </Heading>
 
-          <div className="mb-12 flex flex-wrap gap-1">
-            {tags.map((t) => (
-              <Chip key={`tag-${t}`}>{t}</Chip>
-            ))}
-          </div>
-
           {error ? (
-            <HelperText isError className="mb-2">
+            <HelperText isError>
               There was a problem fetching data on this pool. Shown data may be
               outdated.
             </HelperText>
           ) : null}
 
-          <div className="mb-15 grid grid-cols-3 rounded-lg border border-eggplant-50">
-            <div className="col-span-3 border-b border-eggplant-50 p-5">
-              <FundingBar
-                goal={tranchedPool?.creditLine.maxLimit}
-                backerSupply={tranchedPool?.juniorTranches.reduce(
-                  (total, curr) => {
-                    return total.add(curr.principalDeposited);
-                  },
-                  BigNumber.from(0)
-                )}
-                seniorSupply={tranchedPool?.seniorTranches.reduce(
-                  (total, curr) => {
-                    return total.add(curr.principalDeposited);
-                  },
-                  BigNumber.from(0)
-                )}
-              />
-            </div>
-            <div className="border-r border-eggplant-50 p-5">
-              <Stat
-                label="Drawdown cap"
-                value={usdcFromAtomic(
-                  tranchedPool?.creditLine?.limit || BigNumber.from(0)
-                )}
-                tooltip={
-                  <div>
-                    <div className="mb-4 text-xl font-bold">Drawdown cap</div>
-                    <div>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Distinctio earum pariatur quod. Voluptatem mollitia
-                      doloribus.
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-            <div className="border-r border-eggplant-50 p-5">
-              <Stat
-                label="Payment Term"
-                value={tranchedPool?.creditLine?.termInDays.toString()}
-                tooltip={
-                  <div>
-                    <div className="mb-4 text-xl font-bold">Payment Term</div>
-                    <div>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Distinctio earum pariatur quod. Voluptatem mollitia
-                      doloribus.
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-            <div className="p-5">
-              <Stat
-                label="Payment frequency"
-                value={`${tranchedPool?.creditLine?.paymentPeriodInDays.toString()} days`}
-                tooltip={
-                  <div>
-                    <div className="mb-4 text-xl font-bold">
-                      Payment frequency
-                    </div>
-                    <div>
-                      Lorem ipsum dolor, sit amet consectetur adipisicing elit.
-                      Distinctio earum pariatur quod. Voluptatem mollitia
-                      doloribus.
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-          </div>
+          {poolStatus === PoolStatus.Open ? (
+            <FundingBar
+              goal={
+                tranchedPool?.creditLine.maxLimit
+                  ? {
+                      token: SupportedCrypto.Usdc,
+                      amount: tranchedPool.creditLine.maxLimit,
+                    }
+                  : undefined
+              }
+              backerSupply={backerSupply}
+              seniorSupply={seniorSupply}
+            />
+          ) : null}
 
-          <div>
-            <TabGroup>
-              <TabList>
-                <TabButton>Deal Overview</TabButton>
-                <TabButton>Borrower Profile</TabButton>
-              </TabList>
-              <TabPanels>
-                <TabContent>
-                  <Heading level={3} className="mb-8 !text-4xl">
-                    Overview
-                  </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap !text-2xl">
-                    {tranchedPool?.description}
-                  </Paragraph>
-
-                  <Heading level={4} className="mb-4 font-semibold">
-                    Pool Overview
-                  </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap">
-                    {tranchedPool?.poolDescription}
-                  </Paragraph>
-
-                  <Heading level={4} className="mb-4 font-semibold">
-                    Highlights
-                  </Heading>
-                  <ul className="list-outside list-disc pl-5">
-                    {tranchedPool?.poolHighlights?.map((item, idx) => (
-                      <li
-                        key={`pool-highlight-${address}-${idx}`}
-                        className="py-1"
-                      >
-                        <Paragraph className="whitespace-pre-wrap">
-                          {item}
-                        </Paragraph>
-                      </li>
-                    ))}
-                  </ul>
-                </TabContent>
-                <TabContent>
-                  <Heading level={4} className="mb-4 font-semibold">
-                    Overview
-                  </Heading>
-                  <Paragraph className="mb-10 whitespace-pre-wrap">
-                    {tranchedPool?.borrowerDescription}
-                  </Paragraph>
-
-                  <Heading level={4} className="mb-4 font-semibold">
-                    Highlights
-                  </Heading>
-                  <ul className="list-outside list-disc pl-5">
-                    {tranchedPool?.borrowerHighlights?.map((item, idx) => (
-                      <li
-                        key={`borrower-highlight-${address}-${idx}`}
-                        className="py-1"
-                      >
-                        <Paragraph className="whitespace-pre-wrap">
-                          {item}
-                        </Paragraph>
-                      </li>
-                    ))}
-                  </ul>
-                </TabContent>
-              </TabPanels>
-            </TabGroup>
-          </div>
+          {poolStatus && tranchedPool && seniorPool && fiatPerGfi ? (
+            <StatusSection
+              className="mt-12"
+              poolStatus={poolStatus}
+              tranchedPool={tranchedPool}
+              seniorPoolApyFromGfiRaw={
+                seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+              }
+              fiatPerGfi={fiatPerGfi}
+            />
+          ) : null}
         </div>
 
-        <div className="relative col-span-4">
-          <SupplyPanel
-            apy={tranchedPool?.estimatedJuniorApy}
-            apyGfi={tranchedPool?.estimatedJuniorApyFromGfi}
-          />
+        <div className="relative" style={{ gridArea: "widgets" }}>
+          {tranchedPool && seniorPool && fiatPerGfi ? (
+            <div className="flex flex-col items-stretch gap-8">
+              {poolStatus === PoolStatus.Open && (
+                <SupplyPanel
+                  tranchedPool={tranchedPool}
+                  user={user}
+                  fiatPerGfi={fiatPerGfi}
+                  seniorPoolApyFromGfiRaw={
+                    seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
+                  }
+                  seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                />
+              )}
+
+              {data?.user &&
+              (data?.user.tokens.length > 0 || data?.user.zaps.length > 0) ? (
+                <WithdrawalPanel
+                  tranchedPoolAddress={tranchedPool.id}
+                  poolTokens={data.user.tokens}
+                  zaps={data.user.zaps}
+                  isPoolLocked={
+                    !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
+                    BigNumber.from(data?.currentBlock?.timestamp ?? 0).gt(
+                      tranchedPool.juniorTranches[0].lockedUntil
+                    )
+                  }
+                />
+              ) : null}
+
+              {tranchedPool &&
+              (poolStatus === PoolStatus.Full ||
+                poolStatus === PoolStatus.Repaid) ? (
+                <RepaymentProgressPanel
+                  poolStatus={poolStatus}
+                  tranchedPool={tranchedPool}
+                  userPoolTokens={user?.tokens ?? []}
+                />
+              ) : null}
+
+              {poolStatus === PoolStatus.ComingSoon && (
+                <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{ gridArea: "info" }}>
+          <TabGroup>
+            <TabList>
+              <TabButton>Deal Overview</TabButton>
+              <TabButton>Borrower Profile</TabButton>
+            </TabList>
+            <TabPanels>
+              <TabContent>
+                <div className="mb-20">
+                  <h2 className="mb-8 text-3xl">Deal Overview</h2>
+                  {tranchedPool ? (
+                    <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
+                      {tranchedPool.description}
+                    </p>
+                  ) : (
+                    <ShimmerLines lines={3} />
+                  )}
+                  {tranchedPool?.dataroom ? (
+                    <Button
+                      as="a"
+                      variant="rounded"
+                      iconRight="ArrowTopRight"
+                      href={tranchedPool.dataroom}
+                      target="_blank"
+                      rel="noreferrer"
+                      size="lg"
+                      className="block"
+                    >
+                      Dataroom
+                    </Button>
+                  ) : null}
+                </div>
+
+                <div className="mb-20">
+                  <h2 className="mb-8 text-lg font-semibold">
+                    Recent Activity
+                  </h2>
+                  {tranchedPool ? (
+                    <TransactionTable tranchedPoolId={tranchedPool.id} />
+                  ) : null}
+                </div>
+
+                {tranchedPool?.highlights ? (
+                  <div className="mb-20">
+                    <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
+                    <ul className="list-outside list-disc space-y-5 pl-5">
+                      {tranchedPool?.highlights?.map((item, idx) => (
+                        <li key={`pool-highlight-${address}-${idx}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                <DealTermsTable
+                  tranchedPool={tranchedPool}
+                  poolStatus={poolStatus}
+                />
+              </TabContent>
+              <TabContent>
+                {tranchedPool ? (
+                  <BorrowerProfile tranchedPool={tranchedPool} />
+                ) : null}
+              </TabContent>
+            </TabPanels>
+          </TabGroup>
         </div>
       </div>
     </>

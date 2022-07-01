@@ -1,4 +1,5 @@
 @import url("https://use.typekit.net/oib7cgq.css");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap");
 @import "./variables.scss";
 @import "./animations.scss";
 @import "./normalize.scss";
@@ -49,6 +50,7 @@
 @import "./warning-banner.scss";
 @import "./not-found.scss";
 @import "./senior-pool.scss";
+@import "./nav.scss";
 
 html,
 * {
@@ -60,7 +62,6 @@ html,
 
 body {
   color: $purp-dark;
-  background-color: $sand-xlight;
   padding: 0 20px;
 }
 
@@ -116,20 +117,10 @@ input::placeholder,
   cursor: default;
 }
 
-@media only screen and (min-width: $screen-m) {
-  body {
-    padding: 0 60px 140px $nav-width + 60;
-  }
-}
-
 @media only screen and (min-width: $screen-l) {
   html,
   * {
     font-size: $sans-size-base;
-  }
-
-  body {
-    padding: 0 80px 140px $nav-width + 80;
   }
 
   .content-empty-message {

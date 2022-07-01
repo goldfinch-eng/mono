@@ -1,6 +1,6 @@
-import {Response} from "@sentry/serverless/dist/gcpfunction/general"
+import {Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {getUsers} from "../db"
-import {genRequestHandler} from "../helpers"
+import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"
 
@@ -30,9 +30,20 @@ export const kycStatus = genRequestHandler({
   signatureMaxAge: 60 * 60 * 24, // 1 day
   fallbackOnMissingPlaintext: true,
   cors: true,
-  handler: async (_, res: Response, verificationResult: SignatureVerificationSuccessResult): Promise<Response> => {
+  handler: async (
+    req: Request,
+    res: Response,
+    verificationResult: SignatureVerificationSuccessResult,
+  ): Promise<Response> => {
+    // Verify plaintext matches expected plaintext to prevent the use of an arbitrary signature
+    const blockNum = extractHeaderValue(req, "x-goldfinch-signature-block-num")
+    const expectedPlaintext = `Sign in to Goldfinch: ${blockNum}`
+    if (verificationResult.plaintext !== expectedPlaintext) {
+      return res.status(401).send({error: "Unexpected signature"})
+    }
+
     const address = verificationResult.address
-    const payload = {address: address, status: "unknown", countryCode: null}
+    const payload = {address: address, status: "unknown", countryCode: null, residency: ""}
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
@@ -40,7 +51,9 @@ export const kycStatus = genRequestHandler({
     if (user.exists) {
       payload.status = userStatusFromPersonaStatus(user.data()?.persona?.status)
       payload.countryCode = user.data()?.countryCode
+      payload.residency = user.data()?.kyc?.residency
     }
+
     return res.status(200).send(payload)
   },
 })

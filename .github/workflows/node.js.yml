@@ -150,6 +150,7 @@ jobs:
         with:
           files: |
             packages\/functions\/src\/.+\.ts
+            packages\/functions\/scripts\/.+\.ts
       - name: Cache Firestore emulator
         uses: actions/cache@v2
         env:

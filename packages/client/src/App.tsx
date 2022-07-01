@@ -9,13 +9,13 @@ import Borrow from "./components/Borrow"
 import DevTools from "./components/DevTools"
 import Earn from "./components/Earn"
 import Footer from "./components/footer"
+import Nav from "./components/nav"
 import NetworkIndicators from "./components/networkIndicators"
 import NotFound from "./components/NotFound"
 import PrivacyPolicy from "./components/privacyPolicy"
 import SeniorPoolView from "./components/SeniorPool"
 import SeniorPoolAgreementNonUS from "./components/SeniorPool/seniorPoolAgreementNonUS"
 import SeniorPoolAgreementUS from "./components/SeniorPool/seniorPoolAgreementUS"
-import Sidebar from "./components/sidebar"
 import TermsOfService from "./components/termsOfService"
 import TranchedPoolView from "./components/TranchedPool"
 import Transactions from "./components/transactions"
@@ -665,21 +665,22 @@ function App() {
           <Router>
             <EarnProvider graphQuerierConfig={earnProviderGraphQuerierConfig}>
               <BorrowProvider>
-                <NetworkIndicators
-                  user={user}
-                  network={network}
-                  currentErrors={currentErrors}
-                  currentTxs={currentTxs}
-                  connectionComplete={setupUserWalletWeb3}
-                  rootCurrentBlock={currentBlock}
-                  leavesCurrentBlock={leavesCurrentBlock}
-                  leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh={
-                    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh
-                  }
-                  hasGraphError={hasGraphError}
-                />
                 {(process.env.NODE_ENV === "development" || process.env.MURMURATION === "yes") && <DevTools />}
-                <Sidebar />
+                <Nav>
+                  <NetworkIndicators
+                    user={user}
+                    network={network}
+                    currentErrors={currentErrors}
+                    currentTxs={currentTxs}
+                    connectionComplete={setupUserWalletWeb3}
+                    rootCurrentBlock={currentBlock}
+                    leavesCurrentBlock={leavesCurrentBlock}
+                    leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh={
+                      leavesCurrentBlockTriggeringLastSuccessfulGraphRefresh
+                    }
+                    hasGraphError={hasGraphError}
+                  />
+                </Nav>
                 <div>
                   <Switch>
                     <Route exact path={INDEX_ROUTE}>
@@ -729,8 +730,8 @@ function App() {
                 </div>
               </BorrowProvider>
             </EarnProvider>
+            <Footer />
           </Router>
-          <Footer />
         </ThemeProvider>
       </AppContext.Provider>
     </ApolloProvider>

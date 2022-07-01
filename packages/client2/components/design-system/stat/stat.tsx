@@ -1,26 +1,35 @@
+import clsx from "clsx";
 import { ReactNode } from "react";
 
 import { InfoIconTooltip } from "@/components/design-system";
 
 interface StatProps {
+  /**
+   * The label of the stat to display
+   */
   label: string;
-  value?: string;
+
+  /**
+   * The content of the stat to display
+   */
+  value?: ReactNode;
+
+  /**
+   * Optional tooltip to display with an info icon
+   */
   tooltip?: ReactNode;
 }
 
 export function Stat({ label, value, tooltip }: StatProps) {
   return (
-    <div>
-      <div className="items-middle mb-3 flex text-sm text-sand-600">
-        {label}{" "}
-        {tooltip && (
-          <InfoIconTooltip
-            size="sm"
-            content={<div className="max-w-xs">{tooltip}</div>}
-          />
-        )}
+    <div className="bg-white p-4">
+      <div className="mb-3 flex items-center text-sm text-sand-600">
+        <span className={clsx(tooltip ? "mr-2" : "")}>{label}</span>
+        {tooltip && <InfoIconTooltip size="sm" content={tooltip} />}
       </div>
-      <div className="text-2xl font-medium text-sand-700">{value}</div>
+      <div className="text-xl font-medium text-sand-700 md:text-2xl">
+        {value}
+      </div>
     </div>
   );
 }
