@@ -25,7 +25,6 @@ import {
   MAINNET_CHAIN_ID,
   StakedPositionType,
 } from "../../blockchain_scripts/deployHelpers"
-import {UpgradedContracts} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {
   changeImplementations,
   getDeployEffects,
@@ -35,6 +34,7 @@ import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers
 import {time} from "@openzeppelin/test-helpers"
 import {Staked} from "../../typechain/truffle/StakingRewards"
 import {DepositMade} from "../../typechain/truffle/SeniorPool"
+import {UpgradedContracts} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers/upgradeContracts"
 
 const {deployments} = hre
 
