@@ -119,6 +119,9 @@ export async function main({
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
 
+  // TODO We should just do our own verification of x-goldfinch-signature here, rather than
+  // rely on it being done implicitly via `fetchKYCStatus()`.
+
   if (!isUSAccreditedEntity(userAddress) && !isUSAccreditedIndividual(userAddress) && !isNonUSEntity(userAddress)) {
     try {
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
@@ -130,6 +133,8 @@ export async function main({
     if (kycStatus.status !== "approved" || kycStatus.countryCode === "" || !kycStatus.residency) {
       throw new Error("Does not meet mint requirements")
     }
+  } else {
+    // TODO We should verify the x-goldfinch-signature here!
   }
 
   const currentBlock = await signer.provider.getBlock("latest")

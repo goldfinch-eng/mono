@@ -8,11 +8,12 @@ import {default as DefenderProposer} from "./DefenderProposer"
 import {asNonNullable} from "@goldfinch-eng/utils"
 
 const personaAPIKey = process.env.PERSONA_API_KEY
+const PERSONA_BASE_URL = "https://withpersona.com/api/v1/"
 
 let requests = 0
 
 async function fetchEntities(entity, paginationToken, filter) {
-  let url = `https://withpersona.com/api/v1/${entity}?${filter}`
+  let url = `${PERSONA_BASE_URL}${entity}?${filter}`
   if (paginationToken) {
     url = `${url}&page[after]=${paginationToken}`
   }
@@ -38,20 +39,140 @@ async function fetchEntities(entity, paginationToken, filter) {
     .catch((err) => console.error("error:" + err))
 }
 
-interface Account {
-  id: string
-  inquiryId: string
+interface PersonaAccount {
+  personaId: string
+  referenceId: string
+  inquiryId: string | undefined
   status: string
   countryCode: string
   email: string | null
   verificationCountryCode: string | null
-  golisted?: boolean
+}
+
+type AnnotatedAccount = PersonaAccount & {
+  golisted: boolean
 }
 
 interface AllAccounts {
-  [id: string]: Account
+  [referenceId: string]: AnnotatedAccount
 }
 
+/**
+ * Fetches a single Persona account using `address` as the reference id. Ignores the inquiry id
+ * @param address of account
+ */
+export async function fetchAccount(address: string): Promise<PersonaAccount | undefined> {
+  // Fetch account
+  const response = await fetchEntities("accounts", null, `filter[reference-id]=${address}`)
+  if (response.data.length !== 1) {
+    throw new Error(`Expected one Persona account for ${address} but found ${response.data.length}`)
+  }
+  const accountRaw = response.data[0]
+  console.log("Fetched raw Persona account data")
+  console.log(accountRaw)
+
+  // Fetch inquiry id and verificationCountryCode
+  const inquiriesResponse = await fetch(`${PERSONA_BASE_URL}inquiries?filter[reference-id]=${address}`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      "Persona-Version": "2020-01-13",
+      Authorization: `Bearer ${personaAPIKey}`,
+    },
+  })
+    .then((res) => res.json())
+    .then((res) => res.data)
+
+  console.log("Fetched raw inquiries for account")
+  console.log(inquiriesResponse)
+
+  const mostRecentInquiry = inquiriesResponse
+    .sort((inquiry1, inquiry2) => {
+      const createdAt1 = new Date(inquiry1.attributes.createdAt)
+      const createdAt2 = new Date(inquiry2.attributes.createdAt)
+      return Number(createdAt2) - Number(createdAt1)
+    })
+    .map((inquiry) => {
+      // We only care about the id and verification country code
+      const verification = inquiry.relationships.verifications.data.find((i) => i.type === "verification/government-id")
+      return {
+        id: inquiry.id,
+        verificationCountryCode: verification.attributes?.countryCode || null,
+      }
+    })[0]
+
+  return {
+    personaId: accountRaw.id,
+    referenceId: accountRaw.attributes.referenceId,
+    inquiryId: mostRecentInquiry.id,
+    status: accountRaw.attributes.tags[0] || "undefined",
+    countryCode: accountRaw.attributes.countryCode,
+    email: accountRaw.attributes.emailAddress,
+    verificationCountryCode: mostRecentInquiry.verificationCountryCode,
+  }
+}
+
+/**
+ * Update's an account's reference id (wallet address)
+ * @param account the account to update
+ * @param newReferenceId the new reference id. This MUST be an ethereum wallet address
+ * @returns account object with updated reference id
+ */
+export async function updateReferenceId(account: PersonaAccount, newReferenceId: string): Promise<PersonaAccount> {
+  if (!web3.utils.isAddress(newReferenceId)) {
+    throw Error(`Expected wallet address but given ${newReferenceId}`)
+  }
+
+  const url = `${PERSONA_BASE_URL}accounts/${account.personaId}`
+  const options = {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Persona-Version": "2021-05-14",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${personaAPIKey}`,
+    },
+    // Persona API doesn't actually conform to PATCH (partial update) and will
+    // unset any omitted fields. We only want to update the reference-id here
+    // but need to include the other fields so we don't accidentally wipe them
+    body: JSON.stringify({
+      data: {
+        attributes: {
+          // The fields we're overwriting
+          "reference-id": newReferenceId,
+          tags: [],
+          // The fields we don't want to overwrite but still have to include
+          "country-code": account.countryCode,
+          "email-address": account.email,
+        },
+      },
+    }),
+  }
+
+  return fetch(url, options)
+    .then((res) => res.json())
+    .then((res): PersonaAccount => {
+      console.log("PATCH result")
+      console.log(res)
+      const status =
+        res.data.attributes.tags && res.data.attributes.tags.length > 0
+          ? res.data.attributes.tags[0].toLowerCase()
+          : "undefined"
+      return {
+        personaId: res.data.id,
+        referenceId: res.data.attributes.referenceId,
+        inquiryId: account.inquiryId,
+        status: status,
+        countryCode: res.data.attributes.countryCode,
+        email: res.data.attributes.emailAddress,
+        verificationCountryCode: account.verificationCountryCode,
+      }
+    })
+}
+
+/**
+ * Fetch all accounts on Persona in approved status
+ */
 async function fetchAllAccounts(): Promise<AllAccounts> {
   let paginationToken = null
   const allAccounts = {}
@@ -64,7 +185,6 @@ async function fetchAllAccounts(): Promise<AllAccounts> {
       const referenceId = account.attributes.referenceId
       if (referenceId && payload.data.attributes.status === "approved") {
         const verification = payload.included.find((included) => included.type === "verification/government-id")
-        const customFields = payload.data.attributes.fields
         if (allAccounts[referenceId]) {
           console.log(
             `${referenceId} already has an approved inquiry ${allAccounts[referenceId].inquiryId}, skipping ${payload.data.id}`
@@ -72,7 +192,8 @@ async function fetchAllAccounts(): Promise<AllAccounts> {
           continue
         }
         allAccounts[referenceId] = {
-          id: referenceId,
+          personaId: account.id,
+          referenceId: referenceId,
           inquiryId: payload.data.id,
           status: account.attributes.tags,
           countryCode: account.attributes.countryCode,
@@ -133,7 +254,7 @@ async function main() {
   let processedAccounts = 0
   for (const account of approvedAccounts) {
     account.countryCode = account.countryCode || asNonNullable(account.verificationCountryCode)
-    account.golisted = await retry(3, () => config.goList(account.id))
+    account.golisted = await retry(3, () => config.goList(account.referenceId))
     processedAccounts += 1
     if (processedAccounts % 100 === 0) {
       console.log(`${processedAccounts}/${total} complete`)
@@ -151,7 +272,7 @@ async function main() {
     if (account.golisted) {
       continue
     }
-    accountsToAdd.push(account.id)
+    accountsToAdd.push(account.referenceId)
   }
 
   for (let i = 0; i < accountsToAdd.length; i++) {
@@ -165,7 +286,7 @@ async function main() {
   const writeStream = fs.createWriteStream("accounts.csv")
   writeStream.write("address, country_code, golisted, email\n")
   for (const account of approvedAccounts) {
-    writeStream.write(`"${account.id}", ${account.countryCode}, ${account.golisted}, ${account.email}\n`)
+    writeStream.write(`"${account.referenceId}", ${account.countryCode}, ${account.golisted}, ${account.email}\n`)
   }
   writeStream.end()
   await new Promise<void>((resolve) => {

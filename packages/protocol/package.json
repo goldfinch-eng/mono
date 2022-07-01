@@ -96,6 +96,7 @@
     "contract-proxy-kit": "^2.2.0-alpha.1",
     "csv-parse": "^5.0.3",
     "csv-writer": "^1.6.0",
+    "defender-relay-client": "^1.21.3",
     "dotenv": "^8.2.0",
     "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^7.0.10",
