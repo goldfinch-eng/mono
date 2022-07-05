@@ -204,7 +204,7 @@ export function WithdrawalPanel({
   }, [zaps, totalPrincipalRedeemable, totalInterestRedeemable]);
 
   return (
-    <div className="col rounded-xl bg-sunrise-01 p-5 text-white">
+    <div className="rounded-xl bg-sunrise-01 p-5 text-white">
       <div className="mb-3 flex justify-between text-sm">
         Available to withdraw
         <InfoIconTooltip

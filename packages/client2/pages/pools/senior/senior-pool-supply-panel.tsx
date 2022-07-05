@@ -245,76 +245,71 @@ export function SeniorPoolSupplyPanel({
   }, [account, usdcContract]);
 
   return (
-    <div className="flex flex-col gap-6 rounded-xl bg-sunrise-02 p-5 text-white md:flex-row lg:flex-col">
-      <div
-        data-id="top-half"
-        className="flex flex-grow basis-0 flex-col items-start"
-      >
-        <div className="mb-3 flex w-full items-center justify-between gap-2">
-          <span className="text-sm">Total est. APY</span>
-          <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
-        </div>
-        <div className="mb-8 text-6xl">
-          {formatPercent(seniorPoolApyUsdc.addUnsafe(seniorPoolApyFromGfiFiat))}
-        </div>
-        <table className="table-fixed border-collapse self-stretch text-left">
-          <thead>
-            <tr>
-              <th scope="col" className="w-1/2 pb-3 font-normal">
-                Est. APY breakdown
-              </th>
-              <th scope="col" className="w-1/2 pb-3 font-normal">
-                <div className="flex items-center justify-end gap-2">
-                  <span>Est. return</span>
-                  <InfoIconTooltip content="The current estimated annual return on investment in the Senior Pool, based on the supply amount entered below. The USDC returns, sourced from Borrowers' repayments to their Pools, are based on the Senior Pool's current usage and balance. The GFI returns are based on the Pool's estimated GFI Investor Rewards." />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="text-xl">
-            <tr>
-              <td className="border border-[#674C69] p-3">
-                {formatPercent(seniorPoolApyUsdc)} APY
-              </td>
-              <td className="border border-[#674C69] p-3">
-                <div className="flex items-center justify-end gap-2">
-                  <span>
-                    {supplyValue
-                      ? formatFiat({
-                          symbol: SupportedFiat.Usd,
-                          amount:
-                            parseFloat(supplyValue) *
-                            seniorPoolApyUsdc.toUnsafeFloat(),
-                        })
-                      : "USDC"}
-                  </span>
-                  <Icon name="Usdc" aria-label="USDC logo" size="md" />
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td className="border border-[#674C69] p-3">
-                {formatPercent(seniorPoolApyFromGfiFiat)} APY
-              </td>
-              <td className="border border-[#674C69] p-3">
-                <div className="flex items-center justify-end gap-2">
-                  <span>
-                    {supplyValue
-                      ? formatFiat({
-                          symbol: SupportedFiat.Usd,
-                          amount:
-                            parseFloat(supplyValue) *
-                            seniorPoolApyFromGfiFiat.toUnsafeFloat(),
-                        })
-                      : "GFI"}
-                  </span>
-                  <Icon name="Gfi" aria-label="GFI logo" size="md" />
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div className="rounded-xl bg-sunrise-02 p-5 text-white">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-sm">Total est. APY</span>
+        <InfoIconTooltip content="The Senior Pool's total current estimated APY, including the current USDC APY and est. GFI rewards APY." />
       </div>
+      <div className="mb-8 text-6xl">
+        {formatPercent(seniorPoolApyUsdc.addUnsafe(seniorPoolApyFromGfiFiat))}
+      </div>
+      <table className="mb-8 w-full text-left">
+        <thead>
+          <tr>
+            <th scope="col" className="w-1/2 pb-3 font-normal">
+              Est. APY breakdown
+            </th>
+            <th scope="col" className="w-1/2 pb-3 font-normal">
+              <div className="flex items-center justify-end gap-2">
+                <span>Est. return</span>
+                <InfoIconTooltip content="The current estimated annual return on investment in the Senior Pool, based on the supply amount entered below. The USDC returns, sourced from Borrowers' repayments to their Pools, are based on the Senior Pool's current usage and balance. The GFI returns are based on the Pool's estimated GFI Investor Rewards." />
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody className="text-xl">
+          <tr>
+            <td className="border border-[#674C69] p-3">
+              {formatPercent(seniorPoolApyUsdc)} APY
+            </td>
+            <td className="border border-[#674C69] p-3">
+              <div className="flex items-center justify-end gap-2">
+                <span>
+                  {supplyValue
+                    ? formatFiat({
+                        symbol: SupportedFiat.Usd,
+                        amount:
+                          parseFloat(supplyValue) *
+                          seniorPoolApyUsdc.toUnsafeFloat(),
+                      })
+                    : "USDC"}
+                </span>
+                <Icon name="Usdc" aria-label="USDC logo" size="md" />
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td className="border border-[#674C69] p-3">
+              {formatPercent(seniorPoolApyFromGfiFiat)} APY
+            </td>
+            <td className="border border-[#674C69] p-3">
+              <div className="flex items-center justify-end gap-2">
+                <span>
+                  {supplyValue
+                    ? formatFiat({
+                        symbol: SupportedFiat.Usd,
+                        amount:
+                          parseFloat(supplyValue) *
+                          seniorPoolApyFromGfiFiat.toUnsafeFloat(),
+                      })
+                    : "GFI"}
+                </span>
+                <Icon name="Gfi" aria-label="GFI logo" size="md" />
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       {!account ? (
         <Button
           className="block w-full"
