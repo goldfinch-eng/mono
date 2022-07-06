@@ -115,9 +115,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT")
   transaction.user = event.params.payer.toHexString()
   transaction.tranchedPool = event.address.toHexString()
-  transaction.amount = event.params.principalAmount
-    .plus(event.params.interestAmount)
-    .plus(event.params.remainingAmount)
-    .plus(event.params.reserveAmount)
+  transaction.amount = event.params.principalAmount.plus(event.params.interestAmount)
   transaction.save()
 }
