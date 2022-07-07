@@ -7,7 +7,7 @@ import { Identicon } from "../identicon";
 import { WalletStatus } from "./wallet-status";
 
 export function WalletButton() {
-  const { account, isActivating, error, connector } = useWallet();
+  const { account, error, connector } = useWallet();
 
   return error ? (
     <Button
@@ -47,8 +47,6 @@ export function WalletButton() {
       variant="rounded"
       colorScheme="primary"
       onClick={openWalletModal}
-      isLoading={isActivating}
-      disabled={isActivating}
     >
       Connect Wallet
     </Button>

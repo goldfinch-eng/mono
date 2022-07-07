@@ -14,7 +14,6 @@ export function MetaMaskButton() {
   };
   return (
     <ProviderButton
-      disabled={isActive || isActivating}
       onClick={handleConnectMetaMask}
       errorMessage={error?.message}
     >
