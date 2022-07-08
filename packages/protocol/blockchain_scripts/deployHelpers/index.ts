@@ -24,7 +24,6 @@ import {GoldfinchConfig} from "../../typechain/ethers"
 import {CONFIG_KEYS} from "../configKeys"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../mainnetForkingHelpers"
 import {getExistingContracts} from "./getExistingContracts"
-type Ethers = typeof ethers
 const USDCDecimals = new BN(String(1e6))
 const FIDU_DECIMALS = new BN(String(1e18))
 const GFI_DECIMALS = new BN(String(1e18))

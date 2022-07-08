@@ -1,13 +1,12 @@
 import _ from "lodash"
-import {ethers, Signer} from "ethers"
+import {BytesLike, ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
-import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
+import {assertNonNullable, isPlainObject, isString, presignedMintToMessage} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
-import {keccak256} from "@ethersproject/keccak256"
-import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
+import {verifySignature, presignedMintMessage} from "@goldfinch-eng/utils"
 import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
@@ -37,12 +36,48 @@ const UNIQUE_IDENTITY_ADDRESS = {
 export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
-  assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
+  assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
   const response = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
   if (isKYC(response.data)) {
     return response.data
   } else {
     throw new Error("malformed KYC response")
+  }
+}
+
+const linkUserToUidStatus = async ({
+  signerAddress,
+  signature,
+  presignedMessage,
+  signatureBlockNum,
+  chainId,
+  expiresAt,
+  nonce,
+  uidType,
+  msgSender,
+  mintToAddress,
+}) => {
+  const baseUrl = API_URLS[chainId]
+  assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
+  const response = await axios.post(`${baseUrl}/linkUserToUid`, {
+    headers: {
+      "x-goldfinch-address": signerAddress,
+      "x-goldfinch-signature": signature,
+      "x-goldfinch-signature-plaintext": presignedMessage,
+      "x-goldfinch-signature-block-num": signatureBlockNum,
+    },
+    body: {
+      expiresAt,
+      nonce,
+      uidType,
+      msgSender,
+      mintToAddress,
+    },
+  })
+  if (response.status == 200) {
+    return true
+  } else {
+    throw new Error(`Error in request to link user to UID. Status: ${response.status} Message: ${response.statusText}`)
   }
 }
 
@@ -84,7 +119,7 @@ export function asAuth(obj: any): Auth {
 export async function handler(event: HandlerParams) {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
 
-  const auth = event.request.body.auth
+  const {auth, mintToAddress} = event.request.body
 
   const credentials = {...event}
   const provider = new DefenderRelayProvider(credentials)
@@ -95,7 +130,7 @@ export async function handler(event: HandlerParams) {
   assertNonNullable(uniqueIdentityAddress, "UniqueIdentity address is not defined for this network")
   const uniqueIdentity = new ethers.Contract(uniqueIdentityAddress, UniqueIdentityAbi, signer) as UniqueIdentity
 
-  return await main({signer, auth: auth, network, uniqueIdentity})
+  return await main({signer, auth: auth, network, uniqueIdentity, mintToAddress})
 }
 
 // Main function
@@ -104,18 +139,31 @@ export async function main({
   signer,
   network,
   uniqueIdentity,
+  mintToAddress,
   fetchKYCStatus = defaultFetchKYCStatus,
 }: {
   auth: any
   signer: Signer
   network: ethers.providers.Network
   uniqueIdentity: UniqueIdentity
+  mintToAddress?: string
   fetchKYCStatus?: FetchKYCFunction
 }) {
-  assertNonNullable(signer.provider)
-  auth = asAuth(auth)
   const userAddress = auth["x-goldfinch-address"]
+  const signInSignature = auth["x-goldfinch-signature"]
+  const signInSignatureBlockNum = auth["x-goldfinch-signature-block-num"]
 
+  auth = asAuth(auth)
+
+  assertNonNullable(signer.provider)
+  if (!ethers.utils.isAddress(userAddress)) {
+    throw new Error(`Invalid user address: ${userAddress}`)
+  }
+  if (mintToAddress !== undefined && !ethers.utils.isAddress(mintToAddress)) {
+    throw new Error(`Invalid address to mint to: ${mintToAddress}`)
+  }
+
+  await verifySignature(userAddress, signInSignature, signInSignatureBlockNum, signer.provider)
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
 
@@ -145,11 +193,41 @@ export async function main({
     kycStatus,
   })
 
-  const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
-  const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
-  const encoded = pack(signTypes, signParams)
-  const hashed = keccak256(encoded)
-  const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
+  let presignedMessage
+  if (mintToAddress) {
+    presignedMessage = presignedMintToMessage(
+      userAddress,
+      mintToAddress,
+      idVersion,
+      expiresAt,
+      uniqueIdentity.address,
+      nonce,
+      network.chainId
+    )
+  } else {
+    presignedMessage = presignedMintMessage(
+      userAddress,
+      idVersion,
+      expiresAt,
+      uniqueIdentity.address,
+      nonce,
+      network.chainId
+    )
+  }
+
+  const signature = await signer.signMessage(presignedMessage)
+  await linkUserToUidStatus({
+    signerAddress: await signer.getAddress(),
+    signature,
+    presignedMessage,
+    signatureBlockNum: currentBlock.number,
+    chainId: network.chainId,
+    expiresAt,
+    nonce: nonce.toNumber(),
+    uidType: idVersion,
+    msgSender: userAddress,
+    mintToAddress,
+  })
 
   return {signature, expiresAt, idVersion}
 }

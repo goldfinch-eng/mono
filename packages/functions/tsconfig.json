@@ -9,12 +9,11 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
-    "sourceMap": true,
-    "noImplicitAny": true
+    "sourceMap": true
   },
   "compileOnSave": true,
   "ts-node": {
     "files": true
   },
-  "include": ["types", "src", "scripts"]
+  "include": ["types", "src", "scripts", "hardhat.config.ts"]
 }
