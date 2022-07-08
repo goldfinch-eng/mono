@@ -1,5 +1,5 @@
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
-import hre, {artifacts, getChainId} from "hardhat"
+import hre, {artifacts, getChainId, getNamedAccounts} from "hardhat"
 import _ from "lodash"
 import {decodeLogs} from "../../../test/testHelpers"
 import {DefenderUpgrader} from "../../adminActions/defenderUpgrader"
@@ -19,6 +19,7 @@ import {getAllExistingContracts} from "../../deployHelpers/getAllExistingContrac
 import {getExistingContracts} from "../../deployHelpers/getExistingContracts"
 import {upgradeContracts} from "../../deployHelpers/upgradeContracts"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../mainnetForkingHelpers"
+import deployV2 from "./deployV2"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
 const goList: any[] = []
 
@@ -105,6 +106,7 @@ async function deployAndMigrateToV2() {
   const goldfinchConfig = await getTruffleContract("GoldfinchConfig")
   if (!(await existingPool.ExistingContract.paused())) {
     console.log("Migrating phase 1")
+    // @ts-expect-error Broken because V2Migrator contract has been removed.
     await migrator.migratePhase1(goldfinchConfig.address)
     console.log("Done phase 1")
   } else {
@@ -121,6 +123,7 @@ async function deployAndMigrateToV2() {
   if (ownersWithCls.length > 0) {
     for (let i = 0; i < chunkedOwnersWithCls.length; i++) {
       const ownerChunk = chunkedOwnersWithCls[i]
+      // @ts-expect-error Broken because V2Migrator contract has been removed.
       const migrationTxChunk = await migrator.migrateCreditLines(
         goldfinchConfig.address,
         ownerChunk,
@@ -149,7 +152,7 @@ async function addEveryoneToTheGoList(goldfinchConfigAddress, migrator) {
     console.log("Trying adding chunk", i, "to the goList")
     const chunk = chunkedGoList[i]
     assertNonNullable(chunk)
-    const alreadyAdded = await config.goList(chunk[0])
+    const alreadyAdded = await (config as any).goList(chunk[0])
     if (!alreadyAdded) {
       console.log("Actually adding chunk", i, "to the goList")
       await migrator.bulkAddToGoList(goldfinchConfigAddress, chunk)
@@ -206,13 +209,14 @@ async function handleNewDeployments(migrator) {
   const existingContracts = await getExistingContracts(contractsToUpgrade, gf_deployer, chainId)
   const upgradedContracts = await upgradeContracts(
     contractsToUpgrade,
+    // @ts-expect-error Broken because function signature is obsolete.
     existingContracts,
     gf_deployer,
     gf_deployer,
     deployer,
     false
   )
-  const newConfig = await getTruffleContract("GoldfinchConfig", {from: gf_deployer})
+  const newConfig: any = await getTruffleContract("GoldfinchConfig", {from: gf_deployer})
   // Set the deployer, governance, and migrator as owners of the config. This gets revoked later.
   if (!(await newConfig.hasRole(GO_LISTER_ROLE, migrator.address))) {
     console.log("Initializing the new config...")
@@ -319,9 +323,12 @@ async function deployMigrator(hre, {config}) {
   const protocolOwner = await getProtocolOwner()
   await deploy(contractName, {from: gf_deployer})
   const migrator = await getTruffleContract("V2Migrator", {from: gf_deployer})
+  // @ts-expect-error Broken because V2Migrator contract has been removed.
   if (!(await migrator.hasRole(OWNER_ROLE, protocolOwner))) {
     console.log("Initializing the migrator...")
+    // @ts-expect-error Broken because V2Migrator contract has been removed.
     await migrator.initialize(gf_deployer, config.address)
+    // @ts-expect-error Broken because V2Migrator contract has been removed.
     await migrator.grantRole(OWNER_ROLE, protocolOwner)
   }
   console.log("Done deploying the migrator...")

@@ -45,6 +45,7 @@ export async function deploy(deployEffects: DeployEffects) {
   await deployEffects.add({
     deferred: [
       await go.populateTransaction.setLegacyGoList(goConfigAddress),
+      // @ts-expect-error Ignore broken call to function that has been removed.
       await go.populateTransaction.updateGoldfinchConfig(),
       await go.populateTransaction.performUpgrade(),
     ],
