@@ -1,8 +1,6 @@
 import Image from "next/image";
 
-import { Button } from "@/components/design-system";
-import { closeVerificationModal } from "@/lib/state/actions";
-
+import { ExitFlowButton } from "../exit-flow-button";
 import clock from "./clock.png";
 import { StepTemplate } from "./step-template";
 
@@ -10,11 +8,7 @@ export function PendingStep() {
   return (
     <StepTemplate
       includePrivacyStatement={false}
-      footer={
-        <Button className="w-full" size="lg" onClick={closeVerificationModal}>
-          Finish
-        </Button>
-      }
+      footer={<ExitFlowButton>Finish</ExitFlowButton>}
     >
       <div className="flex flex-col items-center">
         <Image
