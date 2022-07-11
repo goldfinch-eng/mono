@@ -157,19 +157,8 @@ library Accountant {
   ) public view returns (uint256 interestOwed) {
     uint256 secondsElapsed = endTime.sub(startTime);
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
-    uint256 normalInterestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
-
-    // Interest doesn't become due until one payment period after the last full payment time.
-    // After that, the borrower has a grace period before which late fee interest is applied, UNLESS
-    // one payment period after the last full payment happens to be the termEndTime. In that case
-    // the late fee interest is applied right away without a grace period.
-    uint256 lateFeeInterestOwed = 0;
-    uint256 lateFeeStartsAt = Math.max(
-      startTime,
-      Math.min(cl.nextDueTime() + lateFeeGracePeriodInDays * SECONDS_PER_DAY, cl.termEndTime())
-    );
-    if (lateFeeStartsAt <= endTime) {
-      uint256 lateSecondsElapsed = endTime - lateFeeStartsAt;
+    interestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
+    if (lateFeeApplicable(cl, endTime, lateFeeGracePeriodInDays)) {
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);
       uint256 additionalLateFeeInterest = lateFeeInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
       interestOwed = interestOwed.add(additionalLateFeeInterest);
