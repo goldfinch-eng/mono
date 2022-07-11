@@ -13,9 +13,9 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <>
+    <div className="flex h-full flex-col">
       <Nav />
-      <div className="relative">
+      <div className="relative flex-grow">
         <div id={bannerId} />
         <div id={subnavId} />
         <div className="px-5">
@@ -23,7 +23,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </div>
       <Footer />
-    </>
+    </div>
   );
 }
 
