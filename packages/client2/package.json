@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npm run gen-contract-types && npm run codegen",
+    "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npx ts-node scripts/copy-gfi-grant-files.ts && npm run gen-contract-types && npm run codegen",
     "dev": "next dev",
     "prebuild": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npm run gen-contract-types && npm run codegen",
     "build": "next build",
