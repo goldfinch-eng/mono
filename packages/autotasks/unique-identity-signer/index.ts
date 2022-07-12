@@ -19,10 +19,9 @@ export interface KYC {
   residency?: "non-us" | "us"
 }
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
-const isKYC = (obj: unknown): obj is KYC =>
-  isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode) && isString(obj.residency)
+const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
 
-const API_URLS = {
+const API_URLS: {[key: number]: string} = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
   31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
@@ -30,11 +29,18 @@ const API_URLS = {
 /**
  * Mapping of chain-id -> deployed address
  */
-const UNIQUE_IDENTITY_ADDRESS = {
+const UNIQUE_IDENTITY_ADDRESS: {[key: number]: string} = {
   1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
 
-export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
+type Auth = {
+  "x-goldfinch-address": any
+  "x-goldfinch-signature": any
+  "x-goldfinch-signature-plaintext": any
+  "x-goldfinch-signature-block-num": any
+}
+
+export type FetchKYCFunction = ({auth, chainId}: {auth: Auth; chainId: number}) => Promise<KYC>
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
@@ -44,13 +50,6 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   } else {
     throw new Error("malformed KYC response")
   }
-}
-
-type Auth = {
-  "x-goldfinch-address": any
-  "x-goldfinch-signature": any
-  "x-goldfinch-signature-plaintext": any
-  "x-goldfinch-signature-block-num": any
 }
 
 export function asAuth(obj: any): Auth {

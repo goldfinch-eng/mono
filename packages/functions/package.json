@@ -24,7 +24,9 @@
   "engines": {
     "node": "16"
   },
-  "files": "lib/functions/src/**",
+  "files": [
+    "lib/functions/src/**"
+  ],
   "main": "lib/functions/src/index.js",
   "lint-staged": {
     "*.(js(x)?|ts(x)?)": [
@@ -36,6 +38,7 @@
     "@goldfinch-eng/pools": "^0.0.0",
     "@goldfinch-eng/protocol": "^0.1.0",
     "@goldfinch-eng/utils": "^0.0.1",
+    "@goldfinch-eng/autotasks": "^0.0.1",
     "@sentry/integrations": "^6.8.0",
     "@sentry/serverless": "^6.8.0",
     "@svgdotjs/svg.js": "^3.1.2",

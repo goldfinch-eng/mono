@@ -45,7 +45,7 @@ export function getIDType({address, kycStatus}: {address: string; kycStatus?: KY
   } else if (isUSAccreditedIndividual(address)) {
     // US accredited individual
     idVersion = US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
-  } else if (kycStatus?.countryCode !== US_COUNTRY_CODE && kycStatus?.residency === "non-us") {
+  } else if (kycStatus?.countryCode !== US_COUNTRY_CODE && kycStatus?.residency !== "us") {
     // non US individual
     idVersion = NON_US_INDIVIDUAL_ID_TYPE_0
   } else if (kycStatus?.countryCode === US_COUNTRY_CODE || kycStatus?.residency === "us") {
