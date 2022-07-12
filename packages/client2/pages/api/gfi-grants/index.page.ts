@@ -65,7 +65,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const account = (req.query as ExpectedQuery).account;
   if (!account) {
     res.status(500).json({
-      message: "You must provide an 'account' parameter in the body.",
+      message: "You must provide an 'account' parameter in the query string.",
     });
     return;
   }
