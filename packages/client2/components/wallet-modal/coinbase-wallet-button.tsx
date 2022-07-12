@@ -19,7 +19,6 @@ export function CoinbaseWalletButton() {
   };
   return (
     <ProviderButton
-      disabled={isActive || isActivating}
       onClick={handleConnectCoinbaseWallet}
       errorMessage={error?.message}
     >

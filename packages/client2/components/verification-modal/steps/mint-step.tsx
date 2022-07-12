@@ -5,7 +5,6 @@ import { useCallback, useState } from "react";
 import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
 import { UNIQUE_IDENTITY_MINT_PRICE } from "@/constants";
 import { useContract } from "@/lib/contracts";
-import { closeVerificationModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
 import { usePoller } from "@/lib/utils";
 import {
@@ -15,6 +14,7 @@ import {
 } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
+import { ExitFlowButton } from "../exit-flow-button";
 import { useVerificationFlowContext } from "../verification-flow-context";
 import greenCheckmark from "./green-checkmark.png";
 import { StepTemplate } from "./step-template";
@@ -118,9 +118,7 @@ export function MintStep() {
             Claim my UID
           </Button>
         ) : (
-          <Button size="lg" onClick={closeVerificationModal} className="w-full">
-            Finish
-          </Button>
+          <ExitFlowButton>Finish</ExitFlowButton>
         )
       }
     >
