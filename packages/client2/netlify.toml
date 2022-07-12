@@ -2,3 +2,6 @@
 [build]
   publish = ".next"  
   command = "npm run build"
+
+[functions]
+  included_files = ["pages/api/gfi-grants/**.json"]
