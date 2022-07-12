@@ -5,7 +5,7 @@
     "module": "commonjs",
     "target": "es2019",
     "isolatedModules": false,
-    "skipLibCheck": true
+    "skipLibCheck": false
   },
   "include": [
     "hardhat.config.ts",
