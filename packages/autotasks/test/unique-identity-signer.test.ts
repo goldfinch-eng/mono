@@ -13,7 +13,7 @@ import * as uniqueIdentitySigner from "../unique-identity-signer"
 import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
-import {FetchKYCFunction, KYC, UniqueIdentityAbi} from "../unique-identity-signer"
+import {FetchKYCFunction, KYC, UNIQUE_IDENTITY_ABI} from "../unique-identity-signer"
 import * as utils from "../unique-identity-signer/utils"
 import USAccreditedIndividualsList from "../unique-identity-signer/USAccreditedIndividuals.json"
 import USAccreditedEntitiesList from "../unique-identity-signer/USAccreditedEntities.json"
@@ -72,7 +72,7 @@ describe("unique-identity-signer", () => {
     ;({uniqueIdentity, owner, anotherUser, anotherUser2} = await setupTest())
     signer = hre.ethers.provider.getSigner(await getProtocolOwner())
     anotherUserSigner = hre.ethers.provider.getSigner(anotherUser)
-    ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UniqueIdentityAbi, signer) as UniqueIdentity
+    ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UNIQUE_IDENTITY_ABI, signer) as UniqueIdentity
     assertNonNullable(signer.provider, "Signer provider is null")
     network = await signer.provider.getNetwork()
 
@@ -399,7 +399,7 @@ describe("unique-identity-signer", () => {
 
           it("throws an error if linking their KYC to their recipient fails", async () => {
             sandbox.restore()
-            sandbox.stub(axios, "post").resolves({status: 500, statusText: "Link kyc failed"})
+            sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
             await expect(
               uniqueIdentitySigner.main({
                 auth: validAuthAnotherUser,
@@ -408,9 +408,7 @@ describe("unique-identity-signer", () => {
                 uniqueIdentity: ethersUniqueIdentity,
                 fetchKYCStatus: fetchKYCFunction,
               })
-            ).to.eventually.be.rejectedWith(
-              "Error in request to link user to UID. Status: 500 Message: Link kyc failed"
-            )
+            ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
           })
         })
 
@@ -460,7 +458,7 @@ describe("unique-identity-signer", () => {
 
           it("throws an error if linking their KYC to their recipient fails", async () => {
             sandbox.restore()
-            sandbox.stub(axios, "post").resolves({status: 500, statusText: "Link kyc failed"})
+            sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
             await expect(
               uniqueIdentitySigner.main({
                 auth: validAuthAnotherUser,
@@ -469,9 +467,7 @@ describe("unique-identity-signer", () => {
                 uniqueIdentity: ethersUniqueIdentity,
                 fetchKYCStatus: fetchKYCFunction,
               })
-            ).to.eventually.be.rejectedWith(
-              "Error in request to link user to UID. Status: 500 Message: Link kyc failed"
-            )
+            ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
           })
         })
       })
@@ -519,7 +515,7 @@ describe("unique-identity-signer", () => {
 
         it("throws an error if linking their KYC to their recipient fails", async () => {
           sandbox.restore()
-          sandbox.stub(axios, "post").resolves({status: 500, statusText: "Link kyc failed"})
+          sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
           await expect(
             uniqueIdentitySigner.main({
               auth: validAuthAnotherUser,
@@ -528,7 +524,7 @@ describe("unique-identity-signer", () => {
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
             })
-          ).to.eventually.be.rejectedWith("Error in request to link user to UID. Status: 500 Message: Link kyc failed")
+          ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
         })
       })
     })

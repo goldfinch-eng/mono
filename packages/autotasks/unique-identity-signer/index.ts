@@ -1,5 +1,5 @@
 import _ from "lodash"
-import {BytesLike, ethers, Signer} from "ethers"
+import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
@@ -8,7 +8,14 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {verifySignature, presignedMintMessage} from "@goldfinch-eng/utils"
 import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
-export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
+let deployedDevABIs
+try {
+  deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
+} catch (e) {
+  console.log('"@goldfinch-eng/protocol/deployments/all_dev.json" does not exist in this environment.')
+}
+export const UNIQUE_IDENTITY_ABI = UniqueIdentityDeployment.abi
+const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
@@ -24,13 +31,6 @@ const isKYC = (obj: unknown): obj is KYC =>
 const API_URLS = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
   31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
-}
-
-/**
- * Mapping of chain-id -> deployed address
- */
-const UNIQUE_IDENTITY_ADDRESS = {
-  1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
 
 export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
@@ -59,25 +59,34 @@ const linkUserToUidStatus = async ({
 }) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
-  const response = await axios.post(`${baseUrl}/linkUserToUid`, {
-    headers: {
-      "x-goldfinch-address": signerAddress,
-      "x-goldfinch-signature": signature,
-      "x-goldfinch-signature-plaintext": presignedMessage,
-      "x-goldfinch-signature-block-num": signatureBlockNum,
-    },
-    body: {
-      expiresAt,
-      nonce,
-      uidType,
-      msgSender,
-      mintToAddress,
-    },
-  })
-  if (response.status == 200) {
-    return true
-  } else {
-    throw new Error(`Error in request to link user to UID. Status: ${response.status} Message: ${response.statusText}`)
+  try {
+    await axios.post(
+      `${baseUrl}/linkUserToUid`,
+      {
+        expiresAt,
+        nonce,
+        uidType,
+        msgSender,
+        mintToAddress,
+      },
+      {
+        headers: {
+          "content-type": "application/json",
+          "x-goldfinch-address": signerAddress,
+          "x-goldfinch-signature": signature,
+          "x-goldfinch-signature-plaintext": presignedMessage,
+          "x-goldfinch-signature-block-num": signatureBlockNum,
+        },
+      }
+    )
+  } catch (error) {
+    console.error(error)
+    const errorResponse = (error as any)?.response
+    throw new Error(
+      "Error in request to /linkUserToUid.\n" +
+        `status: ${JSON.stringify(errorResponse.status)}\n` +
+        `data: ${JSON.stringify(errorResponse.data)}`
+    )
   }
 }
 
@@ -116,6 +125,7 @@ export function asAuth(obj: any): Auth {
   return auth
 }
 
+// Entry point for OpenZeppelin Defender - presumes Mainnet
 export async function handler(event: HandlerParams) {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
 
@@ -126,9 +136,11 @@ export async function handler(event: HandlerParams) {
   const signer = new DefenderRelaySigner(credentials, provider, {speed: "fast"})
 
   const network = await signer.provider.getNetwork()
-  const uniqueIdentityAddress = UNIQUE_IDENTITY_ADDRESS[network.chainId]
-  assertNonNullable(uniqueIdentityAddress, "UniqueIdentity address is not defined for this network")
-  const uniqueIdentity = new ethers.Contract(uniqueIdentityAddress, UniqueIdentityAbi, signer) as UniqueIdentity
+  const uniqueIdentity = new ethers.Contract(
+    UNIQUE_IDENTITY_MAINNET_ADDRESS,
+    UNIQUE_IDENTITY_ABI,
+    signer
+  ) as UniqueIdentity
 
   return await main({signer, auth: auth, network, uniqueIdentity, mintToAddress})
 }

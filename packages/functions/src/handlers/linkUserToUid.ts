@@ -13,11 +13,22 @@ import {
 } from "@goldfinch-eng/utils"
 import firestore = admin.firestore
 import type {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers/UniqueIdentity"
-import UNIQUE_IDENTITY_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
+import UNIQUE_IDENTITY_MAINNET_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 
-// This is an address for which we have a valid signature, used for
-// unit testing
-const UNIT_TESTING_SIGNER = "0xc34461018f970d343d5a25e4Ed28C4ddE6dcCc3F"
+let deployedDevABIs
+try {
+  deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
+} catch (e) {
+  console.log("'@goldfinch-eng/protocol/deployments/all_dev.json' does not exist in this environment.")
+}
+
+const getUniqueIdentityDeployment = (chainId: number) => {
+  if (chainId === 1) {
+    return UNIQUE_IDENTITY_MAINNET_DEPLOYMENT
+  } else {
+    return deployedDevABIs?.[chainId]?.["localhost"]?.contracts?.["UniqueIdentity"]
+  }
+}
 
 /**
  * Throw when a user does not exist when it was expected to exist during a link KYC request.
@@ -29,21 +40,30 @@ class NonExistingUserError extends Error {}
  */
 class ExistingUidRecipientAddressError extends Error {}
 
+const UNIT_TESTING_SIGNER = "0xc34461018f970d343d5a25e4Ed28C4ddE6dcCc3F"
+const MURMURATION_AND_DEV_SIGNER = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+let ALLOWED_SIGNERS
+if (process.env.NODE_ENV == "test") {
+  ALLOWED_SIGNERS = [UNIT_TESTING_SIGNER, UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS]
+} else if (process.env.MURMURATION === "yes" || process.env.LOCAL === "yes") {
+  ALLOWED_SIGNERS = [UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS, MURMURATION_AND_DEV_SIGNER]
+} else {
+  ALLOWED_SIGNERS = [UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS]
+}
+
 /**
  * Link the provided user's address to their intended UID recipient address.
  * Prevents users with existing UID's (owned on chain or linked in Firestore) from being linked to new UID's.
- * @param { { address: string, abi: any } } uniqueIdentityDeployment The UniqueIdentity contract deployment.
+ * @param { { address: string, abi: any }? } injectedUidDeployment The specified UniqueIdentity contract deployment, try to determine automatically from the chain ID otherwise.
  * @return {HttpsFunction} Https function that handles the request
  */
-export const genLinkKycWithUidDeployment = (uniqueIdentityDeployment: {address: string; abi: any}) => {
+export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: string; abi: any}) => {
   return genRequestHandler({
     fallbackOnMissingPlaintext: false,
     requireAuth: "signatureWithAllowList",
     signatureMaxAge: 3600, // 5 minutes
-    signerAllowList:
-      process.env.NODE_ENV === "test"
-        ? [UNIT_TESTING_SIGNER, UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS]
-        : [UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS],
+    signerAllowList: ALLOWED_SIGNERS,
+    reArrayifyBeforeVerification: true,
     cors: false,
     handler: async (req, res): Promise<Response> => {
       const {expiresAt, nonce} = req.body
@@ -51,24 +71,23 @@ export const genLinkKycWithUidDeployment = (uniqueIdentityDeployment: {address: 
       const msgSender = req.body.msgSender?.toLowerCase()
       const explicitMintToAddress = req.body.mintToAddress?.toLowerCase()
 
+      const blockchain = await getBlockchain("https://app.goldfinch.finance")
+      const network = await blockchain.getNetwork()
+
+      const uidDeployment = injectedUidDeployment ?? getUniqueIdentityDeployment(network.chainId)
+
+      assertNonNullable(uidDeployment)
       assertNonNullable(msgSender)
       assertNonNullable(uidType)
       assertNonNullable(expiresAt)
       assertNonNullable(nonce)
       validateUidType(uidType.toNumber())
 
-      const blockchain = await getBlockchain("https://app.goldfinch.finance")
-      const network = await blockchain.getNetwork()
-
       if (expiresAt < (await blockchain.getBlock("latest")).timestamp) {
         return res.status(400).send({status: "error", message: "Signature has expired"})
       }
 
-      const uid = new ethers.Contract(
-        uniqueIdentityDeployment.address,
-        uniqueIdentityDeployment.abi,
-        blockchain,
-      ) as unknown as UniqueIdentity
+      const uid = new ethers.Contract(uidDeployment.address, uidDeployment.abi, blockchain) as unknown as UniqueIdentity
 
       let expectedPresignedMessage
       if (explicitMintToAddress) {
@@ -168,7 +187,4 @@ export const genLinkKycWithUidDeployment = (uniqueIdentityDeployment: {address: 
   })
 }
 
-export const linkUserToUid = genLinkKycWithUidDeployment({
-  address: UNIQUE_IDENTITY_DEPLOYMENT.address,
-  abi: UNIQUE_IDENTITY_DEPLOYMENT.abi,
-})
+export const linkUserToUid = genLinkKycWithUidDeployment()

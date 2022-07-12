@@ -127,7 +127,7 @@ describe("linkUserToUid", () => {
         "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
         "x-goldfinch-signature": validMintSignature,
         "x-goldfinch-signature-block-num": currentBlockNum,
-        "x-goldfinch-signature-plaintext": validMintPresigMessage,
+        "x-goldfinch-signature-plaintext": validMintPresigMessage.toString(),
       },
     } as unknown as Request
     mintToRequest = {
@@ -136,7 +136,7 @@ describe("linkUserToUid", () => {
         "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
         "x-goldfinch-signature": validMintToSignature,
         "x-goldfinch-signature-block-num": currentBlockNum,
-        "x-goldfinch-signature-plaintext": validMintToPresigMessage,
+        "x-goldfinch-signature-plaintext": validMintToPresigMessage.toString(),
       },
     } as unknown as Request
   })

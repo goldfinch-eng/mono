@@ -9,7 +9,10 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
-    "sourceMap": true
+    "sourceMap": true,
+    "isolatedModules": false,
+    "strict": true,
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   "ts-node": {

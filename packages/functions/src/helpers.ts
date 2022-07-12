@@ -145,6 +145,8 @@ export const extractHeaderValue = (req: Request, headerName: string): string | u
  * @param {Response} res The response to the request.
  * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
  * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
+ * @param {boolean} reArrayifyBeforeVerification if true and the `x-goldfinch-signature-plaintext` header is missing then
+
  * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
  * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
  * @return {Promise<SignatureVerificationResult>} verification result
@@ -154,6 +156,7 @@ const verifySignature = async (
   res: Response,
   signatureMaxAge: number,
   fallbackOnMissingPlaintext: boolean,
+  reArrayifyBeforeVerification = false,
 ): Promise<SignatureVerificationResult> => {
   const address = extractHeaderValue(req, "x-goldfinch-address")
   const signature = extractHeaderValue(req, "x-goldfinch-signature")
@@ -184,7 +187,10 @@ const verifySignature = async (
     }
   }
 
-  const verifiedAddress = ethers.utils.verifyMessage(signaturePlaintext, signature)
+  const presigMessage = reArrayifyBeforeVerification
+    ? signaturePlaintext.split(",").map((ele) => parseInt(ele, 10))
+    : signaturePlaintext
+  const verifiedAddress = ethers.utils.verifyMessage(presigMessage, signature)
 
   console.debug(`address received: ${address}, address verified: ${verifiedAddress}`)
   if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
@@ -225,7 +231,8 @@ const verifySignature = async (
  * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
  * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
  * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
- * @param {string[]} allowedSigners the list of allowed signers
+ * @param {Array<string>} allowedSigners the list of allowed signers
+ * @param {boolean} reArrayifyBeforeVerification if true then rearrayify the signature plaintext before verification
  * @return {Promise<SignatureVerificationResult>} verification result
  */
 const verifySignatureAndAllowList = async (
@@ -234,12 +241,19 @@ const verifySignatureAndAllowList = async (
   signatureMaxAge: number,
   fallbackOnMissingPlaintext: boolean,
   allowedSigners: Array<string>,
+  reArrayifyBeforeVerification = false,
 ): Promise<SignatureVerificationResult> => {
   if (allowedSigners.length === 0) {
     return {res: res.status(500).send({error: "Allow list should not be empty"}), address: undefined}
   }
 
-  const signatureVerification = await verifySignature(req, res, signatureMaxAge, fallbackOnMissingPlaintext)
+  const signatureVerification = await verifySignature(
+    req,
+    res,
+    signatureMaxAge,
+    fallbackOnMissingPlaintext,
+    reArrayifyBeforeVerification,
+  )
 
   if (signatureVerification.res) {
     return signatureVerification
@@ -247,7 +261,11 @@ const verifySignatureAndAllowList = async (
 
   // Checksum all the addresses to disambiguate
   const signerAddress = ethers.utils.getAddress(signatureVerification.address)
-  allowedSigners = allowedSigners.map(ethers.utils.getAddress)
+  allowedSigners = await Promise.all(
+    allowedSigners.map(async (allowedSigner) => {
+      return ethers.utils.getAddress(await allowedSigner)
+    }),
+  )
 
   const signerProhibited = allowedSigners.indexOf(signerAddress) === -1
   if (signerProhibited) {
@@ -279,6 +297,7 @@ export const genRequestHandler = (config: RequestHandlerConfig): functions.Https
           res,
           config.signatureMaxAge,
           config.fallbackOnMissingPlaintext,
+          config.reArrayifyBeforeVerification,
         )
         return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
       } else if (authType === "signatureWithAllowList") {
@@ -288,6 +307,7 @@ export const genRequestHandler = (config: RequestHandlerConfig): functions.Https
           config.signatureMaxAge,
           config.fallbackOnMissingPlaintext,
           config.signerAllowList,
+          config.reArrayifyBeforeVerification,
         )
         return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
       } else if (authType === "none") {
