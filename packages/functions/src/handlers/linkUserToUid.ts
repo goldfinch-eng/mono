@@ -15,7 +15,7 @@ import firestore = admin.firestore
 import type {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers/UniqueIdentity"
 import UNIQUE_IDENTITY_MAINNET_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 
-let deployedDevABIs
+let deployedDevABIs: any
 try {
   deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
 } catch (e) {
@@ -42,7 +42,7 @@ class ExistingUidRecipientAddressError extends Error {}
 
 const UNIT_TESTING_SIGNER = "0xc34461018f970d343d5a25e4Ed28C4ddE6dcCc3F"
 const MURMURATION_AND_DEV_SIGNER = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
-let ALLOWED_SIGNERS
+let ALLOWED_SIGNERS: string[]
 if (process.env.NODE_ENV == "test") {
   ALLOWED_SIGNERS = [UNIT_TESTING_SIGNER, UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS]
 } else if (process.env.MURMURATION === "yes" || process.env.LOCAL === "yes") {
@@ -63,7 +63,6 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
     requireAuth: "signatureWithAllowList",
     signatureMaxAge: 3600, // 5 minutes
     signerAllowList: ALLOWED_SIGNERS,
-    reArrayifyBeforeVerification: true,
     cors: false,
     handler: async (req, res): Promise<Response> => {
       const {expiresAt, nonce} = req.body

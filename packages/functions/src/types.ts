@@ -33,7 +33,6 @@ export type RequestHandlerConfig =
       requireAuth: "signature"
       signatureMaxAge: number // Age in seconds after which the signature becomes invalid
       fallbackOnMissingPlaintext: boolean
-      reArrayifyBeforeVerification?: boolean
       cors: boolean
       handler: (
         req: Request,
@@ -46,7 +45,6 @@ export type RequestHandlerConfig =
       signatureMaxAge: number // Age in seconds after which the signature becomes invalid
       fallbackOnMissingPlaintext: boolean
       signerAllowList: Array<string>
-      reArrayifyBeforeVerification?: boolean
       cors: boolean
       handler: (
         req: Request,

@@ -18,6 +18,7 @@ import {setEnvForTest, getUsers} from "../../src/db"
 const {deployments, web3, ethers, upgrades} = hardhat
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import _ from "lodash"
+import {HttpsFunction} from "firebase-functions/lib/cloud-functions"
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const setupTest = deployments.createFixture(async ({getNamedAccounts}) => {
@@ -68,23 +69,23 @@ describe("linkUserToUid", () => {
   let uidContractOwnerAddress: string
   let chainId: string
   let signer: any
-  let testLinkKycToUid
-  let uniqueIdentity
+  let testLinkKycToUid: HttpsFunction
+  let uniqueIdentity: any
   let testFirestore: Firestore
   let testApp: admin.app.App
   let users: firestore.CollectionReference<firestore.DocumentData>
-  let expiresAt
-  let validMintPresigMessage
-  let validMintSignature
-  let validMintToPresigMessage
-  let validMintToSignature
-  let mintRequest
-  let mintToRequest
+  let expiresAt: BigNumber
+  let validMintPresigMessage: Uint8Array
+  let validMintSignature: string
+  let validMintToPresigMessage: Uint8Array
+  let validMintToSignature: string
+  let mintRequest: Request
+  let mintToRequest: Request
 
   let currentBlockNum: number
   let currentBlockTimestamp: number
 
-  let mainUser
+  let mainUser: Record<string, unknown>
 
   beforeEach(async () => {
     ;({uniqueIdentity, mainUserAddress, uidContractOwnerAddress, otherUserAddress, mintToAddress} = await setupTest())

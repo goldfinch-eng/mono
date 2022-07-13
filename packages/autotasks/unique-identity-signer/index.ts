@@ -8,12 +8,6 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 import {verifySignature, presignedMintMessage} from "@goldfinch-eng/utils"
 import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
-let deployedDevABIs
-try {
-  deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
-} catch (e) {
-  console.log('"@goldfinch-eng/protocol/deployments/all_dev.json" does not exist in this environment.')
-}
 export const UNIQUE_IDENTITY_ABI = UniqueIdentityDeployment.abi
 const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
 
@@ -84,8 +78,8 @@ const linkUserToUidStatus = async ({
     const errorResponse = (error as any)?.response
     throw new Error(
       "Error in request to /linkUserToUid.\n" +
-        `status: ${JSON.stringify(errorResponse.status)}\n` +
-        `data: ${JSON.stringify(errorResponse.data)}`
+        `status: ${JSON.stringify(errorResponse?.status)}\n` +
+        `data: ${JSON.stringify(errorResponse?.data)}`
     )
   }
 }
