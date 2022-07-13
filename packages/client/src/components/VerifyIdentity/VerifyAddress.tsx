@@ -145,8 +145,8 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     return (
       <Banner icon={iconAlert}>
         There was an issue verifying your address. For help, please contact{" "}
-        <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:verify@goldfinch.finance">
-          verify@goldfinch.finance
+        <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:UID@warblerlabs.com">
+          UID@warblerlabs.com
         </a>{" "}
         and include your address.
       </Banner>
