@@ -8,7 +8,6 @@ import {BigNumber} from "bignumber.js"
 import {Signer} from "ethers"
 import hre from "hardhat"
 const {getNamedAccounts} = hre
-import deployedABIs from "../deployments/all_dev.json"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "./helpers/impersonateAccount"
 
@@ -185,6 +184,8 @@ async function getSeniorPool(pool, signerAddress) {
 }
 
 async function getAbi(contractName) {
+  const deployedABIs = await import("../deployments/all_dev.json")
+
   const chainId = process.env.HARDHAT_FORK === "mainnet" ? "1" : await hre.getChainId()
   const networkName = process.env.HARDHAT_FORK ?? process.env.HARDHAT_NETWORK
   assertNonNullable(networkName)
