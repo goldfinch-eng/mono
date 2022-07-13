@@ -8,26 +8,26 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol
 import {ethers, Signer} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {BN, deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
+import * as utils from "@goldfinch-eng/utils"
 const {deployments, web3} = hardhat
 import * as uniqueIdentitySigner from "../unique-identity-signer"
 import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
-import {FetchKYCFunction, KYC, UniqueIdentityAbi} from "../unique-identity-signer"
-import * as utils from "../unique-identity-signer/utils"
-import USAccreditedIndividualsList from "../unique-identity-signer/USAccreditedIndividuals.json"
-import USAccreditedEntitiesList from "../unique-identity-signer/USAccreditedEntities.json"
-import NonUSEntitiesList from "../unique-identity-signer/NonUSEntities.json"
+import {UniqueIdentityAbi} from "../unique-identity-signer"
+import USAccreditedIndividualsList from "../../utils/src/uid-json/USAccreditedIndividuals.json"
+import USAccreditedEntitiesList from "../../utils/src/uid-json/USAccreditedEntities.json"
+import NonUSEntitiesList from "../../utils/src/uid-json/NonUSEntities.json"
 
 const TEST_TIMEOUT = 30000
 
-function fetchStubbedKycStatus(kyc: KYC): FetchKYCFunction {
+function fetchStubbedKycStatus(kyc: utils.KYC): utils.FetchKYCFunction {
   return async (_) => {
     return Promise.resolve(kyc)
   }
 }
 
-const fetchElligibleKycStatus: FetchKYCFunction = fetchStubbedKycStatus({
+const fetchElligibleKycStatus: utils.FetchKYCFunction = fetchStubbedKycStatus({
   status: "approved",
   countryCode: "CA",
   residency: "non-us",
@@ -40,7 +40,7 @@ describe("unique-identity-signer", () => {
   let ethersUniqueIdentity: UniqueIdentity
   let signer: Signer
   let network: ethers.providers.Network
-  let fetchKYCFunction: FetchKYCFunction
+  let fetchKYCFunction: utils.FetchKYCFunction
   const sandbox = sinon.createSandbox()
 
   const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
@@ -71,7 +71,7 @@ describe("unique-identity-signer", () => {
 
   describe("main", () => {
     it("forwards signature headers to the KYC function", async () => {
-      const fetchFunction: FetchKYCFunction = ({auth, chainId}) => {
+      const fetchFunction: utils.FetchKYCFunction = ({auth, chainId}) => {
         // No other headers should be present
         expect(auth).to.deep.equal({
           "x-goldfinch-address": anotherUser,
@@ -298,7 +298,7 @@ describe("unique-identity-signer", () => {
             const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
             const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
             // stub as accredited investor
-            sandbox.stub(utils, "getIDType").returns(usAccreditedIdType.toNumber())
+            const getIDType = () => usAccreditedIdType.toNumber()
             const auth = {
               "x-goldfinch-address": anotherUser,
               "x-goldfinch-signature": "test_signature",
@@ -313,6 +313,7 @@ describe("unique-identity-signer", () => {
               network,
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
+              getIDType,
             })
 
             // mint accredited investor
@@ -331,6 +332,7 @@ describe("unique-identity-signer", () => {
               network,
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
+              getIDType,
             })
 
             await uniqueIdentity.burn(anotherUser, usAccreditedIdType, result.expiresAt, result.signature, {

@@ -10,7 +10,7 @@ import {
   isUSAccreditedEntity,
   isUSAccreditedIndividual,
   isNonUSEntity,
-  getIDType,
+  getIDType as defaultGetIDType,
   KYC,
   Auth,
   FetchKYCFunction,
@@ -102,12 +102,14 @@ export async function main({
   network,
   uniqueIdentity,
   fetchKYCStatus = defaultFetchKYCStatus,
+  getIDType = defaultGetIDType,
 }: {
   auth: any
   signer: Signer
   network: ethers.providers.Network
   uniqueIdentity: UniqueIdentity
   fetchKYCStatus?: FetchKYCFunction
+  getIDType?: typeof defaultGetIDType
 }) {
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
@@ -144,6 +146,7 @@ export async function main({
 
   const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
   const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
+  console.log({signParams})
   const encoded = pack(signTypes, signParams)
   const hashed = keccak256(encoded)
   const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
