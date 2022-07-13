@@ -1,4 +1,4 @@
-import {getIDType} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {getIDType} from "@goldfinch-eng/utils"
 import {UniqueIdentity as UniqueIdentityContract} from "@goldfinch-eng/protocol/typechain/web3/UniqueIdentity"
 import React, {useContext, useState} from "react"
 import {FormProvider, useForm} from "react-hook-form"

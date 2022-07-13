@@ -186,6 +186,9 @@ const verifySignature = async (
   }
 
   let presigMessage: Bytes | string = signaturePlaintext
+  // ethers.Signer#signMessage and ethers.utils.verifyMessage accept (Bytes | string) for their `message` input.
+  // The Bytes should be represented as a valid array of uints representing uint8s.
+  // The strings should represent UTF-8 encoded text.
   try {
     const intArray = signaturePlaintext.split(",").map((ele) => Number(ele))
     if (intArray.every((ele) => ele < 256 && ele >= 0)) {
@@ -193,7 +196,7 @@ const verifySignature = async (
     }
     console.debug("signaturePlaintext is a valid Uint8Array - it will be evaluated as a Uint8Array")
   } catch (e) {
-    console.debug("signaturePlaintext is not a Uint8Array - it will be evaluated as a string")
+    console.debug("signaturePlaintext is not a valid Uint8Array - it will be evaluated as a string")
   }
 
   const verifiedAddress = ethers.utils.verifyMessage(presigMessage, signature)

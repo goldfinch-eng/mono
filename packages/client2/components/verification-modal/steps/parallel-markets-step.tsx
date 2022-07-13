@@ -53,11 +53,8 @@ export function ParallelMarketsStep() {
               entities. After you have completed verification, we will reach out
               within 24-72 hours. If you encounter any issues, please reach out
               to{" "}
-              <Link
-                rel="noopener"
-                href="mailto:institutional@goldfinch.finance"
-              >
-                institutional@goldfinch.finance
+              <Link rel="noopener" href="mailto:UID@warblerlabs.com">
+                UID@warblerlabs.com
               </Link>
             </>
           ) : accredited === "accredited" ? (
@@ -66,8 +63,8 @@ export function ParallelMarketsStep() {
               accredited investors. After you have completed verification, we
               will reach out within 24-72 hours. If you encounter any issues,
               please reach out to{" "}
-              <Link rel="noopener" href="mailto:accredited@goldfinch.finance">
-                accredited@goldfinch.finance
+              <Link rel="noopener" href="mailto:UID@warblerlabs.com">
+                UID@warblerlabs.com
               </Link>
             </>
           ) : (

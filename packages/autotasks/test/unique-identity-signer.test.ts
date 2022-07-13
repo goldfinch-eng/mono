@@ -8,28 +8,24 @@ import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol
 import {ethers, Signer, Wallet} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {BN, deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
+import * as utils from "@goldfinch-eng/utils"
 const {deployments, web3} = hardhat
 import * as uniqueIdentitySigner from "../unique-identity-signer"
 import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
-import {FetchKYCFunction, KYC, UNIQUE_IDENTITY_ABI} from "../unique-identity-signer"
-import * as utils from "../unique-identity-signer/utils"
-import USAccreditedIndividualsList from "../unique-identity-signer/USAccreditedIndividuals.json"
-import USAccreditedEntitiesList from "../unique-identity-signer/USAccreditedEntities.json"
-import NonUSEntitiesList from "../unique-identity-signer/NonUSEntities.json"
-import {presignedBurnMessage} from "@goldfinch-eng/utils"
+import {UNIQUE_IDENTITY_ABI} from "../unique-identity-signer"
 import axios from "axios"
 
 const TEST_TIMEOUT = 30000
 
-function fetchStubbedKycStatus(kyc: KYC): FetchKYCFunction {
+function fetchStubbedKycStatus(kyc: utils.KYC): utils.FetchKYCFunction {
   return async (_) => {
     return Promise.resolve(kyc)
   }
 }
 
-const fetchEligibleKycStatus: FetchKYCFunction = fetchStubbedKycStatus({
+const fetchEligibleKycStatus: utils.FetchKYCFunction = fetchStubbedKycStatus({
   status: "approved",
   countryCode: "CA",
   residency: "non-us",
@@ -54,7 +50,6 @@ const setupTest = deployments.createFixture(async ({deployments, getNamedAccount
 describe("unique-identity-signer", () => {
   let owner: string
   let anotherUser: string
-  let anotherUser2: string
   let uniqueIdentity: TestUniqueIdentityInstance
   let ethersUniqueIdentity: UniqueIdentity
   let signer: Signer
@@ -64,12 +59,12 @@ describe("unique-identity-signer", () => {
   let nonUSIdType
   let usAccreditedIdType
   let usNonAccreditedIdType
-  let fetchKYCFunction: FetchKYCFunction
+  let fetchKYCFunction: utils.FetchKYCFunction
   const sandbox = sinon.createSandbox()
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({uniqueIdentity, owner, anotherUser, anotherUser2} = await setupTest())
+    ;({uniqueIdentity, owner, anotherUser} = await setupTest())
     signer = hre.ethers.provider.getSigner(await getProtocolOwner())
     anotherUserSigner = hre.ethers.provider.getSigner(anotherUser)
     ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UNIQUE_IDENTITY_ABI, signer) as UniqueIdentity
@@ -113,7 +108,7 @@ describe("unique-identity-signer", () => {
         "x-goldfinch-signature-plaintext": "Sign in to Goldfinch: 3",
         "x-goldfinch-signature-block-num": "3",
       }
-      const fetchFunction: FetchKYCFunction = ({auth, chainId}) => {
+      const fetchFunction: utils.FetchKYCFunction = ({auth, chainId}) => {
         // No other headers should be present
         expect(auth).to.deep.equal(expectedAuth)
         return fetchEligibleKycStatus({auth, chainId})
@@ -379,7 +374,7 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            const burnPresigMessage = presignedBurnMessage(
+            const burnPresigMessage = utils.presignedBurnMessage(
               anotherUser,
               usNonAccreditedIdType.toNumber(),
               validExpiryTimestamp,
@@ -413,9 +408,10 @@ describe("unique-identity-signer", () => {
         })
 
         describe("US accredited investor", () => {
+          let getUsAccreditedIDType
           beforeEach(async () => {
             // stub as accredited investor
-            sandbox.stub(utils, "getIDType").returns(usAccreditedIdType.toNumber())
+            getUsAccreditedIDType = () => usAccreditedIdType.toNumber()
             await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
           })
 
@@ -426,6 +422,7 @@ describe("unique-identity-signer", () => {
               network,
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
+              getIDType: getUsAccreditedIDType,
             })
 
             // mint accredited investor
@@ -438,7 +435,7 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            const burnPresigMessage = presignedBurnMessage(
+            const burnPresigMessage = utils.presignedBurnMessage(
               anotherUser,
               usAccreditedIdType.toNumber(),
               validExpiryTimestamp,
@@ -466,6 +463,7 @@ describe("unique-identity-signer", () => {
                 network,
                 uniqueIdentity: ethersUniqueIdentity,
                 fetchKYCStatus: fetchKYCFunction,
+                getIDType: getUsAccreditedIDType,
               })
             ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
           })
@@ -497,7 +495,7 @@ describe("unique-identity-signer", () => {
           expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
 
           // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          const burnPresigMessage = presignedBurnMessage(
+          const burnPresigMessage = utils.presignedBurnMessage(
             anotherUser,
             0,
             validExpiryTimestamp,
@@ -557,7 +555,7 @@ describe("unique-identity-signer", () => {
 
   describe("eligible json files", () => {
     it("checks for duplicates", () => {
-      const data = [USAccreditedIndividualsList, USAccreditedEntitiesList, NonUSEntitiesList]
+      const data = [utils.USAccreditedIndividualsList, utils.USAccreditedEntitiesList, utils.NonUSEntitiesList]
       data.reduce((acc, curr) => {
         if (acc.some((x) => curr.includes(x))) {
           throw new Error("Array intersection")

@@ -1,8 +1,4 @@
-import {
-  US_ACCREDITED_INDIVIDUAL_ID_TYPE_1,
-  US_ENTITY_ID_TYPE_3,
-  US_UID_TYPES,
-} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {US_ACCREDITED_INDIVIDUAL_ID_TYPE_1, US_ENTITY_ID_TYPE_3, US_UID_TYPES} from "@goldfinch-eng/utils"
 import {GeolocationData} from "../../App"
 import {UserLoaded} from "../../ethereum/user"
 import {SENIOR_POOL_AGREEMENT_NON_US_ROUTE, SENIOR_POOL_AGREEMENT_US_ROUTE} from "../../types/routes"
