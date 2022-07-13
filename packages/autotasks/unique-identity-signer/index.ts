@@ -3,26 +3,31 @@ import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
-import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  isPlainObject,
+  isString,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
+  isApprovedNonUSEntity,
+  getIDType as defaultGetIDType,
+  KYC,
+  Auth,
+  FetchKYCFunction,
+} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
+
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
-export interface KYC {
-  status: "unknown" | "approved" | "failed"
-  countryCode: string
-  residency?: "non-us" | "us"
-}
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
-const isKYC = (obj: unknown): obj is KYC =>
-  isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode) && isString(obj.residency)
+const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
 
-const API_URLS = {
+const API_URLS: {[key: number]: string} = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
   31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
@@ -30,11 +35,10 @@ const API_URLS = {
 /**
  * Mapping of chain-id -> deployed address
  */
-const UNIQUE_IDENTITY_ADDRESS = {
+const UNIQUE_IDENTITY_ADDRESS: {[key: number]: string} = {
   1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
 
-export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
@@ -44,13 +48,6 @@ const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   } else {
     throw new Error("malformed KYC response")
   }
-}
-
-type Auth = {
-  "x-goldfinch-address": any
-  "x-goldfinch-signature": any
-  "x-goldfinch-signature-plaintext": any
-  "x-goldfinch-signature-block-num": any
 }
 
 export function asAuth(obj: any): Auth {
@@ -105,12 +102,14 @@ export async function main({
   network,
   uniqueIdentity,
   fetchKYCStatus = defaultFetchKYCStatus,
+  getIDType = defaultGetIDType,
 }: {
   auth: any
   signer: Signer
   network: ethers.providers.Network
   uniqueIdentity: UniqueIdentity
   fetchKYCStatus?: FetchKYCFunction
+  getIDType?: typeof defaultGetIDType
 }) {
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
@@ -122,7 +121,11 @@ export async function main({
   // TODO We should just do our own verification of x-goldfinch-signature here, rather than
   // rely on it being done implicitly via `fetchKYCStatus()`.
 
-  if (!isUSAccreditedEntity(userAddress) && !isUSAccreditedIndividual(userAddress) && !isNonUSEntity(userAddress)) {
+  if (
+    !isApprovedUSAccreditedEntity(userAddress) &&
+    !isApprovedUSAccreditedIndividual(userAddress) &&
+    !isApprovedNonUSEntity(userAddress)
+  ) {
     try {
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
     } catch (e) {

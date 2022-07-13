@@ -1,4 +1,4 @@
-import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {NON_US_INDIVIDUAL_ID_TYPE_0} from "@goldfinch-eng/utils"
 import {CONFIG_KEYS} from "@goldfinch-eng/protocol/blockchain_scripts/configKeys"
 import {FixedLeverageRatioStrategy as FixedLeverageRatioStrategyContract} from "@goldfinch-eng/protocol/typechain/web3/FixedLeverageRatioStrategy"
 import {PoolTokens as PoolTokensContract} from "@goldfinch-eng/protocol/typechain/web3/PoolTokens"
