@@ -3,21 +3,27 @@ import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
-import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  isPlainObject,
+  isString,
+  isUSAccreditedEntity,
+  isUSAccreditedIndividual,
+  isNonUSEntity,
+  getIDType,
+  KYC,
+  Auth,
+  FetchKYCFunction,
+} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
+
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
-export interface KYC {
-  status: "unknown" | "approved" | "failed"
-  countryCode: string
-  residency?: "non-us" | "us"
-}
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
 const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
 
@@ -33,14 +39,6 @@ const UNIQUE_IDENTITY_ADDRESS: {[key: number]: string} = {
   1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
 
-type Auth = {
-  "x-goldfinch-address": any
-  "x-goldfinch-signature": any
-  "x-goldfinch-signature-plaintext": any
-  "x-goldfinch-signature-block-num": any
-}
-
-export type FetchKYCFunction = ({auth, chainId}: {auth: Auth; chainId: number}) => Promise<KYC>
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)

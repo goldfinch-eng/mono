@@ -3,11 +3,7 @@ import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"
-import {
-  isNonUSEntity,
-  isUSAccreditedEntity,
-  isUSAccreditedIndividual,
-} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "@goldfinch-eng/utils"
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
 // Where:

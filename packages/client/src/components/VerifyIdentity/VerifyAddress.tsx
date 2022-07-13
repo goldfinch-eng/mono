@@ -11,11 +11,7 @@ import USForm from "./USForm"
 import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
-import {
-  isNonUSEntity,
-  isUSAccreditedEntity,
-  isUSAccreditedIndividual,
-} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "@goldfinch-eng/utils"
 import USAccreditedForm from "./USAccreditedForm"
 import Banner from "../banner"
 import {UIDTypeToBalance, User} from "../../ethereum/user"
