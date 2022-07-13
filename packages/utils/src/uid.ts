@@ -20,15 +20,15 @@ export function caseInsensitiveIncludes(list: string[], element: string): boolea
   return list.some((x) => x.match(regexp))
 }
 
-export function isUSAccreditedIndividual(address: string): boolean {
+export function isApprovedUSAccreditedIndividual(address: string): boolean {
   return caseInsensitiveIncludes(USAccreditedIndividualsList, address)
 }
 
-export function isUSAccreditedEntity(address: string): boolean {
+export function isApprovedUSAccreditedEntity(address: string): boolean {
   return caseInsensitiveIncludes(USAccreditedEntitiesList, address)
 }
 
-export function isNonUSEntity(address: string): boolean {
+export function isApprovedNonUSEntity(address: string): boolean {
   return caseInsensitiveIncludes(NonUSEntitiesList, address)
 }
 
@@ -41,13 +41,13 @@ export interface KYC {
 export function getIDType({address, kycStatus}: {address: string; kycStatus?: KYC}): number {
   let idVersion: number
 
-  if (isUSAccreditedEntity(address)) {
+  if (isApprovedUSAccreditedEntity(address)) {
     // US accredited entity
     idVersion = US_ENTITY_ID_TYPE_3
-  } else if (isNonUSEntity(address)) {
+  } else if (isApprovedNonUSEntity(address)) {
     // non US entity
     idVersion = NON_US_ENTITY_ID_TYPE_4
-  } else if (isUSAccreditedIndividual(address)) {
+  } else if (isApprovedUSAccreditedIndividual(address)) {
     // US accredited individual
     idVersion = US_ACCREDITED_INDIVIDUAL_ID_TYPE_1
   } else if (kycStatus?.countryCode !== US_COUNTRY_CODE && kycStatus?.residency !== "us") {

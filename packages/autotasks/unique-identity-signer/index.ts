@@ -7,9 +7,9 @@ import {
   assertNonNullable,
   isPlainObject,
   isString,
-  isUSAccreditedEntity,
-  isUSAccreditedIndividual,
-  isNonUSEntity,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
+  isApprovedNonUSEntity,
   getIDType as defaultGetIDType,
   KYC,
   Auth,
@@ -121,7 +121,11 @@ export async function main({
   // TODO We should just do our own verification of x-goldfinch-signature here, rather than
   // rely on it being done implicitly via `fetchKYCStatus()`.
 
-  if (!isUSAccreditedEntity(userAddress) && !isUSAccreditedIndividual(userAddress) && !isNonUSEntity(userAddress)) {
+  if (
+    !isApprovedUSAccreditedEntity(userAddress) &&
+    !isApprovedUSAccreditedIndividual(userAddress) &&
+    !isApprovedNonUSEntity(userAddress)
+  ) {
     try {
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
     } catch (e) {
