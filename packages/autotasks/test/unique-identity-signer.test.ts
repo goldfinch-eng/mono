@@ -15,9 +15,6 @@ import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
 import {UniqueIdentityAbi} from "../unique-identity-signer"
-import USAccreditedIndividualsList from "../../utils/src/uid-json/USAccreditedIndividuals.json"
-import USAccreditedEntitiesList from "../../utils/src/uid-json/USAccreditedEntities.json"
-import NonUSEntitiesList from "../../utils/src/uid-json/NonUSEntities.json"
 
 const TEST_TIMEOUT = 30000
 
@@ -420,7 +417,7 @@ describe("unique-identity-signer", () => {
 
   describe("eligible json files", () => {
     it("checks for duplicates", () => {
-      const data = [USAccreditedIndividualsList, USAccreditedEntitiesList, NonUSEntitiesList]
+      const data = [utils.USAccreditedIndividualsList, utils.USAccreditedEntitiesList, utils.NonUSEntitiesList]
       data.reduce((acc, curr) => {
         if (acc.some((x) => curr.includes(x))) {
           throw new Error("Array intersection")
