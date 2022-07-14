@@ -23,7 +23,7 @@
     "pool-admin": "npx hardhat run ./blockchain_scripts/tranchedPoolAdmin.ts --network",
     "verify-contracts-access-control": "npx hardhat run ./blockchain_scripts/verifyContractsAccessControl.ts --network mainnet",
     "tsc": "tsc",
-    "lint-tsc": "echo 'Confirming that grep supports Perl regexes...' | grep -P Perl && if [[ $(npm run tsc | grep -vcP '^((node_modules\\/.+(\\.d)?\\.ts)|(typechain\\/.+\\.d\\.ts)|>|$)') -eq 0 ]]; then echo 'No unexpected `tsc` errors. Success.' && exit 0; else echo 'Unexpected `tsc` errors. Debug by identifying the files in `tsc` output that are not ignored by this regex:' && npm run tsc && exit 1; fi",
+    "lint-tsc": "echo 'Confirming that grep supports Perl regexes...' | grep -P Perl && if [[ $(npm run tsc | grep -vcP '(^((node_modules\\/.+(\\.d)?\\.ts)|(typechain\\/.+\\.d\\.ts)|>|$))|(Cannot find module .+all_dev\\.json)') -eq 0 ]]; then echo 'No unexpected `tsc` errors. Success.' && exit 0; else echo 'Unexpected `tsc` errors. Debug by identifying the files in `tsc` output that are not ignored by this regex:' && npm run tsc && exit 1; fi",
     "pre-push": "",
     "_generate-merkle-distributor-grants:local": "node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateGrantsFromTemplate -i ./blockchain_scripts/merkle/merkleDistributor/grants.dev.template.json -o ./blockchain_scripts/merkle/merkleDistributor/grants.dev.json",
     "_generate-backer-merkle-distributor-grants:local": "node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateGrantsFromTemplate -i ./blockchain_scripts/merkle/backerMerkleDistributor/grants.dev.template.json -o ./blockchain_scripts/merkle/backerMerkleDistributor/grants.dev.json",
