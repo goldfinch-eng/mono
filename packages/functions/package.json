@@ -24,7 +24,9 @@
   "engines": {
     "node": "16"
   },
-  "files": "lib/functions/src/**",
+  "files": [
+    "lib/functions/src/**"
+  ],
   "main": "lib/functions/src/index.js",
   "lint-staged": {
     "*.(js(x)?|ts(x)?)": [

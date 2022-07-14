@@ -1,4 +1,4 @@
-import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/utils"
 import {JsonRpcSigner} from "@goldfinch-eng/autotasks/node_modules/@ethersproject/providers/lib"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"

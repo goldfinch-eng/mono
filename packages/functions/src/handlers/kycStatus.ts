@@ -3,6 +3,11 @@ import {getUsers} from "../db"
 import {extractHeaderValue, genRequestHandler} from "../helpers"
 import {SignatureVerificationSuccessResult} from "../types"
 import * as admin from "firebase-admin"
+import {
+  isApprovedNonUSEntity,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
+} from "@goldfinch-eng/utils"
 
 // Top level status transitions should be => pending -> approved | failed -> golisted
 // Where:
@@ -44,6 +49,15 @@ export const kycStatus = genRequestHandler({
 
     const address = verificationResult.address
     const payload = {address: address, status: "unknown", countryCode: null, residency: ""}
+
+    // Respond with approved if address on any approved list
+    if (
+      isApprovedNonUSEntity(address) ||
+      isApprovedUSAccreditedEntity(address) ||
+      isApprovedUSAccreditedIndividual(address)
+    ) {
+      return res.status(200).send({...payload, status: "approved"})
+    }
 
     const users = getUsers(admin.firestore())
     const user = await users.doc(`${address.toLowerCase()}`).get()
