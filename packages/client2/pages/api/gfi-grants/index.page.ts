@@ -4,34 +4,17 @@ import path from "path";
 import { withSentry } from "@sentry/nextjs";
 import { NextApiRequest, NextApiResponse } from "next";
 
+import {
+  GrantManifest,
+  GrantWithSource,
+  KnownGrantSource,
+} from "@/lib/gfi-rewards";
+
 type ExpectedQuery = {
   account: string;
 };
 
-type Grant = {
-  amount: string;
-  vestingLength: string;
-  cliffLength: string;
-  vestingInterval: string;
-};
-
-type DirectGrant = {
-  amount: string;
-};
-
-type GrantManifest = {
-  merkleRoot: string;
-  amountTotal: string;
-  grants: {
-    index: number;
-    account: string;
-    reason: string;
-    grant: Grant | DirectGrant;
-    proof: string[];
-  }[];
-};
-
-const fileToSource = {
+const fileToSource: Record<string, KnownGrantSource> = {
   "./merkleDistributorInfo.json": "merkle",
   "./merkleDistributorInfo.dev.json": "merkle",
   "./backerMerkleDistributorInfo.json": "backerMerkle",
@@ -87,19 +70,21 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-async function findMatchingGrants(account: string, file: string) {
+async function findMatchingGrants(
+  account: string,
+  file: string
+): Promise<GrantWithSource[]> {
   const pathname = path.resolve(`${process.cwd()}/pages/api/gfi-grants`, file);
   const grantManifest: GrantManifest = JSON.parse(
     await fs.promises.readFile(pathname, "utf8")
   );
-  let matchingGrants = grantManifest.grants.filter(
+  const matchingGrants = grantManifest.grants.filter(
     (grant) => grant.account.toLowerCase() === account.toLowerCase()
   );
-  matchingGrants = matchingGrants.map((g) => ({
+  return matchingGrants.map((g) => ({
     source: fileToSource[file as keyof typeof fileToSource],
     ...g,
   }));
-  return matchingGrants;
 }
 
 export default withSentry(handler);
