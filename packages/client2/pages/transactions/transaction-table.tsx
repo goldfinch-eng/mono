@@ -13,22 +13,21 @@ import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 gql`
-  query CurrentUserTransactions($account: ID!, $first: Int!, $skip: Int!) {
-    user(id: $account) {
-      transactions(
-        orderBy: timestamp
-        orderDirection: desc
-        first: $first
-        skip: $skip
-      ) {
+  query CurrentUserTransactions($account: String!, $first: Int!, $skip: Int!) {
+    transactions(
+      orderBy: timestamp
+      orderDirection: desc
+      first: $first
+      skip: $skip
+      where: { user: $account }
+    ) {
+      id
+      transactionHash
+      category
+      amount
+      timestamp
+      tranchedPool {
         id
-        transactionHash
-        category
-        amount
-        timestamp
-        tranchedPool {
-          id
-        }
       }
     }
   }
@@ -53,7 +52,7 @@ export function TransactionTable() {
   });
 
   const rows =
-    data?.user?.transactions.map((transaction) => {
+    data?.transactions.map((transaction) => {
       const amount =
         transaction.amount && !transaction.amount.isZero()
           ? (subtractiveTransactionCategories.includes(transaction.category)
@@ -106,10 +105,10 @@ export function TransactionTable() {
     }) ?? [];
 
   const onScrollBottom = useCallback(() => {
-    if (data?.user?.transactions) {
+    if (data?.transactions) {
       fetchMore({
         variables: {
-          skip: data?.user?.transactions.length,
+          skip: data?.transactions.length,
           first: 20,
         },
       });
