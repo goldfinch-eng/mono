@@ -13,11 +13,16 @@
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "license": "MIT",
   "lint-staged": {
-    "*.(js(x)?|ts(x)?)": ["prettier --write", "eslint --resolve-plugins-relative-to=. --fix"]
+    "*.(js(x)?|ts(x)?)": [
+      "prettier --write",
+      "eslint --resolve-plugins-relative-to=. --fix"
+    ]
   },
   "dependencies": {
     "@goldfinch-eng/protocol": "^0.1.0",
     "@goldfinch-eng/utils": "^0.0.1",
+    "@sentry/node": "^7.7.0",
+    "@sentry/tracing": "^7.7.0",
     "axios": "^0.24.0",
     "cors": "^2.8.5",
     "defender-relay-client": "^1.11.1",
