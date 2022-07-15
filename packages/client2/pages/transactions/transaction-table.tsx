@@ -2,14 +2,14 @@ import { gql } from "@apollo/client";
 import { format } from "date-fns";
 import { useCallback } from "react";
 
-import { Link, ShimmerLines, Table } from "@/components/design-system";
+import { Link, ShimmerLines, Table, Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
-import { getTransactionLabel } from "@/lib/pools";
+import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -68,7 +68,11 @@ export function TransactionTable() {
       const date = new Date(transaction.timestamp * 1000);
 
       return [
-        <div key={`${transaction.id}-category`} className="text-left">
+        <div
+          key={`${transaction.id}-category`}
+          className="flex items-center gap-3 text-left"
+        >
+          <Icon name={getTransactionIcon(transaction)} size="xs" />
           {getTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`} className="text-left">

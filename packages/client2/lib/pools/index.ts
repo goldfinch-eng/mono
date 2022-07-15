@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
+import { IconNameType } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
@@ -279,4 +280,29 @@ export function getShortTransactionLabel(transaction: {
   category: TransactionCategory;
 }): string {
   return shortTransactionLabels[transaction.category];
+}
+
+/**
+ * Returns the icon for the transaction category
+ * @param transaction Transaction object
+ * @returns Icon to use for the transaction
+ */
+export function getTransactionIcon(transaction: {
+  category: TransactionCategory;
+}): IconNameType {
+  switch (transaction.category) {
+    case TransactionCategory.SeniorPoolRedemption:
+    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+    case TransactionCategory.SeniorPoolWithdrawal:
+    case TransactionCategory.TranchedPoolDrawdown:
+    case TransactionCategory.TranchedPoolWithdrawal:
+      return "ArrowDownCircle";
+    case TransactionCategory.SeniorPoolDeposit:
+    case TransactionCategory.SeniorPoolDepositAndStake:
+    case TransactionCategory.TranchedPoolDeposit:
+    case TransactionCategory.TranchedPoolRepayment:
+      return "ArrowUpCircle";
+    default:
+      return "CheckmarkCircle";
+  }
 }
