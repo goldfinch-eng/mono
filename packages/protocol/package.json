@@ -23,7 +23,7 @@
     "pool-admin": "npx hardhat run ./blockchain_scripts/tranchedPoolAdmin.ts --network",
     "verify-contracts-access-control": "npx hardhat run ./blockchain_scripts/verifyContractsAccessControl.ts --network mainnet",
     "tsc": "tsc",
-    "lint-tsc": "exit 0",
+    "lint-tsc": "if test \"foo\"; then echo yes && exit 0; else echo no && exit 1; fi",
     "pre-push": "",
     "_generate-merkle-distributor-grants:local": "node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateGrantsFromTemplate -i ./blockchain_scripts/merkle/merkleDistributor/grants.dev.template.json -o ./blockchain_scripts/merkle/merkleDistributor/grants.dev.json",
     "_generate-backer-merkle-distributor-grants:local": "node --require hardhat/register ./blockchain_scripts/merkle/merkleDistributor/generateGrantsFromTemplate -i ./blockchain_scripts/merkle/backerMerkleDistributor/grants.dev.template.json -o ./blockchain_scripts/merkle/backerMerkleDistributor/grants.dev.json",
