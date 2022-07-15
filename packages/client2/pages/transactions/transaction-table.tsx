@@ -43,6 +43,7 @@ const subtractiveTransactionCategories = [
 
 export function TransactionTable() {
   const { account } = useWallet();
+
   const { data, error, fetchMore, loading } = useCurrentUserTransactionsQuery({
     variables: {
       account: account?.toLowerCase() ?? "",
@@ -121,6 +122,8 @@ export function TransactionTable() {
     <div className="text-clay-500">
       There was an error fetching transactions: {error.message}
     </div>
+  ) : !account ? (
+    <div className="text-clay-500">Wallet not connected</div>
   ) : rows.length === 0 ? (
     <div className="rounded bg-sand-50 p-3 text-center text-sm text-sand-400">
       No recent activity
