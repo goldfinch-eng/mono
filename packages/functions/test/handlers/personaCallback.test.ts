@@ -135,15 +135,15 @@ describe("persona callback", async () => {
 
   describe("valid callback", async () => {
     describe("when user doesn't exist", async () => {
-      it("creates a user document with the correct status", async () => {
+      it("creates a user document with the correct data", async () => {
         expect((await users.doc(address.toLowerCase()).get()).exists).to.be.false
 
-        const req = generatePersonaCallbackRequest(address, "created", {})
+        const req = generatePersonaCallbackRequest(address, "created", {}, {countryCode: "US"})
         await personaCallback(req, expectResponse(200, {status: "success"}))
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address})
+        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
         expect(userDoc.data()?.persona?.status).to.eq("created")
       })
     })
@@ -184,18 +184,19 @@ describe("persona callback", async () => {
         expect(userDoc.data()?.persona?.status).to.eq("completed")
       })
 
-      it("does not update the status if already approved", async () => {
+      it("does not update if neither the status or country code changed", async () => {
         await users.doc(address.toLowerCase()).set({
           address: address,
           persona: {status: "approved"},
+          countryCode: "US",
+          updatedAt: 123,
         })
-        const req = generatePersonaCallbackRequest(address, "declined", {})
+        const req = generatePersonaCallbackRequest(address, "approved", {}, {countryCode: "US"})
         await personaCallback(req, expectResponse(200, {status: "success"}))
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address})
-        expect(userDoc.data()?.persona?.status).to.eq("approved")
+        expect(userDoc.data()?.updatedAt).to.eq(123)
       })
     })
   })
