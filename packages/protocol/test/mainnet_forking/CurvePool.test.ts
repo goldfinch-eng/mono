@@ -32,7 +32,7 @@ import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
-import {JsonRpcSigner} from "@goldfinch-eng/autotasks/node_modules/@ethersproject/providers/lib"
+import {JsonRpcSigner} from "@ethersproject/providers"
 import {DeploymentsExtension} from "hardhat-deploy/types"
 const {deployments, web3} = hre
 
