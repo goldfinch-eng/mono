@@ -81,9 +81,8 @@ export const personaCallback = genRequestHandler({
         const doc = await t.get(userRef)
 
         if (doc.exists) {
-          const existingData = doc.data()?.persona
-          if (existingData?.status === status && existingData?.countryCode === countryCode) {
-            // no need to update if the underlying data hasn't changed
+          const existingData = doc.data()
+          if (existingData?.persona?.status === status && existingData?.countryCode === countryCode) {
             return
           }
 
