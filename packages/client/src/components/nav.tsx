@@ -10,7 +10,7 @@ export const NAV_ITEMS = [
   {label: "Borrow", href: "/borrow"},
   {label: "GFI", href: "/gfi"},
   {label: "Stake", href: "/stake"},
-  {label: "Transactions", href: "/transactions"},
+  {label: "Transactions", href: "https://beta.app.goldfinch.finance/transactions"},
 ]
 
 export default function Nav({children}: {children: ReactNode}) {

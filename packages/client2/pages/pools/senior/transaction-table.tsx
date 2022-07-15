@@ -162,6 +162,7 @@ export function TransactionTable() {
           hideHeadings
           rows={transactions}
           onScrollBottom={onScrollBottom}
+          fixedHeight
         />
       )}
     </div>

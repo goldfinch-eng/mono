@@ -8,6 +8,7 @@ interface TableProps {
   rows: Row[];
   className?: string;
   hideHeadings?: boolean;
+  fixedHeight?: boolean;
   /**
    * Callback that gets invoked when the user scrolls to the bottom of the table. Use this to enable lazy loading of rows
    */
@@ -19,6 +20,7 @@ export function Table({
   rows,
   className,
   hideHeadings = false,
+  fixedHeight = false,
   onScrollBottom,
 }: TableProps) {
   const scrollBottomRef = useRef<HTMLDivElement>(null);
@@ -38,11 +40,11 @@ export function Table({
   }, [onScrollBottom]);
 
   return (
-    <div className="relative">
-      <div className="max-h-96 overflow-auto">
+    <div className="relative mb-10">
+      <div className={clsx("overflow-auto", fixedHeight ? "max-h-96" : "")}>
         <table
           className={clsx(
-            "mb-10 min-w-full table-fixed border-collapse whitespace-nowrap text-sm",
+            "min-w-full table-fixed border-collapse whitespace-nowrap text-sm",
             className
           )}
         >
@@ -51,7 +53,7 @@ export function Table({
               {headings.map((heading, index) => (
                 <th
                   className={clsx(
-                    "bg-sand-50 px-5 py-3.5 text-center font-normal first:rounded-l first:text-left last:rounded-r last:text-right",
+                    "px-5 py-3.5 text-left font-normal",
                     hideHeadings ? "sr-only" : null
                   )}
                   key={index}
@@ -78,12 +80,15 @@ export function Table({
         </table>
         <div style={{ height: "2px" }} ref={scrollBottomRef} />
       </div>
-      <div
-        className="pointer-events-none absolute top-0 left-0 h-full w-full"
-        style={{
-          background: "linear-gradient(to bottom, rgba(0, 0, 0, 0) 80%, white)",
-        }}
-      />
+      {fixedHeight ? (
+        <div
+          className="pointer-events-none absolute top-0 left-0 h-full w-full"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(0, 0, 0, 0) 80%, white)",
+          }}
+        />
+      ) : null}
     </div>
   );
 }
