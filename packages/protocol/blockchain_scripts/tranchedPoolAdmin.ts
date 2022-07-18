@@ -62,7 +62,7 @@ async function drawdown(tranchedPool: TranchedPool) {
   const creditLine = await getCreditLine(creditLineAddress, endBorrower)
   const limit = await creditLine.limit()
 
-  const borrowerAddress = await tranchedPool.borrower()
+  const borrowerAddress = await creditLine.borrower()
   const borrower = await getBorrower(borrowerAddress, endBorrower)
 
   await borrower.drawdown(tranchedPool.address, limit, endBorrower)
@@ -76,6 +76,7 @@ async function migrateCreditLine(tranchedPool: TranchedPool): Promise<void> {
   assertNonNullable(process.env.PAYMENT_PERIOD_IN_DAYS)
   assertNonNullable(process.env.TERM_IN_DAYS)
   assertNonNullable(process.env.LATE_FEE_APR)
+  assertNonNullable(process.env.PRINCIPAL_GRACE_PERIOD_IN_DAYS)
 
   const borrowerAddress = process.env.BORROWER_ADDRESS
   const limit = new BigNumber(process.env.LIMIT).multipliedBy(USDCDecimals.toString())
@@ -83,6 +84,7 @@ async function migrateCreditLine(tranchedPool: TranchedPool): Promise<void> {
   const paymentPeriodInDays = new BigNumber(process.env.PAYMENT_PERIOD_IN_DAYS)
   const termInDays = new BigNumber(process.env.TERM_IN_DAYS)
   const lateFeeApr = new BigNumber(process.env.LATE_FEE_APR).multipliedBy(INTEREST_DECIMALS.toString())
+  const principalGracePeriodInDays = process.env.PRINCIPAL_GRACE_PERIOD_IN_DAYS
 
   await tranchedPool.migrateCreditLine(
     borrowerAddress,
@@ -90,7 +92,8 @@ async function migrateCreditLine(tranchedPool: TranchedPool): Promise<void> {
     interestApr.toString(),
     paymentPeriodInDays.toString(),
     termInDays.toString(),
-    lateFeeApr.toString()
+    lateFeeApr.toString(),
+    principalGracePeriodInDays
   )
 
   console.log("Migrated credit line with the following parameters:")
@@ -117,6 +120,7 @@ async function investJuniorAndLock(tranchedPool: TranchedPool) {
   const seniorPool = await getSeniorPool(tranchedPool, tranchedPool.signer)
   const creditLineAddress = await tranchedPool.creditLine()
   const creditLine = await getCreditLine(creditLineAddress, tranchedPool.signer)
+  // @ts-expect-error Ignore broken call to function that has been removed.
   await seniorPool.investJunior(tranchedPool.address, await creditLine.limit())
   await tranchedPool.lockJuniorCapital()
   await tranchedPool.lockPool()
