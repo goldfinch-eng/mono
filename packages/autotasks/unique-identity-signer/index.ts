@@ -133,8 +133,16 @@ export async function main({
       throw new Error("fetchKYCStatus failed")
     }
 
-    if (kycStatus.status !== "approved" || kycStatus.countryCode === "" || !kycStatus.residency) {
-      throw new Error("Does not meet mint requirements")
+    if (kycStatus.status !== "approved") {
+      throw new Error(`Does not meet mint requirements: status is ${kycStatus.status}`)
+    }
+
+    if (kycStatus.countryCode === "") {
+      throw new Error(`Does not meet mint requirements: countryCode is null`)
+    }
+
+    if (!kycStatus.residency) {
+      throw new Error(`Does not meet mint requirements: residency is ${kycStatus.residency}`)
     }
   } else {
     // TODO We should verify the x-goldfinch-signature here!

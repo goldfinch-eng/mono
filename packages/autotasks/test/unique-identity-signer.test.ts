@@ -197,7 +197,7 @@ describe("unique-identity-signer", () => {
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
             })
-          ).to.be.rejectedWith(/Does not meet mint requirements/)
+          ).to.be.rejectedWith(/Does not meet mint requirements: countryCode/)
         })
       })
 
@@ -226,7 +226,36 @@ describe("unique-identity-signer", () => {
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
             })
-          ).to.be.rejectedWith(/Does not meet mint requirements/)
+          ).to.be.rejectedWith(/Does not meet mint requirements: status/)
+        })
+      })
+
+      describe("residency is missing", () => {
+        beforeEach(() => {
+          fetchKYCFunction = fetchStubbedKycStatus({
+            status: "approved",
+            countryCode: "CA",
+            residency: undefined,
+          })
+        })
+
+        it("throws an error", async () => {
+          const auth = {
+            "x-goldfinch-address": anotherUser,
+            "x-goldfinch-signature": "test_signature",
+            "x-goldfinch-signature-plaintext": "plaintext",
+            "x-goldfinch-signature-block-num": "fake_block_number",
+          }
+
+          await expect(
+            uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.be.rejectedWith(/Does not meet mint requirements: residency/)
         })
       })
     })
