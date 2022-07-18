@@ -7,7 +7,7 @@ interface GeolocationClient {
 
 class IpInfoClient implements GeolocationClient {
   async fetch(): Promise<GeolocationData> {
-    let response = await fetch("https://ipinfo.io?token=679544298a8c59", {
+    let response = await fetch("https://ipinfo.io?token=878b795cd15418", {
       method: "GET",
       headers: {"Content-Type": "application/json"},
     })
