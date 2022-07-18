@@ -12,7 +12,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const ipInfoResponse = await fetch(
-      `https://ipinfo.io/${ip}?token=679544298a8c59`,
+      `https://ipinfo.io/${ip}?token=878b795cd15418`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
