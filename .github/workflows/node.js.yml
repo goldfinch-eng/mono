@@ -71,9 +71,7 @@ jobs:
     - run: npm install
     - run: npx lerna bootstrap --ci
     - run: npm run build
-    - name: Run lint script
-      run: npm run lint
-      shell: bash
+    - run: npm run lint
 
   client:
     runs-on: ubuntu-latest
