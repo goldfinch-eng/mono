@@ -184,19 +184,34 @@ describe("persona callback", async () => {
         expect(userDoc.data()?.persona?.status).to.eq("completed")
       })
 
-      it("does not update if neither the status or country code changed", async () => {
+      it("does not update status if status is already approved", async () => {
         await users.doc(address.toLowerCase()).set({
           address: address,
           persona: {status: "approved"},
           countryCode: "US",
           updatedAt: 123,
         })
-        const req = generatePersonaCallbackRequest(address, "approved", {}, {countryCode: "US"})
+        const req = generatePersonaCallbackRequest(address, "closed", {}, {countryCode: "US"})
         await personaCallback(req, expectResponse(200, {status: "success"}))
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()?.updatedAt).to.eq(123)
+        expect(userDoc.data()?.persona?.status).to.eq("approved")
+      })
+
+      it("does updates country code if it already exists", async () => {
+        await users.doc(address.toLowerCase()).set({
+          address: address,
+          persona: {status: "approved"},
+          countryCode: "US",
+          updatedAt: 123,
+        })
+        const req = generatePersonaCallbackRequest(address, "closed", {}, {countryCode: "CA"})
+        await personaCallback(req, expectResponse(200, {status: "success"}))
+
+        const userDoc = await users.doc(address.toLowerCase()).get()
+        expect(userDoc.exists).to.be.true
+        expect(userDoc.data()).to.containSubset({address: address, countryCode: "CA"})
       })
     })
   })

@@ -82,16 +82,13 @@ export const personaCallback = genRequestHandler({
 
         if (doc.exists) {
           const existingData = doc.data()
-          if (existingData?.persona?.status === status && existingData?.countryCode === countryCode) {
-            return
-          }
 
           t.update(userRef, {
             persona: {
               id: eventPayload.id,
-              status: status,
+              status: existingData?.persona?.status === "approved" ? "approved" : status,
             },
-            countryCode: countryCode,
+            countryCode: countryCode ? countryCode : existingData?.countryCode,
             updatedAt: Date.now(),
           })
         } else {
@@ -99,9 +96,9 @@ export const personaCallback = genRequestHandler({
             address: address,
             persona: {
               id: eventPayload.id,
-              status: status,
+              status,
             },
-            countryCode: countryCode,
+            countryCode,
             updatedAt: Date.now(),
           })
         }
