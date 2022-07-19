@@ -1,31 +1,37 @@
-import {HandlerParams} from "../types"
 import * as Sentry from "@sentry/node"
+import {HandlerParams} from "../types"
 
-// Importing @sentry/tracing patches the global hub for tracing to work.
 import "@sentry/tracing"
 
 Sentry.init({
-  dsn: "https://examplePublicKey@o0.ingest.sentry.io/0",
-
-  // We recommend adjusting this value in production, or using tracesSampler
-  // for finer control
+  dsn: "https://753b95473ec54f83a8c0fcee242d6aca@o915675.ingest.sentry.io/6534483",
   tracesSampleRate: 1.0,
 })
 
-export async function handler(arg: HandlerParams, callback: (arg: HandlerParams) => any) {
-  const transaction = Sentry.startTransaction({
-    op: "test",
-    name: "My First Test Transaction",
-  })
-
-  let result = undefined
-  try {
-    result = callback(arg)
-  } catch (e) {
-    Sentry.captureException(e)
+export default function handler(
+  name: string,
+  callback: (arg: HandlerParams) => Promise<any>
+): (arg: HandlerParams) => Promise<any> {
+  // autotasks run as lambdas behind the scenes, so we init sentry once (above/global)
+  // and then create a new transaction every invocation.
+  //
+  // https://docs.openzeppelin.com/defender/autotasks#whats-in-an-autotask
+  const context = {
+    name,
   }
 
-  transaction.finish()
+  return async (arg: HandlerParams) => {
+    const transaction = Sentry.startTransaction(context)
 
-  return result
+    let result = undefined
+    try {
+      result = await callback(arg)
+    } catch (e) {
+      Sentry.captureException(e)
+    }
+
+    transaction.finish()
+
+    return result
+  }
 }
