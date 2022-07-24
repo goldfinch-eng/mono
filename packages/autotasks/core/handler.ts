@@ -4,7 +4,7 @@ import {HandlerParams} from "../types"
 import "@sentry/tracing"
 
 Sentry.init({
-  dsn: "https://753b95473ec54f83a8c0fcee242d6aca@o915675.ingest.sentry.io/6534483",
+  dsn: "https://a544fc1378cb4f24a50cfe9bce55f070@o915675.ingest.sentry.io/6592255",
   tracesSampleRate: 1.0,
 })
 
@@ -23,15 +23,13 @@ export default function handler(
   return async (arg: HandlerParams) => {
     const transaction = Sentry.startTransaction(context)
 
-    let result = undefined
     try {
-      result = await callback(arg)
+      return await callback(arg)
     } catch (e) {
       Sentry.captureException(e)
+      throw e
+    } finally {
+      transaction.finish()
     }
-
-    transaction.finish()
-
-    return result
   }
 }
