@@ -3,10 +3,13 @@ import {HandlerParams} from "../types"
 
 import "@sentry/tracing"
 
-Sentry.init({
-  dsn: "https://a544fc1378cb4f24a50cfe9bce55f070@o915675.ingest.sentry.io/6592255",
-  tracesSampleRate: 1.0,
-})
+if (process.env.NODE_ENV !== "test") {
+  Sentry.init({
+    // https://sentry.io/organizations/goldfinch/projects/autotasks/?project=6592255
+    dsn: "https://a544fc1378cb4f24a50cfe9bce55f070@o915675.ingest.sentry.io/6592255",
+    tracesSampleRate: 1.0,
+  })
+}
 
 export default function handler(
   name: string,
