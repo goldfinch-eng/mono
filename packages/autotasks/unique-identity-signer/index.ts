@@ -1,4 +1,5 @@
 import _ from "lodash"
+import * as Sentry from "@sentry/node"
 import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
@@ -19,6 +20,7 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
+import baseHandler from "../core/handler"
 
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
@@ -78,7 +80,7 @@ export function asAuth(obj: any): Auth {
   return auth
 }
 
-export async function handler(event: HandlerParams) {
+export const handler = baseHandler("unique-identity-signer", async (event: HandlerParams) => {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
 
   const auth = event.request.body.auth
@@ -93,7 +95,7 @@ export async function handler(event: HandlerParams) {
   const uniqueIdentity = new ethers.Contract(uniqueIdentityAddress, UniqueIdentityAbi, signer) as UniqueIdentity
 
   return await main({signer, auth: auth, network, uniqueIdentity})
-}
+})
 
 // Main function
 export async function main({
@@ -114,6 +116,8 @@ export async function main({
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
   const userAddress = auth["x-goldfinch-address"]
+
+  Sentry.setUser({id: userAddress})
 
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
