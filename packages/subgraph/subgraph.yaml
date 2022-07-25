@@ -471,6 +471,8 @@ templates:
           handler: handleStaked
         - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
           handler: handleUnstaked
+        - event: Unstaked(indexed address,indexed uint256,uint256)
+          handler: handleLegacyUnstaked
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
         - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256)

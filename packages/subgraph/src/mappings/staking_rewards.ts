@@ -4,6 +4,7 @@ import {
   Staked,
   StakingRewards,
   Unstaked,
+  Unstaked1 as LegacyUnstaked,
   Transfer,
   DepositedAndStaked,
   UnstakedAndWithdrew,
@@ -36,6 +37,16 @@ export function handleStaked(event: Staked): void {
 }
 
 export function handleUnstaked(event: Unstaked): void {
+  updateCurrentEarnRate(event.address)
+  updateStakedSeniorPoolBalance(event.params.user, event.params.amount.neg())
+
+  const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
+  stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
+
+  stakedPosition.save()
+}
+
+export function handleLegacyUnstaked(event: LegacyUnstaked): void {
   updateCurrentEarnRate(event.address)
   updateStakedSeniorPoolBalance(event.params.user, event.params.amount.neg())
 
