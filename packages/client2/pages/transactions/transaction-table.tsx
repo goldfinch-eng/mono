@@ -72,7 +72,7 @@ export function TransactionTable() {
           key={`${transaction.id}-category`}
           className="flex items-center gap-3 text-left"
         >
-          <Icon name={getTransactionIcon(transaction)} size="xs" />
+          <Icon name={getTransactionIcon(transaction)} size="sm" />
           {getTransactionLabel(transaction)}
         </div>,
         <div key={`${transaction.id}-amount`} className="text-left">
