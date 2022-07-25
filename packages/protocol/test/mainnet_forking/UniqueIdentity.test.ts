@@ -3,7 +3,6 @@ import {UniqueIdentityInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {expect, BN, getDeployedAsTruffleContract, toEthers} from "../testHelpers"
 import {getProtocolOwner, getSignerForAddress, OWNER_ROLE, SIGNER_ROLE} from "../../blockchain_scripts/deployHelpers"
 import {FetchKYCFunction, KYC} from "@goldfinch-eng/utils"
-import * as uniqueIdentitySigner from "@goldfinch-eng/autotasks/unique-identity-signer"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {Signer} from "ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -11,6 +10,12 @@ import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAc
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import * as migrate250 from "../../blockchain_scripts/migrations/v2.5.0/migrate"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+
+// Ideally, we reference this this directly with @goldfinch-eng/autotasks, but that currently
+// creates a circular dependency. Task to fix this:
+// https://linear.app/goldfinch/issue/GFI-840/refactor-mainnet-forking-tests
+import * as uniqueIdentitySigner from "../../../autotasks/unique-identity-signer"
+
 const {deployments, web3} = hre
 
 const TEST_TIMEOUT = 180000 // 3 mins
