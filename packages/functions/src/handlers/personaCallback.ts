@@ -88,7 +88,7 @@ export const personaCallback = genRequestHandler({
               id: eventPayload.id,
               status: existingData?.persona?.status === "approved" ? "approved" : status,
             },
-            countryCode: countryCode ? countryCode : existingData?.countryCode,
+            countryCode: countryCode || existingData?.countryCode || null,
             updatedAt: Date.now(),
           })
         } else {

@@ -228,6 +228,20 @@ describe("persona callback", async () => {
         expect(userDoc.exists).to.be.true
         expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
       })
+
+      it("can handle non-existent country codes", async () => {
+        await users.doc(address.toLowerCase()).set({
+          address: address,
+          persona: {status: "approved"},
+          updatedAt: 123,
+        })
+        const req = generatePersonaCallbackRequest(address, "closed", {}, {})
+        await personaCallback(req, expectResponse(200, {status: "success"}))
+
+        const userDoc = await users.doc(address.toLowerCase()).get()
+        expect(userDoc.exists).to.be.true
+        expect(userDoc.data()).to.containSubset({address: address})
+      })
     })
   })
 })
