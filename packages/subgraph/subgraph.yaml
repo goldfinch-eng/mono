@@ -226,6 +226,27 @@ dataSources:
           handler: handleNoListed
       file: ./src/mappings/goldfinch_config.ts
 
+  - kind: ethereum/contract
+    name: CommunityRewardsProxy
+    network: mainnet
+    source:
+      address: "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460"
+      abi: CommunityRewards_Proxy
+      startBlock: 13941109
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - GfiGrant
+      abis:
+        - name: CommunityRewards_Proxy
+          file: ./abis/CommunityRewards_Proxy.json
+      eventHandlers:
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/community_rewards_proxy.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -523,3 +544,23 @@ templates:
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
+
+  - name: CommunityRewards
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CommunityRewards
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/community_rewards.ts
+      entities:
+        - GfiGrant
+        - User
+      abis:
+        - name: CommunityRewards
+          file: ./abis/CommunityRewards.json
+      eventHandlers:
+        - event: Granted(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
+          handler: handleGranted

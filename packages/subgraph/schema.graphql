@@ -312,3 +312,14 @@ type Zap @entity {
   poolToken: TranchedPoolToken!
   tranchedPool: TranchedPool!
 }
+
+type GfiGrant @entity {
+  id: ID!
+  user: User!
+  totalGranted: BigInt!
+  totalClaimed: BigInt!
+  cliffLength: BigInt!
+  vestingInterval: BigInt!
+  grantedAt: BigInt!
+  revokedAt: BigInt!
+}
