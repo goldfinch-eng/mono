@@ -23,6 +23,7 @@ const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
 const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
 const deployedCommunityRewardsProxyAddress = localhostContracts.CommunityRewards_Proxy.address
+const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
 const deployedUsdcAddress = localhostContracts.TestERC20.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
@@ -60,6 +61,9 @@ for (let dataSource of subgraphManifest.dataSources) {
       break
     case "CommunityRewardsProxy":
       dataSource.source.address = deployedCommunityRewardsProxyAddress
+      break
+    case "MerkleDistributor":
+      dataSource.source.address = deployedMerkleDistributorAddress
       break
     default:
       break
