@@ -72,14 +72,6 @@ enum UserType {
 type User @entity {
   id: ID!
   type: UserType
-  """
-  This includes the amount staked in the senior pool. Doesn't count senior pool shares obtained through a secondary market.
-  """
-  seniorPoolBalance: BigInt!
-  """
-  Amount of FIDU the user has staked
-  """
-  stakedSeniorPoolBalance: BigInt!
   seniorPoolDeposits: [SeniorPoolDeposit!]! @derivedFrom(field: "user")
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
 

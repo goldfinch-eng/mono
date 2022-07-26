@@ -1,4 +1,4 @@
-import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {Address} from "@graphprotocol/graph-ts"
 import {User, SeniorPoolDeposit} from "../../generated/schema"
 import {DepositMade} from "../../generated/templates/SeniorPool/SeniorPool"
 import {DepositMade as V1DepositMade} from "../../generated/templates/Pool/Pool"
@@ -36,10 +36,4 @@ export function handleDepositForV1(event: V1DepositMade): void {
   deposit.blockNumber = event.block.number
   deposit.timestamp = event.block.timestamp
   deposit.save()
-}
-
-export function updateStakedSeniorPoolBalance(userAddress: Address, amountStaked: BigInt): void {
-  const user = getOrInitUser(userAddress)
-  user.stakedSeniorPoolBalance = user.stakedSeniorPoolBalance.plus(amountStaked)
-  user.save()
 }
