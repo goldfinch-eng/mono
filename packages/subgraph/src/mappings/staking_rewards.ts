@@ -35,7 +35,7 @@ export function handleStaked(event: Staked): void {
 }
 
 // Note that Unstaked and Unstaked1 refer to two different versions of this event with different signatures.
-export function handleLegacyUnstaked(event: Unstaked): void {
+export function handleUnstaked(event: Unstaked): void {
   updateCurrentEarnRate(event.address)
 
   const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
