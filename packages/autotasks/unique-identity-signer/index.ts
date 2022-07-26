@@ -144,10 +144,6 @@ export async function main({
     if (kycStatus.countryCode === "") {
       throw new Error(`Does not meet mint requirements: countryCode is null`)
     }
-
-    if (!kycStatus.residency) {
-      throw new Error(`Does not meet mint requirements: residency is ${kycStatus.residency}`)
-    }
   } else {
     // TODO We should verify the x-goldfinch-signature here!
   }
