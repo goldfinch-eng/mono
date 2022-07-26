@@ -1,5 +1,5 @@
 import {Address} from "@graphprotocol/graph-ts"
-import {User, SeniorPoolDeposit} from "../../generated/schema"
+import {User} from "../../generated/schema"
 import {DepositMade} from "../../generated/templates/SeniorPool/SeniorPool"
 import {DepositMade as V1DepositMade} from "../../generated/templates/Pool/Pool"
 
@@ -16,24 +16,12 @@ export function getOrInitUser(address: Address): User {
 
 export function handleDeposit(event: DepositMade): void {
   let userAddress = event.params.capitalProvider
-  let user = getOrInitUser(userAddress)
-  let deposit = new SeniorPoolDeposit(event.transaction.hash.toHexString())
-  deposit.user = user.id
-  deposit.amount = event.params.amount
-  deposit.shares = event.params.shares
-  deposit.blockNumber = event.block.number
-  deposit.timestamp = event.block.timestamp
-  deposit.save()
+  // Just adds a corresponding user entity to the database
+  getOrInitUser(userAddress)
 }
 
 export function handleDepositForV1(event: V1DepositMade): void {
   let userAddress = event.params.capitalProvider
-  let user = getOrInitUser(userAddress)
-  let deposit = new SeniorPoolDeposit(event.transaction.hash.toHexString())
-  deposit.user = user.id
-  deposit.amount = event.params.amount
-  deposit.shares = event.params.shares
-  deposit.blockNumber = event.block.number
-  deposit.timestamp = event.block.timestamp
-  deposit.save()
+  // Just adds a corresponding user entity to the database
+  getOrInitUser(userAddress)
 }
