@@ -479,6 +479,8 @@ templates:
           handler: handleDepositedAndStaked
         - event: UnstakedAndWithdrew(indexed address,uint256,indexed uint256,uint256)
           handler: handleUnstakedAndWithdrew
+        - event: UnstakedAndWithdrewMultiple(indexed address,uint256,uint256[],uint256[])
+          handler: handleUnstakedAndWithdrewMultiple
 
   - name: BackerRewards
     kind: ethereum/contract
