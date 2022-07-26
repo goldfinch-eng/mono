@@ -4,7 +4,7 @@ import {
   Staked,
   StakingRewards,
   Unstaked,
-  Unstaked1 as LegacyUnstaked,
+  Unstaked1,
   Transfer,
   DepositedAndStaked,
   UnstakedAndWithdrew,
@@ -36,7 +36,8 @@ export function handleStaked(event: Staked): void {
   stakedPosition.save()
 }
 
-export function handleUnstaked(event: Unstaked): void {
+// Note that Unstaked and Unstaked1 refer to two different versions of this event with different signatures.
+export function handleLegacyUnstaked(event: Unstaked): void {
   updateCurrentEarnRate(event.address)
   updateStakedSeniorPoolBalance(event.params.user, event.params.amount.neg())
 
@@ -46,7 +47,7 @@ export function handleUnstaked(event: Unstaked): void {
   stakedPosition.save()
 }
 
-export function handleLegacyUnstaked(event: LegacyUnstaked): void {
+export function handleUnstaked1(event: Unstaked1): void {
   updateCurrentEarnRate(event.address)
   updateStakedSeniorPoolBalance(event.params.user, event.params.amount.neg())
 

@@ -528,12 +528,6 @@
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "enum StakingRewards.StakedPositionType",
-          "name": "positionType",
-          "type": "uint8"
         }
       ],
       "name": "Unstaked",
@@ -559,6 +553,12 @@
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "enum StakingRewards.StakedPositionType",
+          "name": "positionType",
+          "type": "uint8"
         }
       ],
       "name": "Unstaked",
