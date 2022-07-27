@@ -532,14 +532,20 @@ templates:
           handler: handleRewardAdded
         - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
           handler: handleStaked
-        - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
+        - event: Unstaked(indexed address,indexed uint256,uint256)
           handler: handleUnstaked
+        - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
+          handler: handleUnstaked1
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256)
+        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256,uint256,uint256)
           handler: handleDepositedAndStaked
+        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256)
+          handler: handleDepositedAndStaked1
         - event: UnstakedAndWithdrew(indexed address,uint256,indexed uint256,uint256)
           handler: handleUnstakedAndWithdrew
+        - event: UnstakedAndWithdrewMultiple(indexed address,uint256,uint256[],uint256[])
+          handler: handleUnstakedAndWithdrewMultiple
 
   - name: BackerRewards
     kind: ethereum/contract

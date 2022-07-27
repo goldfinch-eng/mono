@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
+import { IconNameType } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
@@ -193,24 +194,6 @@ export function usdcWithinEpsilon(n1: BigNumber, n2: BigNumber): boolean {
 }
 
 /**
- * Utility function to determine if a user is in the US or not. Needs to consume a User fragment and a Geolocation (from Viewer)
- * @param user User object, must conform to fragment requirements (same as user eligibility for a pool)
- * @param countryCode String representing the user's country code, as returned from viewer.geolocation.
- * @returns True if the user should be considered a US user, false otherwise
- */
-export function isUsUser(
-  user: UserEligibilityFieldsFragment | null,
-  countryCode: string
-) {
-  if (user && (user.isUsAccreditedIndividual || user.isUsEntity)) {
-    return true;
-  } else if (countryCode === "US") {
-    return true;
-  }
-  return false;
-}
-
-/**
  * Utility function that will perform an ERC20 approval if it's necessary, and will toast messages for this approval too.
  */
 export async function approveErc20IfRequired({
@@ -279,4 +262,28 @@ export function getShortTransactionLabel(transaction: {
   category: TransactionCategory;
 }): string {
   return shortTransactionLabels[transaction.category];
+}
+
+const transactionIcons: Record<TransactionCategory, IconNameType> = {
+  [TransactionCategory.SeniorPoolDeposit]: "ArrowUpCircle",
+  [TransactionCategory.SeniorPoolDepositAndStake]: "ArrowUpCircle",
+  [TransactionCategory.SeniorPoolWithdrawal]: "ArrowDownCircle",
+  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "ArrowDownCircle",
+  [TransactionCategory.SeniorPoolRedemption]: "ArrowDownCircle",
+  [TransactionCategory.TranchedPoolDeposit]: "ArrowUpCircle",
+  [TransactionCategory.TranchedPoolWithdrawal]: "ArrowDownCircle",
+  [TransactionCategory.TranchedPoolRepayment]: "ArrowUpCircle",
+  [TransactionCategory.TranchedPoolDrawdown]: "ArrowDownCircle",
+  [TransactionCategory.UidMinted]: "CheckmarkCircle",
+};
+
+/**
+ * Returns the icon for the transaction category
+ * @param transaction Transaction object
+ * @returns Icon to use for the transaction
+ */
+export function getTransactionIcon(transaction: {
+  category: TransactionCategory;
+}): IconNameType {
+  return transactionIcons[transaction.category];
 }

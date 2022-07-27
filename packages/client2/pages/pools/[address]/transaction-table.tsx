@@ -161,6 +161,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
       hideHeadings
       rows={rows}
       onScrollBottom={onScrollBottom}
+      fixedHeight
     />
   );
 }
