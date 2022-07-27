@@ -75,6 +75,8 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
+
+  communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
