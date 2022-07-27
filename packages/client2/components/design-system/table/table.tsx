@@ -40,7 +40,7 @@ export function Table({
   }, [onScrollBottom]);
 
   return (
-    <div className={clsx("relative", !fixedHeight ? "mb-10" : "")}>
+    <div className="relative">
       <div className={clsx("overflow-auto", fixedHeight ? "max-h-96" : "")}>
         <table
           className={clsx(
