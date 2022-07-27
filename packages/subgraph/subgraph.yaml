@@ -268,6 +268,27 @@ dataSources:
           handler: handleGrantAccepted
       file: ./src/mappings/merkle_distributor.ts
 
+  - kind: ethereum/contract
+    name: BackerMerkleDistributor
+    network: mainnet
+    source:
+      address: "0xC442b55A082f7D5F8d8DcDA3d0efF50f47dD0F82"
+      abi: BackerMerkleDistributor
+      startBlock: 14129983
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - GfiGrant
+      abis:
+        - name: BackerMerkleDistributor
+          file: ./abis/BackerMerkleDistributor.json
+      eventHandlers:
+        - event: GrantAccepted(indexed uint256,indexed uint256,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleGrantAccepted
+      file: ./src/mappings/backer_merkle_distributor.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
