@@ -292,14 +292,14 @@ type Zap @entity {
   tranchedPool: TranchedPool!
 }
 
-enum GfiGrantSource {
+enum CommunityRewardsTokenSource {
   MERKLE_DISTRIBUTOR
   BACKER_MERKLE_DISTRIBUTOR
 }
 
-type GfiGrant @entity {
+type CommunityRewardsToken @entity {
   id: ID!
-  source: GfiGrantSource!
+  source: CommunityRewardsTokenSource!
   index: Int!
   user: User!
   totalGranted: BigInt!

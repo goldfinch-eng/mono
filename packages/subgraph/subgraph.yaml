@@ -238,7 +238,7 @@ dataSources:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - GfiGrant
+        - CommunityRewardsToken
       abis:
         - name: CommunityRewards_Proxy
           file: ./abis/CommunityRewards_Proxy.json
@@ -259,7 +259,7 @@ dataSources:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - GfiGrant
+        - CommunityRewardsToken
       abis:
         - name: MerkleDistributor
           file: ./abis/MerkleDistributor.json
@@ -280,7 +280,7 @@ dataSources:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - GfiGrant
+        - CommunityRewardsToken
       abis:
         - name: BackerMerkleDistributor
           file: ./abis/BackerMerkleDistributor.json
@@ -604,7 +604,7 @@ templates:
       language: wasm/assemblyscript
       file: ./src/mappings/community_rewards.ts
       entities:
-        - GfiGrant
+        - CommunityRewardsToken
         - User
       abis:
         - name: CommunityRewards
