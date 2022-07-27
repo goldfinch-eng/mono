@@ -1,9 +1,14 @@
 import {GfiGrant} from "../../generated/schema"
-import {Granted} from "../../generated/templates/CommunityRewards/CommunityRewards"
+import {RewardPaid, GrantRevoked} from "../../generated/templates/CommunityRewards/CommunityRewards"
 
-export function handleGranted(event: Granted): void {
-  let gfiGrant = GfiGrant.load(event.params.tokenId.toString())
-  if (!gfiGrant) {
-    // throw new Error("Got a grant from an unknown source")
-  }
+export function handleRewardPaid(event: RewardPaid): void {
+  const gfiGrant = assert(GfiGrant.load(event.params.tokenId.toString()))
+  gfiGrant.totalClaimed = gfiGrant.totalClaimed.plus(event.params.reward)
+  gfiGrant.save()
+}
+
+export function handleGrantRevoked(event: GrantRevoked): void {
+  const gfiGrant = assert(GfiGrant.load(event.params.tokenId.toString()))
+  gfiGrant.revokedAt = event.block.timestamp
+  gfiGrant.save()
 }
