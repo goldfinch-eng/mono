@@ -40,11 +40,12 @@ export function Table({
   }, [onScrollBottom]);
 
   return (
-    <div className="relative mb-10">
+    <div className={clsx("relative", !fixedHeight ? "mb-10" : "")}>
       <div className={clsx("overflow-auto", fixedHeight ? "max-h-96" : "")}>
         <table
           className={clsx(
             "min-w-full table-fixed border-collapse whitespace-nowrap text-sm",
+            fixedHeight ? "mb-10" : "",
             className
           )}
         >

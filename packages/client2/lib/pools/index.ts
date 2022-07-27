@@ -282,6 +282,19 @@ export function getShortTransactionLabel(transaction: {
   return shortTransactionLabels[transaction.category];
 }
 
+const transactionIcons: Record<TransactionCategory, IconNameType> = {
+  [TransactionCategory.SeniorPoolDeposit]: "ArrowUpCircle",
+  [TransactionCategory.SeniorPoolDepositAndStake]: "ArrowUpCircle",
+  [TransactionCategory.SeniorPoolWithdrawal]: "ArrowDownCircle",
+  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "ArrowDownCircle",
+  [TransactionCategory.SeniorPoolRedemption]: "ArrowDownCircle",
+  [TransactionCategory.TranchedPoolDeposit]: "ArrowUpCircle",
+  [TransactionCategory.TranchedPoolWithdrawal]: "ArrowDownCircle",
+  [TransactionCategory.TranchedPoolRepayment]: "ArrowUpCircle",
+  [TransactionCategory.TranchedPoolDrawdown]: "ArrowDownCircle",
+  [TransactionCategory.UidMinted]: "CheckmarkCircle",
+};
+
 /**
  * Returns the icon for the transaction category
  * @param transaction Transaction object
@@ -290,19 +303,5 @@ export function getShortTransactionLabel(transaction: {
 export function getTransactionIcon(transaction: {
   category: TransactionCategory;
 }): IconNameType {
-  switch (transaction.category) {
-    case TransactionCategory.SeniorPoolRedemption:
-    case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
-    case TransactionCategory.SeniorPoolWithdrawal:
-    case TransactionCategory.TranchedPoolDrawdown:
-    case TransactionCategory.TranchedPoolWithdrawal:
-      return "ArrowDownCircle";
-    case TransactionCategory.SeniorPoolDeposit:
-    case TransactionCategory.SeniorPoolDepositAndStake:
-    case TransactionCategory.TranchedPoolDeposit:
-    case TransactionCategory.TranchedPoolRepayment:
-      return "ArrowUpCircle";
-    default:
-      return "CheckmarkCircle";
-  }
+  return transactionIcons[transaction.category];
 }
