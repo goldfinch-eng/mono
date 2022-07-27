@@ -87,5 +87,5 @@ export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMult
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL")
   transaction.amount = event.params.usdcReceivedAmount
   transaction.user = event.params.user.toHexString()
-  transaction.save
+  transaction.save()
 }
