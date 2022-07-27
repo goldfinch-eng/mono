@@ -239,7 +239,7 @@ describe("unique-identity-signer", () => {
           })
         })
 
-        it("throws an error", async () => {
+        it("does not throw an error", async () => {
           const auth = {
             "x-goldfinch-address": anotherUser,
             "x-goldfinch-signature": "test_signature",
@@ -255,7 +255,7 @@ describe("unique-identity-signer", () => {
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
             })
-          ).to.be.rejectedWith(/Does not meet mint requirements: residency/)
+          ).to.be.fulfilled
         })
       })
     })
