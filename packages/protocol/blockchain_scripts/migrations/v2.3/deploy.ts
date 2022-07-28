@@ -52,12 +52,12 @@ export async function deploy(deployEffects: DeployEffects) {
   })
 
   // 7. upgrade goldfinch factory
-  const goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {
-    at: upgradedContracts.GoldfinchFactory?.ProxyContract.address,
-  })
-  await deployEffects.add({
-    deferred: [await goldfinchFactory.populateTransaction.performUpgrade()],
-  })
+  // const goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {
+  //   at: upgradedContracts.GoldfinchFactory?.ProxyContract.address,
+  // })
+  // await deployEffects.add({
+  //   deferred: [await goldfinchFactory.populateTransaction.performUpgrade()],
+  // })
 
   return {
     deployedContracts: {

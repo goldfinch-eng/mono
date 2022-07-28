@@ -24,12 +24,12 @@ import {
   getTruffleContract,
   getUSDCAddress,
   MAINNET_CHAIN_ID,
+  MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
 } from "../../blockchain_scripts/deployHelpers"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
-import * as migrate260 from "../../blockchain_scripts/migrations/v2.6.0/migrate"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {JsonRpcSigner} from "@ethersproject/providers"
@@ -58,6 +58,24 @@ describe("the FIDU-USDC Curve Pool", async function () {
 
     goListedUser = await getGoListedUser(resources)
   })
+
+  //==============================================================
+  // START: Property assertions
+  //==============================================================
+  describe("coins", () => {
+    it("returns fidu at index 0", async () => {
+      const {curvePool, fidu} = resources
+      expect(await curvePool.coins("0")).to.equal(fidu.address)
+    })
+
+    it("returns usdc at index 1", async () => {
+      const {curvePool, usdc} = resources
+      expect(await curvePool.coins("1")).to.equal(usdc.address)
+    })
+  })
+  //==============================================================
+  // END: Property assertions
+  //==============================================================
 
   //==============================================================
   // START: Adding liquidity
@@ -590,8 +608,6 @@ async function setupResources({deployments}: {deployments: DeploymentsExtension}
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
 
-  await migrate260.main()
-
   return {
     ...goldfinchContracts,
     ...erc20Contracts,
@@ -633,8 +649,7 @@ async function setupERC20Resources(): Promise<ERC20Resources> {
 }
 
 async function setupExternalResources(): Promise<ExternalResources> {
-  const curveAddress = "0x80aa1a80a30055DAA084E599836532F3e58c95E2"
-  const curvePool: ICurveLPInstance = await artifacts.require("ICurveLP").at(curveAddress)
+  const curvePool: ICurveLPInstance = await artifacts.require("ICurveLP").at(MAINNET_FIDU_USDC_CURVE_LP_ADDRESS)
   const curveLPToken: IERC20Instance = await artifacts.require("IERC20withDec").at((await curvePool.token()) as string)
 
   return {curvePool, curveLPToken}

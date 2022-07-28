@@ -1,7 +1,7 @@
 import {Fidu as FiduContract} from "@goldfinch-eng/protocol/typechain/web3/Fidu"
 import {Go} from "@goldfinch-eng/protocol/typechain/web3/Go"
 import {ICurveLP as CurveContract} from "@goldfinch-eng/protocol/typechain/web3/ICurveLP"
-import {Pool as PoolContract} from "@goldfinch-eng/protocol/typechain/web3/Pool"
+import {Pool as PoolContract} from "../@types/legacy/Pool"
 import {SeniorPool as SeniorPoolContract} from "@goldfinch-eng/protocol/typechain/web3/SeniorPool"
 import {StakingRewards as StakingRewardsContract} from "@goldfinch-eng/protocol/typechain/web3/StakingRewards"
 import {TranchedPool} from "@goldfinch-eng/protocol/typechain/web3/TranchedPool"
@@ -63,8 +63,8 @@ class Pool {
 
   constructor(goldfinchProtocol: GoldfinchProtocol) {
     this.goldfinchProtocol = goldfinchProtocol
-    this.contract = goldfinchProtocol.getContract<PoolContract>("Pool")
-    this.address = goldfinchProtocol.getAddress("Pool")
+    this.contract = goldfinchProtocol.getContract<PoolContract>("Pool", undefined, true)
+    this.address = goldfinchProtocol.getAddress("Pool", true)
     this.chain = goldfinchProtocol.networkId
   }
 }
@@ -736,9 +736,7 @@ async function getEstimatedTotalSeniorPoolInterest(
         totalSeniorDeposits = new BigNumber(0)
         for (let i = 0; i < numSlices; i++) {
           totalSeniorDeposits = totalSeniorDeposits.plus(
-            new BigNumber(
-              (await pool.readOnly.methods.poolSlices(i).call(undefined, currentBlock.number)).seniorTranche[1]
-            )
+            new BigNumber((await pool.readOnly.methods.poolSlices(i).call(undefined, currentBlock.number))[0][1])
           )
         }
       } else {

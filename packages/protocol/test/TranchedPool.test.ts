@@ -16,6 +16,8 @@ import {
   decodeAndGetFirstLog,
   setupBackerRewards,
   getCurrentTimestamp,
+  mineBlock,
+  bigVal,
 } from "./testHelpers"
 import {interestAprAsBN, TRANCHES, MAX_UINT, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {expectEvent, time} from "@openzeppelin/test-helpers"
@@ -29,13 +31,15 @@ import {DepositMade, TrancheLocked, PaymentApplied, SharePriceUpdated} from "../
 import {
   CreditLineInstance,
   GoldfinchConfigInstance,
-  GoldfinchFactoryInstance,
   PoolTokensInstance,
   TestUniqueIdentityInstance,
   SeniorPoolInstance,
   TranchedPoolInstance,
   BackerRewardsInstance,
   GFIInstance,
+  StakingRewardsInstance,
+  FiduInstance,
+  TestTranchedPoolInstance,
 } from "../typechain/truffle"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -89,12 +93,13 @@ describe("TranchedPool", () => {
     usdc,
     uniqueIdentity: TestUniqueIdentityInstance,
     poolTokens: PoolTokensInstance,
-    goldfinchFactory: GoldfinchFactoryInstance,
+    fidu: FiduInstance,
     creditLine: CreditLineInstance,
     treasury,
     backerRewards: BackerRewardsInstance,
     tranchedPool: TranchedPoolInstance,
     gfi: GFIInstance,
+    stakingRewards: StakingRewardsInstance,
     seniorPool: SeniorPoolInstance
   const limit = usdcVal(1000)
   let interestApr = interestAprAsBN("5.00")
@@ -107,16 +112,20 @@ describe("TranchedPool", () => {
 
   const testSetup = deployments.createFixture(async ({deployments}) => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, goldfinchConfig, goldfinchFactory, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi} =
+    ;({usdc, goldfinchConfig, fidu, poolTokens, backerRewards, uniqueIdentity, seniorPool, gfi, stakingRewards} =
       await deployBaseFixture())
+
     await goldfinchConfig.bulkAddToGoList([owner, borrower, otherPerson])
     await goldfinchConfig.setTreasuryReserve(treasury)
-    await setupBackerRewards(gfi, backerRewards, owner)
+    await setupBackerRewards(gfi, backerRewards, stakingRewards, owner)
     await erc20Transfer(usdc, [otherPerson], usdcVal(20000), owner)
     await erc20Transfer(usdc, [borrower], usdcVal(10000), owner)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [otherPerson])
     await seniorPool.deposit(usdcVal(1000), {from: otherPerson})
+
+    await fidu.approve(stakingRewards.address, bigVal(100), {from: otherPerson})
+    await stakingRewards.stake(bigVal(100), new BN(0), {from: otherPerson})
 
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     const {tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
@@ -137,11 +146,11 @@ describe("TranchedPool", () => {
   })
 
   const getTrancheAmounts = async (trancheInfo) => {
-    const interestAmount = await tranchedPool.sharePriceToUsdc(
+    const interestAmount = await (tranchedPool as TestTranchedPoolInstance).sharePriceToUsdc(
       trancheInfo.interestSharePrice,
       trancheInfo.principalDeposited
     )
-    const principalAmount = await tranchedPool.sharePriceToUsdc(
+    const principalAmount = await (tranchedPool as TestTranchedPoolInstance).sharePriceToUsdc(
       trancheInfo.principalSharePrice,
       trancheInfo.principalDeposited
     )
@@ -348,6 +357,7 @@ describe("TranchedPool", () => {
         [() => getBalance(treasury, usdc), {by: amount.mul(new BN(2))}],
       ])
     })
+
     it("should emit an event", async () => {
       const txn = await tranchedPool.emergencyShutdown()
       expectEvent(txn, "EmergencyShutdown", {pool: tranchedPool.address})
@@ -394,51 +404,12 @@ describe("TranchedPool", () => {
     })
   })
 
-  describe("migrateAndSetNewCreditLine", async () => {
-    let otherCreditLine: string
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      otherCreditLine = creditLine.address
-      ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
-        usdcAddress: usdc.address,
-        borrower,
-        principalGracePeriodInDays,
-        limit,
-        interestApr,
-        paymentPeriodInDays,
-        termInDays,
-        fundableAt,
-        lateFeeApr,
-        juniorFeePercent,
-        id: "newPool",
-      }))
-      await tranchedPool.grantRole(await tranchedPool.SENIOR_ROLE(), owner)
-    })
-    it("should set the new creditline", async () => {
-      await expectAction(() => tranchedPool.migrateAndSetNewCreditLine(otherCreditLine)).toChange([
-        [tranchedPool.creditLine, {to: otherCreditLine, bignumber: false}],
-      ])
-    })
-    it("can only be called by governance", async () => {
-      await expect(tranchedPool.migrateAndSetNewCreditLine(otherCreditLine, {from: borrower})).to.be.rejectedWith(
-        /Must have admin role/
-      )
-    })
-    it("should close out the old creditline", async () => {
-      const creditLine = await CreditLine.at(await tranchedPool.creditLine())
-      await tranchedPool.migrateAndSetNewCreditLine(otherCreditLine)
-      expect(await creditLine.balance()).to.bignumber.eq(new BN(0))
-    })
-  })
-
   describe("deposit", async () => {
     describe("junior tranche", async () => {
       it("fails if not legacy golisted and does not have allowed UID token", async () => {
         await tranchedPool.setAllowedUIDTypes([], {from: borrower})
         await goldfinchConfig.bulkRemoveFromGoList([owner])
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /Address not go-listed/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(/NA/)
       })
 
       it("fails if not legacy golisted and has incorrect UID token", async () => {
@@ -449,9 +420,7 @@ describe("TranchedPool", () => {
         await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
         await tranchedPool.setAllowedUIDTypes([1], {from: borrower})
 
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /Address not go-listed/
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.rejectedWith(/NA/)
       })
 
       it("if granted allowed UID token, does not fail for go-listed error", async () => {
@@ -466,15 +435,15 @@ describe("TranchedPool", () => {
 
       it("does not allow deposits when pool is locked", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/Tranche locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))).to.be.rejectedWith(/TL/)
       })
 
       it("does not allow 0 value deposits", async () => {
-        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(/Must deposit > zero/)
+        await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(0))).to.be.rejectedWith(/IA/)
       })
 
       it("fails for invalid tranches", async () => {
-        await expect(tranchedPool.deposit(0, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
+        await expect(tranchedPool.deposit(0, usdcVal(10))).to.be.rejectedWith(/invalid tranche/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -545,16 +514,14 @@ describe("TranchedPool", () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10))
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/Tranche locked/)
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))).to.be.rejectedWith(/TL/)
       })
 
       it("allows deposits from the senior pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
         await tranchedPool.lockJuniorCapital({from: owner})
 
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
-          /Req SENIOR_ROLE/i
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(/NA/i)
         const tx = await seniorPool.invest(tranchedPool.address)
         expectEvent(tx, "InvestmentMadeInSenior")
       })
@@ -562,17 +529,15 @@ describe("TranchedPool", () => {
       it("forbids deposits from accounts without the SENIOR_ROLE", async () => {
         const seniorRole = await tranchedPool.SENIOR_ROLE()
         expect(await tranchedPool.hasRole(seniorRole, borrower)).to.be.false
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(
-          /Req SENIOR_ROLE/i
-        )
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(10), {from: borrower})).to.be.rejectedWith(/NA/i)
       })
 
       it("fails for invalid tranches", async () => {
-        await expect(tranchedPool.deposit(3, usdcVal(10))).to.be.rejectedWith(/Unsupported tranche/)
+        await expect(tranchedPool.deposit(3, usdcVal(10))).to.be.rejectedWith(/invalid tranche/)
       })
 
       it("does not allow 0 value deposits", async () => {
-        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(/Must deposit > zero/)
+        await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(0))).to.be.rejectedWith(/IA/)
       })
 
       it("updates the tranche info and mints the token", async () => {
@@ -721,9 +686,7 @@ describe("TranchedPool", () => {
         const firstLog = getFirstLog(logs)
         const tokenId = firstLog.args.tokenId
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(
-          /Address not go-listed/
-        )
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(/NA/)
       })
 
       it("if granted allowed UID token, does not fail for go-listed error", async () => {
@@ -747,10 +710,8 @@ describe("TranchedPool", () => {
         const firstLog = getFirstLog(logs)
         const tokenId = firstLog.args.tokenId
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: otherPerson})).to.be.rejectedWith(
-          /Not token owner/
-        )
-        await expect(tranchedPool.withdrawMax(tokenId, {from: otherPerson})).to.be.rejectedWith(/Not token owner/)
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: otherPerson})).to.be.rejectedWith(/NA/)
+        await expect(tranchedPool.withdrawMax(tokenId, {from: otherPerson})).to.be.rejectedWith(/NA/)
       })
       it("does not allow you to withdraw if pool token is from a different pool", async () => {
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: owner})
@@ -786,9 +747,7 @@ describe("TranchedPool", () => {
         const tokenId = firstLog.args.tokenId
 
         await expect(tranchedPool.withdrawMax(tokenId, {from: owner})).to.be.fulfilled
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(
-          /Invalid redeem amount/
-        )
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10), {from: owner})).to.be.rejectedWith(/IA/)
       })
 
       it("does not allow you to withdraw zero amounts", async () => {
@@ -797,9 +756,7 @@ describe("TranchedPool", () => {
         const firstLog = getFirstLog(logs)
         const tokenId = firstLog.args.tokenId
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(
-          /Must withdraw more than zero/
-        )
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(0), {from: owner})).to.be.rejectedWith(/IA/)
       })
     })
 
@@ -832,7 +789,7 @@ describe("TranchedPool", () => {
 
         await tranchedPool.lockJuniorCapital({from: borrower})
 
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/TL/)
       })
 
       it("lets you withdraw pro-rata share of payments", async () => {
@@ -875,7 +832,7 @@ describe("TranchedPool", () => {
         expect(tokenInfo.interestRedeemed).to.bignumber.eq(usdcVal(225).div(new BN(10)))
 
         // After withdrawing the max, the junior investor should not be able to withdraw more
-        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/Invalid redeem amount/)
+        await expect(tranchedPool.withdraw(tokenId, usdcVal(10))).to.be.rejectedWith(/IA/)
       })
 
       it("emits a WithdrawalMade event", async () => {
@@ -923,7 +880,7 @@ describe("TranchedPool", () => {
 
       await tranchedPool.lockJuniorCapital({from: borrower})
 
-      await expect(tranchedPool.withdraw(juniorTokenId, usdcVal(10))).to.be.rejectedWith(/Tranche is locked/)
+      await expect(tranchedPool.withdraw(juniorTokenId, usdcVal(10))).to.be.rejectedWith(/TL/)
 
       const seniorResponse = await seniorPool.invest(tranchedPool.address)
       const logs2 = decodeLogs<DepositMade>(seniorResponse.receipt.rawLogs, tranchedPool, "DepositMade")
@@ -931,7 +888,7 @@ describe("TranchedPool", () => {
       const seniorTokenId = firstLog2.args.tokenId
       await tranchedPool.lockPool({from: borrower})
 
-      await expect(tranchedPool.withdraw(seniorTokenId, usdcVal(10))).to.be.rejectedWith(/Not token owner/i)
+      await expect(tranchedPool.withdraw(seniorTokenId, usdcVal(10))).to.be.rejectedWith(/NA/i)
 
       await tranchedPool.drawdown(usdcVal(25), {from: borrower})
 
@@ -977,19 +934,19 @@ describe("TranchedPool", () => {
       it("reverts if any token id is not owned by the sender", async () => {
         await expect(
           tranchedPool.withdrawMultiple([firstToken, thirdTokenFromDifferentUser], [usdcVal(50), usdcVal(200)])
-        ).to.be.rejectedWith(/Not token owner/)
+        ).to.be.rejectedWith(/NA/)
       })
 
       it("reverts if any amount exceeds withdrawable amount for that token", async () => {
         await expect(
           tranchedPool.withdrawMultiple([firstToken, secondToken], [usdcVal(50), usdcVal(250)])
-        ).to.be.rejectedWith(/Invalid redeem amount/)
+        ).to.be.rejectedWith(/IA/)
       })
 
       it("reverts if array lengths don't match", async () => {
         await expect(
           tranchedPool.withdrawMultiple([firstToken, thirdTokenFromDifferentUser], [usdcVal(50)])
-        ).to.be.rejectedWith(/TokensIds and Amounts mismatch/)
+        ).to.be.rejectedWith(/LEN/)
       })
     })
 
@@ -1039,7 +996,7 @@ describe("TranchedPool", () => {
         [async () => await getBalance(owner, usdc), {by: usdcVal(52250).div(new BN(100))}],
       ])
       // Nothing left to withdraw
-      await expect(tranchedPool.withdrawMax(tokenId)).to.be.rejectedWith(/Must withdraw more than zero/)
+      await expect(tranchedPool.withdrawMax(tokenId)).to.be.rejectedWith(/IA/)
     })
 
     it("emits a WithdrawalMade event", async () => {
@@ -1161,9 +1118,7 @@ describe("TranchedPool", () => {
     it("validate must be locker", async () => {
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.fulfilled
       await expect(tranchedPool.setAllowedUIDTypes([1], {from: owner})).to.be.fulfilled
-      await expect(tranchedPool.setAllowedUIDTypes([1], {from: otherPerson})).to.be.rejectedWith(
-        /Must have locker role/
-      )
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: otherPerson})).to.be.rejectedWith(/NA/)
     })
 
     it("validate no principal has been deposited to jr pool", async () => {
@@ -1176,7 +1131,7 @@ describe("TranchedPool", () => {
 
       await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.fulfilled
 
-      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/Must not have balance/)
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/has balance/)
     })
 
     it("validate no principal has been deposited to sr pool", async () => {
@@ -1189,7 +1144,7 @@ describe("TranchedPool", () => {
 
       await expect(tranchedPool.deposit(TRANCHES.Senior, usdcVal(1), {from: owner})).to.be.fulfilled
 
-      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/Must not have balance/)
+      await expect(tranchedPool.setAllowedUIDTypes([1], {from: borrower})).to.be.rejectedWith(/has balance/)
     })
   })
 
@@ -1301,7 +1256,7 @@ describe("TranchedPool", () => {
         await expect(tranchedPool.pause({from: owner})).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        await expect(tranchedPool.pause({from: borrower})).to.be.rejectedWith(/Must have pauser role/)
+        await expect(tranchedPool.pause({from: borrower})).to.be.rejectedWith(/NA/)
       })
     })
   })
@@ -1367,13 +1322,13 @@ describe("TranchedPool", () => {
         it("does not lock", async () => {
           const actor = otherPerson
           await tranchedPool.deposit(TRANCHES.Senior, usdcVal(10))
-          await expect(tranchedPool.lockJuniorCapital({from: actor})).to.be.rejectedWith(/Must have locker role/)
+          await expect(tranchedPool.lockJuniorCapital({from: actor})).to.be.rejectedWith(/NA/)
         })
       })
 
       it("does not allow locking twice", async () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
-        await expect(tranchedPool.lockJuniorCapital({from: borrower})).to.be.rejectedWith(/already locked/)
+        await expect(tranchedPool.lockJuniorCapital({from: borrower})).to.be.rejectedWith(/TL/)
       })
     })
 
@@ -1425,17 +1380,18 @@ describe("TranchedPool", () => {
       describe("as someone else", async () => {
         it("does not lock", async () => {
           const actor = otherPerson
-          await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Must have locker role/)
+          await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/NA/)
         })
       })
 
       it("does not allow locking twice", async () => {
         const actor = owner
         await tranchedPool.lockPool({from: actor})
-        await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/Lock cannot be extended/)
+        await expect(tranchedPool.lockPool({from: actor})).to.be.rejectedWith(/TL/)
       })
     })
   })
+
   describe("drawdown", async () => {
     describe("when deposits are over the limit", async () => {
       it("does not adjust the limit up", async () => {
@@ -1468,9 +1424,127 @@ describe("TranchedPool", () => {
         await tranchedPool.lockPool({from: borrower})
       })
 
+      describe("first drawdown", () => {
+        it("sets termEndTime", async () => {
+          await tranchedPool.drawdown(usdcVal(1), {from: borrower})
+          const timeAfterFirstDrawdown = await time.latest()
+
+          // Verify term end time was set
+          expect(await creditLine.termEndTime()).to.bignumber.eq(
+            timeAfterFirstDrawdown.add(termInDays.mul(SECONDS_PER_DAY))
+          )
+        })
+
+        describe("subsequent drawdown", () => {
+          describe("when creditLine balance is 0", () => {
+            it("doesn't change termEndTime", async () => {
+              // Drawdown full amount
+              await tranchedPool.drawdown(usdcVal(10), {from: borrower})
+
+              // Advance time by one payment period and make make full payment
+              await advanceTime({days: paymentPeriodInDays})
+              await expectAction(async () => tranchedPool.pay(usdcVal(11), {from: borrower})).toChange([
+                [creditLine.balance, {to: new BN(0)}],
+              ])
+
+              // Drawdown full amount again
+              await expectAction(async () => tranchedPool.drawdown(usdcVal(10), {from: borrower})).toChange([
+                [creditLine.balance, {to: usdcVal(10)}],
+                // Term end time should not have changed
+                [creditLine.termEndTime, {unchanged: true}],
+              ])
+            })
+          })
+
+          describe("when creditLine balance is not 0", () => {
+            it("doesn't change termEndTime", async () => {
+              // Drawdown partial amount
+              await expectAction(async () => tranchedPool.drawdown(usdcVal(5), {from: borrower})).toChange([
+                [creditLine.balance, {to: usdcVal(5)}],
+              ])
+
+              // Drawdown again
+              await expectAction(async () => tranchedPool.drawdown(usdcVal(5), {from: borrower})).toChange([
+                [creditLine.balance, {to: usdcVal(10)}],
+                // term end date should not change
+                [creditLine.termEndTime, {unchanged: true}],
+              ])
+            })
+          })
+        })
+      })
+
+      describe("principal owed", () => {
+        it("should be 0 before term end time", async () => {
+          // Drawdown full amount
+          await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
+            [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
+            [creditLine.balance, {to: usdcVal(10)}],
+          ])
+
+          // Advance to this arbitrarily chosen time. The important thing is it's between
+          // the first drawdown and termEndTime
+          await advanceTime({seconds: paymentPeriodInDays.mul(SECONDS_PER_DAY).add(new BN(1234))})
+
+          // After assessment the principal owed should still be 0
+          expect(await creditLine.principalOwed()).to.bignumber.equal(new BN(0))
+          await expectAction(tranchedPool.assess).toChange([[creditLine.principalOwed, {unchanged: true}]])
+        })
+
+        it("should be full balance after term end time", async () => {
+          // Drawdown full amount
+          await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
+            [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
+            [creditLine.balance, {to: usdcVal(10)}],
+          ])
+
+          // Advance time to term end
+          await advanceTime({days: termInDays})
+
+          // after assessment the principal owed should be the full amount
+          expect(await creditLine.principalOwed()).to.bignumber.equal(new BN(0))
+          await expectAction(tranchedPool.assess).toChange([[creditLine.principalOwed, {to: usdcVal(10)}]])
+        })
+      })
+
+      it("can repay full interest and principal multiple times before termEndTime", async () => {
+        // Drawdown in full and repay multiple times. 5 was chosen arbitrarily.
+        for (let i = 0; i < 5; ++i) {
+          await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
+            [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
+            [creditLine.balance, {to: usdcVal(10)}],
+          ])
+          await advanceTime({days: paymentPeriodInDays})
+          await expectAction(async () => tranchedPool.pay(usdcVal(11), {from: borrower})).toChange([
+            [creditLine.balance, {to: new BN(0)}],
+          ])
+        }
+      })
+
+      it("can still be repayed after term end time", async () => {
+        // Drawdown full amount
+        await expectAction(async () => tranchedPool.drawdown(usdcVal(10))).toChange([
+          [async () => usdc.balanceOf(borrower), {by: usdcVal(10)}],
+          [creditLine.balance, {to: usdcVal(10)}],
+        ])
+
+        // Advance to when the end of the loan + some more
+        await advanceTime({days: termInDays.add(new BN(1))})
+        await mineBlock()
+        expect(await time.latest()).to.bignumber.gt(await creditLine.termEndTime())
+
+        // Payback in full after term end time
+        await tranchedPool.assess()
+        await expectAction(async () => tranchedPool.pay(usdcVal(11))).toChange([
+          [creditLine.balance, {to: new BN(0)}],
+          [creditLine.interestOwed, {to: new BN(0)}],
+          [creditLine.principalOwed, {to: new BN(0)}],
+        ])
+      })
+
       describe("validations", async () => {
         it("does not allow drawing down more than the limit", async () => {
-          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/Insufficient funds in slice/)
+          await expect(tranchedPool.drawdown(usdcVal(20))).to.be.rejectedWith(/IF/)
         })
 
         it("does not allow drawing down 0", async () => {
@@ -1484,6 +1558,15 @@ describe("TranchedPool", () => {
             /Cannot drawdown when payments are past due/
           )
         })
+
+        it("does not allow drawing down after the term end time", async () => {
+          // Drawdown to set the term end time
+          await tranchedPool.drawdown(usdcVal(5), {from: borrower})
+          // Advance to end of term
+          await advanceTime({days: termInDays})
+          // Next drawdown should revert
+          await expect(tranchedPool.drawdown(usdcVal(1), {from: borrower})).to.be.rejectedWith(/After termEndTime/)
+        })
       })
 
       context("locking drawdowns", async () => {
@@ -1491,7 +1574,7 @@ describe("TranchedPool", () => {
           await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
           const pauseTxn = await tranchedPool.pauseDrawdowns()
           expectEvent(pauseTxn, "DrawdownsPaused", {pool: tranchedPool.address})
-          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/Drawdowns are paused/)
+          await expect(tranchedPool.drawdown(usdcVal(1))).to.be.rejectedWith(/DP/)
           const unpauseTxn = await tranchedPool.unpauseDrawdowns()
           expectEvent(unpauseTxn, "DrawdownsUnpaused", {pool: tranchedPool.address})
           await expect(tranchedPool.drawdown(usdcVal(1))).to.be.fulfilled
@@ -2113,16 +2196,12 @@ describe("TranchedPool", () => {
       })
 
       it("does not allow creating a slice when current slice is still active", async () => {
-        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
-          /Current slice still active/
-        )
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(/NL/)
 
         await tranchedPool.lockJuniorCapital({from: borrower})
 
         // Senior must also be locked
-        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
-          /Current slice still active/
-        )
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(/NL/)
 
         await tranchedPool.lockPool({from: borrower})
 
@@ -2142,9 +2221,7 @@ describe("TranchedPool", () => {
         await advanceTime({days: halfOfTerm.toNumber() + 1})
 
         await tranchedPool.assess()
-        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
-          /Creditline is late/
-        )
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(/LP/)
       })
 
       it("does not allow depositing before the fundableAt", async () => {
@@ -2157,7 +2234,7 @@ describe("TranchedPool", () => {
         // one day in the future
         const newFundableAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
         await tranchedPool.initializeNextSlice(newFundableAt, {from: borrower})
-        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not open for funding/)
+        await expect(tranchedPool.deposit("3", usdcVal(10))).to.be.rejectedWith(/Not open/)
 
         // advance 2 days, and it should work
         await advanceTime({days: 2})
@@ -2180,9 +2257,7 @@ describe("TranchedPool", () => {
         await hre.ethers.provider.send("evm_mine", [])
 
         expect(await creditLine.withinPrincipalGracePeriod()).to.be.false
-        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
-          /Beyond principal grace period/
-        )
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(/GP/)
       })
 
       it("does not allow creating more than 5 slices", async () => {
@@ -2194,9 +2269,7 @@ describe("TranchedPool", () => {
         await tranchedPool.lockJuniorCapital({from: borrower})
         await tranchedPool.lockPool({from: borrower})
 
-        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(
-          /Cannot exceed 5 slices/
-        )
+        await expect(tranchedPool.initializeNextSlice(fundableAt, {from: borrower})).to.be.rejectedWith(/SL/)
       })
     })
 
@@ -2210,7 +2283,7 @@ describe("TranchedPool", () => {
       await tranchedPool.initializeNextSlice(fundableAt, {from: borrower})
       await advanceTime({days: termInDays.div(new BN(2))})
 
-      await expect(tranchedPool.pay(usdcVal(100), {from: borrower})).to.be.rejectedWith(/Pool is not locked/)
+      await expect(tranchedPool.pay(usdcVal(100), {from: borrower})).to.be.rejectedWith(/NL/)
     })
 
     it("distributes interest correctly across different drawdowns", async () => {
