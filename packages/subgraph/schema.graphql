@@ -307,7 +307,10 @@ type CommunityRewardsToken @entity {
   totalGranted: BigInt!
   totalClaimed: BigInt!
   cliffLength: BigInt!
+  vestingLength: BigInt!
   vestingInterval: BigInt!
   grantedAt: BigInt!
   revokedAt: BigInt!
+  startTime: BigInt!
+  endTime: BigInt!
 }

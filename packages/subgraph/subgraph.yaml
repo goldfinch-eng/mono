@@ -610,5 +610,9 @@ templates:
         - name: CommunityRewards
           file: ./abis/CommunityRewards.json
       eventHandlers:
+        - event: Granted(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
+          handler: handleGranted
         - event: RewardPaid(indexed address,indexed uint256,uint256)
           handler: handleRewardPaid
+        - event: GrantRevoked(indexed uint256,uint256)
+          handler: handleGrantRevoked
