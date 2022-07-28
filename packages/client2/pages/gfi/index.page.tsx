@@ -1,14 +1,41 @@
+import { gql } from "@apollo/client";
 import { useEffect, useState } from "react";
 
 import { Heading, Stat, StatGrid } from "@/components/design-system";
-import { GrantWithSource } from "@/lib/gfi-rewards";
+import { GrantWithSource, GrantWithToken } from "@/lib/gfi-rewards";
+import { useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import { GrantCard } from "./grant-card";
 
+gql`
+  query GfiPage($userId: ID!) {
+    user(id: $userId) {
+      id
+      communityRewardsTokens {
+        id
+        index
+        source
+        totalGranted
+        totalClaimed
+        vestingInterval
+        cliffLength
+        grantedAt
+        revokedAt
+      }
+    }
+  }
+`;
+
 export default function GfiPage() {
   const { account } = useWallet();
-  const [userGrants, setUserGrants] = useState<GrantWithSource[]>([]);
+  const [unacceptedGrants, setUnacceptedGrants] = useState<GrantWithSource[]>();
+  const { data } = useGfiPageQuery({
+    variables: { userId: account ? account.toLowerCase() : "" },
+    skip: !account,
+  });
+  const [hydratedGrants, setHydratedGrants] = useState<GrantWithToken[]>();
+
   useEffect(() => {
     if (!account) {
       return;
@@ -16,10 +43,29 @@ export default function GfiPage() {
     const asyncEffect = async () => {
       const response = await fetch(`/api/gfi-grants?account=${account}`);
       const body = await response.json();
-      setUserGrants(body.matchingGrants);
+      setUnacceptedGrants(body.matchingGrants);
     };
     asyncEffect();
   }, [account]);
+
+  useEffect(() => {
+    if (unacceptedGrants && data?.user?.communityRewardsTokens) {
+      const communityRewardsTokens = data.user.communityRewardsTokens;
+      const hydratedGrants: GrantWithToken[] = [];
+      for (const g of unacceptedGrants) {
+        const correspondingToken = communityRewardsTokens.find(
+          (token) => token.source === g.source && token.index === g.index
+        );
+        if (correspondingToken) {
+          hydratedGrants.push({ ...g, token: correspondingToken });
+        } else {
+          hydratedGrants.push({ ...g });
+        }
+      }
+      setHydratedGrants(hydratedGrants);
+    }
+  }, [unacceptedGrants, data]);
+
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
@@ -39,11 +85,11 @@ export default function GfiPage() {
             <Stat label="Locked GFI" value="0 GFI" />
           </StatGrid>
           <div>
-            {userGrants.map((g, index) => (
+            {hydratedGrants?.map((g, index) => (
               <GrantCard key={index} grant={g} />
             ))}
           </div>
-          <pre>{JSON.stringify(userGrants, null, 2)}</pre>
+          <pre>{JSON.stringify(unacceptedGrants, null, 2)}</pre>
         </div>
       )}
     </div>

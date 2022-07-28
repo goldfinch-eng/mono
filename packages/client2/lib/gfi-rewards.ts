@@ -1,3 +1,5 @@
+import type { CommunityRewardsToken } from "@/lib/graphql/generated";
+
 export type Grant = {
   amount: string;
   vestingLength: string;
@@ -22,13 +24,17 @@ export type GrantManifest = {
 };
 
 export type KnownGrantSource =
-  | "merkle"
-  | "backerMerkle"
-  | "merkleDirect"
-  | "backerMerkleDirect";
+  | "MERKLE_DISTRIBUTOR"
+  | "BACKER_MERKLE_DISTRIBUTOR"
+  | "MERKLE_DIRECT_DISTRIBUTOR"
+  | "BACKER_MERKLE_DIRECT_DISTRIBUTOR";
 
 export type GrantWithSource = GrantManifest["grants"][number] & {
   source: KnownGrantSource;
+};
+
+export type GrantWithToken = GrantWithSource & {
+  token?: Omit<CommunityRewardsToken, "user">;
 };
 
 type Reason =

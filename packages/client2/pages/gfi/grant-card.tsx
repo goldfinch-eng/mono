@@ -1,9 +1,9 @@
 import { BigNumber } from "ethers";
 
-import { GrantWithSource, getReasonLabel } from "@/lib/gfi-rewards";
+import { GrantWithToken, getReasonLabel } from "@/lib/gfi-rewards";
 
 interface GrantCardProps {
-  grant: GrantWithSource;
+  grant: GrantWithToken;
 }
 
 export function GrantCard({ grant }: GrantCardProps) {
