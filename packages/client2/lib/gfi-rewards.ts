@@ -34,14 +34,15 @@ export type GrantWithSource = GrantManifest["grants"][number] & {
 };
 
 export type GrantWithToken = GrantWithSource & {
-  token?: Omit<CommunityRewardsToken, "user">;
+  token?: Pick<CommunityRewardsToken, "id" | "totalClaimed" | "totalGranted">;
 };
 
 type Reason =
   | "backer"
   | "liquidity_provider"
   | "flight_academy"
-  | "flight_academy_and_liquidity_provider";
+  | "flight_academy_and_liquidity_provider"
+  | "goldfinch_investment";
 
 const reasonLabels: Record<Reason, string> = {
   backer: "Backer",
@@ -49,6 +50,7 @@ const reasonLabels: Record<Reason, string> = {
   flight_academy: "Flight Academy",
   flight_academy_and_liquidity_provider:
     "Flight Academy and Liquidity Provider",
+  goldfinch_investment: "Goldfinch Investment",
 };
 
 export function getReasonLabel(reason: string) {

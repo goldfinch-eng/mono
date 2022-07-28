@@ -2,7 +2,11 @@ import { gql } from "@apollo/client";
 import { useEffect, useState } from "react";
 
 import { Heading, Stat, StatGrid } from "@/components/design-system";
-import { GrantWithSource, GrantWithToken } from "@/lib/gfi-rewards";
+import {
+  GrantWithSource,
+  GrantWithToken,
+  KnownGrantSource,
+} from "@/lib/gfi-rewards";
 import { useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -26,6 +30,20 @@ gql`
     }
   }
 `;
+
+const sourceOrdering: Record<KnownGrantSource, number> = {
+  MERKLE_DISTRIBUTOR: 0,
+  MERKLE_DIRECT_DISTRIBUTOR: 1,
+  BACKER_MERKLE_DISTRIBUTOR: 2,
+  BACKER_MERKLE_DIRECT_DISTRIBUTOR: 3,
+};
+
+function grantComparator(a: GrantWithToken, b: GrantWithToken) {
+  if (a.source !== b.source) {
+    return sourceOrdering[a.source] - sourceOrdering[b.source];
+  }
+  return a.index - b.index;
+}
 
 export default function GfiPage() {
   const { account } = useWallet();
@@ -62,7 +80,7 @@ export default function GfiPage() {
           hydratedGrants.push({ ...g });
         }
       }
-      setHydratedGrants(hydratedGrants);
+      setHydratedGrants(hydratedGrants.sort(grantComparator));
     }
   }, [unacceptedGrants, data]);
 
