@@ -67,7 +67,7 @@ export default function GfiPage() {
         <div>You must connect your wallet to view GFI rewards</div>
       ) : (
         <div>
-          <StatGrid>
+          <StatGrid className="mb-15">
             <Stat
               label="Total GFI (Claimable + Locked)"
               value="420.69 GFI ($999)"
@@ -76,6 +76,18 @@ export default function GfiPage() {
             <Stat label="Claimable GFI" value="0.04 GFI" />
             <Stat label="Locked GFI" value="0 GFI" />
           </StatGrid>
+          <div
+            className="mb-3 grid px-6 text-sand-500"
+            style={{
+              gridTemplateColumns: "40% 20% 20% 20%",
+              alignItems: "center",
+            }}
+          >
+            <div>Type</div>
+            <div className="justify-self-end">Locked GFI</div>
+            <div className="justify-self-end">Claimable GFI</div>
+            <div></div>
+          </div>
           <div>
             {grantsWithTokens?.map((g, index) => (
               <GrantCard key={index} grant={g} />
