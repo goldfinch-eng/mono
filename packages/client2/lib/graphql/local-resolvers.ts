@@ -251,7 +251,9 @@ export const resolvers: Resolvers = {
         gfiGrant.cliffLength,
         gfiGrant.vestingInterval,
         BigNumber.from(0),
-        Math.floor(Date.now() / 1000)
+        (
+          await provider.getBlock("latest")
+        ).timestamp
       );
 
       return claimable;
