@@ -44,11 +44,14 @@ const UNIQUE_IDENTITY_ADDRESS: {[key: number]: string} = {
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
-  const response = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
-  if (isKYC(response.data)) {
-    return response.data
+  const {data} = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
+
+  if (isKYC(data)) {
+    return data
   } else {
-    throw new Error("malformed KYC response")
+    throw new Error(
+      `invalid KYC response. Either data is not a plain object, '${data.status}' is unexpected, or '${data.countryCode}' is not a string`
+    )
   }
 }
 
@@ -134,7 +137,7 @@ export async function main({
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
     } catch (e) {
       console.error("fetchKYCStatus failed", e)
-      throw new Error("fetchKYCStatus failed")
+      throw e
     }
 
     if (kycStatus.status !== "approved") {

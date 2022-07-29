@@ -47,7 +47,17 @@ jobs:
         AUTOTASK_API_SECRET: ${{ secrets.AUTOTASK_API_SECRET }}
       run: npx lerna run deploy --stream --scope @goldfinch-eng/autotasks
       if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
-
+    - name: Create Sentry release
+      uses: getsentry/action-release@v1
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        SENTRY_PROJECT: autotasks
+      with:
+        environment: production
+        sourcemaps: packages/autotasks/unique-identity-signer/dist
+        ignore_empty: true
+      if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
 
   lint:
     runs-on: ubuntu-latest
