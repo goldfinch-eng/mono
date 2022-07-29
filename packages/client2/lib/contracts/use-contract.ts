@@ -13,6 +13,7 @@ import {
   UniqueIdentity__factory,
   Zapper__factory,
   CreditLine__factory,
+  CommunityRewards__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -27,6 +28,7 @@ const supportedContracts = {
   StakingRewards: StakingRewards__factory.connect,
   Zapper: Zapper__factory.connect,
   CreditLine: CreditLine__factory.connect,
+  CommunityRewards: CommunityRewards__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

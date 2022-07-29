@@ -59,11 +59,45 @@ type CryptoAmount {
   amount: BigInt!
 }
 
+enum GrantSource {
+  MERKLE_DISTRIBUTOR
+  BACKER_MERKLE_DISTRIBUTOR
+  MERKLE_DIRECT_DISTRIBUTOR
+  BACKER_MERKLE_DIRECT_DISTRIBUTOR
+}
+
+enum GrantReason {
+  BACKER
+  LIQUIDITY_PROVIDER
+  FLIGHT_ACADEMY
+  FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER
+  GOLDFINCH_INVESTMENT
+}
+
+type GfiGrant {
+  id: ID!
+  index: Int!
+  source: GrantSource!
+  reason: GrantReason!
+  proof: [String!]!
+
+  amount: BigInt!
+  vestingLength: BigInt
+  vestingInterval: BigInt
+  cliffLength: BigInt
+  start: BigInt!
+  end: BigInt!
+
+  claimable: BigInt!
+}
+
 type Viewer {
   account(format: String): String
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
+
+  gfiGrants: [GfiGrant!]!
 }
 
 type BlockInfo {

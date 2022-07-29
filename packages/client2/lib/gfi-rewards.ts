@@ -1,4 +1,8 @@
-import type { CommunityRewardsToken } from "@/lib/graphql/generated";
+import type {
+  GfiGrant,
+  GrantReason,
+  GrantSource,
+} from "@/lib/graphql/generated";
 
 export type Grant = {
   amount: string;
@@ -23,36 +27,36 @@ export type GrantManifest = {
   }[];
 };
 
-export type KnownGrantSource =
-  | "MERKLE_DISTRIBUTOR"
-  | "BACKER_MERKLE_DISTRIBUTOR"
-  | "MERKLE_DIRECT_DISTRIBUTOR"
-  | "BACKER_MERKLE_DIRECT_DISTRIBUTOR";
-
 export type GrantWithSource = GrantManifest["grants"][number] & {
-  source: KnownGrantSource;
+  source: GrantSource;
 };
 
-export type GrantWithToken = GrantWithSource & {
-  token?: Pick<CommunityRewardsToken, "id" | "totalClaimed" | "totalGranted">;
-};
-
-type Reason =
-  | "backer"
-  | "liquidity_provider"
-  | "flight_academy"
-  | "flight_academy_and_liquidity_provider"
-  | "goldfinch_investment";
-
-const reasonLabels: Record<Reason, string> = {
-  backer: "Backer",
-  liquidity_provider: "Liquidity Provider",
-  flight_academy: "Flight Academy",
-  flight_academy_and_liquidity_provider:
+const reasonLabels: Record<GrantReason, string> = {
+  BACKER: "Backer",
+  LIQUIDITY_PROVIDER: "Liquidity Provider",
+  FLIGHT_ACADEMY: "Flight Academy",
+  FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER:
     "Flight Academy and Liquidity Provider",
-  goldfinch_investment: "Goldfinch Investment",
+  GOLDFINCH_INVESTMENT: "Goldfinch Investment",
 };
 
 export function getReasonLabel(reason: string) {
-  return reasonLabels[reason as Reason] ?? reason;
+  return reasonLabels[reason as GrantReason] ?? reason;
+}
+
+const sourceOrdering: Record<GrantSource, number> = {
+  MERKLE_DISTRIBUTOR: 0,
+  MERKLE_DIRECT_DISTRIBUTOR: 1,
+  BACKER_MERKLE_DISTRIBUTOR: 2,
+  BACKER_MERKLE_DIRECT_DISTRIBUTOR: 3,
+};
+
+export function grantComparator(
+  a: Pick<GfiGrant, "source" | "index">,
+  b: Pick<GfiGrant, "source" | "index">
+) {
+  if (a.source !== b.source) {
+    return sourceOrdering[a.source] - sourceOrdering[b.source];
+  }
+  return a.index - b.index;
 }

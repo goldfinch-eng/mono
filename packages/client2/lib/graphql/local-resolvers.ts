@@ -1,6 +1,10 @@
 import { Resolvers } from "@apollo/client";
+import { BigNumber } from "ethers";
+
+import { TOKEN_LAUNCH_TIME } from "@/constants";
 
 import { getContract } from "../contracts";
+import { grantComparator } from "../gfi-rewards";
 import { getProvider } from "../wallet";
 import {
   GfiPrice,
@@ -10,6 +14,7 @@ import {
   CryptoAmount,
   BlockInfo,
   CreditLine,
+  GfiGrant,
 } from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
@@ -153,6 +158,46 @@ export const resolvers: Resolvers = {
         amount: fiduBalance,
       };
     },
+    async gfiGrants(viewer: Viewer): Promise<Omit<GfiGrant, "claimable">[]> {
+      if (!viewer || !viewer.account) {
+        return [];
+      }
+
+      const matchingGrantsFromEndpoint = await (
+        await fetch(`/api/gfi-grants?account=${viewer.account}`)
+      ).json();
+      const gfiGrants: Omit<GfiGrant, "claimable">[] = [];
+      for (const g of matchingGrantsFromEndpoint.matchingGrants) {
+        gfiGrants.push({
+          __typename: "GfiGrant",
+          id: `${g.source}${g.index}`,
+          index: g.index,
+          source: g.source,
+          reason: g.reason.toUpperCase(),
+          proof: g.proof,
+          amount: BigNumber.from(g.grant.amount),
+          vestingLength: g.grant.vestingLength
+            ? BigNumber.from(g.grant.vestingLength)
+            : null,
+          vestingInterval: g.grant.vestingInterval
+            ? BigNumber.from(g.grant.vestingInterval)
+            : null,
+          cliffLength: g.grant.cliffLength
+            ? BigNumber.from(g.grant.cliffLength)
+            : null,
+          start: BigNumber.from(TOKEN_LAUNCH_TIME),
+          end: g.grant.vestingLength
+            ? BigNumber.from(TOKEN_LAUNCH_TIME).add(
+                BigNumber.from(g.grant.vestingLength)
+              )
+            : BigNumber.from(TOKEN_LAUNCH_TIME),
+        });
+      }
+
+      gfiGrants.sort(grantComparator);
+
+      return gfiGrants;
+    },
   },
   CreditLine: {
     async isLate(creditLine: CreditLine): Promise<boolean | null> {
@@ -175,6 +220,41 @@ export const resolvers: Resolvers = {
       } catch (e) {
         return null;
       }
+    },
+  },
+  GfiGrant: {
+    async claimable(gfiGrant: GfiGrant): Promise<BigNumber> {
+      if (
+        !gfiGrant.vestingLength ||
+        !gfiGrant.cliffLength ||
+        !gfiGrant.vestingInterval
+      ) {
+        return gfiGrant.amount;
+      }
+
+      const provider = await getProvider();
+      if (!provider) {
+        throw new Error(
+          "No connected provider when calculating claimable for a GfiGrant"
+        );
+      }
+      const chainId = await provider.getSigner().getChainId();
+      const communityRewardsContract = getContract({
+        name: "CommunityRewards",
+        chainId,
+        provider,
+      });
+      const claimable = await communityRewardsContract.totalVestedAt(
+        gfiGrant.start,
+        gfiGrant.end,
+        gfiGrant.amount,
+        gfiGrant.cliffLength,
+        gfiGrant.vestingInterval,
+        BigNumber.from(0),
+        Math.floor(Date.now() / 1000)
+      );
+
+      return claimable;
     },
   },
 };

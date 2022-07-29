@@ -1,88 +1,62 @@
 import { gql } from "@apollo/client";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 import { Heading, Stat, StatGrid } from "@/components/design-system";
-import {
-  GrantWithSource,
-  GrantWithToken,
-  KnownGrantSource,
-} from "@/lib/gfi-rewards";
 import { useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
-import { GrantCard } from "./grant-card";
+import {
+  GrantCard,
+  GRANT_CARD_GRANT_FIELDS,
+  GRANT_CARD_TOKEN_FIELDS,
+  GrantWithToken,
+} from "./grant-card";
 
 gql`
-  query GfiPage($userId: ID!) {
-    user(id: $userId) {
-      id
-      communityRewardsTokens {
-        id
-        index
-        source
-        totalGranted
-        totalClaimed
-        vestingInterval
-        cliffLength
-        grantedAt
-        revokedAt
+  ${GRANT_CARD_GRANT_FIELDS}
+  ${GRANT_CARD_TOKEN_FIELDS}
+
+  query GfiPage($userId: String!) {
+    viewer @client {
+      gfiGrants {
+        ...GrantCardGrantFields
       }
+    }
+    communityRewardsTokens(where: { user: $userId }) {
+      ...GrantCardTokenFields
     }
   }
 `;
 
-const sourceOrdering: Record<KnownGrantSource, number> = {
-  MERKLE_DISTRIBUTOR: 0,
-  MERKLE_DIRECT_DISTRIBUTOR: 1,
-  BACKER_MERKLE_DISTRIBUTOR: 2,
-  BACKER_MERKLE_DIRECT_DISTRIBUTOR: 3,
-};
-
-function grantComparator(a: GrantWithToken, b: GrantWithToken) {
-  if (a.source !== b.source) {
-    return sourceOrdering[a.source] - sourceOrdering[b.source];
-  }
-  return a.index - b.index;
-}
-
 export default function GfiPage() {
   const { account } = useWallet();
-  const [unacceptedGrants, setUnacceptedGrants] = useState<GrantWithSource[]>();
   const { data } = useGfiPageQuery({
-    variables: { userId: account ? account.toLowerCase() : "" },
+    variables: {
+      userId: account ? account.toLowerCase() : "",
+    },
     skip: !account,
   });
-  const [hydratedGrants, setHydratedGrants] = useState<GrantWithToken[]>();
 
-  useEffect(() => {
-    if (!account) {
-      return;
-    }
-    const asyncEffect = async () => {
-      const response = await fetch(`/api/gfi-grants?account=${account}`);
-      const body = await response.json();
-      setUnacceptedGrants(body.matchingGrants);
-    };
-    asyncEffect();
-  }, [account]);
-
-  useEffect(() => {
-    if (unacceptedGrants && data?.user?.communityRewardsTokens) {
-      const communityRewardsTokens = data.user.communityRewardsTokens;
-      const hydratedGrants: GrantWithToken[] = [];
-      for (const g of unacceptedGrants) {
+  const grantsWithTokens = useMemo(() => {
+    if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
+      const gfiGrants = data.viewer.gfiGrants;
+      const communityRewardsTokens = data.communityRewardsTokens;
+      const grantsWithTokens: GrantWithToken[] = [];
+      for (const g of gfiGrants) {
         const correspondingToken = communityRewardsTokens.find(
-          (token) => token.source === g.source && token.index === g.index
+          (token) =>
+            token.source.toString() === g.source.toString() &&
+            token.index === g.index
         );
         if (correspondingToken) {
-          hydratedGrants.push({ ...g, token: correspondingToken });
+          grantsWithTokens.push({ ...g, token: correspondingToken });
         } else {
-          hydratedGrants.push({ ...g });
+          grantsWithTokens.push({ ...g });
         }
       }
-      setHydratedGrants(hydratedGrants.sort(grantComparator));
+      return grantsWithTokens;
     }
-  }, [unacceptedGrants, data]);
+  }, [data]);
 
   return (
     <div>
@@ -103,11 +77,10 @@ export default function GfiPage() {
             <Stat label="Locked GFI" value="0 GFI" />
           </StatGrid>
           <div>
-            {hydratedGrants?.map((g, index) => (
+            {grantsWithTokens?.map((g, index) => (
               <GrantCard key={index} grant={g} />
             ))}
           </div>
-          <pre>{JSON.stringify(unacceptedGrants, null, 2)}</pre>
         </div>
       )}
     </div>
