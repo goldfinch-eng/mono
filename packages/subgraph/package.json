@@ -13,6 +13,7 @@
     "stop-local": "docker compose --env-file .env.local-subgraph down -v && rm -rf data"
   },
   "dependencies": {
+    "@goldfinch-eng/utils": "^0.0.1",
     "@graphprotocol/graph-cli": "^0.29.0",
     "@graphprotocol/graph-ts": "^0.26.0"
   },
