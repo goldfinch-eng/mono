@@ -158,7 +158,7 @@ export const resolvers: Resolvers = {
         amount: fiduBalance,
       };
     },
-    async gfiGrants(viewer: Viewer): Promise<Omit<GfiGrant, "claimable">[]> {
+    async gfiGrants(viewer: Viewer): Promise<Omit<GfiGrant, "vested">[]> {
       if (!viewer || !viewer.account) {
         return [];
       }
@@ -166,7 +166,7 @@ export const resolvers: Resolvers = {
       const matchingGrantsFromEndpoint = await (
         await fetch(`/api/gfi-grants?account=${viewer.account}`)
       ).json();
-      const gfiGrants: Omit<GfiGrant, "claimable">[] = [];
+      const gfiGrants: Omit<GfiGrant, "vested">[] = [];
       for (const g of matchingGrantsFromEndpoint.matchingGrants) {
         gfiGrants.push({
           __typename: "GfiGrant",
@@ -223,7 +223,7 @@ export const resolvers: Resolvers = {
     },
   },
   GfiGrant: {
-    async claimable(gfiGrant: GfiGrant): Promise<BigNumber> {
+    async vested(gfiGrant: GfiGrant): Promise<BigNumber> {
       if (
         !gfiGrant.vestingLength ||
         !gfiGrant.cliffLength ||
@@ -235,7 +235,7 @@ export const resolvers: Resolvers = {
       const provider = await getProvider();
       if (!provider) {
         throw new Error(
-          "No connected provider when calculating claimable for a GfiGrant"
+          "No connected provider when calculating vested amount for a GfiGrant"
         );
       }
       const chainId = await provider.getSigner().getChainId();
@@ -244,7 +244,7 @@ export const resolvers: Resolvers = {
         chainId,
         provider,
       });
-      const claimable = await communityRewardsContract.totalVestedAt(
+      const vested = await communityRewardsContract.totalVestedAt(
         gfiGrant.start,
         gfiGrant.end,
         gfiGrant.amount,
@@ -256,7 +256,7 @@ export const resolvers: Resolvers = {
         ).timestamp
       );
 
-      return claimable;
+      return vested;
     },
   },
 };

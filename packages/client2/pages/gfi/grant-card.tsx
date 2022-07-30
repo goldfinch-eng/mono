@@ -28,7 +28,7 @@ export const GRANT_CARD_GRANT_FIELDS = gql`
     cliffLength
     start
     end
-    claimable
+    vested
   }
 `;
 
@@ -54,9 +54,9 @@ interface GrantCardProps {
 
 export function GrantCard({ grant }: GrantCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const locked = grant.amount.sub(grant.claimable);
+  const locked = grant.amount.sub(grant.vested);
   const unlocked = grant.amount.sub(locked);
-  const claimable = grant.claimable.sub(grant.token?.totalClaimed ?? 0);
+  const claimable = grant.vested.sub(grant.token?.totalClaimed ?? 0);
   return (
     <div className="rounded-xl bg-sand-100 py-4 px-6">
       <div
@@ -128,7 +128,7 @@ export function GrantCard({ grant }: GrantCardProps) {
               heading="Claim status"
               body={
                 grant.token
-                  ? getClaimedStatus(grant.token.totalClaimed, grant.claimable)
+                  ? getClaimedStatus(grant.token.totalClaimed, grant.vested)
                   : "Unclaimed"
               }
             />

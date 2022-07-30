@@ -88,7 +88,7 @@ type GfiGrant {
   start: BigInt!
   end: BigInt!
 
-  claimable: BigInt!
+  vested: BigInt!
 }
 
 type Viewer {
