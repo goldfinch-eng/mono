@@ -110,25 +110,25 @@ export function GrantCard({ grant }: GrantCardProps) {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
             <Detail
               heading="Transaction details"
-              body={getGrantDescription(grant.amount, grant.reason)}
+              body={displayGrantDescription(grant.amount, grant.reason)}
             />
             <Detail
               heading="Unlock schedule"
               body={
                 !grant.cliffLength
                   ? "Immediate"
-                  : getUnlockSchedule(grant.cliffLength, grant.end)
+                  : displayUnlockSchedule(grant.cliffLength, grant.end)
               }
             />
             <Detail
               heading="Unlock status"
-              body={getUnlockedProgress(grant.amount, unlocked)}
+              body={displayUnlockedProgress(grant.amount, unlocked)}
             />
             <Detail
               heading="Claim status"
               body={
                 grant.token
-                  ? getClaimedStatus(grant.token.totalClaimed, grant.vested)
+                  ? displayClaimedStatus(grant.token.totalClaimed, grant.vested)
                   : "Unclaimed"
               }
             />
@@ -157,7 +157,10 @@ const descriptionMapping: Record<GrantReason, string> = {
   [GrantReason.GoldfinchInvestment]: "participating as a Goldfinch investor",
 };
 
-function getGrantDescription(amount: BigNumber, reason: GrantReason): string {
+function displayGrantDescription(
+  amount: BigNumber,
+  reason: GrantReason
+): string {
   const displayAmount = formatCrypto(
     { amount, token: SupportedCrypto.Gfi },
     { includeToken: true }
@@ -165,7 +168,10 @@ function getGrantDescription(amount: BigNumber, reason: GrantReason): string {
   return `${displayAmount} for ${descriptionMapping[reason]}`;
 }
 
-function getUnlockSchedule(cliffLength: BigNumber, endTime: BigNumber): string {
+function displayUnlockSchedule(
+  cliffLength: BigNumber,
+  endTime: BigNumber
+): string {
   const cliffLengthDisplay =
     cliffLength.toString() === "0"
       ? ""
@@ -179,7 +185,7 @@ function getUnlockSchedule(cliffLength: BigNumber, endTime: BigNumber): string {
   )}`;
 }
 
-function getUnlockedProgress(
+function displayUnlockedProgress(
   totalAmount: BigNumber,
   unlocked: BigNumber
 ): string {
@@ -194,7 +200,7 @@ function getUnlockedProgress(
   )}) unlocked`;
 }
 
-function getClaimedStatus(claimed: BigNumber, unlocked: BigNumber): string {
+function displayClaimedStatus(claimed: BigNumber, unlocked: BigNumber): string {
   const formattedClaimed = formatCrypto(
     { token: SupportedCrypto.Gfi, amount: claimed },
     { includeToken: true }
