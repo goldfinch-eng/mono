@@ -82,9 +82,9 @@ type GfiGrant {
   proof: [String!]!
 
   amount: BigInt!
-  vestingLength: BigInt
-  vestingInterval: BigInt
-  cliffLength: BigInt
+  vestingLength: BigInt!
+  vestingInterval: BigInt!
+  cliffLength: BigInt!
   start: BigInt!
   end: BigInt!
 

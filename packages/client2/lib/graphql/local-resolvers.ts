@@ -178,13 +178,13 @@ export const resolvers: Resolvers = {
           amount: BigNumber.from(g.grant.amount),
           vestingLength: g.grant.vestingLength
             ? BigNumber.from(g.grant.vestingLength)
-            : null,
+            : BigNumber.from(0),
           vestingInterval: g.grant.vestingInterval
             ? BigNumber.from(g.grant.vestingInterval)
-            : null,
+            : BigNumber.from(0),
           cliffLength: g.grant.cliffLength
             ? BigNumber.from(g.grant.cliffLength)
-            : null,
+            : BigNumber.from(0),
           start: BigNumber.from(TOKEN_LAUNCH_TIME),
           end: g.grant.vestingLength
             ? BigNumber.from(TOKEN_LAUNCH_TIME).add(
