@@ -1,12 +1,12 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
-import { format } from "date-fns";
-import { BigNumber } from "ethers";
+import { format, formatDistanceStrict } from "date-fns";
+import { BigNumber, FixedNumber } from "ethers";
 import { useState } from "react";
 
 import { Button, Icon } from "@/components/design-system";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
-import { formatCrypto } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { getReasonLabel } from "@/lib/gfi-rewards";
 import {
   SupportedCrypto,
@@ -55,6 +55,8 @@ interface GrantCardProps {
 export function GrantCard({ grant }: GrantCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const locked = grant.amount.sub(grant.claimable);
+  const unlocked = grant.amount.sub(locked);
+  const claimable = grant.claimable.sub(grant.token?.totalClaimed ?? 0);
   return (
     <div className="rounded-xl bg-sand-100 py-4 px-6">
       <div
@@ -85,7 +87,7 @@ export function GrantCard({ grant }: GrantCardProps) {
         <div className="justify-self-end text-xl font-medium text-sand-700">
           {formatCrypto({
             token: SupportedCrypto.Gfi,
-            amount: grant.claimable,
+            amount: claimable,
           })}
         </div>
         <div className="flex items-center justify-self-end">
@@ -105,10 +107,22 @@ export function GrantCard({ grant }: GrantCardProps) {
       {isExpanded ? (
         <>
           <hr className="my-6 border-t border-sand-300" />
-          <div className="flex gap-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
             <Detail
               heading="Transaction details"
               body={getGrantDescription(grant.amount, grant.reason)}
+            />
+            <Detail
+              heading="Unlock schedule"
+              body={
+                !grant.cliffLength
+                  ? "Immediate"
+                  : getUnlockSchedule(grant.cliffLength, grant.end)
+              }
+            />
+            <Detail
+              heading="Unlock status"
+              body={getUnlockedProgress(grant.amount, unlocked)}
             />
             <Detail
               heading="Claim status"
@@ -143,7 +157,7 @@ const descriptionMapping: Record<GrantReason, string> = {
   [GrantReason.GoldfinchInvestment]: "participating as a Goldfinch investor",
 };
 
-function getGrantDescription(amount: BigNumber, reason: GrantReason) {
+function getGrantDescription(amount: BigNumber, reason: GrantReason): string {
   const displayAmount = formatCrypto(
     { amount, token: SupportedCrypto.Gfi },
     { includeToken: true }
@@ -151,7 +165,36 @@ function getGrantDescription(amount: BigNumber, reason: GrantReason) {
   return `${displayAmount} for ${descriptionMapping[reason]}`;
 }
 
-function getClaimedStatus(claimed: BigNumber, unlocked: BigNumber) {
+function getUnlockSchedule(cliffLength: BigNumber, endTime: BigNumber): string {
+  const cliffLengthDisplay =
+    cliffLength.toString() === "0"
+      ? ""
+      : `, with ${formatDistanceStrict(cliffLength.toNumber() * 1000, 0, {
+          unit: "month",
+        }).replace("months", "month")} cliff,`;
+
+  return `Linear${cliffLengthDisplay} until 100% on ${format(
+    endTime.toNumber() * 1000,
+    "MMM d, y"
+  )}`;
+}
+
+function getUnlockedProgress(
+  totalAmount: BigNumber,
+  unlocked: BigNumber
+): string {
+  const totalAmountAsFixed = FixedNumber.fromValue(totalAmount);
+  const unlockedAsFixed = FixedNumber.fromValue(unlocked);
+
+  return `${formatPercent(
+    unlockedAsFixed.divUnsafe(totalAmountAsFixed)
+  )} (${formatCrypto(
+    { token: SupportedCrypto.Gfi, amount: unlocked },
+    { includeToken: true }
+  )}) unlocked`;
+}
+
+function getClaimedStatus(claimed: BigNumber, unlocked: BigNumber): string {
   const formattedClaimed = formatCrypto(
     { token: SupportedCrypto.Gfi, amount: claimed },
     { includeToken: true }
