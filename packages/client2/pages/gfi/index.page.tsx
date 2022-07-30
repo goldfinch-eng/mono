@@ -88,7 +88,7 @@ export default function GfiPage() {
             <div className="justify-self-end">Claimable GFI</div>
             <div></div>
           </div>
-          <div>
+          <div className="space-y-3">
             {grantsWithTokens?.map((g, index) => (
               <GrantCard key={index} grant={g} />
             ))}
