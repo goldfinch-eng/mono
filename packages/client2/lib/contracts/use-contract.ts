@@ -14,6 +14,7 @@ import {
   Zapper__factory,
   CreditLine__factory,
   CommunityRewards__factory,
+  MerkleDistributor__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -29,6 +30,7 @@ const supportedContracts = {
   Zapper: Zapper__factory.connect,
   CreditLine: CreditLine__factory.connect,
   CommunityRewards: CommunityRewards__factory.connect,
+  MerkleDistributor: MerkleDistributor__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

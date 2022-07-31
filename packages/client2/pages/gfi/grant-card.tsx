@@ -1,11 +1,13 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import clsx from "clsx";
 import { format, formatDistanceStrict } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { Button, Icon } from "@/components/design-system";
+import { Button, Form, Icon } from "@/components/design-system";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
+import { useContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { getReasonLabel } from "@/lib/gfi-rewards";
 import {
@@ -13,7 +15,9 @@ import {
   GrantCardGrantFieldsFragment,
   GrantCardTokenFieldsFragment,
   GrantReason,
+  GrantSource,
 } from "@/lib/graphql/generated";
+import { toastTransaction } from "@/lib/toast";
 
 export const GRANT_CARD_GRANT_FIELDS = gql`
   fragment GrantCardGrantFields on GfiGrant {
@@ -62,7 +66,7 @@ export function GrantCard({ grant }: GrantCardProps) {
       <div
         className="grid"
         style={{
-          gridTemplateColumns: "40% 20% 20% 20%",
+          gridTemplateColumns: "1fr 20% 20% 25%",
           alignItems: "center",
         }}
       >
@@ -91,7 +95,7 @@ export function GrantCard({ grant }: GrantCardProps) {
           })}
         </div>
         <div className="flex items-center justify-self-end">
-          <Button size="lg">Lorem</Button>
+          <GrantButton grant={grant} claimable={claimable} locked={locked} />
           <button onClick={() => setIsExpanded(!isExpanded)} className="mx-8">
             <Icon
               name="ChevronDown"
@@ -211,4 +215,66 @@ function displayClaimedStatus(claimed: BigNumber, unlocked: BigNumber): string {
   );
 
   return `${formattedClaimed} claimed of your total unlocked ${formattedUnlocked}`;
+}
+
+function GrantButton({
+  grant,
+  claimable,
+  locked,
+}: {
+  grant: GrantWithToken;
+  claimable: BigNumber;
+  locked: BigNumber;
+}) {
+  const rhfMethods = useForm();
+  const apolloClient = useApolloClient();
+
+  const message = claimable.isZero()
+    ? locked.isZero()
+      ? "Claimed"
+      : "Still Locked"
+    : grant.source === GrantSource.MerkleDistributor ||
+      grant.source === GrantSource.BackerMerkleDistributor
+    ? !grant.token
+      ? "Accept"
+      : "Claim GFI"
+    : "Claim GFI";
+
+  const communityRewardsContract = useContract("CommunityRewards");
+  const merkleDistributorContract = useContract("MerkleDistributor");
+
+  const handleAction = async () => {
+    if (!communityRewardsContract || !merkleDistributorContract) {
+      return;
+    }
+    if (grant.source === GrantSource.MerkleDistributor) {
+      if (!grant.token) {
+        const transaction = merkleDistributorContract.acceptGrant(
+          grant.index,
+          grant.amount,
+          grant.vestingLength,
+          grant.cliffLength,
+          grant.vestingInterval,
+          grant.proof
+        );
+        await toastTransaction({ transaction });
+      } else {
+        const transaction = communityRewardsContract.getReward(grant.token.id);
+        await toastTransaction({ transaction });
+      }
+    } else {
+      throw new Error(
+        `Unimplemented grant source when trying to accept: ${grant.source}`
+      );
+    }
+    await apolloClient.refetchQueries({ include: "active" });
+  };
+
+  return (
+    <Form rhfMethods={rhfMethods} onSubmit={handleAction}>
+      <Button size="lg" type="submit" disabled={claimable.isZero()}>
+        {message}
+      </Button>
+    </Form>
+  );
 }

@@ -58,6 +58,7 @@ const addresses = {
   StakingRewards: contracts.StakingRewards.address,
   Zapper: contracts.Zapper.address,
   CommunityRewards: contracts.CommunityRewards.address,
+  MerkleDistributor: contracts.MerkleDistributor.address,
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

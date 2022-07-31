@@ -79,7 +79,7 @@ export default function GfiPage() {
           <div
             className="mb-3 grid px-6 text-sand-500"
             style={{
-              gridTemplateColumns: "40% 20% 20% 20%",
+              gridTemplateColumns: "1fr 20% 20% 25%",
               alignItems: "center",
             }}
           >
