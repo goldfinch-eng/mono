@@ -48,11 +48,6 @@ export default function GfiPage() {
             token.index === g.index
         );
         grantsWithTokens.push({ grant: g, token: correspondingToken });
-        // if (correspondingToken) {
-        //   grantsWithTokens.push({ ...g, token: correspondingToken });
-        // } else {
-        //   grantsWithTokens.push({ ...g });
-        // }
       }
       return grantsWithTokens;
     }
