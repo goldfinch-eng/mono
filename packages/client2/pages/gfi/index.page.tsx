@@ -1,8 +1,10 @@
 import { gql } from "@apollo/client";
+import { BigNumber } from "ethers";
 import { useMemo } from "react";
 
 import { Heading, Stat, StatGrid } from "@/components/design-system";
-import { useGfiPageQuery } from "@/lib/graphql/generated";
+import { formatCrypto } from "@/lib/format";
+import { SupportedCrypto, useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import {
@@ -41,17 +43,41 @@ export default function GfiPage() {
       const gfiGrants = data.viewer.gfiGrants;
       const communityRewardsTokens = data.communityRewardsTokens;
       const grantsWithTokens = [];
-      for (const g of gfiGrants) {
+      for (const grant of gfiGrants) {
         const correspondingToken = communityRewardsTokens.find(
           (token) =>
-            token.source.toString() === g.source.toString() &&
-            token.index === g.index
+            token.source.toString() === grant.source.toString() &&
+            token.index === grant.index
         );
-        grantsWithTokens.push({ grant: g, token: correspondingToken });
+        grantsWithTokens.push({
+          grant: grant,
+          token: correspondingToken,
+          locked:
+            grant.__typename === "DirectGfiGrant"
+              ? BigNumber.from(0)
+              : grant.amount.sub(grant.vested),
+          claimable:
+            grant.__typename === "DirectGfiGrant"
+              ? grant.isAccepted
+                ? BigNumber.from(0)
+                : grant.amount
+              : grant.vested.sub(correspondingToken?.totalClaimed ?? 0),
+        });
       }
       return grantsWithTokens;
     }
   }, [data]);
+
+  const totalClaimable =
+    grantsWithTokens?.reduce(
+      (prev, current) => prev.add(current.claimable),
+      BigNumber.from(0)
+    ) ?? BigNumber.from(0);
+  const totalLocked =
+    grantsWithTokens?.reduce(
+      (prev, current) => prev.add(current.locked),
+      BigNumber.from(0)
+    ) ?? BigNumber.from(0);
 
   return (
     <div>
@@ -65,11 +91,29 @@ export default function GfiPage() {
           <StatGrid className="mb-15">
             <Stat
               label="Total GFI (Claimable + Locked)"
-              value="420.69 GFI ($999)"
+              value={formatCrypto(
+                {
+                  token: SupportedCrypto.Gfi,
+                  amount: totalClaimable.add(totalLocked),
+                },
+                { includeToken: true }
+              )}
               tooltip="Lorem ipsum"
             />
-            <Stat label="Claimable GFI" value="0.04 GFI" />
-            <Stat label="Locked GFI" value="0 GFI" />
+            <Stat
+              label="Claimable GFI"
+              value={formatCrypto(
+                { token: SupportedCrypto.Gfi, amount: totalClaimable },
+                { includeToken: true }
+              )}
+            />
+            <Stat
+              label="Locked GFI"
+              value={formatCrypto(
+                { token: SupportedCrypto.Gfi, amount: totalLocked },
+                { includeToken: true }
+              )}
+            />
           </StatGrid>
           <div
             className="mb-3 grid px-6 text-sand-500"
@@ -84,9 +128,17 @@ export default function GfiPage() {
             <div></div>
           </div>
           <div className="space-y-3">
-            {grantsWithTokens?.map(({ grant, token }, index) => (
-              <GrantCard key={index} grant={grant} token={token} />
-            ))}
+            {grantsWithTokens?.map(
+              ({ grant, token, claimable, locked }, index) => (
+                <GrantCard
+                  key={index}
+                  grant={grant}
+                  token={token}
+                  claimable={claimable}
+                  locked={locked}
+                />
+              )
+            )}
           </div>
         </div>
       )}

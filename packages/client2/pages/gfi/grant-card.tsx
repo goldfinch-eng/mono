@@ -60,21 +60,14 @@ export const GRANT_CARD_TOKEN_FIELDS = gql`
 interface GrantCardProps {
   grant: GrantCardGrantFieldsFragment;
   token?: GrantCardTokenFieldsFragment;
+  claimable: BigNumber;
+  locked: BigNumber;
 }
 
-export function GrantCard({ grant, token }: GrantCardProps) {
+export function GrantCard({ grant, token, claimable, locked }: GrantCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const locked =
-    grant.__typename === "DirectGfiGrant"
-      ? BigNumber.from(0)
-      : grant.amount.sub(grant.vested);
   const unlocked = grant.amount.sub(locked);
-  const claimable =
-    grant.__typename === "DirectGfiGrant"
-      ? grant.isAccepted
-        ? BigNumber.from(0)
-        : grant.amount
-      : grant.vested.sub(token?.totalClaimed ?? 0);
+
   return (
     <div className="rounded-xl bg-sand-100 py-4 px-6">
       <div
