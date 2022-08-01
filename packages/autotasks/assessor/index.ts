@@ -36,8 +36,6 @@ exports.handler = async function (credentials) {
 
   const goldfinchFactoryAddress = config.factoryAddress
 
-  let pools = []
-
   const factoryAbi = await getAbifor(config.etherscanApi, goldfinchFactoryAddress, provider, etherscanApiKey)
   const factory = new ethers.Contract(goldfinchFactoryAddress, factoryAbi, signer)
   const poolTokensAbi = await getAbifor(config.etherscanApi, config.poolTokensAddress, provider, etherscanApiKey)
@@ -48,6 +46,7 @@ exports.handler = async function (credentials) {
   const filter = asNonNullable(factory.filters.PoolCreated)
   const result = await factory.queryFilter(filter(null, null))
 
+  let pools: string[] = []
   for (const poolCreated of result) {
     pools = pools.concat(asNonNullable(poolCreated.args?.pool))
   }
@@ -67,7 +66,7 @@ exports.handler = async function (credentials) {
   console.log(`Found ${pools.length} tranched pools`)
   let success = 0
   for (const poolAddress of pools) {
-    if (INVALID_POOLS.has(poolAddress)) {
+    if (INVALID_POOLS.has(poolAddress.toLowerCase())) {
       continue
     }
 
