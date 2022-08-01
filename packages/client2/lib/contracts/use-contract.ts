@@ -15,6 +15,7 @@ import {
   CreditLine__factory,
   CommunityRewards__factory,
   MerkleDistributor__factory,
+  BackerMerkleDistributor__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -31,6 +32,7 @@ const supportedContracts = {
   CreditLine: CreditLine__factory.connect,
   CommunityRewards: CommunityRewards__factory.connect,
   MerkleDistributor: MerkleDistributor__factory.connect,
+  BackerMerkleDistributor: BackerMerkleDistributor__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

@@ -242,14 +242,36 @@ function GrantButton({
 
   const communityRewardsContract = useContract("CommunityRewards");
   const merkleDistributorContract = useContract("MerkleDistributor");
+  const backerMerkleDistributorContract = useContract(
+    "BackerMerkleDistributor"
+  );
 
   const handleAction = async () => {
-    if (!communityRewardsContract || !merkleDistributorContract) {
+    if (
+      !communityRewardsContract ||
+      !merkleDistributorContract ||
+      !backerMerkleDistributorContract
+    ) {
       return;
     }
     if (grant.source === GrantSource.MerkleDistributor) {
       if (!grant.token) {
         const transaction = merkleDistributorContract.acceptGrant(
+          grant.index,
+          grant.amount,
+          grant.vestingLength,
+          grant.cliffLength,
+          grant.vestingInterval,
+          grant.proof
+        );
+        await toastTransaction({ transaction });
+      } else {
+        const transaction = communityRewardsContract.getReward(grant.token.id);
+        await toastTransaction({ transaction });
+      }
+    } else if (grant.source === GrantSource.BackerMerkleDistributor) {
+      if (!grant.token) {
+        const transaction = backerMerkleDistributorContract.acceptGrant(
           grant.index,
           grant.amount,
           grant.vestingLength,
