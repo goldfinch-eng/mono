@@ -9,7 +9,6 @@ import {
   GrantCard,
   GRANT_CARD_GRANT_FIELDS,
   GRANT_CARD_TOKEN_FIELDS,
-  GrantWithToken,
 } from "./grant-card";
 
 gql`
@@ -41,18 +40,19 @@ export default function GfiPage() {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
       const gfiGrants = data.viewer.gfiGrants;
       const communityRewardsTokens = data.communityRewardsTokens;
-      const grantsWithTokens: GrantWithToken[] = [];
+      const grantsWithTokens = [];
       for (const g of gfiGrants) {
         const correspondingToken = communityRewardsTokens.find(
           (token) =>
             token.source.toString() === g.source.toString() &&
             token.index === g.index
         );
-        if (correspondingToken) {
-          grantsWithTokens.push({ ...g, token: correspondingToken });
-        } else {
-          grantsWithTokens.push({ ...g });
-        }
+        grantsWithTokens.push({ grant: g, token: correspondingToken });
+        // if (correspondingToken) {
+        //   grantsWithTokens.push({ ...g, token: correspondingToken });
+        // } else {
+        //   grantsWithTokens.push({ ...g });
+        // }
       }
       return grantsWithTokens;
     }
@@ -89,8 +89,8 @@ export default function GfiPage() {
             <div></div>
           </div>
           <div className="space-y-3">
-            {grantsWithTokens?.map((g, index) => (
-              <GrantCard key={index} grant={g} />
+            {grantsWithTokens?.map(({ grant, token }, index) => (
+              <GrantCard key={index} grant={grant} token={token} />
             ))}
           </div>
         </div>

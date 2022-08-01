@@ -74,21 +74,40 @@ enum GrantReason {
   GOLDFINCH_INVESTMENT
 }
 
-type GfiGrant {
+interface GfiGrant {
   id: ID!
   index: Int!
-  source: GrantSource!
   reason: GrantReason!
   proof: [String!]!
-
   amount: BigInt!
+  source: GrantSource!
+}
+
+type IndirectGfiGrant implements GfiGrant {
+  id: ID!
+  index: Int!
+  reason: GrantReason!
+  proof: [String!]!
+  amount: BigInt!
+  source: GrantSource!
+
   vestingLength: BigInt!
   vestingInterval: BigInt!
   cliffLength: BigInt!
   start: BigInt!
   end: BigInt!
-
   vested: BigInt!
+}
+
+type DirectGfiGrant implements GfiGrant {
+  id: ID!
+  index: Int!
+  reason: GrantReason!
+  proof: [String!]!
+  amount: BigInt!
+  source: GrantSource!
+
+  isAccepted: Boolean!
 }
 
 type Viewer {

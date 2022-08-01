@@ -21,18 +21,27 @@ import { toastTransaction } from "@/lib/toast";
 
 export const GRANT_CARD_GRANT_FIELDS = gql`
   fragment GrantCardGrantFields on GfiGrant {
+    __typename
     id
     index
-    source
     reason
     proof
     amount
-    vestingLength
-    vestingInterval
-    cliffLength
-    start
-    end
-    vested
+
+    ... on IndirectGfiGrant {
+      source
+      vestingLength
+      vestingInterval
+      cliffLength
+      start
+      end
+      vested
+    }
+
+    ... on DirectGfiGrant {
+      source
+      isAccepted
+    }
   }
 `;
 
@@ -48,19 +57,24 @@ export const GRANT_CARD_TOKEN_FIELDS = gql`
   }
 `;
 
-export type GrantWithToken = GrantCardGrantFieldsFragment & {
-  token?: GrantCardTokenFieldsFragment;
-};
-
 interface GrantCardProps {
-  grant: GrantWithToken;
+  grant: GrantCardGrantFieldsFragment;
+  token?: GrantCardTokenFieldsFragment;
 }
 
-export function GrantCard({ grant }: GrantCardProps) {
+export function GrantCard({ grant, token }: GrantCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const locked = grant.amount.sub(grant.vested);
+  const locked =
+    grant.__typename === "DirectGfiGrant"
+      ? BigNumber.from(0)
+      : grant.amount.sub(grant.vested);
   const unlocked = grant.amount.sub(locked);
-  const claimable = grant.vested.sub(grant.token?.totalClaimed ?? 0);
+  const claimable =
+    grant.__typename === "DirectGfiGrant"
+      ? grant.isAccepted
+        ? BigNumber.from(0)
+        : grant.amount
+      : grant.vested.sub(token?.totalClaimed ?? 0);
   return (
     <div className="rounded-xl bg-sand-100 py-4 px-6">
       <div
@@ -95,7 +109,12 @@ export function GrantCard({ grant }: GrantCardProps) {
           })}
         </div>
         <div className="flex items-center justify-self-end">
-          <GrantButton grant={grant} claimable={claimable} locked={locked} />
+          <GrantButton
+            grant={grant}
+            token={token}
+            claimable={claimable}
+            locked={locked}
+          />
           <button onClick={() => setIsExpanded(!isExpanded)} className="mx-8">
             <Icon
               name="ChevronDown"
@@ -119,7 +138,7 @@ export function GrantCard({ grant }: GrantCardProps) {
             <Detail
               heading="Unlock schedule"
               body={
-                grant.vestingLength.isZero()
+                grant.__typename === "DirectGfiGrant"
                   ? "Immediate"
                   : displayUnlockSchedule(grant.cliffLength, grant.end)
               }
@@ -131,8 +150,12 @@ export function GrantCard({ grant }: GrantCardProps) {
             <Detail
               heading="Claim status"
               body={
-                grant.token
-                  ? displayClaimedStatus(grant.token.totalClaimed, grant.vested)
+                grant.__typename === "DirectGfiGrant"
+                  ? grant.isAccepted
+                    ? "Claimed"
+                    : "Unclaimed"
+                  : token
+                  ? displayClaimedStatus(token.totalClaimed, grant.vested)
                   : "Unclaimed"
               }
             />
@@ -219,10 +242,12 @@ function displayClaimedStatus(claimed: BigNumber, unlocked: BigNumber): string {
 
 function GrantButton({
   grant,
+  token,
   claimable,
   locked,
 }: {
-  grant: GrantWithToken;
+  grant: GrantCardGrantFieldsFragment;
+  token?: GrantCardTokenFieldsFragment;
   claimable: BigNumber;
   locked: BigNumber;
 }) {
@@ -235,7 +260,7 @@ function GrantButton({
       : "Still Locked"
     : grant.source === GrantSource.MerkleDistributor ||
       grant.source === GrantSource.BackerMerkleDistributor
-    ? !grant.token
+    ? !token
       ? "Accept"
       : "Claim GFI"
     : "Claim GFI";
@@ -248,18 +273,25 @@ function GrantButton({
   const merkleDirectDistributorContract = useContract(
     "MerkleDirectDistributor"
   );
+  const backerMerkleDirectDistributorContract = useContract(
+    "BackerMerkleDirectDistributor"
+  );
 
   const handleAction = async () => {
     if (
       !communityRewardsContract ||
       !merkleDistributorContract ||
       !backerMerkleDistributorContract ||
-      !merkleDirectDistributorContract
+      !merkleDirectDistributorContract ||
+      !backerMerkleDirectDistributorContract
     ) {
       return;
     }
-    if (grant.source === GrantSource.MerkleDistributor) {
-      if (!grant.token) {
+    if (
+      grant.__typename === "IndirectGfiGrant" &&
+      grant.source === GrantSource.MerkleDistributor
+    ) {
+      if (!token) {
         const transaction = merkleDistributorContract.acceptGrant(
           grant.index,
           grant.amount,
@@ -270,11 +302,14 @@ function GrantButton({
         );
         await toastTransaction({ transaction });
       } else {
-        const transaction = communityRewardsContract.getReward(grant.token.id);
+        const transaction = communityRewardsContract.getReward(token.id);
         await toastTransaction({ transaction });
       }
-    } else if (grant.source === GrantSource.BackerMerkleDistributor) {
-      if (!grant.token) {
+    } else if (
+      grant.__typename === "IndirectGfiGrant" &&
+      grant.source === GrantSource.BackerMerkleDistributor
+    ) {
+      if (!token) {
         const transaction = backerMerkleDistributorContract.acceptGrant(
           grant.index,
           grant.amount,
@@ -285,11 +320,18 @@ function GrantButton({
         );
         await toastTransaction({ transaction });
       } else {
-        const transaction = communityRewardsContract.getReward(grant.token.id);
+        const transaction = communityRewardsContract.getReward(token.id);
         await toastTransaction({ transaction });
       }
     } else if (grant.source === GrantSource.MerkleDirectDistributor) {
       const transaction = merkleDirectDistributorContract.acceptGrant(
+        grant.index,
+        grant.amount,
+        grant.proof
+      );
+      await toastTransaction({ transaction });
+    } else if (grant.source === GrantSource.BackerMerkleDirectDistributor) {
+      const transaction = backerMerkleDirectDistributorContract.acceptGrant(
         grant.index,
         grant.amount,
         grant.proof

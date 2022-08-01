@@ -14,7 +14,9 @@ import {
   CryptoAmount,
   BlockInfo,
   CreditLine,
-  GfiGrant,
+  IndirectGfiGrant,
+  DirectGfiGrant,
+  GrantSource,
 } from "./generated";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
@@ -158,7 +160,7 @@ export const resolvers: Resolvers = {
         amount: fiduBalance,
       };
     },
-    async gfiGrants(viewer: Viewer): Promise<Omit<GfiGrant, "vested">[]> {
+    async gfiGrants(viewer: Viewer) {
       if (!viewer || !viewer.account) {
         return [];
       }
@@ -166,32 +168,40 @@ export const resolvers: Resolvers = {
       const matchingGrantsFromEndpoint = await (
         await fetch(`/api/gfi-grants?account=${viewer.account}`)
       ).json();
-      const gfiGrants: Omit<GfiGrant, "vested">[] = [];
+      const gfiGrants = [];
       for (const g of matchingGrantsFromEndpoint.matchingGrants) {
-        gfiGrants.push({
-          __typename: "GfiGrant",
-          id: `${g.source}${g.index}`,
-          index: g.index,
-          source: g.source,
-          reason: g.reason.toUpperCase(),
-          proof: g.proof,
-          amount: BigNumber.from(g.grant.amount),
-          vestingLength: g.grant.vestingLength
-            ? BigNumber.from(g.grant.vestingLength)
-            : BigNumber.from(0),
-          vestingInterval: g.grant.vestingInterval
-            ? BigNumber.from(g.grant.vestingInterval)
-            : BigNumber.from(0),
-          cliffLength: g.grant.cliffLength
-            ? BigNumber.from(g.grant.cliffLength)
-            : BigNumber.from(0),
-          start: BigNumber.from(TOKEN_LAUNCH_TIME),
-          end: g.grant.vestingLength
-            ? BigNumber.from(TOKEN_LAUNCH_TIME).add(
-                BigNumber.from(g.grant.vestingLength)
-              )
-            : BigNumber.from(TOKEN_LAUNCH_TIME),
-        });
+        if (
+          g.grant.vestingLength &&
+          g.grant.vestingInterval &&
+          g.grant.cliffLength
+        ) {
+          gfiGrants.push({
+            __typename: "IndirectGfiGrant",
+            id: `${g.source}${g.index}`,
+            index: g.index,
+            source: g.source,
+            reason: g.reason.toUpperCase(),
+            proof: g.proof,
+            amount: BigNumber.from(g.grant.amount),
+            vestingLength: BigNumber.from(g.grant.vestingLength),
+            vestingInterval: BigNumber.from(g.grant.vestingInterval),
+            cliffLength: BigNumber.from(g.grant.cliffLength),
+            start: BigNumber.from(TOKEN_LAUNCH_TIME),
+            end: BigNumber.from(TOKEN_LAUNCH_TIME).add(
+              BigNumber.from(g.grant.vestingLength)
+            ),
+          } as Omit<IndirectGfiGrant, "vested">);
+        } else {
+          gfiGrants.push({
+            __typename: "DirectGfiGrant",
+            id: `${g.source}${g.index}`,
+            index: g.index,
+            source: g.source,
+            reason: g.reason.toUpperCase(),
+            proof: g.proof,
+            amount: BigNumber.from(g.grant.amount),
+          } as Omit<DirectGfiGrant, "isAccepted">);
+        }
       }
 
       gfiGrants.sort(grantComparator);
@@ -222,16 +232,8 @@ export const resolvers: Resolvers = {
       }
     },
   },
-  GfiGrant: {
-    async vested(gfiGrant: GfiGrant): Promise<BigNumber> {
-      if (
-        !gfiGrant.vestingLength ||
-        !gfiGrant.cliffLength ||
-        !gfiGrant.vestingInterval
-      ) {
-        return gfiGrant.amount;
-      }
-
+  IndirectGfiGrant: {
+    async vested(indirectGfiGrant: IndirectGfiGrant): Promise<BigNumber> {
       const provider = await getProvider();
       if (!provider) {
         throw new Error(
@@ -245,11 +247,11 @@ export const resolvers: Resolvers = {
         provider,
       });
       const vested = await communityRewardsContract.totalVestedAt(
-        gfiGrant.start,
-        gfiGrant.end,
-        gfiGrant.amount,
-        gfiGrant.cliffLength,
-        gfiGrant.vestingInterval,
+        indirectGfiGrant.start,
+        indirectGfiGrant.end,
+        indirectGfiGrant.amount,
+        indirectGfiGrant.cliffLength,
+        indirectGfiGrant.vestingInterval,
         BigNumber.from(0),
         (
           await provider.getBlock("latest")
@@ -257,6 +259,46 @@ export const resolvers: Resolvers = {
       );
 
       return vested;
+    },
+  },
+  DirectGfiGrant: {
+    async isAccepted(gfiDirectGrant: DirectGfiGrant): Promise<boolean> {
+      const provider = await getProvider();
+      if (!provider) {
+        throw new Error(
+          "No connected provider when checking `isAccepted` on GfiDirectGrant"
+        );
+      }
+      const chainId = await provider.getSigner().getChainId();
+      if (gfiDirectGrant.source === GrantSource.MerkleDirectDistributor) {
+        const merkleDirectDistributorContract = getContract({
+          name: "MerkleDirectDistributor",
+          chainId,
+          provider,
+        });
+        const isAccepted =
+          await merkleDirectDistributorContract.isGrantAccepted(
+            gfiDirectGrant.index
+          );
+        return isAccepted;
+      } else if (
+        gfiDirectGrant.source === GrantSource.BackerMerkleDirectDistributor
+      ) {
+        const backerMerkleDirectDistributorContract = getContract({
+          name: "BackerMerkleDirectDistributor",
+          chainId,
+          provider,
+        });
+        const isAccepted =
+          await backerMerkleDirectDistributorContract.isGrantAccepted(
+            gfiDirectGrant.index
+          );
+        return isAccepted;
+      } else {
+        throw new Error(
+          "Unreachable block in GfiDirectGrant.isAccepted resolver"
+        );
+      }
     },
   },
 };
