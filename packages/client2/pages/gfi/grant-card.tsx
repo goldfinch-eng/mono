@@ -119,7 +119,7 @@ export function GrantCard({ grant }: GrantCardProps) {
             <Detail
               heading="Unlock schedule"
               body={
-                !grant.cliffLength
+                grant.vestingLength.isZero()
                   ? "Immediate"
                   : displayUnlockSchedule(grant.cliffLength, grant.end)
               }
@@ -245,12 +245,16 @@ function GrantButton({
   const backerMerkleDistributorContract = useContract(
     "BackerMerkleDistributor"
   );
+  const merkleDirectDistributorContract = useContract(
+    "MerkleDirectDistributor"
+  );
 
   const handleAction = async () => {
     if (
       !communityRewardsContract ||
       !merkleDistributorContract ||
-      !backerMerkleDistributorContract
+      !backerMerkleDistributorContract ||
+      !merkleDirectDistributorContract
     ) {
       return;
     }
@@ -284,6 +288,13 @@ function GrantButton({
         const transaction = communityRewardsContract.getReward(grant.token.id);
         await toastTransaction({ transaction });
       }
+    } else if (grant.source === GrantSource.MerkleDirectDistributor) {
+      const transaction = merkleDirectDistributorContract.acceptGrant(
+        grant.index,
+        grant.amount,
+        grant.proof
+      );
+      await toastTransaction({ transaction });
     } else {
       throw new Error(
         `Unimplemented grant source when trying to accept: ${grant.source}`
