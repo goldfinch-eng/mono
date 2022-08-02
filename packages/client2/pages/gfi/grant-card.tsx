@@ -1,11 +1,9 @@
 import { gql, useApolloClient } from "@apollo/client";
-import clsx from "clsx";
 import { format, formatDistanceStrict } from "date-fns";
 import { BigNumber, FixedNumber } from "ethers";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { Button, Form, Icon } from "@/components/design-system";
+import { Button, Form } from "@/components/design-system";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto, formatPercent } from "@/lib/format";
@@ -18,6 +16,8 @@ import {
   GrantSource,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+
+import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
 export const GRANT_CARD_GRANT_FIELDS = gql`
   fragment GrantCardGrantFields on GfiGrant {
@@ -65,106 +65,64 @@ interface GrantCardProps {
 }
 
 export function GrantCard({ grant, token, claimable, locked }: GrantCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const unlocked = grant.amount.sub(locked);
 
   return (
-    <div className="rounded-xl bg-sand-100 py-4 px-6">
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: "1fr 20% 20% 25%",
-          alignItems: "center",
-        }}
-      >
-        <div>
-          <div className="mb-1.5 text-xl font-medium">
-            {getReasonLabel(grant.reason)}
-          </div>
-          <div className="text-sand-700">
-            {formatCrypto(
-              {
-                token: SupportedCrypto.Gfi,
-                amount: grant.amount,
-              },
-              { includeToken: true }
-            )}{" "}
-            - {format(TOKEN_LAUNCH_TIME * 1000, "MMM d, y")}
-          </div>
-        </div>
-        <div className="justify-self-end text-xl text-sand-500">
-          {formatCrypto({ token: SupportedCrypto.Gfi, amount: locked })}
-        </div>
-        <div className="justify-self-end text-xl font-medium text-sand-700">
-          {formatCrypto({
-            token: SupportedCrypto.Gfi,
-            amount: claimable,
-          })}
-        </div>
-        <div className="flex items-center justify-self-end">
-          <GrantButton
-            grant={grant}
-            token={token}
-            claimable={claimable}
-            locked={locked}
-          />
-          <button onClick={() => setIsExpanded(!isExpanded)} className="mx-8">
-            <Icon
-              name="ChevronDown"
-              size="lg"
-              className={clsx(
-                "transition-transform",
-                isExpanded ? "rotate-180" : null
-              )}
-            />
-          </button>
-        </div>
-      </div>
-      {isExpanded ? (
+    <RewardCardScaffold
+      heading={getReasonLabel(grant.reason)}
+      subheading={`${formatCrypto(
+        {
+          token: SupportedCrypto.Gfi,
+          amount: grant.amount,
+        },
+        { includeToken: true }
+      )} - ${format(TOKEN_LAUNCH_TIME * 1000, "MMM d, y")}`}
+      fadedAmount={formatCrypto({ token: SupportedCrypto.Gfi, amount: locked })}
+      boldedAmount={formatCrypto({
+        token: SupportedCrypto.Gfi,
+        amount: claimable,
+      })}
+      action={
+        <GrantButton
+          grant={grant}
+          token={token}
+          claimable={claimable}
+          locked={locked}
+        />
+      }
+      expandedDetails={
         <>
-          <hr className="my-6 border-t border-sand-300" />
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <Detail
-              heading="Transaction details"
-              body={displayGrantDescription(grant.amount, grant.reason)}
-            />
-            <Detail
-              heading="Unlock schedule"
-              body={
-                grant.__typename === "DirectGfiGrant"
-                  ? "Immediate"
-                  : displayUnlockSchedule(grant.cliffLength, grant.end)
-              }
-            />
-            <Detail
-              heading="Unlock status"
-              body={displayUnlockedProgress(grant.amount, unlocked)}
-            />
-            <Detail
-              heading="Claim status"
-              body={
-                grant.__typename === "DirectGfiGrant"
-                  ? grant.isAccepted
-                    ? "Claimed"
-                    : "Unclaimed"
-                  : token
-                  ? displayClaimedStatus(token.totalClaimed, grant.vested)
+          <Detail
+            heading="Transaction details"
+            body={displayGrantDescription(grant.amount, grant.reason)}
+          />
+          <Detail
+            heading="Unlock schedule"
+            body={
+              grant.__typename === "DirectGfiGrant"
+                ? "Immediate"
+                : displayUnlockSchedule(grant.cliffLength, grant.end)
+            }
+          />
+          <Detail
+            heading="Unlock status"
+            body={displayUnlockedProgress(grant.amount, unlocked)}
+          />
+          <Detail
+            heading="Claim status"
+            body={
+              grant.__typename === "DirectGfiGrant"
+                ? grant.isAccepted
+                  ? "Claimed"
                   : "Unclaimed"
-              }
-            />
-          </div>
+                : token
+                ? displayClaimedStatus(token.totalClaimed, grant.vested)
+                : "Unclaimed"
+            }
+          />
         </>
-      ) : null}
-    </div>
-  );
-}
-
-function Detail({ heading, body }: { heading: string; body: string }) {
-  return (
-    <div>
-      <div className="mb-1.5 text-sm text-sand-600">{heading}</div>
-      <div className="text-lg font-medium text-sand-700">{body}</div>
-    </div>
+      }
+    />
   );
 }
 
