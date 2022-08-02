@@ -73,16 +73,27 @@ export default function GfiPage() {
     }
   }, [data]);
 
-  const totalClaimable =
+  const grantsTotalClaimable =
     grantsWithTokens?.reduce(
       (prev, current) => prev.add(current.claimable),
       BigNumber.from(0)
     ) ?? BigNumber.from(0);
-  const totalLocked =
+  const grantsTotalLocked =
     grantsWithTokens?.reduce(
       (prev, current) => prev.add(current.locked),
       BigNumber.from(0)
     ) ?? BigNumber.from(0);
+
+  const backerTotalClaimable =
+    data?.tranchedPoolTokens.reduce(
+      (prev, current) =>
+        prev.add(current.rewardsClaimable.add(current.stakingRewardsClaimable)),
+      BigNumber.from(0)
+    ) ?? BigNumber.from(0);
+  const backerTotalLocked = BigNumber.from(0);
+
+  const totalClaimable = grantsTotalClaimable.add(backerTotalClaimable);
+  const totalLocked = grantsTotalLocked.add(backerTotalLocked);
 
   return (
     <div>

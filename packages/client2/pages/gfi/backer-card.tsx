@@ -57,7 +57,33 @@ export function BackerCard({ token }: BackerCardProps) {
             body={`Supplied ${formatCrypto({
               token: SupportedCrypto.Usdc,
               amount: token.principalAmount,
-            })}`}
+            })} to this pool`}
+          />
+          <Detail heading="Unlock schedule" body="Immediate" />
+          <Detail
+            heading="Unlock status"
+            body={`100% (${formatCrypto(
+              {
+                token: SupportedCrypto.Gfi,
+                amount: token.rewardsClaimable.add(
+                  token.stakingRewardsClaimable
+                ),
+              },
+              { includeToken: true }
+            )}) unlocked`}
+          />
+          <Detail
+            heading="Claim status"
+            body={`${formatCrypto(
+              {
+                token: SupportedCrypto.Gfi,
+                amount: token.rewardsClaimed.add(token.stakingRewardsClaimed),
+              },
+              { includeToken: true }
+            )} claimed of your total unlocked ${formatCrypto(
+              { token: SupportedCrypto.Gfi, amount: totalAmount },
+              { includeToken: true }
+            )}`}
           />
         </>
       }

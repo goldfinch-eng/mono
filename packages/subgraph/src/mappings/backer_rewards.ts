@@ -1,3 +1,4 @@
+import {BigInt} from "@graphprotocol/graph-ts"
 import {PoolBacker, TranchedPoolToken} from "../../generated/schema"
 import {
   BackerRewardsSetTotalRewards,
@@ -24,6 +25,8 @@ export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
   const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
   poolToken.rewardsClaimed = event.params.amountOfTranchedPoolRewards
   poolToken.stakingRewardsClaimed = event.params.amountOfSeniorPoolRewards
+  poolToken.rewardsClaimable = BigInt.zero()
+  poolToken.stakingRewardsClaimable = BigInt.zero()
   poolToken.save()
 
   const poolBacker = assert(PoolBacker.load(`${poolToken.tranchedPool}-${poolToken.user}`))
