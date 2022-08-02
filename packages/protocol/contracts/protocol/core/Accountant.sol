@@ -3,7 +3,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "hardhat/console.sol";
 import "./CreditLine.sol";
 import "../../interfaces/ICreditLine.sol";
 import "../../external/FixedPoint.sol";
@@ -119,11 +118,8 @@ library Accountant {
     }
 
     FixedPoint.Unsigned memory writedownAmount = writedownPercent.mul(principal).div(FP_SCALING_FACTOR);
-    console.log("writedownPercent %s", writedownPercent.rawValue);
-    console.log("writedownAmount  %s", writedownAmount.rawValue);
     // This will return a number between 0-100 representing the write down percent with no decimals
     uint256 unscaledWritedownPercent = writedownPercent.mul(100).div(FP_SCALING_FACTOR).rawValue;
-    console.log("unscaledPercent  %s", unscaledWritedownPercent);
     return (unscaledWritedownPercent, writedownAmount.rawValue);
   }
 
@@ -163,15 +159,11 @@ library Accountant {
     uint256 totalInterestPerYear = balance.mul(cl.interestApr()).div(INTEREST_DECIMALS);
     uint256 normalInterestOwed = totalInterestPerYear.mul(secondsElapsed).div(SECONDS_PER_YEAR);
 
-    // Interest accrued in the current period isn't owed until nextDueTime. After that, the borrower
-    // has a grace period before late fee interest starts to accrue. The one exception to this rule is
-    // when nextDueTime == termEndTime, in which case the grace period days are ignored and late fee
-    // interest starts to accrue immediately.
+    // Interest accrued in the current period isn't owed until nextDueTime. After that the borrower
+    // has a grace period before late fee interest starts to accrue. This grace period applies for
+    // every due time (termEndTime is not a special case).
     uint256 lateFeeInterestOwed = 0;
-    uint256 lateFeeStartsAt = Math.max(
-      startTime,
-      Math.min(cl.nextDueTime().add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY)), cl.termEndTime())
-    );
+    uint256 lateFeeStartsAt = Math.max(startTime, cl.nextDueTime().add(lateFeeGracePeriodInDays.mul(SECONDS_PER_DAY)));
     if (lateFeeStartsAt < endTime) {
       uint256 lateSecondsElapsed = endTime.sub(lateFeeStartsAt);
       uint256 lateFeeInterestPerYear = balance.mul(cl.lateFeeApr()).div(INTEREST_DECIMALS);

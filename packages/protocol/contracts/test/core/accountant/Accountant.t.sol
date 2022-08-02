@@ -159,6 +159,57 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     assertEq(principalAccr, 0, "principalAccrued");
   }
 
+  /// @notice If we are past the termEndTime but within the lateFeeApr grace period then late fees
+  /// do not apply
+  function test_lateFeeGracePeriod_still_applies_after_termEndTime(uint256 _timestamp)
+    public
+    withMsgSender(PROTOCOL_OWNER)
+    withLateFeeApr(cl, lateFeeApr)
+    withNextDueTime(cl, cl.termEndTime())
+  {
+    uint256 lateFeeGracePeriod = 7 days;
+    _timestamp = bound(_timestamp, cl.termEndTime(), cl.termEndTime() + lateFeeGracePeriod);
+
+    (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
+      cl,
+      _timestamp,
+      lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
+    );
+
+    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+
+    assertEq(interestAccr, expectedInterest, "no late fees");
+    assertEq(principalAccr, cl.balance(), "principalAccrued includes balance");
+  }
+
+  /// @notice When it comes to the lateFeeApr grace period, termEndTime should not be any different than a due time
+  /// in the middle of the loan
+  function test_interestLateFee_applies_after_grace_period_when_nextDueTime_is_termEndTime(uint256 _timestamp)
+    public
+    withMsgSender(PROTOCOL_OWNER)
+    withLateFeeApr(cl, lateFeeApr)
+    withNextDueTime(cl, cl.termEndTime())
+  {
+    uint256 lateFeeGracePeriod = 7 days;
+    _timestamp = bound(_timestamp, cl.termEndTime() + lateFeeGracePeriod, cl.termEndTime() * 5);
+
+    (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
+      cl,
+      _timestamp,
+      lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
+    );
+
+    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
+    uint256 expectedLateFee = getInterestAccrued(
+      cl.termEndTime() + lateFeeGracePeriod,
+      _timestamp,
+      cl.balance(),
+      cl.lateFeeApr()
+    );
+    assertEq(interestAccr, expectedInterest + expectedLateFee, "Interest with late fee");
+    assertEq(principalAccr, cl.balance(), "principal accrued balance");
+  }
+
   /// @notice Late fee should kick in based on my nextDueTime and not be affected by my lastFullPaymentTime
   function test_lateFeeStart_unchanged_on_lastFullPaymentTime_change(uint256 _timestamp)
     public
@@ -183,31 +234,7 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     );
 
     assertEq(interestAccr1, interestAccr2, "accrued interest should be unchanged");
-    assertEq(principalAccr1, principalAccr2, "accrued interest should be unchanged");
-  }
-
-  /// @notice If we are past the termEndTime then late fees should apply immediately even if we
-  /// haven't exceeded the grace period days
-  function test_gracePeriod_ignored_after_termEndTime(uint256 _timestamp)
-    public
-    withMsgSender(PROTOCOL_OWNER)
-    withLateFeeApr(cl, lateFeeApr)
-    withNextDueTime(cl, cl.termEndTime())
-  {
-    _timestamp = bound(_timestamp, cl.termEndTime(), cl.termEndTime() + 1000 days);
-
-    uint256 lateFeeGracePeriod = 7 days;
-    (uint256 interestAccr, uint256 principalAccr) = Accountant.calculateInterestAndPrincipalAccrued(
-      cl,
-      _timestamp,
-      lateFeeGracePeriod / TestConstants.SECONDS_PER_DAY
-    );
-
-    uint256 expectedInterest = getInterestAccrued(cl.interestAccruedAsOf(), _timestamp, cl.balance(), cl.interestApr());
-    uint256 expectedLateFee = getInterestAccrued(cl.termEndTime(), _timestamp, cl.balance(), cl.lateFeeApr());
-
-    assertEq(interestAccr, expectedInterest + expectedLateFee, "interestAccrued with late fees");
-    assertEq(principalAccr, cl.balance(), "principalAccrued includes balance");
+    assertEq(principalAccr1, principalAccr2, "accrued principal should be unchanged");
   }
 
   /// @notice If we are past the termEndTime, owe interest and/or balance, and past the writedown gracePeriod,
@@ -578,6 +605,6 @@ contract AccountantTest is BaseTest, AccountantTestHelpers {
     uint256 expectedAdditionalBalancePayment = remainingBalance < remainingPayment
       ? remainingBalance
       : remainingPayment;
-    assertEq(pa.additionalBalancePayment, expectedAdditionalBalancePayment, "Reapid additional balance");
+    assertEq(pa.additionalBalancePayment, expectedAdditionalBalancePayment, "Repaid additional balance");
   }
 }
