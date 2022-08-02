@@ -112,6 +112,9 @@ function updatePoolBackerRewardsClaimable(poolBacker: PoolBacker, backerRewardsC
     const poolToken = assert(TranchedPoolToken.load(poolTokenId))
     if (poolToken.user == poolBacker.user) {
       poolToken.rewardsClaimable = backerRewardsContract.poolTokenClaimableRewards(BigInt.fromString(poolTokenId))
+      poolToken.stakingRewardsClaimable = backerRewardsContract.stakingRewardsEarnedSinceLastWithdraw(
+        BigInt.fromString(poolTokenId)
+      )
       poolToken.save()
       poolBacker.rewardsClaimable = poolBacker.rewardsClaimable.plus(poolToken.rewardsClaimable)
     }

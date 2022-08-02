@@ -23,6 +23,7 @@ export function handleSetMaxInterestDollarsEligible(event: BackerRewardsSetMaxIn
 export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
   const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
   poolToken.rewardsClaimed = event.params.amountOfTranchedPoolRewards
+  poolToken.stakingRewardsClaimed = event.params.amountOfSeniorPoolRewards
   poolToken.save()
 
   const poolBacker = assert(PoolBacker.load(`${poolToken.tranchedPool}-${poolToken.user}`))

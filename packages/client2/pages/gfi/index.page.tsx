@@ -7,6 +7,7 @@ import { formatCrypto } from "@/lib/format";
 import { SupportedCrypto, useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
+import { BackerCard, BACKER_CARD_TOKEN_FIELDS } from "./backer-card";
 import {
   GrantCard,
   GRANT_CARD_GRANT_FIELDS,
@@ -16,6 +17,7 @@ import {
 gql`
   ${GRANT_CARD_GRANT_FIELDS}
   ${GRANT_CARD_TOKEN_FIELDS}
+  ${BACKER_CARD_TOKEN_FIELDS}
 
   query GfiPage($userId: String!) {
     viewer @client {
@@ -25,6 +27,9 @@ gql`
     }
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields
+    }
+    tranchedPoolTokens(where: { user: $userId }) {
+      ...BackerCardTokenFields
     }
   }
 `;
@@ -128,6 +133,9 @@ export default function GfiPage() {
             <div></div>
           </div>
           <div className="space-y-3">
+            {data?.tranchedPoolTokens.map((token) => (
+              <BackerCard key={token.id} token={token} />
+            ))}
             {grantsWithTokens?.map(
               ({ grant, token, claimable, locked }, index) => (
                 <GrantCard

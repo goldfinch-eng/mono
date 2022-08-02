@@ -234,6 +234,15 @@ type TranchedPoolToken @entity {
 
   rewardsClaimable: BigInt!
   rewardsClaimed: BigInt!
+
+  """
+  Refers to the rewards that are received from LP rewards matching
+  """
+  stakingRewardsClaimable: BigInt!
+  """
+  Refers to the rewards that are received from LP rewards matching
+  """
+  stakingRewardsClaimed: BigInt!
 }
 
 type StakingRewardsData @entity {
