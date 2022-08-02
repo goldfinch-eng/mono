@@ -3,6 +3,7 @@ import {Relayer} from "defender-relay-client"
 import {DefenderRelaySigner, DefenderRelayProvider} from "defender-relay-client/lib/ethers"
 import axios from "axios"
 import {asNonNullable, INVALID_POOLS} from "@goldfinch-eng/utils"
+import baseHandler from "../core/handler"
 
 const CONFIG = {
   mainnet: {
@@ -20,7 +21,7 @@ const CONFIG = {
 }
 
 // Entrypoint for the Autotask
-exports.handler = async function (credentials) {
+exports.handler = baseHandler("assessor", async function (credentials) {
   const {etherscanApiKey} = credentials.secrets
   const relayer = new Relayer(credentials)
   const provider = new DefenderRelayProvider(credentials)
@@ -84,7 +85,7 @@ exports.handler = async function (credentials) {
   if (success !== pools.length && relayerInfo.network === "mainnet") {
     throw new Error(`${pools.length - success} pools failed to asses`)
   }
-}
+})
 
 const assessIfRequired = async function assessIfRequired(
   tranchedPool,

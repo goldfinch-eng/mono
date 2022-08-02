@@ -11,10 +11,10 @@ if (process.env.NODE_ENV !== "test") {
   })
 }
 
-export default function handler(
+export default function handler<T>(
   name: string,
-  callback: (arg: HandlerParams) => Promise<any>
-): (arg: HandlerParams) => Promise<any> {
+  callback: (arg: HandlerParams) => Promise<T>
+): (arg: HandlerParams) => Promise<T> {
   // autotasks run as lambdas behind the scenes, so we init sentry once (above/global)
   // and then create a new transaction every invocation.
   //
