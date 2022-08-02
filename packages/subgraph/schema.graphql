@@ -22,6 +22,10 @@ type SeniorPoolStakedPosition @entity {
   End of vesting schedule.
   """
   endTime: BigInt
+  """
+  Note that the reward rate is measured per second
+  """
+  rewardEarnRate: BigInt!
 }
 
 type SeniorPoolStatus @entity {

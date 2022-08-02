@@ -33,6 +33,8 @@ export function handleStaked(event: Staked): void {
     stakedPosition.endTime = positionsResult.value.value1.endTime
   }
 
+  stakedPosition.rewardEarnRate = contract.positionCurrentEarnRate(event.params.tokenId)
+
   stakedPosition.save()
 }
 
@@ -42,6 +44,9 @@ export function handleUnstaked(event: Unstaked): void {
 
   const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
   stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
+
+  const contract = StakingRewards.bind(event.address)
+  stakedPosition.rewardEarnRate = contract.positionCurrentEarnRate(event.params.tokenId)
 
   stakedPosition.save()
 }

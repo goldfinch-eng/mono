@@ -13,11 +13,16 @@ import {
   GRANT_CARD_GRANT_FIELDS,
   GRANT_CARD_TOKEN_FIELDS,
 } from "./grant-card";
+import {
+  STAKING_CARD_STAKED_POSITION_FIELDS,
+  StakingCard,
+} from "./staking-card";
 
 gql`
   ${GRANT_CARD_GRANT_FIELDS}
   ${GRANT_CARD_TOKEN_FIELDS}
   ${BACKER_CARD_TOKEN_FIELDS}
+  ${STAKING_CARD_STAKED_POSITION_FIELDS}
 
   query GfiPage($userId: String!) {
     viewer @client {
@@ -30,6 +35,9 @@ gql`
     }
     tranchedPoolTokens(where: { user: $userId }) {
       ...BackerCardTokenFields
+    }
+    seniorPoolStakedPositions(where: { user: $userId }) {
+      ...StakingCardPositionFields
     }
   }
 `;
@@ -144,6 +152,9 @@ export default function GfiPage() {
             <div></div>
           </div>
           <div className="space-y-3">
+            {data?.seniorPoolStakedPositions.map((position) => (
+              <StakingCard key={position.id} position={position} />
+            ))}
             {data?.tranchedPoolTokens.map((token) => (
               <BackerCard key={token.id} token={token} />
             ))}
