@@ -63,6 +63,7 @@ const addresses = {
   MerkleDirectDistributor: contracts.MerkleDirectDistributor.address,
   BackerMerkleDirectDistributor:
     contracts.BackerMerkleDirectDistributor.address,
+  BackerRewards: contracts.BackerRewards.address,
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

@@ -1,11 +1,15 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
+import { useForm } from "react-hook-form";
 
+import { Button, Form } from "@/components/design-system";
+import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   BackerCardTokenFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
+import { toastTransaction } from "@/lib/toast";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -34,6 +38,24 @@ export function BackerCard({ token }: BackerCardProps) {
     .add(token.stakingRewardsClaimable)
     .add(token.stakingRewardsClaimed);
 
+  const rhfMethods = useForm();
+  const apolloClient = useApolloClient();
+
+  const backerRewardsContract = useContract("BackerRewards");
+
+  const canClaim = !token.rewardsClaimable
+    .add(token.stakingRewardsClaimable)
+    .isZero();
+
+  const handleClaim = async () => {
+    if (!backerRewardsContract) {
+      return;
+    }
+    const transaction = backerRewardsContract.withdraw(token.id);
+    await toastTransaction({ transaction });
+    await apolloClient.refetchQueries({ include: "active" });
+  };
+
   return (
     <RewardCardScaffold
       heading={`Backer of ${token.tranchedPool.name}`}
@@ -49,7 +71,13 @@ export function BackerCard({ token }: BackerCardProps) {
         token: SupportedCrypto.Gfi,
         amount: token.rewardsClaimable.add(token.stakingRewardsClaimable),
       })}
-      action={null}
+      action={
+        <Form rhfMethods={rhfMethods} onSubmit={handleClaim}>
+          <Button type="submit" size="lg" disabled={!canClaim}>
+            {canClaim ? "Claim GFI" : "Still Locked"}
+          </Button>
+        </Form>
+      }
       expandedDetails={
         <>
           <Detail
