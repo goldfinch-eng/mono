@@ -143,6 +143,7 @@ contract ImplementationRepositoryTest is Test {
     afterInitializingRepository
     impersonating(owner)
     assume(impl != owner)
+    assume(impl != address(repo))
     withFakeContract(impl)
   {
     repo.append(impl);
@@ -239,6 +240,8 @@ contract ImplementationRepositoryTest is Test {
     assume(a != b)
     // none of them should be the initial impl
     assume(a != initialImpl && b != initialImpl)
+    // none of them should be the repo
+    assume(a != address(repo) && b != address(repo))
   {
     vm.label(a, "a");
     vm.label(b, "b");
@@ -267,6 +270,7 @@ contract ImplementationRepositoryTest is Test {
     impersonating(owner)
     withFakeContract(impl)
     assume(!repo.has(impl))
+    assume(impl != address(repo))
     afterInitializingRepository
   {
     vm.expectRevert("invalid lineageId");
