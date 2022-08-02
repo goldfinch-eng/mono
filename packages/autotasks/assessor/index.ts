@@ -49,7 +49,14 @@ exports.handler = baseHandler("assessor", async function (credentials) {
 
   let pools: string[] = []
   for (const poolCreated of result) {
-    pools = pools.concat(asNonNullable(poolCreated.args?.pool))
+    const poolAddress = asNonNullable(poolCreated.args?.pool)
+
+    if (INVALID_POOLS.has(poolAddress.toLowerCase())) {
+      console.log(`On denylist, skipping assessment of ${poolAddress}`)
+      continue
+    }
+
+    pools = pools.concat(poolAddress)
   }
 
   if (pools.length === 0) {
@@ -67,10 +74,6 @@ exports.handler = baseHandler("assessor", async function (credentials) {
   console.log(`Found ${pools.length} tranched pools`)
   let success = 0
   for (const poolAddress of pools) {
-    if (INVALID_POOLS.has(poolAddress.toLowerCase())) {
-      continue
-    }
-
     try {
       console.log(`Assessing ${poolAddress}`)
       await assessIfRequired(pool.attach(poolAddress), creditLine, provider, seniorPool, poolTokens)
