@@ -100,8 +100,28 @@ export default function GfiPage() {
     ) ?? BigNumber.from(0);
   const backerTotalLocked = BigNumber.from(0);
 
-  const totalClaimable = grantsTotalClaimable.add(backerTotalClaimable);
-  const totalLocked = grantsTotalLocked.add(backerTotalLocked);
+  const stakingTotalClaimable =
+    data?.seniorPoolStakedPositions.reduce(
+      (prev, current) => prev.add(current.claimable),
+      BigNumber.from(0)
+    ) ?? BigNumber.from(0);
+  const stakingTotalLocked =
+    data?.seniorPoolStakedPositions.reduce(
+      (prev, current) =>
+        prev.add(
+          current.granted
+            .sub(current.claimable)
+            .sub(current.totalRewardsClaimed)
+        ),
+      BigNumber.from(0)
+    ) ?? BigNumber.from(0);
+
+  const totalClaimable = grantsTotalClaimable
+    .add(backerTotalClaimable)
+    .add(stakingTotalClaimable);
+  const totalLocked = grantsTotalLocked
+    .add(backerTotalLocked)
+    .add(stakingTotalLocked);
 
   return (
     <div>

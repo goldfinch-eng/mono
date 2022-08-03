@@ -1,11 +1,15 @@
-import { gql } from "@apollo/client";
+import { gql, useApolloClient } from "@apollo/client";
 import { BigNumber } from "ethers";
+import { useForm } from "react-hook-form";
 
+import { Button, Form } from "@/components/design-system";
+import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   StakingCardPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
+import { toastTransaction } from "@/lib/toast";
 
 import {
   displayClaimedStatus,
@@ -36,6 +40,19 @@ export function StakingCard({ position }: StakingCardProps) {
   const unlocked = position.claimable.add(position.totalRewardsClaimed);
   const locked = position.granted.sub(unlocked);
 
+  const stakingRewardsContract = useContract("StakingRewards");
+  const apolloClient = useApolloClient();
+
+  const rhfMethods = useForm();
+  const handleClaim = async () => {
+    if (!stakingRewardsContract) {
+      return;
+    }
+    const transaction = stakingRewardsContract.getReward(position.id);
+    await toastTransaction({ transaction });
+    await apolloClient.refetchQueries({ include: "active" });
+  };
+
   return (
     <RewardCardScaffold
       heading={`Staked ${formatCrypto(
@@ -51,7 +68,17 @@ export function StakingCard({ position }: StakingCardProps) {
         { token: SupportedCrypto.Gfi, amount: position.claimable },
         { includeToken: true }
       )}
-      action={null}
+      action={
+        <Form rhfMethods={rhfMethods} onSubmit={handleClaim}>
+          <Button
+            size="lg"
+            type="submit"
+            disabled={position.claimable.isZero()}
+          >
+            {!position.claimable.isZero() ? "Claim GFI" : "Still Locked"}
+          </Button>
+        </Form>
+      }
       expandedDetails={
         <>
           <Detail
