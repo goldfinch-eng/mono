@@ -31,6 +31,15 @@ extend type CreditLine {
   isLate: Boolean
 }
 
+extend type SeniorPoolStakedPosition {
+  rewardEarnRate: BigInt!
+  claimable: BigInt!
+  granted: BigInt!
+  # I would have liked for startTime and endTime to be indexed on the subgraph, but with the signature of positions() changing, it proved to be pretty challenging
+  startTime: BigInt!
+  endTime: BigInt!
+}
+
 enum SupportedFiat {
   USD
 }

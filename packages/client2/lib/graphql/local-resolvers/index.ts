@@ -6,6 +6,7 @@ import {
   indirectGfiGrantResolvers,
 } from "./gfi-grants";
 import { rootQueryResolvers } from "./query";
+import { stakedPositionResolvers } from "./staked-position";
 import { viewerResolvers } from "./viewer";
 
 export const resolvers: Resolvers = {
@@ -14,4 +15,5 @@ export const resolvers: Resolvers = {
   CreditLine: creditLineResolvers,
   IndirectGfiGrant: indirectGfiGrantResolvers,
   DirectGfiGrant: directGfiGrantResolvers,
+  SeniorPoolStakedPosition: stakedPositionResolvers,
 };

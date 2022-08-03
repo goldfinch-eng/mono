@@ -10,6 +10,7 @@ import {
   DepositedAndStaked1,
   UnstakedAndWithdrew,
   UnstakedAndWithdrewMultiple,
+  RewardPaid,
 } from "../../generated/templates/StakingRewards/StakingRewards"
 
 import {createTransactionFromEvent} from "../entities/helpers"
@@ -26,15 +27,6 @@ export function handleStaked(event: Staked): void {
   stakedPosition.amount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
 
-  const contract = StakingRewards.bind(event.address)
-  const positionsResult = contract.try_positions(event.params.tokenId)
-  if (!positionsResult.reverted) {
-    stakedPosition.startTime = positionsResult.value.value1.startTime
-    stakedPosition.endTime = positionsResult.value.value1.endTime
-  }
-
-  stakedPosition.rewardEarnRate = contract.positionCurrentEarnRate(event.params.tokenId)
-
   stakedPosition.save()
 }
 
@@ -44,9 +36,6 @@ export function handleUnstaked(event: Unstaked): void {
 
   const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
   stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
-
-  const contract = StakingRewards.bind(event.address)
-  stakedPosition.rewardEarnRate = contract.positionCurrentEarnRate(event.params.tokenId)
 
   stakedPosition.save()
 }
@@ -66,11 +55,6 @@ export function handleTransfer(event: Transfer): void {
 
   const contract = StakingRewards.bind(event.address)
   stakedPosition.amount = contract.stakedBalanceOf(event.params.tokenId)
-  const positionsResult = contract.try_positions(event.params.tokenId)
-  if (!positionsResult.reverted) {
-    stakedPosition.startTime = positionsResult.value.value1.startTime
-    stakedPosition.endTime = positionsResult.value.value1.endTime
-  }
 
   stakedPosition.save()
 }
@@ -101,4 +85,10 @@ export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMult
   transaction.amount = event.params.usdcReceivedAmount
   transaction.user = event.params.user.toHexString()
   transaction.save()
+}
+
+export function handleRewardPaid(event: RewardPaid): void {
+  const position = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
+  position.totalRewardsClaimed = position.totalRewardsClaimed.plus(event.params.reward)
+  position.save()
 }

@@ -146,7 +146,7 @@ function displayGrantDescription(
   return `${displayAmount} for ${descriptionMapping[reason]}`;
 }
 
-function displayUnlockSchedule(
+export function displayUnlockSchedule(
   cliffLength: BigNumber,
   endTime: BigNumber
 ): string {
@@ -163,7 +163,7 @@ function displayUnlockSchedule(
   )}`;
 }
 
-function displayUnlockedProgress(
+export function displayUnlockedProgress(
   totalAmount: BigNumber,
   unlocked: BigNumber
 ): string {
@@ -178,7 +178,10 @@ function displayUnlockedProgress(
   )}) unlocked`;
 }
 
-function displayClaimedStatus(claimed: BigNumber, unlocked: BigNumber): string {
+export function displayClaimedStatus(
+  claimed: BigNumber,
+  unlocked: BigNumber
+): string {
   const formattedClaimed = formatCrypto(
     { token: SupportedCrypto.Gfi, amount: claimed },
     { includeToken: true }

@@ -14,18 +14,7 @@ type SeniorPoolStakedPosition @entity {
   id: ID!
   user: User!
   amount: BigInt!
-  """
-  Beginning of vesting schedule.
-  """
-  startTime: BigInt
-  """
-  End of vesting schedule.
-  """
-  endTime: BigInt
-  """
-  Note that the reward rate is measured per second
-  """
-  rewardEarnRate: BigInt!
+  totalRewardsClaimed: BigInt!
 }
 
 type SeniorPoolStatus @entity {
