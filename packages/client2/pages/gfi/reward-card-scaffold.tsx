@@ -10,6 +10,7 @@ interface RewardCardScaffoldProps {
   boldedAmount: string;
   action: ReactNode;
   expandedDetails: ReactNode;
+  warning?: string;
 }
 
 export function RewardCardScaffold({
@@ -19,6 +20,7 @@ export function RewardCardScaffold({
   boldedAmount,
   action,
   expandedDetails,
+  warning,
 }: RewardCardScaffoldProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -34,6 +36,7 @@ export function RewardCardScaffold({
         <div>
           <div className="mb-1.5 text-xl font-medium">{heading}</div>
           <div className="text-sand-700">{subheading}</div>
+          {warning ? <div className="mt-2 text-clay-500">{warning}</div> : null}
         </div>
         <div className="justify-self-end text-xl text-sand-500">
           {fadedAmount}

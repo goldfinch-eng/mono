@@ -19,6 +19,10 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
     tranchedPool {
       id
       name @client
+      creditLine {
+        id
+        isLate @client
+      }
     }
     rewardsClaimable
     rewardsClaimed
@@ -43,9 +47,9 @@ export function BackerCard({ token }: BackerCardProps) {
 
   const backerRewardsContract = useContract("BackerRewards");
 
-  const canClaim = !token.rewardsClaimable
-    .add(token.stakingRewardsClaimable)
-    .isZero();
+  const canClaim =
+    !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
+    !token.tranchedPool.creditLine.isLate;
 
   const handleClaim = async () => {
     if (!backerRewardsContract) {
@@ -114,6 +118,11 @@ export function BackerCard({ token }: BackerCardProps) {
             )}`}
           />
         </>
+      }
+      warning={
+        token.tranchedPool.creditLine.isLate
+          ? "Claiming is disabled because a repayment is due"
+          : undefined
       }
     />
   );

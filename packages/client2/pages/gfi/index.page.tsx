@@ -44,7 +44,7 @@ gql`
 
 export default function GfiPage() {
   const { account } = useWallet();
-  const { data } = useGfiPageQuery({
+  const { data, error } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",
     },
@@ -130,6 +130,8 @@ export default function GfiPage() {
       </Heading>
       {!account ? (
         <div>You must connect your wallet to view GFI rewards</div>
+      ) : error ? (
+        <div className="text-clay-500">{error.message}</div>
       ) : (
         <div>
           <StatGrid className="mb-15">
