@@ -167,6 +167,10 @@ export function displayUnlockedProgress(
   totalAmount: BigNumber,
   unlocked: BigNumber
 ): string {
+  if (totalAmount.isZero()) {
+    return "0 GFI unlocked";
+  }
+
   const totalAmountAsFixed = FixedNumber.fromValue(totalAmount);
   const unlockedAsFixed = FixedNumber.fromValue(unlocked);
 

@@ -1,4 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
+import { format } from "date-fns";
 import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -28,6 +29,7 @@ export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
     rewardEarnRate @client
     claimable @client
     granted @client
+    startTime @client
     endTime @client
   }
 `;
@@ -86,7 +88,10 @@ export function StakingCard({ position }: StakingCardProps) {
             body={`Staked ${formatCrypto(
               { token: SupportedCrypto.Fidu, amount: position.amount },
               { includeToken: true }
-            )} on X date`}
+            )} on ${format(
+              position.startTime.mul(1000).toNumber(),
+              "MMM d, y"
+            )}`}
           />
           <Detail
             heading="Current earn rate"
