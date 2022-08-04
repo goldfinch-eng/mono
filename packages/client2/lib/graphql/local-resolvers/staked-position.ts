@@ -20,7 +20,7 @@ export const stakedPositionResolvers: Resolvers[string] = {
     if (!provider) {
       throw new Error("No provider when getting StakingRewards contract");
     }
-    const chainId = await provider?.getSigner().getChainId();
+    const chainId = await provider.getSigner().getChainId();
     const stakingRewardsContract = getContract({
       name: "StakingRewards",
       chainId,
@@ -79,7 +79,7 @@ async function getStakingRewardsContract() {
   if (!provider) {
     throw new Error("No provider when getting StakingRewards contract");
   }
-  const chainId = await provider?.getSigner().getChainId();
+  const chainId = await provider.getSigner().getChainId();
   const stakingRewardsContract = getContract({
     name: "StakingRewards",
     chainId,
