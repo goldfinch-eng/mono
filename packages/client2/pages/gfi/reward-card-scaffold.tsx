@@ -25,7 +25,7 @@ export function RewardCardScaffold({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl bg-sand-100 py-4 px-6">
+    <div className="relative rounded-xl bg-sand-100 py-4 px-6 hover:bg-sand-200">
       <div
         className="grid"
         style={{
@@ -45,8 +45,11 @@ export function RewardCardScaffold({
           {boldedAmount}
         </div>
         <div className="flex items-center justify-self-end">
-          {action}
-          <button onClick={() => setIsExpanded(!isExpanded)} className="mx-8">
+          <div className="relative z-10">{action}</div>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mx-8 before:absolute before:inset-0"
+          >
             <Icon
               name="ChevronDown"
               size="lg"
