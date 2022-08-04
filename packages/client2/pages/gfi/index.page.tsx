@@ -33,7 +33,11 @@ gql`
     communityRewardsTokens(where: { user: $userId }) {
       ...GrantCardTokenFields
     }
-    tranchedPoolTokens(where: { user: $userId }) {
+    tranchedPoolTokens(
+      where: { user: $userId }
+      orderBy: mintedAt
+      orderDirection: asc
+    ) {
       ...BackerCardTokenFields
     }
     seniorPoolStakedPositions(where: { user: $userId }) {

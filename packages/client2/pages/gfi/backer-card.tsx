@@ -1,4 +1,5 @@
 import { gql, useApolloClient } from "@apollo/client";
+import { format } from "date-fns";
 import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -24,6 +25,7 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
         isLate @client
       }
     }
+    mintedAt
     rewardsClaimable
     rewardsClaimed
     stakingRewardsClaimable
@@ -89,7 +91,10 @@ export function BackerCard({ token }: BackerCardProps) {
             body={`Supplied ${formatCrypto({
               token: SupportedCrypto.Usdc,
               amount: token.principalAmount,
-            })} to this pool`}
+            })} beginning on ${format(
+              token.mintedAt.mul(1000).toNumber(),
+              "MMM d, y"
+            )}`}
           />
           <Detail heading="Unlock schedule" body="Immediate" />
           <Detail

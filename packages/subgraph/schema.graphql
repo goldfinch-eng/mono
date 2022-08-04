@@ -216,6 +216,7 @@ type TranchedPool @entity {
 
 type TranchedPoolToken @entity {
   id: ID! # Set to tokenId
+  mintedAt: BigInt!
   user: User!
   tranchedPool: TranchedPool!
   tranche: BigInt!
