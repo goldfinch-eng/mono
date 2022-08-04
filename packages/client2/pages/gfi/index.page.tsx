@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 import { useMemo } from "react";
 
-import { Heading, Stat, StatGrid } from "@/components/design-system";
+import { Heading, Shimmer, Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import { SupportedCrypto, useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
@@ -48,7 +48,7 @@ gql`
 
 export default function GfiPage() {
   const { account } = useWallet();
-  const { data, error } = useGfiPageQuery({
+  const { data, error, loading } = useGfiPageQuery({
     variables: {
       userId: account ? account.toLowerCase() : "",
     },
@@ -141,28 +141,45 @@ export default function GfiPage() {
           <StatGrid className="mb-15">
             <Stat
               label="Total GFI (Claimable + Locked)"
-              value={formatCrypto(
-                {
-                  token: SupportedCrypto.Gfi,
-                  amount: totalClaimable.add(totalLocked),
-                },
-                { includeToken: true }
-              )}
-              tooltip="Lorem ipsum"
+              value={
+                loading ? (
+                  <Shimmer />
+                ) : (
+                  formatCrypto(
+                    {
+                      token: SupportedCrypto.Gfi,
+                      amount: totalClaimable.add(totalLocked),
+                    },
+                    { includeToken: true }
+                  )
+                )
+              }
             />
             <Stat
               label="Claimable GFI"
-              value={formatCrypto(
-                { token: SupportedCrypto.Gfi, amount: totalClaimable },
-                { includeToken: true }
-              )}
+              value={
+                loading ? (
+                  <Shimmer />
+                ) : (
+                  formatCrypto(
+                    { token: SupportedCrypto.Gfi, amount: totalClaimable },
+                    { includeToken: true }
+                  )
+                )
+              }
             />
             <Stat
               label="Locked GFI"
-              value={formatCrypto(
-                { token: SupportedCrypto.Gfi, amount: totalLocked },
-                { includeToken: true }
-              )}
+              value={
+                loading ? (
+                  <Shimmer />
+                ) : (
+                  formatCrypto(
+                    { token: SupportedCrypto.Gfi, amount: totalLocked },
+                    { includeToken: true }
+                  )
+                )
+              }
             />
           </StatGrid>
           <div className="mb-3 hidden grid-cols-5 items-center px-6 text-sand-500 lg:grid">
@@ -171,22 +188,30 @@ export default function GfiPage() {
             <div className="justify-self-end">Claimable GFI</div>
           </div>
           <div className="space-y-3">
-            {data?.seniorPoolStakedPositions.map((position) => (
-              <StakingCard key={position.id} position={position} />
-            ))}
-            {data?.tranchedPoolTokens.map((token) => (
-              <BackerCard key={token.id} token={token} />
-            ))}
-            {grantsWithTokens?.map(
-              ({ grant, token, claimable, locked }, index) => (
-                <GrantCard
-                  key={index}
-                  grant={grant}
-                  token={token}
-                  claimable={claimable}
-                  locked={locked}
-                />
-              )
+            {loading ? (
+              [0, 1, 2, 3].map((nonce) => (
+                <Shimmer key={nonce} className="h-20" />
+              ))
+            ) : (
+              <>
+                {data?.seniorPoolStakedPositions.map((position) => (
+                  <StakingCard key={position.id} position={position} />
+                ))}
+                {data?.tranchedPoolTokens.map((token) => (
+                  <BackerCard key={token.id} token={token} />
+                ))}
+                {grantsWithTokens?.map(
+                  ({ grant, token, claimable, locked }, index) => (
+                    <GrantCard
+                      key={index}
+                      grant={grant}
+                      token={token}
+                      claimable={claimable}
+                      locked={locked}
+                    />
+                  )
+                )}
+              </>
             )}
           </div>
         </div>
