@@ -26,29 +26,23 @@ export function RewardCardScaffold({
 
   return (
     <div className="relative rounded-xl bg-sand-100 py-4 px-6 hover:bg-sand-200">
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: "1fr 20% 20% 25%",
-          alignItems: "center",
-        }}
-      >
-        <div>
+      <div className="grid grid-cols-2 items-center lg:grid-cols-5">
+        <div className="lg:col-span-2">
           <div className="mb-1.5 text-xl font-medium">{heading}</div>
           <div className="text-sand-700">{subheading}</div>
           {warning ? <div className="mt-2 text-clay-500">{warning}</div> : null}
         </div>
-        <div className="justify-self-end text-xl text-sand-500">
+        <div className="hidden justify-self-end text-xl text-sand-500 lg:block">
           {fadedAmount}
         </div>
-        <div className="justify-self-end text-xl font-medium text-sand-700">
+        <div className="hidden justify-self-end text-xl font-medium text-sand-700 lg:block">
           {boldedAmount}
         </div>
         <div className="flex items-center justify-self-end">
           <div className="relative z-10">{action}</div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="mx-8 before:absolute before:inset-0"
+            className="ml-6 before:absolute before:inset-0"
           >
             <Icon
               name="ChevronDown"

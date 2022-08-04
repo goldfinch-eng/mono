@@ -161,17 +161,10 @@ export default function GfiPage() {
               )}
             />
           </StatGrid>
-          <div
-            className="mb-3 grid px-6 text-sand-500"
-            style={{
-              gridTemplateColumns: "1fr 20% 20% 25%",
-              alignItems: "center",
-            }}
-          >
-            <div>Type</div>
+          <div className="mb-3 hidden grid-cols-5 items-center px-6 text-sand-500 lg:grid">
+            <div className="col-span-2">Type</div>
             <div className="justify-self-end">Locked GFI</div>
             <div className="justify-self-end">Claimable GFI</div>
-            <div></div>
           </div>
           <div className="space-y-3">
             {data?.seniorPoolStakedPositions.map((position) => (
