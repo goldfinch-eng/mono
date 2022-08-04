@@ -26,7 +26,7 @@ export function RewardCardScaffold({
 
   return (
     <div className="relative rounded-xl bg-sand-100 py-4 px-6 hover:bg-sand-200">
-      <div className="grid grid-cols-2 items-center lg:grid-cols-5">
+      <div className="grid grid-cols-1 items-center xs:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <div className="mb-1.5 text-xl font-medium">{heading}</div>
           <div className="text-sand-700">{subheading}</div>
