@@ -26,6 +26,7 @@ export function handleStaked(event: Staked): void {
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.startTime = event.block.timestamp
 
   stakedPosition.save()
 }

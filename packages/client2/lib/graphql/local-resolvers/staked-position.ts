@@ -56,14 +56,6 @@ export const stakedPositionResolvers: Resolvers[string] = {
       .add(earnedSinceLastCheckpoint);
   },
 
-  async startTime(
-    position: SeniorPoolStakedPosition
-  ): Promise<SeniorPoolStakedPosition["startTime"]> {
-    const stakingRewardsContract = await getStakingRewardsContract();
-    return (await stakingRewardsContract.positions(position.id)).rewards
-      .startTime;
-  },
-
   async endTime(
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["endTime"]> {

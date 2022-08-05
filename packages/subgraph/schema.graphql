@@ -14,6 +14,10 @@ type SeniorPoolStakedPosition @entity {
   id: ID!
   user: User!
   amount: BigInt!
+  """
+  endTime has to be queried via RPC on client due to a complication: calling positions() on the StakingRewards contract is difficult due to its signature changing over time.
+  """
+  startTime: BigInt!
   totalRewardsClaimed: BigInt!
 }
 

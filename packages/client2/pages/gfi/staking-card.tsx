@@ -29,7 +29,7 @@ export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
     rewardEarnRate @client
     claimable @client
     granted @client
-    startTime @client
+    startTime
     endTime @client
   }
 `;
