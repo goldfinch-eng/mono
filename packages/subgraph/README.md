@@ -143,7 +143,7 @@ graph test
 
 - Make sure you have docker and docker-compose installed
 - Start the local chain with `npm run start` in the `packages/protocol` directory. This should run _without_ mainnet forking (it takes way too long to index with mainnet forking)
-- In another terminal, go to the `packages/subgraph` directory and run `docker-compose up -d`. This will start up 3 Docker containers that The Graph needs. One for Postgres, one for IPFS, one for Graph Node (which is the actual The Graph product)
+- In another terminal, go to the `packages/subgraph` directory and run `npm run start-local`. This will start up 3 Docker containers that The Graph needs. One for Postgres, one for IPFS, one for Graph Node (which is the actual The Graph product)
 - Give it a minute or so to start up, then run `npm run create-local`. This will create an instance of the Goldfinch subgraph (same as if you had created a new empty subgraph on the hosted service)
 - Now run `npm run deploy-local`. This will generate a local `subgraph-local.yaml` file, and edit some constants in the source code, then it will deploy into the Docker containers.
 - The indexing of the subgraph should start immediately.
