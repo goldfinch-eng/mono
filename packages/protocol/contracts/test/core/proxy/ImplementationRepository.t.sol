@@ -269,8 +269,8 @@ contract ImplementationRepositoryTest is Test {
     public
     impersonating(owner)
     withFakeContract(impl)
-    assume(!repo.has(impl))
     afterInitializingRepository
+    assume(!repo.has(impl))
   {
     vm.expectRevert("invalid lineageId");
     repo.append(impl, 0);
