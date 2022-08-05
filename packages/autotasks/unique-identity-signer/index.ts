@@ -183,9 +183,6 @@ export async function main({
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
 
-  // TODO We should just do our own verification of x-goldfinch-signature here, rather than
-  // rely on it being done implicitly via `fetchKYCStatus()`.
-
   if (
     !isApprovedUSAccreditedEntity(userAddress) &&
     !isApprovedUSAccreditedIndividual(userAddress) &&
