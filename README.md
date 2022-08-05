@@ -30,6 +30,17 @@ npm install
 npx lerna bootstrap
 ```
 
+##### Troubleshooting
+
+If you run in to this error during `npm run bootstrap`
+```
+ENFILE: file table overflow
+```
+Try increasing the maximum number of files that can be open
+```
+ulimit -n 10240
+```
+
 ## Developing
 
 ### Smart Contract Development
