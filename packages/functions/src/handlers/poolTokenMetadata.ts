@@ -4,7 +4,7 @@ import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler, getBlockchain} from "../helpers"
 import POOL_METADATA from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {GraphQLClient} from "graphql-request"
-import {getSdk, PoolTokenMetadataQuery, TranchedPoolBorrowerTransactionType} from "../graphql/generated/graphql"
+import {getSdk, PoolTokenMetadataQuery} from "../graphql/generated/graphql"
 import {BigNumber} from "bignumber.js"
 import type {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers/GoldfinchConfig"
 import GOLDFINCH_CONFIG_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/GoldfinchConfig.json"
@@ -91,7 +91,7 @@ type TokenAttribute = {type: AttributeType; value: string}
  * @return {Array<TokenAttribute>} A list of attributes
  */
 async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute>> {
-  const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch")
+  const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2")
   const sdk = getSdk(client)
 
   const provider = getBlockchain("https://app.goldfinch.finance")
@@ -127,10 +127,9 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const nav = await calculateNAV(tranchedPoolToken)
   const monthlyInterestPayment = principalAmount.multipliedBy(backerApr).dividedBy(12)
 
-  const repayments = tranchedPoolToken.tranchedPool.borrowerTransactions.filter(
-    (tx: any) => tx.type === TranchedPoolBorrowerTransactionType.PaymentApplied,
+  const totalAmountRepaid = new BigNumber(tranchedPoolToken.tranchedPool.principalAmountRepaid.toString()).plus(
+    new BigNumber(tranchedPoolToken.tranchedPool.interestAmountRepaid.toString()),
   )
-  const totalAmountRepaid = BigNumber.sum(...repayments.map((r: any) => new BigNumber(r.amount.toString())))
 
   const lastFullPaymentTimeInSeconds = new BigNumber(tranchedPool.creditLine.lastFullPaymentTime.toString()).toNumber()
   const latenessGracePeriodInSeconds = new BigNumber(latenessGracePeriodInDays.toString()).toNumber() * secondsInDay
