@@ -10,14 +10,15 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/IERC20.so
  * @notice Reverts when transfer is not successful
  * @author Goldfinch
  */
-abstract contract SafeERC20Transfer {
+library SafeERC20Transfer {
   function safeERC20Transfer(
     IERC20 erc20,
     address to,
     uint256 amount,
     string memory message
   ) internal {
-    require(to != address(0), "Can't send to zero address");
+    /// @dev ZERO address
+    require(to != address(0), "ZERO");
     bool success = erc20.transfer(to, amount);
     require(success, message);
   }
@@ -27,7 +28,7 @@ abstract contract SafeERC20Transfer {
     address to,
     uint256 amount
   ) internal {
-    safeERC20Transfer(erc20, to, amount, "Failed to transfer ERC20");
+    safeERC20Transfer(erc20, to, amount, "");
   }
 
   function safeERC20TransferFrom(
@@ -37,7 +38,7 @@ abstract contract SafeERC20Transfer {
     uint256 amount,
     string memory message
   ) internal {
-    require(to != address(0), "Can't send to zero address");
+    require(to != address(0), "ZERO");
     bool success = erc20.transferFrom(from, to, amount);
     require(success, message);
   }
@@ -48,8 +49,7 @@ abstract contract SafeERC20Transfer {
     address to,
     uint256 amount
   ) internal {
-    string memory message = "Failed to transfer ERC20";
-    safeERC20TransferFrom(erc20, from, to, amount, message);
+    safeERC20TransferFrom(erc20, from, to, amount, "");
   }
 
   function safeERC20Approve(
@@ -67,7 +67,6 @@ abstract contract SafeERC20Transfer {
     address spender,
     uint256 allowance
   ) internal {
-    string memory message = "Failed to approve ERC20";
-    safeERC20Approve(erc20, spender, allowance, message);
+    safeERC20Approve(erc20, spender, allowance, "");
   }
 }

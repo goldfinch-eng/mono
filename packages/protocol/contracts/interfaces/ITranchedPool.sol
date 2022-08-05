@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./IV2CreditLine.sol";
+import {IV2CreditLine} from "./IV2CreditLine.sol";
 
 abstract contract ITranchedPool {
   IV2CreditLine public creditLine;
@@ -29,20 +29,6 @@ abstract contract ITranchedPool {
     uint256 principalDeployed;
   }
 
-  struct SliceInfo {
-    uint256 reserveFeePercent;
-    uint256 interestAccrued;
-    uint256 principalAccrued;
-  }
-
-  struct ApplyResult {
-    uint256 interestRemaining;
-    uint256 principalRemaining;
-    uint256 reserveDeduction;
-    uint256 oldInterestSharePrice;
-    uint256 oldPrincipalSharePrice;
-  }
-
   function initialize(
     address _config,
     address _borrower,
@@ -60,6 +46,8 @@ abstract contract ITranchedPool {
   function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);
 
   function pay(uint256 amount) external virtual;
+
+  function poolSlices(uint256 index) external view virtual returns (PoolSlice memory);
 
   function lockJuniorCapital() external virtual;
 

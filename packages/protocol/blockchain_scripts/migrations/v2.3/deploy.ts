@@ -45,18 +45,19 @@ export async function deploy(deployEffects: DeployEffects) {
   await deployEffects.add({
     deferred: [
       await go.populateTransaction.setLegacyGoList(goConfigAddress),
+      // @ts-expect-error Ignore broken call to function that has been removed.
       await go.populateTransaction.updateGoldfinchConfig(),
       await go.populateTransaction.performUpgrade(),
     ],
   })
 
   // 7. upgrade goldfinch factory
-  const goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {
-    at: upgradedContracts.GoldfinchFactory?.ProxyContract.address,
-  })
-  await deployEffects.add({
-    deferred: [await goldfinchFactory.populateTransaction.performUpgrade()],
-  })
+  // const goldfinchFactory = await getEthersContract<GoldfinchFactory>("GoldfinchFactory", {
+  //   at: upgradedContracts.GoldfinchFactory?.ProxyContract.address,
+  // })
+  // await deployEffects.add({
+  //   deferred: [await goldfinchFactory.populateTransaction.performUpgrade()],
+  // })
 
   return {
     deployedContracts: {

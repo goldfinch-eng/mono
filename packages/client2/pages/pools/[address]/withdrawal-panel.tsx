@@ -249,13 +249,15 @@ export function WithdrawalPanel({
         >
           Withdraw
         </Button>
-        <div className="mt-3 flex items-center justify-center gap-2 text-sm text-sand-700">
-          <InfoIconTooltip
-            size="sm"
-            content="While this Pool is still open for Backer investments, you can instantly withdraw any amount of the funds you have already invested. Once the Pool is has reached its Pool limit for funding and is closed for further investment, you will only be able to withdraw your share of the Pool's interest and principal repayments."
-          />
-          You can withdraw capital until the pool is closed.
-        </div>
+        {!isPoolLocked ? (
+          <div className="mt-3 flex items-center justify-center gap-2 text-sm text-sand-700">
+            <InfoIconTooltip
+              size="sm"
+              content="While this Pool is still open for Backer investments, you can instantly withdraw any amount of the funds you have already invested. Once the Pool is has reached its Pool limit for funding and is closed for further investment, you will only be able to withdraw your share of the Pool's interest and principal repayments."
+            />
+            You can withdraw capital until the pool is closed.
+          </div>
+        ) : null}
       </Form>
     </div>
   );

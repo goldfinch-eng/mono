@@ -67,7 +67,7 @@ export const personaCallback = genRequestHandler({
 
     const eventPayload = req.body.data.attributes.payload.data
 
-    const address = eventPayload.attributes.referenceId
+    const {referenceId: address, status} = eventPayload.attributes
 
     // Having verified the request, we can set the Sentry user context accordingly.
     Sentry.setUser({id: address, address})
@@ -81,17 +81,14 @@ export const personaCallback = genRequestHandler({
         const doc = await t.get(userRef)
 
         if (doc.exists) {
-          // If the user was already approved, then ignore further updates
-          if (doc.data()?.persona?.status === "approved") {
-            return
-          }
+          const existingData = doc.data()
 
           t.update(userRef, {
             persona: {
               id: eventPayload.id,
-              status: eventPayload.attributes.status,
+              status: existingData?.persona?.status === "approved" ? "approved" : status,
             },
-            countryCode: countryCode,
+            countryCode: countryCode || existingData?.countryCode || null,
             updatedAt: Date.now(),
           })
         } else {
@@ -99,8 +96,9 @@ export const personaCallback = genRequestHandler({
             address: address,
             persona: {
               id: eventPayload.id,
-              status: eventPayload.attributes.status,
+              status,
             },
+            countryCode,
             updatedAt: Date.now(),
           })
         }

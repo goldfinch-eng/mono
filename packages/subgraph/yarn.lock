@@ -2028,7 +2028,7 @@
     "abort-controller" "^3.0.0"
     "node-fetch" "^2.3.0"
 
-"ky@^0.11.2", "ky@>=0.10.0":
+"ky@^0.11.2":
   "integrity" "sha512-5Aou5BWue5/mkPqIRqzSWW+0Hkl403pr/2AIrCKYw7cVl/Xoe8Xe4KLBO0PRjbz7GnRe1/8wW1KhqQNFFE7/GQ=="
   "resolved" "https://registry.npmjs.org/ky/-/ky-0.11.2.tgz"
   "version" "0.11.2"
@@ -3351,11 +3351,6 @@
   "integrity" "sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c="
   "resolved" "https://registry.npmjs.org/typedarray/-/typedarray-0.0.6.tgz"
   "version" "0.0.6"
-
-"typescript@>=2.7":
-  "integrity" "sha512-WOkT3XYvrpXx4vMMqlD+8R8R37fZkjyLGlxavMc4iB8lrl8L0DeTcHbYgw/v0N/z9wAFsgBhcsF0ruoySS22mA=="
-  "resolved" "https://registry.npmjs.org/typescript/-/typescript-4.7.3.tgz"
-  "version" "4.7.3"
 
 "unique-by@^1.0.0":
   "integrity" "sha1-UiDIa6e8Vy+3E610ZRRwy2RCEr0="

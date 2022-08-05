@@ -9,6 +9,12 @@ import {assertNonNullable, presignedBurnMessage, presignedMintMessage} from "@go
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
+
+// Ideally, we reference this this directly with @goldfinch-eng/autotasks, but that currently
+// creates a circular dependency. Task to fix this:
+// https://linear.app/goldfinch/issue/GFI-840/refactor-mainnet-forking-tests
+import * as uniqueIdentitySigner from "../../../autotasks/unique-identity-signer"
+
 const {deployments, web3} = hre
 
 const TEST_TIMEOUT = 180000 // 3 mins

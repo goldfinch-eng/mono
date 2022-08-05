@@ -20,11 +20,13 @@ async function buildAndDeploy(id, name, dir, autoTaskClient) {
       json({compact: true}),
       typescript({
         tsconfig: "./tsconfig.build.json",
+        sourceMap: true,
       }),
     ],
     external: [...builtins, "ethers", "web3", "axios", /^defender-relay-client(\/.*)?$/],
   }
   const outputOptions = {
+    sourcemap: true,
     file: `./${dir}/dist/index.js`,
     format: "cjs",
   }

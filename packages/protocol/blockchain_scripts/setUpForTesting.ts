@@ -1,5 +1,5 @@
 import {NON_US_UID_TYPES, US_UID_TYPES} from "@goldfinch-eng/utils"
-import {JsonRpcSigner} from "@goldfinch-eng/autotasks/node_modules/@ethersproject/providers/lib"
+import {JsonRpcSigner} from "@ethersproject/providers"
 import {assertIsString, assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
 import BigNumber from "bignumber.js"
 import BN from "bn.js"

@@ -30935,6 +30935,379 @@
             }
           ]
         },
+        "TestForwarder": {
+          "address": "0x76C3F166d086E6Cc213fcE0391e5087d3F4A77Fe",
+          "abi": [
+            {
+              "inputs": [],
+              "stateMutability": "nonpayable",
+              "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "domainSeparator",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "bytes",
+                  "name": "domainValue",
+                  "type": "bytes"
+                }
+              ],
+              "name": "DomainRegistered",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "bytes32",
+                  "name": "typeHash",
+                  "type": "bytes32"
+                },
+                {
+                  "indexed": false,
+                  "internalType": "string",
+                  "name": "typeStr",
+                  "type": "string"
+                }
+              ],
+              "name": "RequestTypeRegistered",
+              "type": "event"
+            },
+            {
+              "inputs": [],
+              "name": "EIP712_DOMAIN_TYPE",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [],
+              "name": "GENERIC_PARAMS",
+              "outputs": [
+                {
+                  "internalType": "string",
+                  "name": "",
+                  "type": "string"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "gas",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "nonce",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "internalType": "struct TestForwarder.ForwardRequest",
+                  "name": "req",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "requestTypeHash",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "suffixData",
+                  "type": "bytes"
+                }
+              ],
+              "name": "_getEncoded",
+              "outputs": [
+                {
+                  "internalType": "bytes",
+                  "name": "",
+                  "type": "bytes"
+                }
+              ],
+              "stateMutability": "pure",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "domains",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "gas",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "nonce",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "internalType": "struct TestForwarder.ForwardRequest",
+                  "name": "req",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "domainSeparator",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "requestTypeHash",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "suffixData",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "sig",
+                  "type": "bytes"
+                }
+              ],
+              "name": "execute",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "success",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "ret",
+                  "type": "bytes"
+                }
+              ],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "from",
+                  "type": "address"
+                }
+              ],
+              "name": "getNonce",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "version",
+                  "type": "string"
+                }
+              ],
+              "name": "registerDomainSeparator",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "string",
+                  "name": "typeName",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "typeSuffix",
+                  "type": "string"
+                }
+              ],
+              "name": "registerRequestType",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes32",
+                  "name": "",
+                  "type": "bytes32"
+                }
+              ],
+              "name": "typeHashes",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "gas",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "nonce",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "internalType": "struct TestForwarder.ForwardRequest",
+                  "name": "req",
+                  "type": "tuple"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "domainSeparator",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes32",
+                  "name": "requestTypeHash",
+                  "type": "bytes32"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "suffixData",
+                  "type": "bytes"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "sig",
+                  "type": "bytes"
+                }
+              ],
+              "name": "verify",
+              "outputs": [],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "receive"
+            }
+          ]
+        },
         "TranchedPool": {
           "address": "0x38Dd72b21cBB6023b9818060c541D2Ce7D4D107b",
           "abi": [
@@ -37156,60 +37529,8 @@
       "chainId": "1",
       "contracts": {
         "Accountant": {
-          "address": "0xDD4bb1B6c13a7139F43da6598429f87e7FFe7CC6",
+          "address": "0x87F21B33D7E6CeB3f241a264Fe146F753b8c9667",
           "abi": [
-            {
-              "inputs": [],
-              "name": "FP_SCALING_FACTOR",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "INTEREST_DECIMALS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "SECONDS_PER_DAY",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "SECONDS_PER_YEAR",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
             {
               "inputs": [
                 {
@@ -64029,7 +64350,7 @@
                 },
                 {
                   "indexed": false,
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 },
@@ -64041,101 +64362,6 @@
                 }
               ],
               "name": "EffectiveMultiplierUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "configAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "GoldfinchConfigUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxRateAtPercent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MaxRateAtPercentUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxRate",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MaxRateUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "minRateAtPercent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MinRateAtPercentUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "minRate",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MinRateUpdated",
               "type": "event"
             },
             {
@@ -64305,7 +64531,7 @@
                 },
                 {
                   "indexed": false,
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 },
@@ -64317,25 +64543,6 @@
                 }
               ],
               "name": "Staked",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "targetCapacity",
-                  "type": "uint256"
-                }
-              ],
-              "name": "TargetCapacityUpdated",
               "type": "event"
             },
             {
@@ -64399,7 +64606,7 @@
                 },
                 {
                   "indexed": false,
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -64495,25 +64702,6 @@
               "type": "event"
             },
             {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "vestingLength",
-                  "type": "uint256"
-                }
-              ],
-              "name": "VestingScheduleUpdated",
-              "type": "event"
-            },
-            {
               "inputs": [],
               "name": "DEFAULT_ADMIN_ROLE",
               "outputs": [
@@ -64555,19 +64743,6 @@
             {
               "inputs": [],
               "name": "PAUSER_ROLE",
-              "outputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "",
-                  "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "ZAPPER_ROLE",
               "outputs": [
                 {
                   "internalType": "bytes32",
@@ -64893,7 +65068,7 @@
             {
               "inputs": [
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -64912,7 +65087,7 @@
             {
               "inputs": [
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -64923,6 +65098,94 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getPosition",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "totalUnvested",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "totalVested",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "totalPreviouslyVested",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "totalClaimed",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "startTime",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "endTime",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct StakingRewardsVesting.Rewards",
+                      "name": "rewards",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "leverageMultiplier",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "lockedUntil",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum StakedPositionType",
+                      "name": "positionType",
+                      "type": "uint8"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "unsafeEffectiveMultiplier",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "unsafeBaseTokenExchangeRate",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct StakedPosition",
+                  "name": "position",
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -65043,13 +65306,6 @@
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "initZapperRole",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -65339,7 +65595,7 @@
                   "type": "uint256"
                 },
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 },
@@ -65496,7 +65752,7 @@
                   "type": "uint256"
                 },
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -65543,24 +65799,11 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "_vestingLength",
-                  "type": "uint256"
-                }
-              ],
-              "name": "setVestingSchedule",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
                   "name": "amount",
                   "type": "uint256"
                 },
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -66072,7 +66315,7 @@
           ]
         },
         "StakingRewards_Implementation": {
-          "address": "0x5B06A5aA7fea5EE270E495e1418E6FdDa29766c5",
+          "address": "0xE130F1ac86352C3fbAC0564Ba375B15382da8D82",
           "abi": [
             {
               "anonymous": false,
@@ -66234,7 +66477,7 @@
                 },
                 {
                   "indexed": false,
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 },
@@ -66246,101 +66489,6 @@
                 }
               ],
               "name": "EffectiveMultiplierUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "configAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "GoldfinchConfigUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxRateAtPercent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MaxRateAtPercentUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "maxRate",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MaxRateUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "minRateAtPercent",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MinRateAtPercentUpdated",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "minRate",
-                  "type": "uint256"
-                }
-              ],
-              "name": "MinRateUpdated",
               "type": "event"
             },
             {
@@ -66510,7 +66658,7 @@
                 },
                 {
                   "indexed": false,
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 },
@@ -66522,25 +66670,6 @@
                 }
               ],
               "name": "Staked",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "targetCapacity",
-                  "type": "uint256"
-                }
-              ],
-              "name": "TargetCapacityUpdated",
               "type": "event"
             },
             {
@@ -66604,7 +66733,7 @@
                 },
                 {
                   "indexed": false,
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -66700,25 +66829,6 @@
               "type": "event"
             },
             {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "who",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "vestingLength",
-                  "type": "uint256"
-                }
-              ],
-              "name": "VestingScheduleUpdated",
-              "type": "event"
-            },
-            {
               "inputs": [],
               "name": "DEFAULT_ADMIN_ROLE",
               "outputs": [
@@ -66760,19 +66870,6 @@
             {
               "inputs": [],
               "name": "PAUSER_ROLE",
-              "outputs": [
-                {
-                  "internalType": "bytes32",
-                  "name": "",
-                  "type": "bytes32"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "ZAPPER_ROLE",
               "outputs": [
                 {
                   "internalType": "bytes32",
@@ -67098,7 +67195,7 @@
             {
               "inputs": [
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -67117,7 +67214,7 @@
             {
               "inputs": [
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -67128,6 +67225,94 @@
                   "internalType": "uint256",
                   "name": "",
                   "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "getPosition",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "components": [
+                        {
+                          "internalType": "uint256",
+                          "name": "totalUnvested",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "totalVested",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "totalPreviouslyVested",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "totalClaimed",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "startTime",
+                          "type": "uint256"
+                        },
+                        {
+                          "internalType": "uint256",
+                          "name": "endTime",
+                          "type": "uint256"
+                        }
+                      ],
+                      "internalType": "struct StakingRewardsVesting.Rewards",
+                      "name": "rewards",
+                      "type": "tuple"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "leverageMultiplier",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "lockedUntil",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "enum StakedPositionType",
+                      "name": "positionType",
+                      "type": "uint8"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "unsafeEffectiveMultiplier",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "unsafeBaseTokenExchangeRate",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct StakedPosition",
+                  "name": "position",
+                  "type": "tuple"
                 }
               ],
               "stateMutability": "view",
@@ -67248,13 +67433,6 @@
                 }
               ],
               "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "initZapperRole",
-              "outputs": [],
-              "stateMutability": "nonpayable",
               "type": "function"
             },
             {
@@ -67544,7 +67722,7 @@
                   "type": "uint256"
                 },
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 },
@@ -67701,7 +67879,7 @@
                   "type": "uint256"
                 },
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -67748,24 +67926,11 @@
               "inputs": [
                 {
                   "internalType": "uint256",
-                  "name": "_vestingLength",
-                  "type": "uint256"
-                }
-              ],
-              "name": "setVestingSchedule",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "uint256",
                   "name": "amount",
                   "type": "uint256"
                 },
                 {
-                  "internalType": "enum StakingRewards.StakedPositionType",
+                  "internalType": "enum StakedPositionType",
                   "name": "positionType",
                   "type": "uint8"
                 }
@@ -73326,128 +73491,6 @@
               "anonymous": false,
               "inputs": [
                 {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "previousOwner",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "OwnershipTransferred",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "previousImplementation",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "newImplementation",
-                  "type": "address"
-                }
-              ],
-              "name": "ProxyImplementationUpdated",
-              "type": "event"
-            },
-            {
-              "stateMutability": "payable",
-              "type": "fallback"
-            },
-            {
-              "inputs": [],
-              "name": "owner",
-              "outputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "bytes4",
-                  "name": "id",
-                  "type": "bytes4"
-                }
-              ],
-              "name": "supportsInterface",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "newOwner",
-                  "type": "address"
-                }
-              ],
-              "name": "transferOwnership",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "newImplementation",
-                  "type": "address"
-                }
-              ],
-              "name": "upgradeTo",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "newImplementation",
-                  "type": "address"
-                },
-                {
-                  "internalType": "bytes",
-                  "name": "data",
-                  "type": "bytes"
-                }
-              ],
-              "name": "upgradeToAndCall",
-              "outputs": [],
-              "stateMutability": "payable",
-              "type": "function"
-            },
-            {
-              "stateMutability": "payable",
-              "type": "receive"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
                   "indexed": false,
                   "internalType": "address",
                   "name": "account",
@@ -73575,6 +73618,19 @@
             {
               "inputs": [],
               "name": "__PauserPausable__init",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "poolTokenIds",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "claimMultipleTranchedPoolZaps",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -73830,6 +73886,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256[]",
+                  "name": "poolTokenIds",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "unzapMultipleFromTranchedPools",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "poolTokenId",
                   "type": "uint256"
@@ -73837,6 +73906,74 @@
               ],
               "name": "unzapToStakingRewards",
               "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "contract ITranchedPool",
+                  "name": "tranchedPool",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "tranche",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "fiduAmount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "zapFiduStakeToTranchedPool",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "stakingRewardsTokenIds",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "fiduAmounts",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "contract ITranchedPool",
+                  "name": "tranchedPool",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "tranche",
+                  "type": "uint256"
+                }
+              ],
+              "name": "zapMultipleToTranchedPool",
+              "outputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "poolTokenIds",
+                  "type": "uint256[]"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -73887,7 +74024,13 @@
                 }
               ],
               "name": "zapStakeToTranchedPool",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -73911,11 +74054,133 @@
               ],
               "stateMutability": "payable",
               "type": "constructor"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousOwner",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "OwnershipTransferred",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "previousImplementation",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "ProxyImplementationUpdated",
+              "type": "event"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "fallback"
+            },
+            {
+              "inputs": [],
+              "name": "owner",
+              "outputs": [
+                {
+                  "internalType": "address",
+                  "name": "",
+                  "type": "address"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "id",
+                  "type": "bytes4"
+                }
+              ],
+              "name": "supportsInterface",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newOwner",
+                  "type": "address"
+                }
+              ],
+              "name": "transferOwnership",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                }
+              ],
+              "name": "upgradeTo",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "newImplementation",
+                  "type": "address"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "upgradeToAndCall",
+              "outputs": [],
+              "stateMutability": "payable",
+              "type": "function"
+            },
+            {
+              "stateMutability": "payable",
+              "type": "receive"
             }
           ]
         },
         "Zapper_Implementation": {
-          "address": "0xe46A77C2A61E43bb0Ff222118559eAc84014C719",
+          "address": "0xed7FB6adA3051385348F3253af31346A52a394E5",
           "abi": [
             {
               "anonymous": false,
@@ -74055,6 +74320,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256[]",
+                  "name": "poolTokenIds",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "claimMultipleTranchedPoolZaps",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "poolTokenId",
                   "type": "uint256"
@@ -74303,6 +74581,19 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256[]",
+                  "name": "poolTokenIds",
+                  "type": "uint256[]"
+                }
+              ],
+              "name": "unzapMultipleFromTranchedPools",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "uint256",
                   "name": "poolTokenId",
                   "type": "uint256"
@@ -74310,6 +74601,74 @@
               ],
               "name": "unzapToStakingRewards",
               "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "contract ITranchedPool",
+                  "name": "tranchedPool",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "tranche",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "fiduAmount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "zapFiduStakeToTranchedPool",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "stakingRewardsTokenIds",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "fiduAmounts",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "contract ITranchedPool",
+                  "name": "tranchedPool",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "tranche",
+                  "type": "uint256"
+                }
+              ],
+              "name": "zapMultipleToTranchedPool",
+              "outputs": [
+                {
+                  "internalType": "uint256[]",
+                  "name": "poolTokenIds",
+                  "type": "uint256[]"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             },
@@ -74360,7 +74719,13 @@
                 }
               ],
               "name": "zapStakeToTranchedPool",
-              "outputs": [],
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "poolTokenId",
+                  "type": "uint256"
+                }
+              ],
               "stateMutability": "nonpayable",
               "type": "function"
             }

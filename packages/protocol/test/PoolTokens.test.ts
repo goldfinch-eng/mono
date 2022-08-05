@@ -28,6 +28,7 @@ import {
   BackerRewardsInstance,
   GoldfinchFactoryInstance,
   TestPoolTokensInstance,
+  StakingRewardsInstance,
 } from "../typechain/truffle"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "./util/fixtures"
 import {TokenMinted} from "../typechain/truffle/IPoolTokens"
@@ -42,7 +43,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
   const person2 = asNonNullable(_person2)
   const person3 = asNonNullable(_person3)
 
-  const {poolTokens, goldfinchConfig, goldfinchFactory, backerRewards, usdc, uniqueIdentity, gfi} =
+  const {poolTokens, goldfinchConfig, goldfinchFactory, backerRewards, usdc, uniqueIdentity, gfi, stakingRewards} =
     await deployBaseFixture()
   await goldfinchConfig.bulkAddToGoList([owner, person2])
   await erc20Transfer(usdc, [person2], usdcVal(1000), owner)
@@ -57,6 +58,7 @@ const testSetup = deployments.createFixture(async ({deployments, getNamedAccount
     goldfinchFactory,
     usdc,
     uniqueIdentity,
+    stakingRewards,
     gfi,
   }
 })
@@ -72,6 +74,7 @@ describe("PoolTokens", () => {
     usdc,
     uniqueIdentity,
     backerRewards: BackerRewardsInstance,
+    stakingRewards: StakingRewardsInstance,
     gfi: GFIInstance
 
   const withPoolSender = async (func, otherPoolAddress?) => {
@@ -95,6 +98,7 @@ describe("PoolTokens", () => {
       usdc,
       uniqueIdentity,
       backerRewards,
+      stakingRewards,
       gfi,
     } = await testSetup())
 
@@ -206,7 +210,7 @@ describe("PoolTokens", () => {
     })
 
     it("should use the current rewardsPerPrincipalShare when it's a second drawdown", async () => {
-      await setupBackerRewards(gfi, backerRewards, owner)
+      await setupBackerRewards(gfi, backerRewards, stakingRewards, owner)
 
       const amount = usdcVal(5)
       await pool.deposit(new BN(1), amount, {from: person2})

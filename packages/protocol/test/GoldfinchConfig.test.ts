@@ -42,7 +42,7 @@ describe("GoldfinchConfig", () => {
       await goldfinchConfig.grantRole(OWNER_ROLE, testTheConfigContract.address, {from: owner})
     })
     it("should never change", async () => {
-      await testTheConfigContract.testTheEnums(goldfinchConfig.address)
+      await testTheConfigContract.validateTheEnums(goldfinchConfig.address)
 
       // The expected values here are just hardcoded in the test enums contract
       // The whole point here is to assure we have a test that fails if we change the order
@@ -79,6 +79,9 @@ describe("GoldfinchConfig", () => {
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.FiduUSDCCurveLP)).to.equal(
         "0x55A8a39bc9694714E2874c1ce77aa1E599461E18"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementationRepository)).to.equal(
+        "0x0000000000000000000000000000000000000009"
       )
     })
   })

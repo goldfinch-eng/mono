@@ -1,4 +1,5 @@
 import _ from "lodash"
+import * as Sentry from "@sentry/node"
 import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
@@ -22,6 +23,9 @@ import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
 export const UNIQUE_IDENTITY_ABI = UniqueIdentityDeployment.abi
 export const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
+import baseHandler from "../core/handler"
+
+export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
@@ -35,12 +39,16 @@ const API_URLS: {[key: number]: string} = {
 
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
+
   assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
-  const response = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
-  if (isKYC(response.data)) {
-    return response.data
+  const {data} = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
+
+  if (isKYC(data)) {
+    return data
   } else {
-    throw new Error("malformed KYC response")
+    throw new Error(
+      `invalid KYC response. Either data is not a plain object, '${data.status}' is unexpected, or '${data.countryCode}' is not a string`
+    )
   }
 }
 
@@ -118,7 +126,7 @@ export function asAuth(obj: any): Auth {
 }
 
 // Entry point for OpenZeppelin Defender - presumes Mainnet
-export async function handler(event: HandlerParams) {
+export const handler = baseHandler("unique-identity-signer", async (event: HandlerParams) => {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
 
   const {auth, mintToAddress} = event.request.body
@@ -134,8 +142,8 @@ export async function handler(event: HandlerParams) {
     signer
   ) as UniqueIdentity
 
-  return await main({signer, auth: auth, network, uniqueIdentity, mintToAddress})
-}
+  return await main({signer, auth, network, uniqueIdentity, mintToAddress})
+})
 
 // Main function
 export async function main({
@@ -170,6 +178,8 @@ export async function main({
   }
 
   await verifySignature(userAddress, signInSignature, signInSignatureBlockNum, signer.provider)
+  Sentry.setUser({id: userAddress})
+
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
 
@@ -185,11 +195,15 @@ export async function main({
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
     } catch (e) {
       console.error("fetchKYCStatus failed", e)
-      throw new Error("fetchKYCStatus failed")
+      throw e
     }
 
-    if (kycStatus.status !== "approved" || kycStatus.countryCode === "" || !kycStatus.residency) {
-      throw new Error("Does not meet mint requirements")
+    if (kycStatus.status !== "approved") {
+      throw new Error(`Does not meet mint requirements: status is ${kycStatus.status}`)
+    }
+
+    if (kycStatus.countryCode === "") {
+      throw new Error(`Does not meet mint requirements: countryCode is null`)
     }
   } else {
     // TODO We should verify the x-goldfinch-signature here!

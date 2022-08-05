@@ -18,13 +18,11 @@ import {
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
-  CreditDeskInstance,
   ERC20Instance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
-  PoolInstance,
   SeniorPoolInstance,
   CreditLineInstance,
   TranchedPoolInstance,
@@ -39,6 +37,7 @@ import {
   TestFiduUSDCCurveLPInstance,
   TestStakingRewardsInstance,
   TestPoolTokensInstance,
+  StakingRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -109,12 +108,29 @@ async function getTruffleContractAtAddress<T extends Truffle.ContractInstance>(
   return (await artifacts.require(name).at(address)) as T
 }
 
-async function setupBackerRewards(gfi: GFIInstance, backerRewards: BackerRewardsInstance, owner: string) {
+async function setupBackerRewards(
+  gfi: GFIInstance,
+  backerRewards: BackerRewardsInstance,
+  stakingRewards: StakingRewardsInstance,
+  owner: string
+) {
   const gfiAmount = bigVal(100_000_000) // 100M
   await gfi.setCap(gfiAmount)
   await gfi.mint(owner, gfiAmount)
   await backerRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
   await backerRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
+
+  // Seed stakings rewards with GFI. This brings the test state closer to what's
+  // actually on mainnet. See this https://goldfinchhq.slack.com/archives/C01BGB0Q753/p1655239486314729
+  // discussion for why this is important
+  const targetCapacity = bigVal(1000)
+  const maxRate = bigVal(1000)
+  const minRate = bigVal(100)
+  const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
+  const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
+  await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
+  await gfi.approve(stakingRewards.address, bigVal(1000), {from: owner})
+  await stakingRewards.loadRewards(bigVal(1000), {from: owner})
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -253,12 +269,10 @@ async function deployAllContracts(
   deployments: DeploymentsExtension,
   options: DeployAllContractsOptions = {}
 ): Promise<{
-  pool: PoolInstance
   seniorPool: SeniorPoolInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
   seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
-  creditDesk: CreditDeskInstance
   fidu: FiduInstance
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
@@ -276,7 +290,6 @@ async function deployAllContracts(
   zapper: ZapperInstance
 }> {
   await deployments.fixture("base_deploy")
-  const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
@@ -287,7 +300,6 @@ async function deployAllContracts(
     "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
-  const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
   const fiduUSDCCurveLP = await getDeployedAsTruffleContract<TestFiduUSDCCurveLPInstance>(
     deployments,
@@ -339,12 +351,10 @@ async function deployAllContracts(
   const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 
   return {
-    pool,
     seniorPool,
     seniorPoolFixedStrategy,
     seniorPoolDynamicStrategy,
     usdc,
-    creditDesk,
     fidu,
     fiduUSDCCurveLP,
     goldfinchConfig,

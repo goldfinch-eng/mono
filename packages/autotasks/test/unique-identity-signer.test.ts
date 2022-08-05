@@ -94,7 +94,7 @@ describe("unique-identity-signer", () => {
         "x-goldfinch-address": anotherUser,
         "x-goldfinch-signature": await anotherUserSigner.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
         "x-goldfinch-signature-plaintext": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
-        "x-goldfinch-signature-block-num": `${latestBlockNum}`,
+        "x-goldfinch-signature-block-num": latestBlockNum.toString(),
       }
       nonUSIdType = await uniqueIdentity.ID_TYPE_0()
       usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
@@ -295,7 +295,7 @@ describe("unique-identity-signer", () => {
           const auth = {
             "x-goldfinch-address": TEST_ACCOUNT.address,
             "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
-            "x-goldfinch-signature-block-num": `${latestBlockNum}`,
+            "x-goldfinch-signature-block-num": latestBlockNum.toString(),
             "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
           }
 
@@ -307,7 +307,7 @@ describe("unique-identity-signer", () => {
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
             })
-          ).to.be.rejectedWith(/Does not meet mint requirements/)
+          ).to.be.rejectedWith(/Does not meet mint requirements: countryCode/)
         })
       })
 
@@ -324,7 +324,7 @@ describe("unique-identity-signer", () => {
           const auth = {
             "x-goldfinch-address": TEST_ACCOUNT.address,
             "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
-            "x-goldfinch-signature-block-num": `${latestBlockNum}`,
+            "x-goldfinch-signature-block-num": latestBlockNum.toString(),
             "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
           }
 
@@ -336,7 +336,36 @@ describe("unique-identity-signer", () => {
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
             })
-          ).to.be.rejectedWith(/Does not meet mint requirements/)
+          ).to.be.rejectedWith(/Does not meet mint requirements: status/)
+        })
+      })
+
+      describe("residency is missing", () => {
+        beforeEach(() => {
+          fetchKYCFunction = fetchStubbedKycStatus({
+            status: "approved",
+            countryCode: "CA",
+            residency: undefined,
+          })
+        })
+
+        it("does not throw an error", async () => {
+          const auth = {
+            "x-goldfinch-address": TEST_ACCOUNT.address,
+            "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+            "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
+            "x-goldfinch-signature-block-num": latestBlockNum.toString(),
+          }
+
+          await expect(
+            uniqueIdentitySigner.main({
+              auth,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.be.fulfilled
         })
       })
     })

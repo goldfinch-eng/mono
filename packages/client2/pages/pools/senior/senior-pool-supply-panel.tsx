@@ -18,7 +18,6 @@ import { formatCrypto, formatFiat, formatPercent } from "@/lib/format";
 import {
   SeniorPoolSupplyPanelPoolFieldsFragment,
   SeniorPoolSupplyPanelUserFieldsFragment,
-  SeniorPoolSupplyPanelViewerFieldsFragment,
   SupportedCrypto,
   SupportedFiat,
   UidType,
@@ -27,7 +26,6 @@ import {
   approveErc20IfRequired,
   canUserParticipateInPool,
   computeApyFromGfiInFiat,
-  isUsUser,
 } from "@/lib/pools";
 import { openVerificationModal, openWalletModal } from "@/lib/state/actions";
 import { toastTransaction } from "@/lib/toast";
@@ -55,18 +53,9 @@ export const SENIOR_POOL_SUPPLY_PANEL_USER_FIELDS = gql`
   }
 `;
 
-export const SENIOR_POOL_SUPPLY_PANEL_VIEWER_FIELDS = gql`
-  fragment SeniorPoolSupplyPanelViewerFields on Viewer {
-    geolocation {
-      country
-    }
-  }
-`;
-
 interface SeniorPoolSupplyPanelProps {
   seniorPool: SeniorPoolSupplyPanelPoolFieldsFragment;
   user: SeniorPoolSupplyPanelUserFieldsFragment | null;
-  viewer: SeniorPoolSupplyPanelViewerFieldsFragment;
   fiatPerGfi: number;
 }
 
@@ -78,7 +67,6 @@ interface FormFields {
 export function SeniorPoolSupplyPanel({
   seniorPool,
   user,
-  viewer,
   fiatPerGfi,
 }: SeniorPoolSupplyPanelProps) {
   const seniorPoolApyUsdc = seniorPool.latestPoolStatus.estimatedApy;
@@ -377,13 +365,7 @@ export function SeniorPoolSupplyPanel({
             {/* TODO senior pool agreement page */}
             <div className="mb-4 text-xs">
               By clicking “Supply” below, I hereby agree to the{" "}
-              <Link
-                href={
-                  isUsUser(user, viewer.geolocation.country)
-                    ? "/senior-pool-agreement-us"
-                    : "/senior-pool-agreement-non-us"
-                }
-              >
+              <Link href="/senior-pool-agreement-interstitial">
                 Senior Pool Agreement
               </Link>
               . Please note the protocol deducts a 0.50% fee upon withdrawal for
