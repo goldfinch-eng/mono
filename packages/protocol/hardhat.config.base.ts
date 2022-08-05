@@ -11,6 +11,7 @@ import {
 import "hardhat-contract-sizer"
 import "@openzeppelin/hardhat-upgrades"
 import "solidity-docgen"
+import "solidity-coverage"
 import {subtask} from "hardhat/config"
 import {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} from "hardhat/builtin-tasks/task-names"
 
