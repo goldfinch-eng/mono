@@ -4,6 +4,7 @@ import {
   BackerRewardsSetTotalRewards,
   BackerRewardsSetMaxInterestDollarsEligible,
   BackerRewardsClaimed,
+  BackerRewardsClaimed1,
 } from "../../generated/templates/BackerRewards/BackerRewards"
 
 import {updateBackerRewardsData} from "../entities/backer_rewards"
@@ -22,6 +23,17 @@ export function handleSetMaxInterestDollarsEligible(event: BackerRewardsSetMaxIn
 }
 
 export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
+  const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
+  poolToken.rewardsClaimed = event.params.amount
+  poolToken.rewardsClaimable = BigInt.zero()
+  poolToken.save()
+
+  const poolBacker = assert(PoolBacker.load(`${poolToken.tranchedPool}-${poolToken.user}`))
+  poolBacker.rewardsClaimed = poolBacker.rewardsClaimed.plus(event.params.amount)
+  poolBacker.save()
+}
+
+export function handleBackerRewardsClaimed1(event: BackerRewardsClaimed1): void {
   const poolToken = assert(TranchedPoolToken.load(event.params.tokenId.toString()))
   poolToken.rewardsClaimed = event.params.amountOfTranchedPoolRewards
   poolToken.stakingRewardsClaimed = event.params.amountOfSeniorPoolRewards

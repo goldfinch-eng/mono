@@ -575,8 +575,10 @@ templates:
           handler: handleSetTotalRewards
         - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
           handler: handleSetMaxInterestDollarsEligible
-        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256)
           handler: handleBackerRewardsClaimed
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleBackerRewardsClaimed1
 
   - name: UniqueIdentity
     kind: ethereum/contract
