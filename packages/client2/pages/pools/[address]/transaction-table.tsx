@@ -3,13 +3,13 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
+import { Address } from "@/components/address";
 import {
   GoldfinchLogo,
   Link,
   ShimmerLines,
   Table,
 } from "@/components/design-system";
-import { Identicon } from "@/components/identicon";
 import { formatCrypto } from "@/lib/format";
 import {
   useTranchedPoolTransactionTableQuery,
@@ -17,7 +17,6 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
-import { abbreviateAddress } from "@/lib/wallet";
 
 gql`
   query TranchedPoolTransactionTable(
@@ -94,13 +93,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
             Senior Pool
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <Identicon
-              account={transaction.user.id}
-              className="h-6 w-6 shrink-0"
-            />
-            <span>{abbreviateAddress(transaction.user.id)}</span>
-          </div>
+          <Address address={transaction.user.id} />
         );
 
       const amount =
