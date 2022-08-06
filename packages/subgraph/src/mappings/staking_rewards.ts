@@ -26,6 +26,7 @@ export function handleStaked(event: Staked): void {
 
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
+  stakedPosition.initialAmount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
   stakedPosition.startTime = event.block.timestamp
   stakedPosition.positionType = "Fidu" // Curve integration did not exist at this time
@@ -38,6 +39,7 @@ export function handleStaked1(event: Staked1): void {
 
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
+  stakedPosition.initialAmount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
   stakedPosition.startTime = event.block.timestamp
   stakedPosition.positionType = event.params.positionType == 0 ? "Fidu" : "CurveLP"

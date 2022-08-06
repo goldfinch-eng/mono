@@ -24,6 +24,7 @@ const secondsPerWeek = BigNumber.from(604800);
 export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
   fragment StakingCardPositionFields on SeniorPoolStakedPosition {
     id
+    initialAmount
     amount
     totalRewardsClaimed
     rewardEarnRate @client
@@ -58,7 +59,7 @@ export function StakingCard({ position }: StakingCardProps) {
   return (
     <RewardCardScaffold
       heading={`Staked ${formatCrypto(
-        { token: SupportedCrypto.Fidu, amount: position.amount },
+        { token: SupportedCrypto.Fidu, amount: position.initialAmount },
         { includeToken: true }
       )}`}
       subheading={`${formatCrypto(
@@ -86,12 +87,15 @@ export function StakingCard({ position }: StakingCardProps) {
           <Detail
             heading="Transaction details"
             body={`Staked ${formatCrypto(
-              { token: SupportedCrypto.Fidu, amount: position.amount },
+              { token: SupportedCrypto.Fidu, amount: position.initialAmount },
               { includeToken: true }
             )} on ${format(
               position.startTime.mul(1000).toNumber(),
               "MMM d, y"
-            )}`}
+            )} (${formatCrypto(
+              { token: SupportedCrypto.Fidu, amount: position.amount },
+              { includeToken: true }
+            )} remaining)`}
           />
           <Detail
             heading="Current earn rate"

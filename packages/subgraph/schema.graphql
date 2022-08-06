@@ -18,6 +18,7 @@ enum StakedPositionType {
 type SeniorPoolStakedPosition @entity {
   id: ID!
   user: User!
+  initialAmount: BigInt!
   amount: BigInt!
   positionType: StakedPositionType!
   """
