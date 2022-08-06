@@ -10,10 +10,16 @@ type SeniorPool @entity {
   investmentsMade: [TranchedPool!]!
 }
 
+enum StakedPositionType {
+  Fidu
+  CurveLP
+}
+
 type SeniorPoolStakedPosition @entity {
   id: ID!
   user: User!
   amount: BigInt!
+  positionType: StakedPositionType!
   """
   endTime has to be queried via RPC on client due to a complication: calling positions() on the StakingRewards contract is difficult due to its signature changing over time.
   """

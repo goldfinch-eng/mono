@@ -1,8 +1,9 @@
+import {Bytes} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition} from "../../generated/schema"
 import {
   RewardAdded,
   Staked,
-  StakingRewards,
+  Staked1,
   Unstaked,
   Unstaked1,
   Transfer,
@@ -27,6 +28,19 @@ export function handleStaked(event: Staked): void {
   stakedPosition.amount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
   stakedPosition.startTime = event.block.timestamp
+  stakedPosition.positionType = "Fidu" // Curve integration did not exist at this time
+
+  stakedPosition.save()
+}
+
+export function handleStaked1(event: Staked1): void {
+  updateCurrentEarnRate(event.address)
+
+  const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
+  stakedPosition.amount = event.params.amount
+  stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.startTime = event.block.timestamp
+  stakedPosition.positionType = event.params.positionType == 0 ? "Fidu" : "CurveLP"
 
   stakedPosition.save()
 }
@@ -51,13 +65,11 @@ export function handleUnstaked1(event: Unstaked1): void {
 }
 
 export function handleTransfer(event: Transfer): void {
-  const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
-  stakedPosition.user = event.params.to.toHexString()
-
-  const contract = StakingRewards.bind(event.address)
-  stakedPosition.amount = contract.stakedBalanceOf(event.params.tokenId)
-
-  stakedPosition.save()
+  if (event.params.from.notEqual(Bytes.fromHexString("0x0000000000000000000000000000000000000000"))) {
+    const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
+    stakedPosition.user = event.params.to.toHexString()
+    stakedPosition.save()
+  }
 }
 
 export function handleDepositedAndStaked(event: DepositedAndStaked): void {

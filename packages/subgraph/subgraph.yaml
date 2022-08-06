@@ -530,8 +530,10 @@ templates:
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
-        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
+        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
           handler: handleStaked
+        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
+          handler: handleStaked1
         - event: Unstaked(indexed address,indexed uint256,uint256)
           handler: handleUnstaked
         - event: Unstaked(indexed address,indexed uint256,uint256,uint8)

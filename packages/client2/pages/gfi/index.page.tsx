@@ -40,7 +40,7 @@ gql`
     ) {
       ...BackerCardTokenFields
     }
-    seniorPoolStakedPositions(where: { user: $userId }) {
+    seniorPoolStakedPositions(where: { user: $userId, positionType: Fidu }) {
       ...StakingCardPositionFields
     }
   }
