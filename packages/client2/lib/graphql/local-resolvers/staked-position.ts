@@ -13,13 +13,40 @@ export const stakedPositionResolvers: Resolvers[string] = {
     return stakingRewardsContract.positionCurrentEarnRate(position.id);
   },
 
+  // This logic is largely the same as client/src/ethereum/pool.ts (line 894, claimable())
+  // Calling optimisticClaimable() on the smart contract isn't accurate, unfortunately
   async claimable(
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["claimable"]> {
-    const stakingRewardsContract = await getStakingRewardsContract();
-    const optimisticClaimable =
-      await stakingRewardsContract.optimisticClaimable(position.id);
-    return optimisticClaimable;
+    const provider = await getProvider();
+    if (!provider) {
+      throw new Error("No provider when getting StakingRewards contract");
+    }
+    const chainId = await provider.getSigner().getChainId();
+    const stakingRewardsContract = getContract({
+      name: "StakingRewards",
+      chainId,
+      provider,
+    });
+
+    const currentBlock = await provider.getBlock("latest");
+    const earnedSinceLastCheckpoint =
+      await stakingRewardsContract.earnedSinceLastCheckpoint(position.id);
+    const positionDetails = await stakingRewardsContract.positions(position.id);
+    const rewards = positionDetails.rewards;
+    const optimisticCurrentGrant = rewards.totalUnvested
+      .add(rewards.totalVested)
+      .add(earnedSinceLastCheckpoint);
+    const optimisticTotalVested = await stakingRewardsContract.totalVestedAt(
+      rewards.startTime,
+      rewards.endTime,
+      currentBlock.timestamp,
+      optimisticCurrentGrant
+    );
+
+    return optimisticTotalVested
+      .add(rewards.totalPreviouslyVested)
+      .sub(rewards.totalClaimed);
   },
 
   async granted(
