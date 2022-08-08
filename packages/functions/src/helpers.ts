@@ -145,7 +145,6 @@ export const extractHeaderValue = (req: Request, headerName: string): string | u
  * @param {Response} res The response to the request.
  * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
  * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
-
  * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
  * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
  * @return {Promise<SignatureVerificationResult>} verification result

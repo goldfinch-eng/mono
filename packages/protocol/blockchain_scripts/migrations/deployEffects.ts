@@ -55,16 +55,21 @@ export type Effects = {
   deferred?: PopulatedTransaction[]
 }
 
-export async function changeImplementations({contracts}: {contracts: UpgradedContracts}): Promise<Effects> {
+export async function changeImplementations(
+  {contracts}: {contracts: UpgradedContracts},
+  proxyOwner?: string
+): Promise<Effects> {
+  const proxyContractConnector = proxyOwner || (await getProtocolOwner())
   const partialTxs = await Promise.all(
     Object.keys(contracts).map(async (contractName) => {
       const contractHolder = contracts[contractName]
       assertNonNullable(contractHolder, "contractHolder is undefined")
-      const proxy = contractHolder.ProxyContract.connect(await getProtocolOwner())
+      const proxy = contractHolder.ProxyContract.connect(proxyContractConnector)
       // hardhat-deploy changed the method name in newer versions
       const upgradeMethod =
         proxy.populateTransaction["changeImplementation"] || proxy.populateTransaction["upgradeToAndCall"]
       assertNonNullable(upgradeMethod, `upgradeMethod is undefined for ${contractName}`)
+
       const unsignedTx = await upgradeMethod(contractHolder.UpgradedImplAddress, "0x")
       return unsignedTx
     })

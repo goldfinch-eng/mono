@@ -1,14 +1,6 @@
-import {
-  OWNER_ROLE,
-  MINTER_ROLE,
-  isMainnetForking,
-  assertIsChainId,
-  ContractDeployer,
-  ZAPPER_ROLE,
-} from "./deployHelpers"
+import {isMainnetForking, assertIsChainId, ContractDeployer, ZAPPER_ROLE} from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
-import {Fidu} from "../typechain/ethers"
 import {Logger} from "./types"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {getDeployEffects} from "./migrations/deployEffects"

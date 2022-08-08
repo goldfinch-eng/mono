@@ -10,7 +10,7 @@ import {assertNonNullable, presignedMintMessage, presignedMintToMessage} from "@
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
 import {hardhat} from "@goldfinch-eng/protocol"
-import {BigNumber, Wallet} from "ethers"
+import {BigNumber, BytesLike, Wallet} from "ethers"
 import {genLinkKycWithUidDeployment} from "../../src/handlers/linkUserToUid"
 import {fake} from "sinon"
 import * as firebaseTesting from "@firebase/rules-unit-testing"
@@ -75,9 +75,9 @@ describe("linkUserToUid", () => {
   let testApp: admin.app.App
   let users: firestore.CollectionReference<firestore.DocumentData>
   let expiresAt: BigNumber
-  let validMintPresigMessage: Uint8Array
+  let validMintPresigMessage: BytesLike
   let validMintSignature: string
-  let validMintToPresigMessage: Uint8Array
+  let validMintToPresigMessage: BytesLike
   let validMintToSignature: string
   let mintRequest: Request
   let mintToRequest: Request
