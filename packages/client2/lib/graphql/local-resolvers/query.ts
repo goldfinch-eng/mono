@@ -18,7 +18,9 @@ async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
     !coingeckoResponse.goldfinch[key] ||
     typeof coingeckoResponse.goldfinch[key] !== "number"
   ) {
-    throw new Error("Coingecko response JSON failed type guard");
+    throw new Error(
+      `Coingecko response JSON failed type guard. Tried to get data for ${key}`
+    );
   }
   return coingeckoResponse.goldfinch[key];
 }
@@ -34,7 +36,9 @@ async function fetchCoinbasePrice(fiat: SupportedFiat): Promise<number> {
     !coinbaseResponse.data ||
     !coinbaseResponse.data.amount
   ) {
-    throw new Error("Coinbase response JSON failed type guard");
+    throw new Error(
+      `Coinbase response JSON failed type guard. Tried to get data for ${key}`
+    );
   }
   return parseFloat(coinbaseResponse.data.amount);
 }
