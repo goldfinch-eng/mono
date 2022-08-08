@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "predev": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npx ts-node scripts/copy-gfi-grant-files.ts && npm run gen-contract-types && npm run codegen",
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "prebuild": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npm run gen-contract-types && npm run codegen",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "analyze": "ANALYZE=true npm run build",
     "lint": "next lint",
     "storybook": "start-storybook -p 6006",
