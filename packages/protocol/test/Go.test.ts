@@ -11,7 +11,7 @@ import {
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
 import {mint} from "./uniqueIdentityHelpers"
-import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {BN} from "ethereumjs-util"
 import {DeployResult} from "hardhat-deploy/types"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {deployBaseFixture} from "./util/fixtures"
