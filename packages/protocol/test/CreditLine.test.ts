@@ -150,7 +150,7 @@ describe("CreditLine", () => {
         return expect(creditLine.pause()).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        return expect(creditLine.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
+        return expect(creditLine.pause({from: person2})).to.be.rejectedWith(/NA/)
       })
     })
   })

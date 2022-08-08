@@ -789,7 +789,7 @@ export async function mockStakingRewardsContractCalls(
     callCurrentEarnRatePerToken,
     callGetBaseTokenExchangeRate,
     callGetEffectiveMultiplierForPositionType,
-    callCurvePoolLPPrice,
+    callCurvePoolGetVirtualPrice: callCurvePoolLPPrice,
   }
 }
 

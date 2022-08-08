@@ -5,7 +5,7 @@ import AsPromised from "chai-as-promised"
 chai.use(AsPromised)
 
 import {getProtocolOwner, OWNER_ROLE, SIGNER_ROLE} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers"
-import {ethers, Signer} from "ethers"
+import {ethers, Signer, Wallet} from "ethers"
 import {hardhat} from "@goldfinch-eng/protocol"
 import {BN, deployAllContracts} from "@goldfinch-eng/protocol/test/testHelpers"
 import * as utils from "@goldfinch-eng/utils"
@@ -14,7 +14,8 @@ import * as uniqueIdentitySigner from "../unique-identity-signer"
 import {assertNonNullable} from "packages/utils/src/type"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
-import {UniqueIdentityAbi} from "../unique-identity-signer"
+import {UNIQUE_IDENTITY_ABI} from "../unique-identity-signer"
+import axios from "axios"
 
 const TEST_TIMEOUT = 30000
 
@@ -24,10 +25,26 @@ function fetchStubbedKycStatus(kyc: utils.KYC): utils.FetchKYCFunction {
   }
 }
 
-const fetchElligibleKycStatus: utils.FetchKYCFunction = fetchStubbedKycStatus({
+const fetchEligibleKycStatus: utils.FetchKYCFunction = fetchStubbedKycStatus({
   status: "approved",
   countryCode: "CA",
   residency: "non-us",
+})
+
+const TEST_ACCOUNT = {
+  address: "0xc34461018f970d343d5a25e4Ed28C4ddE6dcCc3F",
+  privateKey: "0x50f9c471e3c454b506f39536c06bde77233144784297a95d35896b3be3dfc9d8",
+}
+
+const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
+  const {protocol_owner} = await getNamedAccounts()
+  const [, anotherUser, anotherUser2] = await web3.eth.getAccounts()
+  assertNonNullable(protocol_owner)
+  assertNonNullable(anotherUser)
+  assertNonNullable(anotherUser2)
+
+  const {uniqueIdentity, go} = await deployAllContracts(deployments)
+  return {uniqueIdentity, go, owner: protocol_owner, anotherUser, anotherUser2}
 })
 
 describe("unique-identity-signer", () => {
@@ -36,30 +53,27 @@ describe("unique-identity-signer", () => {
   let uniqueIdentity: TestUniqueIdentityInstance
   let ethersUniqueIdentity: UniqueIdentity
   let signer: Signer
+  let anotherUserSigner: Signer
   let network: ethers.providers.Network
+  let validAuthAnotherUser
+  let nonUSIdType
+  let usAccreditedIdType
+  let usNonAccreditedIdType
   let fetchKYCFunction: utils.FetchKYCFunction
   const sandbox = sinon.createSandbox()
-
-  const setupTest = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    const {protocol_owner} = await getNamedAccounts()
-    const [, anotherUser] = await web3.eth.getAccounts()
-    assertNonNullable(protocol_owner)
-    assertNonNullable(anotherUser)
-
-    const {uniqueIdentity, go} = await deployAllContracts(deployments)
-    return {uniqueIdentity, go, owner: protocol_owner, anotherUser}
-  })
 
   beforeEach(async () => {
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({uniqueIdentity, owner, anotherUser} = await setupTest())
     signer = hre.ethers.provider.getSigner(await getProtocolOwner())
-    ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UniqueIdentityAbi, signer) as UniqueIdentity
+    anotherUserSigner = hre.ethers.provider.getSigner(anotherUser)
+    ethersUniqueIdentity = new ethers.Contract(uniqueIdentity.address, UNIQUE_IDENTITY_ABI, signer) as UniqueIdentity
     assertNonNullable(signer.provider, "Signer provider is null")
     network = await signer.provider.getNetwork()
 
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: owner})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: owner})
+    sandbox.stub(axios, "post").resolves({status: 200})
   })
 
   afterEach(() => {
@@ -67,30 +81,47 @@ describe("unique-identity-signer", () => {
   })
 
   describe("main", () => {
-    it("forwards signature headers to the KYC function", async () => {
+    let latestBlockNum: number
+    let validExpiryTimestamp: number
+    let wallet
+    beforeEach(async () => {
+      wallet = new Wallet(TEST_ACCOUNT.privateKey)
+      latestBlockNum = (await signer.provider?.getBlock("latest"))?.number as number
+      const currentBlock = await signer.provider?.getBlock(latestBlockNum)
+      assertNonNullable(currentBlock)
+      validExpiryTimestamp = currentBlock.timestamp + 100000
+      validAuthAnotherUser = {
+        "x-goldfinch-address": anotherUser,
+        "x-goldfinch-signature": await anotherUserSigner.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+        "x-goldfinch-signature-plaintext": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+        "x-goldfinch-signature-block-num": latestBlockNum.toString(),
+      }
+      nonUSIdType = await uniqueIdentity.ID_TYPE_0()
+      usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
+      usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+    })
+
+    it("forwards signature headers to the KYC function and verifies signature", async () => {
+      const expectedAuth = {
+        "x-goldfinch-address": TEST_ACCOUNT.address,
+        "x-goldfinch-signature": await wallet.signMessage("Sign in to Goldfinch: 3"),
+        "x-goldfinch-signature-plaintext": "Sign in to Goldfinch: 3",
+        "x-goldfinch-signature-block-num": "3",
+      }
       const fetchFunction: utils.FetchKYCFunction = ({auth, chainId}) => {
         // No other headers should be present
-        expect(auth).to.deep.equal({
-          "x-goldfinch-address": anotherUser,
-          "x-goldfinch-signature": "test_signature",
-          "x-goldfinch-signature-plaintext": "plaintext",
-          "x-goldfinch-signature-block-num": "fake_block_number",
-        })
-        return fetchElligibleKycStatus({auth, chainId})
+        expect(auth).to.deep.equal(expectedAuth)
+        return fetchEligibleKycStatus({auth, chainId})
       }
-
-      const auth = {
+      const inputHeaders = {
         "x-some-random-header": "test",
-        "x-goldfinch-address": anotherUser,
-        "x-goldfinch-signature": "test_signature",
-        "x-goldfinch-signature-plaintext": "plaintext",
-        "x-goldfinch-signature-block-num": "fake_block_number",
+        ...expectedAuth,
       }
 
       // Run handler
       await expect(
         uniqueIdentitySigner.main({
-          auth,
+          auth: inputHeaders,
           signer,
           network,
           uniqueIdentity: ethersUniqueIdentity,
@@ -169,9 +200,88 @@ describe("unique-identity-signer", () => {
           ).to.be.rejectedWith(/auth does not conform/)
         })
       })
+
+      it("throws an error if the signature is incorrect", async () => {
+        const invalidSignature =
+          "0xaf75579e99f8810b5c009041961852a4872d3b19031a283ff8ea451854ac072331610c5edaf6ec7430a11cea0f19a2a111ce3b5c52ee93b933fd91e2f9336ad71c"
+        await expect(
+          uniqueIdentitySigner.main({
+            auth: {
+              "x-goldfinch-address": TEST_ACCOUNT.address,
+              "x-goldfinch-signature": invalidSignature,
+              "x-goldfinch-signature-block-num": latestBlockNum.toString(),
+              "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
+            },
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchStubbedKycStatus({status: "approved", countryCode: "US"}),
+          })
+        ).to.eventually.be.rejectedWith("Invalid address or signature.")
+      })
+
+      it("throws an error if the signature block number is invalid", async () => {
+        const validSignatureInvalidBlockNum =
+          "0xf55449d7cea45a1537616da2ca9300623ec8c74888868209a4b02c19990e7d884f5835a4bc56218cf6e2d72d6d2351b2f0c52717159643025a70e2d3d25a7ac21c"
+        await expect(
+          uniqueIdentitySigner.main({
+            auth: {
+              "x-goldfinch-address": TEST_ACCOUNT.address,
+              "x-goldfinch-signature": validSignatureInvalidBlockNum,
+              "x-goldfinch-signature-block-num": "foo",
+              "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
+            },
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchEligibleKycStatus,
+          })
+        ).to.eventually.be.rejectedWith("Invalid signature block number.")
+      })
+
+      it("throws an error if the signature block number corresponds to an expired timestamp", async () => {
+        assertNonNullable(signer?.provider)
+        signer.provider.getBlock = ((blockId) => {
+          const blockTimestamp = blockId === "latest" ? 100000 : 0
+          const blockNum = blockId === "latest" ? 10000 : 0
+          return Promise.resolve({number: blockNum, timestamp: blockTimestamp})
+        }) as any
+        await expect(
+          uniqueIdentitySigner.main({
+            auth: {
+              "x-goldfinch-address": TEST_ACCOUNT.address,
+              "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: 0`),
+              "x-goldfinch-signature-block-num": "0",
+              "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${0}`,
+            },
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchEligibleKycStatus,
+          })
+        ).to.eventually.be.rejectedWith(/Signature expired: /)
+      })
+
+      it("throws an error if the signature block number is in the future", async () => {
+        const futureBlockNum = latestBlockNum + 100000
+        await expect(
+          uniqueIdentitySigner.main({
+            auth: {
+              "x-goldfinch-address": TEST_ACCOUNT.address,
+              "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${futureBlockNum}`),
+              "x-goldfinch-signature-block-num": futureBlockNum.toString(),
+              "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${futureBlockNum}`,
+            },
+            signer,
+            network,
+            uniqueIdentity: ethersUniqueIdentity,
+            fetchKYCStatus: fetchEligibleKycStatus,
+          })
+        ).to.eventually.be.rejectedWith(/Unexpected signature block number: /)
+      })
     })
 
-    describe("KYC is inelligible", () => {
+    describe("KYC is ineligible", () => {
       describe("countryCode is empty", () => {
         beforeEach(() => {
           fetchKYCFunction = fetchStubbedKycStatus({
@@ -183,10 +293,10 @@ describe("unique-identity-signer", () => {
 
         it("throws an error", async () => {
           const auth = {
-            "x-goldfinch-address": anotherUser,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-plaintext": "plaintext",
-            "x-goldfinch-signature-block-num": "fake_block_number",
+            "x-goldfinch-address": TEST_ACCOUNT.address,
+            "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+            "x-goldfinch-signature-block-num": latestBlockNum.toString(),
+            "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
           }
 
           await expect(
@@ -212,10 +322,10 @@ describe("unique-identity-signer", () => {
 
         it("throws an error", async () => {
           const auth = {
-            "x-goldfinch-address": anotherUser,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-plaintext": "plaintext",
-            "x-goldfinch-signature-block-num": "fake_block_number",
+            "x-goldfinch-address": TEST_ACCOUNT.address,
+            "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+            "x-goldfinch-signature-block-num": latestBlockNum.toString(),
+            "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
           }
 
           await expect(
@@ -241,10 +351,10 @@ describe("unique-identity-signer", () => {
 
         it("does not throw an error", async () => {
           const auth = {
-            "x-goldfinch-address": anotherUser,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-plaintext": "plaintext",
-            "x-goldfinch-signature-block-num": "fake_block_number",
+            "x-goldfinch-address": TEST_ACCOUNT.address,
+            "x-goldfinch-signature": await wallet.signMessage(`Sign in to Goldfinch: ${latestBlockNum}`),
+            "x-goldfinch-signature-plaintext": `Sign in to Goldfinch: ${latestBlockNum}`,
+            "x-goldfinch-signature-block-num": latestBlockNum.toString(),
           }
 
           await expect(
@@ -260,7 +370,7 @@ describe("unique-identity-signer", () => {
       })
     })
 
-    describe("KYC is elligible", () => {
+    describe("KYC is eligible", () => {
       describe("countryCode is US", () => {
         beforeEach(() => {
           fetchKYCFunction = fetchStubbedKycStatus({
@@ -272,19 +382,10 @@ describe("unique-identity-signer", () => {
 
         describe("non accredited investor", () => {
           it("returns a signature that can be used to mint", async () => {
-            const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-            const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-            const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
-            const auth = {
-              "x-goldfinch-address": anotherUser,
-              "x-goldfinch-signature": "test_signature",
-              "x-goldfinch-signature-plaintext": "plaintext",
-              "x-goldfinch-signature-block-num": "fake_block_number",
-            }
             await uniqueIdentity.setSupportedUIDTypes([usNonAccreditedIdType], [true])
 
-            let result = await uniqueIdentitySigner.main({
-              auth,
+            const result = await uniqueIdentitySigner.main({
+              auth: validAuthAnotherUser,
               signer,
               network,
               uniqueIdentity: ethersUniqueIdentity,
@@ -296,50 +397,61 @@ describe("unique-identity-signer", () => {
               from: anotherUser,
               value: web3.utils.toWei("0.00083"),
             })
+
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            result = await uniqueIdentitySigner.main({
-              auth,
-              signer,
-              network,
-              uniqueIdentity: ethersUniqueIdentity,
-              fetchKYCStatus: fetchKYCFunction,
-            })
+            const burnPresigMessage = utils.presignedBurnMessage(
+              anotherUser,
+              usNonAccreditedIdType.toNumber(),
+              validExpiryTimestamp,
+              uniqueIdentity.address,
+              1,
+              network.chainId
+            )
+            const burnSig = await signer.signMessage(burnPresigMessage)
 
-            await uniqueIdentity.burn(anotherUser, usNonAccreditedIdType, result.expiresAt, result.signature, {
+            await uniqueIdentity.burn(anotherUser, usNonAccreditedIdType, validExpiryTimestamp, burnSig, {
               from: anotherUser,
             })
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
+
+          it("throws an error if linking their KYC to their recipient fails", async () => {
+            sandbox.restore()
+            sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
+            await expect(
+              uniqueIdentitySigner.main({
+                auth: validAuthAnotherUser,
+                signer,
+                network,
+                uniqueIdentity: ethersUniqueIdentity,
+                fetchKYCStatus: fetchKYCFunction,
+              })
+            ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
+          })
         })
 
         describe("US accredited investor", () => {
-          it("returns a signature that can be used to mint", async () => {
-            const nonUSIdType = await uniqueIdentity.ID_TYPE_0()
-            const usAccreditedIdType = await uniqueIdentity.ID_TYPE_1()
-            const usNonAccreditedIdType = await uniqueIdentity.ID_TYPE_2()
+          let getUsAccreditedIDType
+          beforeEach(async () => {
             // stub as accredited investor
-            const getIDType = () => usAccreditedIdType.toNumber()
-            const auth = {
-              "x-goldfinch-address": anotherUser,
-              "x-goldfinch-signature": "test_signature",
-              "x-goldfinch-signature-plaintext": "plaintext",
-              "x-goldfinch-signature-block-num": "fake_block_number",
-            }
+            getUsAccreditedIDType = () => usAccreditedIdType.toNumber()
             await uniqueIdentity.setSupportedUIDTypes([usAccreditedIdType], [true])
+          })
 
-            let result = await uniqueIdentitySigner.main({
-              auth,
+          it("returns a signature that can be used to mint", async () => {
+            const result = await uniqueIdentitySigner.main({
+              auth: validAuthAnotherUser,
               signer,
               network,
               uniqueIdentity: ethersUniqueIdentity,
               fetchKYCStatus: fetchKYCFunction,
-              getIDType,
+              getIDType: getUsAccreditedIDType,
             })
 
             // mint accredited investor
@@ -352,41 +464,51 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
 
             // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-            result = await uniqueIdentitySigner.main({
-              auth,
-              signer,
-              network,
-              uniqueIdentity: ethersUniqueIdentity,
-              fetchKYCStatus: fetchKYCFunction,
-              getIDType,
-            })
+            const burnPresigMessage = utils.presignedBurnMessage(
+              anotherUser,
+              usAccreditedIdType.toNumber(),
+              validExpiryTimestamp,
+              uniqueIdentity.address,
+              1,
+              network.chainId
+            )
+            const burnSig = await signer.signMessage(burnPresigMessage)
 
-            await uniqueIdentity.burn(anotherUser, usAccreditedIdType, result.expiresAt, result.signature, {
+            await uniqueIdentity.burn(anotherUser, usAccreditedIdType, validExpiryTimestamp, burnSig, {
               from: anotherUser,
             })
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
+
+          it("throws an error if linking their KYC to their recipient fails", async () => {
+            sandbox.restore()
+            sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
+            await expect(
+              uniqueIdentitySigner.main({
+                auth: validAuthAnotherUser,
+                signer,
+                network,
+                uniqueIdentity: ethersUniqueIdentity,
+                fetchKYCStatus: fetchKYCFunction,
+                getIDType: getUsAccreditedIDType,
+              })
+            ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
+          })
         })
       })
 
       describe("countryCode is non US", () => {
         beforeEach(() => {
-          fetchKYCFunction = fetchElligibleKycStatus
+          fetchKYCFunction = fetchEligibleKycStatus
         })
 
         it("returns a signature that can be used to mint", async () => {
-          const auth = {
-            "x-goldfinch-address": anotherUser,
-            "x-goldfinch-signature": "test_signature",
-            "x-goldfinch-signature-plaintext": "plaintext",
-            "x-goldfinch-signature-block-num": "fake_block_number",
-          }
           await uniqueIdentity.setSupportedUIDTypes([0], [true])
 
-          let result = await uniqueIdentitySigner.main({
-            auth,
+          const result = await uniqueIdentitySigner.main({
+            auth: validAuthAnotherUser,
             signer,
             network,
             uniqueIdentity: ethersUniqueIdentity,
@@ -402,19 +524,35 @@ describe("unique-identity-signer", () => {
           expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
 
           // Indirectly test that the nonce is correctly used, thereby allowing the burn to succeed
-          result = await uniqueIdentitySigner.main({
-            auth,
-            signer,
-            network,
-            uniqueIdentity: ethersUniqueIdentity,
-            fetchKYCStatus: fetchKYCFunction,
-          })
+          const burnPresigMessage = utils.presignedBurnMessage(
+            anotherUser,
+            0,
+            validExpiryTimestamp,
+            uniqueIdentity.address,
+            1,
+            network.chainId
+          )
+          const burnSig = await signer.signMessage(burnPresigMessage)
 
-          await uniqueIdentity.burn(anotherUser, 0, result.expiresAt, result.signature, {from: anotherUser})
+          await uniqueIdentity.burn(anotherUser, 0, validExpiryTimestamp, burnSig, {from: anotherUser})
           expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(0))
           expect(await uniqueIdentity.balanceOf(anotherUser, 1)).to.bignumber.eq(new BN(0))
           expect(await uniqueIdentity.balanceOf(anotherUser, 2)).to.bignumber.eq(new BN(0))
         }).timeout(TEST_TIMEOUT)
+
+        it("throws an error if linking their KYC to their recipient fails", async () => {
+          sandbox.restore()
+          sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
+          await expect(
+            uniqueIdentitySigner.main({
+              auth: validAuthAnotherUser,
+              signer,
+              network,
+              uniqueIdentity: ethersUniqueIdentity,
+              fetchKYCStatus: fetchKYCFunction,
+            })
+          ).to.eventually.be.rejectedWith('Error in request to /linkUserToUid.\nstatus: 500\ndata: "Link kyc failed"')
+        })
       })
     })
   })

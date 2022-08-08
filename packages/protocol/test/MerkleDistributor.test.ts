@@ -1,5 +1,5 @@
 /* global web3 */
-import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {BN} from "ethereumjs-util"
 import hre, {getNamedAccounts} from "hardhat"
 import {MerkleDistributorGrantInfo} from "../blockchain_scripts/merkle/merkleDistributor/types"
 import {GFIInstance} from "../typechain/truffle/GFI"

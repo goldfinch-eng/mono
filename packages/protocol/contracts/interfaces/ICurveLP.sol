@@ -4,13 +4,13 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 interface ICurveLP {
+  function coins(uint256) external view returns (address);
+
   function token() external view returns (address);
 
   function calc_token_amount(uint256[2] calldata amounts) external view returns (uint256);
 
   function lp_price() external view returns (uint256);
-
-  function get_virtual_price() external view returns (uint256);
 
   function add_liquidity(
     uint256[2] calldata amounts,

@@ -9,12 +9,14 @@ import "@uniswap/lib/contracts/libraries/Babylonian.sol";
 import "../library/SafeERC20Transfer.sol";
 import "../protocol/core/ConfigHelper.sol";
 import "../protocol/core/BaseUpgradeablePausable.sol";
+import {ICreditLine} from "../interfaces/ICreditLine.sol";
 import "../interfaces/IPoolTokens.sol";
 import "../interfaces/IStakingRewards.sol";
 import "../interfaces/ITranchedPool.sol";
 import "../interfaces/IBackerRewards.sol";
 import "../interfaces/ISeniorPool.sol";
 import "../interfaces/IEvents.sol";
+import {IERC20withDec} from "../interfaces/IERC20withDec.sol";
 
 // Basically, Every time a interest payment comes back
 // we keep a running total of dollars (totalInterestReceived) until it reaches the maxInterestDollarsEligible limit
@@ -31,10 +33,11 @@ import "../interfaces/IEvents.sol";
 // Every time a PoolToken withdraws rewards, we determine the allocated rewards,
 // increase that PoolToken's rewardsClaimed, and transfer the owner the gfi
 
-contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Transfer, IEvents {
+contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, IEvents {
   GoldfinchConfig public config;
   using ConfigHelper for GoldfinchConfig;
   using SafeMath for uint256;
+  using SafeERC20Transfer for IERC20withDec;
 
   uint256 internal constant GFI_MANTISSA = 10**18;
   uint256 internal constant FIDU_MANTISSA = 10**18;
@@ -386,7 +389,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
       _checkpointTokenStakingRewards(tokenId);
     }
 
-    safeERC20Transfer(config.getGFI(), poolTokens.ownerOf(tokenId), totalClaimableRewards);
+    config.getGFI().safeERC20Transfer(poolTokens.ownerOf(tokenId), totalClaimableRewards);
     emit BackerRewardsClaimed(_msgSender(), tokenId, claimableBackerRewards, claimableStakingRewards);
   }
 
@@ -460,7 +463,7 @@ contract BackerRewards is IBackerRewards, BaseUpgradeablePausable, SafeERC20Tran
     ITranchedPool pool = ITranchedPool(_msgSender());
 
     // only accrue rewards on a full repayment
-    IV2CreditLine cl = pool.creditLine();
+    ICreditLine cl = pool.creditLine();
     bool wasFullRepayment = cl.lastFullPaymentTime() > 0 &&
       cl.lastFullPaymentTime() <= block.timestamp &&
       cl.principalOwed() == 0 &&

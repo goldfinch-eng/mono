@@ -5,4 +5,10 @@ export interface Request {
   headers: {[header: string]: any}
   queryParameters: {[key: string]: any}
 }
-export type HandlerParams = {request?: Request} & RelayerParams
+
+export interface Env {
+  // https://docs.openzeppelin.com/defender/autotasks#secrets
+  secrets: {[key: string]: any}
+}
+
+export type HandlerParams = {request?: Request} & RelayerParams & Env

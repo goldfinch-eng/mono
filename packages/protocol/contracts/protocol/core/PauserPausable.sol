@@ -49,7 +49,8 @@ contract PauserPausable is AccessControlUpgradeSafe, PausableUpgradeSafe {
   }
 
   modifier onlyPauserRole() {
-    require(hasRole(PAUSER_ROLE, _msgSender()), "Must have pauser role to perform this action");
+    /// @dev NA: not authorized
+    require(hasRole(PAUSER_ROLE, _msgSender()), "NA");
     _;
   }
 }

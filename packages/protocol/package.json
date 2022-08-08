@@ -161,6 +161,7 @@
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
     "rollup": "^2.33.3",
+    "sinon": "^13.0.1",
     "solhint": "^3.3.6",
     "solhint-plugin-modifiers": "0.0.3",
     "solhint-plugin-prettier": "0.0.5",

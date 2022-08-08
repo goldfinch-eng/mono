@@ -5,7 +5,7 @@
     "bootstrap": "npx lerna bootstrap && npm run stub-dev-deployments && npm run build",
     "stub-dev-deployments": "sh -c \"[ ! -e \"packages/protocol/deployments/all_dev.json\" ] && echo {} > packages/protocol/deployments/all_dev.json || true\"",
     "start": "npm run kill-ports && REACT_APP_HARDHAT_FORK=mainnet HARDHAT_FORK=mainnet npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
-    "start:local": "npm run kill-ports && npx lerna run --ignore @goldfinch-eng/client2 generate-merkle-root:local && REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
+    "start:local": "npm run kill-ports && npx lerna run --ignore @goldfinch-eng/client2 generate-merkle-root:local && REACT_APP_GCLOUD_FUNCTIONS_URL=http://localhost:5001/goldfinch-frontends-dev/us-central1 BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json CHAIN_IDENTIFIER=http://localhost:8545 LOCAL=yes npx lerna run --ignore @goldfinch-eng/client2 start --parallel",
     "start:murmuration": "npm run kill-ports && npx lerna run --ignore @goldfinch-eng/client2 generate-merkle-root:murmuration && BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json && MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json npx lerna run --ignore @goldfinch-eng/client2 start:murmuration --parallel",
     "kill-ports": "for i in 4000 4001 3000 3002 5001 8545 8080; do lsof -t -i:$i | xargs -r kill; done",
     "test": "NODE_OPTIONS=--unhandled-rejections=strict npx lerna run --ignore @goldfinch-eng/client2 test --stream",
@@ -29,7 +29,7 @@
     "eslint-plugin-chai-friendly": "^0.7.2",
     "eslint-plugin-mocha-no-only": "^1.1.1",
     "husky": "^7.0.2",
-    "lerna": "^5.0.0",
+    "lerna": "^5.3.0",
     "prettier": "^2.4.0",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "typescript": "^4.4.3"

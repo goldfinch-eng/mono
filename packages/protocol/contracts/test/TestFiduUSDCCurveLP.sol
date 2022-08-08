@@ -4,21 +4,22 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 
-import "../interfaces/IGoldfinchConfig.sol";
 import "../interfaces/ICurveLP.sol";
 import "../protocol/core/ConfigOptions.sol";
+import {GoldfinchConfig} from "../protocol/core/GoldfinchConfig.sol";
+import {ConfigHelper} from "../protocol/core/ConfigHelper.sol";
 
 contract TestFiduUSDCCurveLP is
   ERC20("LP FIDU-USDC Curve", "FIDUUSDCCURVE"),
   ERC20Permit("LP FIDU-USDC Curve"),
   ICurveLP
 {
+  using ConfigHelper for GoldfinchConfig;
   uint256 private constant MULTIPLIER_DECIMALS = 1e18;
   uint256 private constant USDC_DECIMALS = 1e6;
 
-  IGoldfinchConfig public config;
+  GoldfinchConfig public config;
 
-  uint256 private virtual_price = MULTIPLIER_DECIMALS;
   uint256 private slippage = MULTIPLIER_DECIMALS;
   uint256[2] private _balances = [1e18, 1e18];
   uint256 private _totalSupply = 1e18;
@@ -26,11 +27,20 @@ contract TestFiduUSDCCurveLP is
   constructor(
     uint256 initialSupply,
     uint8 decimals,
-    IGoldfinchConfig _config
+    GoldfinchConfig _config
   ) public {
     _setupDecimals(decimals);
     _mint(msg.sender, initialSupply);
     config = _config;
+  }
+
+  function coins(uint256 index) external view override returns (address) {
+    // note: defining as an array so we get the same out of bounds behavior
+    //        but can't define it at compile time because the addresses
+    //        are sourced from goldfinch config
+    address[2] memory coins = [address(getFidu()), address(getUSDC())];
+
+    return coins[index];
   }
 
   function token() public view override returns (address) {
@@ -90,14 +100,6 @@ contract TestFiduUSDCCurveLP is
     _totalSupply = newTotalSupply;
   }
 
-  function _set_virtual_price(uint256 new_virtual_price) external {
-    virtual_price = new_virtual_price;
-  }
-
-  function get_virtual_price() public view override returns (uint256) {
-    return virtual_price;
-  }
-
   /// @notice Mock remove_liquidity function
   /// @dev Left unimplemented because we're only using this in mainnet forking tests
   function remove_liquidity(uint256 _amount, uint256[2] memory min_amounts) public override returns (uint256) {
@@ -135,11 +137,11 @@ contract TestFiduUSDCCurveLP is
     return 0;
   }
 
-  function getUSDC() internal returns (ERC20) {
-    return ERC20(config.getAddress(uint256(ConfigOptions.Addresses.USDC)));
+  function getUSDC() internal view returns (ERC20) {
+    return ERC20(address(config.getUSDC()));
   }
 
-  function getFidu() internal returns (ERC20) {
-    return ERC20(config.getAddress(uint256(ConfigOptions.Addresses.Fidu)));
+  function getFidu() internal view returns (ERC20) {
+    return ERC20(address(config.getFidu()));
   }
 }
