@@ -61,7 +61,6 @@
     "@graphql-codegen/typescript-graphql-request": "^4.4.7",
     "@graphql-codegen/typescript-operations": "2.3.7",
     "@graphql-codegen/typescript-react-query": "^3.5.11",
-    "@goldfinch-eng/protocol": "^0.1.0",
     "@nomiclabs/hardhat-truffle5": "^2.0.1",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
