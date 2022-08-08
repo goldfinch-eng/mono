@@ -13,7 +13,8 @@ import {
   GrantCardGrantFieldsFragment,
   GrantCardTokenFieldsFragment,
   GrantReason,
-  GrantSource,
+  IndirectGrantSource,
+  DirectGrantSource,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 
@@ -29,7 +30,7 @@ export const GRANT_CARD_GRANT_FIELDS = gql`
     amount
 
     ... on IndirectGfiGrant {
-      source
+      indirectSource
       vestingLength
       vestingInterval
       cliffLength
@@ -39,7 +40,7 @@ export const GRANT_CARD_GRANT_FIELDS = gql`
     }
 
     ... on DirectGfiGrant {
-      source
+      directSource
       isAccepted
     }
   }
@@ -216,8 +217,7 @@ function GrantButton({
     ? locked.isZero()
       ? "Claimed"
       : "Still Locked"
-    : grant.source === GrantSource.MerkleDistributor ||
-      grant.source === GrantSource.BackerMerkleDistributor
+    : grant.__typename === "IndirectGfiGrant"
     ? !token
       ? "Accept"
       : "Claim GFI"
@@ -245,60 +245,79 @@ function GrantButton({
     ) {
       return;
     }
-    if (
-      grant.__typename === "IndirectGfiGrant" &&
-      grant.source === GrantSource.MerkleDistributor
-    ) {
-      if (!token) {
-        const transaction = merkleDistributorContract.acceptGrant(
-          grant.index,
-          grant.amount,
-          grant.vestingLength,
-          grant.cliffLength,
-          grant.vestingInterval,
-          grant.proof
-        );
-        await toastTransaction({ transaction });
-      } else {
-        const transaction = communityRewardsContract.getReward(token.id);
-        await toastTransaction({ transaction });
+
+    if (grant.__typename === "IndirectGfiGrant") {
+      switch (grant.indirectSource) {
+        case IndirectGrantSource.MerkleDistributor:
+          if (!token) {
+            await toastTransaction({
+              transaction: merkleDistributorContract.acceptGrant(
+                grant.index,
+                grant.amount,
+                grant.vestingLength,
+                grant.cliffLength,
+                grant.vestingInterval,
+                grant.proof
+              ),
+            });
+          } else {
+            await toastTransaction({
+              transaction: communityRewardsContract.getReward(token.id),
+            });
+          }
+          break;
+        case IndirectGrantSource.BackerMerkleDistributor:
+          if (!token) {
+            await toastTransaction({
+              transaction: backerMerkleDistributorContract.acceptGrant(
+                grant.index,
+                grant.amount,
+                grant.vestingLength,
+                grant.cliffLength,
+                grant.vestingInterval,
+                grant.proof
+              ),
+            });
+          } else {
+            await toastTransaction({
+              transaction: communityRewardsContract.getReward(token.id),
+            });
+          }
+          break;
+        default:
+          // Remember if the compiler errors here, it's because the switch statement isn't exhaustive so you have to add a case
+          const exhaustive: never = grant.indirectSource;
+          throw new Error(
+            `Unhandled indirect grant source ${exhaustive as string}`
+          );
       }
-    } else if (
-      grant.__typename === "IndirectGfiGrant" &&
-      grant.source === GrantSource.BackerMerkleDistributor
-    ) {
-      if (!token) {
-        const transaction = backerMerkleDistributorContract.acceptGrant(
-          grant.index,
-          grant.amount,
-          grant.vestingLength,
-          grant.cliffLength,
-          grant.vestingInterval,
-          grant.proof
-        );
-        await toastTransaction({ transaction });
-      } else {
-        const transaction = communityRewardsContract.getReward(token.id);
-        await toastTransaction({ transaction });
+    } else if (grant.__typename === "DirectGfiGrant") {
+      switch (grant.directSource) {
+        case DirectGrantSource.MerkleDirectDistributor:
+          await toastTransaction({
+            transaction: merkleDirectDistributorContract.acceptGrant(
+              grant.index,
+              grant.amount,
+              grant.proof
+            ),
+          });
+          break;
+        case DirectGrantSource.BackerMerkleDirectDistributor:
+          await toastTransaction({
+            transaction: backerMerkleDirectDistributorContract.acceptGrant(
+              grant.index,
+              grant.amount,
+              grant.proof
+            ),
+          });
+          break;
+        default:
+          // Remember if the compiler errors here, it's because the switch statement isn't exhaustive so you have to add a case
+          const exhaustive: never = grant.directSource;
+          throw new Error(
+            `Unhandled indirect grant source ${exhaustive as string}`
+          );
       }
-    } else if (grant.source === GrantSource.MerkleDirectDistributor) {
-      const transaction = merkleDirectDistributorContract.acceptGrant(
-        grant.index,
-        grant.amount,
-        grant.proof
-      );
-      await toastTransaction({ transaction });
-    } else if (grant.source === GrantSource.BackerMerkleDirectDistributor) {
-      const transaction = backerMerkleDirectDistributorContract.acceptGrant(
-        grant.index,
-        grant.amount,
-        grant.proof
-      );
-      await toastTransaction({ transaction });
-    } else {
-      throw new Error(
-        `Unimplemented grant source when trying to accept: ${grant.source}`
-      );
     }
     await apolloClient.refetchQueries({ include: "active" });
   };

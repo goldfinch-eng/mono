@@ -92,7 +92,7 @@ export const viewerResolvers: Resolvers[string] = {
           __typename: "IndirectGfiGrant",
           id: `${g.source}${g.index}`,
           index: g.index,
-          source: g.source,
+          indirectSource: g.source,
           reason: g.reason.toUpperCase(),
           proof: g.proof,
           amount: BigNumber.from(g.grant.amount),
@@ -103,17 +103,17 @@ export const viewerResolvers: Resolvers[string] = {
           end: BigNumber.from(TOKEN_LAUNCH_TIME).add(
             BigNumber.from(g.grant.vestingLength)
           ),
-        } as Omit<IndirectGfiGrant, "vested">);
+        } as Required<Omit<IndirectGfiGrant, "vested">>);
       } else {
         gfiGrants.push({
           __typename: "DirectGfiGrant",
           id: `${g.source}${g.index}`,
           index: g.index,
-          source: g.source,
+          directSource: g.source,
           reason: g.reason.toUpperCase(),
           proof: g.proof,
           amount: BigNumber.from(g.grant.amount),
-        } as Omit<DirectGfiGrant, "isAccepted">);
+        } as Required<Omit<DirectGfiGrant, "isAccepted">>);
       }
     }
 

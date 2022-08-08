@@ -4,7 +4,11 @@ import { BigNumber } from "ethers";
 import { getContract } from "@/lib/contracts";
 import { getProvider } from "@/lib/wallet";
 
-import { DirectGfiGrant, GrantSource, IndirectGfiGrant } from "../generated";
+import {
+  DirectGfiGrant,
+  DirectGrantSource,
+  IndirectGfiGrant,
+} from "../generated";
 
 export const indirectGfiGrantResolvers: Resolvers[string] = {
   async vested(indirectGfiGrant: IndirectGfiGrant): Promise<BigNumber> {
@@ -45,33 +49,28 @@ export const directGfiGrantResolvers: Resolvers[string] = {
       );
     }
     const chainId = await provider.getSigner().getChainId();
-    if (gfiDirectGrant.source === GrantSource.MerkleDirectDistributor) {
-      const merkleDirectDistributorContract = getContract({
-        name: "MerkleDirectDistributor",
-        chainId,
-        provider,
-      });
-      const isAccepted = await merkleDirectDistributorContract.isGrantAccepted(
-        gfiDirectGrant.index
-      );
-      return isAccepted;
-    } else if (
-      gfiDirectGrant.source === GrantSource.BackerMerkleDirectDistributor
-    ) {
-      const backerMerkleDirectDistributorContract = getContract({
-        name: "BackerMerkleDirectDistributor",
-        chainId,
-        provider,
-      });
-      const isAccepted =
-        await backerMerkleDirectDistributorContract.isGrantAccepted(
+    switch (gfiDirectGrant.directSource) {
+      case DirectGrantSource.MerkleDirectDistributor:
+        const merkleDirectDistributorContract = getContract({
+          name: "MerkleDirectDistributor",
+          chainId,
+          provider,
+        });
+        return await merkleDirectDistributorContract.isGrantAccepted(
           gfiDirectGrant.index
         );
-      return isAccepted;
-    } else {
-      throw new Error(
-        "Unreachable block in GfiDirectGrant.isAccepted resolver"
-      );
+      case DirectGrantSource.BackerMerkleDirectDistributor:
+        const backerMerkleDirectDistributorContract = getContract({
+          name: "BackerMerkleDirectDistributor",
+          chainId,
+          provider,
+        });
+        return backerMerkleDirectDistributorContract.isGrantAccepted(
+          gfiDirectGrant.index
+        );
+      default:
+        const exhaustive: never = gfiDirectGrant.directSource;
+        throw new Error(`Unhandled direct grant source: ${exhaustive}`);
     }
   },
 };

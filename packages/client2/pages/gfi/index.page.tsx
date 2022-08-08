@@ -67,7 +67,8 @@ export default function GfiPage() {
       for (const grant of gfiGrants) {
         const correspondingToken = communityRewardsTokens.find(
           (token) =>
-            token.source.toString() === grant.source.toString() &&
+            grant.__typename === "IndirectGfiGrant" &&
+            token.source.toString() === grant.indirectSource.toString() &&
             token.index === grant.index
         );
         grantsWithTokens.push({

@@ -5,23 +5,30 @@ import { withSentry } from "@sentry/nextjs";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import { GrantManifest, GrantWithSource } from "@/lib/gfi-rewards";
-import { GrantSource } from "@/lib/graphql/generated";
+import {
+  IndirectGrantSource,
+  DirectGrantSource,
+} from "@/lib/graphql/generated";
 
 type ExpectedQuery = {
   account: string;
 };
 
-const fileToSource: Record<string, GrantSource> = {
-  "./merkleDistributorInfo.json": GrantSource.MerkleDistributor,
-  "./merkleDistributorInfo.dev.json": GrantSource.MerkleDistributor,
-  "./backerMerkleDistributorInfo.json": GrantSource.BackerMerkleDistributor,
-  "./backerMerkleDistributorInfo.dev.json": GrantSource.BackerMerkleDistributor,
-  "./merkleDirectDistributorInfo.json": GrantSource.MerkleDirectDistributor,
-  "./merkleDirectDistributorInfo.dev.json": GrantSource.MerkleDirectDistributor,
+const fileToSource: Record<string, IndirectGrantSource | DirectGrantSource> = {
+  "./merkleDistributorInfo.json": IndirectGrantSource.MerkleDistributor,
+  "./merkleDistributorInfo.dev.json": IndirectGrantSource.MerkleDistributor,
+  "./backerMerkleDistributorInfo.json":
+    IndirectGrantSource.BackerMerkleDistributor,
+  "./backerMerkleDistributorInfo.dev.json":
+    IndirectGrantSource.BackerMerkleDistributor,
+  "./merkleDirectDistributorInfo.json":
+    DirectGrantSource.MerkleDirectDistributor,
+  "./merkleDirectDistributorInfo.dev.json":
+    DirectGrantSource.MerkleDirectDistributor,
   "./backerMerkleDirectDistributorInfo.json":
-    GrantSource.BackerMerkleDirectDistributor,
+    DirectGrantSource.BackerMerkleDirectDistributor,
   "./backerMerkleDirectDistributorInfo.dev.json":
-    GrantSource.BackerMerkleDirectDistributor,
+    DirectGrantSource.BackerMerkleDirectDistributor,
 };
 
 const merkleDistributorFiles: (keyof typeof fileToSource)[] =

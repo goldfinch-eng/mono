@@ -1,7 +1,9 @@
 import type {
-  GfiGrant,
+  DirectGfiGrant,
+  IndirectGfiGrant,
   GrantReason,
-  GrantSource,
+  DirectGrantSource,
+  IndirectGrantSource,
 } from "@/lib/graphql/generated";
 
 export type Grant = {
@@ -28,7 +30,7 @@ export type GrantManifest = {
 };
 
 export type GrantWithSource = GrantManifest["grants"][number] & {
-  source: GrantSource;
+  source: DirectGrantSource | IndirectGrantSource;
 };
 
 const reasonLabels: Record<GrantReason, string> = {
@@ -44,19 +46,29 @@ export function getReasonLabel(reason: string) {
   return reasonLabels[reason as GrantReason] ?? reason;
 }
 
-const sourceOrdering: Record<GrantSource, number> = {
-  MERKLE_DISTRIBUTOR: 0,
-  MERKLE_DIRECT_DISTRIBUTOR: 1,
-  BACKER_MERKLE_DISTRIBUTOR: 2,
-  BACKER_MERKLE_DIRECT_DISTRIBUTOR: 3,
-};
+const sourceOrdering: Record<IndirectGrantSource | DirectGrantSource, number> =
+  {
+    MERKLE_DISTRIBUTOR: 0,
+    MERKLE_DIRECT_DISTRIBUTOR: 1,
+    BACKER_MERKLE_DISTRIBUTOR: 2,
+    BACKER_MERKLE_DIRECT_DISTRIBUTOR: 3,
+  };
 
-export function grantComparator(
-  a: Pick<GfiGrant, "source" | "index">,
-  b: Pick<GfiGrant, "source" | "index">
-) {
-  if (a.source !== b.source) {
-    return sourceOrdering[a.source] - sourceOrdering[b.source];
+type I = Required<
+  Pick<IndirectGfiGrant, "__typename" | "indirectSource" | "index">
+>;
+type D = Required<
+  Pick<DirectGfiGrant, "__typename" | "directSource" | "index">
+>;
+
+export function grantComparator(a: I | D, b: I | D) {
+  const aSource =
+    a.__typename === "IndirectGfiGrant" ? a.indirectSource : a.directSource;
+  const bSource =
+    b.__typename === "IndirectGfiGrant" ? b.indirectSource : b.directSource;
+
+  if (aSource !== bSource) {
+    return sourceOrdering[aSource] - sourceOrdering[bSource];
   }
   return a.index - b.index;
 }
