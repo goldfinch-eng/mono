@@ -1,15 +1,34 @@
+import { gql, useApolloClient } from "@apollo/client";
 import { useEffect, useState } from "react";
 import { useWizard } from "react-use-wizard";
 
 import { Spinner } from "@/components/design-system";
+import {
+  StatusCheckStepQuery,
+  StatusCheckStepQueryVariables,
+} from "@/lib/graphql/generated";
 import { fetchKycStatus, getSignatureForKyc } from "@/lib/verify";
 import { useWallet } from "@/lib/wallet";
 
 import { VerificationFlowSteps } from "../step-manifest";
 import { useVerificationFlowContext } from "../verification-flow-context";
 
-export function StatusCheckStep({}) {
+const statusCheckStepQuery = gql`
+  query StatusCheckStep($account: ID!) {
+    user(id: $account) {
+      id
+      isUsEntity
+      isNonUsEntity
+      isUsAccreditedIndividual
+      isUsNonAccreditedIndividual
+      isNonUsIndividual
+    }
+  }
+`;
+
+export function StatusCheckStep() {
   const { goToStep } = useWizard();
+  const apolloClient = useApolloClient();
   const { setSignature } = useVerificationFlowContext();
   const { account, provider } = useWallet();
   const [error, setError] = useState<string>();
@@ -20,6 +39,28 @@ export function StatusCheckStep({}) {
     }
     const asyncEffect = async () => {
       try {
+        const { data, error } = await apolloClient.query<
+          StatusCheckStepQuery,
+          StatusCheckStepQueryVariables
+        >({
+          query: statusCheckStepQuery,
+          variables: { account: account.toLowerCase() },
+        });
+        if (error) {
+          throw error;
+        }
+        if (
+          data.user &&
+          (data.user.isUsEntity ||
+            data.user.isNonUsEntity ||
+            data.user.isUsAccreditedIndividual ||
+            data.user.isUsNonAccreditedIndividual ||
+            data.user.isNonUsIndividual)
+        ) {
+          goToStep(VerificationFlowSteps.AlreadyMinted);
+          return;
+        }
+
         const signature = await getSignatureForKyc(provider);
         setSignature(signature);
         const kycStatus = await fetchKycStatus(
@@ -39,7 +80,7 @@ export function StatusCheckStep({}) {
       }
     };
     asyncEffect();
-  }, [account, provider, setSignature, goToStep]);
+  }, [account, provider, setSignature, goToStep, apolloClient]);
 
   return (
     <div className="flex h-full w-full grow items-center justify-center text-center">

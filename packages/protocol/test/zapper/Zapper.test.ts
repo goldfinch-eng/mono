@@ -28,6 +28,7 @@ import {
   SECONDS_PER_DAY,
   SECONDS_PER_YEAR,
   usdcVal,
+  USDC_DECIMALS,
 } from "../testHelpers"
 import {deployBaseFixture, deployUninitializedTranchedPoolFixture} from "../util/fixtures"
 import {DepositMade} from "../../typechain/truffle/SeniorPool"
@@ -151,10 +152,8 @@ const baseSetupTest = deployments.createFixture(async () => {
   } = await deployBaseFixture()
 
   // Set up contracts
-  await stakingRewards.initZapperRole()
   await seniorPool.initZapperRole()
   await go.initZapperRole()
-  await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), zapper.address)
   await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), zapper.address)
   await go.grantRole(await go.ZAPPER_ROLE(), zapper.address)
 
@@ -298,6 +297,13 @@ describe("Zapper", async () => {
       uniqueIdentity: uid,
       maxRate: stakingRewardsMaxRate,
     } = await baseSetupTest())
+  })
+
+  beforeEach(async () => {
+    // Reset balances such that 1 FIDU underlies a single Curve LP token
+    await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS)
+    await fiduUSDCCurveLP._setBalance(1, USDC_DECIMALS)
+    await fiduUSDCCurveLP._setTotalSupply(MULTIPLIER_DECIMALS)
   })
 
   const getPoolTokenInfos = async (poolTokenIds: BN[]): Promise<any[]> => {
@@ -857,8 +863,6 @@ describe("Zapper", async () => {
       it("reverts", async () => {
         // Set the effective multiplier for the Curve to 2x
         await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-        // Set the Curve LP token virtual price to $1.00
-        await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
 
         const usdcEquilavent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         await usdc.approve(fiduUSDCCurveLP.address, usdcEquilavent, {from: investor1})
@@ -1060,8 +1064,6 @@ describe("Zapper", async () => {
       it("reverts", async () => {
         // Set the effective multiplier for the Curve to 2x
         await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-        // Set the Curve LP token virtual price to $1.00
-        await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
 
         const usdcEquilavent = fiduToUSDC(fiduAmount.mul(await seniorPool.sharePrice()).div(FIDU_DECIMALS))
         await usdc.approve(fiduUSDCCurveLP.address, usdcEquilavent, {from: investor1})
@@ -1414,8 +1416,6 @@ describe("Zapper", async () => {
     beforeEach(async function () {
       // Set the effective multiplier for the Curve to 2x
       await stakingRewards.setEffectiveMultiplier(new BN(2).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-      // Set the Curve LP token virtual price to $1.00
-      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     context("for a FIDU-only migration", async () => {

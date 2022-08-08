@@ -144,6 +144,7 @@ contract ImplementationRepositoryTest is Test {
     impersonating(owner)
     assume(impl != owner)
     assume(impl != address(repo))
+    assume(impl != initialImpl)
     withFakeContract(impl)
   {
     repo.append(impl);
@@ -269,9 +270,9 @@ contract ImplementationRepositoryTest is Test {
     public
     impersonating(owner)
     withFakeContract(impl)
-    assume(!repo.has(impl))
     assume(impl != address(repo))
     afterInitializingRepository
+    assume(!repo.has(impl))
   {
     vm.expectRevert("invalid lineageId");
     repo.append(impl, 0);
@@ -339,6 +340,15 @@ contract ImplementationRepositoryTest is Test {
   }
 
   function _withFakeContract(address x) internal {
+    uint32 nBytes;
+    assembly {
+      nBytes := extcodesize(x)
+    }
+
+    bool isAlreadyAContract = nBytes > 0;
+    if (isAlreadyAContract) return;
+
+    vm.assume(x != address(0));
     vm.etch(x, bytes("SUPER SECRET CODE"));
   }
 

@@ -12,11 +12,8 @@ query poolTokenMetadata($id: ID!) {
       estimatedJuniorApyFromGfiRaw
       totalDeployed
       totalDeposited
-      borrowerTransactions {
-        id
-        type
-        amount
-      }
+      principalAmountRepaid
+      interestAmountRepaid
       creditLine {
         limit
         interestApr

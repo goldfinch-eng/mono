@@ -33,30 +33,12 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     TwentyFourMonths
   }
 
-  /* ========== EVENTS =================== */
-  event RewardsParametersUpdated(
-    address indexed who,
-    uint256 targetCapacity,
-    uint256 minRate,
-    uint256 maxRate,
-    uint256 minRateAtPercent,
-    uint256 maxRateAtPercent
-  );
-  event TargetCapacityUpdated(address indexed who, uint256 targetCapacity);
-  event VestingScheduleUpdated(address indexed who, uint256 vestingLength);
-  event MinRateUpdated(address indexed who, uint256 minRate);
-  event MaxRateUpdated(address indexed who, uint256 maxRate);
-  event MinRateAtPercentUpdated(address indexed who, uint256 minRateAtPercent);
-  event MaxRateAtPercentUpdated(address indexed who, uint256 maxRateAtPercent);
-  event EffectiveMultiplierUpdated(address indexed who, StakedPositionType positionType, uint256 multiplier);
-
   /* ========== STATE VARIABLES ========== */
 
   uint256 private constant MULTIPLIER_DECIMALS = 1e18;
+  uint256 private constant USDC_MANTISSA = 1e6;
 
   bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
-
-  bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
   GoldfinchConfig public config;
 
@@ -137,10 +119,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     vestingLength = 365 days;
   }
 
-  function initZapperRole() external onlyAdmin {
-    _setRoleAdmin(ZAPPER_ROLE, OWNER_ROLE);
-  }
-
   /* ========== VIEWS ========== */
 
   function getPosition(uint256 tokenId) external view override returns (StakedPosition memory position) {
@@ -167,11 +145,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       return IERC20(config.getFiduUSDCCurveLP().token());
     }
 
-    return config.getFidu();
-  }
-
-  /// @notice The address of the base token used to denominate staking rewards
-  function baseStakingToken() internal view returns (IERC20withDec) {
     return config.getFidu();
   }
 
@@ -318,9 +291,9 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @dev We overload the responsibility of this function -- i.e. returning a value that can be
   /// used for both the `stakingToken()` mantissa and the `rewardsToken()` mantissa --, rather than have
   /// multiple distinct functions for that purpose, in order to reduce contract size. We rely on a unit
-  /// test to ensure that the tokens' mantissas are indeed equal and therefore that this approach works.
-  function stakingAndRewardsTokenMantissa() internal view returns (uint256) {
-    return uint256(10)**baseStakingToken().decimals();
+  /// test to ensure that the tokens' mantissas are indeed 1e18 and therefore that this approach works.
+  function stakingAndRewardsTokenMantissa() internal pure returns (uint256) {
+    return 1e18;
   }
 
   /// @notice The amount of rewards currently being earned per token per second. This amount takes into
@@ -514,16 +487,10 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   /// @param positionType Type of the staked postion
   function getBaseTokenExchangeRate(StakedPositionType positionType) public view virtual returns (uint256) {
     if (positionType == StakedPositionType.CurveLP) {
-      // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
-      uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
-
-      // @dev LOW: The Curve LP token virtual price is too low
-      require(curveLPVirtualPrice > MULTIPLIER_DECIMALS.div(2), "LOW");
-      // @dev HIGH: The Curve LP token virtual price is too high
-      require(curveLPVirtualPrice < MULTIPLIER_DECIMALS.mul(2), "HIGH");
-
-      // The FIDU token price is also scaled by MULTIPLIER_DECIMALS (1e18)
-      return curveLPVirtualPrice.mul(MULTIPLIER_DECIMALS).div(config.getSeniorPool().sharePrice());
+      ICurveLP curvePool = config.getFiduUSDCCurveLP();
+      // To calculate the amount of FIDU underlying each Curve LP token, we take the total amount of FIDU in
+      // the Curve pool, and divide that by the total number of Curve LP tokens in circulation.
+      return curvePool.balances(0).mul(MULTIPLIER_DECIMALS).div(IERC20(curvePool.token()).totalSupply());
     }
 
     return MULTIPLIER_DECIMALS; // 1x
@@ -549,6 +516,35 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
 
     uint256 baseTokenExchangeRate = getBaseTokenExchangeRate(positionType);
     uint256 effectiveMultiplier = getEffectiveMultiplierForPositionType(positionType);
+
+    if (positionType == StakedPositionType.CurveLP) {
+      ICurveLP curvePool = config.getFiduUSDCCurveLP();
+
+      // Do not allow the user to create a new Curve LP staked position if the Curve pool is significantly
+      // imbalanced. This prevents attackers from exploiting an artificially unbalanced Curve pool to
+      // receive a higher staking reward rate.
+      //
+      // We consider the Curve pool to be reasonably balanced if the ratio of USDC to FIDU is within +/- 25%
+      // of the current FIDU price in the Senior Pool. When the Curve pool is balanced, we expect this
+      // the ratio to be close to the Senior Pool FIDU price.
+      //
+      // We put these bounds in place to protect against flash loan attacks, where an attacker can temporarily
+      // force the Curve pool to become imbalanced, and stake the Curve LP tokens to get a higher staking
+      // reward rate.
+      uint256 usdcToFiduOnCurve = curvePool
+        .balances(1)
+        .mul(MULTIPLIER_DECIMALS)
+        .div(curvePool.balances(0))
+        .mul(MULTIPLIER_DECIMALS)
+        .div(USDC_MANTISSA);
+
+      /// @dev IM: Curve pool is too imbalanced
+      require(
+        usdcToFiduOnCurve > config.getSeniorPool().sharePrice().mul(75).div(100) &&
+          usdcToFiduOnCurve < config.getSeniorPool().sharePrice().mul(125).div(100),
+        "IM"
+      );
+    }
 
     positions[tokenId] = StakedPosition({
       positionType: positionType,
@@ -696,9 +692,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
       // Checkpoint rewards
       _updateReward(tokenIds[i]);
       // Unstake and withdraw staked FIDU
-      uint256 usdcReceivedAmount = _unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]);
-
-      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(usdcReceivedAmount);
+      usdcReceivedAmountTotal = usdcReceivedAmountTotal.add(_unstakeAndWithdrawInFidu(tokenIds[i], fiduAmounts[i]));
     }
 
     emit UnstakedAndWithdrewMultiple(msg.sender, usdcReceivedAmountTotal, tokenIds, fiduAmounts);
@@ -928,10 +922,6 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     _;
   }
 
-  function isZapper() internal view returns (bool) {
-    return hasRole(ZAPPER_ROLE, _msgSender());
-  }
-
   function isGoListed() internal view returns (bool) {
     return config.getGo().goSeniorPool(msg.sender);
   }
@@ -969,5 +959,13 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     uint256[] amounts
   );
   event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
-  event GoldfinchConfigUpdated(address indexed who, address configAddress);
+  event RewardsParametersUpdated(
+    address indexed who,
+    uint256 targetCapacity,
+    uint256 minRate,
+    uint256 maxRate,
+    uint256 minRateAtPercent,
+    uint256 maxRateAtPercent
+  );
+  event EffectiveMultiplierUpdated(address indexed who, StakedPositionType positionType, uint256 multiplier);
 }

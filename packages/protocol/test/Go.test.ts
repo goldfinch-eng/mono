@@ -11,7 +11,7 @@ import {
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
 import {burn, mint} from "./uniqueIdentityHelpers"
-import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {BN} from "ethereumjs-util"
 import {deployBaseFixture} from "./util/fixtures"
 const {deployments} = hre
 

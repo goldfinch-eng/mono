@@ -4,7 +4,7 @@
     "codegen": "graph codegen",
     "build": "graph codegen && graph build",
     "test": "graph test",
-    "deploy": "graph build && graph deploy --node https://api.studio.thegraph.com/deploy/ goldfinch-subgraph",
+    "deploy-prod": "graph codegen && graph deploy --product hosted-service goldfinch-eng/goldfinch-v2",
     "create-local": "graph create --node http://localhost:8020/ goldfinch-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ goldfinch-subgraph",
     "deploy-local": "graph codegen && graph deploy --node http://localhost:8020 --ipfs http://localhost:5002 --version-label v0.0.1 goldfinch-subgraph subgraph-local.yaml",
@@ -13,6 +13,7 @@
     "stop-local": "docker compose --env-file .env.local-subgraph down -v && rm -rf data"
   },
   "dependencies": {
+    "@goldfinch-eng/utils": "^0.0.1",
     "@graphprotocol/graph-cli": "^0.29.0",
     "@graphprotocol/graph-ts": "^0.26.0"
   },

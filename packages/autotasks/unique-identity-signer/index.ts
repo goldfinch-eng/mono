@@ -1,28 +1,35 @@
 import _ from "lodash"
+import * as Sentry from "@sentry/node"
 import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
-import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  isPlainObject,
+  isString,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
+  isApprovedNonUSEntity,
+  getIDType as defaultGetIDType,
+  KYC,
+  Auth,
+  FetchKYCFunction,
+} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
+import baseHandler from "../core/handler"
+
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
-export interface KYC {
-  status: "unknown" | "approved" | "failed"
-  countryCode: string
-  residency?: "non-us" | "us"
-}
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
-const isKYC = (obj: unknown): obj is KYC =>
-  isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode) && isString(obj.residency)
+const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
 
-const API_URLS = {
+const API_URLS: {[key: number]: string} = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
   31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
@@ -30,27 +37,22 @@ const API_URLS = {
 /**
  * Mapping of chain-id -> deployed address
  */
-const UNIQUE_IDENTITY_ADDRESS = {
+const UNIQUE_IDENTITY_ADDRESS: {[key: number]: string} = {
   1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
 }
 
-export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
   assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
-  const response = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
-  if (isKYC(response.data)) {
-    return response.data
-  } else {
-    throw new Error("malformed KYC response")
-  }
-}
+  const {data} = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
 
-type Auth = {
-  "x-goldfinch-address": any
-  "x-goldfinch-signature": any
-  "x-goldfinch-signature-plaintext": any
-  "x-goldfinch-signature-block-num": any
+  if (isKYC(data)) {
+    return data
+  } else {
+    throw new Error(
+      `invalid KYC response. Either data is not a plain object, '${data.status}' is unexpected, or '${data.countryCode}' is not a string`
+    )
+  }
 }
 
 export function asAuth(obj: any): Auth {
@@ -81,7 +83,7 @@ export function asAuth(obj: any): Auth {
   return auth
 }
 
-export async function handler(event: HandlerParams) {
+export const handler = baseHandler("unique-identity-signer", async (event: HandlerParams) => {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
 
   const auth = event.request.body.auth
@@ -96,7 +98,7 @@ export async function handler(event: HandlerParams) {
   const uniqueIdentity = new ethers.Contract(uniqueIdentityAddress, UniqueIdentityAbi, signer) as UniqueIdentity
 
   return await main({signer, auth: auth, network, uniqueIdentity})
-}
+})
 
 // Main function
 export async function main({
@@ -105,31 +107,48 @@ export async function main({
   network,
   uniqueIdentity,
   fetchKYCStatus = defaultFetchKYCStatus,
+  getIDType = defaultGetIDType,
 }: {
   auth: any
   signer: Signer
   network: ethers.providers.Network
   uniqueIdentity: UniqueIdentity
   fetchKYCStatus?: FetchKYCFunction
+  getIDType?: typeof defaultGetIDType
 }) {
   assertNonNullable(signer.provider)
   auth = asAuth(auth)
   const userAddress = auth["x-goldfinch-address"]
 
+  Sentry.setUser({id: userAddress})
+
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
 
-  if (!isUSAccreditedEntity(userAddress) && !isUSAccreditedIndividual(userAddress) && !isNonUSEntity(userAddress)) {
+  // TODO We should just do our own verification of x-goldfinch-signature here, rather than
+  // rely on it being done implicitly via `fetchKYCStatus()`.
+
+  if (
+    !isApprovedUSAccreditedEntity(userAddress) &&
+    !isApprovedUSAccreditedIndividual(userAddress) &&
+    !isApprovedNonUSEntity(userAddress)
+  ) {
     try {
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
     } catch (e) {
       console.error("fetchKYCStatus failed", e)
-      throw new Error("fetchKYCStatus failed")
+      throw e
     }
 
-    if (kycStatus.status !== "approved" || kycStatus.countryCode === "" || !kycStatus.residency) {
-      throw new Error("Does not meet mint requirements")
+    if (kycStatus.status !== "approved") {
+      throw new Error(`Does not meet mint requirements: status is ${kycStatus.status}`)
     }
+
+    if (kycStatus.countryCode === "") {
+      throw new Error(`Does not meet mint requirements: countryCode is null`)
+    }
+  } else {
+    // TODO We should verify the x-goldfinch-signature here!
   }
 
   const currentBlock = await signer.provider.getBlock("latest")

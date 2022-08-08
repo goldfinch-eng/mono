@@ -1,7 +1,7 @@
 /* global web3 */
 
 import {asNonNullable} from "@goldfinch-eng/utils"
-import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {BN} from "ethereumjs-util"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {constants as ethersConstants} from "ethers"
 import hre from "hardhat"

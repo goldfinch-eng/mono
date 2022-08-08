@@ -62,9 +62,6 @@ gql`
         token
         amount
       }
-      geolocation {
-        country
-      }
     }
   }
 `;
@@ -160,7 +157,6 @@ export default function SeniorPoolPage() {
               <SeniorPoolSupplyPanel
                 seniorPool={seniorPool}
                 user={user}
-                viewer={data.viewer}
                 fiatPerGfi={fiatPerGfi}
               />
             ) : null}

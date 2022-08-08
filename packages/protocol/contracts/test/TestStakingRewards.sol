@@ -70,7 +70,7 @@ contract TestStakingRewards is StakingRewards {
     return tokenId;
   }
 
-  function _getStakingAndRewardsTokenMantissa() public view returns (uint256) {
+  function _getStakingAndRewardsTokenMantissa() public pure returns (uint256) {
     return stakingAndRewardsTokenMantissa();
   }
 

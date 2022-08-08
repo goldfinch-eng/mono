@@ -10,7 +10,7 @@ export const NAV_ITEMS = [
   { label: "Stake", href: `${oldClientOrigin}/stake` },
   {
     label: "Transactions",
-    href: `${oldClientOrigin}/transactions`,
+    href: `/transactions`,
   },
 ];
 

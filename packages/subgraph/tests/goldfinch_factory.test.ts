@@ -129,3 +129,18 @@ test("handlePoolCreated creates a new Tranched pool record after V2_2 migration"
 
   clearStore()
 })
+
+test("handlePoolCreated ignores invalid pools", () => {
+  const tranchedPoolAddress = "0x0e2e11dc77bbe75b2b65b57328a8e4909f7da1eb"
+  const creditLineAddress = "0x1999999999999999999999999999999999999991"
+  const borrowerAddress = "0x1111111111111111111111111111111111111111"
+
+  const poolCreatedEvent = createPoolCreatedEvent(tranchedPoolAddress, borrowerAddress)
+
+  mockTranchedPoolCalls(Address.fromString(tranchedPoolAddress), Address.fromString(creditLineAddress))
+  handlePoolCreated(poolCreatedEvent)
+
+  assert.notInStore("TranchedPool", tranchedPoolAddress)
+
+  clearStore()
+})

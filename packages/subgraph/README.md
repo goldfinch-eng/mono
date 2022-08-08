@@ -68,6 +68,60 @@ entity.numbers = numbers
 entity.save()
 ```
 
+### Updating event signatures
+
+If an event signature updates (meaning the parameters change), then Ethereum considers the event to be completely different. You would have to search for the event by it's old and new signatures to get a complete history. This means that some action must be taken in the subgraph mappings in order to consume all old and new events. Let's demonstrate with an example: the `Unstaked` event on `StakingRewards.sol`. Suppose that the signature updates from `Unstaked(indexed address,indexed uint256,uint256)` to `Unstaked(indexed address,indexed uint256,uint256,uint8)`. In the latest ABI for `StakingRewards.sol` (StakingRewards.json), it will list only the newest definition of `Unstaked`. In the ABI that we place in `subgraph/abis`, we have to make sure that both the old and new definition are present. Thankfully, this is actually easy to do, because the artifact file (`StakingRewards.json`) contains a `history` block that will hold the definition for the old version of this event. Therefore, we can just insert this block into `subgraph/abis/StakingRewards.json` to make it aware of the new version of `Unstaked` (assuming it already has the old version):
+```
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "enum StakingRewards.StakedPositionType",
+          "name": "positionType",
+          "type": "uint8"
+        }
+      ],
+      "name": "Unstaked",
+      "type": "event"
+    },
+```
+be sure to place this directly _after_ the old version. This will affect what the graph SDK will produce when you run `codegen`.
+
+When you run codegen, the first `Unstaked` event defined in the ABI can be imported as follows (same as before):
+```
+import { Unstaked } from "../../generated/templates/StakingRewards/StakingRewards"
+```
+The second one will be generated under the name `Unstaked1`:
+```
+import { Unstaked1 } from "../../generated/templates/StakingRewards/StakingRewards"
+```
+You must write a handler for the new `Unstaked1` (it can have the same logic as the old one, if that is desired).
+
+Finally, be sure that you add your new handler for `Unstaked1` to `subgraph.yaml` (otherwise it will never run):
+```
+- event: Unstaked(indexed address,indexed uint256,uint256,uint8)
+  handler: handleUnstaked1
+```
+
 ### Debugging
 
 Debugging on the graph should be done through logs and checking the subgraph logs:

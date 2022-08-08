@@ -30,6 +30,17 @@ npm install
 npx lerna bootstrap
 ```
 
+##### Troubleshooting
+
+If you run in to this error during `npm run bootstrap`
+```
+ENFILE: file table overflow
+```
+Try increasing the maximum number of files that can be open
+```
+ulimit -n 10240
+```
+
 ## Developing
 
 ### Smart Contract Development
@@ -38,6 +49,13 @@ All contracts are located under `packages/protocol/contracts`
 2. Write tests, which should be placed under `packages/protocol/test`
     - There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
 3. Write great commit messages, and put up your PR!
+
+#### One time setup
+We use both Foundry and Hardhat for our tests. Hardhat will already be set up, but there's some extra steps for getting Foundry prepared:
+- Install Foundry using the instructions here: https://github.com/foundry-rs/foundry
+- Once installed, run the `foundry-tool.sh` script in `packages/protocol`
+  - This will set up foundry and prepare the git submodules
+- Now you can run `forge test` in `packages/protocol`!
 
 ### Frontend Development
 - `npm run start:local`

@@ -36,6 +36,7 @@ import {
   usdcToFidu,
   decimals,
   FIDU_DECIMALS,
+  USDC_DECIMALS,
 } from "./testHelpers"
 import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
@@ -224,6 +225,13 @@ describe("StakingRewards", function () {
     } = await testSetup())
   })
 
+  beforeEach(async () => {
+    // Reset balances such that 1 FIDU underlies a single Curve LP token
+    await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS)
+    await fiduUSDCCurveLP._setBalance(1, USDC_DECIMALS)
+    await fiduUSDCCurveLP._setTotalSupply(MULTIPLIER_DECIMALS)
+  })
+
   describe("stakingAndRewardsTokenMantissa", () => {
     it("returns the expected value", async () => {
       const stakingAndRewardsTokenMantissa = await stakingRewards._getStakingAndRewardsTokenMantissa()
@@ -250,9 +258,6 @@ describe("StakingRewards", function () {
 
       // Reset the effective multiplier for the Curve to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-
-      // Reset the Curve LP token virtual price to $1.00
-      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     context("for a FIDU position", async () => {
@@ -351,7 +356,16 @@ describe("StakingRewards", function () {
         await advanceTime({seconds: yearInSeconds})
         // Need to tickle the contract so there's a new checkpoint
         await stake({amount: fiduAmount, from: investor})
-        const amountClaimable = await stakingRewards.totalOptimisticClaimable(anotherUser)
+
+        const amountClaimable = (
+          await Promise.all(
+            [...Array(await (await stakingRewards.balanceOf(anotherUser)).toNumber())].map(async (_, i) => {
+              const tokenId = await stakingRewards.tokenOfOwnerByIndex(anotherUser, i)
+              return stakingRewards.optimisticClaimable(tokenId.toString())
+            })
+          )
+        ).reduce((acc, claimable) => acc.add(new BN(claimable)), new BN(0))
+
         // In this example, the user was the only one staking, so they got all the rewards
         expect(amountClaimable).to.bignumber.equal(totalRewards)
       })
@@ -362,7 +376,15 @@ describe("StakingRewards", function () {
         await advanceTime({seconds: yearInSeconds.div(new BN(2))})
         // Need to tickle the contract so there's a new checkpoint
         await stake({amount: new BN(1), from: investor})
-        const amountClaimable = await stakingRewards.totalOptimisticClaimable(anotherUser)
+
+        const amountClaimable = (
+          await Promise.all(
+            [...Array(await (await stakingRewards.balanceOf(anotherUser)).toNumber())].map(async (_, i) => {
+              const tokenId = await stakingRewards.tokenOfOwnerByIndex(anotherUser, i)
+              return stakingRewards.optimisticClaimable(tokenId.toString())
+            })
+          )
+        ).reduce((acc, claimable) => acc.add(new BN(claimable)), new BN(0))
         expect(amountClaimable).to.bignumber.closeTo(totalRewards.div(new BN(2)), totalRewards.div(new BN(100)))
       })
     })
@@ -491,12 +513,19 @@ describe("StakingRewards", function () {
       })
 
       it("splits rewards amongst stakers proportional to their stakes with different exchange rates", async () => {
-        // Set the Curve LP token virtual price to $1.50
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(3)).div(new BN(2)))
+        const onePointFive = new BN(3).div(new BN(2))
+        const onePointFiveMultiplier = MULTIPLIER_DECIMALS.mul(onePointFive)
+
+        // Set balances such that 1.5 FIDU underlies a single Curve LP token
+        await fiduUSDCCurveLP._setBalance(0, onePointFiveMultiplier)
+        await fiduUSDCCurveLP._setTotalSupply(MULTIPLIER_DECIMALS)
+        expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
+          onePointFiveMultiplier
+        )
 
         // anotherUser stakes 1.5x more FIDU tokens than investor in Curve LP tokens
         const anotherUserToken = await stake({
-          amount: curveLPAmount.mul(new BN(3)).div(new BN(2)),
+          amount: curveLPAmount.mul(onePointFive),
           from: anotherUser,
         })
         const startTime = await time.latest()
@@ -519,6 +548,46 @@ describe("StakingRewards", function () {
         const rewardsWhenInvestorWasStaked = maxRate.mul(yearInSeconds.sub(timeDiff)).div(new BN(2))
         expectedRewards = rewardsWhenOnlyAnotherUserWasStaked.add(rewardsWhenInvestorWasStaked)
         expect(await gfi.balanceOf(anotherUser)).to.bignumber.equal(expectedRewards)
+      })
+
+      context("when the Curve pool is imbalanced", async () => {
+        it("allows staking when the Curve pool is slightly imbalanced", async () => {
+          // Set Senior Pool FIDU share price to be $1
+          await seniorPool._setSharePrice(MULTIPLIER_DECIMALS)
+
+          // Set balances such that there is 1.2 USDC for every FIDU token in the Curve pool
+          await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS)
+          await fiduUSDCCurveLP._setBalance(1, USDC_DECIMALS.mul(new BN(12)).div(new BN(10)))
+
+          await expect(stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})).to.be
+            .fulfilled
+        })
+
+        it("does not allow staking when the Curve pool has significaly more FIDU than USDC", async () => {
+          // Set Senior Pool FIDU share price to be $1
+          await seniorPool._setSharePrice(MULTIPLIER_DECIMALS)
+
+          // Set balances such that there is 0.7 USDC for every FIDU token in the Curve pool
+          await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS)
+          await fiduUSDCCurveLP._setBalance(1, USDC_DECIMALS.mul(new BN(7)).div(new BN(10)))
+
+          await expect(
+            stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+          ).to.be.rejectedWith(/IM/)
+        })
+
+        it("does not allow staking when the Curve pool has significaly more USDC than FIDU", async () => {
+          // Set Senior Pool FIDU share price to be $1
+          await seniorPool._setSharePrice(MULTIPLIER_DECIMALS)
+
+          // Set balances such that there is 1.3 USDC for every FIDU token in the Curve pool
+          await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS)
+          await fiduUSDCCurveLP._setBalance(1, USDC_DECIMALS.mul(new BN(13)).div(new BN(10)))
+
+          await expect(
+            stake({amount: curveLPAmount, positionType: StakedPositionType.CurveLP, from: investor})
+          ).to.be.rejectedWith(/IM/)
+        })
       })
     })
 
@@ -1104,7 +1173,10 @@ describe("StakingRewards", function () {
 
         await stakingRewards.approve(anotherUser, tokenId, {from: investor})
 
-        await expect(stakingRewards.unstake(tokenId, fiduAmount, {from: anotherUser})).to.not.be.rejected
+        await expectAction(() => stakingRewards.unstake(tokenId, fiduAmount, {from: anotherUser})).toChange([
+          [() => fidu.balanceOf(anotherUser), {by: fiduAmount}],
+          [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
+        ])
       })
     })
 
@@ -1115,26 +1187,6 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.unstake(tokenId, bigVal(100), {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
-
-    context("sender has ZAPPER_ROLE", async () => {
-      beforeEach(async () => {
-        await stakingRewards.initZapperRole()
-        await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), owner)
-      })
-
-      it("can unstake on behalf of a user who has approved", async () => {
-        const tokenId = await stake({amount: fiduAmount, from: investor})
-        await stakingRewards.approve(owner, tokenId, {from: investor})
-
-        await advanceTime({seconds: 10000})
-
-        // Owner has ZAPPER_ROLE and is approved by token holder
-        await expectAction(() => stakingRewards.unstake(tokenId, fiduAmount, {from: owner})).toChange([
-          [() => fidu.balanceOf(owner), {by: fiduAmount}],
-          [() => stakingRewards.totalStakedSupply(), {by: fiduAmount.neg()}],
-        ])
-      })
-    })
   })
 
   describe("addToStake", async () => {
@@ -1142,9 +1194,6 @@ describe("StakingRewards", function () {
     let totalRewards: BN
 
     beforeEach(async () => {
-      await stakingRewards.initZapperRole()
-      await stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), owner)
-
       rewardRate = bigVal(1000)
 
       // Fix the reward rate
@@ -2531,9 +2580,6 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-
-      // Reset Curve LP virtual price to $1.00
-      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("the default effective multiplier is correct", async () => {
@@ -2561,9 +2607,6 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-
-      // Reset Curve LP virtual price to $1.00
-      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("checkpoints rewards before updating the position's multiplier", async () => {
@@ -3010,10 +3053,6 @@ describe("StakingRewards", function () {
   })
 
   describe("getBaseTokenExchangeRate", async () => {
-    beforeEach(async () => {
-      await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
-    })
-
     context("for FIDU positions", async () => {
       it("is correct", async () => {
         expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.Fidu)).to.bignumber.equal(
@@ -3024,36 +3063,26 @@ describe("StakingRewards", function () {
 
     context("for Curve LP positions", async () => {
       it("is correct", async () => {
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
-        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS)
-
+        // Reset balances such that 1 FIDU underlies a single Curve LP token
+        await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS)
+        await fiduUSDCCurveLP._setTotalSupply(MULTIPLIER_DECIMALS)
         expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
           MULTIPLIER_DECIMALS
         )
 
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
-        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS.div(new BN(2)))
-
+        // Reset balances such that 2 FIDU underlies a single Curve LP token
+        await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS.mul(new BN(2)))
+        await fiduUSDCCurveLP._setTotalSupply(MULTIPLIER_DECIMALS)
         expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
           MULTIPLIER_DECIMALS.mul(new BN(2))
         )
 
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS)
-        await seniorPool._setSharePrice(MULTIPLIER_DECIMALS.mul(new BN(2)))
-
+        // Reset balances such that 0.5 FIDU underlies a single Curve LP token
+        await fiduUSDCCurveLP._setBalance(0, MULTIPLIER_DECIMALS.div(new BN(2)))
+        await fiduUSDCCurveLP._setTotalSupply(MULTIPLIER_DECIMALS)
         expect(await stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.bignumber.equal(
           MULTIPLIER_DECIMALS.div(new BN(2))
         )
-      })
-
-      it("reverts if the Curve LP token virtual price is too low", async () => {
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.div(new BN(2)))
-        await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/LOW/)
-      })
-
-      it("reverts if the Curve LP token virtual price is too high", async () => {
-        await fiduUSDCCurveLP._set_virtual_price(MULTIPLIER_DECIMALS.mul(new BN(2)))
-        await expect(stakingRewards.getBaseTokenExchangeRate(StakedPositionType.CurveLP)).to.be.rejectedWith(/HIGH/)
       })
     })
   })
@@ -3069,9 +3098,6 @@ describe("StakingRewards", function () {
 
       // Reset effective multiplier to 1x
       await stakingRewards.setEffectiveMultiplier(new BN(1).mul(MULTIPLIER_DECIMALS), StakedPositionType.CurveLP)
-
-      // Reset Curve LP virtual price to $1.00
-      await fiduUSDCCurveLP._set_virtual_price(new BN(1).mul(MULTIPLIER_DECIMALS))
     })
 
     it("sets multipliers", async () => {
@@ -3145,20 +3171,6 @@ describe("StakingRewards", function () {
           })
         ).to.be.rejectedWith(/AD/)
       })
-    })
-  })
-
-  context("initZapperRole", async () => {
-    it("is only callable by admin", async () => {
-      await expect(stakingRewards.initZapperRole({from: anotherUser})).to.be.rejectedWith(/AD/)
-      await expect(stakingRewards.initZapperRole({from: owner})).to.be.fulfilled
-    })
-
-    it("initializes ZAPPER_ROLE", async () => {
-      await stakingRewards.initZapperRole({from: owner})
-      // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
-      await expect(stakingRewards.grantRole(await stakingRewards.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be
-        .fulfilled
     })
   })
 })

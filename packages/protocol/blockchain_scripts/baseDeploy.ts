@@ -73,7 +73,7 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await deployClImplementation(deployer, {config})
 
   const gfi = await deployGFI(deployer, {config})
-  const stakingRewards = await deployLPStakingRewards(deployer, {config, deployEffects})
+  await deployLPStakingRewards(deployer, {config, deployEffects})
   const communityRewards = await deployCommunityRewards(deployer, {config, deployEffects})
   await deployMerkleDistributor(deployer, {communityRewards, deployEffects})
   await deployMerkleDirectDistributor(deployer, {gfi, deployEffects})
@@ -101,8 +101,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const zapper = await deployZapper(deployer, {config, deployEffects})
   await seniorPool.initZapperRole({from: trustedSigner})
   await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
-  await stakingRewards.initZapperRole({from: trustedSigner})
-  await stakingRewards.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
   await go.contract.initZapperRole({from: trustedSigner})
   await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})
 

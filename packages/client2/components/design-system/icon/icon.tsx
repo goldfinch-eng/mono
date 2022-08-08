@@ -1,10 +1,13 @@
 import clsx from "clsx";
 import { forwardRef } from "react";
 
+import ArrowDownCircle from "./svg/arrow-down-circle-solid.svg";
 import ArrowDown from "./svg/arrow-down.svg";
 import ArrowSmRight from "./svg/arrow-sm-right.svg";
 import ArrowTopRight from "./svg/arrow-top-right.svg";
+import ArrowUpCircle from "./svg/arrow-up-circle-solid.svg";
 import ArrowUp from "./svg/arrow-up.svg";
+import CheckmarkCircle from "./svg/checkmark-circle-solid.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
 import Discord from "./svg/discord.svg";
@@ -22,10 +25,13 @@ import X from "./svg/x.svg";
 
 export const iconManifest = {
   ArrowDown,
+  ArrowDownCircle,
   ArrowSmRight,
   ArrowTopRight,
   ArrowUp,
+  ArrowUpCircle,
   Checkmark,
+  CheckmarkCircle,
   ChevronDown,
   Discord,
   DotsHorizontal,
