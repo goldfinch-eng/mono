@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Icon, Tooltip } from "@/components/design-system";
 import { abbreviateAddress } from "@/lib/wallet";
 
@@ -8,32 +10,33 @@ interface AddressProps {
 }
 
 export function Address({ address }: AddressProps) {
-  const inner = (
-    <div className="flex items-center gap-2">
-      <Identicon account={address} className="h-6 w-6 shrink-0" />
-      <span>{abbreviateAddress(address)}</span>
-    </div>
-  );
+  const [showCopied, setShowCopied] = useState(false);
+  const copyAddress = () => {
+    navigator.clipboard.writeText(address);
+    setShowCopied(true);
+    setTimeout(() => setShowCopied(false), 3000);
+  };
 
-  if (process.env.NODE_ENV === "production") {
-    return inner;
-  }
   return (
     <Tooltip
-      useWrapper
+      placement="right"
       content={
-        <div className="flex items-center gap-2">
-          {address}
+        showCopied ? (
+          "Copied to clipboard"
+        ) : (
           <button
             className="flex items-center justify-center"
-            onClick={() => navigator.clipboard.writeText(address)}
+            onClick={copyAddress}
           >
-            <Icon name="Copy" />
+            <Icon size="sm" name="Copy" />
           </button>
-        </div>
+        )
       }
     >
-      {inner}
+      <button className="flex items-center gap-2" onClick={copyAddress}>
+        <Identicon account={address} className="h-6 w-6 shrink-0" />
+        <span>{abbreviateAddress(address)}</span>
+      </button>
     </Tooltip>
   );
 }
