@@ -1,8 +1,6 @@
 import hre from "hardhat"
-import {ContractDeployer, ContractUpgrader, getEthersContract} from "../../deployHelpers"
+import {ContractDeployer, ContractUpgrader} from "../../deployHelpers"
 import {changeImplementations, getDeployEffects} from "../deployEffects"
-import {deployTranchedPoolImplementationRepository} from "../../baseDeploy/deployTranchedPoolImplementationRepository"
-import {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers"
 
 export async function main() {
   const deployer = new ContractDeployer(console.log, hre)
@@ -11,18 +9,11 @@ export async function main() {
     title: "v2.7.1",
     description: "https://github.com/warbler-labs/mono/pull/815",
   })
-  const config = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
-  const ucuRepo = await deployTranchedPoolImplementationRepository(deployer, {config, deployEffects})
 
   // Upgrade contracts
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["Zapper", "StakingRewards", "GoldfinchFactory"],
+    contracts: ["Zapper", "StakingRewards"],
   })
-
-  // Change implementations
-  deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
-
-  const deployedContracts = {ucuRepo}
 
   // Change implementations
   deployEffects.add(
@@ -36,7 +27,6 @@ export async function main() {
   console.log("Finished v2.7.1 deploy")
   return {
     upgradedContracts,
-    deployedContracts,
   }
 }
 
