@@ -78,7 +78,7 @@ describe("destroyUser", () => {
     destroyedUsers = getDestroyedUsers(testFirestore)
   })
 
-  after(async () => {
+  after(() => {
     mockGetBlockchain(undefined)
   })
 
@@ -104,7 +104,7 @@ describe("destroyUser", () => {
     } as unknown as Request
   }
 
-  describe("with valid address and signature and block number", async () => {
+  describe("with valid address and signature and block number", () => {
     const user = {
       address: testAccount.address,
       countryCode: "ID",

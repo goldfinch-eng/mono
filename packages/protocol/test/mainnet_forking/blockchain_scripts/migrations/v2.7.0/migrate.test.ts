@@ -58,7 +58,6 @@ describe("v2.7.0", async function () {
     let usdc: ERC20Instance
 
     beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
       await setupAfterDeploy()
       poolTokens = await getEthersContract<PoolTokens>("PoolTokens")
       backerRewards = await getEthersContract<BackerRewards>("BackerRewards")

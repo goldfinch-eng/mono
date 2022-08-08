@@ -3,7 +3,7 @@ import {BaseProvider} from "@ethersproject/providers"
 import * as Sentry from "@sentry/serverless"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
 import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {ethers} from "ethers"
+import {Bytes, ethers} from "ethers"
 import * as functions from "firebase-functions"
 import {getConfig} from "./db"
 import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
@@ -145,6 +145,7 @@ export const extractHeaderValue = (req: Request, headerName: string): string | u
  * @param {Response} res The response to the request.
  * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
  * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
+
  * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
  * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
  * @return {Promise<SignatureVerificationResult>} verification result
@@ -184,7 +185,21 @@ const verifySignature = async (
     }
   }
 
-  const verifiedAddress = ethers.utils.verifyMessage(signaturePlaintext, signature)
+  let presigMessage: Bytes | string = signaturePlaintext
+  // ethers.Signer#signMessage and ethers.utils.verifyMessage accept (Bytes | string) for their `message` input.
+  // The Bytes should be represented as a valid array of uints representing uint8s.
+  // The strings should represent UTF-8 encoded text.
+  try {
+    const intArray = signaturePlaintext.split(",").map((ele) => Number(ele))
+    if (intArray.every((ele) => ele < 256 && ele >= 0)) {
+      presigMessage = intArray as Bytes
+    }
+    console.debug("signaturePlaintext is a valid Uint8Array - it will be evaluated as a Uint8Array")
+  } catch (e) {
+    console.debug("signaturePlaintext is not a valid Uint8Array - it will be evaluated as a string")
+  }
+
+  const verifiedAddress = ethers.utils.verifyMessage(presigMessage, signature)
 
   console.debug(`address received: ${address}, address verified: ${verifiedAddress}`)
   if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
@@ -225,7 +240,7 @@ const verifySignature = async (
  * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
  * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
  * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
- * @param {string[]} allowedSigners the list of allowed signers
+ * @param {Array<string>} allowedSigners the list of allowed signers
  * @return {Promise<SignatureVerificationResult>} verification result
  */
 const verifySignatureAndAllowList = async (
@@ -247,7 +262,11 @@ const verifySignatureAndAllowList = async (
 
   // Checksum all the addresses to disambiguate
   const signerAddress = ethers.utils.getAddress(signatureVerification.address)
-  allowedSigners = allowedSigners.map(ethers.utils.getAddress)
+  allowedSigners = await Promise.all(
+    allowedSigners.map(async (allowedSigner) => {
+      return ethers.utils.getAddress(await allowedSigner)
+    }),
+  )
 
   const signerProhibited = allowedSigners.indexOf(signerAddress) === -1
   if (signerProhibited) {

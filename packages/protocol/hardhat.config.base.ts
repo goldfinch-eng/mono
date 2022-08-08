@@ -36,7 +36,7 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper
   // Specifically: foundry uses git submodules to pull in dependencies, but hardhat requires
   // any imported dependency to have a corresponding node module. We are explicitly making
   // hardhat not import any foundry file to avoid this issue.
-  return paths.filter((p) => !p.endsWith(".t.sol"))
+  return paths.filter((p: any) => !p.endsWith(".t.sol"))
 })
 
 export default {
