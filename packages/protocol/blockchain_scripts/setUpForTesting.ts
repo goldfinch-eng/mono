@@ -14,7 +14,6 @@ import _ from "lodash"
 import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import {
   assertIsChainId,
-  ContractDeployer,
   FIDU_DECIMALS,
   getEthersContract,
   getProtocolOwner,
@@ -508,7 +507,6 @@ async function writePoolMetadata({
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget mi fringilla, maximus quam sodales, condimentum arcu. Vivamus arcu lorem, ultrices at ligula ut, tempor consectetur nibh. Vivamus commodo felis eu urna facilisis, feugiat gravida lectus egestas. Suspendisse consectetur urna at ornare lacinia. Etiam erat nunc, interdum sed gravida at, condimentum in metus. Mauris at sagittis libero."
   const detailsUrl = "https://example.com"
   const NDAUrl = "https://example.com"
-  const status = [false, true, undefined]
 
   const metadataPath = "../../packages/pools/metadata/localhost.json"
   const metadataPathForClient2 = "../../packages/client2/constants/metadata/localhost.json"

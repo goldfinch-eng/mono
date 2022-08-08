@@ -1,7 +1,7 @@
 import {keccak256} from "@ethersproject/keccak256"
 import {pack} from "@ethersproject/solidity"
 import {BigNumber} from "ethers"
-import {arrayify} from "@ethersproject/bytes"
+import {arrayify, BytesLike} from "@ethersproject/bytes"
 
 // This is the address of the Unique Identity Signer, a relayer on
 // Defender. It has the SIGNER_ROLE on UniqueIdentity and therefore
@@ -16,7 +16,7 @@ export const UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS = "0x125cde169191c6c6c5e71c4
  * @param nonce  - The uint256 nonce associated with the approved msg.sender for UniqueIdentity actions
  * @param chainId - The ID of the chain the UID will be minted on
  * @description - Generates the arrayified hash of the parameters for a mint/mintTo signature - should be signed by an address with the UNIQUE_IDENTITY_SIGNER role to be valid
- * @returns {Uint8Array} - The arrayified hash of the signature input elements
+ * @returns {BytesLike} - The arrayified hash of the signature input elements
  */
 export const presignedMintToMessage = (
   fromAddress: string,
@@ -26,7 +26,7 @@ export const presignedMintToMessage = (
   uniqueIdentityAddress: string,
   nonce: BigNumber | number,
   chainId: number
-): Uint8Array => {
+): BytesLike => {
   const extraTypes = ["address", "uint256", "uint256"]
   const extraValues = [toAddress, tokenId, expiresAt]
   return presignedUidMessage(fromAddress, extraTypes, extraValues, uniqueIdentityAddress, nonce, chainId)
@@ -39,7 +39,7 @@ export const presignedMintToMessage = (
  * @param nonce  - The uint256 nonce associated with the approved msg.sender for the mint, or the token holder for a burn.
  * @param chainId - The ID of the chain the UID will be burned/minted on
  * @description - Generates the arrayified hash of the parameters for a mint/burn signature - should be signed by an address with the UNIQUE_IDENTITY_SIGNER role to be valid. Equivalent functionality to presignedBurnMessage.
- * @returns {Uint8Array} - The arrayified hash of the signature input elements
+ * @returns {BytesLike} - The arrayified hash of the signature input elements
  */
 export const presignedMintMessage = (
   fromAddress: string,
@@ -48,7 +48,7 @@ export const presignedMintMessage = (
   uniqueIdentityAddress: string,
   nonce: BigNumber | number,
   chainId: number
-): Uint8Array => {
+): BytesLike => {
   const extraTypes = ["uint256", "uint256"]
   const extraValues = [tokenId, expiresAt]
   return presignedUidMessage(fromAddress, extraTypes, extraValues, uniqueIdentityAddress, nonce, chainId)
@@ -63,7 +63,7 @@ const presignedUidMessage = (
   uniqueIdentityAddress: string,
   nonce: BigNumber | number,
   chainId: number
-): Uint8Array => {
+): BytesLike => {
   if (extraTypes.length !== extraValues.length) {
     throw new Error("Length of extraTypes and extraValues must match")
   }

@@ -8,6 +8,7 @@ import {Signer} from "ethers"
 import {assertNonNullable, presignedBurnMessage, presignedMintMessage} from "@goldfinch-eng/utils"
 import {impersonateAccount} from "../../blockchain_scripts/helpers/impersonateAccount"
 import {fundWithWhales} from "../../blockchain_scripts/helpers/fundWithWhales"
+import * as migrate280 from "../../blockchain_scripts/migrations/v2.8.0/migrate"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 
 // Ideally, we reference this this directly with @goldfinch-eng/autotasks, but that currently
@@ -82,6 +83,7 @@ describe("UID", () => {
 
     await uniqueIdentity.grantRole(OWNER_ROLE, owner, {from: await getProtocolOwner()})
     await uniqueIdentity.grantRole(SIGNER_ROLE, await signer.getAddress(), {from: await getProtocolOwner()})
+    await migrate280.main()
   })
 
   describe("KYC is eligible", () => {

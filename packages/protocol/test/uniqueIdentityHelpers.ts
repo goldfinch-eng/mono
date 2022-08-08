@@ -9,10 +9,11 @@ import {BigNumber, constants as ethersConstants} from "ethers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 
 export const MINT_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256", "address"]
+export const BURN_MESSAGE_ELEMENT_TYPES = MINT_MESSAGE_ELEMENT_TYPES
+export const MINT_TO_MESSAGE_ELEMENT_TYPES = ["address", "address", "uint256", "uint256", "address"]
+
 export const EMPTY_STRING_HEX = web3.utils.asciiToHex("")
 export const MINT_PAYMENT = new BN(0.00083e18)
-
-export const BURN_MESSAGE_ELEMENT_TYPES = ["address", "uint256", "uint256", "address"]
 
 export const sign = async (
   hre: HardhatRuntimeEnvironment,
@@ -21,7 +22,7 @@ export const sign = async (
   nonce: BN,
   overrideChainId?: BN
 ): Promise<string> => {
-  const signer = (await hre.ethers.getSigners()).find((signer) => signer.address === signerAddress)
+  const signer = await hre.ethers.provider.getSigner(signerAddress)
   assertNonNullable(signer)
 
   if (messageBaseElements.types.length !== messageBaseElements.values.length) {
@@ -67,7 +68,6 @@ export async function mint(
 ): Promise<void> {
   const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
   const tokenBalanceBefore = await uniqueIdentity.balanceOf(overrideFrom as string, tokenId)
-
   const messageElements: [string, BN, BN, string] = [overrideFrom as string, tokenId, expiresAt, uniqueIdentity.address]
   const signature = await sign(
     hre,
@@ -76,15 +76,11 @@ export async function mint(
     nonce,
     overrideChainId
   )
-
   const defaultMintParams: MintParams = [tokenId, expiresAt]
   const mintParams: MintParams = overrideMintParams || defaultMintParams
 
-  const defaultFrom = overrideFrom
-  const from = overrideFrom || defaultFrom
-
   const receipt = await uniqueIdentity.mint(...mintParams, signature, {
-    from,
+    from: overrideFrom as string,
     value: MINT_PAYMENT,
   })
 
@@ -102,9 +98,70 @@ export async function mint(
   const transferEvent = getOnlyLog<TransferSingle>(
     decodeLogs(receipt.receipt.rawLogs, uniqueIdentity, "TransferSingle")
   )
-  expect(transferEvent.args.operator).to.equal(from)
+  expect(transferEvent.args.operator).to.equal(overrideFrom)
   expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
   expect(transferEvent.args.to).to.equal(overrideFrom as string)
+  expect(transferEvent.args.id).to.bignumber.equal(tokenId)
+  expect(transferEvent.args.value).to.bignumber.equal(new BN(1))
+}
+
+export type MintToParams = [string, BN, BN]
+export async function mintTo(
+  hre: HardhatRuntimeEnvironment,
+  uniqueIdentity: TestUniqueIdentityInstance,
+  recipientAddress: string,
+  tokenId: BN,
+  expiresAt: BN,
+  nonce: BN,
+  signer: string,
+  from: string,
+  overrideMintToParams?: MintToParams,
+  overrideChainId?: BN
+): Promise<void> {
+  const contractBalanceBefore = await web3.eth.getBalance(uniqueIdentity.address)
+  const tokenBalanceBefore = await uniqueIdentity.balanceOf(recipientAddress, tokenId)
+
+  const messageElements: [string, string, BN, BN, string] = [
+    from,
+    recipientAddress,
+    tokenId,
+    expiresAt,
+    uniqueIdentity.address,
+  ]
+
+  const signature = await sign(
+    hre,
+    signer,
+    {types: MINT_TO_MESSAGE_ELEMENT_TYPES, values: messageElements},
+    nonce,
+    overrideChainId
+  )
+
+  const defaultMintToParams: MintToParams = [recipientAddress, tokenId, expiresAt]
+  const mintToParams: MintToParams = overrideMintToParams || defaultMintToParams
+
+  const receipt = await uniqueIdentity.mintTo(...mintToParams, signature, {
+    from,
+    value: MINT_PAYMENT,
+  })
+
+  // Verify contract state.
+  const contractBalanceAfter = await web3.eth.getBalance(uniqueIdentity.address)
+  expect(new BN(contractBalanceAfter).sub(new BN(contractBalanceBefore))).to.bignumber.equal(MINT_PAYMENT)
+
+  const tokenBalanceAfter = await uniqueIdentity.balanceOf(recipientAddress, tokenId)
+  expect(tokenBalanceAfter.sub(tokenBalanceBefore)).to.bignumber.equal(new BN(1))
+  expect(tokenBalanceAfter).to.bignumber.equal(new BN(1))
+
+  expect(await uniqueIdentity.nonces(from)).to.bignumber.equal(nonce.add(new BN(1)))
+
+  // Verify that event was emitted.
+  const transferEvent = getOnlyLog<TransferSingle>(
+    decodeLogs(receipt.receipt.rawLogs, uniqueIdentity, "TransferSingle")
+  )
+  expect(transferEvent.args.operator).to.equal(from)
+  expect(transferEvent.args.from).to.equal(ethersConstants.AddressZero)
+  expect(transferEvent.args.to).to.equal(recipientAddress)
   expect(transferEvent.args.id).to.bignumber.equal(tokenId)
   expect(transferEvent.args.value).to.bignumber.equal(new BN(1))
 }
