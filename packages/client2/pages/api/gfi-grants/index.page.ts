@@ -50,6 +50,35 @@ const merkleDirectDistributorFiles: (keyof typeof fileToSource)[] =
         "./backerMerkleDirectDistributorInfo.dev.json",
       ];
 
+const filesToSearch = merkleDistributorFiles.concat(
+  merkleDirectDistributorFiles
+);
+
+const fileData = filesToSearch.map((file) => {
+  const pathname = path.resolve(`${process.cwd()}/pages/api/gfi-grants`, file);
+  const grantManifest: GrantManifest = JSON.parse(
+    fs.readFileSync(pathname, "utf-8")
+  );
+  return { file, grantManifest };
+});
+
+function findMatchingGrants(account: string): GrantWithSource[] {
+  let allMatchingGrants: GrantWithSource[] = [];
+  for (const { file, grantManifest } of fileData) {
+    const matchingGrants = grantManifest.grants.filter(
+      (grant) => grant.account.toLowerCase() === account.toLowerCase()
+    );
+    allMatchingGrants = allMatchingGrants.concat(
+      matchingGrants.map((g) => ({
+        source: fileToSource[file as keyof typeof fileToSource],
+        ...g,
+      }))
+    );
+  }
+
+  return allMatchingGrants;
+}
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const account = (req.query as ExpectedQuery).account;
   if (!account) {
@@ -59,15 +88,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
   try {
-    const filesToSearch = merkleDistributorFiles.concat(
-      merkleDirectDistributorFiles
-    );
-    const matchingGrants = (
-      await Promise.all(
-        filesToSearch.map((file) => findMatchingGrants(account, file))
-      )
-    ).flat();
-
+    const matchingGrants = findMatchingGrants(account);
     res.status(200).json({ account, matchingGrants });
   } catch (e) {
     res
@@ -75,22 +96,5 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       .json({ message: `Error searching grants: ${(e as Error).message}` });
   }
 };
-
-async function findMatchingGrants(
-  account: string,
-  file: string
-): Promise<GrantWithSource[]> {
-  const pathname = path.resolve(`${process.cwd()}/pages/api/gfi-grants`, file);
-  const grantManifest: GrantManifest = JSON.parse(
-    await fs.promises.readFile(pathname, "utf8")
-  );
-  const matchingGrants = grantManifest.grants.filter(
-    (grant) => grant.account.toLowerCase() === account.toLowerCase()
-  );
-  return matchingGrants.map((g) => ({
-    source: fileToSource[file as keyof typeof fileToSource],
-    ...g,
-  }));
-}
 
 export default withSentry(handler);
