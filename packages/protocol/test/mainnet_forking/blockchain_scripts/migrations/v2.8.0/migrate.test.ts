@@ -7,13 +7,14 @@ import {assertIsString} from "packages/utils/src/type"
 import {impersonateAccount} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/impersonateAccount"
 import * as migrate280 from "@goldfinch-eng/protocol/blockchain_scripts/migrations/v2.8.0/migrate"
 import {MINT_PAYMENT} from "../../../../uniqueIdentityHelpers"
+import {TransferSingle} from "packages/protocol/typechain/truffle/TestUniqueIdentity"
 import {TEST_TIMEOUT} from "../../../MainnetForking.test"
+import {BN, decodeLogs, getOnlyLog} from "packages/protocol/test/testHelpers"
 import {
   getCurrentTimestamp,
   getDeployedAsTruffleContract,
   SECONDS_PER_DAY,
 } from "@goldfinch-eng/protocol/test/testHelpers"
-import {getExistingContracts} from "@goldfinch-eng/protocol/blockchain_scripts/deployHelpers/getExistingContracts"
 import {MAINNET_GOVERNANCE_MULTISIG} from "@goldfinch-eng/protocol/blockchain_scripts/mainnetForkingHelpers"
 import {
   presignedMintMessage,
@@ -21,10 +22,9 @@ import {
   presignedBurnMessage,
 } from "packages/utils/src/uniqueIdentityHelpers"
 import {UniqueIdentityInstance} from "@goldfinch-eng/protocol/typechain/truffle"
+import BigNumber from "bignumber.js"
 
 const setupTest = deployments.createFixture(async () => {
-  // await deployments.fixture("base_deploy", {keepExistingDeployments: true})
-
   const {gf_deployer} = await getNamedAccounts()
   assertIsString(gf_deployer)
 
@@ -48,7 +48,6 @@ const setupTest = deployments.createFixture(async () => {
 
   const uniqueIdentityDeploy = await getDeployedAsTruffleContract<UniqueIdentityInstance>(deployments, "UniqueIdentity")
   const uniqueIdentity = await ethers.getContractAt(uniqueIdentityDeploy.abi, uniqueIdentityDeploy.address)
-  // const uniqueIdentity = await artifacts.require("UniqueIdentity").at(existingUniqueIdentity.address)
 
   const protocolOwnerSigner = await hre.ethers.getSigner(protocolOwner)
   await uniqueIdentity.connect(protocolOwnerSigner).grantRole(OWNER_ROLE, owner)
@@ -96,11 +95,22 @@ describe("v2.8.0", async function () {
         1
       )
       const mintSig = signer.signMessage(presignedMint)
-      await expect(
-        uniqueIdentity.connect(hre.ethers.provider.getSigner(anotherUser2)).mint(tokenId, timestamp, mintSig, {
+      const txResponse = await uniqueIdentity
+        .connect(hre.ethers.provider.getSigner(anotherUser2))
+        .mint(tokenId, timestamp, mintSig, {
           value: MINT_PAYMENT.toNumber(),
         })
-      ).to.be.fulfilled
+      const receipt = await txResponse.wait()
+
+      // Verify that event was emitted.
+      const transferEvent = receipt.events[0]
+      expect(transferEvent.event).to.eq("TransferSingle")
+      expect(transferEvent.args[0]).to.equal(anotherUser2) // operator
+      expect(transferEvent.args[1]).to.equal(ethers.constants.AddressZero) // from
+      expect(transferEvent.args[2]).to.equal(anotherUser2) // recipient
+      expect(transferEvent.args[3].toString()).equal(tokenId.toString()) // tokenId
+      expect(transferEvent.args[4].toString()).equal("1") // value
+
       expect((await uniqueIdentity.balanceOf(anotherUser2, tokenId)).toString()).to.eq("1")
       const nonce2 = await uniqueIdentity.nonces(anotherUser2)
       const presignedBurn = await presignedBurnMessage(
@@ -135,14 +145,25 @@ describe("v2.8.0", async function () {
         1
       )
       const mintToSig = signer.signMessage(presignedMintTo)
-      await expect(
-        uniqueIdentity
-          .connect(hre.ethers.provider.getSigner(anotherUser2))
-          .mintTo(anotherUser, tokenId, timestamp, mintToSig, {
-            value: MINT_PAYMENT.toNumber(),
-          })
-      ).to.be.fulfilled
+      const txResponse = await uniqueIdentity
+        .connect(hre.ethers.provider.getSigner(anotherUser2))
+        .mintTo(anotherUser, tokenId, timestamp, mintToSig, {
+          value: MINT_PAYMENT.toNumber(),
+        })
+      const receipt = await txResponse.wait()
+
       expect((await uniqueIdentity.balanceOf(anotherUser, tokenId)).toString()).to.eq("1")
+
+      // Verify that event was emitted.
+
+      const transferEvent = receipt.events[0]
+      expect(transferEvent.event).to.eq("TransferSingle")
+      expect(transferEvent.args[0]).to.equal(anotherUser2) // operator
+      expect(transferEvent.args[1]).to.equal(ethers.constants.AddressZero) // from
+      expect(transferEvent.args[2]).to.equal(anotherUser) // recipient
+      expect(transferEvent.args[3].toString()).to.equal(tokenId.toString()) // tokenId
+      expect(transferEvent.args[4].toString()).to.equal("1") // value
+
       const nonce2 = await uniqueIdentity.nonces(anotherUser)
       const presignedBurn = await presignedBurnMessage(
         anotherUser,

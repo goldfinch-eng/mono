@@ -16,6 +16,7 @@ import {
   KYC,
   FetchKYCFunction,
   caseInsensitiveIncludes,
+  presignedBurnMessage,
 } from "@goldfinch-eng/utils"
 
 const {deployments, web3} = hardhat
@@ -23,7 +24,6 @@ import * as uniqueIdentitySigner from "../unique-identity-signer"
 import {TestUniqueIdentityInstance} from "packages/protocol/typechain/truffle"
 import {UniqueIdentity} from "packages/protocol/typechain/ethers"
 import {UNIQUE_IDENTITY_ABI} from "../unique-identity-signer"
-import {presignedBurnMessage} from "@goldfinch-eng/utils"
 import axios from "axios"
 
 const TEST_TIMEOUT = 30000
@@ -405,7 +405,7 @@ describe("unique-identity-signer", () => {
             // mint non-accredited investor
             await uniqueIdentity.mint(usNonAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
-              value: web3.utils.toWei("0.00083"),
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
             })
 
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
@@ -447,7 +447,7 @@ describe("unique-identity-signer", () => {
             // mint non-accredited investor
             await uniqueIdentity.mintTo(anotherUser2, usNonAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
-              value: web3.utils.toWei("0.00083"),
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
             })
 
             expect(await uniqueIdentity.balanceOf(anotherUser2, nonUSIdType)).to.bignumber.eq(new BN(0))
@@ -492,7 +492,7 @@ describe("unique-identity-signer", () => {
             // mint accredited investor
             await uniqueIdentity.mint(usAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
-              value: web3.utils.toWei("0.00083"),
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
             })
             expect(await uniqueIdentity.balanceOf(anotherUser, nonUSIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser, usAccreditedIdType)).to.bignumber.eq(new BN(1))
@@ -530,7 +530,7 @@ describe("unique-identity-signer", () => {
             // mint accredited investor
             await uniqueIdentity.mintTo(anotherUser2, usAccreditedIdType, result.expiresAt, result.signature, {
               from: anotherUser,
-              value: web3.utils.toWei("0.00083"),
+              value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
             })
             expect(await uniqueIdentity.balanceOf(anotherUser2, nonUSIdType)).to.bignumber.eq(new BN(0))
             expect(await uniqueIdentity.balanceOf(anotherUser2, usAccreditedIdType)).to.bignumber.eq(new BN(1))
@@ -573,7 +573,7 @@ describe("unique-identity-signer", () => {
 
           await uniqueIdentity.mint(0, result.expiresAt, result.signature, {
             from: anotherUser,
-            value: web3.utils.toWei("0.00083"),
+            value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
           })
           expect(await uniqueIdentity.balanceOf(anotherUser, 0)).to.bignumber.eq(new BN(1))
           expect(await uniqueIdentity.balanceOf(anotherUser, 1)).to.bignumber.eq(new BN(0))
@@ -616,7 +616,7 @@ describe("unique-identity-signer", () => {
 
           await uniqueIdentity.mintTo(anotherUser2, 0, result.expiresAt, result.signature, {
             from: anotherUser,
-            value: web3.utils.toWei("0.00083"),
+            value: await uniqueIdentity.MINT_COST_PER_TOKEN(),
           })
           expect(await uniqueIdentity.balanceOf(anotherUser2, 0)).to.bignumber.eq(new BN(1))
           expect(await uniqueIdentity.balanceOf(anotherUser2, 1)).to.bignumber.eq(new BN(0))
