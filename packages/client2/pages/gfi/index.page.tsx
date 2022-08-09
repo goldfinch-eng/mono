@@ -41,7 +41,7 @@ gql`
       ...BackerCardTokenFields
     }
     seniorPoolStakedPositions(
-      where: { user: $userId, positionType: Fidu }
+      where: { user: $userId }
       orderBy: startTime
       orderDirection: asc
     ) {

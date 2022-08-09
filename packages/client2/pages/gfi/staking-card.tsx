@@ -7,6 +7,7 @@ import { Button, Form } from "@/components/design-system";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
+  StakedPositionType,
   StakingCardPositionFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
@@ -27,6 +28,7 @@ export const STAKING_CARD_STAKED_POSITION_FIELDS = gql`
     initialAmount
     amount
     totalRewardsClaimed
+    positionType
     rewardEarnRate @client
     claimable @client
     granted @client
@@ -40,6 +42,10 @@ interface StakingCardProps {
 }
 
 export function StakingCard({ position }: StakingCardProps) {
+  const stakedToken =
+    position.positionType === StakedPositionType.Fidu
+      ? SupportedCrypto.Fidu
+      : SupportedCrypto.FiduUsdcCurveLp;
   const unlocked = position.claimable.add(position.totalRewardsClaimed);
   const locked = position.granted.sub(unlocked);
 
@@ -59,7 +65,7 @@ export function StakingCard({ position }: StakingCardProps) {
   return (
     <RewardCardScaffold
       heading={`Staked ${formatCrypto(
-        { token: SupportedCrypto.Fidu, amount: position.initialAmount },
+        { token: stakedToken, amount: position.initialAmount },
         { includeToken: true }
       )}`}
       subheading={`${formatCrypto(
@@ -87,13 +93,13 @@ export function StakingCard({ position }: StakingCardProps) {
           <Detail
             heading="Transaction details"
             body={`Staked ${formatCrypto(
-              { token: SupportedCrypto.Fidu, amount: position.initialAmount },
+              { token: stakedToken, amount: position.initialAmount },
               { includeToken: true }
             )} on ${format(
               position.startTime.mul(1000).toNumber(),
               "MMM d, y"
             )} (${formatCrypto(
-              { token: SupportedCrypto.Fidu, amount: position.amount },
+              { token: stakedToken, amount: position.amount },
               { includeToken: true }
             )} remaining)`}
           />

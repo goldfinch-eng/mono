@@ -1,6 +1,11 @@
 import { utils } from "ethers";
 
-import { USDC_DECIMALS, GFI_DECIMALS, FIDU_DECIMALS } from "@/constants";
+import {
+  USDC_DECIMALS,
+  GFI_DECIMALS,
+  FIDU_DECIMALS,
+  FIDU_USDC_CURVE_LP_DECIMALS,
+} from "@/constants";
 
 import {
   CryptoAmount,
@@ -46,6 +51,11 @@ export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
         utils.formatUnits(cryptoAmount.amount, FIDU_DECIMALS)
       );
       return fiduAsFloat;
+    case SupportedCrypto.FiduUsdcCurveLp:
+      const curveLpAsFloat = parseFloat(
+        utils.formatUnits(cryptoAmount.amount, FIDU_USDC_CURVE_LP_DECIMALS)
+      );
+      return curveLpAsFloat;
     default:
       const token: never = cryptoAmount.token;
       throw new Error(`Unrecognized crypto (${token}) in cryptoToFloat()`);
@@ -85,4 +95,5 @@ const tokenMap: Record<SupportedCrypto, string> = {
   [SupportedCrypto.Usdc]: "USDC",
   [SupportedCrypto.Gfi]: "GFI",
   [SupportedCrypto.Fidu]: "FIDU",
+  [SupportedCrypto.FiduUsdcCurveLp]: "FIDU-USDC-F",
 };
