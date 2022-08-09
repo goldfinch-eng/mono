@@ -19,7 +19,7 @@ let deployedDevABIs: any
 try {
   deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
 } catch (e) {
-  console.log("'@goldfinch-eng/protocol/deployments/all_dev.json' does not exist in this environment.")
+  console.debug("'@goldfinch-eng/protocol/deployments/all_dev.json' does not exist in this environment.")
 }
 
 const getUniqueIdentityDeployment = (chainId: number) => {
