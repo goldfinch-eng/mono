@@ -13,7 +13,6 @@ const devDeployments = JSON.parse(
 const localhostContracts = devDeployments["31337"].localhost.contracts
 const deployedSeniorPoolProxyAddress = localhostContracts.SeniorPool_Proxy.address
 const deployedGoldfinchFactoryProxyAddress = localhostContracts.GoldfinchFactory_Proxy.address
-const deployedPoolProxyAddress = localhostContracts.Pool_Proxy.address
 const deployedPoolTokensProxyAddress = localhostContracts.PoolTokens_Proxy.address
 const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.address
 const deployedFiduAddress = localhostContracts.Fidu.address
@@ -38,9 +37,6 @@ for (let dataSource of subgraphManifest.dataSources) {
       break
     case "GoldfinchFactoryProxy":
       dataSource.source.address = deployedGoldfinchFactoryProxyAddress
-      break
-    case "PoolProxy":
-      dataSource.source.address = deployedPoolProxyAddress
       break
     case "PoolTokensProxy":
       dataSource.source.address = deployedPoolTokensProxyAddress
