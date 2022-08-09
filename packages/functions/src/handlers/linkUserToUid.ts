@@ -18,9 +18,8 @@ import UNIQUE_IDENTITY_MAINNET_DEPLOYMENT from "@goldfinch-eng/protocol/deployme
 let deployedDevABIs: any
 try {
   deployedDevABIs = require("@goldfinch-eng/protocol/deployments/all_dev.json")
-} catch (e) {
-  console.debug("'@goldfinch-eng/protocol/deployments/all_dev.json' does not exist in this environment.")
-}
+  // eslint-disable-next-line no-empty
+} catch (_) {}
 
 const getUniqueIdentityDeployment = (chainId: number) => {
   if (chainId === 1) {
