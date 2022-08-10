@@ -1,6 +1,7 @@
 import { assertUnreachable, ArrayItem } from "@goldfinch-eng/utils";
 
 import {
+  AmountToken,
   BorrowerTransactionsQuery,
   CurrentUserTransactionsQuery,
   SupportedCrypto,
