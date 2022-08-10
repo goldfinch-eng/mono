@@ -34,6 +34,11 @@ export function handleStaked(event: Staked): void {
   }
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE")
+  transaction.amount = event.params.amount
+  transaction.user = event.params.user.toHexString()
+  transaction.save()
 }
 
 // Note that Unstaked and Unstaked1 refer to two different versions of this event with different signatures.
@@ -44,6 +49,11 @@ export function handleUnstaked(event: Unstaked): void {
   stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE")
+  transaction.amount = event.params.amount
+  transaction.user = event.params.user.toHexString()
+  transaction.save()
 }
 
 export function handleUnstaked1(event: Unstaked1): void {
@@ -53,6 +63,11 @@ export function handleUnstaked1(event: Unstaked1): void {
   stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE")
+  transaction.amount = event.params.amount
+  transaction.user = event.params.user.toHexString()
+  transaction.save()
 }
 
 export function handleTransfer(event: Transfer): void {

@@ -23,8 +23,10 @@ gql`
           TRANCHED_POOL_REPAYMENT
           SENIOR_POOL_DEPOSIT
           SENIOR_POOL_DEPOSIT_AND_STAKE
+          SENIOR_POOL_STAKE
           SENIOR_POOL_WITHDRAWAL
           SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
+          SENIOR_POOL_UNSTAKE
         ]
       }
       orderBy: timestamp
