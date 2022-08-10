@@ -284,6 +284,12 @@ enum TransactionCategory {
   UID_MINTED
 }
 
+enum AmountToken {
+  USDC
+  FIDU
+  CURVE_LP
+}
+
 type Transaction @entity(immutable: true) {
   """
   This is a concatenation of transaction hash with log index. One transaction can result in more than one of this entity.
@@ -295,6 +301,7 @@ type Transaction @entity(immutable: true) {
   timestamp: Int!
   blockNumber: Int!
   amount: BigInt!
+  amountToken: AmountToken!
   tranchedPool: TranchedPool
 }
 

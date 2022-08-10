@@ -14,10 +14,14 @@ import { formatCrypto } from "@/lib/format";
 import {
   useTranchedPoolTransactionTableQuery,
   TransactionCategory,
-  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
 import { abbreviateAddress } from "@/lib/wallet";
+
+import {
+  reduceOverlappingEventsToNonOverlappingTxs,
+  supportedCryptoTokenByTxAmountToken,
+} from "../../../lib/tx";
 
 gql`
   query TranchedPoolTransactionTable(
@@ -39,6 +43,7 @@ gql`
       }
       category
       amount
+      amountToken
       timestamp
       tranchedPool {
         id
@@ -55,7 +60,7 @@ interface TransactionTableProps {
   tranchedPoolId: string;
 }
 
-const subtractiveTransactionCategories = [
+const subtractiveIconTransactionCategories = [
   TransactionCategory.TranchedPoolWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
   TransactionCategory.SeniorPoolRedemption,
@@ -67,8 +72,12 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
       variables: { tranchedPoolId, first: 20, skip: 0 },
     });
 
+  const filteredTxs = data?.transactions
+    ? reduceOverlappingEventsToNonOverlappingTxs(data.transactions)
+    : [];
+
   const rows =
-    data?.transactions.map((transaction) => {
+    filteredTxs.map((transaction) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const borrower = transaction.tranchedPool!.borrower;
 
@@ -104,11 +113,11 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         );
 
       const amount =
-        (subtractiveTransactionCategories.includes(transaction.category)
+        (subtractiveIconTransactionCategories.includes(transaction.category)
           ? "-"
           : "+") +
         formatCrypto({
-          token: SupportedCrypto.Usdc,
+          token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
           amount: transaction.amount,
         });
 

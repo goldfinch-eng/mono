@@ -7,10 +7,12 @@ import { formatCrypto } from "@/lib/format";
 import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
-  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
-import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
+import {
+  reduceOverlappingEventsToNonOverlappingTxs,
+  supportedCryptoTokenByTxAmountToken,
+} from "@/lib/tx";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -26,6 +28,7 @@ gql`
       transactionHash
       category
       amount
+      amountToken
       timestamp
       tranchedPool {
         id
@@ -34,8 +37,9 @@ gql`
   }
 `;
 
-const subtractiveTransactionCategories = [
+const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolRedemption,
+  TransactionCategory.SeniorPoolUnstake,
   TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
   TransactionCategory.SeniorPoolWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
@@ -60,11 +64,11 @@ export function TransactionTable() {
   const rows = filteredTxs.map((transaction) => {
     const amount =
       transaction.amount && !transaction.amount.isZero()
-        ? (subtractiveTransactionCategories.includes(transaction.category)
+        ? (subtractiveIconTransactionCategories.includes(transaction.category)
             ? "-"
             : "+") +
           formatCrypto({
-            token: SupportedCrypto.Usdc, // TODO Make this conditional
+            token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
             amount: transaction.amount,
           })
         : null;

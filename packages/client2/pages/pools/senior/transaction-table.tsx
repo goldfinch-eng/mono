@@ -7,12 +7,16 @@ import { Link, Table } from "@/components/design-system";
 import { Identicon } from "@/components/identicon";
 import { formatCrypto } from "@/lib/format";
 import {
-  SupportedCrypto,
   TransactionCategory,
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
 import { abbreviateAddress } from "@/lib/wallet";
+
+import {
+  reduceOverlappingEventsToNonOverlappingTxs,
+  supportedCryptoTokenByTxAmountToken,
+} from "../../../lib/tx";
 
 gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
@@ -41,6 +45,7 @@ gql`
       }
       timestamp
       amount
+      amountToken
       category
       tranchedPool {
         id
@@ -55,9 +60,9 @@ gql`
   }
 `;
 
-// Transaction categories that take money out of the senior pool
-const subtractiveTransactionCategories = [
+const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolWithdrawal,
+  TransactionCategory.SeniorPoolUnstake,
   TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
 ];
@@ -68,15 +73,19 @@ export function TransactionTable() {
     variables: { first: 20, skip: 0 },
   });
 
+  const filteredTxs = data?.transactions
+    ? reduceOverlappingEventsToNonOverlappingTxs(data.transactions)
+    : [];
+
   const transactions =
-    data?.transactions.map((transaction) => {
+    filteredTxs.map((transaction) => {
       const date = new Date(transaction.timestamp * 1000);
       const transactionAmount =
-        (subtractiveTransactionCategories.includes(transaction.category)
+        (subtractiveIconTransactionCategories.includes(transaction.category)
           ? "-"
           : "+") +
         formatCrypto({
-          token: SupportedCrypto.Usdc,
+          token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
           amount: transaction.amount,
         });
 

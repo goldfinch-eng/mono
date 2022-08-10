@@ -1,7 +1,10 @@
-import { assertUnreachable } from "@goldfinch-eng/utils";
+import { assertUnreachable, ArrayItem } from "@goldfinch-eng/utils";
 
 import {
+  BorrowerTransactionsQuery,
   CurrentUserTransactionsQuery,
+  SupportedCrypto,
+  TranchedPoolTransactionTableQuery,
   TransactionCategory,
 } from "../graphql/generated";
 
@@ -23,9 +26,15 @@ type OverlapAccumulator = {
  * Currently, we define "suitable" to mean that the result set returned by this function contains only
  * one item pertaining to a given Ethereum transaction.
  */
-export function reduceOverlappingEventsToNonOverlappingTxs(
-  overlappingEvents: CurrentUserTransactionsQuery["transactions"]
-): CurrentUserTransactionsQuery["transactions"] {
+export function reduceOverlappingEventsToNonOverlappingTxs<
+  // It would be stronger to type this as `T extends CurrentUserTransactionsQuery["transactions"] | ...`, so
+  // that the compiler understands that `overlappingEvents` can only be an array of a single type of item,
+  // but the compiler resisted that with the use of `.reduce()`.
+  T extends
+    | ArrayItem<CurrentUserTransactionsQuery["transactions"]>
+    | ArrayItem<BorrowerTransactionsQuery["transactions"]>
+    | ArrayItem<TranchedPoolTransactionTableQuery["transactions"]>
+>(overlappingEvents: T[]): T[] {
   // We want to eliminate `Staked` events that are redundant with a corresponding
   // `DepositedAndStaked` event, and `Unstaked` events that are redundant with
   // a corresponding `UnstakedAndWithdrew` or `UnstakedAndWithdrewMultiple` event.
@@ -36,53 +45,55 @@ export function reduceOverlappingEventsToNonOverlappingTxs(
   // in one transaction using a multi-send contract. But the assumption is true for transactions created
   // using Goldfinch frontends, which is all we will worry about supporting here.
 
-  const reduced = overlappingEvents.reduce<OverlapAccumulator>(
-    (acc, curr) => {
-      switch (curr.category) {
-        case TransactionCategory.SeniorPoolDeposit:
-          break;
-        case TransactionCategory.SeniorPoolDepositAndStake:
-          acc.depositedAndStaked[curr.timestamp] =
-            acc.depositedAndStaked[curr.timestamp] || {};
-          acc.depositedAndStaked[curr.timestamp][curr.id] = true;
-          break;
-        case TransactionCategory.SeniorPoolRedemption:
-        case TransactionCategory.SeniorPoolStake:
-          break;
-        case TransactionCategory.SeniorPoolUnstake:
-          break;
-        case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
-          acc.unstakedAndWithdrew[curr.timestamp] =
-            acc.unstakedAndWithdrew[curr.timestamp] || {};
-          acc.unstakedAndWithdrew[curr.timestamp][curr.id] = true;
-          break;
-        case TransactionCategory.SeniorPoolWithdrawal:
-        case TransactionCategory.TranchedPoolDeposit:
-        case TransactionCategory.TranchedPoolDrawdown:
-        case TransactionCategory.TranchedPoolRepayment:
-        case TransactionCategory.TranchedPoolWithdrawal:
-        case TransactionCategory.UidMinted:
-          break;
-        default:
-          assertUnreachable(curr.category);
+  const reduced: OverlapAccumulator =
+    overlappingEvents.reduce<OverlapAccumulator>(
+      (acc: OverlapAccumulator, curr: T) => {
+        switch (curr.category) {
+          case TransactionCategory.SeniorPoolDeposit:
+            break;
+          case TransactionCategory.SeniorPoolDepositAndStake:
+            acc.depositedAndStaked[curr.timestamp] =
+              acc.depositedAndStaked[curr.timestamp] || {};
+            acc.depositedAndStaked[curr.timestamp][curr.transactionHash] = true;
+            break;
+          case TransactionCategory.SeniorPoolRedemption:
+          case TransactionCategory.SeniorPoolStake:
+            break;
+          case TransactionCategory.SeniorPoolUnstake:
+            break;
+          case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
+            acc.unstakedAndWithdrew[curr.timestamp] =
+              acc.unstakedAndWithdrew[curr.timestamp] || {};
+            acc.unstakedAndWithdrew[curr.timestamp][curr.transactionHash] =
+              true;
+            break;
+          case TransactionCategory.SeniorPoolWithdrawal:
+          case TransactionCategory.TranchedPoolDeposit:
+          case TransactionCategory.TranchedPoolDrawdown:
+          case TransactionCategory.TranchedPoolRepayment:
+          case TransactionCategory.TranchedPoolWithdrawal:
+          case TransactionCategory.UidMinted:
+            break;
+          default:
+            assertUnreachable(curr.category);
+        }
+        return acc;
+      },
+      {
+        depositedAndStaked: {},
+        unstakedAndWithdrew: {},
       }
-      return acc;
-    },
-    {
-      depositedAndStaked: {},
-      unstakedAndWithdrew: {},
-    }
-  );
-  return overlappingEvents.filter((tx): boolean => {
+    );
+  return overlappingEvents.filter((tx: T): boolean => {
     switch (tx.category) {
       case TransactionCategory.SeniorPoolDeposit:
       case TransactionCategory.SeniorPoolDepositAndStake:
       case TransactionCategory.SeniorPoolRedemption:
         return true;
       case TransactionCategory.SeniorPoolStake:
-        return !reduced.depositedAndStaked[tx.timestamp]?.[tx.id];
+        return !reduced.depositedAndStaked[tx.timestamp]?.[tx.transactionHash];
       case TransactionCategory.SeniorPoolUnstake:
-        return !reduced.unstakedAndWithdrew[tx.timestamp]?.[tx.id];
+        return !reduced.unstakedAndWithdrew[tx.timestamp]?.[tx.transactionHash];
       case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:
       case TransactionCategory.SeniorPoolWithdrawal:
       case TransactionCategory.TranchedPoolDeposit:
@@ -96,3 +107,12 @@ export function reduceOverlappingEventsToNonOverlappingTxs(
     }
   });
 }
+
+export const supportedCryptoTokenByTxAmountToken: Record<
+  AmountToken,
+  SupportedCrypto
+> = {
+  USDC: SupportedCrypto.Usdc,
+  FIDU: SupportedCrypto.Fidu,
+  CURVE_LP: SupportedCrypto.CurveLp,
+};

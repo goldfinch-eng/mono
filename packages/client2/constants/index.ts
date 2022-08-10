@@ -13,6 +13,7 @@ export const DESIRED_CHAIN_ID =
 export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
+export const CURVE_LP_DECIMALS = 18;
 
 export const TRANCHES = {
   Senior: 1,

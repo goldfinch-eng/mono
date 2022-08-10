@@ -35,6 +35,7 @@ export function handleDepositMade(event: DepositMade): void {
   transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.amount
+  transaction.amountToken = "USDC"
   transaction.save()
 
   createZapMaybe(event)
@@ -63,6 +64,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
+  transaction.amountToken = "USDC"
   transaction.save()
 
   deleteZapAfterUnzapMaybe(event)
@@ -96,6 +98,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   transaction.user = event.params.borrower.toHexString()
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.amount
+  transaction.amountToken = "USDC"
   transaction.save()
 }
 
@@ -116,5 +119,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   transaction.user = event.params.payer.toHexString()
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.principalAmount.plus(event.params.interestAmount)
+  transaction.amountToken = "USDC"
   transaction.save()
 }

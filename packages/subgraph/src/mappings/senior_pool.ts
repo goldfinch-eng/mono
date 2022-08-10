@@ -23,6 +23,7 @@ export function handleDepositMade(event: DepositMade): void {
     const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT")
     transaction.user = event.params.capitalProvider.toHexString()
     transaction.amount = event.params.amount
+    transaction.amountToken = "USDC"
     transaction.save()
   }
 }
@@ -61,6 +62,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
     const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL")
     transaction.user = event.params.capitalProvider.toHexString()
     transaction.amount = event.params.userAmount
+    transaction.amountToken = "USDC"
     transaction.save()
   }
 }
