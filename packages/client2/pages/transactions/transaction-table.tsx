@@ -10,6 +10,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
+import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -52,58 +53,61 @@ export function TransactionTable() {
     },
   });
 
-  const rows =
-    data?.transactions.map((transaction) => {
-      const amount =
-        transaction.amount && !transaction.amount.isZero()
-          ? (subtractiveTransactionCategories.includes(transaction.category)
-              ? "-"
-              : "+") +
-            formatCrypto({
-              token: SupportedCrypto.Usdc,
-              amount: transaction.amount,
-            })
-          : null;
+  const filteredTxs = data?.transactions
+    ? reduceOverlappingEventsToNonOverlappingTxs(data.transactions)
+    : [];
 
-      const date = new Date(transaction.timestamp * 1000);
+  const rows = filteredTxs.map((transaction) => {
+    const amount =
+      transaction.amount && !transaction.amount.isZero()
+        ? (subtractiveTransactionCategories.includes(transaction.category)
+            ? "-"
+            : "+") +
+          formatCrypto({
+            token: SupportedCrypto.Usdc, // TODO Make this conditional
+            amount: transaction.amount,
+          })
+        : null;
 
-      return [
-        <div
-          key={`${transaction.id}-category`}
-          className="flex items-center gap-3 text-left"
-        >
-          <Icon name={getTransactionIcon(transaction)} size="sm" />
-          {getTransactionLabel(transaction)}
-        </div>,
-        <div key={`${transaction.id}-amount`} className="text-left">
-          {amount}
-        </div>,
-        <div key={`${transaction.id}-date`} className="text-left">
-          {format(date, "MMM d, y")}
-        </div>,
-        <div key={`${transaction.id}-pool`} className="text-left">
-          {transaction.tranchedPool ? (
-            <Link
-              href={`/pools/${transaction.tranchedPool.id}`}
-              iconRight="ArrowTopRight"
-              className="text-sand-400"
-            >
-              Pool
-            </Link>
-          ) : null}
-        </div>,
-        <Link
-          href={`https://etherscan.io/tx/${transaction.transactionHash}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sand-400"
-          key={`${transaction.id}-link`}
-          iconRight="ArrowTopRight"
-        >
-          Tx
-        </Link>,
-      ];
-    }) ?? [];
+    const date = new Date(transaction.timestamp * 1000);
+
+    return [
+      <div
+        key={`${transaction.id}-category`}
+        className="flex items-center gap-3 text-left"
+      >
+        <Icon name={getTransactionIcon(transaction)} size="sm" />
+        {getTransactionLabel(transaction)}
+      </div>,
+      <div key={`${transaction.id}-amount`} className="text-left">
+        {amount}
+      </div>,
+      <div key={`${transaction.id}-date`} className="text-left">
+        {format(date, "MMM d, y")}
+      </div>,
+      <div key={`${transaction.id}-pool`} className="text-left">
+        {transaction.tranchedPool ? (
+          <Link
+            href={`/pools/${transaction.tranchedPool.id}`}
+            iconRight="ArrowTopRight"
+            className="text-sand-400"
+          >
+            Pool
+          </Link>
+        ) : null}
+      </div>,
+      <Link
+        href={`https://etherscan.io/tx/${transaction.transactionHash}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sand-400"
+        key={`${transaction.id}-link`}
+        iconRight="ArrowTopRight"
+      >
+        Tx
+      </Link>,
+    ];
+  });
 
   const onScrollBottom = useCallback(() => {
     if (data?.transactions) {
