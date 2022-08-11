@@ -2,3 +2,6 @@
 [build]
   publish = ".next"
   command = "npm run build"
+
+[context.deploy-preview]
+  environment = { NEXT_PUBLIC_GRAPHQL_URL = "https://api.thegraph.com/subgraphs/name/ihinsdale/goldfinch" }
