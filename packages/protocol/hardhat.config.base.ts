@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "aurora",
+  defaultNetwork: "mumbai",
   networks: {
     hardhat: {
       mining: {
@@ -70,6 +70,12 @@ export default {
       url: "https://testnet.aurora.dev",
       accounts: {mnemonic: process.env.EOA_MNEMONIC},
       chainId: 1313161555,
+      // gasPrice: 120 * 1000000000
+    },
+    mumbai: {
+      url: "https://rpc-mumbai.maticvigil.com/",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 80001,
       // gasPrice: 120 * 1000000000
     },
   },
