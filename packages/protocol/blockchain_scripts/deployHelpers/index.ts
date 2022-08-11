@@ -55,8 +55,16 @@ const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
 const FUJI = "fuji"
 const MOONBEAM = "moonbeam"
+const AURORA = "aurora"
 
-export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET | typeof FUJI | typeof MOONBEAM
+export type ChainName =
+  | typeof LOCAL
+  | typeof ROPSTEN
+  | typeof RINKEBY
+  | typeof MAINNET
+  | typeof FUJI
+  | typeof MOONBEAM
+  | typeof AURORA
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
@@ -72,8 +80,17 @@ const FUJI_CHAIN_ID = "43113"
 type FujiChainId = typeof FUJI_CHAIN_ID
 const MOONBEAM_CHAIN_ID = "1287"
 type MoonbeamChainId = typeof MOONBEAM_CHAIN_ID
+const AURORA_CHAIN_ID = "1313161555"
+type AuroraChainId = typeof AURORA_CHAIN_ID
 
-export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId | FujiChainId | MoonbeamChainId
+export type ChainId =
+  | LocalChainId
+  | RopstenChainId
+  | MainnetChainId
+  | RinkebyChainId
+  | FujiChainId
+  | MoonbeamChainId
+  | AuroraChainId
 
 const CHAIN_IDS = genExhaustiveTuple<ChainId>()(
   LOCAL_CHAIN_ID,
@@ -81,7 +98,8 @@ const CHAIN_IDS = genExhaustiveTuple<ChainId>()(
   MAINNET_CHAIN_ID,
   RINKEBY_CHAIN_ID,
   FUJI_CHAIN_ID,
-  MOONBEAM_CHAIN_ID
+  MOONBEAM_CHAIN_ID,
+  AURORA_CHAIN_ID
 )
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
@@ -96,6 +114,7 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [RINKEBY_CHAIN_ID]: RINKEBY,
   [FUJI_CHAIN_ID]: FUJI,
   [MOONBEAM_CHAIN_ID]: MOONBEAM,
+  [AURORA_CHAIN_ID]: AURORA,
 }
 
 export type AddressString = string

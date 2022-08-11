@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "moonbeam",
+  defaultNetwork: "aurora",
   networks: {
     hardhat: {
       mining: {
@@ -65,6 +65,12 @@ export default {
       url: "https://rpc.api.moonbase.moonbeam.network",
       accounts: {mnemonic: process.env.EOA_MNEMONIC},
       chainId: 1287,
+    },
+    aurora: {
+      url: "https://testnet.aurora.dev",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 1313161555,
+      // gasPrice: 120 * 1000000000
     },
   },
   solidity: {
