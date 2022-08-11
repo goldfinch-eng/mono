@@ -4,6 +4,7 @@ import {
   AmountToken,
   BorrowerTransactionsQuery,
   CurrentUserTransactionsQuery,
+  CurrentUserWalletInfoQuery,
   SupportedCrypto,
   TranchedPoolTransactionTableQuery,
   TransactionCategory,
@@ -32,6 +33,7 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
   // that the compiler understands that `overlappingEvents` can only be an array of a single type of item,
   // but the compiler resisted that with the use of `.reduce()`.
   T extends
+    | ArrayItem<CurrentUserWalletInfoQuery>["transactions"]
     | ArrayItem<CurrentUserTransactionsQuery["transactions"]>
     | ArrayItem<BorrowerTransactionsQuery["transactions"]>
     | ArrayItem<TranchedPoolTransactionTableQuery["transactions"]>

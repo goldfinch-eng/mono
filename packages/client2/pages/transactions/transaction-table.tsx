@@ -67,10 +67,14 @@ export function TransactionTable() {
         ? (subtractiveIconTransactionCategories.includes(transaction.category)
             ? "-"
             : "+") +
-          formatCrypto({
-            token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
-            amount: transaction.amount,
-          })
+          formatCrypto(
+            {
+              token:
+                supportedCryptoTokenByTxAmountToken[transaction.amountToken],
+              amount: transaction.amount,
+            },
+            { includeToken: true }
+          )
         : null;
 
     const date = new Date(transaction.timestamp * 1000);

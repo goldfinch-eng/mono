@@ -116,10 +116,13 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         (subtractiveIconTransactionCategories.includes(transaction.category)
           ? "-"
           : "+") +
-        formatCrypto({
-          token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
-          amount: transaction.amount,
-        });
+        formatCrypto(
+          {
+            token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
+            amount: transaction.amount,
+          },
+          { includeToken: true }
+        );
 
       const date = new Date(transaction.timestamp * 1000);
 

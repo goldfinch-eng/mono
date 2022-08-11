@@ -84,10 +84,13 @@ export function TransactionTable() {
         (subtractiveIconTransactionCategories.includes(transaction.category)
           ? "-"
           : "+") +
-        formatCrypto({
-          token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
-          amount: transaction.amount,
-        });
+        formatCrypto(
+          {
+            token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
+            amount: transaction.amount,
+          },
+          { includeToken: true }
+        );
 
       return [
         <div key={`${transaction.id}-user`} className="flex items-center gap-2">
