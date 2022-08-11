@@ -44,6 +44,7 @@ export function BackerCard({ token }: BackerCardProps) {
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)
     .add(token.stakingRewardsClaimed);
+  const formattedDate = format(token.mintedAt.mul(1000).toNumber(), "MMM d, y");
 
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
@@ -67,10 +68,10 @@ export function BackerCard({ token }: BackerCardProps) {
   return (
     <RewardCardScaffold
       heading={`Backer of ${token.tranchedPool.name}`}
-      subheading={formatCrypto(
+      subheading={`${formatCrypto(
         { token: SupportedCrypto.Gfi, amount: totalAmount },
         { includeToken: true }
-      )}
+      )} - ${formattedDate}`}
       fadedAmount={formatCrypto({
         token: SupportedCrypto.Gfi,
         amount: BigNumber.from(0),
@@ -93,10 +94,7 @@ export function BackerCard({ token }: BackerCardProps) {
             body={`Supplied ${formatCrypto({
               token: SupportedCrypto.Usdc,
               amount: token.principalAmount,
-            })} beginning on ${format(
-              token.mintedAt.mul(1000).toNumber(),
-              "MMM d, y"
-            )}`}
+            })} on ${formattedDate}`}
           />
           <Detail heading="Unlock schedule" body="Immediate" />
           <Detail

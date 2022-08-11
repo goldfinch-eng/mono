@@ -51,6 +51,10 @@ export function StakingCard({ position }: StakingCardProps) {
       : assertUnreachable(position.positionType);
   const unlocked = position.claimable.add(position.totalRewardsClaimed);
   const locked = position.granted.sub(unlocked);
+  const formattedDate = format(
+    position.startTime.mul(1000).toNumber(),
+    "MMM d, y"
+  );
 
   const stakingRewardsContract = useContract("StakingRewards");
   const apolloClient = useApolloClient();
@@ -74,7 +78,7 @@ export function StakingCard({ position }: StakingCardProps) {
       subheading={`${formatCrypto(
         { token: SupportedCrypto.Gfi, amount: position.granted },
         { includeToken: true }
-      )} to date`}
+      )} to date - ${formattedDate}`}
       fadedAmount={formatCrypto({ token: SupportedCrypto.Gfi, amount: locked })}
       boldedAmount={formatCrypto(
         { token: SupportedCrypto.Gfi, amount: position.claimable },
@@ -98,10 +102,7 @@ export function StakingCard({ position }: StakingCardProps) {
             body={`Staked ${formatCrypto(
               { token: stakedToken, amount: position.initialAmount },
               { includeToken: true }
-            )} on ${format(
-              position.startTime.mul(1000).toNumber(),
-              "MMM d, y"
-            )} (${formatCrypto(
+            )} on ${formattedDate} (${formatCrypto(
               { token: stakedToken, amount: position.amount },
               { includeToken: true }
             )} remaining)`}
