@@ -1,4 +1,4 @@
-import {Bytes} from "@graphprotocol/graph-ts"
+import {Bytes, log} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition} from "../../generated/schema"
 import {
   RewardAdded,
@@ -42,7 +42,13 @@ export function handleStaked1(event: Staked1): void {
   stakedPosition.initialAmount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
   stakedPosition.startTime = event.block.timestamp
-  stakedPosition.positionType = event.params.positionType == 0 ? "Fidu" : "CurveLP"
+  if (event.params.positionType == 0) {
+    stakedPosition.positionType = "Fidu"
+  } else if (event.params.positionType == 1) {
+    stakedPosition.positionType = "CurveLP"
+  } else {
+    log.critical("Encountered unrecognized positionType in a Staked event: {}", [event.params.positionType.toString()])
+  }
 
   stakedPosition.save()
 }
