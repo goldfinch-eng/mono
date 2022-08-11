@@ -2,6 +2,7 @@ import { Resolvers } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { getContract } from "@/lib/contracts";
+import { assertUnreachable } from "@/lib/utils";
 import { getProvider } from "@/lib/wallet";
 
 import {
@@ -69,8 +70,7 @@ export const directGfiGrantResolvers: Resolvers[string] = {
           gfiDirectGrant.index
         );
       default:
-        const exhaustive: never = gfiDirectGrant.directSource;
-        throw new Error(`Unhandled direct grant source: ${exhaustive}`);
+        assertUnreachable(gfiDirectGrant.directSource);
     }
   },
 };

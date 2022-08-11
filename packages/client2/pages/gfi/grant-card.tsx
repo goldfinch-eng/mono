@@ -17,6 +17,7 @@ import {
   DirectGrantSource,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+import { assertUnreachable } from "@/lib/utils";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -285,11 +286,7 @@ function GrantButton({
           }
           break;
         default:
-          // Remember if the compiler errors here, it's because the switch statement isn't exhaustive so you have to add a case
-          const exhaustive: never = grant.indirectSource;
-          throw new Error(
-            `Unhandled indirect grant source ${exhaustive as string}`
-          );
+          assertUnreachable(grant.indirectSource);
       }
     } else if (grant.__typename === "DirectGfiGrant") {
       switch (grant.directSource) {
@@ -312,11 +309,7 @@ function GrantButton({
           });
           break;
         default:
-          // Remember if the compiler errors here, it's because the switch statement isn't exhaustive so you have to add a case
-          const exhaustive: never = grant.directSource;
-          throw new Error(
-            `Unhandled indirect grant source ${exhaustive as string}`
-          );
+          assertUnreachable(grant.directSource);
       }
     }
     await apolloClient.refetchQueries({ include: "active" });

@@ -12,6 +12,7 @@ import {
   FiatAmount,
   SupportedCrypto,
 } from "../graphql/generated";
+import { assertUnreachable } from "../utils";
 
 export function formatFiat(
   fiatAmount: FiatAmount,
@@ -57,8 +58,7 @@ export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
       );
       return curveLpAsFloat;
     default:
-      const token: never = cryptoAmount.token;
-      throw new Error(`Unrecognized crypto (${token}) in cryptoToFloat()`);
+      assertUnreachable(cryptoAmount.token);
   }
 }
 
