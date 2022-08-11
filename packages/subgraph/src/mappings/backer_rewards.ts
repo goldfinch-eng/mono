@@ -1,5 +1,5 @@
 import {BigInt} from "@graphprotocol/graph-ts"
-import {PoolBacker, TranchedPoolToken} from "../../generated/schema"
+import {TranchedPoolToken} from "../../generated/schema"
 import {
   BackerRewardsSetTotalRewards,
   BackerRewardsSetMaxInterestDollarsEligible,
@@ -27,10 +27,6 @@ export function handleBackerRewardsClaimed(event: BackerRewardsClaimed): void {
   poolToken.rewardsClaimed = event.params.amount
   poolToken.rewardsClaimable = BigInt.zero()
   poolToken.save()
-
-  const poolBacker = assert(PoolBacker.load(`${poolToken.tranchedPool}-${poolToken.user}`))
-  poolBacker.rewardsClaimed = poolBacker.rewardsClaimed.plus(event.params.amount)
-  poolBacker.save()
 }
 
 export function handleBackerRewardsClaimed1(event: BackerRewardsClaimed1): void {
@@ -40,8 +36,4 @@ export function handleBackerRewardsClaimed1(event: BackerRewardsClaimed1): void 
   poolToken.rewardsClaimable = BigInt.zero()
   poolToken.stakingRewardsClaimable = BigInt.zero()
   poolToken.save()
-
-  const poolBacker = assert(PoolBacker.load(`${poolToken.tranchedPool}-${poolToken.user}`))
-  poolBacker.rewardsClaimed = poolBacker.rewardsClaimed.plus(event.params.amountOfTranchedPoolRewards)
-  poolBacker.save()
 }

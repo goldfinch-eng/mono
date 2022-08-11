@@ -14,7 +14,7 @@ import {
 } from "../../generated/templates/TranchedPool/TranchedPool"
 import {SENIOR_POOL_ADDRESS} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
-import {updateAllPoolBackers, updateAllPoolBackersRewardsClaimable} from "../entities/pool_backer"
+import {updateAllPoolBackers} from "../entities/pool_backer"
 import {
   handleDeposit,
   updatePoolCreditLine,
@@ -105,7 +105,6 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   user.save()
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
-  updateAllPoolBackersRewardsClaimable(event.address, event.block.timestamp)
 
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
   tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)

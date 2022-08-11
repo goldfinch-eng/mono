@@ -127,9 +127,6 @@ type PoolBacker @entity {
   principalRedeemable: BigInt!
   interestRedeemable: BigInt!
   availableToWithdraw: BigInt!
-
-  rewardsClaimable: BigInt!
-  rewardsClaimed: BigInt!
 }
 
 type CreditLine @entity {
