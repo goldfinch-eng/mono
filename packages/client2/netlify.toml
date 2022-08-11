@@ -1,5 +1,4 @@
 
 [build]
-  base = "/packages/client2/"
-  command = "cd ../.. && CI= && npx lerna bootstrap --ci --scope @goldfinch-eng/client2 --include-dependencies && npx lerna run --scope @goldfinch-eng/client2 build-netlify-client2 --include-dependencies --stream"
   publish = ".next"
+  command = "npm run build"

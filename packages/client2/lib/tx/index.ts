@@ -1,5 +1,4 @@
-import { assertUnreachable, ArrayItem } from "@goldfinch-eng/utils";
-
+import { ArrayItem, assertUnreachable } from "../../types/utils";
 import {
   AmountToken,
   BorrowerTransactionsQuery,

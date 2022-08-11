@@ -17,7 +17,6 @@
     "prepare": "husky install",
     "build": "npx lerna run --ignore @goldfinch-eng/client2 build --stream --scope @goldfinch-eng/protocol && npx lerna run --ignore @goldfinch-eng/client2 build --stream --ignore @goldfinch-eng/protocol",
     "build-netlify": "npx lerna run --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server build --stream --scope @goldfinch-eng/protocol && npx lerna run --ignore @goldfinch-eng/client2 --ignore @goldfinch-eng/subgraph --ignore @goldfinch-eng/server build --stream --ignore @goldfinch-eng/protocol",
-    "build-netlify-client2": "npx lerna run build-netlify-client2 --stream --scope @goldfinch-eng/client2",
     "pre-push": "npx lerna run --ignore @goldfinch-eng/client2 pre-push --stream --concurrency 1 --since HEAD --exclude-dependents",
     "pre-commit": "npx lerna run pre-commit --stream --concurrency 1 --since HEAD --exclude-dependents"
   },
