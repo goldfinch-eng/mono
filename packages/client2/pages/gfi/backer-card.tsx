@@ -24,6 +24,7 @@ export const BACKER_CARD_TOKEN_FIELDS = gql`
         id
         isLate @client
       }
+      isPaused
     }
     mintedAt
     rewardsClaimable
@@ -51,7 +52,8 @@ export function BackerCard({ token }: BackerCardProps) {
 
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
-    !token.tranchedPool.creditLine.isLate;
+    !token.tranchedPool.creditLine.isLate &&
+    !token.tranchedPool.isPaused;
 
   const handleClaim = async () => {
     if (!backerRewardsContract) {
@@ -127,6 +129,8 @@ export function BackerCard({ token }: BackerCardProps) {
       warning={
         token.tranchedPool.creditLine.isLate
           ? "Claiming is disabled because a repayment is due"
+          : token.tranchedPool.isPaused
+          ? "Claiming is disabled because this pool is paused"
           : undefined
       }
     />
