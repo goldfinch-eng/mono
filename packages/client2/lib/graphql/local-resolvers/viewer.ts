@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { TOKEN_LAUNCH_TIME } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { grantComparator } from "@/lib/gfi-rewards";
+import { assertUnreachable } from "@/lib/utils";
 import { getProvider } from "@/lib/wallet";
 
 import {
@@ -13,6 +14,32 @@ import {
   IndirectGfiGrant,
   DirectGfiGrant,
 } from "../generated";
+
+async function erc20Balance(
+  token: Exclude<SupportedCrypto, SupportedCrypto.FiduUsdcCurveLp> // curve lp token could be added later
+): Promise<CryptoAmount | null> {
+  const provider = await getProvider();
+  if (!provider) {
+    return null;
+  }
+  const account = await provider.getSigner().getAddress();
+  const chainId = await provider.getSigner().getChainId();
+
+  const contract = getContract({
+    name:
+      token === SupportedCrypto.Gfi
+        ? "GFI"
+        : token === SupportedCrypto.Usdc
+        ? "USDC"
+        : token === SupportedCrypto.Fidu
+        ? "Fidu"
+        : assertUnreachable(token),
+    chainId,
+    provider,
+  });
+  const balance = await contract.balanceOf(account);
+  return { __typename: "CryptoAmount", token, amount: balance };
+}
 
 export const viewerResolvers: Resolvers[string] = {
   account(viewer: Viewer, args: { format: "lowercase" }) {
@@ -26,52 +53,13 @@ export const viewerResolvers: Resolvers[string] = {
     return viewer.account;
   },
   async gfiBalance(): Promise<CryptoAmount | null> {
-    const provider = await getProvider();
-    if (!provider) {
-      return null;
-    }
-    const account = await provider.getSigner().getAddress();
-    const chainId = await provider.getSigner().getChainId();
-
-    const gfiContract = getContract({ name: "GFI", chainId, provider });
-    const gfiBalance = await gfiContract.balanceOf(account);
-    return {
-      __typename: "CryptoAmount",
-      token: SupportedCrypto.Gfi,
-      amount: gfiBalance,
-    };
+    return erc20Balance(SupportedCrypto.Gfi);
   },
   async usdcBalance(): Promise<CryptoAmount | null> {
-    const provider = await getProvider();
-    if (!provider) {
-      return null;
-    }
-    const account = await provider.getSigner().getAddress();
-    const chainId = await provider.getSigner().getChainId();
-
-    const usdcContract = getContract({ name: "USDC", chainId, provider });
-    const usdcBalance = await usdcContract.balanceOf(account);
-    return {
-      __typename: "CryptoAmount",
-      token: SupportedCrypto.Usdc,
-      amount: usdcBalance,
-    };
+    return erc20Balance(SupportedCrypto.Usdc);
   },
   async fiduBalance(): Promise<CryptoAmount | null> {
-    const provider = await getProvider();
-    if (!provider) {
-      return null;
-    }
-    const account = await provider.getSigner().getAddress();
-    const chainId = await provider.getSigner().getChainId();
-
-    const fiduContract = getContract({ name: "Fidu", chainId, provider });
-    const fiduBalance = await fiduContract.balanceOf(account);
-    return {
-      __typename: "CryptoAmount",
-      token: SupportedCrypto.Fidu,
-      amount: fiduBalance,
-    };
+    return erc20Balance(SupportedCrypto.Fidu);
   },
   async gfiGrants(viewer: Viewer) {
     if (!viewer || !viewer.account) {
