@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "moonbeam",
   networks: {
     hardhat: {
       mining: {
@@ -37,14 +37,8 @@ export default {
       },
       allowUnlimitedContractSize: true,
       timeout: 1800000,
-      accounts: {mnemonic: "test test test test test test test test test test test junk"},
-      chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : 31337,
-      forking: process.env.HARDHAT_FORK
-        ? {
-            url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-            blockNumber: 14762303, // May-12-2022 05:07:13 PM +UTC
-          }
-        : undefined,
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 31337,
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_RINKEBY_API_KEY}`,
@@ -59,6 +53,18 @@ export default {
       url: "https://murmuration.goldfinch.finance/_chain",
       chainId: 31337,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
+    },
+    fuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      // gasPrice: 225000000000,
+      chainId: 43113,
+      // gasPrice: 120000000000
+    },
+    moonbeam: {
+      url: "https://rpc.api.moonbase.moonbeam.network",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 1287,
     },
   },
   solidity: {
@@ -93,7 +99,7 @@ export default {
       4: "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
     },
     gf_deployer: {
-      default: 1,
+      default: 0,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       4: "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
     },

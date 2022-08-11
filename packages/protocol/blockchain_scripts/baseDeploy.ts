@@ -123,7 +123,7 @@ export async function grantOwnershipOfPoolToCreditDesk(pool: any, creditDeskAddr
 
 export async function grantMinterRoleToPool(fidu: Fidu, pool: any) {
   if (!(await fidu.hasRole(MINTER_ROLE, pool.address))) {
-    await fidu.grantRole(MINTER_ROLE, pool.address)
+    await (await fidu.grantRole(MINTER_ROLE, pool.address)).wait()
   }
 }
 

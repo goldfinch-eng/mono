@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx hardhat node --hostname 0.0.0.0 --export-all deployments/all_dev.json",
+    "deploy": "BACKER_MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDistributor/merkleDistributorInfo.dev.json BACKER_MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/backerMerkleDirectDistributor/merkleDirectDistributorInfo.dev.json MERKLE_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDistributor/merkleDistributorInfo.dev.json MERKLE_DIRECT_DISTRIBUTOR_INFO_PATH=./blockchain_scripts/merkle/merkleDirectDistributor/merkleDirectDistributorInfo.dev.json npx hardhat deploy --export-all deployments/all_deploy.json",
     "start:murmuration": "HARDHAT_FORK=mainnet MURMURATION=yes npm run start",
     "start:murmuration:liquidity-mining": "HARDHAT_FORK= MURMURATION=yes npm run start",
     "test": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test $(find test/ -name '*.test.ts' | grep -v mainnet_forking) --show-stack-traces",

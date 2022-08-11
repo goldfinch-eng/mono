@@ -53,8 +53,10 @@ const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
+const FUJI = "fuji"
+const MOONBEAM = "moonbeam"
 
-export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET
+export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET | typeof FUJI | typeof MOONBEAM
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
@@ -66,10 +68,21 @@ const MAINNET_CHAIN_ID = "1"
 type MainnetChainId = typeof MAINNET_CHAIN_ID
 const RINKEBY_CHAIN_ID = "4"
 type RinkebyChainId = typeof RINKEBY_CHAIN_ID
+const FUJI_CHAIN_ID = "43113"
+type FujiChainId = typeof FUJI_CHAIN_ID
+const MOONBEAM_CHAIN_ID = "1287"
+type MoonbeamChainId = typeof MOONBEAM_CHAIN_ID
 
-export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId
+export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId | FujiChainId | MoonbeamChainId
 
-const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+const CHAIN_IDS = genExhaustiveTuple<ChainId>()(
+  LOCAL_CHAIN_ID,
+  ROPSTEN_CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  RINKEBY_CHAIN_ID,
+  FUJI_CHAIN_ID,
+  MOONBEAM_CHAIN_ID
+)
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
     throw new AssertionError(`${val} is not in \`CHAIN_IDS\`.`)
@@ -81,6 +94,8 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [ROPSTEN_CHAIN_ID]: ROPSTEN,
   [MAINNET_CHAIN_ID]: MAINNET,
   [RINKEBY_CHAIN_ID]: RINKEBY,
+  [FUJI_CHAIN_ID]: FUJI,
+  [MOONBEAM_CHAIN_ID]: MOONBEAM,
 }
 
 export type AddressString = string
@@ -439,18 +454,9 @@ export async function getTempMultisig(): Promise<string> {
 }
 
 async function getProtocolOwner(): Promise<string> {
-  const chainId = await getChainId()
   const {protocol_owner} = await getNamedAccounts()
-  if (isMainnetForking()) {
-    return SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
-  } else if (chainId === LOCAL_CHAIN_ID) {
-    assertIsString(protocol_owner)
-    return protocol_owner
-  } else if (SAFE_CONFIG[chainId]) {
-    return SAFE_CONFIG[chainId].safeAddress
-  } else {
-    throw new Error(`Unknown owner for chain id ${chainId}`)
-  }
+  assertIsString(protocol_owner)
+  return protocol_owner
 }
 
 async function currentChainId(): Promise<ChainId> {
