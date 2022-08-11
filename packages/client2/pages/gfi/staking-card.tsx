@@ -12,6 +12,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+import { assertUnreachable } from "@/lib/utils";
 
 import {
   displayClaimedStatus,
@@ -45,7 +46,9 @@ export function StakingCard({ position }: StakingCardProps) {
   const stakedToken =
     position.positionType === StakedPositionType.Fidu
       ? SupportedCrypto.Fidu
-      : SupportedCrypto.FiduUsdcCurveLp;
+      : position.positionType === StakedPositionType.CurveLp
+      ? SupportedCrypto.FiduUsdcCurveLp
+      : assertUnreachable(position.positionType);
   const unlocked = position.claimable.add(position.totalRewardsClaimed);
   const locked = position.granted.sub(unlocked);
 
