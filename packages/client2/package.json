@@ -7,6 +7,7 @@
     "dev": "next dev",
     "prebuild": "npx ts-node scripts/populate-contract-addresses.ts && npx ts-node scripts/prepare-metadata.ts && npm run gen-contract-types && npm run codegen",
     "build": "next build",
+    "build-netlify-client2": "npm run build",
     "start": "next start",
     "analyze": "ANALYZE=true npm run build",
     "lint": "next lint",
