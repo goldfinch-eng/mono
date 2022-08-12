@@ -30,6 +30,9 @@ jobs:
         files: |
           packages\/autotasks\/.+\.ts
           packages\/autotasks\/.+\.json
+          packages\/autotasks\/package\.json
+          packages\/autotasks\/package\-lock\.json
+          packages\/utils\/**
     - name: Cache node modules
       uses: actions/cache@v2
       env:
@@ -161,6 +164,9 @@ jobs:
           files: |
             packages\/functions\/src\/.+\.ts
             packages\/functions\/scripts\/.+\.ts
+            packages\/functions\/package\.json
+            packages\/functions\/package\-lock\.json
+            packages\/utils\/**
       - name: Cache Firestore emulator
         uses: actions/cache@v2
         env:
@@ -176,8 +182,30 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --stream --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
         if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-dev
+        with:
+          environment: dev
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
+      if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true' 
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-prod
+        with:
+          environment: production
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
         if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
