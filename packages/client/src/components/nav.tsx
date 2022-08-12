@@ -8,7 +8,7 @@ import menuIcon from "../images/menu.svg"
 export const NAV_ITEMS = [
   {label: "Earn", href: "https://beta.app.goldfinch.finance/earn"},
   {label: "Borrow", href: "/borrow"},
-  {label: "GFI", href: "https://beta.app.goldfinch.finance/earn"},
+  {label: "GFI", href: "https://beta.app.goldfinch.finance/gfi"},
   {label: "Stake", href: "/stake"},
   {label: "Transactions", href: "https://beta.app.goldfinch.finance/transactions"},
 ]
