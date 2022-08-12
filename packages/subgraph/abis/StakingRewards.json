@@ -480,6 +480,43 @@
         },
         {
           "indexed": false,
+          "internalType": "uint256",
+          "name": "lockedUntil",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "multiplier",
+          "type": "uint256"
+        }
+      ],
+      "name": "Staked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
           "internalType": "enum StakingRewards.StakedPositionType",
           "name": "positionType",
           "type": "uint8"

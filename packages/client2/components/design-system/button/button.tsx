@@ -66,7 +66,7 @@ export const Button = forwardRef<
     } = formContext;
     // Can't use the built-in isValid on formState because that only updates when the mode is set to onChange/onBlur/whatever
     const isValid = Object.keys(errors).length === 0;
-    _disabled = isSubmitting || !isValid;
+    _disabled = disabled || isSubmitting || !isValid;
     _isLoading = isSubmitting;
   }
 

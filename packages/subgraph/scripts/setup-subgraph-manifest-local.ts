@@ -21,6 +21,9 @@ const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Pro
 const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
 const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
+const deployedCommunityRewardsProxyAddress = localhostContracts.CommunityRewards_Proxy.address
+const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
+const deployedBackerMerkleDistributorAddress = localhostContracts.BackerMerkleDistributor.address
 const deployedUsdcAddress = localhostContracts.TestERC20.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
@@ -52,6 +55,15 @@ for (let dataSource of subgraphManifest.dataSources) {
       break
     case "GoldfinchConfig":
       dataSource.source.address = deployedGoldfinchConfigAddress
+      break
+    case "CommunityRewardsProxy":
+      dataSource.source.address = deployedCommunityRewardsProxyAddress
+      break
+    case "MerkleDistributor":
+      dataSource.source.address = deployedMerkleDistributorAddress
+      break
+    case "BackerMerkleDistributor":
+      dataSource.source.address = deployedBackerMerkleDistributorAddress
       break
     default:
       break

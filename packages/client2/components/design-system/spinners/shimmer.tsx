@@ -28,15 +28,17 @@ export function ShimmerLines({
 
 export interface ShimmerProps {
   isTruncated?: boolean;
+  className?: string;
   style?: CSSProperties;
 }
 
-export function Shimmer({ isTruncated, style }: ShimmerProps) {
+export function Shimmer({ isTruncated, className, style }: ShimmerProps) {
   return (
     <div
       className={clsx(
         isTruncated ? "w-5/12" : "w-full",
-        "animate-background-oscillate-slow rounded bg-gradient-to-r from-sand-200 via-sand-100 to-sand-200"
+        "animate-background-oscillate-slow rounded bg-gradient-to-r from-sand-200 via-sand-100 to-sand-200",
+        className
       )}
       style={{ backgroundSize: "200% 100%", ...style }}
     >

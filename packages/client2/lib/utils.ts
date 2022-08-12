@@ -81,3 +81,23 @@ export function usePoller({
 
   return { isPolling };
 }
+
+class UnreachableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnreachableError";
+  }
+}
+
+/**
+ * A utility function that helps create exhaustive switch statements. Use this function as the `default` switch case, and pass the switch key as the arg here.
+ * If the compiler shows an error at the callsite, then it means the switch statement is not exhaustive.
+ * @param x The switch key
+ */
+export function assertUnreachable(x: never): never {
+  throw new UnreachableError(
+    `Expected not to get here.${
+      x ? ` Unhandled switch key: ${x as string}` : ""
+    }`
+  );
+}

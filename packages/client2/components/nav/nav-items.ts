@@ -6,7 +6,7 @@ const oldClientOrigin =
 export const NAV_ITEMS = [
   { label: "Earn", href: "/earn" },
   { label: "Borrow", href: `${oldClientOrigin}/borrow` },
-  { label: "GFI", href: `${oldClientOrigin}/gfi` },
+  { label: "GFI", href: `/gfi` },
   { label: "Stake", href: `${oldClientOrigin}/stake` },
   {
     label: "Transactions",

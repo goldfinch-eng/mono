@@ -1,8 +1,9 @@
+import {Bytes, log} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition} from "../../generated/schema"
 import {
   RewardAdded,
   Staked,
-  StakingRewards,
+  Staked1,
   Unstaked,
   Unstaked1,
   Transfer,
@@ -10,6 +11,7 @@ import {
   DepositedAndStaked1,
   UnstakedAndWithdrew,
   UnstakedAndWithdrewMultiple,
+  RewardPaid,
 } from "../../generated/templates/StakingRewards/StakingRewards"
 
 import {createTransactionFromEvent} from "../entities/helpers"
@@ -24,13 +26,28 @@ export function handleStaked(event: Staked): void {
 
   const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
   stakedPosition.amount = event.params.amount
+  stakedPosition.initialAmount = event.params.amount
   stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.startTime = event.block.timestamp
+  stakedPosition.positionType = "Fidu" // Curve integration did not exist at this time
 
-  const contract = StakingRewards.bind(event.address)
-  const positionsResult = contract.try_positions(event.params.tokenId)
-  if (!positionsResult.reverted) {
-    stakedPosition.startTime = positionsResult.value.value1.startTime
-    stakedPosition.endTime = positionsResult.value.value1.endTime
+  stakedPosition.save()
+}
+
+export function handleStaked1(event: Staked1): void {
+  updateCurrentEarnRate(event.address)
+
+  const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
+  stakedPosition.amount = event.params.amount
+  stakedPosition.initialAmount = event.params.amount
+  stakedPosition.user = event.params.user.toHexString()
+  stakedPosition.startTime = event.block.timestamp
+  if (event.params.positionType == 0) {
+    stakedPosition.positionType = "Fidu"
+  } else if (event.params.positionType == 1) {
+    stakedPosition.positionType = "CurveLP"
+  } else {
+    log.critical("Encountered unrecognized positionType in a Staked event: {}", [event.params.positionType.toString()])
   }
 
   stakedPosition.save()
@@ -56,18 +73,11 @@ export function handleUnstaked1(event: Unstaked1): void {
 }
 
 export function handleTransfer(event: Transfer): void {
-  const stakedPosition = new SeniorPoolStakedPosition(event.params.tokenId.toString())
-  stakedPosition.user = event.params.to.toHexString()
-
-  const contract = StakingRewards.bind(event.address)
-  stakedPosition.amount = contract.stakedBalanceOf(event.params.tokenId)
-  const positionsResult = contract.try_positions(event.params.tokenId)
-  if (!positionsResult.reverted) {
-    stakedPosition.startTime = positionsResult.value.value1.startTime
-    stakedPosition.endTime = positionsResult.value.value1.endTime
+  if (event.params.from.notEqual(Bytes.fromHexString("0x0000000000000000000000000000000000000000"))) {
+    const stakedPosition = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
+    stakedPosition.user = event.params.to.toHexString()
+    stakedPosition.save()
   }
-
-  stakedPosition.save()
 }
 
 export function handleDepositedAndStaked(event: DepositedAndStaked): void {
@@ -96,4 +106,10 @@ export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMult
   transaction.amount = event.params.usdcReceivedAmount
   transaction.user = event.params.user.toHexString()
   transaction.save()
+}
+
+export function handleRewardPaid(event: RewardPaid): void {
+  const position = assert(SeniorPoolStakedPosition.load(event.params.tokenId.toString()))
+  position.totalRewardsClaimed = position.totalRewardsClaimed.plus(event.params.reward)
+  position.save()
 }

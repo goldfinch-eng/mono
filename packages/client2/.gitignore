@@ -54,3 +54,6 @@ constants/metadata/localhost.json
 constants/contract-addresses/index.ts
 # Sentry
 .sentryclirc
+
+# JSON files containing dev GFI grants
+pages/api/gfi-grants/*.dev.json
