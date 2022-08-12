@@ -54,6 +54,9 @@ import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 
 dotenv.config({path: findEnvLocal()})
 
+const USDC_TOTAL = new BigNumber(100_000_000).multipliedBy(new BigNumber(1e6)).toString(10)
+const GFI_TOTAL = new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10)
+
 export const BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE = new BigNumber(100_000_000)
   .multipliedBy(new BigNumber(1e18))
   .toString(10)
@@ -135,10 +138,10 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     )
     const {protocol_owner: trustedSigner} = await getNamedAccounts()
     assertNonNullable(trustedSigner)
-    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+    let tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
     await tx.wait()
 
-    await uniqueIdentity.setSupportedUIDTypes(
+    tx = await uniqueIdentity.setSupportedUIDTypes(
       [
         await uniqueIdentity.ID_TYPE_0(),
         await uniqueIdentity.ID_TYPE_1(),
@@ -148,6 +151,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       ],
       [true, true, true, true, true]
     )
+    await tx.wait()
   }
 
   // await impersonateAccount(hre, protocol_owner)
@@ -158,7 +162,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
   if (!isMainnetForking()) {
     go = go.connect(protocolOwnerSigner)
-    await go.setLegacyGoList(goldfinchConfig.address)
+    await (await go.setLegacyGoList(goldfinchConfig.address)).wait()
   }
   const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
     at: await go.legacyGoList(),
@@ -205,6 +209,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       allowedUIDTypes: [...NON_US_UID_TYPES],
     })
     await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
+    let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
+    creditLine = creditLine.attach(await commonPool.creditLine())
 
     const empty = await createPoolForBorrower({
       getOrNull,
@@ -220,21 +226,22 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
-    const txn = await commonPool.lockJuniorCapital()
+    let txn = await commonPool.lockJuniorCapital()
     await txn.wait()
-    await seniorPool.invest(commonPool.address)
+    txn = await seniorPool.invest(commonPool.address)
+    await txn.wait()
     const filter = commonPool.filters.DepositMade(seniorPool.address)
     const depositLog = (await ethers.provider.getLogs(filter))[0]
     assertNonNullable(depositLog)
     const depositEvent = commonPool.interface.parseLog(depositLog)
     const tokenId = depositEvent.args.tokenId
 
-    await commonPool.lockPool()
-    let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
-    creditLine = creditLine.attach(await commonPool.creditLine())
+    txn = await commonPool.lockPool()
+    await txn.wait()
 
     const amount = (await creditLine.limit()).div(2)
-    await commonPool.drawdown(amount)
+    txn = await commonPool.drawdown(amount)
+    await txn.wait()
 
     // await advanceTime({days: 32})
 
@@ -244,12 +251,15 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     assertNonNullable(borrowerSigner)
     const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
     const payAmount = new BN(100).mul(USDCDecimals)
-    await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
-    await bwrCon.pay(commonPool.address, payAmount.toString())
+    txn = await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, USDC_TOTAL)
+    await txn.wait()
+    txn = await bwrCon.pay(commonPool.address, payAmount.toString())
+    await txn.wait()
 
     // await advanceTime({days: 32})
 
-    await bwrCon.pay(commonPool.address, payAmount.toString())
+    txn = await bwrCon.pay(commonPool.address, payAmount.toString())
+    await txn.wait()
 
     // await seniorPool.redeem(tokenId)
   }
@@ -277,14 +287,20 @@ async function setUpRewards(
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
 
   if (!isMainnetForking()) {
-    await gfi.mint(protocolOwner, amount.toString(10))
-    await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
-    await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
+    const signer = ethers.provider.getSigner(protocolOwner)
+    let tx = await gfi.mint(protocolOwner, amount.toString(10))
+    await tx.wait()
+    tx = await gfi.connect(signer).approve(communityRewards.address, GFI_TOTAL)
+    await tx.wait()
+    tx = await gfi.connect(signer).approve(stakingRewards.address, GFI_TOTAL)
+    await tx.wait()
 
-    await communityRewards.loadRewards(rewardsAmount.toString(10))
+    tx = await communityRewards.loadRewards(rewardsAmount.toString(10))
+    await tx.wait()
 
-    await stakingRewards.loadRewards(rewardsAmount.toString(10))
-    await stakingRewards.setRewardsParameters(
+    tx = await stakingRewards.loadRewards(rewardsAmount.toString(10))
+    await tx.wait()
+    tx = await stakingRewards.setRewardsParameters(
       toAtomic(new BN(1000), FIDU_DECIMALS),
       new BigNumber("10000000000")
         .multipliedBy(
@@ -298,30 +314,43 @@ async function setUpRewards(
       toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
       toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
     )
+    await tx.wait()
 
     // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
     // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
-    const signer = ethers.provider.getSigner(protocolOwner)
     const usdcAmount = String(usdcVal(50000))
-    await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
-    await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+    tx = await erc20.connect(signer).approve(stakingRewards.address, USDC_TOTAL)
+    await tx.wait()
+    tx = await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+    await tx.wait()
 
     // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
     if (merkleDirectDistributor) {
-      await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      tx = await gfi.connect(signer).approve(merkleDirectDistributor.address, GFI_TOTAL)
+      await tx.wait()
+      tx = await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      await tx.wait()
     }
 
     // If the BackerMerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
     if (backerMerkleDirectDistributor) {
-      await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      tx = await gfi.connect(signer).approve(backerMerkleDirectDistributor.address, GFI_TOTAL)
+      await tx.wait()
+      tx = await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      await tx.wait()
     }
   }
 
   // Configure BackerRewards
   const backerRewardsGfiAmount = amount.mul(new BN(BACKER_REWARDS_PERCENT_OF_TOTAL_GFI)).div(new BN(100))
-  await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
-  await backerRewards.setMaxInterestDollarsEligible(BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE, {from: protocolOwner})
-  await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
+  let tx = await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
+  await tx.wait()
+  tx = await backerRewards.setMaxInterestDollarsEligible(BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE, {
+    from: protocolOwner,
+  })
+  await tx.wait()
+  tx = await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
+  await tx.wait()
 }
 
 export async function getERC20s({hre, chainId}) {
@@ -364,11 +393,13 @@ async function fundAddressAndDepositToCommonPool({
   // await impersonateAccount(hre, depositorAddress)
   const signer = ethers.provider.getSigner(depositorAddress)
   const depositAmount = new BN(10000).mul(USDCDecimals)
-  await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
-  await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
+  let txn = await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, USDC_TOTAL)
+  await txn.wait()
+  txn = await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
+  await txn.wait()
 
   // Deposit funds into Common Pool
-  let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
+  txn = await erc20.connect(signer).approve(commonPool.address, USDC_TOTAL)
   await txn.wait()
   txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
   await txn.wait()
@@ -414,7 +445,8 @@ async function createBorrowerContractAndPools({
   let filledPoolTxn = await filledPool.lockJuniorCapital()
   await filledPoolTxn.wait()
   const ownerSigner = ethers.provider.getSigner(protocol_owner)
-  await seniorPool.connect(ownerSigner).invest(filledPool.address)
+  const tx = await seniorPool.connect(ownerSigner).invest(filledPool.address)
+  await tx.wait()
 
   filledPoolTxn = await filledPool.lockPool()
   await filledPoolTxn.wait()
@@ -449,7 +481,7 @@ async function createFullPool(
   })
 
   let txn
-  txn = await erc20.connect(ownerSigner).approve(pool.address, String(depositAmount))
+  txn = await erc20.connect(ownerSigner).approve(pool.address, USDC_TOTAL)
   await txn.wait()
   txn = await pool.connect(ownerSigner).deposit(TRANCHES.Junior, String(depositAmount))
   await txn.wait()
@@ -458,10 +490,12 @@ async function createFullPool(
   txn = await pool.lockJuniorCapital()
   await txn.wait()
 
-  await pool.lockPool()
+  txn = await pool.lockPool()
+  await txn.wait()
   creditLine = creditLine.attach(await pool.creditLine())
 
-  await pool.drawdown((await creditLine.limit()).div(2))
+  txn = await pool.drawdown((await creditLine.limit()).div(2))
+  await txn.wait()
 
   await writePoolMetadata({pool: pool, borrower: address})
 }
@@ -549,7 +583,8 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logge
   for (const erc20 of erc20s) {
     const {contract} = erc20
     const decimals = ten.pow(new BN(await contract.decimals()))
-    await contract.transfer(userToFund, String(new BN(1000000).mul(decimals)))
+    const tx = await contract.transfer(userToFund, String(new BN(1000000).mul(decimals)))
+    await tx.wait()
   }
 }
 
@@ -636,13 +671,13 @@ async function createPoolForBorrower({
   const pool = poolContract.attach(poolAddress).connect(underwriterSigner)
 
   logger(`Created a Pool ${poolAddress} for the borrower ${borrower}`)
-  let txn = await erc20.connect(underwriterSigner).approve(pool.address, String(limit))
+  let txn = await erc20.connect(underwriterSigner).approve(pool.address, USDC_TOTAL)
   await txn.wait()
 
   if (depositor) {
     const depositAmount = String(new BN(limit).div(new BN(20)))
     const depositorSigner = ethers.provider.getSigner(depositor)
-    txn = await erc20.connect(depositorSigner).approve(pool.address, String(limit))
+    txn = await erc20.connect(depositorSigner).approve(pool.address, USDC_TOTAL)
     await txn.wait()
     txn = await pool.connect(depositorSigner).deposit(TRANCHES.Junior, depositAmount)
     await txn.wait()
@@ -669,7 +704,8 @@ async function setupTestForwarder(
   logger(`Created Forwarder at ${forwarder.address}`)
 
   assertNonNullable(forwarder)
-  await forwarder.registerDomainSeparator("Defender", "1")
+  const tx = await forwarder.registerDomainSeparator("Defender", "1")
+  await tx.wait()
 
   await updateConfig(config, "address", CONFIG_KEYS.TrustedForwarder, forwarder.address, {logger})
 }
