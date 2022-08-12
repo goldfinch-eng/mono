@@ -136,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [ 16.x ]
+        node-version: [16.x]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -192,7 +192,7 @@ jobs:
           environment: dev
           sourcemaps: packages/functions/lib/functions
           ignore_empty: true
-      if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true' 
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true' 
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
