@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "mumbai",
+  defaultNetwork: "moonbeam",
   networks: {
     hardhat: {
       mining: {
@@ -77,6 +77,11 @@ export default {
       accounts: {mnemonic: process.env.EOA_MNEMONIC},
       chainId: 80001,
       // gasPrice: 120 * 1000000000
+    },
+    arbitrum: {
+      url: "https://rinkeby.arbitrum.io/rpc",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 421611,
     },
   },
   solidity: {

@@ -57,6 +57,7 @@ const FUJI = "fuji"
 const MOONBEAM = "moonbeam"
 const AURORA = "aurora"
 const MUMBAI = "mumbai"
+const ARBITRUM = "arbitrum"
 
 export type ChainName =
   | typeof LOCAL
@@ -67,6 +68,7 @@ export type ChainName =
   | typeof MOONBEAM
   | typeof AURORA
   | typeof MUMBAI
+  | typeof ARBITRUM
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
@@ -86,6 +88,8 @@ const AURORA_CHAIN_ID = "1313161555"
 type AuroraChainId = typeof AURORA_CHAIN_ID
 const MUMBAI_CHAIN_ID = "80001"
 type MumbaiChainId = typeof MUMBAI_CHAIN_ID
+const ARBITRUM_CHAIN_ID = "421611"
+type ArbitrumChainId = typeof ARBITRUM_CHAIN_ID
 
 export type ChainId =
   | LocalChainId
@@ -96,6 +100,7 @@ export type ChainId =
   | MoonbeamChainId
   | AuroraChainId
   | MumbaiChainId
+  | ArbitrumChainId
 
 const CHAIN_IDS = genExhaustiveTuple<ChainId>()(
   LOCAL_CHAIN_ID,
@@ -105,7 +110,8 @@ const CHAIN_IDS = genExhaustiveTuple<ChainId>()(
   FUJI_CHAIN_ID,
   MOONBEAM_CHAIN_ID,
   AURORA_CHAIN_ID,
-  MUMBAI_CHAIN_ID
+  MUMBAI_CHAIN_ID,
+  ARBITRUM_CHAIN_ID
 )
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
@@ -122,6 +128,7 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [MOONBEAM_CHAIN_ID]: MOONBEAM,
   [AURORA_CHAIN_ID]: AURORA,
   [MUMBAI_CHAIN_ID]: MUMBAI,
+  [ARBITRUM_CHAIN_ID]: ARBITRUM,
 }
 
 export type AddressString = string
