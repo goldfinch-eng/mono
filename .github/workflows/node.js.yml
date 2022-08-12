@@ -30,6 +30,9 @@ jobs:
         files: |
           packages\/autotasks\/.+\.ts
           packages\/autotasks\/.+\.json
+        # packages\/autotasks\/package\.json
+        # packages\/autotasks\/package\-lock\.json
+        # packages\/utils\/**
     - name: Cache node modules
       uses: actions/cache@v2
       env:
@@ -164,8 +167,6 @@ jobs:
           # TODO: Uncomment if .github/workflows/test_functions_deploy_file_diff.yml test run is successful
           # packages\/functions\/package\.json
           # packages\/functions\/package\-lock\.json
-          # packages\/pools\/**
-          # packages\/protocol\/**
           # packages\/utils\/**
       - name: Cache Firestore emulator
         uses: actions/cache@v2
@@ -177,6 +178,11 @@ jobs:
       - run: npx lerna bootstrap --ci --scope @goldfinch-eng/functions --include-dependencies
       - run: npx lerna run build --stream --scope @goldfinch-eng/functions --include-dependencies
       - run: npx lerna run ci_test --stream --scope @goldfinch-eng/functions
+      - name: deploy-dev
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --stream --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
+        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       # TODO: Uncomment if .github/workflows/test_functions_deploy_file_diff.yml test run is successful
       # - name: Create Sentry release
       #   uses: getsentry/action-release@v1
@@ -189,10 +195,10 @@ jobs:
       #     sourcemaps: packages/functions/lib/functions
       #     ignore_empty: true
       #   if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true' 
-      - name: deploy-dev
+      - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --stream --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
+        run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
         if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
       # TODO: Uncomment if .github/workflows/test_functions_deploy_file_diff.yml test run is successful
       # - name: Create Sentry release
@@ -206,9 +212,3 @@ jobs:
       #     sourcemaps: packages/functions/lib/functions
       #     ignore_empty: true
       #   if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
-      - name: deploy-prod
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
-        if: github.ref == 'refs/heads/main' && steps.changed-files.outputs.any_changed == 'true'
-

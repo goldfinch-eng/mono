@@ -4,6 +4,41 @@ name: Test proper file diff tracking & sentry release deploys
 on: workflow_dispatch
 
 jobs:
+  autotasks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v11.2
+      with:
+        files: |
+          packages\/autotasks\/.+\.ts
+          packages\/autotasks\/.+\.json
+          packages\/autotasks\/package\.json
+          packages\/autotasks\/package\-lock\.json
+          packages\/utils\/**
+    - name: Cache node modules
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+    - run: npx lerna bootstrap --ci --scope @goldfinch-eng/autotasks --include-dependencies
+    - run: npx lerna run build --stream --scope @goldfinch-eng/autotasks --include-dependencies
+    - run: npx lerna run test --stream --scope @goldfinch-eng/autotasks
+
   functions:
     runs-on: ubuntu-latest
     strategy:
@@ -38,8 +73,6 @@ jobs:
             packages\/functions\/scripts\/.+\.ts
             packages\/functions\/package\.json
             packages\/functions\/package\-lock\.json
-            packages\/pools\/**
-            packages\/protocol\/**
             packages\/utils\/**
       - name: Cache Firestore emulator
         uses: actions/cache@v2
