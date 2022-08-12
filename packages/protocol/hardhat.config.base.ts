@@ -83,6 +83,11 @@ export default {
       accounts: {mnemonic: process.env.EOA_MNEMONIC},
       chainId: 421611,
     },
+    bsc: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 97,
+    },
   },
   solidity: {
     compilers: [
