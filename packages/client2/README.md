@@ -37,9 +37,9 @@ Running the app against a local chain is possible as well, but you need to set u
 
 To bring up the machines:
 
-1. In `packages/protocol`, run `npm run start` to start up a local chain. Wait for this to finish initializing.
+1. In the monorepo root, run `npm run start:local`. This will start up the local chain, the old client, and all of the other related processes. This will include the local GFI airdrops.
 2. In `packages/subgraph`, run `npm run start-local`. This will bring up a subgraph in Docker. When Docker is up, run `npm run create-local` then `npm run deploy-local`
-3. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `npm run dev`.
+3. Finally, in this package, you can set `NEXT_PUBLIC_NETWORK_NAME=localhost` and you can comment out the env var for a graphQL URL if you have it. Now run `npm run dev`. This will start client2 on port 3001 so it doesn't conflict with the old client on port 3000.
 
 ## Guidelines and Conventions
 

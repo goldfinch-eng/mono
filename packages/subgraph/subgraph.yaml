@@ -226,6 +226,69 @@ dataSources:
           handler: handleNoListed
       file: ./src/mappings/goldfinch_config.ts
 
+  - kind: ethereum/contract
+    name: CommunityRewardsProxy
+    network: mainnet
+    source:
+      address: "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460"
+      abi: CommunityRewards_Proxy
+      startBlock: 13941109
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - CommunityRewardsToken
+      abis:
+        - name: CommunityRewards_Proxy
+          file: ./abis/CommunityRewards_Proxy.json
+      eventHandlers:
+        - event: ProxyImplementationUpdated(indexed address,indexed address)
+          handler: handleProxyImplementationUpdated
+      file: ./src/mappings/community_rewards_proxy.ts
+
+  - kind: ethereum/contract
+    name: MerkleDistributor
+    network: mainnet
+    source:
+      address: "0x0f306E3f6b2d5ae820d33C284659B29847972d9A"
+      abi: MerkleDistributor
+      startBlock: 13941117
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - CommunityRewardsToken
+      abis:
+        - name: MerkleDistributor
+          file: ./abis/MerkleDistributor.json
+      eventHandlers:
+        - event: GrantAccepted(indexed uint256,indexed uint256,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleGrantAccepted
+      file: ./src/mappings/merkle_distributor.ts
+
+  - kind: ethereum/contract
+    name: BackerMerkleDistributor
+    network: mainnet
+    source:
+      address: "0xC442b55A082f7D5F8d8DcDA3d0efF50f47dD0F82"
+      abi: BackerMerkleDistributor
+      startBlock: 14129983
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - CommunityRewardsToken
+      abis:
+        - name: BackerMerkleDistributor
+          file: ./abis/BackerMerkleDistributor.json
+      eventHandlers:
+        - event: GrantAccepted(indexed uint256,indexed uint256,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleGrantAccepted
+      file: ./src/mappings/backer_merkle_distributor.ts
+
 templates:
   - name: SeniorPool
     kind: ethereum/contract
@@ -467,8 +530,10 @@ templates:
       eventHandlers:
         - event: RewardAdded(uint256)
           handler: handleRewardAdded
-        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
+        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
           handler: handleStaked
+        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
+          handler: handleStaked1
         - event: Unstaked(indexed address,indexed uint256,uint256)
           handler: handleUnstaked
         - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
@@ -483,6 +548,8 @@ templates:
           handler: handleUnstakedAndWithdrew
         - event: UnstakedAndWithdrewMultiple(indexed address,uint256,uint256[],uint256[])
           handler: handleUnstakedAndWithdrewMultiple
+        - event: RewardPaid(indexed address,indexed uint256,uint256)
+          handler: handleRewardPaid
 
   - name: BackerRewards
     kind: ethereum/contract
@@ -508,8 +575,10 @@ templates:
           handler: handleSetTotalRewards
         - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
           handler: handleSetMaxInterestDollarsEligible
-        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256)
           handler: handleBackerRewardsClaimed
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleBackerRewardsClaimed1
 
   - name: UniqueIdentity
     kind: ethereum/contract
@@ -529,3 +598,27 @@ templates:
       eventHandlers:
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
+
+  - name: CommunityRewards
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CommunityRewards
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/community_rewards.ts
+      entities:
+        - CommunityRewardsToken
+        - User
+      abis:
+        - name: CommunityRewards
+          file: ./abis/CommunityRewards.json
+      eventHandlers:
+        - event: Granted(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
+          handler: handleGranted
+        - event: RewardPaid(indexed address,indexed uint256,uint256)
+          handler: handleRewardPaid
+        - event: GrantRevoked(indexed uint256,uint256)
+          handler: handleGrantRevoked

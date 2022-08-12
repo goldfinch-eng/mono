@@ -10,18 +10,22 @@ type SeniorPool @entity {
   investmentsMade: [TranchedPool!]!
 }
 
+enum StakedPositionType {
+  Fidu
+  CurveLP
+}
+
 type SeniorPoolStakedPosition @entity {
   id: ID!
   user: User!
+  initialAmount: BigInt!
   amount: BigInt!
+  positionType: StakedPositionType!
   """
-  Beginning of vesting schedule.
+  endTime has to be queried via RPC on client due to a complication: calling positions() on the StakingRewards contract is difficult due to its signature changing over time.
   """
-  startTime: BigInt
-  """
-  End of vesting schedule.
-  """
-  endTime: BigInt
+  startTime: BigInt!
+  totalRewardsClaimed: BigInt!
 }
 
 type SeniorPoolStatus @entity {
@@ -75,6 +79,8 @@ type User @entity {
   isGoListed: Boolean!
 
   transactions: [Transaction!]! @derivedFrom(field: "user")
+
+  communityRewardsTokens: [CommunityRewardsToken!]! @derivedFrom(field: "user")
 }
 
 type SeniorTrancheInfo @entity {
@@ -121,9 +127,6 @@ type PoolBacker @entity {
   principalRedeemable: BigInt!
   interestRedeemable: BigInt!
   availableToWithdraw: BigInt!
-
-  rewardsClaimable: BigInt!
-  rewardsClaimed: BigInt!
 }
 
 type CreditLine @entity {
@@ -221,6 +224,7 @@ type TranchedPool @entity {
 
 type TranchedPoolToken @entity {
   id: ID! # Set to tokenId
+  mintedAt: BigInt!
   user: User!
   tranchedPool: TranchedPool!
   tranche: BigInt!
@@ -232,6 +236,15 @@ type TranchedPoolToken @entity {
 
   rewardsClaimable: BigInt!
   rewardsClaimed: BigInt!
+
+  """
+  Refers to the rewards that are received from LP rewards matching
+  """
+  stakingRewardsClaimable: BigInt!
+  """
+  Refers to the rewards that are received from LP rewards matching
+  """
+  stakingRewardsClaimed: BigInt!
 }
 
 type StakingRewardsData @entity {
@@ -315,4 +328,25 @@ type Zap @entity {
   seniorPoolStakedPosition: SeniorPoolStakedPosition!
   poolToken: TranchedPoolToken!
   tranchedPool: TranchedPool!
+}
+
+enum CommunityRewardsTokenSource {
+  MERKLE_DISTRIBUTOR
+  BACKER_MERKLE_DISTRIBUTOR
+}
+
+type CommunityRewardsToken @entity {
+  id: ID!
+  source: CommunityRewardsTokenSource!
+  index: Int!
+  user: User!
+  totalGranted: BigInt!
+  totalClaimed: BigInt!
+  cliffLength: BigInt!
+  vestingLength: BigInt!
+  vestingInterval: BigInt!
+  grantedAt: BigInt!
+  revokedAt: BigInt!
+  startTime: BigInt!
+  endTime: BigInt!
 }

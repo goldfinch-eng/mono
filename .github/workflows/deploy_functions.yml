@@ -1,9 +1,7 @@
 # This workflow will do a clean install of node dependencies, build the source code, run tests, and then deploy Google Cloud functions from main.
 # NOTE: This should be kept in sync with workflows/node.js.yml - with modifications for triggers.
 name: Manually deploy main to Google Cloud functions
-
 on: workflow_dispatch
-
 jobs:
   functions:
     runs-on: ubuntu-latest
@@ -45,8 +43,30 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --stream --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
         if: github.ref == 'refs/heads/main'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-dev
+        with:
+          environment: dev
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
+        if: github.ref == 'refs/heads/main'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
+        if: github.ref == 'refs/heads/main'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-prod
+        with:
+          environment: production
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
         if: github.ref == 'refs/heads/main'

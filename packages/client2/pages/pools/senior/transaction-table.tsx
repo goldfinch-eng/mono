@@ -3,15 +3,14 @@ import { format } from "date-fns";
 import Image from "next/image";
 import { useCallback } from "react";
 
+import { Address } from "@/components/address";
 import { Link, Table } from "@/components/design-system";
-import { Identicon } from "@/components/identicon";
 import { formatCrypto } from "@/lib/format";
 import {
   TransactionCategory,
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
-import { abbreviateAddress } from "@/lib/wallet";
 
 import {
   reduceOverlappingEventsToNonOverlappingTxs,
@@ -108,10 +107,7 @@ export function TransactionTable() {
               <div>{transaction.tranchedPool?.borrower.name}</div>
             </>
           ) : (
-            <>
-              <Identicon className="h-6 w-6" account={transaction.user.id} />
-              <div>{abbreviateAddress(transaction.user.id)}</div>
-            </>
+            <Address address={transaction.user.id} />
           )}
         </div>,
         <div key={`${transaction.id}-category`} className="text-left">

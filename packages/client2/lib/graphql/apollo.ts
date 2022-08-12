@@ -29,7 +29,10 @@ const schema = buildClientSchema(
 const scalarLink = withScalars({ schema, typesMap });
 
 export const apolloClient = new ApolloClient({
-  cache: new InMemoryCache({ typePolicies }),
+  cache: new InMemoryCache({
+    typePolicies,
+    possibleTypes: { GfiGrant: ["IndirectGfiGrant", "DirectGfiGrant"] },
+  }),
   typeDefs: localSchema,
   link: from([scalarLink, nonFatalErrorLink, errorLink, httpLink]),
   defaultOptions: {

@@ -12,6 +12,7 @@ import {
   FiatAmount,
   SupportedCrypto,
 } from "../graphql/generated";
+import { assertUnreachable } from "../utils";
 
 export function formatFiat(
   fiatAmount: FiatAmount,
@@ -57,9 +58,7 @@ export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
       );
       return curveLpAsFloat;
     default:
-      throw new Error(
-        `Unrecognized crypto (${cryptoAmount.token}) in cryptoToFloat()`
-      );
+      assertUnreachable(cryptoAmount.token);
   }
 }
 
@@ -83,26 +82,18 @@ export function formatCrypto(
     includeToken: false,
   };
   const { includeSymbol, includeToken } = { ...defaultOptions, ...options };
-  switch (cryptoAmount.token) {
-    case SupportedCrypto.Usdc:
-      return `${includeSymbol ? "$" : ""}${decimalFormatter.format(
-        cryptoToFloat(cryptoAmount)
-      )}${includeToken ? " USDC" : ""}`;
-    case SupportedCrypto.Gfi:
-      return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
-        includeToken ? " GFI" : ""
-      }`;
-    case SupportedCrypto.Fidu:
-      return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
-        includeToken ? " FIDU" : ""
-      }`;
-    case SupportedCrypto.CurveLp:
-      return `${decimalFormatter.format(cryptoToFloat(cryptoAmount))}${
-        includeToken ? " Curve LP" : ""
-      }`;
-    default:
-      throw new Error(
-        `Unrecognized crypto (${cryptoAmount.token}) in formatCrypto()`
-      );
-  }
+  const float = cryptoToFloat(cryptoAmount);
+  const amount =
+    float > 0 && float < 0.01 ? "<0.01" : decimalFormatter.format(float);
+  const prefix =
+    cryptoAmount.token === SupportedCrypto.Usdc && includeSymbol ? "$" : "";
+  const suffix = includeToken ? ` ${tokenMap[cryptoAmount.token]}` : "";
+  return prefix.concat(amount).concat(suffix);
 }
+
+const tokenMap: Record<SupportedCrypto, string> = {
+  [SupportedCrypto.Usdc]: "USDC",
+  [SupportedCrypto.Gfi]: "GFI",
+  [SupportedCrypto.Fidu]: "FIDU",
+  [SupportedCrypto.CurveLp]: "FIDU-USDC-F",
+};
