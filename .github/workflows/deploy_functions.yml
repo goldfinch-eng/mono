@@ -38,38 +38,35 @@ jobs:
       - run: npx lerna bootstrap --ci --scope @goldfinch-eng/functions --include-dependencies
       - run: npx lerna run build --stream --scope @goldfinch-eng/functions --include-dependencies
       - run: npx lerna run ci_test --stream --scope @goldfinch-eng/functions
-
       - name: deploy-dev
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_dev --stream --scope @goldfinch-eng/functions && npx lerna exec --stream --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project dev"
         if: github.ref == 'refs/heads/main'
-      # TODO: Uncomment if .github/workflows/test_functions_deploy_file_diff.yml test run is successful
-      # - name: Create Sentry release
-      #   uses: getsentry/action-release@v1
-      #   env:
-      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      #     SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      #     SENTRY_PROJECT: server-functions-dev
-      #   with:
-      #     environment: dev
-      #     sourcemaps: packages/functions/lib/functions
-      #     ignore_empty: true
-      #   if: github.ref == 'refs/heads/main'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-dev
+        with:
+          environment: dev
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
+        if: github.ref == 'refs/heads/main'
       - name: deploy-prod
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: npx lerna run ci_functions_config_set_prod --stream --scope @goldfinch-eng/functions && npx lerna exec --scope @goldfinch-eng/functions "npm run pre-deploy && npx firebase deploy --only functions --project prod"
         if: github.ref == 'refs/heads/main'
-      # TODO: Uncomment if .github/workflows/test_functions_deploy_file_diff.yml test run is successful
-      # - name: Create Sentry release
-      #   uses: getsentry/action-release@v1
-      #   env:
-      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      #     SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      #     SENTRY_PROJECT: server-functions-prod
-      #   with:
-      #     environment: production
-      #     sourcemaps: packages/functions/lib/functions
-      #     ignore_empty: true
-      #   if: github.ref == 'refs/heads/main'
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: server-functions-prod
+        with:
+          environment: production
+          sourcemaps: packages/functions/lib/functions
+          ignore_empty: true
+        if: github.ref == 'refs/heads/main'
