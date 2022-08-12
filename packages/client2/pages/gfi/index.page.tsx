@@ -132,6 +132,12 @@ export default function GfiPage() {
     .add(backerTotalLocked)
     .add(stakingTotalLocked);
 
+  const userHasRewards =
+    (data?.seniorPoolStakedPositions.length ?? 0) +
+      (data?.tranchedPoolTokens.length ?? 0) +
+      (grantsWithTokens?.length ?? 0) >
+    0;
+
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
@@ -187,18 +193,20 @@ export default function GfiPage() {
               }
             />
           </StatGrid>
-          <div className="mb-3 hidden grid-cols-5 items-center px-6 text-sand-500 lg:grid">
-            <div className="col-span-2">Type</div>
-            <div className="justify-self-end">Locked GFI</div>
-            <div className="justify-self-end">Claimable GFI</div>
-          </div>
-          <div className="space-y-3">
-            {loading ? (
-              [0, 1, 2, 3].map((nonce) => (
+          {loading ? (
+            <div className="space-y-3">
+              {[0, 1, 2, 3].map((nonce) => (
                 <Shimmer key={nonce} className="h-20" />
-              ))
-            ) : (
-              <>
+              ))}
+            </div>
+          ) : userHasRewards ? (
+            <div>
+              <div className="mb-3 hidden grid-cols-5 items-center px-6 text-sand-500 lg:grid">
+                <div className="col-span-2">Type</div>
+                <div className="justify-self-end">Locked GFI</div>
+                <div className="justify-self-end">Claimable GFI</div>
+              </div>
+              <div className="space-y-3">
                 {data?.seniorPoolStakedPositions.map((position) => (
                   <StakingCard key={position.id} position={position} />
                 ))}
@@ -216,9 +224,14 @@ export default function GfiPage() {
                     />
                   )
                 )}
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              You do not have any sources of GFI rewards. You can earn rewards
+              by supplying to pools.
+            </div>
+          )}
         </div>
       )}
     </div>
