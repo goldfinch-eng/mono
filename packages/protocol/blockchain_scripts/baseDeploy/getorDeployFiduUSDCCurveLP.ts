@@ -24,7 +24,7 @@ export async function getOrDeployFiduUSDCCurveLP(deployer: ContractDeployer, con
   assertIsChainId(chainId)
   let fiduUSDCCurveLPAddress = MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
   const protocolOwner = await getProtocolOwner()
-  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+  if (!isMainnetForking()) {
     logger("We don't have a FIDU-USDC Curve LP address for this network, so deploying a fake contract")
     const initialAmount = String(new BN("10000000000000").mul(new BN(String(1e18))))
     const decimalPlaces = String(new BN(18))

@@ -103,7 +103,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
-  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+  if (!isMainnetForking()) {
     logger("🐳 Funding from local whales")
     await fundFromLocalWhale(gf_deployer, erc20s, {logger})
     await fundFromLocalWhale(borrower, erc20s, {logger})
@@ -187,7 +187,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   } else {
     await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
-    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+    if (!isMainnetForking()) {
       await setUpRewards(erc20, getOrNull, protocol_owner)
     }
 
