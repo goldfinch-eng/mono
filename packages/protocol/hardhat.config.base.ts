@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "moonbeam",
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       mining: {
