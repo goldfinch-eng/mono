@@ -54,9 +54,6 @@ import {overrideUsdcDomainSeparator} from "./mainnetForkingHelpers"
 
 dotenv.config({path: findEnvLocal()})
 
-const USDC_TOTAL = new BigNumber(100_000_000).multipliedBy(new BigNumber(1e6)).toString(10)
-const GFI_TOTAL = new BigNumber(100_000_000).multipliedBy(new BigNumber(1e18)).toString(10)
-
 export const BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE = new BigNumber(100_000_000)
   .multipliedBy(new BigNumber(1e18))
   .toString(10)
@@ -209,8 +206,6 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       allowedUIDTypes: [...NON_US_UID_TYPES],
     })
     await writePoolMetadata({pool: commonPool, borrower: "NON-US Pool GFI"})
-    let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
-    creditLine = creditLine.attach(await commonPool.creditLine())
 
     const empty = await createPoolForBorrower({
       getOrNull,
@@ -239,6 +234,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     txn = await commonPool.lockPool()
     await txn.wait()
 
+    let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
+    creditLine = creditLine.attach(await commonPool.creditLine())
+
     const amount = (await creditLine.limit()).div(2)
     txn = await commonPool.drawdown(amount)
     await txn.wait()
@@ -251,7 +249,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     assertNonNullable(borrowerSigner)
     const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
     const payAmount = new BN(100).mul(USDCDecimals)
-    txn = await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, USDC_TOTAL)
+    txn = await (erc20 as TestERC20)
+      .connect(borrowerSigner)
+      .approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
     await txn.wait()
     txn = await bwrCon.pay(commonPool.address, payAmount.toString())
     await txn.wait()
@@ -290,9 +290,9 @@ async function setUpRewards(
     const signer = ethers.provider.getSigner(protocolOwner)
     let tx = await gfi.mint(protocolOwner, amount.toString(10))
     await tx.wait()
-    tx = await gfi.connect(signer).approve(communityRewards.address, GFI_TOTAL)
+    tx = await gfi.connect(signer).approve(communityRewards.address, rewardsAmount.toString(10))
     await tx.wait()
-    tx = await gfi.connect(signer).approve(stakingRewards.address, GFI_TOTAL)
+    tx = await gfi.connect(signer).approve(stakingRewards.address, rewardsAmount.toString(10))
     await tx.wait()
 
     tx = await communityRewards.loadRewards(rewardsAmount.toString(10))
@@ -319,14 +319,14 @@ async function setUpRewards(
     // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
     // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
     const usdcAmount = String(usdcVal(50000))
-    tx = await erc20.connect(signer).approve(stakingRewards.address, USDC_TOTAL)
+    tx = await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
     await tx.wait()
     tx = await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
     await tx.wait()
 
     // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
     if (merkleDirectDistributor) {
-      tx = await gfi.connect(signer).approve(merkleDirectDistributor.address, GFI_TOTAL)
+      tx = await gfi.connect(signer).approve(merkleDirectDistributor.address, rewardsAmount.toString(10))
       await tx.wait()
       tx = await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
       await tx.wait()
@@ -334,7 +334,7 @@ async function setUpRewards(
 
     // If the BackerMerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
     if (backerMerkleDirectDistributor) {
-      tx = await gfi.connect(signer).approve(backerMerkleDirectDistributor.address, GFI_TOTAL)
+      tx = await gfi.connect(signer).approve(backerMerkleDirectDistributor.address, rewardsAmount.toString(10))
       await tx.wait()
       tx = await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
       await tx.wait()
@@ -393,13 +393,15 @@ async function fundAddressAndDepositToCommonPool({
   // await impersonateAccount(hre, depositorAddress)
   const signer = ethers.provider.getSigner(depositorAddress)
   const depositAmount = new BN(10000).mul(USDCDecimals)
-  let txn = await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, USDC_TOTAL)
+  let txn = await (erc20 as TestERC20)
+    .connect(signer)
+    .approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
   await txn.wait()
   txn = await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
   await txn.wait()
 
   // Deposit funds into Common Pool
-  txn = await erc20.connect(signer).approve(commonPool.address, USDC_TOTAL)
+  txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
   await txn.wait()
   txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
   await txn.wait()
@@ -481,7 +483,7 @@ async function createFullPool(
   })
 
   let txn
-  txn = await erc20.connect(ownerSigner).approve(pool.address, USDC_TOTAL)
+  txn = await erc20.connect(ownerSigner).approve(pool.address, String(depositAmount))
   await txn.wait()
   txn = await pool.connect(ownerSigner).deposit(TRANCHES.Junior, String(depositAmount))
   await txn.wait()
@@ -671,13 +673,13 @@ async function createPoolForBorrower({
   const pool = poolContract.attach(poolAddress).connect(underwriterSigner)
 
   logger(`Created a Pool ${poolAddress} for the borrower ${borrower}`)
-  let txn = await erc20.connect(underwriterSigner).approve(pool.address, USDC_TOTAL)
+  let txn = await erc20.connect(underwriterSigner).approve(pool.address, String(limit))
   await txn.wait()
 
   if (depositor) {
     const depositAmount = String(new BN(limit).div(new BN(20)))
     const depositorSigner = ethers.provider.getSigner(depositor)
-    txn = await erc20.connect(depositorSigner).approve(pool.address, USDC_TOTAL)
+    txn = await erc20.connect(depositorSigner).approve(pool.address, String(limit))
     await txn.wait()
     txn = await pool.connect(depositorSigner).deposit(TRANCHES.Junior, depositAmount)
     await txn.wait()
