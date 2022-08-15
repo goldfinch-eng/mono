@@ -233,7 +233,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.estimatedJuniorApy = estimateJuniorAPY(tranchedPool)
-  tranchedPool.totalAmountOwed = calculateTotalAmountOwed(creditLine)
+  tranchedPool.initialInterestOwed = calculateInitialInterestOwed(creditLine)
   tranchedPool.save()
 
   if (isCreating) {
@@ -443,10 +443,10 @@ export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, ti
 }
 
 // Performs a simple (not compound) interest calculation on the creditLine, using the limit as the principal amount
-function calculateTotalAmountOwed(creditLine: CreditLine): BigInt {
+function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
   const principal = creditLine.limit.toBigDecimal()
   const interestRatePerDay = creditLine.interestAprDecimal.div(BigDecimal.fromString("365"))
   const termInDays = creditLine.termInDays.toBigDecimal()
   const interestOwed = principal.times(interestRatePerDay.times(termInDays))
-  return ceil(principal.plus(interestOwed))
+  return ceil(interestOwed)
 }

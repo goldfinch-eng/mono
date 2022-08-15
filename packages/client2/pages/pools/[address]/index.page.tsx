@@ -95,7 +95,7 @@ gql`
         borrower
         lateFeeApr
       }
-      totalAmountOwed
+      initialInterestOwed
       principalAmountRepaid
       interestAmountRepaid
       ...TranchedPoolStatusFields

@@ -216,9 +216,9 @@ type TranchedPool @entity {
   principalAmountRepaid: BigInt!
   interestAmountRepaid: BigInt!
   """
-  Includes principal amount and compounded interest over the entire loan term.
+  The amount of interest determined to be owed to this pool, calculated at the very beginning
   """
-  totalAmountOwed: BigInt!
+  initialInterestOwed: BigInt!
 }
 
 type TranchedPoolToken @entity {

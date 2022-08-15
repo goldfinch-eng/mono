@@ -14,7 +14,7 @@ import { PoolStatus } from "@/lib/pools";
 
 export const REPAYMENT_PROGRESS_PANEL_FIELDS = gql`
   fragment RepaymentProgressPanelTranchedPoolFields on TranchedPool {
-    totalAmountOwed
+    initialInterestOwed
     principalAmountRepaid
     interestAmountRepaid
     creditLine {
@@ -53,9 +53,9 @@ export default function RepaymentProgressPanel({
   const principalOutstanding = tranchedPool.creditLine.limit.sub(
     tranchedPool.principalAmountRepaid
   );
-  const interestOutstanding = tranchedPool.totalAmountOwed
-    .sub(tranchedPool.creditLine.limit)
-    .sub(tranchedPool.interestAmountRepaid);
+  const interestOutstanding = tranchedPool.initialInterestOwed.sub(
+    tranchedPool.interestAmountRepaid
+  );
   const remainingInterestTime = formatDistanceToNowStrict(
     tranchedPool.creditLine.termEndTime.toNumber() * 1000,
     { unit: "month" }
