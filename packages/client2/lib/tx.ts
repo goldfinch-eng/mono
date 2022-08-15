@@ -1,9 +1,4 @@
-import {
-  AmountToken,
-  SupportedCrypto,
-  TransactionCategory,
-  Transaction,
-} from "./graphql/generated";
+import { TransactionCategory, Transaction } from "./graphql/generated";
 import { assertUnreachable } from "./utils";
 
 type CorrespondingExistsInfo = {
@@ -104,12 +99,3 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
     }
   });
 }
-
-export const supportedCryptoTokenByTxAmountToken: Record<
-  AmountToken,
-  SupportedCrypto
-> = {
-  USDC: SupportedCrypto.Usdc,
-  FIDU: SupportedCrypto.Fidu,
-  CURVE_LP: SupportedCrypto.CurveLp,
-};

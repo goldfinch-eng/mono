@@ -199,9 +199,11 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
   }
 
-  tranchedPool.remainingJuniorCapacity = tranchedPool.estimatedLeverageRatio ? limit
-    .minus(tranchedPool.juniorDeposited.times(tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1))))
-    .div(tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1))) : BigInt.zero()
+  tranchedPool.remainingJuniorCapacity = tranchedPool.estimatedLeverageRatio
+    ? limit
+        .minus(tranchedPool.juniorDeposited.times(tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1))))
+        .div(tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1)))
+    : BigInt.zero()
   if (tranchedPool.remainingJuniorCapacity.lt(BigInt.zero())) {
     tranchedPool.remainingJuniorCapacity = BigInt.zero()
   }
@@ -231,7 +233,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.estimatedJuniorApy = estimateJuniorAPY(tranchedPool)
-  tranchedPool.totalAmountOwed = calculateTotalAmountOwed(creditLine)
+  tranchedPool.initialInterestOwed = calculateInitialInterestOwed(creditLine)
   tranchedPool.save()
 
   if (isCreating) {
@@ -420,9 +422,7 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
     if (tranchedPool.estimatedLeverageRatio !== null) {
       divisor = tranchedPool.estimatedLeverageRatio!.plus(BigInt.fromI32(1)).toBigDecimal()
     }
-    const juniorPrincipalDollars = creditLine.maxLimit
-      .divDecimal(divisor)
-      .div(USDC_DECIMALS.toBigDecimal())
+    const juniorPrincipalDollars = creditLine.maxLimit.divDecimal(divisor).div(USDC_DECIMALS.toBigDecimal())
     const reward = summedRewardsByTranchedPool.get(tranchedPoolAddress)
     const perPrincipalDollar = reward.div(juniorPrincipalDollars)
 
@@ -442,14 +442,11 @@ export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, ti
   tranchedPool.save()
 }
 
-function calculateTotalAmountOwed(creditLine: CreditLine): BigInt {
+// Performs a simple (not compound) interest calculation on the creditLine, using the limit as the principal amount
+function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
   const principal = creditLine.limit.toBigDecimal()
-  const interestRate = creditLine.interestAprDecimal
-  const numPayments = ceil(creditLine.termInDays.divDecimal(creditLine.paymentPeriodInDays.toBigDecimal())).toI32()
-  const paymentsPerYear = BigInt.fromI32(365).divDecimal(creditLine.paymentPeriodInDays.toBigDecimal())
-  let power = BigDecimal.fromString("1")
-  for (let i = 0; i < numPayments; i++) {
-    power = power.times(BigDecimal.fromString("1").plus(interestRate.div(paymentsPerYear)))
-  }
-  return ceil(principal.times(power))
+  const interestRatePerDay = creditLine.interestAprDecimal.div(BigDecimal.fromString("365"))
+  const termInDays = creditLine.termInDays.toBigDecimal()
+  const interestOwed = principal.times(interestRatePerDay.times(termInDays))
+  return ceil(interestOwed)
 }

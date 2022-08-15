@@ -17,10 +17,7 @@ import {
 } from "@/lib/graphql/generated";
 import { getTransactionLabel } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
-import {
-  reduceOverlappingEventsToNonOverlappingTxs,
-  supportedCryptoTokenByTxAmountToken,
-} from "@/lib/tx";
+import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -231,10 +228,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
                       {transaction.amount && !transaction.amount.isZero()
                         ? `${formatCrypto(
                             {
-                              token:
-                                supportedCryptoTokenByTxAmountToken[
-                                  transaction.amountToken
-                                ],
+                              token: transaction.amountToken,
                               amount: transaction.amount,
                             },
                             { includeToken: true }

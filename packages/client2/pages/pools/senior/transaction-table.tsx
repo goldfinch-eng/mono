@@ -11,10 +11,7 @@ import {
   useBorrowerTransactionsQuery,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
-import {
-  reduceOverlappingEventsToNonOverlappingTxs,
-  supportedCryptoTokenByTxAmountToken,
-} from "@/lib/tx";
+import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 
 gql`
   query BorrowerTransactions($first: Int!, $skip: Int!) {
@@ -83,7 +80,7 @@ export function TransactionTable() {
         : "+") +
       formatCrypto(
         {
-          token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
+          token: transaction.amountToken,
           amount: transaction.amount,
         },
         { includeToken: true }
