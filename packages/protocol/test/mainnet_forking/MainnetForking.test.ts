@@ -17,6 +17,7 @@ import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate271 from "../../blockchain_scripts/migrations/v2.7.1/migrate"
 import * as migrate272 from "../../blockchain_scripts/migrations/v2.7.2/migrate"
+import * as migrate273 from "../../blockchain_scripts/migrations/v2.7.3/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -191,6 +192,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const network = await signer.provider.getNetwork()
   await migrate271.main()
   await migrate272.main()
+  await migrate273.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
