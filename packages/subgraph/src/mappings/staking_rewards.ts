@@ -64,10 +64,9 @@ export function handleStaked1(event: Staked1): void {
 
   stakedPosition.save()
 
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE", event.params.user)
   transaction.amount = event.params.amount
   transaction.amountToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 
@@ -80,13 +79,12 @@ export function handleUnstaked(event: Unstaked): void {
 
   stakedPosition.save()
 
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
   transaction.amount = event.params.amount
   transaction.amountToken = mapStakedPositionTypeToAmountToken(
     // The historical/legacy Unstaked events that didn't have a `positionType` param were all of FIDU type.
     0
   )
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 
@@ -98,10 +96,9 @@ export function handleUnstaked1(event: Unstaked1): void {
 
   stakedPosition.save()
 
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
   transaction.amount = event.params.amount
   transaction.amountToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 
@@ -114,34 +111,30 @@ export function handleTransfer(event: Transfer): void {
 }
 
 export function handleDepositedAndStaked(event: DepositedAndStaked): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE", event.params.user)
   transaction.amount = event.params.depositedAmount
   transaction.amountToken = "USDC"
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 
 export function handleDepositedAndStaked1(event: DepositedAndStaked1): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE", event.params.user)
   transaction.amount = event.params.depositedAmount
   transaction.amountToken = "USDC"
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 
 export function handleUnstakedAndWithdrew(event: UnstakedAndWithdrew): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
   transaction.amount = event.params.usdcReceivedAmount
   transaction.amountToken = "USDC"
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 
 export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMultiple): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
   transaction.amount = event.params.usdcReceivedAmount
   transaction.amountToken = "USDC"
-  transaction.user = event.params.user.toHexString()
   transaction.save()
 }
 

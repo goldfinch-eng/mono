@@ -36,9 +36,8 @@ export function handleTransferSingle(event: TransferSingle): void {
     sendingUser.save()
   }
 
-  const transaction = createTransactionFromEvent(event, "UID_MINTED")
-  transaction.user = receivingUser.id
-  transaction.category = "UID_MINTED"
+  const transaction = createTransactionFromEvent(event, "UID_MINTED", event.params.to)
+  transaction.user = transaction.category = "UID_MINTED"
   transaction.amountToken = "USDC" // (Meaningless value for the sake of the type definition.)
   transaction.save()
 }

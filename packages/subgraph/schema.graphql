@@ -63,7 +63,6 @@ enum UserType {
 
 type User @entity {
   id: ID!
-  type: UserType
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
 
   tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
@@ -272,21 +271,21 @@ enum TransactionCategory {
   SENIOR_POOL_STAKE
   SENIOR_POOL_WITHDRAWAL
   SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
-  # NOTE: We do not need to define a `SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL_MULTIPLE` transaction 
+  # NOTE: We do not need to define a `SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL_MULTIPLE` transaction
   # category, because UnstakedAndWithdrew and UnstakedAndWithdrewMultiple events are emitted by
-  # the StakingRewards contract mutually exclusively, so for indexing them in the subgraph, we 
+  # the StakingRewards contract mutually exclusively, so for indexing them in the subgraph, we
   # can combine both of them into the same category.
   SENIOR_POOL_UNSTAKE
   # NOTE: We do not define a `SENIOR_POOL_UNSTAKE_MULTIPLE` transaction category for two reasons:
   # (1) `Unstaked` and `UnstakedMultiple` events are not emitted mutually exclusively by the StakingRewards
   # contract; on the contrary, for every `UnstakedMultiple` event, a corresponding set of `Unstaked`
-  # events are emitted whose params collectively comprise the same data as the `UnstakedMultiple` event. 
+  # events are emitted whose params collectively comprise the same data as the `UnstakedMultiple` event.
   # So we don't need to index `UnstakedMultiple` events for the sake of obtaining any unique data. And
-  # doing so would only create a need for the consumer of the subgraph to de-duplicate between an 
+  # doing so would only create a need for the consumer of the subgraph to de-duplicate between an
   # `UnstakedMultiple` event and its corresponding set of `Unstaked` events.
   # (2) The positions unstaked in an `UnstakedMultiple` event can be of different types (e.g. FIDU
   # and Curve LP), so their respective amounts are not necessarily commensurable, so summing
-  # them to a total amount would be inappropriate. Our `Transaction` schema currently supports 
+  # them to a total amount would be inappropriate. Our `Transaction` schema currently supports
   # only a single `amount` value for the transaction, so it "wants" us to do such summing. But we
   # cannot.
   SENIOR_POOL_REDEMPTION
