@@ -5,10 +5,11 @@ import {
   SeniorTrancheInfo,
   TranchedPoolDeposit,
   CreditLine,
+  TranchedPoolToken,
 } from "../../generated/schema"
 import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
-import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR} from "../constants"
+import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitPoolBacker} from "./pool_backer"
@@ -23,9 +24,11 @@ import {
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
+  getGoldfinchConfig,
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
+import {BackerRewards as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
@@ -449,4 +452,26 @@ function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
   const termInDays = creditLine.termInDays.toBigDecimal()
   const interestOwed = principal.times(interestRatePerDay.times(termInDays))
   return ceil(interestOwed)
+}
+
+// Goes through all of the tokens for this pool and updates their rewards claimable
+export function updatePoolRewardsClaimable(tranchedPool: TranchedPool, blockTimestamp: BigInt): void {
+  const goldfinchConfig = getGoldfinchConfig(blockTimestamp)
+  const backerRewardsContractAddress = goldfinchConfig.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.BackerRewards))
+  if (backerRewardsContractAddress.equals(Address.zero())) {
+    return
+  }
+  const backerRewardsContract = BackerRewardsContract.bind(backerRewardsContractAddress)
+  const poolTokenIds = tranchedPool.tokens
+  for (let i = 0; i < poolTokenIds.length; i++) {
+    const poolToken = assert(TranchedPoolToken.load(poolTokenIds[i]))
+    poolToken.rewardsClaimable = backerRewardsContract.poolTokenClaimableRewards(BigInt.fromString(poolToken.id))
+    const stakingRewardsEarnedResult = backerRewardsContract.try_stakingRewardsEarnedSinceLastWithdraw(
+      BigInt.fromString(poolToken.id)
+    )
+    if (!stakingRewardsEarnedResult.reverted) {
+      poolToken.stakingRewardsClaimable = stakingRewardsEarnedResult.value
+    }
+    poolToken.save()
+  }
 }

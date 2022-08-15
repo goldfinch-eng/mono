@@ -20,6 +20,7 @@ import {
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
   updateTranchedPoolLeverageRatio,
+  updatePoolRewardsClaimable,
 } from "../entities/tranched_pool"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 
@@ -111,6 +112,8 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.principalAmountRepaid = tranchedPool.principalAmountRepaid.plus(event.params.principalAmount)
   tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interestAmount)
   tranchedPool.save()
+
+  updatePoolRewardsClaimable(tranchedPool, event.block.timestamp)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.tranchedPool = event.address.toHexString()
