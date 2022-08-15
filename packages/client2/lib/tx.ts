@@ -3,8 +3,8 @@ import {
   SupportedCrypto,
   TransactionCategory,
   Transaction,
-} from "../graphql/generated";
-import { assertUnreachable } from "../utils";
+} from "./graphql/generated";
+import { assertUnreachable } from "./utils";
 
 type CorrespondingExistsInfo = {
   [timestamp: number]: {
