@@ -94,9 +94,9 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
     user?.isUsAccreditedIndividual;
   const shouldShowVerificationPrompt = !hasUid && !user?.isGoListed;
 
-  const filteredTxs = user?.transactions
-    ? reduceOverlappingEventsToNonOverlappingTxs(user.transactions)
-    : [];
+  const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
+    user?.transactions
+  );
 
   return (
     <div className="w-80 divide-y divide-sand-100">

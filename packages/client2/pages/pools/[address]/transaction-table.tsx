@@ -71,9 +71,9 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
       variables: { tranchedPoolId, first: 20, skip: 0 },
     });
 
-  const filteredTxs = data?.transactions
-    ? reduceOverlappingEventsToNonOverlappingTxs(data.transactions)
-    : [];
+  const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
+    data?.transactions
+  );
 
   const rows =
     filteredTxs.map((transaction) => {

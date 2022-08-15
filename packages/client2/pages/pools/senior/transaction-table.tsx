@@ -72,9 +72,9 @@ export function TransactionTable() {
     variables: { first: 20, skip: 0 },
   });
 
-  const filteredTxs = data?.transactions
-    ? reduceOverlappingEventsToNonOverlappingTxs(data.transactions)
-    : [];
+  const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
+    data?.transactions
+  );
 
   const transactions =
     filteredTxs.map((transaction) => {

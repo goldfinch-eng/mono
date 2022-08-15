@@ -11,7 +11,7 @@ import {
 
 type CorrespondingExistsInfo = {
   [timestamp: number]: {
-    [txId: string]: true;
+    [txHash: string]: true;
   };
 };
 
@@ -36,7 +36,11 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
     | ArrayItem<CurrentUserTransactionsQuery["transactions"]>
     | ArrayItem<BorrowerTransactionsQuery["transactions"]>
     | ArrayItem<TranchedPoolTransactionTableQuery["transactions"]>
->(overlappingEvents: T[]): T[] {
+>(overlappingEvents: T[] | undefined): T[] {
+  if (!overlappingEvents) {
+    return [];
+  }
+
   // We want to eliminate `Staked` events that are redundant with a corresponding
   // `DepositedAndStaked` event, and `Unstaked` events that are redundant with
   // a corresponding `UnstakedAndWithdrew` or `UnstakedAndWithdrewMultiple` event.
@@ -60,7 +64,6 @@ export function reduceOverlappingEventsToNonOverlappingTxs<
             break;
           case TransactionCategory.SeniorPoolRedemption:
           case TransactionCategory.SeniorPoolStake:
-            break;
           case TransactionCategory.SeniorPoolUnstake:
             break;
           case TransactionCategory.SeniorPoolUnstakeAndWithdrawal:

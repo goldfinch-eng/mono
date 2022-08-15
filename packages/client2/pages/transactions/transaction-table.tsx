@@ -57,9 +57,9 @@ export function TransactionTable() {
     },
   });
 
-  const filteredTxs = data?.transactions
-    ? reduceOverlappingEventsToNonOverlappingTxs(data.transactions)
-    : [];
+  const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
+    data?.transactions
+  );
 
   const rows = filteredTxs.map((transaction) => {
     const amount =
