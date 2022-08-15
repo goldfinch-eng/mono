@@ -645,6 +645,15 @@ describe("UniqueIdentity", () => {
           /Balance before mint must be 0/
         )
       })
+
+      it("rejects duplicate minting by msgSender where msgSender has a UID of the given type already", async () => {
+        await mint(tokenId, new BN(0), owner, undefined, from)
+        expect(await uniqueIdentity.balanceOf(from, tokenId)).to.bignumber.equal(new BN(1))
+        expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
+        await expect(mintTo(recipient, tokenId, new BN(1), owner, from)).to.be.rejectedWith(
+          /Balance of _msgSender\(\) before mint must be 0/
+        )
+      })
     })
 
     it("updates state and emits an event", async () => {
@@ -667,7 +676,7 @@ describe("UniqueIdentity", () => {
         value: MINT_PAYMENT,
       })
       const tolerance = new BN(50)
-      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(91348), tolerance)
+      expect(new BN(receipt.receipt.gasUsed)).to.bignumber.closeTo(new BN(93704), tolerance)
     })
 
     context("paused", () => {
