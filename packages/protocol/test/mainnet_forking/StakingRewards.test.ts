@@ -74,7 +74,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   }
 })
 
-describe("StakingRewards", () => {
+xdescribe("StakingRewards", () => {
   let gfi: GFIInstance,
     stakingRewards: StakingRewardsInstance,
     fidu: FiduInstance,
