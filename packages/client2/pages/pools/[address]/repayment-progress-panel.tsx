@@ -53,12 +53,15 @@ export default function RepaymentProgressPanel({
   const principalOutstanding = tranchedPool.creditLine.limit.sub(
     tranchedPool.principalAmountRepaid
   );
-  const interestOutstanding =
-    tranchedPool.totalAmountOwed.sub(principalOutstanding);
+  const interestOutstanding = tranchedPool.totalAmountOwed
+    .sub(tranchedPool.creditLine.limit)
+    .sub(tranchedPool.interestAmountRepaid);
   const remainingInterestTime = formatDistanceToNowStrict(
     tranchedPool.creditLine.termEndTime.toNumber() * 1000,
     { unit: "month" }
   );
+
+  const totalOutstanding = principalOutstanding.add(interestOutstanding);
 
   return (
     <div className="rounded-xl border border-sand-200 p-5">
@@ -69,10 +72,7 @@ export default function RepaymentProgressPanel({
             tooltip="The total value of your investment that remains for the Borrower to repay to you over the course of the Pool's payment term, including interest and principal repayments."
             value={formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: multiplyByFraction(
-                tranchedPool.totalAmountOwed,
-                userPositionRatio
-              ),
+              amount: multiplyByFraction(totalOutstanding, userPositionRatio),
             })}
           />
           <MiniTable
@@ -102,7 +102,7 @@ export default function RepaymentProgressPanel({
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
                   amount: multiplyByFraction(
-                    tranchedPool.totalAmountOwed,
+                    totalOutstanding,
                     userPositionRatio
                   ),
                 }),
@@ -117,7 +117,7 @@ export default function RepaymentProgressPanel({
             tooltip="The total amount of USDC remaining for the Borrower to repay to this Pool over its payment term, including interest and principal repayments."
             value={formatCrypto({
               token: SupportedCrypto.Usdc,
-              amount: tranchedPool.totalAmountOwed,
+              amount: totalOutstanding,
             })}
           />
           <MiniTable
@@ -140,7 +140,7 @@ export default function RepaymentProgressPanel({
                 "Total",
                 formatCrypto({
                   token: SupportedCrypto.Usdc,
-                  amount: tranchedPool.totalAmountOwed,
+                  amount: totalOutstanding,
                 }),
               ],
             ]}
