@@ -31,6 +31,14 @@ extend type CreditLine {
   isLate: Boolean
 }
 
+extend type SeniorPoolStakedPosition {
+  rewardEarnRate: BigInt!
+  claimable: BigInt!
+  granted: BigInt!
+  # I would have liked for endTime to be indexed on the subgraph, but with the signature of positions() changing, it proved to be pretty challenging
+  endTime: BigInt!
+}
+
 enum SupportedFiat {
   USD
 }
@@ -48,15 +56,62 @@ type GfiPrice {
   lastUpdated: Int!
 }
 
-enum SupportedCrypto {
-  USDC
-  GFI
-  FIDU
-}
-
 type CryptoAmount {
   token: SupportedCrypto!
   amount: BigInt!
+}
+
+enum IndirectGrantSource {
+  MERKLE_DISTRIBUTOR
+  BACKER_MERKLE_DISTRIBUTOR
+}
+
+enum DirectGrantSource {
+  MERKLE_DIRECT_DISTRIBUTOR
+  BACKER_MERKLE_DIRECT_DISTRIBUTOR
+}
+
+enum GrantReason {
+  BACKER
+  LIQUIDITY_PROVIDER
+  FLIGHT_ACADEMY
+  FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER
+  GOLDFINCH_INVESTMENT
+}
+
+interface GfiGrant {
+  id: ID!
+  index: Int!
+  reason: GrantReason!
+  proof: [String!]!
+  amount: BigInt!
+}
+
+type IndirectGfiGrant implements GfiGrant {
+  id: ID!
+  index: Int!
+  reason: GrantReason!
+  proof: [String!]!
+  amount: BigInt!
+
+  indirectSource: IndirectGrantSource!
+  vestingLength: BigInt!
+  vestingInterval: BigInt!
+  cliffLength: BigInt!
+  start: BigInt!
+  end: BigInt!
+  vested: BigInt!
+}
+
+type DirectGfiGrant implements GfiGrant {
+  id: ID!
+  index: Int!
+  reason: GrantReason!
+  proof: [String!]!
+  amount: BigInt!
+
+  directSource: DirectGrantSource!
+  isAccepted: Boolean!
 }
 
 type Viewer {
@@ -64,6 +119,8 @@ type Viewer {
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
+
+  gfiGrants: [GfiGrant!]!
 }
 
 type BlockInfo {

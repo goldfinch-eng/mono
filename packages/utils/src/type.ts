@@ -132,3 +132,5 @@ export class UnreachableError extends Error {
 export function assertUnreachable(x: never): never {
   throw new UnreachableError("Expected not to get here.")
 }
+
+export type ArrayItem<T> = T extends Array<infer U> ? U : never

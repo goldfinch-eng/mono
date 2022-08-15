@@ -455,7 +455,7 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser2, usNonAccreditedIdType)).to.bignumber.eq(new BN(1))
           }).timeout(TEST_TIMEOUT)
 
-          it("throws an error if linking their KYC to their recipient fails", async () => {
+          it.skip("throws an error if linking their KYC to their recipient fails", async () => {
             sandbox.restore()
             sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
             await expect(
@@ -537,7 +537,7 @@ describe("unique-identity-signer", () => {
             expect(await uniqueIdentity.balanceOf(anotherUser2, usNonAccreditedIdType)).to.bignumber.eq(new BN(0))
           }).timeout(TEST_TIMEOUT)
 
-          it("throws an error if linking their KYC to their recipient fails", async () => {
+          it.skip("throws an error if linking their KYC to their recipient fails", async () => {
             sandbox.restore()
             sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
             await expect(
@@ -623,7 +623,7 @@ describe("unique-identity-signer", () => {
           expect(await uniqueIdentity.balanceOf(anotherUser2, 2)).to.bignumber.eq(new BN(0))
         }).timeout(TEST_TIMEOUT)
 
-        it("throws an error if linking their KYC to their recipient fails", async () => {
+        it.skip("throws an error if linking their KYC to their recipient fails", async () => {
           sandbox.restore()
           sandbox.stub(axios, "post").throws({response: {status: 500, data: "Link kyc failed"}})
           await expect(

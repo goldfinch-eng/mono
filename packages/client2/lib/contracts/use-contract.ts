@@ -13,6 +13,12 @@ import {
   UniqueIdentity__factory,
   Zapper__factory,
   CreditLine__factory,
+  CommunityRewards__factory,
+  MerkleDistributor__factory,
+  BackerMerkleDistributor__factory,
+  MerkleDirectDistributor__factory,
+  BackerMerkleDirectDistributor__factory,
+  BackerRewards__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -27,6 +33,12 @@ const supportedContracts = {
   StakingRewards: StakingRewards__factory.connect,
   Zapper: Zapper__factory.connect,
   CreditLine: CreditLine__factory.connect,
+  CommunityRewards: CommunityRewards__factory.connect,
+  MerkleDistributor: MerkleDistributor__factory.connect,
+  BackerMerkleDistributor: BackerMerkleDistributor__factory.connect,
+  MerkleDirectDistributor: MerkleDirectDistributor__factory.connect,
+  BackerMerkleDirectDistributor: BackerMerkleDirectDistributor__factory.connect,
+  BackerRewards: BackerRewards__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

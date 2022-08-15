@@ -13,6 +13,7 @@ export const DESIRED_CHAIN_ID =
 export const USDC_DECIMALS = 6;
 export const GFI_DECIMALS = 18;
 export const FIDU_DECIMALS = 18;
+export const CURVE_LP_DECIMALS = 18;
 
 export const TRANCHES = {
   Senior: 1,
@@ -62,3 +63,5 @@ export const UNIQUE_IDENTITY_SIGNER_URL =
     : `${SERVER_URL}/uniqueIdentitySigner`;
 
 export const UNIQUE_IDENTITY_MINT_PRICE = "830000000000000";
+
+export const TOKEN_LAUNCH_TIME = 1641920400; // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00 (note that this number is in seconds, not ms)

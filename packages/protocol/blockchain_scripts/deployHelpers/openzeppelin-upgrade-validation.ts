@@ -60,8 +60,6 @@ export const openzeppelin_saveDeploymentManifest = async (
 ): Promise<undefined> => {
   const {version, validations} = await getVersionAndValidations(implementation)
 
-  // to debug: console.log(validations.log[n]?.CreditLineFactory)
-
   const manifest = await Manifest.forNetwork(provider)
   await manifest.addProxy({
     address: proxy.address,
@@ -71,6 +69,9 @@ export const openzeppelin_saveDeploymentManifest = async (
 
   await manifest.lockedRun(async () => {
     const manifestData = await manifest.read()
+    // Uncomment to debug issues with "Error saving manifest for <contract>: The requested contract was not found..."
+    // The output of this console.log should be used to replace the corresponding entry in packages/protocol/cache/validations.json
+    // console.log(version)
     const layout = getStorageLayout(validations, version)
     manifestData.impls[version.linkedWithoutMetadata] = {
       address: implementation.address,

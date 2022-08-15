@@ -1,5 +1,5 @@
 import {ethers} from "ethers"
-import {assertNonNullable} from "@goldfinch-eng/utils"
+import {assertNonNullable, INVALID_POOLS} from "@goldfinch-eng/utils"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
 import {genRequestHandler, getBlockchain} from "../helpers"
 import POOL_METADATA from "@goldfinch-eng/pools/metadata/mainnet.json"
@@ -108,7 +108,8 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   assertNonNullable(tranchedPoolToken, `Token ID ${tokenId} not found in subgraph`)
   const {tranchedPool} = tranchedPoolToken
 
-  const poolMetadata = metadataStore[tranchedPool.id.toLowerCase()]
+  const poolId = tranchedPool.id.toLowerCase()
+  const poolMetadata = INVALID_POOLS.has(poolId) ? {name: "invalid", borrowerName: "invalid"} : metadataStore[poolId]
   assertNonNullable(poolMetadata, `Pool ${tranchedPool.id} not found`)
 
   const now = new Date()

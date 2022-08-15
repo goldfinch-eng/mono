@@ -19,7 +19,6 @@ export function initOrUpdateTranchedPoolToken(tokenId: BigInt): TranchedPoolToke
   const result = contract.getTokenInfo(BigInt.fromString(id))
   const ownerAddress = contract.ownerOf(BigInt.fromString(id))
 
-  poolToken = new TranchedPoolToken(id)
   poolToken.user = ownerAddress.toHexString()
   poolToken.tranchedPool = result.pool.toHexString()
   poolToken.tranche = result.tranche
