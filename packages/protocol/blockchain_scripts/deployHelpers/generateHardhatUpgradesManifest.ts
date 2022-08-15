@@ -31,7 +31,7 @@ export class HardhatUpgradesManifest {
   If you're seeing the following error:
   - "Error saving manifest for <>: Error: The requested contract was not found. Make sure the source code is available for compilation".
   - Unfortunately, we weren't able to figure out why the metadata is different - theory is related to the way compilation occurs.
-  - The solution is to replace the `{validations:{}}` block for the given contract w/ the metadata provided in the error - inside of packages/protocol/cache/validations.json.
+  - The solution is to replace the `{validations:{}}` block for the given contract inside of packages/protocol/cache/validations.json. Uncomment the `console.log` in `openzeppelin_saveDeploymentManifest` to get the correct value.
   */
   async writeManifest({contracts}: {contracts: string[]}): Promise<void> {
     const {network} = this.hre
