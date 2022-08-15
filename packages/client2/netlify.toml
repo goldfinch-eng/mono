@@ -1,6 +1,6 @@
 
 [build]
-  publish = ".next"  
+  publish = ".next"
   command = "npm run build"
 
 [functions]

@@ -220,9 +220,11 @@ export async function approveErc20IfRequired({
 }
 
 const transactionLabels: Record<TransactionCategory, string> = {
+  [TransactionCategory.SeniorPoolStake]: "Senior Pool Stake",
   [TransactionCategory.SeniorPoolDeposit]: "Senior Pool Supply",
   [TransactionCategory.SeniorPoolDepositAndStake]:
     "Senior Pool Supply and Stake",
+  [TransactionCategory.SeniorPoolUnstake]: "Senior Pool Unstake",
   [TransactionCategory.SeniorPoolWithdrawal]: "Senior Pool Withdrawal",
   [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]:
     "Senior Pool Unstake and Withdraw",
@@ -241,8 +243,10 @@ export function getTransactionLabel(transaction: {
 }
 
 const shortTransactionLabels: Record<TransactionCategory, string> = {
+  [TransactionCategory.SeniorPoolStake]: "Stake",
   [TransactionCategory.SeniorPoolDeposit]: "Supply",
   [TransactionCategory.SeniorPoolDepositAndStake]: "Supply and Stake",
+  [TransactionCategory.SeniorPoolUnstake]: "Unstake",
   [TransactionCategory.SeniorPoolWithdrawal]: "Withdrawal",
   [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "Unstake and Withdraw",
   [TransactionCategory.SeniorPoolRedemption]: "Auto Transfer",
@@ -265,8 +269,10 @@ export function getShortTransactionLabel(transaction: {
 }
 
 const transactionIcons: Record<TransactionCategory, IconNameType> = {
+  [TransactionCategory.SeniorPoolStake]: "ArrowUpCircle",
   [TransactionCategory.SeniorPoolDeposit]: "ArrowUpCircle",
   [TransactionCategory.SeniorPoolDepositAndStake]: "ArrowUpCircle",
+  [TransactionCategory.SeniorPoolUnstake]: "ArrowDownCircle",
   [TransactionCategory.SeniorPoolWithdrawal]: "ArrowDownCircle",
   [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "ArrowDownCircle",
   [TransactionCategory.SeniorPoolRedemption]: "ArrowDownCircle",

@@ -16,7 +16,7 @@ import {
 } from "../generated";
 
 async function erc20Balance(
-  token: Exclude<SupportedCrypto, SupportedCrypto.FiduUsdcCurveLp> // curve lp token could be added later
+  token: Exclude<SupportedCrypto, SupportedCrypto.CurveLp> // curve lp token could be added later
 ): Promise<CryptoAmount | null> {
   const provider = await getProvider();
   if (!provider) {

@@ -31,10 +31,10 @@ export function handleCreditLineMigrated(event: CreditLineMigrated): void {
 export function handleDepositMade(event: DepositMade): void {
   handleDeposit(event)
 
-  const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT")
-  transaction.user = event.params.owner.toHexString()
+  const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DEPOSIT", event.params.owner)
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.amount
+  transaction.amountToken = "USDC"
   transaction.save()
 
   createZapMaybe(event)
@@ -57,12 +57,13 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
     event,
     event.params.owner.equals(Address.fromString(SENIOR_POOL_ADDRESS))
       ? "SENIOR_POOL_REDEMPTION"
-      : "TRANCHED_POOL_WITHDRAWAL"
+      : "TRANCHED_POOL_WITHDRAWAL",
+    event.params.owner
   )
   transaction.transactionHash = event.transaction.hash
-  transaction.user = event.params.owner.toHexString()
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
+  transaction.amountToken = "USDC"
   transaction.save()
 
   deleteZapAfterUnzapMaybe(event)
@@ -92,10 +93,10 @@ export function handleDrawdownMade(event: DrawdownMade): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
   updateAllPoolBackers(event.address)
 
-  const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN")
-  transaction.user = event.params.borrower.toHexString()
+  const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.amount
+  transaction.amountToken = "USDC"
   transaction.save()
 }
 
@@ -111,9 +112,9 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interestAmount)
   tranchedPool.save()
 
-  const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT")
-  transaction.user = event.params.payer.toHexString()
+  const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.tranchedPool = event.address.toHexString()
   transaction.amount = event.params.principalAmount.plus(event.params.interestAmount)
+  transaction.amountToken = "USDC"
   transaction.save()
 }

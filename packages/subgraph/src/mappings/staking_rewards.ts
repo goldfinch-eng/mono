@@ -17,6 +17,18 @@ import {
 import {createTransactionFromEvent} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
 
+function mapStakedPositionTypeToAmountToken(stakedPositionType: i32): string {
+  // NOTE: The return type of this function should be an AmountToken enum value.
+
+  if (stakedPositionType === 0) {
+    return "FIDU"
+  } else if (stakedPositionType === 1) {
+    return "CURVE_LP"
+  } else {
+    throw new Error(`Unexpected staked position type: ${stakedPositionType}`)
+  }
+}
+
 export function handleRewardAdded(event: RewardAdded): void {
   updateCurrentEarnRate(event.address)
 }
@@ -51,6 +63,11 @@ export function handleStaked1(event: Staked1): void {
   }
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE", event.params.user)
+  transaction.amount = event.params.amount
+  transaction.amountToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
+  transaction.save()
 }
 
 // Note that Unstaked and Unstaked1 refer to two different versions of this event with different signatures.
@@ -61,6 +78,14 @@ export function handleUnstaked(event: Unstaked): void {
   stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
+  transaction.amount = event.params.amount
+  transaction.amountToken = mapStakedPositionTypeToAmountToken(
+    // The historical/legacy Unstaked events that didn't have a `positionType` param were all of FIDU type.
+    0
+  )
+  transaction.save()
 }
 
 export function handleUnstaked1(event: Unstaked1): void {
@@ -70,6 +95,11 @@ export function handleUnstaked1(event: Unstaked1): void {
   stakedPosition.amount = stakedPosition.amount.minus(event.params.amount)
 
   stakedPosition.save()
+
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
+  transaction.amount = event.params.amount
+  transaction.amountToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
+  transaction.save()
 }
 
 export function handleTransfer(event: Transfer): void {
@@ -81,30 +111,30 @@ export function handleTransfer(event: Transfer): void {
 }
 
 export function handleDepositedAndStaked(event: DepositedAndStaked): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE", event.params.user)
   transaction.amount = event.params.depositedAmount
-  transaction.user = event.params.user.toHexString()
+  transaction.amountToken = "USDC"
   transaction.save()
 }
 
 export function handleDepositedAndStaked1(event: DepositedAndStaked1): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT_AND_STAKE", event.params.user)
   transaction.amount = event.params.depositedAmount
-  transaction.user = event.params.user.toHexString()
+  transaction.amountToken = "USDC"
   transaction.save()
 }
 
 export function handleUnstakedAndWithdrew(event: UnstakedAndWithdrew): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
   transaction.amount = event.params.usdcReceivedAmount
-  transaction.user = event.params.user.toHexString()
+  transaction.amountToken = "USDC"
   transaction.save()
 }
 
 export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMultiple): void {
-  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL")
+  const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
   transaction.amount = event.params.usdcReceivedAmount
-  transaction.user = event.params.user.toHexString()
+  transaction.amountToken = "USDC"
   transaction.save()
 }
 

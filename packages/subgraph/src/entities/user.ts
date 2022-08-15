@@ -7,11 +7,15 @@ export function getOrInitUser(address: Address): User {
   let user = User.load(address.toHexString())
   if (!user) {
     user = new User(address.toHexString())
+    user.isNonUsIndividual = false
+    user.isUsAccreditedIndividual = false
+    user.isUsNonAccreditedIndividual = false
+    user.isUsEntity = false
+    user.isNonUsEntity = false
     user.isGoListed = false
-    user.type = "CAPITAL_PROVIDER"
     user.save()
   }
-  return user as User
+  return user
 }
 
 export function handleDeposit(event: DepositMade): void {

@@ -60,7 +60,7 @@ enum SupportedCrypto {
   USDC
   GFI
   FIDU
-  FiduUsdcCurveLP
+  CURVE_LP
 }
 
 type CryptoAmount {

@@ -47,7 +47,7 @@ export function StakingCard({ position }: StakingCardProps) {
     position.positionType === StakedPositionType.Fidu
       ? SupportedCrypto.Fidu
       : position.positionType === StakedPositionType.CurveLp
-      ? SupportedCrypto.FiduUsdcCurveLp
+      ? SupportedCrypto.CurveLp
       : assertUnreachable(position.positionType);
   const unlocked = position.claimable.add(position.totalRewardsClaimed);
   const locked = position.granted.sub(unlocked);

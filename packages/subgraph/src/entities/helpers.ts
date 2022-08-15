@@ -12,6 +12,7 @@ import {
 } from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 import {VERSION_BEFORE_V2_2} from "../utils"
+import {getOrInitUser} from "./user"
 
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
@@ -198,13 +199,16 @@ export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
  * A helper function that creates a Transaction entity from an Ethereum event. Does not save the entity, you must call .save() yourself, after you add any additional properties.
  * @param event Ethereum event to process. Can be any event.
  * @param category The category to assign to this. Must conform to the TransactionCategory enum.
+ * @param userAddress The address of the user that should be associated with this transaction. The corresponding `user` entity will be created if it doesn't exist
  * @returns Instance of a Transaction entity.
  */
-export function createTransactionFromEvent(event: ethereum.Event, category: string): Transaction {
+export function createTransactionFromEvent(event: ethereum.Event, category: string, userAddress: Address): Transaction {
   const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
   transaction.transactionHash = event.transaction.hash
   transaction.timestamp = event.block.timestamp.toI32()
   transaction.blockNumber = event.block.number.toI32()
   transaction.category = category
+  const user = getOrInitUser(userAddress)
+  transaction.user = user.id
   return transaction
 }

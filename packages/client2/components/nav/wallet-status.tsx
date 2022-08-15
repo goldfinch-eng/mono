@@ -12,12 +12,15 @@ import { GFI_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto, formatFiat, cryptoToFloat } from "@/lib/format";
 import {
-  SupportedCrypto,
   SupportedFiat,
   useCurrentUserWalletInfoQuery,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
+import {
+  reduceOverlappingEventsToNonOverlappingTxs,
+  supportedCryptoTokenByTxAmountToken,
+} from "@/lib/tx";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -50,9 +53,11 @@ gql`
 
       transactions(orderBy: timestamp, orderDirection: desc, first: 5) {
         id
+        timestamp
         transactionHash
         category
         amount
+        amountToken
       }
     }
   }
@@ -87,6 +92,10 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
     user?.isNonUsEntity ||
     user?.isUsAccreditedIndividual;
   const shouldShowVerificationPrompt = !hasUid && !user?.isGoListed;
+
+  const filteredTxs = reduceOverlappingEventsToNonOverlappingTxs(
+    user?.transactions
+  );
 
   return (
     <div className="w-80 divide-y divide-sand-100">
@@ -213,17 +222,23 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
           </Link>
         </div>
         <div>
-          {user && user.transactions.length !== 0 ? (
+          {filteredTxs.length !== 0 ? (
             <table className="w-full text-sm">
               <tbody>
-                {user?.transactions.map((transaction) => (
+                {filteredTxs.map((transaction) => (
                   <tr key={transaction.id}>
                     <td className="text-left">
                       {transaction.amount && !transaction.amount.isZero()
-                        ? `${formatCrypto({
-                            token: SupportedCrypto.Usdc,
-                            amount: transaction.amount,
-                          })} `
+                        ? `${formatCrypto(
+                            {
+                              token:
+                                supportedCryptoTokenByTxAmountToken[
+                                  transaction.amountToken
+                                ],
+                              amount: transaction.amount,
+                            },
+                            { includeToken: true }
+                          )} `
                         : null}
                       {getTransactionLabel(transaction)}
                     </td>

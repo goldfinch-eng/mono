@@ -20,9 +20,9 @@ export function handleDepositMade(event: DepositMade): void {
 
   // Purposefully ignore deposits from StakingRewards contract because those will get captured as DepositAndStake events instead
   if (!event.params.capitalProvider.equals(Address.fromString(STAKING_REWARDS_ADDRESS))) {
-    const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT")
-    transaction.user = event.params.capitalProvider.toHexString()
+    const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT", event.params.capitalProvider)
     transaction.amount = event.params.amount
+    transaction.amountToken = "USDC"
     transaction.save()
   }
 }
@@ -58,9 +58,9 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
   // Purposefully ignore withdrawals made by StakingRewards contract because those will be captured as UnstakeAndWithdraw
   if (!event.params.capitalProvider.equals(Address.fromString(STAKING_REWARDS_ADDRESS))) {
-    const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL")
-    transaction.user = event.params.capitalProvider.toHexString()
+    const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL", event.params.capitalProvider)
     transaction.amount = event.params.userAmount
+    transaction.amountToken = "USDC"
     transaction.save()
   }
 }
