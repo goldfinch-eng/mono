@@ -16,10 +16,7 @@ import {
   TransactionCategory,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
-import {
-  reduceOverlappingEventsToNonOverlappingTxs,
-  supportedCryptoTokenByTxAmountToken,
-} from "@/lib/tx";
+import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 
 gql`
   query TranchedPoolTransactionTable(
@@ -108,7 +105,7 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         : "+") +
       formatCrypto(
         {
-          token: supportedCryptoTokenByTxAmountToken[transaction.amountToken],
+          token: transaction.amountToken,
           amount: transaction.amount,
         },
         { includeToken: true }

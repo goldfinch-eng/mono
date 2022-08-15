@@ -56,13 +56,6 @@ type GfiPrice {
   lastUpdated: Int!
 }
 
-enum SupportedCrypto {
-  USDC
-  GFI
-  FIDU
-  CURVE_LP
-}
-
 type CryptoAmount {
   token: SupportedCrypto!
   amount: BigInt!

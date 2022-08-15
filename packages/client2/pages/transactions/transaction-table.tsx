@@ -9,10 +9,7 @@ import {
   TransactionCategory,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
-import {
-  reduceOverlappingEventsToNonOverlappingTxs,
-  supportedCryptoTokenByTxAmountToken,
-} from "@/lib/tx";
+import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 import { useWallet } from "@/lib/wallet";
 
 gql`
@@ -69,8 +66,7 @@ export function TransactionTable() {
             : "+") +
           formatCrypto(
             {
-              token:
-                supportedCryptoTokenByTxAmountToken[transaction.amountToken],
+              token: transaction.amountToken,
               amount: transaction.amount,
             },
             { includeToken: true }

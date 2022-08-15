@@ -18,7 +18,7 @@ import {createTransactionFromEvent} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
 
 function mapStakedPositionTypeToAmountToken(stakedPositionType: i32): string {
-  // NOTE: The return type of this function should be an AmountToken enum value.
+  // NOTE: The return type of this function should be a SupportedCrypto enum value.
 
   if (stakedPositionType === 0) {
     return "FIDU"
