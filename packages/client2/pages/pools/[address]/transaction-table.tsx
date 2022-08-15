@@ -16,11 +16,10 @@ import {
   TransactionCategory,
 } from "@/lib/graphql/generated";
 import { getShortTransactionLabel } from "@/lib/pools";
-
 import {
   reduceOverlappingEventsToNonOverlappingTxs,
   supportedCryptoTokenByTxAmountToken,
-} from "../../../lib/tx";
+} from "@/lib/tx";
 
 gql`
   query TranchedPoolTransactionTable(

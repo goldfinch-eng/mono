@@ -1,13 +1,10 @@
-import { ArrayItem, assertUnreachable } from "../../types/utils";
 import {
   AmountToken,
-  BorrowerTransactionsQuery,
-  CurrentUserTransactionsQuery,
-  CurrentUserWalletInfoQuery,
   SupportedCrypto,
-  TranchedPoolTransactionTableQuery,
   TransactionCategory,
+  Transaction,
 } from "../graphql/generated";
+import { assertUnreachable } from "../utils";
 
 type CorrespondingExistsInfo = {
   [timestamp: number]: {
@@ -26,16 +23,11 @@ type OverlapAccumulator = {
  * filters that set so that it is suitable for presenting to the user as their transaction history.
  * Currently, we define "suitable" to mean that the result set returned by this function contains only
  * one item pertaining to a given Ethereum transaction.
+ * @param overlappingEvents The array of Transactions from the subgraph
+ * @returns The same array of Transactions, but with overlapping events removed
  */
 export function reduceOverlappingEventsToNonOverlappingTxs<
-  // It would be stronger to type this as `T extends CurrentUserTransactionsQuery["transactions"] | ...`, so
-  // that the compiler understands that `overlappingEvents` can only be an array of a single type of item,
-  // but the compiler resisted that with the use of `.reduce()`.
-  T extends
-    | ArrayItem<CurrentUserWalletInfoQuery>["transactions"]
-    | ArrayItem<CurrentUserTransactionsQuery["transactions"]>
-    | ArrayItem<BorrowerTransactionsQuery["transactions"]>
-    | ArrayItem<TranchedPoolTransactionTableQuery["transactions"]>
+  T extends Pick<Transaction, "category" | "timestamp" | "transactionHash">
 >(overlappingEvents: T[] | undefined): T[] {
   if (!overlappingEvents) {
     return [];

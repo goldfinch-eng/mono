@@ -17,12 +17,11 @@ import {
 } from "@/lib/graphql/generated";
 import { getTransactionLabel } from "@/lib/pools";
 import { openVerificationModal } from "@/lib/state/actions";
-import { useWallet } from "@/lib/wallet";
-
 import {
   reduceOverlappingEventsToNonOverlappingTxs,
   supportedCryptoTokenByTxAmountToken,
-} from "../../lib/tx";
+} from "@/lib/tx";
+import { useWallet } from "@/lib/wallet";
 
 gql`
   query CurrentUserWalletInfo($userAccount: ID!) {
