@@ -10,7 +10,7 @@ const devDeployments = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "../../protocol/deployments/all_dev.json")).toString()
 )
 
-const localhostContracts = devDeployments["31337"].localhost.contracts
+const localhostContracts = devDeployments["1287"].moonbeam.contracts
 const deployedSeniorPoolProxyAddress = localhostContracts.SeniorPool_Proxy.address
 const deployedGoldfinchFactoryProxyAddress = localhostContracts.GoldfinchFactory_Proxy.address
 const deployedPoolProxyAddress = localhostContracts.Pool_Proxy.address

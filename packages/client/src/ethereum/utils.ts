@@ -31,10 +31,12 @@ const ONE_QUADRILLION_USDC = "1000000000000000000000"
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
 export const RINKEBY = "rinkeby"
+export const MOONBEAM = "moonbeam"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
 const USDC_ADDRESSES = {
   [ROPSTEN]: "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
+  [MOONBEAM]: "0xb9D2052b5c4d096647eDC9402D3486C8E1D2BF28",
   [MAINNET]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
 }
 
@@ -66,20 +68,23 @@ const ONE_INCH_ADDRESSES = {
 const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
-  private: "localhost",
+  private: MOONBEAM,
   rinkeby: RINKEBY,
+  moonbeam: MOONBEAM,
 }
 
 const chainIdToNetworkID = {
   1: MAINNET,
   4: RINKEBY,
   31337: "localhost",
+  1287: "moonbeam",
 }
 
 const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,
+  [MOONBEAM]: true,
 }
 
 enum SupportedChainId {
@@ -87,6 +92,7 @@ enum SupportedChainId {
   ROPSTEN = 3,
   LOCAL = 31337,
   MURMURATION = 31337,
+  MOONBEAM = 1287,
 }
 
 const MURMURATION_RPC_URL = "https://murmuration.goldfinch.finance/_chain"
