@@ -1,13 +1,13 @@
 # Internal Audit
 
-## MyContract <!-- Replace with your contract name -->
+### Goals
 
-### Goal
-
-Break the contract. Get it to do something we wouldn't want it to do.
+Break the contracts. Get them to do something we wouldn't want them to do.
 
 <!-- Add any specific areas of concern for the audit -->
 <!-- Add any time or resource constraints for the scope of the audit -->
+
+## MyContract <!-- Replace with your contract name -->
 
 ### Responsibilities of the contract
 
@@ -104,6 +104,11 @@ Break the contract. Get it to do something we wouldn't want it to do.
   - Review status
     - SKIPPED
 
-## MyContract2 <!-- Replace with your contract name -->
+#### Additional Notes
+
+- [] Pre-audit checklist followed (see Notion doc)
+  <!-- See pre-audit checklist -->
+  <!-- Include any additional notes that don't fit into above categories -->
 
 <!-- Copy MyContract1 template for any additional contracts under audit. -->
+<!-- ## MyContract2  Replace with another contract name -->
