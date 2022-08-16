@@ -1,6 +1,6 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {CreditLine} from "../../generated/schema"
-import {CreditLine as CreditLineContract} from "../../generated/templates/GoldfinchFactory/CreditLine"
+import {CreditLine as CreditLineContract} from "../../generated/templates/TranchedPool/CreditLine"
 import {BACKER_REWARDS_EPOCH, FIDU_DECIMALS} from "../constants"
 import {isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 

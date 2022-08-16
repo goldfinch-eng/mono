@@ -47,7 +47,7 @@ dataSources:
           handler: handleWithdrawalMade
 
   - kind: ethereum/contract
-    name: GoldfinchFactoryProxy
+    name: GoldfinchFactory
     network: mainnet
     source:
       address: "0xd20508E1E971b80EE172c73517905bfFfcBD87f9"
@@ -57,8 +57,9 @@ dataSources:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
+      file: ./src/mappings/goldfinch_factory.ts
       entities:
-        - User
+        - TranchedPool
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
@@ -68,18 +69,11 @@ dataSources:
           file: ./abis/CreditLine.json
         - name: GoldfinchConfig
           file: ./abis/GoldfinchConfig.json
-        - name: SeniorPool_Implementation
-          file: ./abis/SeniorPool_Implementation.json
-        - name: SeniorPool_Proxy
-          file: ./abis/SeniorPool_Proxy.json
         - name: SeniorPool
           file: ./abis/SeniorPool.json
-        - name: CreditLine
-          file: ./abis/CreditLine.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/goldfinch_factory_proxy.ts
+        - event: PoolCreated(indexed address,indexed address)
+          handler: handlePoolCreated
 
   - kind: ethereum/contract
     name: PoolProxy
@@ -315,40 +309,6 @@ templates:
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade
-
-  - name: GoldfinchFactory
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: GoldfinchFactory
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/goldfinch_factory.ts
-      entities:
-        - User
-        - TranchedPool
-      abis:
-        - name: GoldfinchFactory
-          file: ./abis/GoldfinchFactory.json
-        - name: TranchedPool
-          file: ./abis/TranchedPool.json
-        - name: GoldfinchConfig
-          file: ./abis/GoldfinchConfig.json
-        - name: SeniorPool_Implementation
-          file: ./abis/SeniorPool_Implementation.json
-        - name: SeniorPool_Proxy
-          file: ./abis/SeniorPool_Proxy.json
-        - name: SeniorPool
-          file: ./abis/SeniorPool.json
-        - name: CreditLine
-          file: ./abis/CreditLine.json
-        - name: FixedLeverageRatioStrategy
-          file: ./abis/FixedLeverageRatioStrategy.json
-      eventHandlers:
-        - event: PoolCreated(indexed address,indexed address)
-          handler: handlePoolCreated
 
   - name: TranchedPool
     kind: ethereum/contract
