@@ -15,8 +15,7 @@ import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForki
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
 import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate271 from "../../blockchain_scripts/migrations/v2.7.1/migrate"
-import * as migrate272 from "../../blockchain_scripts/migrations/v2.7.2/migrate"
+import * as migrate273 from "../../blockchain_scripts/migrations/v2.7.3/migrate"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -189,8 +188,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate271.main()
-  await migrate272.main()
+  await migrate273.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -1509,7 +1507,7 @@ describe("mainnet forking tests", async function () {
         describe("when I try to withdraw", async () => {
           it("it fails", async () => {
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(400), bwr, {from: bwr})).to.be.rejectedWith(
-              /NA/i
+              /Must have locker role/i
             )
           })
         })

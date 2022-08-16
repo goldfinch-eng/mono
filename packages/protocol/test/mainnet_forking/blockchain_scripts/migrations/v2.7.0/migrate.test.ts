@@ -40,7 +40,7 @@ const setupTest = deployments.createFixture(async () => {
   return {}
 })
 
-describe("v2.7.0", async function () {
+xdescribe("v2.7.0", async function () {
   this.timeout(TEST_TIMEOUT)
 
   beforeEach(async () => {
