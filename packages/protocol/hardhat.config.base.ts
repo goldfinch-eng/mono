@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "evmos",
   networks: {
     hardhat: {
       mining: {
@@ -87,6 +87,11 @@ export default {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       accounts: {mnemonic: process.env.EOA_MNEMONIC},
       chainId: 97,
+    },
+    evmos: {
+      url: "https://eth.bd.evmos.dev:8545",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 9000,
     },
   },
   solidity: {
