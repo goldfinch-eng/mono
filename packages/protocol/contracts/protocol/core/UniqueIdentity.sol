@@ -89,6 +89,7 @@ contract UniqueIdentity is ERC1155PresetPauserUpgradeable, IUniqueIdentity {
     uint256 expiresAt,
     bytes calldata signature
   ) public payable override onlySignerMintTo(recipient, id, expiresAt, signature) incrementNonce(_msgSender()) {
+    require(balanceOf(_msgSender(), id) == 0, "msgSender already owns UID");
     _mintTo(recipient, id);
   }
 
