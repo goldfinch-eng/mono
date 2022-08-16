@@ -651,7 +651,7 @@ describe("UniqueIdentity", () => {
         expect(await uniqueIdentity.balanceOf(from, tokenId)).to.bignumber.equal(new BN(1))
         expect(await uniqueIdentity.balanceOf(recipient, tokenId)).to.bignumber.equal(new BN(0))
         await expect(mintTo(recipient, tokenId, new BN(1), owner, from)).to.be.rejectedWith(
-          /Balance of _msgSender\(\) before mint must be 0/
+          /msgSender already owns UID/
         )
       })
     })
