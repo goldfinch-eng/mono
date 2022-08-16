@@ -102,10 +102,6 @@ dataSources:
           file: ./abis/Pool_Proxy.json
         - name: Pool
           file: ./abis/Pool.json
-        - name: Fidu
-          file: ./abis/Fidu.json
-        - name: Fidu_Proxy
-          file: ./abis/Fidu_Proxy.json
       eventHandlers:
         - event: ProxyImplementationUpdated(indexed address,indexed address)
           handler: handleProxyImplementationUpdated
@@ -373,12 +369,6 @@ templates:
       abis:
         - name: TranchedPool
           file: ./abis/TranchedPool.json
-        - name: Fidu_Implementation
-          file: ./abis/Fidu_Implementation.json
-        - name: Fidu
-          file: ./abis/Fidu.json
-        - name: Fidu_Proxy
-          file: ./abis/Fidu_Proxy.json
         - name: CreditLine
           file: ./abis/CreditLine.json
         - name: PoolTokens
@@ -452,12 +442,6 @@ templates:
           file: ./abis/SeniorPool_Proxy.json
         - name: SeniorPool
           file: ./abis/SeniorPool.json
-        - name: Fidu_Implementation
-          file: ./abis/Fidu_Implementation.json
-        - name: Fidu
-          file: ./abis/Fidu.json
-        - name: Fidu_Proxy
-          file: ./abis/Fidu_Proxy.json
         - name: CreditLine
           file: ./abis/CreditLine.json
       eventHandlers:
