@@ -342,10 +342,6 @@ templates:
           file: ./abis/PoolTokens.json
         - name: GoldfinchConfig
           file: ./abis/GoldfinchConfig.json
-        - name: SeniorPool_Implementation
-          file: ./abis/SeniorPool_Implementation.json
-        - name: SeniorPool_Proxy
-          file: ./abis/SeniorPool_Proxy.json
         - name: SeniorPool
           file: ./abis/SeniorPool.json
         - name: FixedLeverageRatioStrategy
