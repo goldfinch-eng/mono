@@ -78,30 +78,26 @@ dataSources:
           handler: handlePoolCreated
 
   - kind: ethereum/contract
-    name: PoolProxy
+    name: Pool
     network: mainnet
     source:
       address: "0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
-      abi: Pool_Proxy
+      abi: Pool
       startBlock: 11370642
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
+      file: ./src/mappings/v1_pool.ts
       entities:
         - User
         - SeniorPoolDeposit
       abis:
-        - name: Pool_Implementation
-          file: ./abis/Pool_Implementation.json
-        - name: Pool_Proxy
-          file: ./abis/Pool_Proxy.json
         - name: Pool
           file: ./abis/Pool.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/v1_pool_proxy.ts
+        - event: DepositMade(indexed address,uint256,uint256)
+          handler: handleDepositMade
 
   - kind: ethereum/contract
     name: PoolTokensProxy
@@ -290,28 +286,6 @@ dataSources:
       file: ./src/mappings/backer_merkle_distributor.ts
 
 templates:
-  - name: Pool
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: Pool
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/v1_pool.ts
-      entities:
-        - User
-        - SeniorPoolDeposit
-      abis:
-        - name: Pool
-          file: ./abis/Pool.json
-        - name: Pool_Implementation
-          file: ./abis/Pool_Implementation.json
-      eventHandlers:
-        - event: DepositMade(indexed address,uint256,uint256)
-          handler: handleDepositMade
-
   - name: TranchedPool
     kind: ethereum/contract
     network: mainnet
