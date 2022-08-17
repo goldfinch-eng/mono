@@ -89,3 +89,18 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 - No modifiers exist for Go contract.
 
 ## TranchedPool
+### State Mutating Functions
+- deposit
+- withdraw
+
+## StakingRewards
+### Mutating Functions
+- depositAndStake
+- unstakeAndWithdraw
+- unstakeAndWithdrawMultiple
+
+## SeniorPool
+### Mutating Functions
+- deposit
+- withdraw
+- withdrawInFidu
