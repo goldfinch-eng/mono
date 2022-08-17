@@ -178,11 +178,11 @@ dataSources:
       file: ./src/mappings/staking_rewards.ts
 
   - kind: ethereum/contract
-    name: BackerRewardsProxy
+    name: BackerRewards
     network: mainnet
     source:
       address: "0x384860F14B39CcD9C89A73519c70cD5f5394D0a6"
-      abi: BackerRewards_Proxy
+      abi: BackerRewards
       startBlock: 13942222
     mapping:
       kind: ethereum/events
@@ -193,14 +193,16 @@ dataSources:
       abis:
         - name: BackerRewards
           file: ./abis/BackerRewards.json
-        - name: BackerRewards_Implementation
-          file: ./abis/BackerRewards_Implementation.json
-        - name: BackerRewards_Proxy
-          file: ./abis/BackerRewards_Proxy.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/backer_rewards_proxy.ts
+        - event: BackerRewardsSetTotalRewards(indexed address,uint256,uint256)
+          handler: handleSetTotalRewards
+        - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
+          handler: handleSetMaxInterestDollarsEligible
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256)
+          handler: handleBackerRewardsClaimed
+        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleBackerRewardsClaimed1
+      file: ./src/mappings/backer_rewards.ts
 
   - kind: ethereum/contract
     name: UniqueIdentityProxy
@@ -368,35 +370,6 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
-
-  - name: BackerRewards
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: BackerRewards
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/backer_rewards.ts
-      entities:
-        - BackerRewards
-      abis:
-        - name: BackerRewards
-          file: ./abis/BackerRewards.json
-        - name: BackerRewards_Implementation
-          file: ./abis/BackerRewards_Implementation.json
-        - name: BackerRewards_Proxy
-          file: ./abis/BackerRewards_Proxy.json
-      eventHandlers:
-        - event: BackerRewardsSetTotalRewards(indexed address,uint256,uint256)
-          handler: handleSetTotalRewards
-        - event: BackerRewardsSetMaxInterestDollarsEligible(indexed address,uint256)
-          handler: handleSetMaxInterestDollarsEligible
-        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256)
-          handler: handleBackerRewardsClaimed
-        - event: BackerRewardsClaimed(indexed address,indexed uint256,uint256,uint256)
-          handler: handleBackerRewardsClaimed1
 
   - name: UniqueIdentity
     kind: ethereum/contract

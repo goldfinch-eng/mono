@@ -27,7 +27,7 @@ import {
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
-import {BackerRewards as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards"
+import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)

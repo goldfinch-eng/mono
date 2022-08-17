@@ -18,7 +18,7 @@ const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.addres
 const deployedFiduAddress = localhostContracts.Fidu.address
 const deployedGfiAddress = localhostContracts.GFI.address
 const deployedStakingRewardsAddress = localhostContracts.StakingRewards.address
-const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
+const deployedBackerRewardsAddress = localhostContracts.BackerRewards.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
 const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
 const deployedCommunityRewardsProxyAddress = localhostContracts.CommunityRewards_Proxy.address
@@ -47,8 +47,8 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "StakingRewards":
       dataSource.source.address = deployedStakingRewardsAddress
       break
-    case "BackerRewardsProxy":
-      dataSource.source.address = deployedBackerRewardsProxyAddress
+    case "BackerRewards":
+      dataSource.source.address = deployedBackerRewardsAddress
       break
     case "UniqueIdentityProxy":
       dataSource.source.address = deployedUniqueIdentityProxyAddress
