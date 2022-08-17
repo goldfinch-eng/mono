@@ -249,11 +249,11 @@ dataSources:
       file: ./src/mappings/goldfinch_config.ts
 
   - kind: ethereum/contract
-    name: CommunityRewardsProxy
+    name: CommunityRewards
     network: mainnet
     source:
       address: "0x0Cd73c18C085dEB287257ED2307eC713e9Af3460"
-      abi: CommunityRewards_Proxy
+      abi: CommunityRewards
       startBlock: 13941109
     mapping:
       kind: ethereum/events
@@ -261,13 +261,18 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - CommunityRewardsToken
+        - User
       abis:
-        - name: CommunityRewards_Proxy
-          file: ./abis/CommunityRewards_Proxy.json
+        - name: CommunityRewards
+          file: ./abis/CommunityRewards.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/community_rewards_proxy.ts
+        - event: Granted(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
+          handler: handleGranted
+        - event: RewardPaid(indexed address,indexed uint256,uint256)
+          handler: handleRewardPaid
+        - event: GrantRevoked(indexed uint256,uint256)
+          handler: handleGrantRevoked
+      file: ./src/mappings/community_rewards.ts
 
   - kind: ethereum/contract
     name: MerkleDistributor
@@ -370,27 +375,3 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
-
-  - name: CommunityRewards
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: CommunityRewards
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/community_rewards.ts
-      entities:
-        - CommunityRewardsToken
-        - User
-      abis:
-        - name: CommunityRewards
-          file: ./abis/CommunityRewards.json
-      eventHandlers:
-        - event: Granted(indexed address,indexed uint256,uint256,uint256,uint256,uint256)
-          handler: handleGranted
-        - event: RewardPaid(indexed address,indexed uint256,uint256)
-          handler: handleRewardPaid
-        - event: GrantRevoked(indexed uint256,uint256)
-          handler: handleGrantRevoked

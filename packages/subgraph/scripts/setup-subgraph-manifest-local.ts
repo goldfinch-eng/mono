@@ -21,7 +21,7 @@ const deployedStakingRewardsAddress = localhostContracts.StakingRewards.address
 const deployedBackerRewardsAddress = localhostContracts.BackerRewards.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
 const deployedUniqueIdentityAddress = localhostContracts.UniqueIdentity.address
-const deployedCommunityRewardsProxyAddress = localhostContracts.CommunityRewards_Proxy.address
+const deployedCommunityRewardsAddress = localhostContracts.CommunityRewards.address
 const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
 const deployedBackerMerkleDistributorAddress = localhostContracts.BackerMerkleDistributor.address
 const deployedUsdcAddress = localhostContracts.TestERC20.address
@@ -56,8 +56,8 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "GoldfinchConfig":
       dataSource.source.address = deployedGoldfinchConfigAddress
       break
-    case "CommunityRewardsProxy":
-      dataSource.source.address = deployedCommunityRewardsProxyAddress
+    case "CommunityRewards":
+      dataSource.source.address = deployedCommunityRewardsAddress
       break
     case "MerkleDistributor":
       dataSource.source.address = deployedMerkleDistributorAddress
