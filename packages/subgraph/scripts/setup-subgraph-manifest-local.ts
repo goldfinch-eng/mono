@@ -13,7 +13,7 @@ const devDeployments = JSON.parse(
 const localhostContracts = devDeployments["31337"].localhost.contracts
 const deployedSeniorPoolAddress = localhostContracts.SeniorPool.address
 const deployedGoldfinchFactoryAddress = localhostContracts.GoldfinchFactory.address
-const deployedPoolTokensProxyAddress = localhostContracts.PoolTokens_Proxy.address
+const deployedPoolTokensAddress = localhostContracts.PoolTokens.address
 const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.address
 const deployedFiduAddress = localhostContracts.Fidu.address
 const deployedGfiAddress = localhostContracts.GFI.address
@@ -38,8 +38,8 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "GoldfinchFactory":
       dataSource.source.address = deployedGoldfinchFactoryAddress
       break
-    case "PoolTokensProxy":
-      dataSource.source.address = deployedPoolTokensProxyAddress
+    case "PoolTokens":
+      dataSource.source.address = deployedPoolTokensAddress
       break
     case "GFI":
       dataSource.source.address = deployedGfiAddress
@@ -77,7 +77,7 @@ for (let dataSource of subgraphManifest.templates) {
 const codeSnippet = `// It's OK if this file shows diffs. The only reason it's committed is to prevent "module not found" errors. Unfortunately it doesn't seem The Graph allows env vars for this kind of thing.
 export const LOCALHOST_FIDU_ADDRESS = "${deployedFiduAddress}"
 export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolAddress}"
-export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensProxyAddress}"
+export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
 export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
 export const LOCALHOST_USDC_ADDRESS = "${deployedUsdcAddress}"

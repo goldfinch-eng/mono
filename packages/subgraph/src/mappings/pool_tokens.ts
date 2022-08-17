@@ -1,4 +1,4 @@
-import {TokenBurned, TokenMinted, TokenRedeemed, Transfer} from "../../generated/PoolTokensProxy/PoolTokens"
+import {TokenBurned, TokenMinted, TokenRedeemed, Transfer} from "../../generated/PoolTokens/PoolTokens"
 import {TranchedPoolToken} from "../../generated/schema"
 import {updatePoolBacker} from "../entities/pool_backer"
 import {handleTranchedPoolTokenTransfer, initOrUpdateTranchedPoolToken} from "../entities/pool_tokens"

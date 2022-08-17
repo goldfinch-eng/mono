@@ -100,11 +100,11 @@ dataSources:
           handler: handleDepositMade
 
   - kind: ethereum/contract
-    name: PoolTokensProxy
+    name: PoolTokens
     network: mainnet
     source:
       address: "0x57686612C601Cb5213b01AA8e80AfEb24BBd01df"
-      abi: PoolTokens_Proxy
+      abi: PoolTokens
       startBlock: 13097225
     mapping:
       kind: ethereum/events
@@ -117,16 +117,24 @@ dataSources:
       abis:
         - name: PoolTokens
           file: ./abis/PoolTokens.json
-        - name: PoolTokens_Implementation
-          file: ./abis/PoolTokens_Implementation.json
-        - name: PoolTokens_Proxy
-          file: ./abis/PoolTokens_Proxy.json
         - name: TranchedPool
           file: ./abis/TranchedPool.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
+        - name: SeniorPool
+          file: ./abis/SeniorPool.json
+        - name: CreditLine
+          file: ./abis/CreditLine.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/pool_tokens_proxy.ts
+        - event: TokenBurned(indexed address,indexed address,indexed uint256)
+          handler: handleTokenBurned
+        - event: TokenMinted(indexed address,indexed address,indexed uint256,uint256,uint256)
+          handler: handleTokenMinted
+        - event: TokenRedeemed(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleTokenRedeemed
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+      file: ./src/mappings/pool_tokens.ts
 
   - kind: ethereum/contract
     name: StakingRewardsProxy
@@ -309,10 +317,6 @@ templates:
           file: ./abis/CreditLine.json
         - name: PoolTokens
           file: ./abis/PoolTokens.json
-        - name: PoolTokens_Proxy
-          file: ./abis/PoolTokens_Proxy.json
-        - name: PoolTokens_Implementation
-          file: ./abis/PoolTokens_Implementation.json
         - name: GoldfinchConfig
           file: ./abis/GoldfinchConfig.json
         - name: SeniorPool_Implementation
@@ -348,47 +352,6 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
-
-  - name: PoolTokens
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: PoolTokens
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/pool_tokens.ts
-      entities:
-        - User
-        - TranchedPool
-        - TranchedPoolToken
-      abis:
-        - name: PoolTokens
-          file: ./abis/PoolTokens.json
-        - name: PoolTokens_Implementation
-          file: ./abis/PoolTokens_Implementation.json
-        - name: TranchedPool
-          file: ./abis/TranchedPool.json
-        - name: GoldfinchConfig
-          file: ./abis/GoldfinchConfig.json
-        - name: SeniorPool_Implementation
-          file: ./abis/SeniorPool_Implementation.json
-        - name: SeniorPool_Proxy
-          file: ./abis/SeniorPool_Proxy.json
-        - name: SeniorPool
-          file: ./abis/SeniorPool.json
-        - name: CreditLine
-          file: ./abis/CreditLine.json
-      eventHandlers:
-        - event: TokenBurned(indexed address,indexed address,indexed uint256)
-          handler: handleTokenBurned
-        - event: TokenMinted(indexed address,indexed address,indexed uint256,uint256,uint256)
-          handler: handleTokenMinted
-        - event: TokenRedeemed(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
-          handler: handleTokenRedeemed
-        - event: Transfer(indexed address,indexed address,indexed uint256)
-          handler: handleTransfer
 
   - name: StakingRewards
     kind: ethereum/contract
