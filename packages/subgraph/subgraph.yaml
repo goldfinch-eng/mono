@@ -137,11 +137,11 @@ dataSources:
       file: ./src/mappings/pool_tokens.ts
 
   - kind: ethereum/contract
-    name: StakingRewardsProxy
+    name: StakingRewards
     network: mainnet
     source:
       address: "0xFD6FF39DA508d281C2d255e9bBBfAb34B6be60c3"
-      abi: StakingRewards_Proxy
+      abi: StakingRewards
       startBlock: 13941096
     mapping:
       kind: ethereum/events
@@ -152,14 +152,30 @@ dataSources:
       abis:
         - name: StakingRewards
           file: ./abis/StakingRewards.json
-        - name: StakingRewards_Implementation
-          file: ./abis/StakingRewards_Implementation.json
-        - name: StakingRewards_Proxy
-          file: ./abis/StakingRewards_Proxy.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/staking_rewards_proxy.ts
+        - event: RewardAdded(uint256)
+          handler: handleRewardAdded
+        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleStaked
+        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
+          handler: handleStaked1
+        - event: Unstaked(indexed address,indexed uint256,uint256)
+          handler: handleUnstaked
+        - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
+          handler: handleUnstaked1
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256,uint256,uint256)
+          handler: handleDepositedAndStaked
+        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256)
+          handler: handleDepositedAndStaked1
+        - event: UnstakedAndWithdrew(indexed address,uint256,indexed uint256,uint256)
+          handler: handleUnstakedAndWithdrew
+        - event: UnstakedAndWithdrewMultiple(indexed address,uint256,uint256[],uint256[])
+          handler: handleUnstakedAndWithdrewMultiple
+        - event: RewardPaid(indexed address,indexed uint256,uint256)
+          handler: handleRewardPaid
+      file: ./src/mappings/staking_rewards.ts
 
   - kind: ethereum/contract
     name: BackerRewardsProxy
@@ -352,49 +368,6 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
-
-  - name: StakingRewards
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: StakingRewards
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/staking_rewards.ts
-      entities:
-        - StakingRewards
-      abis:
-        - name: StakingRewards
-          file: ./abis/StakingRewards.json
-        - name: StakingRewards_Implementation
-          file: ./abis/StakingRewards_Implementation.json
-        - name: StakingRewards_Proxy
-          file: ./abis/StakingRewards_Proxy.json
-      eventHandlers:
-        - event: RewardAdded(uint256)
-          handler: handleRewardAdded
-        - event: Staked(indexed address,indexed uint256,uint256,uint256,uint256)
-          handler: handleStaked
-        - event: Staked(indexed address,indexed uint256,uint256,uint8,uint256)
-          handler: handleStaked1
-        - event: Unstaked(indexed address,indexed uint256,uint256)
-          handler: handleUnstaked
-        - event: Unstaked(indexed address,indexed uint256,uint256,uint8)
-          handler: handleUnstaked1
-        - event: Transfer(indexed address,indexed address,indexed uint256)
-          handler: handleTransfer
-        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256,uint256,uint256)
-          handler: handleDepositedAndStaked
-        - event: DepositedAndStaked(indexed address,uint256,indexed uint256,uint256)
-          handler: handleDepositedAndStaked1
-        - event: UnstakedAndWithdrew(indexed address,uint256,indexed uint256,uint256)
-          handler: handleUnstakedAndWithdrew
-        - event: UnstakedAndWithdrewMultiple(indexed address,uint256,uint256[],uint256[])
-          handler: handleUnstakedAndWithdrewMultiple
-        - event: RewardPaid(indexed address,indexed uint256,uint256)
-          handler: handleRewardPaid
 
   - name: BackerRewards
     kind: ethereum/contract

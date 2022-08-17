@@ -12,7 +12,7 @@ import {
   UnstakedAndWithdrew,
   UnstakedAndWithdrewMultiple,
   RewardPaid,
-} from "../../generated/templates/StakingRewards/StakingRewards"
+} from "../../generated/StakingRewards/StakingRewards"
 
 import {createTransactionFromEvent} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
