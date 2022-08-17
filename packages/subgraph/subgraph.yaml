@@ -205,11 +205,11 @@ dataSources:
       file: ./src/mappings/backer_rewards.ts
 
   - kind: ethereum/contract
-    name: UniqueIdentityProxy
+    name: UniqueIdentity
     network: mainnet
     source:
       address: "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
-      abi: UniqueIdentity_Proxy
+      abi: UniqueIdentity
       startBlock: 13494815
     mapping:
       kind: ethereum/events
@@ -218,12 +218,12 @@ dataSources:
       entities:
         - User
       abis:
-        - name: UniqueIdentity_Proxy
-          file: ./abis/UniqueIdentity_Proxy.json
+        - name: UniqueIdentity
+          file: ./abis/UniqueIdentity.json
       eventHandlers:
-        - event: ProxyImplementationUpdated(indexed address,indexed address)
-          handler: handleProxyImplementationUpdated
-      file: ./src/mappings/unique_identity_proxy.ts
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle
+      file: ./src/mappings/unique_identity.ts
 
   - kind: ethereum/contract
     name: GoldfinchConfig
@@ -370,25 +370,6 @@ templates:
           handler: handleDrawdownMade
         - event: PaymentApplied(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handlePaymentApplied
-
-  - name: UniqueIdentity
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: UniqueIdentity
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      file: ./src/mappings/unique_identity.ts
-      entities:
-        - User
-      abis:
-        - name: UniqueIdentity
-          file: ./abis/UniqueIdentity.json
-      eventHandlers:
-        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
-          handler: handleTransferSingle
 
   - name: CommunityRewards
     kind: ethereum/contract
