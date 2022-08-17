@@ -6,6 +6,9 @@ import {genRequestHandler, getBlockchain, extractHeaderValue} from "../helpers"
 import {ethers, BigNumber} from "ethers"
 import {
   assertNonNullable,
+  //   isApprovedNonUSEntity,
+  //   isApprovedUSAccreditedEntity,
+  //   isApprovedUSAccreditedIndividual,
   presignedMintMessage,
   presignedMintToMessage,
   UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS,
@@ -141,6 +144,13 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
         })
       }
 
+      // if (
+      //   isApprovedNonUSEntity(msgSender) ||
+      //   isApprovedUSAccreditedEntity(msgSender) ||
+      //   isApprovedUSAccreditedIndividual(msgSender)
+      // ) {
+      //   return res.status(200).send({...payload, status: "approved"})
+      // }
       const db = getDb(admin.firestore())
       const userRef = getUsers(admin.firestore()).doc(`${msgSender.toLowerCase()}`)
       const uidTypeId = uidType.toString()
