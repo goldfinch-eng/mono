@@ -8,7 +8,7 @@ import {
   PaymentApplied,
   WithdrawalMade,
 } from "../generated/templates/TranchedPool/TranchedPool"
-import {TokenMinted, Transfer} from "../generated/PoolTokensProxy/PoolTokens"
+import {TokenMinted, Transfer} from "../generated/PoolTokens/PoolTokens"
 import {AFTER_V2_2_TIMESTAMP, BEFORE_V2_2_TIMESTAMP} from "./utils"
 import {DepositMade as SeniorPoolDepositMade} from "../generated/SeniorPool/SeniorPool"
 
