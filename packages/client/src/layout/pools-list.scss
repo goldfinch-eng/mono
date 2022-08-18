@@ -73,7 +73,10 @@
       opacity: 50%;
     }
 
-    .name, .apy, .limit, .balance {
+    .name,
+    .apy,
+    .limit,
+    .balance {
       font-size: $sans-size-s;
     }
 
@@ -161,7 +164,6 @@
     white-space: nowrap;
   }
 }
-
 
 @media only screen and (min-width: 850px) {
   .table-spaced.pools-list {

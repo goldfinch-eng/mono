@@ -2,7 +2,7 @@
 
 .pool-overview {
   .background-container-inner {
-      border-bottom: 2px solid $sand;
+    border-bottom: 2px solid $sand;
   }
 
   .info-section {
@@ -17,7 +17,8 @@
     margin-bottom: 30px;
   }
 
-  .pool-loan-description, .pool-borrower-description {
+  .pool-loan-description,
+  .pool-borrower-description {
     font-size: $sans-size-s;
     line-height: 27px;
   }
@@ -53,7 +54,6 @@
     margin-right: 14px;
     display: block;
   }
-
 
   .pool-header {
     display: flex;
