@@ -90,8 +90,25 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 
 ## TranchedPool
 ### State Mutating Functions
+- consider removing infinite USDC self approval
+  - current pattern: in initializer we self approve the max amount `require(config.getUSDC().approve(address(this), uint256(-1)))` and perform transfers as
+  `config.getUSDC().safeERC20TransferFrom(address(this), config.reserveAddress(), totalReserveAmount);`.
+  - suggestion: remove the self approval and use safeERC20Transfer for transfers from self
+  - impact: simplification and gas savings
+
+- setAllowedUIDTypes
+  - locker role (borrower role) can arbitrarily set the allowed UID types on the TranchedPool.
+  - impact: Legal risk - Could set the allowed UID types to be all UID types, allowing non-accredited US investors to deposit in the pool
+  - suggestion 1: gate setAllowedUIDTypes to onlyAdmin
+  - suggestion 2: remove setAllowedUIDTypes so _allowedUIDTypes it only set in pool initialization
+
 - deposit
+
 - withdraw
+  - There is a restriction on 0 amount withdrawls. Does removing this restriction break any tests (aside from the tests that merely assert you cannot perform
+  a 0 amount withdrawl)
+    - Answer: No
+    - Followup question: Is this restriction necessary? Was the motivation for it a desire to err on the side of caution, or something more?
 
 ## StakingRewards
 ### Mutating Functions
