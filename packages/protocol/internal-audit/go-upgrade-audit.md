@@ -106,10 +106,19 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
   - impact: simplification and gas savings
 
 - setAllowedUIDTypes
-  - locker role (borrower role) can arbitrarily set the allowed UID types on the TranchedPool.
-  - impact: Legal risk - Could set the allowed UID types to be all UID types, allowing non-accredited US investors to deposit in the pool
-  - suggestion 1: gate setAllowedUIDTypes to onlyAdmin
-  - suggestion 2: remove setAllowedUIDTypes so _allowedUIDTypes it only set in pool initialization
+  - locker can set uid types to include us non-accredited, potentially opening us up to legal liability?
+    - impact: unsure, need to ask Chris
+  - locker can set uid types to be anything, including invalid UID values
+    - impact: negligible but fixing it will improve code quality
+  - locker can get around the "has balance" requirement because it only checks the first slice
+    - they can create pool, immediately lock the first slice, and initialize the second slice
+    - as deposits come in for the second slice, they can change the allowed uid types at will
+    - impact: these actions give no benefit to the borrower, it only inconveniences the depositors and warbler.
+      Thankfully we can recoup the funds by doing an emergency shutdown. This sweeps the depositor's money to
+      the protocol reserve which we could then use to make the depositors whole.
+  - suggested fix 1: prevent allowedUIDTypes from being set after initialization - also check that all uid types are valid
+  - suggested fix 2: fix the "has balance" check to check for deposits in the latest slice, not the first
+  
 
 - deposit
 
