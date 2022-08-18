@@ -59,7 +59,6 @@ type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
 
-  tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
   poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
   tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
@@ -94,17 +93,6 @@ type JuniorTrancheInfo @entity {
   principalDeposited: BigInt!
   principalSharePrice: BigInt!
   interestSharePrice: BigInt!
-}
-
-type TranchedPoolDeposit @entity {
-  id: ID! # Set to transaction hash
-  user: User!
-  tranchedPool: TranchedPool!
-  tranche: BigInt!
-  tokenId: BigInt!
-  amount: BigInt!
-  blockNumber: BigInt!
-  timestamp: BigInt!
 }
 
 type PoolBacker @entity {
@@ -198,7 +186,6 @@ type TranchedPool @entity {
   backers: [PoolBacker!]!
   numBackers: Int!
   tokens: [TranchedPoolToken!]!
-  deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!

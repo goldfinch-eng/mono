@@ -1,12 +1,5 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
-import {
-  TranchedPool,
-  JuniorTrancheInfo,
-  SeniorTrancheInfo,
-  TranchedPoolDeposit,
-  CreditLine,
-  TranchedPoolToken,
-} from "../../generated/schema"
+import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, TranchedPoolToken} from "../../generated/schema"
 import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
@@ -45,15 +38,6 @@ export function handleDeposit(event: DepositMade): void {
   const user = getOrInitUser(userAddress)
 
   let tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp)
-  let deposit = new TranchedPoolDeposit(event.transaction.hash.toHexString())
-  deposit.user = user.id
-  deposit.amount = event.params.amount
-  deposit.tranchedPool = tranchedPool.id
-  deposit.tranche = event.params.tranche
-  deposit.tokenId = event.params.tokenId
-  deposit.blockNumber = event.block.number
-  deposit.timestamp = event.block.timestamp
-  deposit.save()
   const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
   if (juniorTrancheInfo) {
     juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
