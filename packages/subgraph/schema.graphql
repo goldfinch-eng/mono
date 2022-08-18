@@ -59,7 +59,6 @@ type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
 
-  poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
   tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
   zaps: [Zap!]! @derivedFrom(field: "user")
 
@@ -93,21 +92,6 @@ type JuniorTrancheInfo @entity {
   principalDeposited: BigInt!
   principalSharePrice: BigInt!
   interestSharePrice: BigInt!
-}
-
-type PoolBacker @entity {
-  id: ID! # Set to `${tranchedPool.id}-${user.id}`
-  user: User!
-  tranchedPool: TranchedPool!
-  balance: BigInt!
-  unrealizedGains: BigInt!
-  principalAmount: BigInt!
-  principalRedeemed: BigInt!
-  interestRedeemed: BigInt!
-  principalAtRisk: BigInt!
-  principalRedeemable: BigInt!
-  interestRedeemable: BigInt!
-  availableToWithdraw: BigInt!
 }
 
 type CreditLine @entity {
@@ -183,7 +167,7 @@ type TranchedPool @entity {
   This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
   """
   estimatedSeniorPoolContribution: BigInt!
-  backers: [PoolBacker!]!
+  backers: [User!]!
   numBackers: Int!
   tokens: [TranchedPoolToken!]!
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
