@@ -25,9 +25,18 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 #### State mutating functions
 
 - initialize(address owner,GoldfinchConfig \_config,address \_uniqueIdentity) public initializer
-- [] How could it break?
+  - [x] How could it break?
+    - Allow reinitialization
+      - review status?
+        - OK - added a mainnet forking that verifies call to initialize fails
 - performUpgrade() external onlyAdmin
-- [] How could it break?
+  - [x] How could it break?
+    - callable by non-admin
+      - review status
+        - OK - has onlyAdmin modifier
+    - `allIdTypes` array set to incorrect values
+      - review status
+        - OK - values are fine
 - setLegacyGoList(GoldfinchConfig \_legacyGoList) external onlyAdmin
 - [] How could it break?
 - initZapperRole() external onlyAdmin
