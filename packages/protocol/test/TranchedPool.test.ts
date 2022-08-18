@@ -442,7 +442,7 @@ describe("TranchedPool", () => {
       await tranchedPool.setAllowedUIDTypes([], {from: borrower})
 
       // Money is locked - attempt to withdraw fails
-      await expect(tranchedPool.withdraw(tokenId, usdcVal(1))).to.be.rejectedWith(/NA/)
+      await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(/NA/)
     })
   })
 
