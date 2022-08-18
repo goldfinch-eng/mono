@@ -404,6 +404,48 @@ describe("TranchedPool", () => {
     })
   })
 
+  describe("vulnerabilies", () => {
+    it("allows a non-accredited US investor to deposit", async () => {
+      // Mint a non-accredited US investor UID to owner
+      await uniqueIdentity.setSupportedUIDTypes([2], [true])
+      const uidTokenId = new BN(2)
+      const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+      await mint(hre, uniqueIdentity, uidTokenId, expiresAt, new BN(0), owner, undefined, owner)
+
+      // Borrower can set the allowed UID types list to whatever they want
+      await tranchedPool.setAllowedUIDTypes([2], {from: borrower})
+
+      // Owner can deposit as a non-accredited US UID holder
+      await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(1), {from: owner})).to.be.fulfilled
+    })
+    it("allows the borrower to set valid UIDs to anything they want", async () => {
+      await tranchedPool.setAllowedUIDTypes([0, 1], {from: borrower})
+      await tranchedPool.setAllowedUIDTypes([100, 101], {from: borrower})
+      const allowedUIDTypes = await tranchedPool.getAllowedUIDTypes()
+      expect(allowedUIDTypes[0]).to.bignumber.eq("100")
+      expect(allowedUIDTypes[1]).to.bignumber.eq("101")
+    })
+    it("allowedUIDTypes can be changed after deposits made, locking funds", async () => {
+      // Borrower immediately locks first slice and then initializes the next
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await tranchedPool.lockPool({from: borrower})
+      await tranchedPool.initializeNextSlice(await time.latest(), {from: borrower})
+
+      // Deposit to second slice
+      const secondSliceJuniorTrancheId = 4
+      const response = await tranchedPool.deposit(secondSliceJuniorTrancheId, usdcVal(1), {from: owner})
+      const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
+      const firstLog = getFirstLog(logs)
+      const tokenId = firstLog.args.tokenId
+
+      // Revoke all allowed UIDs
+      await tranchedPool.setAllowedUIDTypes([], {from: borrower})
+
+      // Money is locked - attempt to withdraw fails
+      await expect(tranchedPool.withdraw(tokenId, usdcVal(1))).to.be.rejectedWith(/NA/)
+    })
+  })
+
   describe("deposit", async () => {
     describe("junior tranche", async () => {
       it("fails if not legacy golisted and does not have allowed UID token", async () => {
