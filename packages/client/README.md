@@ -5,18 +5,20 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - `npm install`
 
 ## Wallet Connect Integration
+
 Wallet Connect is a open protocol for connecting wallets to Dapps. The protocol establishes a remote connection between two apps and/or devices using a Bridge server to relay payloads. These payloads are symmetrically encrypted through a shared key between the two peers. The connection is initiated by one peer displaying a QR Code or deep link with a standard WalletConnect URI and is established when the counter-party approves this connection request.
 
 To test the integration with mainnet:
+
 - Run the client with the `REACT_APP_INFURA_PROJECT_ID` environment variable defined
 
 To test the integration with the local network:
+
 - Run the client **without** the `REACT_APP_INFURA_PROJECT_ID` environment variable defined
 - When testing with a mobile wallet you will need a public url. Use [ngrok](https://ngrok.com/)
   - `ngrok http 8545`
 - You'll need to manually add your local network to your wallet
 - To complete a transaction, after receive a transaction confirmation on your wallet open the devTools widget and click on "advanceTimeOneDay", this will mine a new block and the app will receive the new block headers triggering confirmations.
-
 
 ## Available Scripts
 
