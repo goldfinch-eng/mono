@@ -42,3 +42,5 @@ lib/graphql/generated.ts
 
 # typechain types for smart contracts
 types/ethers-contracts
+
+constants/metadata/localhost.json
