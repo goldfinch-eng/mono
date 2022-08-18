@@ -156,7 +156,6 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
           // Parallel Markets users will usually not exist in Firestore at this point in the KYC process (barring manual intervention or error cases)
           await db.runTransaction(async (t: firestore.Transaction) => {
             const userExists = (await t.get(userRef)).exists
-            console.log("userExists", userExists)
             const userData: {address: string; kycProvider: string; countryCode?: string} = {
               address: msgSender,
               kycProvider: KycProvider.ParallelMarkets.valueOf(),

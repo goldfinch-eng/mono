@@ -94,55 +94,26 @@ describe("linkUserToUid", () => {
 
   let mainUser: Record<string, unknown>
 
-  const validMintMessage = (fromAddress: string) =>
-    presignedMintMessage(fromAddress, uidType, expiresAt, uniqueIdentity.address, BigNumber.from(0), parseInt(chainId))
-  const validMintToMessage = (fromAddress: string, recipientAddress: string) =>
-    presignedMintToMessage(
+  const expectSuccessfulMint = async (fromAddress: string) => {
+    const startedAt = Date.now()
+    const presigMintMessage = presignedMintMessage(
       fromAddress,
-      recipientAddress,
       uidType,
       expiresAt,
       uniqueIdentity.address,
       BigNumber.from(0),
       parseInt(chainId),
     )
-  const validMintRequest = (fromAddress: string, mintSignature: string, mintPresigMessage: Uint8Array) => {
-    return {
+    const mintSig = await signer.signMessage(presigMintMessage)
+    const mintRequest = {
       body: {msgSender: fromAddress, uidType, expiresAt, nonce},
       headers: {
         "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
-        "x-goldfinch-signature": mintSignature,
+        "x-goldfinch-signature": mintSig,
         "x-goldfinch-signature-block-num": currentBlockNum,
-        "x-goldfinch-signature-plaintext": mintPresigMessage.toString(),
+        "x-goldfinch-signature-plaintext": presigMintMessage.toString(),
       },
     } as unknown as Request
-  }
-  const validMintToRequest = (
-    fromAddress: string,
-    recipientAddress: string,
-    mintToSignature: string,
-    mintToPresigMessage: Uint8Array,
-  ) => {
-    return {
-      body: {msgSender: fromAddress, mintToAddress: recipientAddress, uidType, expiresAt, nonce},
-      headers: {
-        "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
-        "x-goldfinch-signature": mintToSignature,
-        "x-goldfinch-signature-block-num": currentBlockNum,
-        "x-goldfinch-signature-plaintext": mintToPresigMessage.toString(),
-      },
-    } as unknown as Request
-  }
-  const expectedUser = (fromAddress: string, recipientAddress: string) => ({
-    address: fromAddress,
-    uidRecipientAuthorizations: {[uidType.toString()]: recipientAddress},
-  })
-
-  const expectSuccessfulMint = async (fromAddress: string) => {
-    const startedAt = Date.now()
-    const presigMintMessage = validMintMessage(fromAddress)
-    const mintSig = await signer.signMessage(presigMintMessage)
-    const mintRequest = validMintRequest(fromAddress, mintSig, presigMintMessage)
     await testLinkKycToUid(
       mintRequest,
       expectResponse(200, {
@@ -153,7 +124,10 @@ describe("linkUserToUid", () => {
     const endedAt = Date.now()
     const userDoc = await users.doc(fromAddress).get()
     expect(userDoc.exists).to.be.true
-    expect(userDoc.data()).to.containSubset(expectedUser(fromAddress, fromAddress))
+    expect(userDoc.data()).to.containSubset({
+      address: fromAddress,
+      uidRecipientAuthorizations: {[uidType.toString()]: fromAddress},
+    })
     expect(userDoc.data()?.updatedAt).to.satisfy((updatedAt: number) => updatedAt >= startedAt && updatedAt <= endedAt)
     const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
     expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(fromAddress)
@@ -162,9 +136,25 @@ describe("linkUserToUid", () => {
 
   const expectSuccessfulMintTo = async (fromAddress: string, recipientAddress: string) => {
     const startedAt = Date.now()
-    const presigMintToMessage = validMintToMessage(fromAddress, recipientAddress)
+    const presigMintToMessage = presignedMintToMessage(
+      fromAddress,
+      recipientAddress,
+      uidType,
+      expiresAt,
+      uniqueIdentity.address,
+      BigNumber.from(0),
+      parseInt(chainId),
+    )
     const mintToSig = await signer.signMessage(presigMintToMessage)
-    const mintToRequest = validMintToRequest(fromAddress, recipientAddress, mintToSig, presigMintToMessage)
+    const mintToRequest = {
+      body: {msgSender: fromAddress, mintToAddress: recipientAddress, uidType, expiresAt, nonce},
+      headers: {
+        "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
+        "x-goldfinch-signature": mintToSig,
+        "x-goldfinch-signature-block-num": currentBlockNum,
+        "x-goldfinch-signature-plaintext": presigMintToMessage.toString(),
+      },
+    } as unknown as Request
 
     await testLinkKycToUid(
       mintToRequest,
@@ -176,7 +166,10 @@ describe("linkUserToUid", () => {
     const endedAt = Date.now()
     const userDoc = await users.doc(fromAddress).get()
     expect(userDoc.exists).to.be.true
-    expect(userDoc.data()).to.containSubset(expectedUser(fromAddress, recipientAddress))
+    expect(userDoc.data()).to.containSubset({
+      address: fromAddress,
+      uidRecipientAuthorizations: {[uidType.toString()]: recipientAddress},
+    })
     expect(userDoc.data()?.updatedAt).to.satisfy((updatedAt: number) => updatedAt >= startedAt && updatedAt <= endedAt)
     const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
     expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(recipientAddress)
