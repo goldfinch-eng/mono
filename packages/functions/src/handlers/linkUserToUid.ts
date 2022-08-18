@@ -152,10 +152,13 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
       const isUsAccredited = isApprovedUSAccreditedEntity(msgSender) || isApprovedUSAccreditedIndividual(msgSender)
       const isParallelMarketsUser = isApprovedNonUSEntity(msgSender) || isUsAccredited
       try {
-        if (isParallelMarketsUser) {
+        await db.runTransaction(async (t: firestore.Transaction) => {
+          const user = await t.get(userRef)
+          let userExists: boolean = user.exists
           // Parallel Markets users will usually not exist in Firestore at this point in the KYC process (barring manual intervention or error cases)
-          await db.runTransaction(async (t: firestore.Transaction) => {
-            const userExists = (await t.get(userRef)).exists
+          // ^ This would be resolved as part of GFI-266
+          // Users w/o a defined kycProvider are legacy Persona users who should be backfilled.
+          if (isParallelMarketsUser) {
             const userData: {address: string; kycProvider: string; countryCode?: string} = {
               address: msgSender,
               kycProvider: KycProvider.ParallelMarkets.valueOf(),
@@ -163,13 +166,11 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
             if (isUsAccredited) {
               userData.countryCode = "US"
             }
-            userExists ? t.update(userRef, userData) : t.set(userRef, userData)
-          })
-        }
+            user.exists ? t.update(userRef, userData) : t.set(userRef, userData)
+            userExists = true
+          }
 
-        await db.runTransaction(async (t: firestore.Transaction) => {
-          const user = await t.get(userRef)
-          if (!user.exists) {
+          if (!userExists) {
             throw new NonExistingUserError(`User with address ${msgSender} not found`)
           }
 
