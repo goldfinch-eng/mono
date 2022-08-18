@@ -341,7 +341,7 @@ class IndividualTxEffects extends MultisendEffects {
     for (const tx of safeTxs) {
       console.log(`Executing transaction ${i}...`)
       console.log(JSON.stringify(tx))
-      await signer.sendTransaction({...tx, value: BigNumber.from(tx.value)})
+      await (await signer.sendTransaction({...tx, value: BigNumber.from(tx.value)})).wait()
       ++i
     }
   }
