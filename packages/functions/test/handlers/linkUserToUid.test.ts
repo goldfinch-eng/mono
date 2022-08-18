@@ -6,7 +6,14 @@ chai.use(chaiSubset)
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {Request} from "express"
-import {assertNonNullable, presignedMintMessage, presignedMintToMessage} from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  presignedMintToMessage,
+  presignedMintMessage,
+  NonUSEntitiesList,
+  USAccreditedEntitiesList,
+  USAccreditedIndividualsList,
+} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
 import {hardhat} from "@goldfinch-eng/protocol"
@@ -87,6 +94,88 @@ describe("linkUserToUid", () => {
 
   let mainUser: Record<string, unknown>
 
+  const expectSuccessfulMint = async (fromAddress: string) => {
+    const startedAt = Date.now()
+    const presigMintMessage = presignedMintMessage(
+      fromAddress,
+      uidType,
+      expiresAt,
+      uniqueIdentity.address,
+      BigNumber.from(0),
+      parseInt(chainId),
+    )
+    const mintSig = await signer.signMessage(presigMintMessage)
+    const mintRequest = {
+      body: {msgSender: fromAddress, uidType, expiresAt, nonce},
+      headers: {
+        "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
+        "x-goldfinch-signature": mintSig,
+        "x-goldfinch-signature-block-num": currentBlockNum,
+        "x-goldfinch-signature-plaintext": presigMintMessage.toString(),
+      },
+    } as unknown as Request
+    await testLinkKycToUid(
+      mintRequest,
+      expectResponse(200, {
+        status: "success",
+        message: `User's address ${fromAddress} is linked to the ${fromAddress} UID recipient address.`,
+      }),
+    )
+    const endedAt = Date.now()
+    const userDoc = await users.doc(fromAddress).get()
+    expect(userDoc.exists).to.be.true
+    expect(userDoc.data()).to.containSubset({
+      address: fromAddress,
+      uidRecipientAuthorizations: {[uidType.toString()]: fromAddress},
+    })
+    expect(userDoc.data()?.updatedAt).to.satisfy((updatedAt: number) => updatedAt >= startedAt && updatedAt <= endedAt)
+    const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
+    expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(fromAddress)
+    expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
+  }
+
+  const expectSuccessfulMintTo = async (fromAddress: string, recipientAddress: string) => {
+    const startedAt = Date.now()
+    const presigMintToMessage = presignedMintToMessage(
+      fromAddress,
+      recipientAddress,
+      uidType,
+      expiresAt,
+      uniqueIdentity.address,
+      BigNumber.from(0),
+      parseInt(chainId),
+    )
+    const mintToSig = await signer.signMessage(presigMintToMessage)
+    const mintToRequest = {
+      body: {msgSender: fromAddress, mintToAddress: recipientAddress, uidType, expiresAt, nonce},
+      headers: {
+        "x-goldfinch-address": UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.address,
+        "x-goldfinch-signature": mintToSig,
+        "x-goldfinch-signature-block-num": currentBlockNum,
+        "x-goldfinch-signature-plaintext": presigMintToMessage.toString(),
+      },
+    } as unknown as Request
+
+    await testLinkKycToUid(
+      mintToRequest,
+      expectResponse(200, {
+        status: "success",
+        message: `User's address ${fromAddress} is linked to the ${recipientAddress} UID recipient address.`,
+      }),
+    )
+    const endedAt = Date.now()
+    const userDoc = await users.doc(fromAddress).get()
+    expect(userDoc.exists).to.be.true
+    expect(userDoc.data()).to.containSubset({
+      address: fromAddress,
+      uidRecipientAuthorizations: {[uidType.toString()]: recipientAddress},
+    })
+    expect(userDoc.data()?.updatedAt).to.satisfy((updatedAt: number) => updatedAt >= startedAt && updatedAt <= endedAt)
+    const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
+    expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(recipientAddress)
+    expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
+  }
+
   beforeEach(async () => {
     ;({uniqueIdentity, mainUserAddress, uidContractOwnerAddress, otherUserAddress, mintToAddress} = await setupTest())
     signer = new Wallet(UNIQUE_IDENTITY_SIGNER_TEST_ACCOUNT.privateKey)
@@ -142,6 +231,10 @@ describe("linkUserToUid", () => {
     } as unknown as Request
   })
 
+  afterEach(async () => {
+    await firebaseTesting.clearFirestoreData({projectId})
+  })
+
   context("with an existing user in firestore", () => {
     beforeEach(async () => {
       mainUser = {
@@ -154,35 +247,11 @@ describe("linkUserToUid", () => {
     })
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
-      await testLinkKycToUid(
-        mintToRequest,
-        expectResponse(200, {
-          status: "success",
-          message: `User's address ${mainUserAddress} is linked to the ${mintToAddress} UID recipient address.`,
-        }),
-      )
-      const userDoc = await users.doc(mainUserAddress).get()
-      expect(userDoc.exists).to.be.true
-      expect(userDoc.data()).to.containSubset(_.omit(mainUser, "updatedAt"))
-      const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
-      expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(mintToAddress)
-      expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
+      await expectSuccessfulMintTo(mainUserAddress, mintToAddress)
     })
 
     it("links a user to a UID recipient address for a valid mint operation", async () => {
-      await testLinkKycToUid(
-        mintRequest,
-        expectResponse(200, {
-          status: "success",
-          message: `User's address ${mainUserAddress} is linked to the ${mainUserAddress} UID recipient address.`,
-        }),
-      )
-      const userDoc = await users.doc(mainUserAddress).get()
-      expect(userDoc.exists).to.be.true
-      expect(userDoc.data()).to.containSubset(_.omit(mainUser, "updatedAt"))
-      const uidTypeRecipientAuthorizations = userDoc.data()?.uidRecipientAuthorizations
-      expect(uidTypeRecipientAuthorizations[uidType.toString()]).to.eq(mainUserAddress)
-      expect(Object.keys(uidTypeRecipientAuthorizations).length).to.eq(1)
+      await expectSuccessfulMint(mainUserAddress)
     })
 
     it("throws a 400 error when the msgSender already has a UID of tokenId linked to a different UID recipient", async () => {
@@ -282,7 +351,36 @@ describe("linkUserToUid", () => {
     })
   })
 
-  it("throws an error when the requested user to link does not exist", async () => {
+  context(
+    "when the user is on the parallel markets isApprovedNonUSEntity, isApprovedUSAccreditedEntity, or isApprovedUSAccreditedIndividual list",
+    () => {
+      const nonUSEntityUserAddress = (NonUSEntitiesList[0] as any).toLowerCase()
+      const usAccreditedEntityUserAddress = (USAccreditedEntitiesList[0] as any).toLowerCase()
+      const usAccreditedIndividualUserAddress = (USAccreditedIndividualsList[0] as any).toLowerCase()
+
+      const nonUsEntityMintToAddress = "0x0000000000000000000000000000000000000004"
+      const usAccreditedEntityMintToAddress = "0x0000000000000000000000000000000000000005"
+      const usAccreditedIndividualMintToAddress = "0x0000000000000000000000000000000000000006"
+
+      context("mint", () => {
+        it("can successfully create a new user & add the uid recipient to the user data for a mint request", async () => {
+          await expectSuccessfulMint(nonUSEntityUserAddress)
+          await expectSuccessfulMint(usAccreditedEntityUserAddress)
+          await expectSuccessfulMint(usAccreditedIndividualUserAddress)
+        })
+      })
+
+      context("mintTo", () => {
+        it("can successfully create a new user & add the uid recipient to the user data for a mintTo request", async () => {
+          await expectSuccessfulMintTo(nonUSEntityUserAddress, nonUsEntityMintToAddress)
+          await expectSuccessfulMintTo(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress)
+          await expectSuccessfulMintTo(usAccreditedIndividualUserAddress, usAccreditedIndividualMintToAddress)
+        })
+      })
+    },
+  )
+
+  it("throws an error when the requested user to link does not exist and the user is not on a KYC'ed user list", async () => {
     await testLinkKycToUid(
       mintRequest,
       expectResponse(404, {
