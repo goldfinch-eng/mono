@@ -6,9 +6,9 @@ import {genRequestHandler, getBlockchain, extractHeaderValue} from "../helpers"
 import {ethers, BigNumber} from "ethers"
 import {
   assertNonNullable,
-  //   isApprovedNonUSEntity,
-  //   isApprovedUSAccreditedEntity,
-  //   isApprovedUSAccreditedIndividual,
+  isApprovedNonUSEntity,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
   presignedMintMessage,
   presignedMintToMessage,
   UNIQUE_IDENTITY_SIGNER_MAINNET_ADDRESS,
@@ -17,6 +17,7 @@ import {
 import firestore = admin.firestore
 import type {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers/UniqueIdentity"
 import UNIQUE_IDENTITY_MAINNET_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
+import {KycProvider} from "../types"
 
 let deployedDevABIs: any
 try {
@@ -144,17 +145,29 @@ export const genLinkKycWithUidDeployment = (injectedUidDeployment?: {address: st
         })
       }
 
-      // if (
-      //   isApprovedNonUSEntity(msgSender) ||
-      //   isApprovedUSAccreditedEntity(msgSender) ||
-      //   isApprovedUSAccreditedIndividual(msgSender)
-      // ) {
-      //   return res.status(200).send({...payload, status: "approved"})
-      // }
       const db = getDb(admin.firestore())
       const userRef = getUsers(admin.firestore()).doc(`${msgSender.toLowerCase()}`)
       const uidTypeId = uidType.toString()
+
+      const isUsAccredited = isApprovedUSAccreditedEntity(msgSender) || isApprovedUSAccreditedIndividual(msgSender)
+      const isParallelMarketsUser = isApprovedNonUSEntity(msgSender) || isUsAccredited
       try {
+        if (isParallelMarketsUser) {
+          // Parallel Markets users will usually not exist in Firestore at this point in the KYC process (barring manual intervention or error cases)
+          await db.runTransaction(async (t: firestore.Transaction) => {
+            const userExists = (await t.get(userRef)).exists
+            console.log("userExists", userExists)
+            const userData: {address: string; kycProvider: string; countryCode?: string} = {
+              address: msgSender,
+              kycProvider: KycProvider.ParallelMarkets.valueOf(),
+            }
+            if (isUsAccredited) {
+              userData.countryCode = "US"
+            }
+            userExists ? t.update(userRef, userData) : t.set(userRef, userData)
+          })
+        }
+
         await db.runTransaction(async (t: firestore.Transaction) => {
           const user = await t.get(userRef)
           if (!user.exists) {

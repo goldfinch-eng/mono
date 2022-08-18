@@ -6,7 +6,14 @@ chai.use(chaiSubset)
 import firestore = admin.firestore
 import Firestore = firestore.Firestore
 import {Request} from "express"
-import {assertNonNullable, presignedMintMessage, presignedMintToMessage} from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  presignedMintToMessage,
+  presignedMintMessage,
+  NonUSEntitiesList,
+  USAccreditedEntitiesList,
+  USAccreditedIndividualsList,
+} from "@goldfinch-eng/utils"
 import {mockGetBlockchain} from "../../src/helpers"
 import {expectResponse} from "../utils"
 import {hardhat} from "@goldfinch-eng/protocol"
@@ -62,7 +69,7 @@ const config = {
 
 const uidType = BigNumber.from(1)
 const nonce = BigNumber.from(0)
-describe.only("linkUserToUid", () => {
+describe("linkUserToUid", () => {
   let mainUserAddress: string
   let otherUserAddress: string
   let mintToAddress: string
@@ -231,6 +238,10 @@ describe.only("linkUserToUid", () => {
     } as unknown as Request
   })
 
+  afterEach(async () => {
+    await firebaseTesting.clearFirestoreData({projectId})
+  })
+
   context("with an existing user in firestore", () => {
     beforeEach(async () => {
       mainUser = {
@@ -244,14 +255,10 @@ describe.only("linkUserToUid", () => {
 
     it("links a user to a UID recipient address for a valid mintTo operation", async () => {
       await expectSuccessfulMintTo(mainUserAddress, mintToAddress)
-      const userDoc = await users.doc(mainUserAddress).get()
-      expect(userDoc.data()?.createdAt).to.equal(mainUser.createdAt)
     })
 
     it("links a user to a UID recipient address for a valid mint operation", async () => {
       await expectSuccessfulMint(mainUserAddress)
-      const userDoc = await users.doc(mainUserAddress).get()
-      expect(userDoc.data()?.createdAt).to.equal(mainUser.createdAt)
     })
 
     it("throws a 400 error when the msgSender already has a UID of tokenId linked to a different UID recipient", async () => {
@@ -354,9 +361,9 @@ describe.only("linkUserToUid", () => {
   context(
     "when the user is on the parallel markets isApprovedNonUSEntity, isApprovedUSAccreditedEntity, or isApprovedUSAccreditedIndividual list",
     () => {
-      const nonUSEntityUserAddress = "0x0000000000000000000000000000000000000001"
-      const usAccreditedEntityUserAddress = "0x0000000000000000000000000000000000000002"
-      const usAccreditedIndividualUserAddress = "0x0000000000000000000000000000000000000003"
+      const nonUSEntityUserAddress = (NonUSEntitiesList[0] as any).toLowerCase()
+      const usAccreditedEntityUserAddress = (USAccreditedEntitiesList[0] as any).toLowerCase()
+      const usAccreditedIndividualUserAddress = (USAccreditedIndividualsList[0] as any).toLowerCase()
 
       const nonUsEntityMintToAddress = "0x0000000000000000000000000000000000000004"
       const usAccreditedEntityMintToAddress = "0x0000000000000000000000000000000000000005"
@@ -364,53 +371,23 @@ describe.only("linkUserToUid", () => {
 
       context("mint", () => {
         it("can successfully create a new user & add the uid recipient to the user data for a mint request", async () => {
-          const startedAt = Date.now()
           await expectSuccessfulMint(nonUSEntityUserAddress)
           await expectSuccessfulMint(usAccreditedEntityUserAddress)
           await expectSuccessfulMint(usAccreditedIndividualUserAddress)
-          const endedAt = Date.now()
-          const nonUSAccreditedEntityUserDoc = await users.doc(nonUSEntityUserAddress).get()
-          const usAccreditedEntityUserDoc = await users.doc(usAccreditedEntityUserAddress).get()
-          const usAccreditedIndividualUserDoc = await users.doc(usAccreditedIndividualUserAddress).get()
-
-          expect(nonUSAccreditedEntityUserDoc.data()?.createdAt).to.satisfy(
-            (createdAt: number) => createdAt >= startedAt && createdAt <= endedAt,
-          )
-          expect(usAccreditedEntityUserDoc.data()?.createdAt).to.satisfy(
-            (createdAt: number) => createdAt >= startedAt && createdAt <= endedAt,
-          )
-          expect(usAccreditedIndividualUserDoc.data()?.createdAt).to.satisfy(
-            (createdAt: number) => createdAt >= startedAt && createdAt <= endedAt,
-          )
         })
       })
 
       context("mintTo", () => {
         it("can successfully create a new user & add the uid recipient to the user data for a mintTo request", async () => {
-          const startedAt = Date.now()
           await expectSuccessfulMintTo(nonUSEntityUserAddress, nonUsEntityMintToAddress)
           await expectSuccessfulMintTo(usAccreditedEntityUserAddress, usAccreditedEntityMintToAddress)
           await expectSuccessfulMintTo(usAccreditedIndividualUserAddress, usAccreditedIndividualMintToAddress)
-          const endedAt = Date.now()
-          const nonUSAccreditedEntityUserDoc = await users.doc(nonUSEntityUserAddress).get()
-          const usAccreditedEntityUserDoc = await users.doc(usAccreditedEntityUserAddress).get()
-          const usAccreditedIndividualUserDoc = await users.doc(usAccreditedIndividualUserAddress).get()
-
-          expect(nonUSAccreditedEntityUserDoc.data()?.createdAt).to.satisfy(
-            (createdAt: number) => createdAt >= startedAt && createdAt <= endedAt,
-          )
-          expect(usAccreditedEntityUserDoc.data()?.createdAt).to.satisfy(
-            (createdAt: number) => createdAt >= startedAt && createdAt <= endedAt,
-          )
-          expect(usAccreditedIndividualUserDoc.data()?.createdAt).to.satisfy(
-            (createdAt: number) => createdAt >= startedAt && createdAt <= endedAt,
-          )
         })
       })
     },
   )
 
-  it("throws an error when the requested user to link does not exist", async () => {
+  it("throws an error when the requested user to link does not exist and the user is not on a KYC'ed user list", async () => {
     await testLinkKycToUid(
       mintRequest,
       expectResponse(404, {
