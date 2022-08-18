@@ -4,7 +4,7 @@ import firestore = admin.firestore
 
 let _firestoreForTest: firestore.Firestore
 let _configForTest: FirebaseConfig = {
-  kyc: {allowed_origins: "http://localhost:3000"},
+  kyc: {allowed_origins: "http://localhost"},
   persona: {allowed_ips: ""},
   sentry: {
     dsn: "https://8c1adf3a336a4487b14ae1af080c26d1@o915675.ingest.sentry.io/5857894",
@@ -15,7 +15,7 @@ let _configForTest: FirebaseConfig = {
 
 /**
  * Get the users collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore the get the collection from (ignored for tests)
+ * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
 function getUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
@@ -23,8 +23,17 @@ function getUsers(firestore: firestore.Firestore): firestore.CollectionReference
 }
 
 /**
+ * Get the destroyed users collection given a reference to the firestore
+ * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
+ * @return {firestore.CollectionReference} A Collection object that can be queried
+ */
+function getDestroyedUsers(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
+  return getCollection("destroyedUsers", firestore)
+}
+
+/**
  * Get the agreements collection given a reference to the firestore
- * @param {firestore.Firestore} firestore The firestore the get the collection from (ignored for tests)
+ * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
 function getAgreements(firestore: firestore.Firestore): firestore.CollectionReference<firestore.DocumentData> {
@@ -34,7 +43,7 @@ function getAgreements(firestore: firestore.Firestore): firestore.CollectionRefe
 /**
  * Generic function to get any collection given a reference to the name and the firestore (test aware)
  * @param {string} collection The collection name
- * @param {firestore.Firestore} firestore The firestore the get the collection from (ignored for tests)
+ * @param {firestore.Firestore} firestore The firestore to get the collection from (ignored for tests)
  * @return {firestore.CollectionReference} A Collection object that can be queried
  */
 const getCollection = (
@@ -150,4 +159,4 @@ function setEnvForTest(firestore: firestore.Firestore, config: Omit<FirebaseConf
   }
 }
 
-export {getUsers, getAgreements, getDb, getConfig, setEnvForTest}
+export {getUsers, getDestroyedUsers, getAgreements, getDb, getConfig, setEnvForTest}

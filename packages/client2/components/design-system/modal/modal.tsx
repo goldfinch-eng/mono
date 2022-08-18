@@ -24,11 +24,15 @@ export interface ModalProps {
   /**
    * Heading that appears at the top of the modal
    */
-  title: string;
+  title: ReactNode;
   /**
    * Gives a screen-reader accessible description to this modal.
    */
   description?: string;
+  /**
+   * Adds a divider between the modal's title and content
+   */
+  divider?: boolean;
 }
 
 export function Modal({
@@ -38,6 +42,7 @@ export function Modal({
   size = "md",
   title,
   description,
+  divider = true,
 }: ModalProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -80,9 +85,14 @@ export function Modal({
                 : null
             )}
           >
-            <div className="mb-2 flex items-start justify-between gap-12 px-6">
+            <div
+              className={clsx(
+                "flex items-center justify-between gap-12 px-6 pb-4",
+                divider ? "border-b border-b-sand-100" : null
+              )}
+            >
               <div>
-                <Dialog.Title className={"text-lg font-semibold"}>
+                <Dialog.Title className="text-lg font-semibold">
                   {title}
                 </Dialog.Title>
                 {description && (
@@ -94,7 +104,7 @@ export function Modal({
               </button>
             </div>
             <div className="max-h-[75vh] overflow-auto">
-              <div className="px-6 py-1">{children}</div>
+              <div className="px-6 pt-4 pb-1">{children}</div>
             </div>
           </div>
         </Transition.Child>

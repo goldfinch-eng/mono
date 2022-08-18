@@ -1,6 +1,6 @@
-import { Address, BigInt, log } from '@graphprotocol/graph-ts'
-import { PoolBacker, TranchedPool, TranchedPoolToken } from "../../generated/schema"
-import { TranchedPool as TranchedPoolContract } from '../../generated/templates/PoolTokens/TranchedPool'
+import {Address, BigInt, log} from "@graphprotocol/graph-ts"
+import {PoolBacker, TranchedPool, TranchedPoolToken} from "../../generated/schema"
+import {TranchedPool as TranchedPoolContract} from "../../generated/templates/PoolTokens/TranchedPool"
 
 // Currently, AssemblyScript does not support Closures.
 // Because of that, we need to do some restructuring on the code
@@ -13,15 +13,6 @@ export function getOrInitPoolBacker(poolAddress: Address, userAddress: Address):
     poolBacker = new PoolBacker(id)
     poolBacker.user = userAddress.toHexString()
     poolBacker.tranchedPool = poolAddress.toHexString()
-    poolBacker.principalAmount = new BigInt(0)
-    poolBacker.principalRedeemed = new BigInt(0)
-    poolBacker.interestRedeemed = new BigInt(0)
-    poolBacker.principalAtRisk = new BigInt(0)
-    poolBacker.balance = new BigInt(0)
-    poolBacker.availableToWithdraw = new BigInt(0)
-    poolBacker.unrealizedGains = new BigInt(0)
-    poolBacker.principalRedeemable = new BigInt(0)
-    poolBacker.interestRedeemable = new BigInt(0)
     poolBacker.save()
   }
   return poolBacker
@@ -51,7 +42,7 @@ export function updatePoolBacker(userAddress: Address, tranchedPoolAddress: Addr
   }
 
   let tokens = tranchedPool.tokens
-  if (tokens){
+  if (tokens) {
     for (let i = 0, k = tokens.length; i < k; ++i) {
       let tokenId = assert(tokens[i])
 
@@ -66,7 +57,7 @@ export function updatePoolBacker(userAddress: Address, tranchedPoolAddress: Addr
         const poolContract = TranchedPoolContract.bind(Address.fromString(poolAddressStr))
         let callResult = poolContract.try_availableToWithdraw(BigInt.fromString(tokenId))
         if (callResult.reverted) {
-          log.warning('availableToWithdraw reverted for pool {} and backer {}', [poolAddressStr, currentBackerStr])
+          log.warning("availableToWithdraw reverted for pool {} and backer {}", [poolAddressStr, currentBackerStr])
         } else {
           tokenInfo.interestRedeemable = callResult.value.value0
           tokenInfo.principalRedeemable = callResult.value.value1

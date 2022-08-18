@@ -21,6 +21,7 @@ const CONFIG_KEYS_BY_TYPE = {
     TreasuryReserve: 6,
     ProtocolAdmin: 7,
     OneInch: 8,
+    // TrustedForwarder is deprecated because we no longer use GSN
     TrustedForwarder: 9,
     CUSDCContract: 10,
     GoldfinchConfig: 11,
@@ -35,6 +36,7 @@ const CONFIG_KEYS_BY_TYPE = {
     BackerRewards: 20,
     StakingRewards: 21,
     FiduUSDCCurveLP: 22,
+    TranchedPoolImplementationRepository: 23,
   },
 }
 

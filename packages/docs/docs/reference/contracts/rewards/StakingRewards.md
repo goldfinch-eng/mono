@@ -190,7 +190,10 @@ The percent of &#x60;targetCapacity&#x60; at which the reward rate reaches &#x60
 uint256 vestingLength
 ```
 
-The duration in seconds over which rewards vest
+The duration in seconds over which legacy rewards vest. New positions have no vesting
+ and earn rewards immediately.
+
+_UNUSED (definition kept for storage slot)_
 
 ### totalStakedSupply
 
@@ -356,7 +359,7 @@ function claimableRewards(uint256 tokenId) public view returns (uint256 rewards)
 ```
 
 Returns the rewards claimable by a given position token at the most recent checkpoint, taking into
-  account vesting schedule.
+  account vesting schedule for legacy positions.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -449,12 +452,12 @@ The amount of rewards currently being earned per second, for a given position. T
 ### stake
 
 ```solidity
-function stake(uint256 amount, enum StakingRewards.StakedPositionType positionType) external
+function stake(uint256 amount, enum StakingRewards.StakedPositionType positionType) external returns (uint256)
 ```
 
 Stake &#x60;stakingToken()&#x60; to earn rewards. When you call this function, you&#x27;ll receive an
   an NFT representing your staked position. You can present your NFT to &#x60;getReward&#x60; or &#x60;unstake&#x60;
-  to claim rewards or unstake your tokens respectively. Rewards vest over a schedule.
+  to claim rewards or unstake your tokens respectively.
 
 _This function checkpoints rewards._
 
@@ -463,10 +466,14 @@ _This function checkpoints rewards._
 | amount | uint256 | The amount of &#x60;stakingToken()&#x60; to stake |
 | positionType | enum StakingRewards.StakedPositionType | The type of the staked position |
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | Id of the NFT representing the staked position |
+
 ### depositAndStake
 
 ```solidity
-function depositAndStake(uint256 usdcAmount) public
+function depositAndStake(uint256 usdcAmount) public returns (uint256)
 ```
 
 Deposit to SeniorPool and stake your shares in the same transaction.
@@ -478,7 +485,7 @@ Deposit to SeniorPool and stake your shares in the same transaction.
 ### depositWithPermitAndStake
 
 ```solidity
-function depositWithPermitAndStake(uint256 usdcAmount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external
+function depositWithPermitAndStake(uint256 usdcAmount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external returns (uint256)
 ```
 
 Identical to &#x60;depositAndStake&#x60;, except it allows for a signature to be passed that permits
@@ -601,8 +608,7 @@ function unstake(uint256 tokenId, uint256 amount) public
 ```
 
 Unstake an amount of &#x60;stakingToken()&#x60; associated with a given position and transfer to msg.sender.
-  Unvested rewards will be forfeited, but remaining staked amount will continue to accrue rewards.
-  Positions that are still locked cannot be unstaked until the position&#x27;s lockedUntil time has passed.
+  Any remaining staked amount will continue to accrue rewards.
 
 _This function checkpoints rewards_
 
@@ -632,12 +638,6 @@ _This function checkpoints rewards_
 function unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) external
 ```
 
-### _unstakeAndWithdraw
-
-```solidity
-function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal returns (uint256 usdcAmountReceived, uint256 fiduUsed)
-```
-
 ### unstakeAndWithdrawMultiple
 
 ```solidity
@@ -650,16 +650,22 @@ function unstakeAndWithdrawMultiple(uint256[] tokenIds, uint256[] usdcAmounts) e
 function unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) external
 ```
 
-### _unstakeAndWithdrawInFidu
-
-```solidity
-function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal returns (uint256 usdcReceivedAmount)
-```
-
 ### unstakeAndWithdrawMultipleInFidu
 
 ```solidity
 function unstakeAndWithdrawMultipleInFidu(uint256[] tokenIds, uint256[] fiduAmounts) external
+```
+
+### _unstakeAndWithdraw
+
+```solidity
+function _unstakeAndWithdraw(uint256 tokenId, uint256 usdcAmount) internal returns (uint256 usdcAmountReceived, uint256 fiduUsed)
+```
+
+### _unstakeAndWithdrawInFidu
+
+```solidity
+function _unstakeAndWithdrawInFidu(uint256 tokenId, uint256 fiduAmount) internal returns (uint256 usdcReceivedAmount)
 ```
 
 ### _unstake
@@ -667,6 +673,19 @@ function unstakeAndWithdrawMultipleInFidu(uint256[] tokenIds, uint256[] fiduAmou
 ```solidity
 function _unstake(uint256 tokenId, uint256 amount) internal
 ```
+
+Unstake an amount from a single position
+
+_This function does NOT checkpoint rewards; the caller of this function is responsible
+  for ensuring that rewards are properly checkpointed before invocation.
+This function does NOT transfer staked tokens back to the user; the caller of this
+  function is responsible for ensuring that tokens are transferred back to the
+  owner if necessary._
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenId | uint256 | The token ID |
+| amount | uint256 | The amount of of &#x60;stakingToken()&#x60; to be unstaked from the position |
 
 ### kick
 
@@ -686,7 +705,7 @@ function updatePositionEffectiveMultiplier(uint256 tokenId) external
 ```
 
 Updates a user&#x27;s effective multiplier to the prevailing multiplier. This function gives
-  users an option to get on a higher multiplier without needing to unstake and lose their unvested tokens.
+  users an option to get on a higher multiplier without needing to unstake.
 
 _This will also checkpoint their rewards up to the current time._
 
@@ -708,12 +727,10 @@ Claim rewards for a given staked position
 function addToStake(uint256 tokenId, uint256 amount) external
 ```
 
-Add to an existing position without affecting vesting schedule
+Add &#x60;amount&#x60; to an existing FIDU position (&#x60;tokenId&#x60;)
 
-_This function checkpoints rewards and is only callable by an approved address with ZAPPER_ROLE. This
-  function enables the Zapper to unwind &quot;in-progress&quot; positions initiated by &#x60;Zapper.zapStakeToTranchedPool&#x60;.
-  That is, funds that were moved from this contract into a TranchedPool can be &quot;unwound&quot; back to their original
-  staked position by the Zapper as part of &#x60;Zapper.unzapToStakingRewards&#x60;._
+_For non-zapper cases, it is not recommended to call this for vesting positions, as any additions
+  will be vested. It is optimal to create a new non-vesting position and earn more rewards there._
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -748,12 +765,6 @@ Set the effective multiplier for a given staked position type. The effective mul
 | ---- | ---- | ----------- |
 | multiplier | uint256 | the new multiplier, denominated in &#x60;MULTIPLIER_DECIMALS&#x60; |
 | positionType | enum StakingRewards.StakedPositionType | the type of the position |
-
-### setVestingSchedule
-
-```solidity
-function setVestingSchedule(uint256 _vestingLength) external
-```
 
 ### updateReward
 

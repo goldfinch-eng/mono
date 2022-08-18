@@ -1,4 +1,10 @@
 
 [build]
-  publish = ".next"  
+  publish = ".next"
   command = "npm run build"
+
+[functions]
+  included_files = ["pages/api/gfi-grants/**.json"]
+
+[context.deploy-preview]
+  environment = { NEXT_PUBLIC_GRAPHQL_URL = "https://api.thegraph.com/subgraphs/name/pugbyte/goldfinch" }

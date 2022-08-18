@@ -3,7 +3,6 @@ import {assertIsString} from "@goldfinch-eng/utils"
 import {CONFIG_KEYS} from "../configKeys"
 import {ContractDeployer, updateConfig} from "../deployHelpers"
 import {DeployEffects} from "../migrations/deployEffects"
-import {DeployOpts} from "../types"
 
 const logger = console.log
 

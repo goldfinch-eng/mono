@@ -9,13 +9,13 @@ New routes: be sure to update the webpack proxy
 packages/client/config-overrides.js
 
 */
-import {assertNonNullable, findEnvLocal} from "@goldfinch-eng/utils"
+import {findEnvLocal} from "@goldfinch-eng/utils"
 import dotenv from "dotenv"
 dotenv.config({path: findEnvLocal()})
 
 import express from "express"
 import cors from "cors"
-import {relayHandler, uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
+import {uniqueIdentitySignerHandler} from "@goldfinch-eng/autotasks"
 
 import {fundWithWhales} from "@goldfinch-eng/protocol/blockchain_scripts/helpers/fundWithWhales"
 import {
@@ -23,6 +23,7 @@ import {
   fundFromLocalWhale,
   getERC20s,
 } from "@goldfinch-eng/protocol/blockchain_scripts/setUpForTesting"
+import {lockTranchedPool} from "@goldfinch-eng/protocol/blockchain_scripts/lockTranchedPool"
 import {hardhat as hre} from "@goldfinch-eng/protocol"
 import {advanceTime, mineBlock} from "@goldfinch-eng/protocol/test/testHelpers"
 import {
@@ -38,13 +39,8 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-assertNonNullable(
-  process.env.RELAY_SERVER_PORT,
-  "RELAY_SERVER_PORT must be passed as an envvar when running the development server"
-)
-const port = process.env.RELAY_SERVER_PORT
+const PORT = 4000
 
-app.post("/relay", relayHandler)
 app.post("/uniqueIdentitySigner", uniqueIdentitySignerHandler)
 
 app.post("/fundWithWhales", async (req, res) => {
@@ -79,6 +75,21 @@ app.post("/fundWithWhales", async (req, res) => {
   } catch (e) {
     console.error("fundWithWhales error", e)
     return res.status(500).send({message: "fundWithWhales error"})
+  }
+
+  return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
+})
+
+app.post("/lockTranchedPool", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).send({message: "lockTranchedPool only available on local and murmuration"})
+  }
+
+  try {
+    const {tranchedPoolAddress} = req.body
+    await lockTranchedPool(hre, tranchedPoolAddress)
+  } catch (e) {
+    console.error("lockTranchedPool error", e)
   }
 
   return res.status(200).send({status: "success", result: JSON.stringify({success: true})})
@@ -147,11 +158,11 @@ app.post("/kycStatus", async (req, res) => {
   const {address, countryCode, kycStatus} = req.body
   const db = getDb(admin.firestore())
   const userRef = getUsers(admin.firestore()).doc(`${address.toLowerCase()}`)
+  const residency = req.body.residency ?? (countryCode.toLowerCase() === "us" ? "us" : "non-us")
 
   try {
     await db.runTransaction(async (t: firestore.Transaction) => {
       const doc = await t.get(userRef)
-      console.log(doc.data())
 
       if (doc.exists) {
         t.update(userRef, {
@@ -160,6 +171,9 @@ app.post("/kycStatus", async (req, res) => {
             status: kycStatus,
           },
           countryCode: countryCode,
+          kyc: {
+            residency,
+          },
           updatedAt: Date.now(),
         })
       } else {
@@ -170,6 +184,9 @@ app.post("/kycStatus", async (req, res) => {
             status: kycStatus,
           },
           countryCode: countryCode,
+          kyc: {
+            residency,
+          },
           updatedAt: Date.now(),
         })
       }
@@ -182,6 +199,6 @@ app.post("/kycStatus", async (req, res) => {
   return res.status(200).send({status: "success"})
 })
 
-app.listen(port, () => {
-  console.log(`App listening at http://localhost:${port}`)
+app.listen(PORT, () => {
+  console.log(`App listening at http://localhost:${PORT}`)
 })

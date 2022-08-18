@@ -19,9 +19,11 @@
   "author": "The Goldfinch Community <engineering@goldfinch.finance>",
   "license": "MIT",
   "devDependencies": {
+    "@types/bn.js": "^5.1.0",
     "@types/node": "^16.9.0",
     "@typescript-eslint/eslint-plugin": "^4.31.1",
     "@typescript-eslint/parser": "^4.31.1",
+    "bn.js": "^5.1.3",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-import-resolver-typescript": "^2.5.0",
@@ -35,6 +37,7 @@
     "typescript": "^4.4.2"
   },
   "dependencies": {
+    "ethers": "^5.4.6",
     "@types/lodash": "^4.14.172",
     "lodash": "^4.17.21"
   }

@@ -14,6 +14,8 @@ library ConfigOptions {
   // You can rename or append. But NEVER change the order.
   enum Numbers {
     TransactionLimit,
+    /// @dev: TotalFundsLimit used to represent a total cap on senior pool deposits
+    /// but is now deprecated
     TotalFundsLimit,
     MaxUnderwriterLimit,
     ReserveDenominator,
@@ -24,21 +26,23 @@ library ConfigOptions {
     TransferRestrictionPeriodInDays,
     LeverageRatio
   }
+  /// @dev TrustedForwarder is deprecated because we no longer use GSN. CreditDesk
+  ///   and Pool are deprecated because they are no longer used in the protocol.
   enum Addresses {
-    Pool,
+    Pool, // deprecated
     CreditLineImplementation,
     GoldfinchFactory,
-    CreditDesk,
+    CreditDesk, // deprecated
     Fidu,
     USDC,
     TreasuryReserve,
     ProtocolAdmin,
     OneInch,
-    TrustedForwarder,
+    TrustedForwarder, // deprecated
     CUSDCContract,
     GoldfinchConfig,
     PoolTokens,
-    TranchedPoolImplementation,
+    TranchedPoolImplementation, // deprecated
     SeniorPool,
     SeniorPoolStrategy,
     MigratedTranchedPoolImplementation,
@@ -47,6 +51,7 @@ library ConfigOptions {
     Go,
     BackerRewards,
     StakingRewards,
-    FiduUSDCCurveLP
+    FiduUSDCCurveLP,
+    TranchedPoolImplementationRepository
   }
 }

@@ -3179,11 +3179,7 @@
           },
           "t_enum(LockupPeriod)29935": {
             "label": "enum StakingRewards.LockupPeriod",
-            "members": [
-              "SixMonths",
-              "TwelveMonths",
-              "TwentyFourMonths"
-            ]
+            "members": ["SixMonths", "TwelveMonths", "TwentyFourMonths"]
           },
           "t_mapping(t_uint256,t_struct(StakedPosition)29944_storage)": {
             "label": "mapping(uint256 => struct StakingRewards.StakedPosition)"

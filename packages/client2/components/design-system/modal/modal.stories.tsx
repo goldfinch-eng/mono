@@ -3,6 +3,7 @@ import React, { useState } from "react";
 
 import { Button } from "@/components/design-system";
 
+import { confirmDialog } from "./confirm-dialog";
 import { Modal, ModalProps } from "./index";
 
 export default {
@@ -75,4 +76,28 @@ ModalStory.args = {
   size: "md",
   title: "This the modal's heading",
   description: "This is the modal's description (optional)",
+};
+
+export const ConfirmDialogStory = () => {
+  const handleClick = async () => {
+    const confirmationResult = await confirmDialog("Do you accept?");
+    // eslint-disable-next-line no-console
+    console.log({ confirmationResult });
+  };
+  return (
+    <div>
+      <div>
+        Demonstrates the use of an imperative function that allows you to invoke
+        a confirm dialog and await the user&apos;s response. Use this in a
+        pinch.
+      </div>
+      <div>
+        The handler of this button asynchronously waits for you to interact with
+        the confirm dialog, then logs your choice to the console.
+      </div>
+      <button type="button" onClick={handleClick}>
+        Click me
+      </button>
+    </div>
+  );
 };

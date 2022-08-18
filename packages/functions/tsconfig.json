@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
+    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string", "dom"],
     "module": "commonjs",
     "target": "es2019",
     "noEmit": false,
@@ -10,8 +10,13 @@
     "noUnusedLocals": true,
     "outDir": "lib",
     "sourceMap": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "strict": true,
+    "skipLibCheck": true
   },
   "compileOnSave": true,
-  "include": ["src", "scripts"]
+  "ts-node": {
+    "files": true
+  },
+  "include": ["types", "src", "scripts", "hardhat.config.ts"]
 }

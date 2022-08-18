@@ -13,7 +13,6 @@ const devDeployments = JSON.parse(
 const localhostContracts = devDeployments["31337"].localhost.contracts
 const deployedSeniorPoolProxyAddress = localhostContracts.SeniorPool_Proxy.address
 const deployedGoldfinchFactoryProxyAddress = localhostContracts.GoldfinchFactory_Proxy.address
-const deployedPoolProxyAddress = localhostContracts.Pool_Proxy.address
 const deployedPoolTokensProxyAddress = localhostContracts.PoolTokens_Proxy.address
 const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.address
 const deployedFiduAddress = localhostContracts.Fidu.address
@@ -21,6 +20,11 @@ const deployedGfiAddress = localhostContracts.GFI.address
 const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Proxy.address
 const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
+const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
+const deployedCommunityRewardsProxyAddress = localhostContracts.CommunityRewards_Proxy.address
+const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
+const deployedBackerMerkleDistributorAddress = localhostContracts.BackerMerkleDistributor.address
+const deployedUsdcAddress = localhostContracts.TestERC20.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
@@ -34,9 +38,6 @@ for (let dataSource of subgraphManifest.dataSources) {
     case "GoldfinchFactoryProxy":
       dataSource.source.address = deployedGoldfinchFactoryProxyAddress
       break
-    case "PoolProxy":
-      dataSource.source.address = deployedPoolProxyAddress
-      break
     case "PoolTokensProxy":
       dataSource.source.address = deployedPoolTokensProxyAddress
       break
@@ -48,6 +49,21 @@ for (let dataSource of subgraphManifest.dataSources) {
       break
     case "BackerRewardsProxy":
       dataSource.source.address = deployedBackerRewardsProxyAddress
+      break
+    case "UniqueIdentityProxy":
+      dataSource.source.address = deployedUniqueIdentityProxyAddress
+      break
+    case "GoldfinchConfig":
+      dataSource.source.address = deployedGoldfinchConfigAddress
+      break
+    case "CommunityRewardsProxy":
+      dataSource.source.address = deployedCommunityRewardsProxyAddress
+      break
+    case "MerkleDistributor":
+      dataSource.source.address = deployedMerkleDistributorAddress
+      break
+    case "BackerMerkleDistributor":
+      dataSource.source.address = deployedBackerMerkleDistributorAddress
       break
     default:
       break
@@ -64,6 +80,8 @@ export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolProxyAddress}"
 export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensProxyAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
 export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
+export const LOCALHOST_USDC_ADDRESS = "${deployedUsdcAddress}"
+export const LOCALHOST_STAKING_REWARDS_ADDRESS = "${deployedStakingRewardsProxyAddress}"
 `
 
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))

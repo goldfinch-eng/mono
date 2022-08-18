@@ -88,15 +88,20 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
    * @param amount The amount in USDC that has been drawndown
    */
   function drawdown(uint256 amount) external onlyAdmin {
+    uint256 timestamp = currentTime();
+    require(termEndTime == 0 || (timestamp < termEndTime), "After termEndTime");
     require(amount.add(balance) <= currentLimit, "Cannot drawdown more than the limit");
     require(amount > 0, "Invalid drawdown amount");
-    uint256 timestamp = currentTime();
 
     if (balance == 0) {
       setInterestAccruedAsOf(timestamp);
       setLastFullPaymentTime(timestamp);
       setTotalInterestAccrued(0);
-      setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
+      // Set termEndTime only once to prevent extending
+      // the loan's end time on every 0 balance drawdown
+      if (termEndTime == 0) {
+        setTermEndTime(timestamp.add(SECONDS_PER_DAY.mul(termInDays)));
+      }
     }
 
     (uint256 _interestOwed, uint256 _principalOwed) = _updateAndGetInterestAndPrincipalOwedAsOf(timestamp);
@@ -104,14 +109,6 @@ contract CreditLine is BaseUpgradeablePausable, ICreditLine {
 
     updateCreditLineAccounting(balance, _interestOwed, _principalOwed);
     require(!_isLate(timestamp), "Cannot drawdown when payments are past due");
-  }
-
-  /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   function setLateFeeApr(uint256 newLateFeeApr) external onlyAdmin {

@@ -1,32 +1,27 @@
-import hre from "hardhat"
-const {getNamedAccounts} = hre
-import deployV2 from "./deployV2"
+import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
+import hre, {artifacts, getChainId, getNamedAccounts} from "hardhat"
+import _ from "lodash"
+import {decodeLogs} from "../../../test/testHelpers"
+import {DefenderUpgrader} from "../../adminActions/defenderUpgrader"
 import {
+  assertIsChainId,
+  ContractDeployer,
+  getProtocolOwner,
+  getTruffleContract,
+  GO_LISTER_ROLE,
+  isMainnetForking,
+  MAINNET_CHAIN_ID,
   MINTER_ROLE,
   OWNER_ROLE,
   PAUSER_ROLE,
-  GO_LISTER_ROLE,
-  getContract,
-  getProtocolOwner,
-  isMainnetForking,
-  MAINNET_CHAIN_ID,
-  TRUFFLE_CONTRACT_PROVIDER,
-  assertIsChainId,
-  ContractDeployer,
 } from "../../deployHelpers"
+import {getAllExistingContracts} from "../../deployHelpers/getAllExistingContracts"
+import {getExistingContracts} from "../../deployHelpers/getExistingContracts"
+import {upgradeContracts} from "../../deployHelpers/upgradeContracts"
+import {MAINNET_GOVERNANCE_MULTISIG} from "../../mainnetForkingHelpers"
+import deployV2 from "./deployV2"
 import {borrowerCreditlines, getMigrationData} from "./migrationHelpers"
-import {
-  MAINNET_MULTISIG,
-  upgradeContracts,
-  getExistingContracts,
-  getAllExistingContracts,
-} from "../../mainnetForkingHelpers"
-import {getChainId, artifacts} from "hardhat"
-import _ from "lodash"
-import {decodeLogs} from "../../../test/testHelpers"
 const goList: any[] = []
-import {DefenderUpgrader} from "../../adminActions/defenderUpgrader"
-import {asNonNullable, assertNonNullable} from "@goldfinch-eng/utils"
 
 async function main() {
   const step = process.env.STEP
@@ -47,7 +42,7 @@ async function main() {
       // JUST FOR TESTING
       const protocolOwner = await getProtocolOwner()
       const chainId = await getChainId()
-      const pool = await getContract("Pool", TRUFFLE_CONTRACT_PROVIDER)
+      const pool = await getTruffleContract("Pool")
       const defender = new DefenderUpgrader({hre, logger: console.log, chainId})
       await defender.send({
         method: "assets",
@@ -102,15 +97,16 @@ async function prepareMigration() {
 async function deployAndMigrateToV2() {
   const {gf_deployer} = await getNamedAccounts()
   assertNonNullable(gf_deployer)
-  const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+  const migrator = await getTruffleContract("V2Migrator", {from: gf_deployer})
   const chainId = isMainnetForking() ? MAINNET_CHAIN_ID : await getChainId()
   assertIsChainId(chainId)
   const existingPool = (await getExistingContracts(["Pool"], gf_deployer, chainId)).Pool
   assertNonNullable(existingPool)
   const existingPoolAddress = existingPool.ExistingContract.address
-  const goldfinchConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER)
+  const goldfinchConfig = await getTruffleContract("GoldfinchConfig")
   if (!(await existingPool.ExistingContract.paused())) {
     console.log("Migrating phase 1")
+    // @ts-expect-error Broken because V2Migrator contract has been removed.
     await migrator.migratePhase1(goldfinchConfig.address)
     console.log("Done phase 1")
   } else {
@@ -127,6 +123,7 @@ async function deployAndMigrateToV2() {
   if (ownersWithCls.length > 0) {
     for (let i = 0; i < chunkedOwnersWithCls.length; i++) {
       const ownerChunk = chunkedOwnersWithCls[i]
+      // @ts-expect-error Broken because V2Migrator contract has been removed.
       const migrationTxChunk = await migrator.migrateCreditLines(
         goldfinchConfig.address,
         ownerChunk,
@@ -150,12 +147,12 @@ async function closingOutTheMigration(goldfinchConfigAddress, migrator) {
 
 async function addEveryoneToTheGoList(goldfinchConfigAddress, migrator) {
   const chunkedGoList = _.chunk(goList, 375)
-  const config = await getContract("GoldfinchConfig")
+  const config = await getTruffleContract("GoldfinchConfig")
   for (let i = 0; i < chunkedGoList.length; i++) {
     console.log("Trying adding chunk", i, "to the goList")
     const chunk = chunkedGoList[i]
     assertNonNullable(chunk)
-    const alreadyAdded = await config.goList(chunk[0])
+    const alreadyAdded = await (config as any).goList(chunk[0])
     if (!alreadyAdded) {
       console.log("Actually adding chunk", i, "to the goList")
       await migrator.bulkAddToGoList(goldfinchConfigAddress, chunk)
@@ -212,13 +209,14 @@ async function handleNewDeployments(migrator) {
   const existingContracts = await getExistingContracts(contractsToUpgrade, gf_deployer, chainId)
   const upgradedContracts = await upgradeContracts(
     contractsToUpgrade,
+    // @ts-expect-error Broken because function signature is obsolete.
     existingContracts,
     gf_deployer,
     gf_deployer,
     deployer,
     false
   )
-  const newConfig = await getContract("GoldfinchConfig", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+  const newConfig: any = await getTruffleContract("GoldfinchConfig", {from: gf_deployer})
   // Set the deployer, governance, and migrator as owners of the config. This gets revoked later.
   if (!(await newConfig.hasRole(GO_LISTER_ROLE, migrator.address))) {
     console.log("Initializing the new config...")
@@ -252,20 +250,20 @@ async function handleNewDeployments(migrator) {
 async function givePermsToMigrator({pool, creditDesk, goldfinchFactory, fidu, migrator, oldConfig}) {
   // Give owner roles to the migrator
   if (isMainnetForking()) {
-    await fidu.grantRole(MINTER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await fidu.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await fidu.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await fidu.grantRole(MINTER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await fidu.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await fidu.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await creditDesk.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await creditDesk.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await creditDesk.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await creditDesk.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await pool.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await pool.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await pool.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await pool.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await goldfinchFactory.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
-    await goldfinchFactory.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await goldfinchFactory.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
+    await goldfinchFactory.grantRole(PAUSER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
 
-    await oldConfig.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_MULTISIG})
+    await oldConfig.grantRole(OWNER_ROLE, migrator.address, {from: MAINNET_GOVERNANCE_MULTISIG})
   } else {
     console.log("--------Do a multisend tx----------")
     console.log("-----------------------------------")
@@ -324,10 +322,13 @@ async function deployMigrator(hre, {config}) {
   console.log("Deploying the migrator...")
   const protocolOwner = await getProtocolOwner()
   await deploy(contractName, {from: gf_deployer})
-  const migrator = await getContract("V2Migrator", TRUFFLE_CONTRACT_PROVIDER, {from: gf_deployer})
+  const migrator = await getTruffleContract("V2Migrator", {from: gf_deployer})
+  // @ts-expect-error Broken because V2Migrator contract has been removed.
   if (!(await migrator.hasRole(OWNER_ROLE, protocolOwner))) {
     console.log("Initializing the migrator...")
+    // @ts-expect-error Broken because V2Migrator contract has been removed.
     await migrator.initialize(gf_deployer, config.address)
+    // @ts-expect-error Broken because V2Migrator contract has been removed.
     await migrator.grantRole(OWNER_ROLE, protocolOwner)
   }
   console.log("Done deploying the migrator...")
@@ -351,7 +352,7 @@ async function deployMigrator(hre, {config}) {
 */
 
 // async function delegateSafeTransaction(tx) {
-//   const safeAddress = MAINNET_MULTISIG
+//   const safeAddress = MAINNET_GOVERNANCE_MULTISIG
 //   const blakesGovAddress = "0xf13eFa505444D09E176d83A4dfd50d10E399cFd5"
 //   const mikesGovAddress = "0x5E7b1B5d5B03558BA57410e5dc4DbFCA71C92B84"
 //   await impersonateAccount(hre, blakesGovAddress)

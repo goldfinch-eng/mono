@@ -12,27 +12,20 @@ import {
   interestAprAsBN,
   ZERO_ADDRESS,
   DISTRIBUTOR_ROLE,
-  getContract,
-  TRUFFLE_CONTRACT_PROVIDER,
   OWNER_ROLE,
   getTruffleContract,
 } from "../blockchain_scripts/deployHelpers"
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
 import {
-  CreditDeskInstance,
   ERC20Instance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
   GoldfinchConfigInstance,
   GoldfinchFactoryInstance,
-  PoolInstance,
-  PoolTokensInstance,
   SeniorPoolInstance,
   CreditLineInstance,
-  TestForwarderInstance,
   TranchedPoolInstance,
-  TransferRestrictedVaultInstance,
   GFIInstance,
   CommunityRewardsInstance,
   MerkleDistributorInstance,
@@ -43,9 +36,10 @@ import {
   ZapperInstance,
   TestFiduUSDCCurveLPInstance,
   TestStakingRewardsInstance,
+  TestPoolTokensInstance,
+  StakingRewardsInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
-import {MerkleDistributor, CommunityRewards, Go, TestUniqueIdentity, MerkleDirectDistributor} from "../typechain/ethers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import "./types"
 const decimals = new BN(String(1e18))
@@ -114,12 +108,29 @@ async function getTruffleContractAtAddress<T extends Truffle.ContractInstance>(
   return (await artifacts.require(name).at(address)) as T
 }
 
-async function setupBackerRewards(gfi: GFIInstance, backerRewards: BackerRewardsInstance, owner: string) {
+async function setupBackerRewards(
+  gfi: GFIInstance,
+  backerRewards: BackerRewardsInstance,
+  stakingRewards: StakingRewardsInstance,
+  owner: string
+) {
   const gfiAmount = bigVal(100_000_000) // 100M
   await gfi.setCap(gfiAmount)
   await gfi.mint(owner, gfiAmount)
   await backerRewards.setMaxInterestDollarsEligible(bigVal(1_000_000_000)) // 1B
   await backerRewards.setTotalRewards(bigVal(3_000_000)) // 3% of 100M, 3M
+
+  // Seed stakings rewards with GFI. This brings the test state closer to what's
+  // actually on mainnet. See this https://goldfinchhq.slack.com/archives/C01BGB0Q753/p1655239486314729
+  // discussion for why this is important
+  const targetCapacity = bigVal(1000)
+  const maxRate = bigVal(1000)
+  const minRate = bigVal(100)
+  const maxRateAtPercent = new BN(5).mul(new BN(String(1e17))) // 50%
+  const minRateAtPercent = new BN(3).mul(new BN(String(1e18))) // 300%
+  await stakingRewards.setRewardsParameters(targetCapacity, minRate, maxRate, minRateAtPercent, maxRateAtPercent)
+  await gfi.approve(stakingRewards.address, bigVal(1000), {from: owner})
+  await stakingRewards.loadRewards(bigVal(1000), {from: owner})
 }
 
 const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
@@ -244,9 +255,6 @@ function getOnlyLog<T extends Truffle.AnyEvent>(logs: DecodedLog<T>[]): DecodedL
 }
 
 export type DeployAllContractsOptions = {
-  deployForwarder?: {
-    fromAccount: string
-  }
   deployMerkleDistributor?: {
     fromAccount: string
     root: string
@@ -261,20 +269,16 @@ async function deployAllContracts(
   deployments: DeploymentsExtension,
   options: DeployAllContractsOptions = {}
 ): Promise<{
-  pool: PoolInstance
   seniorPool: SeniorPoolInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
   seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
-  creditDesk: CreditDeskInstance
   fidu: FiduInstance
   fiduUSDCCurveLP: TestFiduUSDCCurveLPInstance
   goldfinchConfig: GoldfinchConfigInstance
   goldfinchFactory: GoldfinchFactoryInstance
-  forwarder: TestForwarderInstance | null
-  poolTokens: PoolTokensInstance
+  poolTokens: TestPoolTokensInstance
   tranchedPool: TranchedPoolInstance
-  transferRestrictedVault: TransferRestrictedVaultInstance
   gfi: GFIInstance
   stakingRewards: TestStakingRewardsInstance
   backerRewards: TestBackerRewardsInstance
@@ -286,7 +290,6 @@ async function deployAllContracts(
   zapper: ZapperInstance
 }> {
   await deployments.fixture("base_deploy")
-  const pool = await getDeployedAsTruffleContract<PoolInstance>(deployments, "Pool")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
   const seniorPoolFixedStrategy = await getDeployedAsTruffleContract<FixedLeverageRatioStrategyInstance>(
     deployments,
@@ -297,7 +300,6 @@ async function deployAllContracts(
     "DynamicLeverageRatioStrategy"
   )
   const usdc = await getDeployedAsTruffleContract<ERC20Instance>(deployments, "ERC20")
-  const creditDesk = await getDeployedAsTruffleContract<CreditDeskInstance>(deployments, "CreditDesk")
   const fidu = await getDeployedAsTruffleContract<FiduInstance>(deployments, "Fidu")
   const fiduUSDCCurveLP = await getDeployedAsTruffleContract<TestFiduUSDCCurveLPInstance>(
     deployments,
@@ -305,27 +307,13 @@ async function deployAllContracts(
   )
   const goldfinchConfig = await getDeployedAsTruffleContract<GoldfinchConfigInstance>(deployments, "GoldfinchConfig")
   const goldfinchFactory = await getDeployedAsTruffleContract<GoldfinchFactoryInstance>(deployments, "GoldfinchFactory")
-  const poolTokens = await getDeployedAsTruffleContract<PoolTokensInstance>(deployments, "PoolTokens")
-  let forwarder: TestForwarderInstance | null = null
-  if (options.deployForwarder) {
-    await deployments.deploy("TestForwarder", {from: options.deployForwarder.fromAccount, gasLimit: 4000000})
-    forwarder = await getDeployedAsTruffleContract<TestForwarderInstance>(deployments, "TestForwarder")
-    assertNonNullable(forwarder)
-    await forwarder.registerDomainSeparator("Defender", "1")
-  }
+  const poolTokens = await getDeployedAsTruffleContract<TestPoolTokensInstance>(deployments, "PoolTokens")
   const tranchedPool = await getDeployedAsTruffleContract<TranchedPoolInstance>(deployments, "TranchedPool")
-  const transferRestrictedVault = await getDeployedAsTruffleContract<TransferRestrictedVaultInstance>(
-    deployments,
-    "TransferRestrictedVault"
-  )
   const gfi = await getDeployedAsTruffleContract<GFIInstance>(deployments, "GFI")
   const stakingRewards = await getDeployedAsTruffleContract<TestStakingRewardsInstance>(deployments, "StakingRewards")
   const backerRewards = await getDeployedAsTruffleContract<TestBackerRewardsInstance>(deployments, "BackerRewards")
 
-  const communityRewards = await getContract<CommunityRewards, CommunityRewardsInstance>(
-    "CommunityRewards",
-    TRUFFLE_CONTRACT_PROVIDER
-  )
+  const communityRewards = await getTruffleContract<CommunityRewardsInstance>("CommunityRewards")
   let merkleDistributor: MerkleDistributorInstance | null = null
   if (options.deployMerkleDistributor) {
     await deployments.deploy("MerkleDistributor", {
@@ -333,10 +321,7 @@ async function deployAllContracts(
       from: options.deployMerkleDistributor.fromAccount,
       gasLimit: 4000000,
     })
-    merkleDistributor = await getContract<MerkleDistributor, MerkleDistributorInstance>(
-      "MerkleDistributor",
-      TRUFFLE_CONTRACT_PROVIDER
-    )
+    merkleDistributor = await getTruffleContract<MerkleDistributorInstance>("MerkleDistributor")
     await communityRewards.grantRole(DISTRIBUTOR_ROLE, merkleDistributor.address)
   }
 
@@ -357,35 +342,25 @@ async function deployAllContracts(
         },
       },
     })
-    merkleDirectDistributor = await getContract<MerkleDirectDistributor, MerkleDirectDistributorInstance>(
-      "MerkleDirectDistributor",
-      TRUFFLE_CONTRACT_PROVIDER
-    )
+    merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
   }
 
-  const uniqueIdentity = await getContract<TestUniqueIdentity, TestUniqueIdentityInstance>(
-    "TestUniqueIdentity",
-    TRUFFLE_CONTRACT_PROVIDER
-  )
-  const go = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER)
+  const uniqueIdentity = await getTruffleContract<TestUniqueIdentityInstance>("TestUniqueIdentity")
+  const go = await getTruffleContract<GoInstance>("Go")
 
   const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 
   return {
-    pool,
     seniorPool,
     seniorPoolFixedStrategy,
     seniorPoolDynamicStrategy,
     usdc,
-    creditDesk,
     fidu,
     fiduUSDCCurveLP,
     goldfinchConfig,
     goldfinchFactory,
-    forwarder,
     poolTokens,
     tranchedPool,
-    transferRestrictedVault,
     gfi,
     stakingRewards,
     communityRewards,

@@ -145,14 +145,6 @@ Withdraws USDC (denominated in FIDU terms) from the SeniorPool to msg.sender
 | ---- | ---- | ----------- |
 | fiduAmount | uint256 | The amount of USDC to withdraw in terms of FIDU shares |
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
-Migrates to a new goldfinch config address
-
 ### sweepToCompound
 
 ```solidity
@@ -303,12 +295,6 @@ function _fiduToUSDC(uint256 amount) internal pure returns (uint256)
 
 ```solidity
 function _getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256)
-```
-
-### _sharesWithinLimit
-
-```solidity
-function _sharesWithinLimit(uint256 _totalShares) internal view returns (bool)
 ```
 
 ### doUSDCTransfer

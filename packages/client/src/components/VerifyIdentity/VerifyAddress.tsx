@@ -12,10 +12,10 @@ import VerifyCard from "./VerifyCard"
 import {Action, CREATE_UID, US_COUNTRY_CODE} from "./constants"
 import ErrorCard from "./ErrorCard"
 import {
-  isNonUSEntity,
-  isUSAccreditedEntity,
-  isUSAccreditedIndividual,
-} from "@goldfinch-eng/autotasks/unique-identity-signer/utils"
+  isApprovedNonUSEntity,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
+} from "@goldfinch-eng/utils"
 import USAccreditedForm from "./USAccreditedForm"
 import Banner from "../banner"
 import {UIDTypeToBalance, User} from "../../ethereum/user"
@@ -29,9 +29,9 @@ export const ENTITY_ENTITY_TYPE = "Entity"
 function isEligible(kyc: KYC | undefined, user: User): boolean {
   return (
     (kyc?.status === "approved" && kyc?.countryCode !== "") ||
-    isNonUSEntity(user?.address) ||
-    isUSAccreditedEntity(user?.address) ||
-    isUSAccreditedIndividual(user?.address)
+    isApprovedNonUSEntity(user?.address) ||
+    isApprovedUSAccreditedEntity(user?.address) ||
+    isApprovedUSAccreditedIndividual(user?.address)
   )
 }
 
@@ -149,8 +149,8 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
     return (
       <Banner icon={iconAlert}>
         There was an issue verifying your address. For help, please contact{" "}
-        <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:verify@goldfinch.finance">
-          verify@goldfinch.finance
+        <a className="link" target="_blank" rel="noopener noreferrer" href="mailto:UID@warblerlabs.com">
+          UID@warblerlabs.com
         </a>{" "}
         and include your address.
       </Banner>
@@ -166,9 +166,13 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
         onEvent={() => fetchKYCStatus(session)}
       />
     )
-  } else if (entityType === US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE && !isUSAccreditedIndividual(user.address)) {
+  } else if (entityType === US_ACCREDITED_INDIVIDUAL_ENTITY_TYPE && !isApprovedUSAccreditedIndividual(user.address)) {
     return <USAccreditedForm onClose={() => setEntityType("")} />
-  } else if (entityType === ENTITY_ENTITY_TYPE && !isUSAccreditedEntity(user.address) && !isNonUSEntity(user.address)) {
+  } else if (
+    entityType === ENTITY_ENTITY_TYPE &&
+    !isApprovedUSAccreditedEntity(user.address) &&
+    !isApprovedNonUSEntity(user.address)
+  ) {
     return <EntityForm onClose={() => setEntityType("")} />
   } else if (isEligible(kyc, user)) {
     return <Banner icon={iconCircleCheck}>Your verification was approved.</Banner>
@@ -191,7 +195,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </label>
           <div className="value-option">
             <input
-              {...register("countrySelection", {required: true})}
+              {...(register("countrySelection", {required: true}) as any)}
               name="countrySelection"
               type="radio"
               id="value-type-us"
@@ -203,7 +207,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </div>
           <div className="value-option">
             <input
-              {...register("countrySelection", {required: true})}
+              {...(register("countrySelection", {required: true}) as any)}
               name="countrySelection"
               type="radio"
               id="value-type-not-us"
@@ -218,7 +222,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </label>
           <div className="value-option">
             <input
-              {...register("individualOrEntity", {required: true})}
+              {...(register("individualOrEntity", {required: true}) as any)}
               name="individualOrEntity"
               type="radio"
               id="value-type-individual"
@@ -230,7 +234,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
           </div>
           <div className="value-option">
             <input
-              {...register("individualOrEntity", {required: true})}
+              {...(register("individualOrEntity", {required: true}) as any)}
               name="individualOrEntity"
               type="radio"
               id="value-type-entity"
@@ -251,7 +255,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
                   type="radio"
                   id="value-type-accredited"
                   value="value-type-accredited"
-                  {...register("accreditedIndividual", {required: true})}
+                  {...(register("accreditedIndividual", {required: true}) as any)}
                   ref={(ref) => register(ref)}
                 />
                 <div className="radio-check"></div>
@@ -263,7 +267,7 @@ export default function VerifyAddress({disabled, dispatch}: {disabled: boolean; 
                   type="radio"
                   id="value-type-not-accredited"
                   value="value-type-not-accredited"
-                  {...register("accreditedIndividual", {required: true})}
+                  {...(register("accreditedIndividual", {required: true}) as any)}
                   ref={(ref) => register(ref)}
                 />
                 <div className="radio-check"></div>

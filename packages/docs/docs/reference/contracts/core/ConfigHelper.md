@@ -105,6 +105,8 @@ function creditLineImplementationAddress(contract GoldfinchConfig config) intern
 function trustedForwarderAddress(contract GoldfinchConfig config) internal view returns (address)
 ```
 
+_deprecated because we no longer use GSN_
+
 ### configAddress
 
 ```solidity

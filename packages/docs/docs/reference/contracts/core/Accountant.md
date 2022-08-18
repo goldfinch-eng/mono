@@ -2,7 +2,7 @@
 
 **Deployment on Ethereum mainnet: **
 
-https://etherscan.io/address/0xCb4c20Da8BB0D8496708eDB919e0db925E1C2D93
+https://etherscan.io/address/0xDD4bb1B6c13a7139F43da6598429f87e7FFe7CC6
 
 Library for handling key financial calculations, such as interest and principal accrual.
 

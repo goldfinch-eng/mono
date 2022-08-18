@@ -48,12 +48,6 @@ event GoldfinchConfigUpdated(address who, address configAddress)
 function initialize(address owner, contract GoldfinchConfig _config, address _uniqueIdentity) public
 ```
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
 ### performUpgrade
 
 ```solidity

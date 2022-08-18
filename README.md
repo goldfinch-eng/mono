@@ -6,7 +6,11 @@ Goldfinch is a decentralized lending protocol built on the blockchain. This is a
 
 You will need the correct version of node/npm on your local machine.
 
-Using nvm, you can do this with `nvm install 14.19.0`. If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
+Using nvm, you can do this with `nvm install` (this will look at .nvmrc for the version). If you don't have `nvm`, see [here](https://github.com/nvm-sh/nvm#installing-and-updating) for installation instructions.
+
+#### Other Prerequisites 
+
+You will need `python` installed and in your path. Some of the dependencies require [node-gyp](https://github.com/nodejs/node-gyp), which compiles native addons using python. If you don't have `python`, we recommend using `pyenv`, which has instructions [here](https://github.com/pyenv/pyenv).
 
 #### Packages
 
@@ -26,6 +30,17 @@ npm install
 npx lerna bootstrap
 ```
 
+##### Troubleshooting
+
+If you run in to this error during `npm run bootstrap`
+```
+ENFILE: file table overflow
+```
+Try increasing the maximum number of files that can be open
+```
+ulimit -n 10240
+```
+
 ## Developing
 
 ### Smart Contract Development
@@ -34,6 +49,13 @@ All contracts are located under `packages/protocol/contracts`
 2. Write tests, which should be placed under `packages/protocol/test`
     - There are two kinds of tests. "Regular" (all local state) and "mainnet forking" (uses state from mainnet). They are located in different folders. Sometimes you write both for the same feature. Use your judgement depending on the change.
 3. Write great commit messages, and put up your PR!
+
+#### One time setup
+We use both Foundry and Hardhat for our tests. Hardhat will already be set up, but there's some extra steps for getting Foundry prepared:
+- Install Foundry using the instructions here: https://github.com/foundry-rs/foundry
+- Once installed, run the `foundry-tool.sh` script in `packages/protocol`
+  - This will set up foundry and prepare the git submodules
+- Now you can run `forge test` in `packages/protocol`!
 
 ### Frontend Development
 - `npm run start:local`
@@ -52,7 +74,6 @@ Both options will start several processes, including your local blockchain and f
   ```
   ALCHEMY_API_KEY={your alchemy api key}
   TEST_USER={your metamask address}
-  ALLOWED_SENDERS={your metamask address}`
   ```
 
 - If you want the `client` to use variables in your `.env.local`, create a symlink to this file from inside the `packages/client` dir, or else create a separate `packages/client/.env.local` file.
@@ -62,9 +83,6 @@ Both options will start several processes, including your local blockchain and f
 Changes to the frontend should be automatically hotloaded using react-refresh.
 
 Changes to smart contracts will require re-compiling and re-deploying. You can do this by re-running your start command.
-
-#### Other ways to run
-* `npm run start:no-gasless` is available if gasless transactions are giving you trouble, or if you're having trouble finding the borrower contract address.
 
 ***Note** When running with `start:local`, the Fake USDC address that we create will also not be visible to Metamask by default. So you'll need to add this as well
 by looking at the terminal output of the `@goldfinch-eng/protocol` start command. Search "USDC Address", and you should see something. Take that address, and
@@ -77,10 +95,20 @@ then go to `Add Token` in Metamask, and paste it in there. Your fake USDC balanc
   * [`protocol/`](./packages/protocol) (`@goldfinch-eng/protocol`): Solidity smart contracts and tests.
   * [`client/`](./packages/client) (`@goldfinch-eng/client`): Web3 frontend using React.
   * [`functions/`](./packages/functions) (`@goldfinch-eng/functions`): Google cloud functions to support KYC and other server-side functionality.
-  * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for supporting gasless transactions and triggering periodic on-chain calls.
+  * [`autotasks/`](./packages/autotasks) (`@goldfinch-eng/functions`): [Defender Autotasks and Relay](https://docs.openzeppelin.com/defender/autotasks) code for triggering periodic on-chain calls.
   * [`utils/`](./packages/utils) (`@goldfinch-eng/utils`): Generally useful utilities that are shared across packages.
   * [`docs/`](./packages/docs) (`@goldfinch-eng/docs`): Static site of protocol documentation.
 * [`murmuration/`](./murmuration): Provisioning scripts for our cloud staging environment, called Murmuration.
+
+### Adding a new packages
+
+1. Create the package with lerna:
+
+```sh
+npx lerna create package-name
+```
+
+2. (optional), If this is a typescript package being used from another typescript pacakge, add the new package name to the root `tsconfig.json`.
 
 ### Tenderly debugging
 We have the ability to debug/profile local transactions via [Tenderly](Tenderly.co). To do this, get hold of a transaction hash and then run:
@@ -107,13 +135,6 @@ Pick up the transaction hash from the output of the test and run export as above
 
 ### Security
 - See the [`SECURITY.MD`](./SECURITY.MD)
-
-### Gasless transactions
-
-To support gasless transactions, we need to collect the signature from the client, perform some server side checks to validate
-the sender and receiving contract (e.g. it's a known borrower interacting with our borrower contracts, we don't want to subsidize any arbitrary transaction).
-We use [Defender Relay](https://docs.openzeppelin.com/defender/relay) to do this. For local development, we mimic this by running a local server that executes the gasless logic.
-We've configured webpack to proxy to this server when running `npm run start` for local development. If you're having problems with gasless transactions, make sure you've added your address to `.env.local`'s `ALLOWED_SENDERS`.
 
 ### Testing
 - Run `npm test` to run tests for all packages.

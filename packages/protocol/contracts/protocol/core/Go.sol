@@ -39,11 +39,6 @@ contract Go is IGo, BaseUpgradeablePausable {
     uniqueIdentity = _uniqueIdentity;
   }
 
-  function updateGoldfinchConfig() external override onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
-  }
-
   function performUpgrade() external onlyAdmin {
     return _performUpgrade();
   }

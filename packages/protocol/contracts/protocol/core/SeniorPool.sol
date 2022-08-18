@@ -46,11 +46,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     __BaseUpgradeablePausable__init(owner);
 
     config = _config;
-    // Initialize sharePrice to be identical to the legacy pool. This is in the initializer
-    // because it must only ever happen once.
-    sharePrice = config.getPool().sharePrice();
-    totalLoansOutstanding = config.getCreditDesk().totalLoansOutstanding();
-    totalWritedowns = config.getCreditDesk().totalWritedowns();
+    sharePrice = _fiduMantissa();
+    totalLoansOutstanding = 0;
+    totalWritedowns = 0;
 
     IERC20withDec usdc = config.getUSDC();
     // Sanity check the address
@@ -71,7 +69,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     uint256 potentialNewTotalShares = totalShares().add(depositShares);
-    require(_sharesWithinLimit(potentialNewTotalShares), "Deposit would put the senior pool over the total limit.");
     emit DepositMade(msg.sender, amount, depositShares);
     bool success = doUSDCTransfer(msg.sender, address(this), amount);
     require(success, "Failed to transfer for deposit");
@@ -130,14 +127,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 usdcAmount = _getUSDCAmountFromShares(fiduAmount);
     uint256 withdrawShares = fiduAmount;
     return _withdraw(usdcAmount, withdrawShares);
-  }
-
-  /**
-   * @notice Migrates to a new goldfinch config address
-   */
-  function updateGoldfinchConfig() external onlyAdmin {
-    config = GoldfinchConfig(config.configAddress());
-    emit GoldfinchConfigUpdated(msg.sender, address(config));
   }
 
   /**
@@ -338,12 +327,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   function _getUSDCAmountFromShares(uint256 fiduAmount) internal view returns (uint256) {
     return _fiduToUSDC(fiduAmount.mul(sharePrice).div(_fiduMantissa()));
-  }
-
-  function _sharesWithinLimit(uint256 _totalShares) internal view returns (bool) {
-    return
-      _totalShares.mul(sharePrice).div(_fiduMantissa()) <=
-      _usdcToFidu(config.getNumber(uint256(ConfigOptions.Numbers.TotalFundsLimit)));
   }
 
   function doUSDCTransfer(

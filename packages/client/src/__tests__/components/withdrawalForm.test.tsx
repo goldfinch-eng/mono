@@ -106,7 +106,7 @@ describe("withdrawal form", () => {
       return getDeployments()
     })
 
-    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo) => {
+    jest.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
       const url = input.toString()
       if (url === COINGECKO_API_GFI_PRICE_URL) {
         return Promise.resolve({
@@ -165,6 +165,73 @@ describe("withdrawal form", () => {
     expect(await screen.findByText("Submit")).toBeVisible()
     expect(await screen.findByText("Cancel")).toBeVisible()
     expect(await screen.findByText("Withdraw")).toBeVisible()
+  })
+
+  describe("when the senior pool does have liquidity", () => {
+    const poolBalanceInAtoms = new BigNumber(1e6)
+    const withdrawalAmountInAtoms = poolBalanceInAtoms
+    const withdrawAmountInUsdc = withdrawalAmountInAtoms.dividedBy(1e6).toFixed(6)
+    const poolData = {
+      balance: poolBalanceInAtoms,
+    }
+    beforeEach(async () => {
+      await waitFor(async () => {
+        expect(withdrawalAmountInAtoms.toNumber()).toBeLessThanOrEqual(poolBalanceInAtoms.toNumber())
+        renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
+        fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: withdrawAmountInUsdc}})
+      })
+    })
+
+    it("should enable the 'submit' button", async () => {
+      await waitFor(async () => {
+        const submitButton = await screen.findByText("Submit")
+        expect(submitButton).toBeVisible()
+        expect(submitButton).not.toHaveClass("disabled")
+      })
+    })
+
+    it("should not display a warning", async () => {
+      await waitFor(async () => {
+        try {
+          await screen.getByTestId("liquidity-advisory")
+        } catch (e) {
+          // we expect the above line to throw an exception because the
+          // liquidity advisory should not be able to found
+        }
+      })
+    })
+  })
+
+  describe("when the senior pool doesn't have liquidity", () => {
+    const poolBalanceInAtoms = new BigNumber(1e6)
+    const withdrawalAmountInAtoms = poolBalanceInAtoms.plus(1)
+    const withdrawAmountInUsdc = withdrawalAmountInAtoms.dividedBy(1e6).toFixed(6)
+    const poolData = {
+      balance: poolBalanceInAtoms,
+    }
+    beforeEach(async () => {
+      await waitFor(async () => {
+        expect(withdrawalAmountInAtoms.toNumber()).toBeGreaterThan(poolBalanceInAtoms.toNumber())
+        renderWithdrawalForm(poolData, capitalProvider, undefined, undefined, currentBlock)
+        fireEvent.change(screen.getByPlaceholderText("0"), {target: {value: withdrawAmountInUsdc}})
+      })
+    })
+
+    it("should disable the 'submit' button", async () => {
+      await waitFor(async () => {
+        const submitButton = await screen.findByText("Submit")
+        expect(submitButton).toBeVisible()
+        expect(submitButton).toHaveClass("disabled")
+      })
+    })
+
+    it("should display a warning", async () => {
+      await waitFor(async () => {
+        const liquidityAdvisory = await screen.getByTestId("liquidity-advisory")
+        expect(liquidityAdvisory).not.toEqual(null)
+        expect(liquidityAdvisory).toBeVisible()
+      })
+    })
   })
 
   it("shows withdrawal form, to user with claimable staking reward", async () => {

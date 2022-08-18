@@ -1,14 +1,21 @@
 import hre from "hardhat"
 import {
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deployPoolTokens,
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deploySeniorPool,
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deployTranchedPool,
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deployMigratedTranchedPool,
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deploySeniorPoolStrategy,
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deployBorrower,
+  // @ts-expect-error Ignore obsolete broken import because code is deprecated.
   deployClImplementation,
 } from "../../baseDeploy"
-import {UpgradedContracts} from "../../mainnetForkingHelpers"
+import {UpgradedContracts} from "../../deployHelpers/upgradeContracts"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {Fidu, GoldfinchConfig} from "../../../typechain/ethers"
 

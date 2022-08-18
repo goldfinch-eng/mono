@@ -130,38 +130,4 @@ describe("GoldfinchFactory", async () => {
       expect(await goldfinchFactory.hasRole(borrowerRole, otherPerson)).to.be.false
     })
   })
-
-  describe("performUgrade", async () => {
-    const performUpgradeSetup = deployments.createFixture(async () => {
-      const {goldfinchFactory, ...others} = await testSetup()
-      await goldfinchFactory.performUpgrade({from: owner})
-      return {goldfinchFactory, ...others}
-    })
-
-    beforeEach(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-extra-semi
-      ;({goldfinchFactory} = await performUpgradeSetup())
-    })
-
-    it("makes OWNER_ROLE admin of BORROWER_ROLE", async () => {
-      const borrowerRole = await goldfinchFactory.BORROWER_ROLE()
-      const ownerRole = await goldfinchFactory.OWNER_ROLE()
-
-      expect(await goldfinchFactory.getRoleAdmin(borrowerRole)).to.eq(ownerRole)
-    })
-  })
-
-  describe("updateGoldfinchConfig", async () => {
-    describe("setting it", async () => {
-      it("emits an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address, {from: owner})
-        const tx = await goldfinchFactory.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
-      })
-    })
-  })
 })

@@ -1,9 +1,13 @@
-Subgraphs related to the Goldfinch Protocol
+# The Graph subgraphs related to the Goldfinch Protocol
 
-## Schema
+## Usage
+
+### Schema
+
 The schema is defined under: [schema.graphql](./schema.graphql)
 
-## Assumptions
+### Assumptions
+
 - The SeniorPool is updated every time when the following events are called:
   - DepositMade
   - InterestCollected
@@ -18,12 +22,13 @@ The schema is defined under: [schema.graphql](./schema.graphql)
   - PrincipalCollected
   - PrincipalWrittenDown
 
-## Patterns
+### Patterns
+
 - Build the graphQL schema as close as possible to the frontend requirements
 - When designing contracts, write events with data retrieval in mind, think about the data you need to avoid doing extra queries on the subgraph
 - The mappings that transform the Ethereum into entities are written in a subset of TypeScript called [AssemblyScript](https://thegraph.com/docs/developer/assemblyscript-api)
 
-#### Create vs Update pattern
+##### Create vs Update pattern
 
 ```js
 let id = seniorPoolAddress.toHex()
@@ -35,7 +40,8 @@ if (seniorPool === null) {
 }
 ```
 
-#### Fetching data from smart contracts
+##### Fetching data from smart contracts
+
 If you have the ABIs on the contracts defined on `subgraph.yaml` you can call public methods from smart contracts:
 
 
@@ -48,7 +54,8 @@ let totalSupply = fidu_contract.totalSupply()
 let totalPoolAssets = totalSupply.times(sharePrice)
 ```
 
-#### Updating array properties
+##### Updating array properties
+
 ```js
 // This won't work
 entity.numbers.push(BigInt.fromI32(1))
@@ -61,45 +68,69 @@ entity.numbers = numbers
 entity.save()
 ```
 
-## Debugging
+### Updating event signatures
+
+If an event signature updates (meaning the parameters change), then Ethereum considers the event to be completely different. You would have to search for the event by it's old and new signatures to get a complete history. This means that some action must be taken in the subgraph mappings in order to consume all old and new events. Let's demonstrate with an example: the `Unstaked` event on `StakingRewards.sol`. Suppose that the signature updates from `Unstaked(indexed address,indexed uint256,uint256)` to `Unstaked(indexed address,indexed uint256,uint256,uint8)`. In the latest ABI for `StakingRewards.sol` (StakingRewards.json), it will list only the newest definition of `Unstaked`. In the ABI that we place in `subgraph/abis`, we have to make sure that both the old and new definition are present. Thankfully, this is actually easy to do, because the artifact file (`StakingRewards.json`) contains a `history` block that will hold the definition for the old version of this event. Therefore, we can just insert this block into `subgraph/abis/StakingRewards.json` to make it aware of the new version of `Unstaked` (assuming it already has the old version):
+```
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "enum StakingRewards.StakedPositionType",
+          "name": "positionType",
+          "type": "uint8"
+        }
+      ],
+      "name": "Unstaked",
+      "type": "event"
+    },
+```
+be sure to place this directly _after_ the old version. This will affect what the graph SDK will produce when you run `codegen`.
+
+When you run codegen, the first `Unstaked` event defined in the ABI can be imported as follows (same as before):
+```
+import { Unstaked } from "../../generated/templates/StakingRewards/StakingRewards"
+```
+The second one will be generated under the name `Unstaked1`:
+```
+import { Unstaked1 } from "../../generated/templates/StakingRewards/StakingRewards"
+```
+You must write a handler for the new `Unstaked1` (it can have the same logic as the old one, if that is desired).
+
+Finally, be sure that you add your new handler for `Unstaked1` to `subgraph.yaml` (otherwise it will never run):
+```
+- event: Unstaked(indexed address,indexed uint256,uint256,uint8)
+  handler: handleUnstaked1
+```
+
+### Debugging
+
 Debugging on the graph should be done through logs and checking the subgraph logs:
 - [Logging and Debugging](https://thegraph.com/docs/developer/assemblyscript-api#logging-and-debugging)
 
 In practical terms, logs should be added to monitor the progress of the application.
 
-## Local run
-### MacOS
-- Make sure you have docker and docker-compose installed
-- Start the local chain with `npm run start` in the `packages/protocol` directory. This should run _without_ mainnet forking (it takes way too long to index with mainnet forking)
-- In another terminal, go to the `packages/subgraph` directory and run `docker-compose up -d`. This will start up 3 Docker containers that The Graph needs. One for Postgres, one for IPFS, one for Graph Node (which is the actual The Graph product)
-- Give it a minute or so to start up, then run `npm run create-local`. This will create an instance of the Goldfinch subgraph (same as if you had created a new empty subgraph on the hosted service)
-- Now run `npm run deploy-local`. This will generate a local `subgraph-local.yaml` file, and edit some constants in the source code, then it will deploy into the Docker containers.
-- The indexing of the subgraph should start immediately.
-- Urls available are:
-  - JSON-RPC admin server at: http://localhost:8020
-  - GraphQL HTTP server at: http://localhost:8000
-  - Index node server at: http://localhost:8030
-  - Metrics server at: http://localhost:8040
+### Validating data received from the subgraph
 
-### Linux
-- Run: `./reset-local.sh && ./start-local.sh` or `./start-local.sh`
-  - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
-
-### Cleaning up after running locally
-- Run `docker-compose down -v` to tear down the Docker instances
-- Run `rm -rf ./data` from `packages/subgraph` to remove any leftover data from execution. If you forget this step, it can lead to errors on subsequent runs.
-- Don't forget to close your locally-running blockchain from `packages/protocol`
-
-### Quick Runs
-- A quick run script is available: `packages/subgraph/quick-start.sh`. This requires a test dump to be restored to the postgres container.
-  - This only works for mainnet forking
-  - The network on metamask should be http://localhost:8545
-
-### Creating local backups
-- If you already have a running db and want to save it for future runs use:
-  - docker exec -t <postgres-container-id> pg_dumpall -c -U graph-node > ~/dump.sql
-
-## Validating data from the subgraph
 1. Change the network to be mainnet
 2. Change on App.tsx the currentBlock. eg:
 ```
@@ -138,7 +169,8 @@ tranchedPools(block: {number: 13845148}) {
   - Beaware that running `generalBackerValidation` will run the validations for all backers which is subject to rate limit of the web3 provider
 - On `src/graphql/client.ts` change the `API_URLS` for the url of the subgraph you want to validate
 
-## Running Tests
+### Tests
+
 Subgraph tests use [Matchstick](https://github.com/LimeChain/matchstick) as a unit testing framework which is still in the early stages of development.
 
 ```
@@ -157,7 +189,50 @@ graph test
 - [Demo Subgraph (The Graph) showcasing unit testing with Matchstick](https://github.com/LimeChain/demo-subgraph)
 - [aavegotchi-matic-subgraph tests](https://github.com/aavegotchi/aavegotchi-matic-subgraph/tree/main/src/tests)
 
-## Deploy
+## Deployment
+
+### Local
+
+#### Mac OS X
+
+- Make sure you have docker and docker-compose installed
+- Start the local chain with `npm run start` in the `packages/protocol` directory. This should run _without_ mainnet forking (it takes way too long to index with mainnet forking)
+- In another terminal, go to the `packages/subgraph` directory and run `docker-compose up -d`. This will start up 3 Docker containers that The Graph needs. One for Postgres, one for IPFS, one for Graph Node (which is the actual The Graph product)
+- Give it a minute or so to start up, then run `npm run create-local`. This will create an instance of the Goldfinch subgraph (same as if you had created a new empty subgraph on the hosted service)
+- Now run `npm run deploy-local`. This will generate a local `subgraph-local.yaml` file, and edit some constants in the source code, then it will deploy into the Docker containers.
+- The indexing of the subgraph should start immediately.
+- Urls available are:
+  - JSON-RPC admin server at: http://localhost:8020
+  - GraphQL HTTP server at: http://localhost:8000
+  - Index node server at: http://localhost:8030
+  - Metrics server at: http://localhost:8040
+
+#### Linux
+
+- Run: `./reset-local.sh && ./start-local.sh` or `./start-local.sh`
+  - If you are on linux, the Graph Node Docker Compose setup uses host.docker.internal as the alias for the host machine. On Linux, this is not supported yet. The detault script already replaces the host name with the host IP address. If you have issues, run `ifconfig -a` and get the address of the docker0
+
+#### Cleaning up after running locally
+
+- Run `docker compose down -v` to tear down the Docker instances
+- Run `rm -rf ./data` from `packages/subgraph` to remove any leftover data from execution. If you forget this step, it can lead to errors on subsequent runs.
+- Don't forget to close your locally-running blockchain from `packages/protocol`
+
+#### Quick Runs
+
+- A quick run script is available: `packages/subgraph/quick-start.sh`. This requires a test dump to be restored to the postgres container.
+  - This only works for mainnet forking
+  - The network on metamask should be http://localhost:8545
+
+#### Creating local backups
+
+- If you already have a running db and want to save it for future runs use:
+  - docker exec -t <postgres-container-id> pg_dumpall -c -U graph-node > ~/dump.sql
+
+### Production
+
+URL: https://thegraph.com/hosted-service/subgraph/goldfinch-eng/goldfinch
+
 For deploying the production subgraph:
 
 ```
@@ -168,7 +243,12 @@ npx graph build
 npx graph deploy --product hosted-service goldfinch-eng/goldfinch
 ```
 
-## Resources
+### Beta subgraph used by https://beta.app.goldfinch.finance
+
+See `beta-subgraph/README.md`.
+
+## Additional Resources
+
 - [The Graph Academy](https://thegraph.academy/developers/)
 - [The Graph Academy Hub](https://github.com/TheGraphAcademy/Graph-Academy-Hub)
 - [The Graph Explorer](https://thegraph.com/explorer/)

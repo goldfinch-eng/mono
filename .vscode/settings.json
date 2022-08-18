@@ -7,5 +7,10 @@
     "./packages/client2"
   ],
   "solidity.defaultCompiler": "remote",
-  "solidity.packageDefaultDependenciesDirectory": "packages/protocol/node_modules"
+  "solidity.packageDefaultDependenciesDirectory": "packages/protocol/node_modules",
+  "solidity.remappings": ["forge-std/=packages/protocol/lib/forge-std/src/"],
+
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

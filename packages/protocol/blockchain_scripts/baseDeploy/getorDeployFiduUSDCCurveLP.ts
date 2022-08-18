@@ -1,4 +1,3 @@
-import {TestFiduUSDCCurveLP} from "@goldfinch-eng/protocol/typechain/ethers"
 import {TestFiduUSDCCurveLPInstance} from "@goldfinch-eng/protocol/typechain/truffle"
 import {assertIsString} from "@goldfinch-eng/utils"
 import BN from "bn.js"
@@ -8,12 +7,11 @@ import {
   ContractDeployer,
   assertIsChainId,
   getProtocolOwner,
-  getContract,
-  TRUFFLE_CONTRACT_PROVIDER,
   updateConfig,
   MAINNET_FIDU_USDC_CURVE_LP_ADDRESS,
   isMainnetForking,
   LOCAL_CHAIN_ID,
+  getTruffleContract,
 } from "../deployHelpers"
 
 const logger = console.log
@@ -35,13 +33,9 @@ export async function getOrDeployFiduUSDCCurveLP(deployer: ContractDeployer, con
     })
     fiduUSDCCurveLPAddress = fakeFiduUSDCCurveLPAddress.address
     await (
-      await getContract<TestFiduUSDCCurveLP, TestFiduUSDCCurveLPInstance>(
-        "TestFiduUSDCCurveLP",
-        TRUFFLE_CONTRACT_PROVIDER,
-        {
-          from: gf_deployer,
-        }
-      )
+      await getTruffleContract<TestFiduUSDCCurveLPInstance>("TestFiduUSDCCurveLP", {
+        from: gf_deployer,
+      })
     ).transfer(protocolOwner, String(new BN(10000000000000).mul(new BN(String(1e18)))))
   }
   await updateConfig(config, "address", CONFIG_KEYS.FiduUSDCCurveLP, fiduUSDCCurveLPAddress, logger)

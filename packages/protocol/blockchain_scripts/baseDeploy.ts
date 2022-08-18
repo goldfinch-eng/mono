@@ -1,4 +1,11 @@
-import {OWNER_ROLE, MINTER_ROLE, isMainnetForking, assertIsChainId, ContractDeployer} from "./deployHelpers"
+import {
+  OWNER_ROLE,
+  MINTER_ROLE,
+  isMainnetForking,
+  assertIsChainId,
+  ContractDeployer,
+  ZAPPER_ROLE,
+} from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
 import {Fidu} from "../typechain/ethers"
@@ -15,19 +22,16 @@ import {deployGoldfinchFactory} from "./baseDeploy/deployGoldfinchFactory"
 import {deployLPStakingRewards} from "./baseDeploy/deployLPStakingRewards"
 import {deployMerkleDirectDistributor} from "./baseDeploy/deployMerkleDirectDistributor"
 import {deployMerkleDistributor} from "./baseDeploy/deployMerkleDistributor"
-import {deployPool} from "./baseDeploy/deployPool"
 import {deployPoolTokens} from "./baseDeploy/deployPoolTokens"
 import {deploySeniorPool} from "./baseDeploy/deploySeniorPool"
 import {deploySeniorPoolStrategies} from "./baseDeploy/deploySeniorPoolStrategies"
-import {deployTranchedPool} from "./baseDeploy/deployTranchedPool"
-import {deployTransferRestrictedVault} from "./baseDeploy/deployTransferRestrictedVault"
 import {deployBackerRewards} from "./baseDeploy/deployBackerRewards"
-import {deployCreditDesk} from "./baseDeploy/deployCreditDesk"
 import {deployConfig} from "./baseDeploy/deployConfig"
 import {deployGo} from "./baseDeploy/deployGo"
 import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
 import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
+import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
 
 const logger: Logger = console.log
 
@@ -59,13 +63,9 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   await getOrDeployFiduUSDCCurveLP(deployer, config)
   const fidu = await deployFidu(deployer, config)
   await deployPoolTokens(deployer, {config})
-  await deployTransferRestrictedVault(deployer, {config})
-  const pool = await deployPool(deployer, {config})
-  await deployTranchedPool(deployer, {config, deployEffects})
+  await deployTranchedPoolImplementationRepository(deployer, {config, deployEffects})
   logger("Granting minter role to Pool")
-  await grantMinterRoleToPool(fidu, pool)
-  const creditDesk = await deployCreditDesk(deployer, {config})
-  await deploySeniorPool(deployer, {config, fidu})
+  const seniorPool = await deploySeniorPool(deployer, {config, fidu})
   await deployBorrower(deployer, {config})
   await deploySeniorPoolStrategies(deployer, {config})
   logger("Deploying GoldfinchFactory")
@@ -94,37 +94,17 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   assertNonNullable(trustedSigner)
   const uniqueIdentity = await deployUniqueIdentity({deployer, trustedSigner, deployEffects})
 
-  await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
+  const go = await deployGo(deployer, {configAddress: config.address, uniqueIdentity, deployEffects})
   await deployBackerRewards(deployer, {configAddress: config.address, deployEffects})
 
-  await deployZapper(deployer, {config, deployEffects})
-
-  logger("Granting ownership of Pool to CreditDesk")
-  await grantOwnershipOfPoolToCreditDesk(pool, creditDesk.address)
+  logger("deploying Zapper and granting it ZAPPER_ROLE role on SeniorPool, StakingRewards, and Go")
+  const zapper = await deployZapper(deployer, {config, deployEffects})
+  await seniorPool.initZapperRole({from: trustedSigner})
+  await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
+  await go.contract.initZapperRole({from: trustedSigner})
+  await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})
 
   await deployEffects.executeDeferred()
-}
-
-export async function grantOwnershipOfPoolToCreditDesk(pool: any, creditDeskAddress: any) {
-  const alreadyOwnedByCreditDesk = await pool.hasRole(OWNER_ROLE, creditDeskAddress)
-  if (alreadyOwnedByCreditDesk) {
-    // We already did this step, so early return
-    logger("Looks like Credit Desk already is the owner")
-    return
-  }
-  logger("Adding the Credit Desk as an owner")
-  const txn = await pool.grantRole(OWNER_ROLE, creditDeskAddress)
-  await txn.wait()
-  const nowOwnedByCreditDesk = await pool.hasRole(OWNER_ROLE, creditDeskAddress)
-  if (!nowOwnedByCreditDesk) {
-    throw new Error(`Expected ${creditDeskAddress} to be an owner, but that is not the case`)
-  }
-}
-
-export async function grantMinterRoleToPool(fidu: Fidu, pool: any) {
-  if (!(await fidu.hasRole(MINTER_ROLE, pool.address))) {
-    await fidu.grantRole(MINTER_ROLE, pool.address)
-  }
 }
 
 export {baseDeploy, deployBackerRewards}

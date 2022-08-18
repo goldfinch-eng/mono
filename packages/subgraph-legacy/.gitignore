@@ -1,0 +1,4 @@
+# This is just a subgraph manifest for local The Graph instances
+subgraph-local.yaml
+
+generated

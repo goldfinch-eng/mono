@@ -20,11 +20,12 @@ module.exports = {
   },
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
+    "/src/graphql/generated/*", // Ignore generated graphql files.
   ],
   plugins: ["@typescript-eslint", "import", "prettier"],
   rules: {
     "prettier/prettier": "error",
-    indent: ["error", 2],
+    indent: ["error", 2, {SwitchCase: 1}],
     "linebreak-style": ["error", "unix"],
     quotes: ["error", "double"],
     semi: ["error", "never"],

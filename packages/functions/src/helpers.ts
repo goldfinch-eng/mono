@@ -3,21 +3,22 @@ import {BaseProvider} from "@ethersproject/providers"
 import * as Sentry from "@sentry/serverless"
 import {HttpFunctionWrapperOptions} from "@sentry/serverless/dist/gcpfunction"
 import {HttpFunction, Request, Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {ethers} from "ethers"
+import {Bytes, ethers} from "ethers"
 import * as functions from "firebase-functions"
 import {getConfig} from "./db"
 import {RequestHandlerConfig, SignatureVerificationResult} from "./types"
 import _ from "lodash"
+import {assertUnreachable} from "@goldfinch-eng/utils"
 
-// Make sure to keep the structure of this message in sync with the frontend.
-const genVerificationMessage = (blockNum: number) => `Sign in to Goldfinch: ${blockNum}`
-
-const ONE_DAY_SECONDS = 60 * 60 * 24
-
-// This is not a secret, so it's ok to hardcode this
+// This is not a secret, so it's ok to hardcode this.
 const INFURA_PROJECT_ID = "d8e13fc4893e4be5aae875d94fee67b7"
 
 const setCORSHeaders = (req: Request, res: Response) => {
+  if (process.env.MURMURATION === "yes") {
+    res.set("Access-Control-Allow-Origin", "*")
+    res.set("Access-Control-Allow-Headers", "*")
+    return
+  }
   const allowedOrigins = (getConfig(functions).kyc.allowed_origins || "").split(",")
   const origin = req.headers.origin || ""
   if (originAllowed(allowedOrigins, origin)) {
@@ -48,6 +49,7 @@ export const originAllowed = (allowedOrigins: string[], origin: string): boolean
 const defaultBlockchainIdentifierByOrigin: {[origin: string]: string | number} = {
   "http://localhost:3000": "http://localhost:8545",
   "https://murmuration.goldfinch.finance": "https://murmuration.goldfinch.finance/_chain",
+  "https://beta.app.goldfinch.finance": 1,
   "https://app.goldfinch.finance": 1,
 }
 const overrideBlockchainIdentifier = (): string | number | undefined => {
@@ -123,61 +125,157 @@ const wrapWithSentry = (fn: HttpFunction, wrapOptions?: Partial<HttpFunctionWrap
   }, wrapOptions)
 }
 
-const verifySignature = async (req: Request, res: Response): Promise<SignatureVerificationResult> => {
-  const addressHeader = req.headers["x-goldfinch-address"]
-  const address = Array.isArray(addressHeader) ? addressHeader.join("") : addressHeader
-  const signatureHeader = req.headers["x-goldfinch-signature"]
-  const signature = Array.isArray(signatureHeader) ? signatureHeader.join("") : signatureHeader
-  const signatureBlockNumHeader = req.headers["x-goldfinch-signature-block-num"]
-  const signatureBlockNumStr = Array.isArray(signatureBlockNumHeader)
-    ? signatureBlockNumHeader.join("")
-    : signatureBlockNumHeader
+export const extractHeaderValue = (req: Request, headerName: string): string | undefined => {
+  const value = req.headers[headerName]
+  return Array.isArray(value) ? value.join("") : value
+}
+
+/**
+ * Verifies that the signature provided in the `x-goldfinch-signature` header was signed by the
+ * address `x-goldfinch-address` and the plaintext `x-goldfinch-signature-plaintext` is the
+ * message that produced the signature.
+ *
+ * Also verifies that this signature has not expired, per the provided `x-goldfinch-signature-block-num`
+ * header -- which is critical so that signatures can't confer privileges forever.
+ *
+ * This form of authentication is meant to support requests that we want only the end user, who
+ * controls the private key behind the address, to be able to perform.
+ *
+ * @param {Request} req The request being handled.
+ * @param {Response} res The response to the request.
+ * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
+ * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
+ * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
+ * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
+ * @return {Promise<SignatureVerificationResult>} verification result
+ */
+const verifySignature = async (
+  req: Request,
+  res: Response,
+  signatureMaxAge: number,
+  fallbackOnMissingPlaintext: boolean,
+): Promise<SignatureVerificationResult> => {
+  const address = extractHeaderValue(req, "x-goldfinch-address")
+  const signature = extractHeaderValue(req, "x-goldfinch-signature")
+  const signatureBlockNumStr = extractHeaderValue(req, "x-goldfinch-signature-block-num")
+  let signaturePlaintext = extractHeaderValue(req, "x-goldfinch-signature-plaintext")
 
   if (!address) {
     return {res: res.status(400).send({error: "Address not provided."}), address: undefined}
   }
+
+  Sentry.setUser({id: address, address})
+
   if (!signature) {
     return {res: res.status(400).send({error: "Signature not provided."}), address: undefined}
   }
   if (!signatureBlockNumStr) {
     return {res: res.status(400).send({error: "Signature block number not provided."}), address: undefined}
   }
-
-  Sentry.setUser({id: address, address})
-
   const signatureBlockNum = parseInt(signatureBlockNumStr, 10)
   if (!Number.isInteger(signatureBlockNum)) {
     return {res: res.status(400).send({error: "Invalid signature block number."}), address: undefined}
   }
+  if (!signaturePlaintext) {
+    if (fallbackOnMissingPlaintext) {
+      signaturePlaintext = `Sign in to Goldfinch: ${signatureBlockNum}`
+    } else {
+      return {res: res.status(400).send({error: "Signature plaintext not provided."}), address: undefined}
+    }
+  }
 
-  const verifiedAddress = ethers.utils.verifyMessage(genVerificationMessage(signatureBlockNum), signature)
+  let presigMessage: Bytes | string = signaturePlaintext
+  // ethers.Signer#signMessage and ethers.utils.verifyMessage accept (Bytes | string) for their `message` input.
+  // The Bytes should be represented as a valid array of uints representing uint8s.
+  // The strings should represent UTF-8 encoded text.
+  try {
+    const intArray = signaturePlaintext.split(",").map((ele) => Number(ele))
+    if (intArray.every((ele) => ele < 256 && ele >= 0)) {
+      presigMessage = intArray as Bytes
+    }
+    console.debug("signaturePlaintext is a valid Uint8Array - it will be evaluated as a Uint8Array")
+  } catch (e) {
+    console.debug("signaturePlaintext is not a valid Uint8Array - it will be evaluated as a string")
+  }
 
-  console.debug(`Received address: ${address}, Verified address: ${verifiedAddress}`)
+  const verifiedAddress = ethers.utils.verifyMessage(presigMessage, signature)
 
+  console.debug(`address received: ${address}, address verified: ${verifiedAddress}`)
   if (address.toLowerCase() !== verifiedAddress.toLowerCase()) {
     return {res: res.status(401).send({error: "Invalid address or signature."}), address: undefined}
   }
-
   const origin = req.headers.origin || ""
   const blockchain = getBlockchain(origin)
   const currentBlock = await blockchain.getBlock("latest")
-
   // Don't allow signatures signed for the future.
   if (currentBlock.number < signatureBlockNum) {
-    return {res: res.status(401).send({error: "Unexpected signature block number."}), address: undefined}
+    return {
+      res: res
+        .status(401)
+        .send({error: `Unexpected signature block number: ${currentBlock.number} < ${signatureBlockNum}`}),
+      address: undefined,
+    }
   }
-
   const signatureBlock = await blockchain.getBlock(signatureBlockNum)
   const signatureTime = signatureBlock.timestamp
   const now = currentBlock.timestamp
 
-  // Don't allow signatures more than a day old.
-  if (signatureTime + ONE_DAY_SECONDS < now) {
-    console.error("Signature expired", {signatureTime, now})
+  // Don't allow signatures older than the max allowable age
+  if (signatureTime + signatureMaxAge < now) {
+    console.error(`Signature expired: ${signatureTime} + ${signatureMaxAge} < ${now}`)
     return {res: res.status(401).send({error: "Signature expired."}), address: undefined}
   }
 
-  return {res: undefined, address}
+  return {res: undefined, address, plaintext: signaturePlaintext}
+}
+
+/**
+ * Verifies a signature in the same manner as `verifySignature` with the additional
+ * constraint that the signer must be present in the `allowedSigners` list
+ *
+ * @param {Request} req The request being handled.
+ * @param {Response} res The response to the request.
+ * @param {number} signatureMaxAge age in seconds after which the signature becomes invalid
+ * @param {boolean} fallbackOnMissingPlaintext if true and the `x-goldfinch-signature-plaintext` header is missing then
+ * the signature will be verified against the plaintext `Sign in to Goldfinch: ${blockNum}`, where blockNum comes from
+ * the `x-goldfinch-signature-block-num header`. [TODO - remove this param once all callers are updated to use `x-goldfinch-signature-plaintext`]
+ * @param {Array<string>} allowedSigners the list of allowed signers
+ * @return {Promise<SignatureVerificationResult>} verification result
+ */
+const verifySignatureAndAllowList = async (
+  req: Request,
+  res: Response,
+  signatureMaxAge: number,
+  fallbackOnMissingPlaintext: boolean,
+  allowedSigners: Array<string>,
+): Promise<SignatureVerificationResult> => {
+  if (allowedSigners.length === 0) {
+    return {res: res.status(500).send({error: "Allow list should not be empty"}), address: undefined}
+  }
+
+  const signatureVerification = await verifySignature(req, res, signatureMaxAge, fallbackOnMissingPlaintext)
+
+  if (signatureVerification.res) {
+    return signatureVerification
+  }
+
+  // Checksum all the addresses to disambiguate
+  const signerAddress = ethers.utils.getAddress(signatureVerification.address)
+  allowedSigners = await Promise.all(
+    allowedSigners.map(async (allowedSigner) => {
+      return ethers.utils.getAddress(await allowedSigner)
+    }),
+  )
+
+  const signerProhibited = allowedSigners.indexOf(signerAddress) === -1
+  if (signerProhibited) {
+    return {
+      res: res.status(403).send({error: `Signer ${signerAddress} not allowed to call this function`}),
+      address: undefined,
+    }
+  }
+
+  return {res: undefined, address: signerAddress, plaintext: signatureVerification.plaintext}
 }
 
 export const genRequestHandler = (config: RequestHandlerConfig): functions.HttpsFunction => {
@@ -192,15 +290,28 @@ export const genRequestHandler = (config: RequestHandlerConfig): functions.Https
         }
       }
 
-      if (config.requireAuth) {
-        const verificationResult = await verifySignature(req, res)
-        if (verificationResult.res) {
-          return verificationResult.res
-        }
-
-        return config.handler(req, res, verificationResult)
-      } else {
+      const authType = config.requireAuth
+      if (authType === "signature") {
+        const verificationResult = await verifySignature(
+          req,
+          res,
+          config.signatureMaxAge,
+          config.fallbackOnMissingPlaintext,
+        )
+        return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
+      } else if (authType === "signatureWithAllowList") {
+        const verificationResult = await verifySignatureAndAllowList(
+          req,
+          res,
+          config.signatureMaxAge,
+          config.fallbackOnMissingPlaintext,
+          config.signerAllowList,
+        )
+        return verificationResult.res ? verificationResult.res : config.handler(req, res, verificationResult)
+      } else if (authType === "none") {
         return config.handler(req, res)
+      } else {
+        assertUnreachable(authType)
       }
     }),
   )

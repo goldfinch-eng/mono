@@ -225,32 +225,7 @@ describe("SeniorPool", () => {
         return expect(seniorPool.pause()).to.be.fulfilled
       })
       it("should disallow non-owner to pause", async () => {
-        return expect(seniorPool.pause({from: person2})).to.be.rejectedWith(/Must have pauser role/)
-      })
-    })
-  })
-
-  describe("updateGoldfinchConfig", () => {
-    describe("setting it", async () => {
-      it("should allow the owner to set it", async () => {
-        await goldfinchConfig.setAddress(CONFIG_KEYS.GoldfinchConfig, person2)
-        return expectAction(() => seniorPool.updateGoldfinchConfig({from: owner})).toChange([
-          [() => seniorPool.config(), {to: person2, bignumber: false}],
-        ])
-      })
-      it("should disallow non-owner to set", async () => {
-        return expect(seniorPool.updateGoldfinchConfig({from: person2})).to.be.rejectedWith(/Must have admin/)
-      })
-
-      it("should emit an event", async () => {
-        const newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-
-        await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-        const tx = await seniorPool.updateGoldfinchConfig({from: owner})
-        expectEvent(tx, "GoldfinchConfigUpdated", {
-          who: owner,
-          configAddress: newConfig.address,
-        })
+        return expect(seniorPool.pause({from: person2})).to.be.rejectedWith(/NA/)
       })
     })
   })
@@ -500,36 +475,6 @@ describe("SeniorPool", () => {
       await makeWithdraw(person2, new BN("123"))
       const sharesAfter = await getBalance(person2, fidu)
       expect(sharesAfter.toNumber()).to.equal(0)
-    })
-  })
-
-  describe("hard limits", async () => {
-    describe("totalFundsLimit", async () => {
-      describe("once it's set", async () => {
-        const limit = new BN(5000)
-        const testSetup = deployments.createFixture(async () => {
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TotalFundsLimit, limit.mul(USDC_DECIMALS))
-          await goldfinchConfig.setNumber(CONFIG_KEYS.TransactionLimit, limit.mul(new BN(2)).mul(USDC_DECIMALS))
-        })
-
-        beforeEach(async () => {
-          await testSetup()
-        })
-
-        it("should accept deposits before the limit is reached", async () => {
-          return expect(makeDeposit(person2, new BN(1000).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should accept everything right up to the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).mul(USDC_DECIMALS))).to.be.fulfilled
-        })
-
-        it("should fail if you're over the limit", async () => {
-          return expect(makeDeposit(person2, new BN(limit).add(new BN(1)).mul(USDC_DECIMALS))).to.be.rejectedWith(
-            /put the senior pool over the total limit/
-          )
-        })
-      })
     })
   })
 
@@ -1071,9 +1016,6 @@ describe("SeniorPool", () => {
     })
 
     it("initializes ZAPPER_ROLE", async () => {
-      await expect(seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2, {from: owner})).to.be.rejectedWith(
-        /sender must be an admin to grant/
-      )
       await seniorPool.initZapperRole({from: owner})
       // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
       await expect(seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2, {from: owner})).to.be.fulfilled

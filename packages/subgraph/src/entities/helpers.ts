@@ -1,5 +1,5 @@
-import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
-import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine} from "../../generated/schema"
+import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
+import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
@@ -12,10 +12,12 @@ import {
 } from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 import {VERSION_BEFORE_V2_2} from "../utils"
+import {getOrInitUser} from "./user"
 
 const FIDU_DECIMAL_PLACES = 18
 const FIDU_DECIMALS = BigInt.fromI32(10).pow(FIDU_DECIMAL_PLACES as u8)
 const ONE = BigInt.fromString("1")
+const ZERO = BigInt.fromString("0")
 const ONE_HUNDRED = BigDecimal.fromString("100")
 
 export function fiduFromAtomic(amount: BigInt): BigInt {
@@ -41,6 +43,14 @@ export function getTotalDeposited(
     totalDeposited = totalDeposited.plus(srTranche.principalDeposited)
   }
   return totalDeposited
+}
+
+export function getJuniorDeposited(juniorTranches: JuniorTrancheInfo[]): BigInt {
+  let juniorDeposited = BigInt.zero()
+  for (let i = 0; i < juniorTranches.length; i++) {
+    juniorDeposited = juniorDeposited.plus(juniorTranches[i].principalDeposited)
+  }
+  return juniorDeposited
 }
 
 export function getEstimatedSeniorPoolInvestment(tranchedPoolAddress: Address, tranchedPoolVersion: string): BigInt {
@@ -72,7 +82,7 @@ export function getEstimatedTotalAssets(
   return totalAssets
 }
 
-function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
+export function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
   const configAddress = timestamp.lt(BigInt.fromU64(1641349586))
     ? GOLDFINCH_LEGACY_CONFIG_ADDRESS
     : GOLDFINCH_CONFIG_ADDRESS
@@ -105,6 +115,17 @@ export function isV1StyleDeal(address: Address): boolean {
   return false
 }
 
+export function getCreatedAtOverride(address: Address): BigInt | null {
+  const poolMetadata = MAINNET_METADATA.get(address.toHexString())
+  if (poolMetadata != null) {
+    const createdAt = poolMetadata.toObject().get("createdAt")
+    if (createdAt != null) {
+      return createdAt.toBigInt()
+    }
+  }
+  return null
+}
+
 export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string): BigDecimal {
   const tranchedPool = TranchedPool.load(tranchedPoolId)
   if (!tranchedPool) {
@@ -116,45 +137,50 @@ export function calculateEstimatedInterestForTranchedPool(tranchedPoolId: string
   }
 
   const protocolFee = BigDecimal.fromString("0.1")
-  const balance = creditLine.balance.toBigDecimal()
-  const interestAprDecimal = creditLine.interestAprDecimal
+  const leverageRatio = tranchedPool.estimatedLeverageRatio
+  const seniorFraction = leverageRatio
+    ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
+    : ONE.toBigDecimal()
+  const seniorBalance = creditLine.balance.toBigDecimal().times(seniorFraction)
   const juniorFeePercentage = tranchedPool.juniorFeePercent.toBigDecimal().div(ONE_HUNDRED)
   const isV1Pool = tranchedPool.isV1StyleDeal
-  const seniorPoolPercentageOfInterest = BigDecimal.fromString("1")
-    .minus(isV1Pool ? BigDecimal.fromString("0") : juniorFeePercentage)
-    .minus(protocolFee)
-  return balance.times(interestAprDecimal).times(seniorPoolPercentageOfInterest)
+  const seniorPoolPercentageOfInterest = isV1Pool
+    ? BigDecimal.fromString("1").minus(protocolFee)
+    : BigDecimal.fromString("1").minus(juniorFeePercentage).minus(protocolFee)
+  return seniorBalance.times(creditLine.interestAprDecimal).times(seniorPoolPercentageOfInterest)
 }
 
-export function estimateJuniorAPY(tranchedPoolId: string): BigDecimal {
-  const tranchedPool = TranchedPool.load(tranchedPoolId)
+export function estimateJuniorAPY(tranchedPool: TranchedPool): BigDecimal {
   if (!tranchedPool) {
     return BigDecimal.fromString("0")
   }
 
   const creditLine = CreditLine.load(tranchedPool.creditLine)
   if (!creditLine) {
-    return BigDecimal.fromString("0")
+    throw new Error(`Missing creditLine for TranchedPool ${tranchedPool.id}`)
   }
 
-  if (isV1StyleDeal(Address.fromString(tranchedPoolId))) {
+  if (isV1StyleDeal(Address.fromString(tranchedPool.id))) {
     return creditLine.interestAprDecimal
   }
 
   let balance: BigInt
-  if (creditLine.balance.isZero()) {
-    balance = creditLine.limit
-  } else {
+  if (!creditLine.balance.isZero()) {
     balance = creditLine.balance
-  }
-
-  if (balance.isZero()) {
+  } else if (!creditLine.limit.isZero()) {
+    balance = creditLine.limit
+  } else if (!creditLine.maxLimit.isZero()) {
+    balance = creditLine.maxLimit
+  } else {
     return BigDecimal.fromString("0")
   }
 
   const leverageRatio = tranchedPool.estimatedLeverageRatio
-  let seniorFraction = leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
-  let juniorFraction = ONE.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
+  // A missing leverage ratio implies this was a v1 style deal and the senior pool supplied all the capital
+  let seniorFraction = leverageRatio
+    ? leverageRatio.divDecimal(ONE.plus(leverageRatio).toBigDecimal())
+    : ONE.toBigDecimal()
+  let juniorFraction = leverageRatio ? ONE.divDecimal(ONE.plus(leverageRatio).toBigDecimal()) : ZERO.toBigDecimal()
   let interestRateFraction = creditLine.interestAprDecimal.div(ONE_HUNDRED)
   let juniorFeeFraction = tranchedPool.juniorFeePercent.divDecimal(ONE_HUNDRED)
   let reserveFeeFraction = tranchedPool.reserveFeePercent.divDecimal(ONE_HUNDRED)
@@ -167,4 +193,22 @@ export function estimateJuniorAPY(tranchedPoolId: string): BigDecimal {
   let netJuniorInterest = grossJuniorInterest.plus(juniorFee).minus(juniorReserveFeeOwed)
   let juniorTranche = balance.toBigDecimal().times(juniorFraction)
   return netJuniorInterest.div(juniorTranche).times(ONE_HUNDRED)
+}
+
+/**
+ * A helper function that creates a Transaction entity from an Ethereum event. Does not save the entity, you must call .save() yourself, after you add any additional properties.
+ * @param event Ethereum event to process. Can be any event.
+ * @param category The category to assign to this. Must conform to the TransactionCategory enum.
+ * @param userAddress The address of the user that should be associated with this transaction. The corresponding `user` entity will be created if it doesn't exist
+ * @returns Instance of a Transaction entity.
+ */
+export function createTransactionFromEvent(event: ethereum.Event, category: string, userAddress: Address): Transaction {
+  const transaction = new Transaction(event.transaction.hash.concatI32(event.logIndex.toI32()))
+  transaction.transactionHash = event.transaction.hash
+  transaction.timestamp = event.block.timestamp.toI32()
+  transaction.blockNumber = event.block.number.toI32()
+  transaction.category = category
+  const user = getOrInitUser(userAddress)
+  transaction.user = user.id
+  return transaction
 }

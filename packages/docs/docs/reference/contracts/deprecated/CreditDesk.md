@@ -207,12 +207,6 @@ payment is due (e.g. asOf is before the nextDueTime)
 | creditLineAddress | address | The creditLine to calculate the payment for |
 | asOf | uint256 | The timestamp to use for the payment calculation, if it is set to 0, uses the current time |
 
-### updateGoldfinchConfig
-
-```solidity
-function updateGoldfinchConfig() external
-```
-
 ### collectPayment
 
 ```solidity

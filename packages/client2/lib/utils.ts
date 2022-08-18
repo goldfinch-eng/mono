@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { useEffect, useState } from "react";
 
 import { apolloClient } from "@/lib/graphql/apollo";
 
@@ -45,4 +46,58 @@ export async function waitForSubgraphBlock(
   if (currentAttempt >= maxPollingAttempts) {
     throw new Error("MAX_POLLING_ATTEMPTS");
   }
+}
+
+export function usePoller({
+  callback,
+  delay = 1000,
+  maxPollingAttempts = 10,
+  onMaxPoll,
+}: {
+  callback: () => Promise<"CONTINUE_POLLING" | "FINISH_POLLING">;
+  delay: number;
+  maxPollingAttempts?: number;
+  onMaxPoll?: () => void;
+}) {
+  const [isPolling, setIsPolling] = useState(false);
+
+  useEffect(() => {
+    setIsPolling(true);
+    let numAttempts = 0;
+    const interval = setInterval(async () => {
+      const callbackResult = await callback();
+      numAttempts += 1;
+      if (numAttempts >= maxPollingAttempts) {
+        clearInterval(interval);
+        setIsPolling(false);
+        onMaxPoll?.();
+      } else if (callbackResult === "FINISH_POLLING") {
+        clearInterval(interval);
+        setIsPolling(false);
+      }
+    }, delay);
+    return () => clearInterval(interval);
+  }, [callback, delay, maxPollingAttempts, onMaxPoll]);
+
+  return { isPolling };
+}
+
+class UnreachableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnreachableError";
+  }
+}
+
+/**
+ * A utility function that helps create exhaustive switch statements. Use this function as the `default` switch case, and pass the switch key as the arg here.
+ * If the compiler shows an error at the callsite, then it means the switch statement is not exhaustive.
+ * @param x The switch key
+ */
+export function assertUnreachable(x: never): never {
+  throw new UnreachableError(
+    `Expected not to get here.${
+      x ? ` Unhandled switch key: ${x as string}` : ""
+    }`
+  );
 }

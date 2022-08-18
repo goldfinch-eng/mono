@@ -6,5 +6,5 @@
     "target": "es2019",
     "isolatedModules": false
   },
-  "include": ["hardhat.config.ts", "./senior-pool-redeemer/**/*", "test/**/*", "assessor/**/*", "relayer/**/*", "index.ts"]
+  "include": ["hardhat.config.ts", "./senior-pool-redeemer/**/*", "test/**/*", "assessor/**/*", "index.ts"]
 }

@@ -1,53 +1,100 @@
 import _ from "lodash"
+import * as Sentry from "@sentry/node"
 import {ethers, Signer} from "ethers"
 import axios from "axios"
 import {DefenderRelayProvider, DefenderRelaySigner} from "defender-relay-client/lib/ethers"
 import {HandlerParams} from "../types"
-import {assertNonNullable, isPlainObject, isString} from "@goldfinch-eng/utils"
+import {
+  assertNonNullable,
+  isPlainObject,
+  isString,
+  isApprovedUSAccreditedEntity,
+  isApprovedUSAccreditedIndividual,
+  isApprovedNonUSEntity,
+  getIDType as defaultGetIDType,
+  KYC,
+  Auth,
+  FetchKYCFunction,
+  presignedMintMessage,
+  presignedMintToMessage,
+  verifySignature,
+} from "@goldfinch-eng/utils"
 import {UniqueIdentity} from "@goldfinch-eng/protocol/typechain/ethers"
-import {keccak256} from "@ethersproject/keccak256"
-import {pack} from "@ethersproject/solidity"
 import UniqueIdentityDeployment from "@goldfinch-eng/protocol/deployments/mainnet/UniqueIdentity.json"
-import {getIDType, isNonUSEntity, isUSAccreditedEntity, isUSAccreditedIndividual} from "./utils"
+export const UNIQUE_IDENTITY_ABI = UniqueIdentityDeployment.abi
+export const UNIQUE_IDENTITY_MAINNET_ADDRESS = "0xba0439088dc1e75F58e0A7C107627942C15cbb41"
+import baseHandler from "../core/handler"
+
 export const UniqueIdentityAbi = UniqueIdentityDeployment.abi
 
 const SIGNATURE_EXPIRY_IN_SECONDS = 3600 // 1 hour
 
-export interface KYC {
-  status: "unknown" | "approved" | "failed"
-  countryCode: string
-}
 const isStatus = (obj: unknown): obj is KYC["status"] => obj === "unknown" || obj === "approved" || obj === "failed"
 const isKYC = (obj: unknown): obj is KYC => isPlainObject(obj) && isStatus(obj.status) && isString(obj.countryCode)
 
-const API_URLS = {
+const API_URLS: {[key: number]: string} = {
   1: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
   31337: "http://localhost:5001/goldfinch-frontends-dev/us-central1",
 }
 
-/**
- * Mapping of chain-id -> deployed address
- */
-const UNIQUE_IDENTITY_ADDRESS = {
-  1: "0xba0439088dc1e75F58e0A7C107627942C15cbb41",
-}
-
-export type FetchKYCFunction = ({auth: Auth, chainId: number}) => Promise<KYC>
 const defaultFetchKYCStatus: FetchKYCFunction = async ({auth, chainId}) => {
   const baseUrl = API_URLS[chainId]
-  assertNonNullable(baseUrl, `No function URL defined for chain ${chainId}`)
-  const response = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
-  if (isKYC(response.data)) {
-    return response.data
+
+  assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
+  const {data} = await axios.get(`${baseUrl}/kycStatus`, {headers: auth})
+
+  if (isKYC(data)) {
+    return data
   } else {
-    throw new Error("malformed KYC response")
+    throw new Error(
+      `invalid KYC response. Either data is not a plain object, '${data.status}' is unexpected, or '${data.countryCode}' is not a string`
+    )
   }
 }
 
-type Auth = {
-  "x-goldfinch-address": any
-  "x-goldfinch-signature": any
-  "x-goldfinch-signature-block-num": any
+const linkUserToUidStatus = async ({
+  signerAddress,
+  signature,
+  presignedMessage,
+  signatureBlockNum,
+  chainId,
+  expiresAt,
+  nonce,
+  uidType,
+  msgSender,
+  mintToAddress,
+}) => {
+  const baseUrl = API_URLS[chainId]
+  assertNonNullable(baseUrl, `No baseUrl function URL defined for chain ${chainId}`)
+  try {
+    await axios.post(
+      `${baseUrl}/linkUserToUid`,
+      {
+        expiresAt,
+        nonce,
+        uidType,
+        msgSender,
+        mintToAddress,
+      },
+      {
+        headers: {
+          "content-type": "application/json",
+          "x-goldfinch-address": signerAddress,
+          "x-goldfinch-signature": signature,
+          "x-goldfinch-signature-plaintext": presignedMessage,
+          "x-goldfinch-signature-block-num": signatureBlockNum,
+        },
+      }
+    )
+  } catch (error) {
+    console.error(error)
+    const errorResponse = (error as any)?.response
+    console.error(
+      "Error in request to /linkUserToUid.\n" +
+        `status: ${JSON.stringify(errorResponse?.status)}\n` +
+        `data: ${JSON.stringify(errorResponse?.data)}`
+    )
+  }
 }
 
 export function asAuth(obj: any): Auth {
@@ -57,31 +104,46 @@ export function asAuth(obj: any): Auth {
     throw new Error("auth does not conform")
   }
 
-  if (!("x-goldfinch-address" in obj && "x-goldfinch-signature" in obj && "x-goldfinch-signature-block-num" in obj)) {
+  if (
+    !(
+      "x-goldfinch-address" in obj &&
+      "x-goldfinch-signature" in obj &&
+      "x-goldfinch-signature-block-num" in obj &&
+      "x-goldfinch-signature-plaintext" in obj
+    )
+  ) {
     throw new Error("auth does not conform")
   }
 
-  const auth = _.pick(obj, ["x-goldfinch-address", "x-goldfinch-signature", "x-goldfinch-signature-block-num"])
+  const auth = _.pick(obj, [
+    "x-goldfinch-address",
+    "x-goldfinch-signature",
+    "x-goldfinch-signature-block-num",
+    "x-goldfinch-signature-plaintext",
+  ])
 
   return auth
 }
 
-export async function handler(event: HandlerParams) {
+// Entry point for OpenZeppelin Defender - presumes Mainnet
+export const handler = baseHandler("unique-identity-signer", async (event: HandlerParams) => {
   if (!event.request || !event.request.body) throw new Error("Missing payload")
 
-  const auth = event.request.body.auth
+  const {auth, mintToAddress} = event.request.body
 
   const credentials = {...event}
   const provider = new DefenderRelayProvider(credentials)
   const signer = new DefenderRelaySigner(credentials, provider, {speed: "fast"})
 
   const network = await signer.provider.getNetwork()
-  const uniqueIdentityAddress = UNIQUE_IDENTITY_ADDRESS[network.chainId]
-  assertNonNullable(uniqueIdentityAddress, "UniqueIdentity address is not defined for this network")
-  const uniqueIdentity = new ethers.Contract(uniqueIdentityAddress, UniqueIdentityAbi, signer) as UniqueIdentity
+  const uniqueIdentity = new ethers.Contract(
+    UNIQUE_IDENTITY_MAINNET_ADDRESS,
+    UNIQUE_IDENTITY_ABI,
+    signer
+  ) as UniqueIdentity
 
-  return await main({signer, auth: auth, network, uniqueIdentity})
-}
+  return await main({signer, auth, network, uniqueIdentity, mintToAddress})
+})
 
 // Main function
 export async function main({
@@ -89,32 +151,59 @@ export async function main({
   signer,
   network,
   uniqueIdentity,
+  mintToAddress,
   fetchKYCStatus = defaultFetchKYCStatus,
+  getIDType = defaultGetIDType,
 }: {
   auth: any
   signer: Signer
   network: ethers.providers.Network
   uniqueIdentity: UniqueIdentity
+  mintToAddress?: string
   fetchKYCStatus?: FetchKYCFunction
+  getIDType?: typeof defaultGetIDType
 }) {
-  assertNonNullable(signer.provider)
-  auth = asAuth(auth)
   const userAddress = auth["x-goldfinch-address"]
+  const signInSignature = auth["x-goldfinch-signature"]
+  const signInSignatureBlockNum = auth["x-goldfinch-signature-block-num"]
+
+  auth = asAuth(auth)
+
+  assertNonNullable(signer.provider)
+  if (!ethers.utils.isAddress(userAddress)) {
+    throw new Error(`Invalid user address: ${userAddress}`)
+  }
+  if (mintToAddress !== undefined && !ethers.utils.isAddress(mintToAddress)) {
+    throw new Error(`Invalid address to mint to: ${mintToAddress}`)
+  }
+
+  await verifySignature(userAddress, signInSignature, signInSignatureBlockNum, signer.provider)
+  Sentry.setUser({id: userAddress})
 
   // accredited individuals + entities do not go through persona
   let kycStatus: KYC | undefined = undefined
 
-  if (!isUSAccreditedEntity(userAddress) && !isUSAccreditedIndividual(userAddress) && !isNonUSEntity(userAddress)) {
+  if (
+    !isApprovedUSAccreditedEntity(userAddress) &&
+    !isApprovedUSAccreditedIndividual(userAddress) &&
+    !isApprovedNonUSEntity(userAddress)
+  ) {
     try {
       kycStatus = await fetchKYCStatus({auth, chainId: network.chainId})
     } catch (e) {
       console.error("fetchKYCStatus failed", e)
-      throw new Error("fetchKYCStatus failed")
+      throw e
     }
 
-    if (kycStatus.status !== "approved" || kycStatus.countryCode === "") {
-      throw new Error("Does not meet mint requirements")
+    if (kycStatus.status !== "approved") {
+      throw new Error(`Does not meet mint requirements: status is ${kycStatus.status}`)
     }
+
+    if (kycStatus.countryCode === "") {
+      throw new Error(`Does not meet mint requirements: countryCode is null`)
+    }
+  } else {
+    // TODO We should verify the x-goldfinch-signature here!
   }
 
   const currentBlock = await signer.provider.getBlock("latest")
@@ -125,11 +214,41 @@ export async function main({
     kycStatus,
   })
 
-  const signTypes = ["address", "uint256", "uint256", "address", "uint256", "uint256"]
-  const signParams = [userAddress, idVersion, expiresAt, uniqueIdentity.address, nonce, network.chainId]
-  const encoded = pack(signTypes, signParams)
-  const hashed = keccak256(encoded)
-  const signature = await signer.signMessage(ethers.utils.arrayify(hashed))
+  let presignedMessage
+  if (mintToAddress) {
+    presignedMessage = presignedMintToMessage(
+      userAddress,
+      mintToAddress,
+      idVersion,
+      expiresAt,
+      uniqueIdentity.address,
+      nonce,
+      network.chainId
+    )
+  } else {
+    presignedMessage = presignedMintMessage(
+      userAddress,
+      idVersion,
+      expiresAt,
+      uniqueIdentity.address,
+      nonce,
+      network.chainId
+    )
+  }
 
-  return {signature, expiresAt}
+  const signature = await signer.signMessage(presignedMessage)
+  await linkUserToUidStatus({
+    signerAddress: await signer.getAddress(),
+    signature,
+    presignedMessage,
+    signatureBlockNum: currentBlock.number,
+    chainId: network.chainId,
+    expiresAt,
+    nonce: nonce.toNumber(),
+    uidType: idVersion,
+    msgSender: userAddress,
+    mintToAddress,
+  })
+
+  return {signature, expiresAt, idVersion}
 }

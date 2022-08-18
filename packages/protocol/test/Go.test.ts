@@ -3,15 +3,7 @@ import hre from "hardhat"
 import {constants as ethersConstants} from "ethers"
 import {asNonNullable} from "@goldfinch-eng/utils"
 import {getCurrentTimestamp, SECONDS_PER_DAY, ZERO_ADDRESS} from "./testHelpers"
-import {
-  getContract,
-  getTruffleContract,
-  GO_LISTER_ROLE,
-  OWNER_ROLE,
-  PAUSER_ROLE,
-  TRUFFLE_CONTRACT_PROVIDER,
-} from "../blockchain_scripts/deployHelpers"
-import {Go, StakingRewards} from "../typechain/ethers"
+import {getTruffleContract, GO_LISTER_ROLE, OWNER_ROLE, PAUSER_ROLE} from "../blockchain_scripts/deployHelpers"
 import {
   GoInstance,
   GoldfinchConfigInstance,
@@ -19,7 +11,7 @@ import {
   TestUniqueIdentityInstance,
 } from "../typechain/truffle"
 import {mint} from "./uniqueIdentityHelpers"
-import {BN} from "ethereumjs-tx/node_modules/ethereumjs-util"
+import {BN} from "ethereumjs-util"
 import {DeployResult} from "hardhat-deploy/types"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import {deployBaseFixture} from "./util/fixtures"
@@ -43,7 +35,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
     from: uninitializedGoDeployer,
     gasLimit: 4000000,
   })
-  const uninitializedGo = await getContract<Go, GoInstance>("Go", TRUFFLE_CONTRACT_PROVIDER, {
+  const uninitializedGo = await getTruffleContract<GoInstance>("Go", {
     at: uninitializedGoDeployResult.address,
   })
 
@@ -177,42 +169,6 @@ describe("Go", () => {
     })
   })
 
-  describe("updateGoldfinchConfig", () => {
-    let newConfig: DeployResult
-
-    beforeEach(async () => {
-      newConfig = await deployments.deploy("GoldfinchConfig", {from: owner})
-      await goldfinchConfig.setGoldfinchConfig(newConfig.address)
-    })
-
-    it("rejects sender who lacks owner role", async () => {
-      expect(await go.hasRole(OWNER_ROLE, anotherUser)).to.equal(false)
-      await expect(go.updateGoldfinchConfig({from: anotherUser})).to.be.rejectedWith(
-        /Must have admin role to perform this action/
-      )
-    })
-    it("allows sender who has owner role", async () => {
-      expect(await go.hasRole(OWNER_ROLE, owner)).to.equal(true)
-      await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
-    })
-    it("updates config address, emits an event", async () => {
-      expect(await go.config()).to.equal(goldfinchConfig.address)
-      const receipt = await go.updateGoldfinchConfig({from: owner})
-      expect(await go.config()).to.equal(newConfig.address)
-      expectEvent(receipt, "GoldfinchConfigUpdated", {
-        who: owner,
-        configAddress: newConfig.address,
-      })
-    })
-
-    context("paused", () => {
-      it("does not reject", async () => {
-        await pause()
-        await expect(go.updateGoldfinchConfig({from: owner})).to.be.fulfilled
-      })
-    })
-  })
-
   describe("go", () => {
     it("rejects zero address account", async () => {
       await expect(go.go(ethersConstants.AddressZero)).to.be.rejectedWith(/Zero address is not go-listed/)
@@ -327,10 +283,7 @@ describe("Go", () => {
         const uidTokenId = await uniqueIdentity.ID_TYPE_0()
         await uniqueIdentity.setSupportedUIDTypes([], [])
         expect(await uniqueIdentity.balanceOf(anotherUser, uidTokenId)).to.bignumber.equal(new BN(0))
-        const stakingRewardsContract = await getContract<StakingRewards, StakingRewardsInstance>(
-          "StakingRewards",
-          TRUFFLE_CONTRACT_PROVIDER
-        )
+        const stakingRewardsContract = await getTruffleContract<StakingRewardsInstance>("StakingRewards")
         await expect(go.goSeniorPool(stakingRewardsContract.address)).to.be.fulfilled
       })
 
@@ -412,9 +365,6 @@ describe("Go", () => {
       })
 
       it("initializes ZAPPER_ROLE", async () => {
-        await expect(go.grantRole(await go.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be.rejectedWith(
-          /sender must be an admin to grant/
-        )
         await go.initZapperRole({from: owner})
         // Owner has OWNER_ROLE and can therefore grant ZAPPER_ROLE
         await expect(go.grantRole(await go.ZAPPER_ROLE(), anotherUser, {from: owner})).to.be.fulfilled
