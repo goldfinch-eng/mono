@@ -1,6 +1,6 @@
 import {Address, BigInt, log} from "@graphprotocol/graph-ts"
 import {PoolBacker, TranchedPool, TranchedPoolToken} from "../../generated/schema"
-import {TranchedPool as TranchedPoolContract} from "../../generated/templates/PoolTokens/TranchedPool"
+import {TranchedPool as TranchedPoolContract} from "../../generated/PoolTokens/TranchedPool"
 
 // Currently, AssemblyScript does not support Closures.
 // Because of that, we need to do some restructuring on the code

@@ -1,16 +1,16 @@
-import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts"
-import { newMockEvent } from "matchstick-as"
-import { PoolCreated } from "../generated/templates/GoldfinchFactory/GoldfinchFactory"
+import {Address, BigInt, ethereum} from "@graphprotocol/graph-ts"
+import {newMockEvent} from "matchstick-as"
+import {PoolCreated} from "../generated/GoldfinchFactory/GoldfinchFactory"
 import {
   CreditLineMigrated,
   DepositMade as TranchedPoolDepositMade,
   DrawdownMade,
   PaymentApplied,
-  WithdrawalMade
+  WithdrawalMade,
 } from "../generated/templates/TranchedPool/TranchedPool"
-import { TokenMinted, Transfer } from "../generated/PoolTokensProxy/PoolTokens"
-import { AFTER_V2_2_TIMESTAMP, BEFORE_V2_2_TIMESTAMP } from "./utils"
-import { DepositMade as SeniorPoolDepositMade } from "../generated/templates/SeniorPool/SeniorPool"
+import {TokenMinted, Transfer} from "../generated/PoolTokens/PoolTokens"
+import {AFTER_V2_2_TIMESTAMP, BEFORE_V2_2_TIMESTAMP} from "./utils"
+import {DepositMade as SeniorPoolDepositMade} from "../generated/SeniorPool/SeniorPool"
 
 export function createPoolCreatedEvent(poolAddress: string, borrower: string, v2_2: boolean = true): PoolCreated {
   let mockEvent = newMockEvent()
@@ -27,17 +27,13 @@ export function createPoolCreatedEvent(poolAddress: string, borrower: string, v2
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   poolCreatedEvent.parameters = new Array()
 
-  const poolParam = new ethereum.EventParam("pool",
-    ethereum.Value.fromAddress(Address.fromString(poolAddress))
-  )
-  const borrowerParam = new ethereum.EventParam("borrower",
-    ethereum.Value.fromAddress(Address.fromString(borrower))
-  )
+  const poolParam = new ethereum.EventParam("pool", ethereum.Value.fromAddress(Address.fromString(poolAddress)))
+  const borrowerParam = new ethereum.EventParam("borrower", ethereum.Value.fromAddress(Address.fromString(borrower)))
 
   poolCreatedEvent.parameters.push(poolParam)
   poolCreatedEvent.parameters.push(borrowerParam)
@@ -65,15 +61,17 @@ export function createCreditLineMigratedEvent(
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   creditLineMigratedEvent.parameters = new Array()
 
-  const oldCreditLineParam = new ethereum.EventParam("oldCreditLine",
+  const oldCreditLineParam = new ethereum.EventParam(
+    "oldCreditLine",
     ethereum.Value.fromAddress(Address.fromString(oldCreditLineAddress))
   )
-  const newCreditLineParam = new ethereum.EventParam("newCreditLine",
+  const newCreditLineParam = new ethereum.EventParam(
+    "newCreditLine",
     ethereum.Value.fromAddress(Address.fromString(newCreditLineAddress))
   )
 
@@ -83,7 +81,11 @@ export function createCreditLineMigratedEvent(
   return creditLineMigratedEvent
 }
 
-export function createTranchedPoolDepositMadeEvent(tranchedPoolAddress: string, owner: string, v2_2: boolean = true): TranchedPoolDepositMade {
+export function createTranchedPoolDepositMadeEvent(
+  tranchedPoolAddress: string,
+  owner: string,
+  v2_2: boolean = true
+): TranchedPoolDepositMade {
   let mockEvent = newMockEvent()
   const amount = BigInt.fromString("5000000000000")
   const tranche = BigInt.fromI32(2)
@@ -101,7 +103,7 @@ export function createTranchedPoolDepositMadeEvent(tranchedPoolAddress: string, 
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   depositMadeEvent.parameters = new Array()
@@ -119,7 +121,10 @@ export function createTranchedPoolDepositMadeEvent(tranchedPoolAddress: string, 
   return depositMadeEvent
 }
 
-export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: string, v2_2: boolean = true): PaymentApplied {
+export function createTranchedPoolPaymentAppliedEvent(
+  tranchedPoolAddress: string,
+  v2_2: boolean = true
+): PaymentApplied {
   let mockEvent = newMockEvent()
   if (v2_2) {
     mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
@@ -127,7 +132,7 @@ export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: strin
     mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
   }
   const defaultValue = ethereum.Value.fromI32(1)
-  const defaultPayer = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
+  const defaultPayer = ethereum.Value.fromAddress(Address.fromString("0x1000000000000000000000000000000000000000"))
   const defaultPool = ethereum.Value.fromAddress(Address.fromString(tranchedPoolAddress))
 
   const paymentAppliedEvent = new PaymentApplied(
@@ -137,7 +142,7 @@ export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: strin
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   paymentAppliedEvent.parameters = new Array()
@@ -167,15 +172,18 @@ export function createTranchedPoolPaymentAppliedEvent(tranchedPoolAddress: strin
   return paymentAppliedEvent
 }
 
-export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: string, v2_2: boolean = true): WithdrawalMade {
+export function createTranchedPoolWithdrawalMadeEvent(
+  tranchedPoolAddress: string,
+  v2_2: boolean = true
+): WithdrawalMade {
   let mockEvent = newMockEvent()
   if (v2_2) {
     mockEvent.block.timestamp = AFTER_V2_2_TIMESTAMP
   } else {
     mockEvent.block.timestamp = BEFORE_V2_2_TIMESTAMP
   }
-  const defaultValue = ethereum.Value.fromString('1')
-  const defaultOwner = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
+  const defaultValue = ethereum.Value.fromString("1")
+  const defaultOwner = ethereum.Value.fromAddress(Address.fromString("0x1000000000000000000000000000000000000000"))
 
   const withdrawalMadeEvent = new WithdrawalMade(
     Address.fromString(tranchedPoolAddress),
@@ -184,7 +192,7 @@ export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: strin
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   withdrawalMadeEvent.parameters = new Array()
@@ -195,13 +203,13 @@ export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: strin
   const principalWithdrawnParam = new ethereum.EventParam("principalWithdrawn", ethereum.Value.fromI32(1))
 
   // Order matters:
-    // event WithdrawalMade(
-    //   address indexed owner
-    //   uint256 indexed tranche
-    //   uint256 indexed tokenId
-    //   uint256 interestWithdrawn
-    //   uint256 principalWithdrawn
-    // );
+  // event WithdrawalMade(
+  //   address indexed owner
+  //   uint256 indexed tranche
+  //   uint256 indexed tokenId
+  //   uint256 interestWithdrawn
+  //   uint256 principalWithdrawn
+  // );
   withdrawalMadeEvent.parameters.push(ownerParam)
   withdrawalMadeEvent.parameters.push(trancheParam)
   withdrawalMadeEvent.parameters.push(tokenIdParam)
@@ -211,7 +219,11 @@ export function createTranchedPoolWithdrawalMadeEvent(tranchedPoolAddress: strin
   return withdrawalMadeEvent
 }
 
-export function createTokenMintedEvent(tranchedPoolAddress: string, ownerAddress: string, tokenId: BigInt): TokenMinted {
+export function createTokenMintedEvent(
+  tranchedPoolAddress: string,
+  ownerAddress: string,
+  tokenId: BigInt
+): TokenMinted {
   let mockEvent = newMockEvent()
 
   const tokenMintedEvent = new TokenMinted(
@@ -221,7 +233,7 @@ export function createTokenMintedEvent(tranchedPoolAddress: string, ownerAddress
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   tokenMintedEvent.parameters = new Array()
@@ -246,7 +258,6 @@ export function createTokenMintedEvent(tranchedPoolAddress: string, ownerAddress
   return tokenMintedEvent
 }
 
-
 export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string, v2_2: boolean = true): DrawdownMade {
   let mockEvent = newMockEvent()
   if (v2_2) {
@@ -256,7 +267,7 @@ export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string,
   }
 
   const defaultValue = ethereum.Value.fromI32(1)
-  const defaultBorrower = ethereum.Value.fromAddress(Address.fromString('0x1000000000000000000000000000000000000000'))
+  const defaultBorrower = ethereum.Value.fromAddress(Address.fromString("0x1000000000000000000000000000000000000000"))
 
   const drawdownMadeEvent = new DrawdownMade(
     Address.fromString(tranchedPoolAddress),
@@ -265,7 +276,7 @@ export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string,
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   drawdownMadeEvent.parameters = new Array()
@@ -276,11 +287,7 @@ export function createTranchedPoolDrawdownMadeEvent(tranchedPoolAddress: string,
   return drawdownMadeEvent
 }
 
-export function createTokenTransferEvent(
-  user1Address: string,
-  user2Address: string,
-  tokenId: BigInt
-): Transfer {
+export function createTokenTransferEvent(user1Address: string, user2Address: string, tokenId: BigInt): Transfer {
   let mockEvent = newMockEvent()
 
   const transferEvent = new Transfer(
@@ -290,7 +297,7 @@ export function createTokenTransferEvent(
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   transferEvent.parameters = new Array()
@@ -304,7 +311,10 @@ export function createTokenTransferEvent(
   return transferEvent
 }
 
-export function createDepositMadeForSeniorPool(seniorPoolAddress: string, capitalProviderAddress: string): SeniorPoolDepositMade {
+export function createDepositMadeForSeniorPool(
+  seniorPoolAddress: string,
+  capitalProviderAddress: string
+): SeniorPoolDepositMade {
   const amount = BigInt.fromString("5000000000000")
   const shares = BigInt.fromString("5000000000000")
 
@@ -316,12 +326,13 @@ export function createDepositMadeForSeniorPool(seniorPoolAddress: string, capita
     mockEvent.logType,
     mockEvent.block,
     mockEvent.transaction,
-    mockEvent.parameters,
+    mockEvent.parameters
   )
 
   depositMadeEvent.parameters = new Array()
 
-  const capitalProviderParam = new ethereum.EventParam("capitalProvider",
+  const capitalProviderParam = new ethereum.EventParam(
+    "capitalProvider",
     ethereum.Value.fromAddress(Address.fromString(capitalProviderAddress))
   )
   const amountParam = new ethereum.EventParam("amount", ethereum.Value.fromUnsignedBigInt(amount))

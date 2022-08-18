@@ -11,17 +11,17 @@ const devDeployments = JSON.parse(
 )
 
 const localhostContracts = devDeployments["31337"].localhost.contracts
-const deployedSeniorPoolProxyAddress = localhostContracts.SeniorPool_Proxy.address
-const deployedGoldfinchFactoryProxyAddress = localhostContracts.GoldfinchFactory_Proxy.address
-const deployedPoolTokensProxyAddress = localhostContracts.PoolTokens_Proxy.address
+const deployedSeniorPoolAddress = localhostContracts.SeniorPool.address
+const deployedGoldfinchFactoryAddress = localhostContracts.GoldfinchFactory.address
+const deployedPoolTokensAddress = localhostContracts.PoolTokens.address
 const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.address
 const deployedFiduAddress = localhostContracts.Fidu.address
 const deployedGfiAddress = localhostContracts.GFI.address
-const deployedStakingRewardsProxyAddress = localhostContracts.StakingRewards_Proxy.address
-const deployedBackerRewardsProxyAddress = localhostContracts.BackerRewards_Proxy.address
+const deployedStakingRewardsAddress = localhostContracts.StakingRewards.address
+const deployedBackerRewardsAddress = localhostContracts.BackerRewards.address
 const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
-const deployedUniqueIdentityProxyAddress = localhostContracts.UniqueIdentity_Proxy.address
-const deployedCommunityRewardsProxyAddress = localhostContracts.CommunityRewards_Proxy.address
+const deployedUniqueIdentityAddress = localhostContracts.UniqueIdentity.address
+const deployedCommunityRewardsAddress = localhostContracts.CommunityRewards.address
 const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
 const deployedBackerMerkleDistributorAddress = localhostContracts.BackerMerkleDistributor.address
 const deployedUsdcAddress = localhostContracts.TestERC20.address
@@ -32,32 +32,32 @@ for (let dataSource of subgraphManifest.dataSources) {
   dataSource.network = "localhost"
   delete dataSource.source.startBlock
   switch (dataSource.name) {
-    case "SeniorPoolProxy":
-      dataSource.source.address = deployedSeniorPoolProxyAddress
+    case "SeniorPool":
+      dataSource.source.address = deployedSeniorPoolAddress
       break
-    case "GoldfinchFactoryProxy":
-      dataSource.source.address = deployedGoldfinchFactoryProxyAddress
+    case "GoldfinchFactory":
+      dataSource.source.address = deployedGoldfinchFactoryAddress
       break
-    case "PoolTokensProxy":
-      dataSource.source.address = deployedPoolTokensProxyAddress
+    case "PoolTokens":
+      dataSource.source.address = deployedPoolTokensAddress
       break
     case "GFI":
       dataSource.source.address = deployedGfiAddress
       break
-    case "StakingRewardsProxy":
-      dataSource.source.address = deployedStakingRewardsProxyAddress
+    case "StakingRewards":
+      dataSource.source.address = deployedStakingRewardsAddress
       break
-    case "BackerRewardsProxy":
-      dataSource.source.address = deployedBackerRewardsProxyAddress
+    case "BackerRewards":
+      dataSource.source.address = deployedBackerRewardsAddress
       break
-    case "UniqueIdentityProxy":
-      dataSource.source.address = deployedUniqueIdentityProxyAddress
+    case "UniqueIdentity":
+      dataSource.source.address = deployedUniqueIdentityAddress
       break
     case "GoldfinchConfig":
       dataSource.source.address = deployedGoldfinchConfigAddress
       break
-    case "CommunityRewardsProxy":
-      dataSource.source.address = deployedCommunityRewardsProxyAddress
+    case "CommunityRewards":
+      dataSource.source.address = deployedCommunityRewardsAddress
       break
     case "MerkleDistributor":
       dataSource.source.address = deployedMerkleDistributorAddress
@@ -76,12 +76,12 @@ for (let dataSource of subgraphManifest.templates) {
 
 const codeSnippet = `// It's OK if this file shows diffs. The only reason it's committed is to prevent "module not found" errors. Unfortunately it doesn't seem The Graph allows env vars for this kind of thing.
 export const LOCALHOST_FIDU_ADDRESS = "${deployedFiduAddress}"
-export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolProxyAddress}"
-export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensProxyAddress}"
+export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolAddress}"
+export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
 export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
 export const LOCALHOST_USDC_ADDRESS = "${deployedUsdcAddress}"
-export const LOCALHOST_STAKING_REWARDS_ADDRESS = "${deployedStakingRewardsProxyAddress}"
+export const LOCALHOST_STAKING_REWARDS_ADDRESS = "${deployedStakingRewardsAddress}"
 `
 
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))

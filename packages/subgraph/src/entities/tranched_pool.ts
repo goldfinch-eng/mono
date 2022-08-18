@@ -7,8 +7,7 @@ import {
   CreditLine,
   TranchedPoolToken,
 } from "../../generated/schema"
-import {DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
-import {TranchedPool as TranchedPoolContract} from "../../generated/templates/GoldfinchFactory/TranchedPool"
+import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
@@ -28,7 +27,7 @@ import {
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
-import {BackerRewards as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards"
+import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 
 export function updatePoolCreditLine(address: Address, timestamp: BigInt): void {
   const contract = TranchedPoolContract.bind(address)
