@@ -167,3 +167,17 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 - deposit
 - withdraw
 - withdrawInFidu
+
+# Conclusions
+
+## Action Items
+* [GFI-926](https://linear.app/goldfinch/issue/GFI-926/remove-erc20-infinite-approval-on-self-pattern) Remove the pattern of self approving for an infinite amount and using safeTransferFrom(address(this)...), and replace it with calls to safeTransfer()
+* [GFI-927](https://linear.app/goldfinch/issue/GFI-927/borrower-can-lock-depositor-funds-low-impact) Fix bug on TranchedPool that allows the borrower to lock up funds
+
+## Discussion points for addressing events
+There were differing opinions on taking action for events like `DepositMade`, and potentially changing the signature to emit both the UID holding address on the operator address
+### Against
+* We can pull out tx.origin in subgraph code, so no need to add it directly to the event
+* Making other contracts aware of the tx.origin vs msg.sender distinction is "leaking" Go implementation details to those contracts
+### In favor
+* Make events as generic as possible to accommodate potential third party developers
