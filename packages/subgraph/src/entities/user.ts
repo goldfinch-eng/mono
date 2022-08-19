@@ -1,7 +1,7 @@
 import {Address} from "@graphprotocol/graph-ts"
 import {User} from "../../generated/schema"
-import {DepositMade} from "../../generated/templates/SeniorPool/SeniorPool"
-import {DepositMade as V1DepositMade} from "../../generated/templates/Pool/Pool"
+import {DepositMade} from "../../generated/SeniorPool/SeniorPool"
+import {DepositMade as V1DepositMade} from "../../generated/Pool/Pool"
 
 export function getOrInitUser(address: Address): User {
   let user = User.load(address.toHexString())

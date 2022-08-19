@@ -96,20 +96,6 @@ describe("StakingRewards", () => {
         await fundWithWhales(["ETH", "USDC"], [account])
       })
 
-      it("continues vesting as before", async () => {
-        // Found by running this test against mainnet (without upgrades)
-        const nonUpgraded30DayDelta = new BN("142978037577295434945")
-
-        await stakingRewards.getReward(tokenId, {from: account})
-        const balanceBefore = await gfi.balanceOf(account)
-
-        await advanceTime({days: 30})
-
-        await expectAction(() => stakingRewards.getReward(tokenId, {from: account})).toChange([
-          [async () => (await gfi.balanceOf(account)).sub(balanceBefore), {byCloseTo: nonUpgraded30DayDelta}],
-        ])
-      })
-
       it("continues vesting unvested rewards after fully unstaking without slashing", async () => {
         // Establish totalUnvested before unstaking, cover slashing case
         await stakingRewards.getReward(tokenId, {from: account})
@@ -179,20 +165,6 @@ describe("StakingRewards", () => {
       beforeEach(async () => {
         await impersonateAccount(hre, account)
         await fundWithWhales(["ETH", "USDC"], [account])
-      })
-
-      it("continues vesting as before", async () => {
-        // Found by running this test against mainnet (without upgrades)
-        const nonUpgraded30DayDelta = new BN("3146439604584523805")
-
-        await stakingRewards.getReward(tokenId, {from: account})
-        const balanceBefore = await gfi.balanceOf(account)
-
-        await advanceTime({days: 30})
-
-        await expectAction(() => stakingRewards.getReward(tokenId, {from: account})).toChange([
-          [async () => (await gfi.balanceOf(account)).sub(balanceBefore), {byCloseTo: nonUpgraded30DayDelta}],
-        ])
       })
 
       it("continues vesting unvested rewards after fully unstaking without slashing", async () => {

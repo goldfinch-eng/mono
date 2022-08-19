@@ -14,13 +14,13 @@ import {
 } from "../../generated/templates/TranchedPool/TranchedPool"
 import {SENIOR_POOL_ADDRESS} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
-import {updateAllPoolBackers} from "../entities/pool_backer"
 import {
   handleDeposit,
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
   updateTranchedPoolLeverageRatio,
   updatePoolRewardsClaimable,
+  updatePoolTokensRedeemable,
 } from "../entities/tranched_pool"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 
@@ -52,7 +52,6 @@ export function handleDrawdownsUnpaused(event: DrawdownsUnpaused): void {
 export function handleWithdrawalMade(event: WithdrawalMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
-  updateAllPoolBackers(event.address)
 
   const transaction = createTransactionFromEvent(
     event,
@@ -87,12 +86,13 @@ export function handleEmergencyShutdown(event: EmergencyShutdown): void {
 }
 
 export function handleDrawdownMade(event: DrawdownMade): void {
+  const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
   // ensures that a wallet making a drawdown is correctly considered a user
   const user = new User(event.params.borrower.toHexString())
   user.save()
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
-  updateAllPoolBackers(event.address)
+  updatePoolTokensRedeemable(tranchedPool)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_DRAWDOWN", event.params.borrower)
   transaction.tranchedPool = event.address.toHexString()
@@ -113,6 +113,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.interestAmountRepaid = tranchedPool.interestAmountRepaid.plus(event.params.interestAmount)
   tranchedPool.save()
 
+  updatePoolTokensRedeemable(tranchedPool)
   updatePoolRewardsClaimable(tranchedPool, event.block.timestamp)
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)

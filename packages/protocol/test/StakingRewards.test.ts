@@ -70,6 +70,7 @@ describe("StakingRewards", function () {
   let owner: string,
     investor: string,
     anotherUser: string,
+    nonGoListedUser: string,
     gfi: GFIInstance,
     usdc: ERC20Instance,
     seniorPool: TestSeniorPoolInstance,
@@ -132,10 +133,11 @@ describe("StakingRewards", function () {
   }
 
   const testSetup = deployments.createFixture(async ({deployments, getNamedAccounts}) => {
-    const [_owner, _investor, _anotherUser] = await web3.eth.getAccounts()
+    const [_owner, _investor, _anotherUser, _nonGoListedUser] = await web3.eth.getAccounts()
     const owner = asNonNullable(_owner)
     const investor = asNonNullable(_investor)
     const anotherUser = asNonNullable(_anotherUser)
+    const nonGoListedUser = asNonNullable(_nonGoListedUser)
     const {
       goldfinchConfig,
       seniorPool: _seniorPool,
@@ -152,6 +154,9 @@ describe("StakingRewards", function () {
 
     await erc20Approve(usdc, anotherUser, usdcVal(50000), [owner])
     await erc20Transfer(usdc, [anotherUser], usdcVal(50000), owner)
+
+    await erc20Approve(usdc, nonGoListedUser, usdcVal(50000), [owner])
+    await erc20Transfer(usdc, [nonGoListedUser], usdcVal(50000), owner)
 
     await erc20Approve(fiduUSDCCurveLP, investor, bigVal(100), [owner])
     await erc20Transfer(fiduUSDCCurveLP, [investor], bigVal(100), owner)
@@ -182,6 +187,7 @@ describe("StakingRewards", function () {
       owner,
       investor,
       anotherUser,
+      nonGoListedUser,
       goldfinchConfig,
       seniorPool: _seniorPool as TestSeniorPoolInstance,
       gfi,
@@ -207,6 +213,7 @@ describe("StakingRewards", function () {
       owner,
       investor,
       anotherUser,
+      nonGoListedUser,
       seniorPool,
       gfi,
       stakingRewards,
@@ -653,6 +660,12 @@ describe("StakingRewards", function () {
         await expect(stakingRewards.depositAndStake(usdcVal(1000), {from: investor})).to.be.rejectedWith(/paused/)
       })
     })
+
+    context("not go-listed", async () => {
+      it("reverts", async () => {
+        await expect(stakingRewards.depositAndStake(usdcVal(1000), {from: nonGoListedUser})).to.be.rejectedWith(/GL/)
+      })
+    })
   })
 
   describe("depositWithPermitAndStake", async () => {
@@ -774,6 +787,29 @@ describe("StakingRewards", function () {
             from: investor,
           })
         ).to.be.rejectedWith(/paused/)
+      })
+    })
+
+    context("not go-listed", async () => {
+      it("reverts", async () => {
+        const nonce = await (usdc as any).nonces(nonGoListedUser)
+        const deadline = MAX_UINT
+        const amount = usdcVal(1000)
+
+        // Create signature for permit
+        const digest = await getApprovalDigest({
+          token: usdc,
+          owner: nonGoListedUser,
+          spender: stakingRewards.address,
+          value: amount,
+          nonce,
+          deadline,
+        })
+        const wallet = await getWallet(nonGoListedUser)
+        assertNonNullable(wallet)
+        const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+        await expect(stakingRewards.depositAndStake(usdcVal(1000), {from: nonGoListedUser})).to.be.rejectedWith(/GL/)
       })
     })
   })
@@ -1674,6 +1710,21 @@ describe("StakingRewards", function () {
         ).to.be.rejectedWith(/paused/)
       })
     })
+
+    context("not go-listed", async () => {
+      it("reverts", async () => {
+        await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+        const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+        const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+        const ownerFiduAmount = depositEvent.args.shares
+        await fidu.transfer(nonGoListedUser, ownerFiduAmount, {from: owner})
+
+        const tokenId = await stake({amount: ownerFiduAmount, from: nonGoListedUser})
+        await expect(
+          stakingRewards.unstakeAndWithdrawInFidu(tokenId, ownerFiduAmount, {from: nonGoListedUser})
+        ).to.be.rejectedWith(/GL/)
+      })
+    })
   })
 
   describe("unstakeAndWithdraw", async () => {
@@ -1806,6 +1857,21 @@ describe("StakingRewards", function () {
         )
       })
     })
+
+    context("not go-listed", async () => {
+      it("reverts", async () => {
+        await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+        const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+        const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+        const ownerFiduAmount = depositEvent.args.shares
+        await fidu.transfer(nonGoListedUser, ownerFiduAmount, {from: owner})
+
+        const tokenId = await stake({amount: ownerFiduAmount, from: nonGoListedUser})
+        await expect(
+          stakingRewards.unstakeAndWithdraw(tokenId, usdcVal(1000), {from: nonGoListedUser})
+        ).to.be.rejectedWith(/GL/)
+      })
+    })
   })
 
   describe("unstakeAndWithdrawMultiple", async () => {
@@ -1925,6 +1991,21 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("not go-listed", async () => {
+        it("reverts", async () => {
+          await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+          const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+          const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+          const ownerFiduAmount = depositEvent.args.shares
+          await fidu.transfer(nonGoListedUser, ownerFiduAmount, {from: owner})
+
+          const tokenId = await stake({amount: ownerFiduAmount, from: nonGoListedUser})
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultiple([tokenId], [usdcVal(1000)], {from: nonGoListedUser})
+          ).to.be.rejectedWith(/GL/)
         })
       })
 
@@ -2131,6 +2212,21 @@ describe("StakingRewards", function () {
               {from: investor}
             )
           ).to.be.rejectedWith(/AD/)
+        })
+      })
+
+      context("not go-listed", async () => {
+        it("reverts", async () => {
+          await erc20Approve(usdc, seniorPool.address, usdcVal(1000), [owner])
+          const receipt = await seniorPool.deposit(usdcVal(1000), {from: owner})
+          const depositEvent = getFirstLog<DepositMade>(decodeLogs(receipt.receipt.rawLogs, seniorPool, "DepositMade"))
+          const ownerFiduAmount = depositEvent.args.shares
+          await fidu.transfer(nonGoListedUser, ownerFiduAmount, {from: owner})
+
+          const tokenId = await stake({amount: ownerFiduAmount, from: nonGoListedUser})
+          await expect(
+            stakingRewards.unstakeAndWithdrawMultipleInFidu([tokenId], [ownerFiduAmount], {from: nonGoListedUser})
+          ).to.be.rejectedWith(/GL/)
         })
       })
 

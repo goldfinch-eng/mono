@@ -1521,7 +1521,7 @@ describe("mainnet forking tests", async function () {
         describe("when I try to withdraw", async () => {
           it("it fails", async () => {
             await expect(bwrCon.drawdown(tranchedPool.address, usdcVal(400), bwr, {from: bwr})).to.be.rejectedWith(
-              /NA/i
+              /Must have locker role/i
             )
           })
         })

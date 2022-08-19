@@ -51,8 +51,8 @@ export function ParallelMarketsStep() {
             <>
               Goldfinch uses Parallel Markets to complete verification for
               entities. After you have completed verification, we will reach out
-              within 24-72 hours. If you encounter any issues, please reach out
-              to{" "}
+              within 24-72 hours. Please check your junk or spam mail folder for
+              this email. If you encounter any issues, please reach out to{" "}
               <Link rel="noopener" href="mailto:UID@warblerlabs.com">
                 UID@warblerlabs.com
               </Link>
@@ -61,8 +61,9 @@ export function ParallelMarketsStep() {
             <>
               Goldfinch uses Parallel Markets to complete verification for
               accredited investors. After you have completed verification, we
-              will reach out within 24-72 hours. If you encounter any issues,
-              please reach out to{" "}
+              will reach out within 24-72 hours. Please check your junk or spam
+              mail folder for this email. If you encounter any issues, please
+              reach out to{" "}
               <Link rel="noopener" href="mailto:UID@warblerlabs.com">
                 UID@warblerlabs.com
               </Link>

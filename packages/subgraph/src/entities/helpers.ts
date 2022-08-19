@@ -1,7 +1,7 @@
 import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
 import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
-import {SeniorPool as SeniorPoolContract} from "../../generated/templates/GoldfinchFactory/SeniorPool"
-import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/GoldfinchFactory/GoldfinchConfig"
+import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/GoldfinchConfig/GoldfinchConfig"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
 import {
   CONFIG_KEYS_NUMBERS,

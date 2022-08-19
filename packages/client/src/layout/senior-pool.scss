@@ -1,4 +1,3 @@
-
 .senior-pool-overview {
   .pool-header {
     display: flex;
@@ -15,13 +14,13 @@
   span {
     margin-right: 4px;
   }
-  
+
   a {
     color: $purp-dark;
     display: flex;
     align-items: center;
   }
-  
+
   svg {
     height: 15px;
     width: 15px;
@@ -56,6 +55,6 @@
   }
 
   .list-dot {
-    margin: 0 6px;  
+    margin: 0 6px;
   }
 }

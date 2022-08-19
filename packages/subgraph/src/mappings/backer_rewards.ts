@@ -5,7 +5,7 @@ import {
   BackerRewardsSetMaxInterestDollarsEligible,
   BackerRewardsClaimed,
   BackerRewardsClaimed1,
-} from "../../generated/templates/BackerRewards/BackerRewards"
+} from "../../generated/BackerRewards/BackerRewards"
 
 import {updateBackerRewardsData} from "../entities/backer_rewards"
 import {calculateApyFromGfiForAllPools} from "../entities/tranched_pool"

@@ -68,3 +68,8 @@ export type SignatureVerificationSuccessResult = {
   plaintext: string
 }
 export type SignatureVerificationResult = SignatureVerificationFailureResult | SignatureVerificationSuccessResult
+
+export enum KycProvider {
+  Persona = "persona",
+  ParallelMarkets = "parallelMarkets",
+}
