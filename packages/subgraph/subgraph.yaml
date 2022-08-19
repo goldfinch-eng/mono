@@ -13,7 +13,7 @@ dataSources:
       startBlock: 13096000
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/senior_pool.ts
       entities:
@@ -55,7 +55,7 @@ dataSources:
       startBlock: 11370655
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/goldfinch_factory.ts
       entities:
@@ -86,7 +86,7 @@ dataSources:
       startBlock: 11370642
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/v1_pool.ts
       entities:
@@ -108,7 +108,7 @@ dataSources:
       startBlock: 13097225
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - User
@@ -147,7 +147,7 @@ dataSources:
       startBlock: 13941096
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - StakingRewards
@@ -188,7 +188,7 @@ dataSources:
       startBlock: 13942222
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - BackerRewards
@@ -215,7 +215,7 @@ dataSources:
       startBlock: 13494815
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - User
@@ -236,7 +236,7 @@ dataSources:
       startBlock: 13096701
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - User
@@ -259,7 +259,7 @@ dataSources:
       startBlock: 13941109
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - CommunityRewardsToken
@@ -285,7 +285,7 @@ dataSources:
       startBlock: 13941117
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - CommunityRewardsToken
@@ -306,7 +306,7 @@ dataSources:
       startBlock: 14129983
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - CommunityRewardsToken
@@ -326,7 +326,7 @@ templates:
       abi: TranchedPool
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/tranched_pool.ts
       entities:
