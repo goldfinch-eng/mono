@@ -120,11 +120,7 @@ type CreditLine @entity {
   # or are not used on the pages we are integrating.
   periodDueAmount: BigInt
   interestAprDecimal: BigDecimal!
-  collectedPaymentBalance: BigInt
-  totalDueAmount: BigInt
-  dueDate: String
   isEligibleForRewards: Boolean!
-  name: String
 }
 
 enum TranchedPoolCreditLineVersion {
