@@ -8,7 +8,7 @@ import {
   PrincipalWrittenDown,
   ReserveFundsCollected,
   WithdrawalMade,
-} from "../../generated/templates/SeniorPool/SeniorPool"
+} from "../../generated/SeniorPool/SeniorPool"
 import {STAKING_REWARDS_ADDRESS} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"

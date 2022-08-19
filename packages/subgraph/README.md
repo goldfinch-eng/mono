@@ -68,6 +68,12 @@ entity.numbers = numbers
 entity.save()
 ```
 
+### Regarding Upgradeable Contracts
+
+The subgraph doesn't need to know anything about upgradeable contracts. If a contract is upgradeable, just define it as an ordinary `dataSource` in `subgraph.yaml`, *not* a `template`. The address that you write will be the address of the proxy, because all events are emitted under the proxy's address. The ABI will be the ABI of the implementation contract, but that should come as no surprise because the ABI of the proxy contract itself isn't useful.
+
+With all that said, you do need to be careful of how contracts change over time. Subgraph mapping code allows you to run view functions on the block being ingested. If you try to run a function as you're ingesting block 1000, but the upgrade that introduced that function happened on block 1001, then you'll get an error. Another problem is how event signatures can change through upgrades (see the excerpt below).
+
 ### Updating event signatures
 
 If an event signature updates (meaning the parameters change), then Ethereum considers the event to be completely different. You would have to search for the event by it's old and new signatures to get a complete history. This means that some action must be taken in the subgraph mappings in order to consume all old and new events. Let's demonstrate with an example: the `Unstaked` event on `StakingRewards.sol`. Suppose that the signature updates from `Unstaked(indexed address,indexed uint256,uint256)` to `Unstaked(indexed address,indexed uint256,uint256,uint8)`. In the latest ABI for `StakingRewards.sol` (StakingRewards.json), it will list only the newest definition of `Unstaked`. In the ABI that we place in `subgraph/abis`, we have to make sure that both the old and new definition are present. Thankfully, this is actually easy to do, because the artifact file (`StakingRewards.json`) contains a `history` block that will hold the definition for the old version of this event. Therefore, we can just insert this block into `subgraph/abis/StakingRewards.json` to make it aware of the new version of `Unstaked` (assuming it already has the old version):

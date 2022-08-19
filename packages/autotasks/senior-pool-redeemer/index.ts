@@ -5,6 +5,16 @@ import PoolTokensDeployment from "@goldfinch-eng/protocol/deployments/mainnet/Po
 import TranchedPoolDeploy from "@goldfinch-eng/protocol/deployments/mainnet/TranchedPool.json"
 import {RelayerParams} from "defender-relay-client/lib/relayer"
 import {SeniorPool, PoolTokens, TranchedPool} from "@goldfinch-eng/protocol/typechain/ethers"
+import baseHandler from "../core/handler"
+
+class MultiError extends Error {
+  private errors: any[]
+
+  constructor(message: string, ...errors: any[]) {
+    super(message)
+    this.errors = errors
+  }
+}
 
 // These are tokens that shouldn't be considered for redemption
 const tokenIgnoreList = [
@@ -17,7 +27,7 @@ const tokenIgnoreList = [
 ]
 
 // Entrypoint for the Autotask
-export async function handler(event: RelayerParams) {
+export const handler = baseHandler("senior-pool-redeemer", async (event: RelayerParams) => {
   const provider = new DefenderRelayProvider(event as RelayerParams)
   const signer = new DefenderRelaySigner(event, provider, {speed: "fast"})
   const seniorPool = new ethers.Contract(SeniorPoolDeployment.address, SeniorPoolDeployment.abi, signer) as SeniorPool
@@ -71,6 +81,7 @@ export async function handler(event: RelayerParams) {
   console.log(`✅  found ${activePoolTokens.length} redeemable tokens`)
 
   console.log("starting to redeem pool tokens")
+  const errors: any[] = []
   const successes = await Promise.all(
     activePoolTokens.map(async (tokenId: string) => {
       console.log(`🏦  trying to redeem token id = ${tokenId}...`)
@@ -81,18 +92,19 @@ export async function handler(event: RelayerParams) {
       } catch (e) {
         console.error(`❌  failed to redeem token id = ${tokenId}!`)
         console.error(e)
+        errors.push(e)
         return false
       }
     })
   )
 
   if (!successes.every((x) => x === true)) {
-    console.error("not all tokens successefully redeemed! Exiting as failure...")
-    process.exit(1)
+    console.error("not all tokens successfully redeemed! Exiting as failure...")
+    throw new MultiError("not all tokens successfully redeemed", errors)
   }
 
   console.log("success!")
-}
+})
 
 // To run locally (this code will not be executed in Autotasks)
 // Invoke with: API_KEY=<key> API_SECRET=<secret>

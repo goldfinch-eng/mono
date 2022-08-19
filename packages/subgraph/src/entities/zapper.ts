@@ -1,12 +1,12 @@
 import {Address, store} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition, Zap} from "../../generated/schema"
-import {SeniorPool as SeniorPoolContract} from "../../generated/templates/SeniorPool/SeniorPool"
+import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {Zapper as ZapperContract} from "../../generated/templates/TranchedPool/Zapper"
 import {
   DepositMade as TranchedPoolDepositMade,
   WithdrawalMade as TranchedPoolWithdrawalMade,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import {Transfer as PoolTokenTransfer} from "../../generated/PoolTokensProxy/PoolTokens"
+import {Transfer as PoolTokenTransfer} from "../../generated/PoolTokens/PoolTokens"
 
 import {SENIOR_POOL_ADDRESS} from "../constants"
 

@@ -726,6 +726,8 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   {
     /// @dev CW: Cannot withdraw funds with this position
     require(canWithdraw(tokenId), "CW");
+    /// @dev GL: This address has not been go-listed
+    require(isGoListed(), "GL");
 
     usdcReceivedAmount = config.getSeniorPool().withdrawInFidu(fiduAmount);
     _unstake(tokenId, fiduAmount);

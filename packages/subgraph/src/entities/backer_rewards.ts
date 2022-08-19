@@ -1,7 +1,7 @@
 import {Address, BigDecimal} from "@graphprotocol/graph-ts"
 
 import {BackerRewardsData} from "../../generated/schema"
-import {BackerRewards_Implementation as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards_Implementation"
+import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 import {GFI_DECIMALS} from "../constants"
 
 const BACKER_REWARDS_ID = "1"

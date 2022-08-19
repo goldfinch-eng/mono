@@ -159,7 +159,7 @@ describe("persona callback", async () => {
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
+        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US", kycProvider: "persona"})
         expect(userDoc.data()?.persona?.status).to.eq("completed")
       })
 
@@ -180,7 +180,7 @@ describe("persona callback", async () => {
         const userDoc = await users.doc(address.toLowerCase()).get()
 
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
+        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US", kycProvider: "persona"})
         expect(userDoc.data()?.persona?.status).to.eq("completed")
       })
 
@@ -211,7 +211,7 @@ describe("persona callback", async () => {
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address, countryCode: "CA"})
+        expect(userDoc.data()).to.containSubset({address: address, countryCode: "CA", kycProvider: "persona"})
       })
 
       it("does not remove country code if it is already set", async () => {
@@ -226,7 +226,7 @@ describe("persona callback", async () => {
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US"})
+        expect(userDoc.data()).to.containSubset({address: address, countryCode: "US", kycProvider: "persona"})
       })
 
       it("can handle non-existent country codes", async () => {
@@ -240,7 +240,7 @@ describe("persona callback", async () => {
 
         const userDoc = await users.doc(address.toLowerCase()).get()
         expect(userDoc.exists).to.be.true
-        expect(userDoc.data()).to.containSubset({address: address})
+        expect(userDoc.data()).to.containSubset({address: address, kycProvider: "persona"})
       })
     })
   })

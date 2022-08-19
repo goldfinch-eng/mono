@@ -4,7 +4,7 @@ import {
   Granted,
   RewardPaid,
   GrantRevoked,
-} from "../../generated/templates/CommunityRewards/CommunityRewards"
+} from "../../generated/CommunityRewards/CommunityRewards"
 
 // Seems redundant, but this handler gets used to add the startTime/endTime info on tokens
 // Remember that this actually runs _before_ GrantAccepted. We can let GrantAccepted fill out the other details.

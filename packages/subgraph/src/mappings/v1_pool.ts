@@ -1,4 +1,4 @@
-import { DepositMade } from "../../generated/templates/Pool/Pool"
+import {DepositMade} from "../../generated/Pool/Pool"
 
 import {handleDepositForV1} from "../entities/user"
 
