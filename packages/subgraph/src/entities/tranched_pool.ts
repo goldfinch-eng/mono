@@ -1,17 +1,9 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
-import {
-  TranchedPool,
-  JuniorTrancheInfo,
-  SeniorTrancheInfo,
-  TranchedPoolDeposit,
-  CreditLine,
-  TranchedPoolToken,
-} from "../../generated/schema"
+import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, TranchedPoolToken} from "../../generated/schema"
 import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
-import {getOrInitPoolBacker} from "./pool_backer"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
   getLeverageRatio,
@@ -41,26 +33,15 @@ export function updatePoolCreditLine(address: Address, timestamp: BigInt): void 
 }
 
 export function handleDeposit(event: DepositMade): void {
-  const userAddress = event.params.owner
-  const user = getOrInitUser(userAddress)
+  const backer = getOrInitUser(event.params.owner)
 
   let tranchedPool = getOrInitTranchedPool(event.address, event.block.timestamp)
-  let deposit = new TranchedPoolDeposit(event.transaction.hash.toHexString())
-  deposit.user = user.id
-  deposit.amount = event.params.amount
-  deposit.tranchedPool = tranchedPool.id
-  deposit.tranche = event.params.tranche
-  deposit.tokenId = event.params.tokenId
-  deposit.blockNumber = event.block.number
-  deposit.timestamp = event.block.timestamp
-  deposit.save()
   const juniorTrancheInfo = JuniorTrancheInfo.load(`${event.address.toHexString()}-${event.params.tranche.toString()}`)
   if (juniorTrancheInfo) {
     juniorTrancheInfo.principalDeposited = juniorTrancheInfo.principalDeposited.plus(event.params.amount)
     juniorTrancheInfo.save()
   }
 
-  let backer = getOrInitPoolBacker(event.address, userAddress)
   if (!tranchedPool.backers.includes(backer.id)) {
     const addresses = tranchedPool.backers
     addresses.push(backer.id)
@@ -470,6 +451,22 @@ export function updatePoolRewardsClaimable(tranchedPool: TranchedPool, blockTime
     )
     if (!stakingRewardsEarnedResult.reverted) {
       poolToken.stakingRewardsClaimable = stakingRewardsEarnedResult.value
+    }
+    poolToken.save()
+  }
+}
+
+export function updatePoolTokensRedeemable(tranchedPool: TranchedPool): void {
+  const tranchedPoolContract = TranchedPoolContract.bind(Address.fromString(tranchedPool.id))
+  const poolTokenIds = tranchedPool.tokens
+  for (let i = 0; i < poolTokenIds.length; i++) {
+    const poolToken = assert(TranchedPoolToken.load(poolTokenIds[i]))
+    const availableToWithdrawResult = tranchedPoolContract.try_availableToWithdraw(BigInt.fromString(poolToken.id))
+    if (!availableToWithdrawResult.reverted) {
+      poolToken.interestRedeemable = availableToWithdrawResult.value.value0
+      poolToken.principalRedeemable = availableToWithdrawResult.value.value1
+    } else {
+      log.warning("availableToWithdraw reverted for pool token {} on TranchedPool {}", [poolToken.id, tranchedPool.id])
     }
     poolToken.save()
   }

@@ -134,6 +134,8 @@ dataSources:
           handler: handleTokenRedeemed
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
+        - event: TokenPrincipalWithdrawn(indexed address,indexed address,indexed uint256,uint256,uint256)
+          handler: handleTokenPrincipalWithdrawn
       file: ./src/mappings/pool_tokens.ts
 
   - kind: ethereum/contract
