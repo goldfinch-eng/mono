@@ -37,31 +37,13 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
     - `allIdTypes` array set to incorrect values
       - review status
         - OK - values are fine
-- setLegacyGoList(GoldfinchConfig \_legacyGoList) external onlyAdmin
-- [] How could it break?
-- initZapperRole() external onlyAdmin
-- [] How could it break?
-
-- exampleFunc1
-  - [] How could it break?
-    - Fail to call initializers of inherited functions
-      - Current defense
-        - None / manual
-      - Review status
-        - NOT REVIEWED
-    - Allow zero-address `owner`
-      - Review status
-        - BUG
-          - REMEDY
-            - Priority: LOW
-              - The contract has already been initialized.
-- exampleFunc2
-  - [] How could it break?
-    - Fail to set the correct role (owner role) as admin of Zapper role
-      - Current defense
-        - None / manual
-      - Review status
-        - Looks OK, but did not review `_setRoleAdmin()` function internals
+- [x] setLegacyGoList(GoldfinchConfig \_legacyGoList) external onlyAdmin
+  - No threat found.
+  - Role modifiers are correctly used, and impact is limited to modifying Go listed addresses.
+- [x] initZapperRole() external onlyAdmin
+  - No threat found.
+  - Role modifiers are correctly used, and impact is limited to modifying Zapper role admin address
+  - Zapper role holder is limited to being a goListed address.
 
 #### View / pure functions
 
@@ -71,26 +53,14 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 - [] How could it break?
 - getAllIdTypes() public view returns (uint256[] memory)
 - [] How could it break?
-- getSeniorPoolIdTypes() public pure returns (uint256[] memory)
-- [] How could it break?
+- [x] getSeniorPoolIdTypes() public pure returns (uint256[] memory)
+  - No threat found. Pure function with hard coded values and no inputs - basically static constant.
 - go(address account) public view override returns (bool)
-- [] How could it break?
+  - Might exhibits threats (if any) found in goOnlyIdTypes.
+  - However, no threats found in how `go` utilizes goOnlyIdTypes
 - goSeniorPool(address account) public view override returns (bool)
-- [] How could it break?
-- exampleViewFunc
-  - [] How could it break?
-    - Review status
-      - SKIPPED. Hasn't changed in 8 months.
-- examplePureFunc
-  - [] How could it break?
-    - Incorrect arithmetic
-      - Review status
-        - ISSUE
-          - Do we not want to sanity-check the returned "effective amount" value, as some multiple of the original `amount`, to prevent some extreme multiple?
-        - REMEDY
-          - Priority: CRITICAL
-          - We should evaluate whether we are comfortable fully relying on the base token exchange rate and effective multiplier values having been set correctly "upstream", or whether we'd feel better about imposing a cap on the combined multiplicative effect of those two values.
-          - Decision: We are comfortable relying on setting bounds on the base token exchange rate, plus our testing of setting the effective multiplier value.
+  - Might exhibits threats (if any) found in goOnlyIdTypes.
+  - However, no threats found in how `goSeniorPool` utilizes goOnlyIdTypes
 
 #### Additional Notes
 
@@ -98,14 +68,18 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 - No modifiers exist for Go contract.
 
 ## TranchedPool
+
 ### State Mutating Functions
+
 - consider removing infinite USDC self approval
+
   - current pattern: in initializer we self approve the max amount `require(config.getUSDC().approve(address(this), uint256(-1)))` and perform transfers as
-  `config.getUSDC().safeERC20TransferFrom(address(this), config.reserveAddress(), totalReserveAmount);`.
+    `config.getUSDC().safeERC20TransferFrom(address(this), config.reserveAddress(), totalReserveAmount);`.
   - suggestion: remove the self approval and use safeERC20Transfer for transfers from self
   - impact: simplification and gas savings
 
 - setAllowedUIDTypes
+
   - locker can set uid types to include us non-accredited, potentially opening us up to legal liability?
     - impact: unsure, need to ask Chris
   - locker can set uid types to be anything, including invalid UID values
@@ -123,9 +97,9 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
       and initialized the next, attempts to deposit on the client would fail
   - suggested fix 1: prevent allowedUIDTypes from being set after initialization - also check that all uid types are valid
   - suggested fix 2: fix the "has balance" check to check for deposits in all initialized slices
-  
 
 - deposit
+
   - the complexity of analyzing `DepositMade` events will increase
     - Now that approved operators can deposit on behalf of a UID holder, the poolToken `owner` param in `DepositMade` events
       is not necessarily the UID holder. The UId holder can make deposits from an arbitrary number of operator contracts.
@@ -133,8 +107,8 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
         "How many deposits has this user end made in any pool?", etc. are harder to answer
         are harder to answer - now we have to look at all possible approved operators for the end user's UID
       - Potential implications for client and how it currently displays info like
-         - Displaying total number of depositors on a pool page
-         - As a user, viewing all the deposits I have made across pools
+        - Displaying total number of depositors on a pool page
+        - As a user, viewing all the deposits I have made across pools
     - impact: No security impact. But could potentially increase client/subgraph code complexity
     - suggestion 1: Keep the add new address param to `DepositMade` for `operator`, which is `msg.sender`, and change
       `owner` to be the UID holder?
@@ -151,19 +125,62 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
   - follows checks-effects-interactions pattern?
     - yes: state is updated before transferring USDC from pool to borrower
   - `WithdrawlMade` event
-    - similar impact to  `DepositMade`
+    - similar impact to `DepositMade`
   - there is a restriction on 0 amount withdrawls. Removing this restriction doesn't break any tests except the tests that assert you can't withdraw
     a zero amount
     - If seemingly nothing else breaks, is it necessary to keep the restriction? Was the motivation for it a desire to err on the side of caution, or something more?
 
 ## StakingRewards
+
 ### Mutating Functions
+
 - depositAndStake
+  - Applies noReentrancy modifier?
+    - yes
 - unstakeAndWithdraw
+  - Applies noReentrancy modifier?
+    - yes
 - unstakeAndWithdrawMultiple
+  - Applies noReentrancy modifier?
+    - yes
 
 ## SeniorPool
+
 ### Mutating Functions
+
 - deposit
+  - Applies noReentrancy modifier?
+    - yes
+  - Flash loans used in conjunction with external AMM pools
+    - Tokens of interest are FIDU, USDC, FIDU-USDC LP tokens, & GFI
+    - Can staking be use to generate outsized rewards for a large amount of staked FIDU or FIDU-USDC Curve LP tokens?
+      - Not in the context of a flash loan, 0 time diff in a single block so staking rewards should always be 0 over course of flash loan
+      - Non reentrancy prevents users from calling both stake and unstake in a single transaction
+        - This may be different if there is external liquidity for FIDU stake tokens, FIDU-USDC Curve LP tokens, or FIDU-USDC Curve LP Stake tokens
+          - Attack vectors via external stake token liquidity would be dependent upon how external liquidity sources price assets.
+          - [Brandon] I believe responsibility and risk for external stake token liquidity are held solely by external parties (i.e. external DeFi/AMM protocol designers)
+    - Can large FIDU withdrawal at static share price be paired with Curve pool to generate artificial arbitrage opportunity where Curve LPs' funds are at risk?
+      - Ex: https://twitter.com/valentinmihov/status/1327750899423440896
+      - FIDU share price acts as buy-side price ceiling - unlimited FIDU liquidity at a static buy price
+      - Normal Curve pool price mechanics shouldn't be susceptible to price manipulation without committed capital - no perceived risk.
 - withdraw
+  - Applies noReentrancy modifier?
+    - yes
 - withdrawInFidu
+  - Applies noReentrancy modifier?
+    - yes
+
+## Issues
+
+### Opening up `go` to tx.origin
+
+Severity: Informational
+We have opened up `go` to tx.origin Go listed users, contingent upon the tx.origin user giving UniqueIdentity#approvedForAll access to the msg.sender.
+
+- Normally, tx.origin access control opens up a much broader surface area of phishing attacks for backers and liquidity providers: https://github.com/ethereum/solidity/issues/683
+  - UniqueIdentity#approvedForAll should require users to explicitly approve access to the msg.sender, mitigating some of our phishing concerns.
+    - Non-crypto natives would not be familiar with approveForAll, and crypto natives may be confused by our slightly unorthodox usage of approvedForAll.
+    - The intended purpose of `approveForAll` for a non transferable NFT is not clear, nor explicitly stated at the time of transaction prompting.
+    - [Brandon] I think `approveForAll` for a normal transferable NFT does not do a good enough job of prompting user to understand the implications of the "approveForAll" operation. I think
+    - [Brandon] I still think there are concerns with users inadvertently calling approveForAll on a malicious actor's contract, potentially giving them control of user deposited funds or staked positions. Token recipients for mints & stakes are `msg.sender`, regardless of whether tx.origin is used as source of truth for access controll.
+- Recommendation is to force users to sign a human-readable message explaining the implications of calling UniqueIdentity#approveForAll for a given address.
