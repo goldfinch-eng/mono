@@ -20,7 +20,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
 
 ##### External / public
 
-- __initialize__
+- **initialize**
   - [x] How could it break?
     - Fail to call initializers of inherited functions
       - Current defense
@@ -185,8 +185,8 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
             // Curve LP tokens are scaled by MULTIPLIER_DECIMALS (1e18),
             uint256 curveLPVirtualPrice = config.getFiduUSDCCurveLP().get_virtual_price();
             ```
-              - I think, given the context, that that comment may be describing the mantissa of the Curve LP token *price*, rather than the token itself?
-              - TODO In any case, we should confirm the mantissa of the Curve LP token itself and its price, and include comments that link to that info.
+            - I think, given the context, that that comment may be describing the mantissa of the Curve LP token _price_, rather than the token itself?
+            - TODO In any case, we should confirm the mantissa of the Curve LP token itself and its price, and include comments that link to that info.
           - REMEDY
             - Priority: CRITICAL
             - Check this, as noted.
@@ -450,10 +450,10 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
     - Fail to checkpoint the 0 token
       - Review status
         - OK
-    - Allow _maxRate less than _minRate
+    - Allow \_maxRate less than \_minRate
       - Review status
         - OK
-    - Allow _maxRateAtPercent less than _minRateAtPercent
+    - Allow \_maxRateAtPercent less than \_minRateAtPercent
       - Review status
         - OK
     - Fail to set values correctly
@@ -502,7 +502,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
 
 ##### Internal
 
-- _depositToCurve
+- \_depositToCurve
   - [x] How could it break?
     - allow staking 0 FIDU and 0 USDC
     - reentrancy via call to `curveLP.add_liquidity()`
@@ -530,7 +530,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
           - REMEDY
             - Priority: HIGH
             - Confirmed it's not upgradeable.
-- _stake
+- \_stake
   - [x] How could it break?
     - Allow staking 0 amount
       - Current defense
@@ -585,7 +585,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
         - None / manual
       - Review status
         - OK
-- _unstakeAndWithdraw
+- \_unstakeAndWithdraw
   - [x] How could it break?
     - reentrancy via call to `USDC.safeTransfer()`
       - Review status
@@ -611,7 +611,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
     - Incorrect return values
       - Review status
         - OK
-- _unstakeAndWithdrawInFidu
+- \_unstakeAndWithdrawInFidu
   - [x] How could this break?
     - reentrancy via call to `USDC.safeTransfer()`
       - Review status
@@ -637,7 +637,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
     - Incorrect return value
       - Review status
         - OK
-- _unstake
+- \_unstake
   - [x] How could it break?
     - Allow non-owner-and-non-zapper of token to perform the unstaking
       - Review status
@@ -651,14 +651,14 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
       - Review status
         - OK
     - Allow unstaking more than the staked amount on the position
-        - Review status
-          - OK
+      - Review status
+        - OK
     - Allow unstaking if the position is still locked
       - Review status
         - OK
     - Decrement the total staked supply incorrectly
-        - Review status
-          - OK
+      - Review status
+        - OK
     - Decrement the amount on the position incorrectly
       - Review status
         - OK
@@ -672,7 +672,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
     - Fail to emit event
       - Review status
         - OK
-- _updateReward
+- \_updateReward
   - Review status
     - ISSUE
       - Currently in calculating `rewardsJustDistributed`, we divide by `stakingTokenMantissa()`. Semantically, I think this is incorrect. We should be dividing by "rewards token mantissa". We are fortunate that they happen to be the same.
@@ -738,6 +738,7 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
       - Review status
         - OK
 - getEffectiveMultiplier
+
   - [x] How could it break?
     - Impossibility of using an effective multiplier value of 0.
       - If we had set an effective multiplier of 0, that value wouldn't be used. The current logic would use 1 instead.
@@ -778,16 +779,15 @@ NOTE: This audit covers the contract code at the top level; it does NOT cover co
         - OK
           - I think we are comfortable taking the senior pool share price at face value.
 
-
 ##### Internal
 
-- _additionalRewardsPerTokenSinceLastUpdate
+- \_additionalRewardsPerTokenSinceLastUpdate
   - Review status
     - OK
 - rewardRate
   - Review status
     - SKIPPED. Hasn't changed in 8 months.
-- _positionToEffectiveAmount
+- \_positionToEffectiveAmount
   - [x] How could it break?
     - Improper passage of arguments to `toEffectiveAmount()`
       - Review status
