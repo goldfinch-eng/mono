@@ -121,7 +121,7 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
   
 
 - deposit
-  - The complexity of analyzing `DepositMade` events will increase
+  - the complexity of analyzing `DepositMade` events will increase
     - Now that approved operators can deposit on behalf of a UID holder, the poolToken `owner` param in `DepositMade` events
       is not necessarily the UID holder. The UId holder can make deposits from an arbitrary number of operator contracts.
       - Questions like "How many deposits has this end user made in a particular pool?",
@@ -135,11 +135,19 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
       `owner` to be the UID holder?
       - would still need logic to bridge the old and new events into a single stream that can be processed on client/subgraph
       - operator cannot be indexable, as we've already exceeded the max number of indexable params on that event (but this isn't a problem for subgraph)
+  - vulnerable to re-entrancy?
+    - no
+  - follows checks-effects-interactions pattern?
+    - yes: state is updated before transferring usdc from depositor to pool
 
 - withdraw
-  - `WithdrawMade` event
-    - Similar impact to  `DepositMade`
-  - There is a restriction on 0 amount withdrawls. Removing this restriction doesn't break any tests except the tests that assert you can't withdraw
+  - vulnerable to re-entrancy?
+    - no
+  - follows checks-effects-interactions pattern?
+    - yes: state is updated before transferring USDC from pool to borrower
+  - `WithdrawlMade` event
+    - similar impact to  `DepositMade`
+  - there is a restriction on 0 amount withdrawls. Removing this restriction doesn't break any tests except the tests that assert you can't withdraw
     a zero amount
     - If seemingly nothing else breaks, is it necessary to keep the restriction? Was the motivation for it a desire to err on the side of caution, or something more?
 
