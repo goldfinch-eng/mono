@@ -116,6 +116,11 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
     - impact: these actions give no benefit to the borrower, it only inconveniences the depositors and warbler.
       Thankfully we can recoup the funds by doing an emergency shutdown. This sweeps the depositor's money to
       the protocol reserve which we could then use to make the depositors whole.
+  - likelihood of exploit: LOW
+    - No financial gain for Borrower (unless they were short GFI?). Only motivation would be to cause issues for Goldfinch
+      and harm protocol reputation
+    - Our client is hardcoded to deposit to the first slice - if a borrower secretly locked the first slice with 0 deposits
+      and initialized the next, attempts to deposit on the client would fail
   - suggested fix 1: prevent allowedUIDTypes from being set after initialization - also check that all uid types are valid
   - suggested fix 2: fix the "has balance" check to check for deposits in all initialized slices
   
