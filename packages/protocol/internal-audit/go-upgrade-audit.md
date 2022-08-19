@@ -149,6 +149,7 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 ### Mutating Functions
 
 - deposit
+
   - Applies noReentrancy modifier?
     - yes
   - Flash loans used in conjunction with external AMM pools
@@ -163,10 +164,9 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
       - Ex: https://twitter.com/valentinmihov/status/1327750899423440896
       - FIDU share price acts as buy-side price ceiling - unlimited FIDU liquidity at a static buy price
       - Normal Curve pool price mechanics shouldn't be susceptible to price manipulation without committed capital - no perceived risk.
-- withdraw
-- withdrawInFidu
 
-* Make events as generic as possible to accommodate potential third party developers
+- withdraw
+
   - Applies noReentrancy modifier?
     - yes
 

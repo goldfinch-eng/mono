@@ -106,8 +106,9 @@ Break the contracts. Get them to do something we wouldn't want them to do.
 
 #### Additional Notes
 
-- [] Pre-audit checklist followed (see Notion doc)
+- [] Pre-audit checklist redundancy checks (see Notion doc)
   - [] Do mutative functions follow checks-effects-interactions pattern?
+  - [] Do mutative functions apply the noReentrancy modifier?
     <!-- See pre-audit checklist -->
     <!-- Include any additional notes that don't fit into above categories -->
 
