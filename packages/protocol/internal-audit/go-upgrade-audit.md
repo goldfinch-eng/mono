@@ -1,4 +1,8 @@
-# Internal Audit
+# Internal Audit August - `Go` contract `tx.origin` as source of truth for access control
+
+## Audit authors
+
+@daltyboy11 @bstchow
 
 ## Goals
 

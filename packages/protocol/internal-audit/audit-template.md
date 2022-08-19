@@ -4,6 +4,10 @@
 <!-- Try not to limit investigation to just functions in isolation -->
 <!-- Opt for using unit tests as living documentation & reproducible examples of potential bugs or exploits. -->
 
+## Audit authors
+
+<!-- Add author names or GitHub handles here -->
+
 ### Goals
 
 Break the contracts. Get them to do something we wouldn't want them to do.
