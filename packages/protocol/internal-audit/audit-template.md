@@ -1,5 +1,9 @@
 # Internal Audit
 
+<!-- Follow this template as a loose guide for double checking functions -->
+<!-- Try not to limit investigation to just functions in isolation -->
+<!-- Opt for using unit tests as living documentation & reproducible examples of potential bugs or exploits. -->
+
 ### Goals
 
 Break the contracts. Get them to do something we wouldn't want them to do.
@@ -106,7 +110,7 @@ Break the contracts. Get them to do something we wouldn't want them to do.
 
 #### Additional Notes
 
-- [] Pre-audit checklist redundancy checks (see Notion doc)
+- [] Pre-audit checklist redundancy checks (see [Notion doc](https://www.notion.so/goldfinchfinance/Pre-audit-checklist-be502a1333ce49af835856a98ea02642))
   - [] Do mutative functions follow checks-effects-interactions pattern?
   - [] Do mutative functions apply the noReentrancy modifier?
     <!-- See pre-audit checklist -->
