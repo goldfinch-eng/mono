@@ -117,7 +117,7 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
       Thankfully we can recoup the funds by doing an emergency shutdown. This sweeps the depositor's money to
       the protocol reserve which we could then use to make the depositors whole.
   - suggested fix 1: prevent allowedUIDTypes from being set after initialization - also check that all uid types are valid
-  - suggested fix 2: fix the "has balance" check to check for deposits in the latest slice, not the first
+  - suggested fix 2: fix the "has balance" check to check for deposits in all initialized slices
   
 
 - deposit
