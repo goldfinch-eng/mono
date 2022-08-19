@@ -118,3 +118,19 @@ Break the contracts. Get them to do something we wouldn't want them to do.
 
 <!-- Copy MyContract1 template for any additional contracts under audit. -->
 <!-- ## MyContract2  Replace with another contract name -->
+
+## Issues
+
+<!-- Add any general issues or points of concern which did not fit into any one contract/function. -->
+
+### Issue #1 title <!-- Replace with your issue title name -->
+
+<!--  Add description of issue -->
+
+# Conclusions
+
+<!--  Self-explanatory - add audit conclusions here -->
+
+## Action Items
+
+<!--  Self-explanatory - add audit action items here -->
