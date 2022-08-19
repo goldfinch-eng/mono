@@ -166,15 +166,16 @@ Go is the source of truth on whether an Ethereum address is allowed to interact 
 - withdraw
 - withdrawInFidu
 
-
 * Make events as generic as possible to accommodate potential third party developers
   - Applies noReentrancy modifier?
     - yes
+
 - withdrawInFidu
   - Applies noReentrancy modifier?
     - yes
 
 ## Issues
+
 ### Opening up `go` to tx.origin
 
 Severity: Informational
@@ -191,12 +192,35 @@ We have opened up `go` to tx.origin Go listed users, contingent upon the tx.orig
 # Conclusions
 
 ## Action Items
-* [GFI-926](https://linear.app/goldfinch/issue/GFI-926/remove-erc20-infinite-approval-on-self-pattern) Remove the pattern of self approving for an infinite amount and using safeTransferFrom(address(this)...), and replace it with calls to safeTransfer()
-* [GFI-927](https://linear.app/goldfinch/issue/GFI-927/borrower-can-lock-depositor-funds-low-impact) Fix bug on TranchedPool that allows the borrower to lock up funds
+
+- [GFI-926](https://linear.app/goldfinch/issue/GFI-926/remove-erc20-infinite-approval-on-self-pattern) Remove the pattern of self approving for an infinite amount and using safeTransferFrom(address(this)...), and replace it with calls to safeTransfer()
+- [GFI-927](https://linear.app/goldfinch/issue/GFI-927/borrower-can-lock-depositor-funds-low-impact) Fix bug on TranchedPool that allows the borrower to lock up funds
+
+## Discussion points for Opening up `go` to tx.origin
+
+After internal team discussion, the general consensus is that using tx.origin for access control is fine as long as the economic effects of permissioned actions only impact the msg.sender.
+
+e.g. when the tx.origin !== msg.sender and the tx.origin is the UID holder, a FIDU depositor/withdrawal recipient must be the msg.sender and only the msg.sender.
+
+There remains some mild uneasiness with the following issues:
+
+1. Relative lack of clarity of the amount of permission ApproveForAll provides - this would not be clear from the UniqueIdentity contract, someone would need to look over the Go contract as well to understand impact as ApproveForAll does nothing in the context of UniqueIdentity, since UID's are non-transferable.
+
+- **Proposed Solution** Add some comments to our Go contract implementation in which we use tx.origin & ApprovalForAll status to check a user for Go permission. Comments should emphasize that:
+  - tx.origin is only used, and should only be used for access control.
+  - tx.origin should never be used to determine the destination/source address of any economic costs/benefits.
+
+2. A non-UID'ed entity/individual could phish a UID'ed user into calling a smart contract which could then interact with the Goldfinch protocol. Because the economic impact is limited to the msg.sender, in isolation, this sort of phishing attack has limited impact on victims. This seems like a relatively low reward for a very effort costly attack.
+
+- **Conclusion** Monitor but do not need to address.
 
 ## Discussion points for addressing events
+
 There were differing opinions on taking action for events like `DepositMade`, and potentially changing the signature to emit both the UID holding address on the operator address
+
 ### Against
-* We can pull out tx.origin in subgraph code, so no need to add it directly to the event
-* Making other contracts aware of the tx.origin vs msg.sender distinction is "leaking" Go implementation details to those contracts
+
+- We can pull out tx.origin in subgraph code, so no need to add it directly to the event
+- Making other contracts aware of the tx.origin vs msg.sender distinction is "leaking" Go implementation details to those contracts
+
 ### In favor
