@@ -404,28 +404,6 @@ describe("TranchedPool", () => {
     })
   })
 
-  // describe("bugs", () => {
-  //   it("allowedUIDTypes can be changed after deposits made, locking funds", async () => {
-  //     // Borrower immediately locks first slice and then initializes the next
-  //     await tranchedPool.lockJuniorCapital({from: borrower})
-  //     await tranchedPool.lockPool({from: borrower})
-  //     await tranchedPool.initializeNextSlice(await time.latest(), {from: borrower})
-
-  //     // Deposit to second slice
-  //     const secondSliceJuniorTrancheId = 4
-  //     const response = await tranchedPool.deposit(secondSliceJuniorTrancheId, usdcVal(1), {from: owner})
-  //     const logs = decodeLogs<DepositMade>(response.receipt.rawLogs, tranchedPool, "DepositMade")
-  //     const firstLog = getFirstLog(logs)
-  //     const tokenId = firstLog.args.tokenId
-
-  //     // Revoke all allowed UIDs
-  //     await tranchedPool.setAllowedUIDTypes([], {from: borrower})
-
-  //     // Money is locked - attempt to withdraw fails
-  //     await expect(tranchedPool.withdraw(tokenId, usdcVal(1), {from: owner})).to.be.rejectedWith(/NA/)
-  //   })
-  // })
-
   describe("deposit", async () => {
     describe("junior tranche", async () => {
       it("fails if not legacy golisted and does not have allowed UID token", async () => {
