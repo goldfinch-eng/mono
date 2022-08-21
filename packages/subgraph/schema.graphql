@@ -97,14 +97,11 @@ type JuniorTrancheInfo @entity {
 type CreditLine @entity {
   id: ID!
   borrower: Bytes!
-  tranchedPool: TranchedPool!
+  tranchedPool: TranchedPool! @derivedFrom(field: "creditLine")
   limit: BigInt!
   maxLimit: BigInt!
   interestApr: BigInt!
   balance: BigInt!
-  remainingPeriodDueAmount: BigInt!
-  remainingTotalDueAmount: BigInt!
-  availableCredit: BigInt!
   interestAccruedAsOf: BigInt!
   paymentPeriodInDays: BigInt!
   termInDays: BigInt!
@@ -115,10 +112,6 @@ type CreditLine @entity {
   lastFullPaymentTime: BigInt!
   version: TranchedPoolCreditLineVersion!
   lateFeeApr: BigDecimal!
-  # These fields are marked as nullable as they
-  # either require information not yet available on the subgraph,
-  # or are not used on the pages we are integrating.
-  periodDueAmount: BigInt
   interestAprDecimal: BigDecimal!
   isEligibleForRewards: Boolean!
 }

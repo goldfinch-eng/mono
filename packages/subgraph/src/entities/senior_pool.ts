@@ -41,6 +41,7 @@ export function getOrInitSeniorPoolStatus(): SeniorPoolStatus {
     poolStatus.estimatedApyFromGfiRaw = BigDecimal.zero()
     poolStatus.defaultRate = new BigInt(0)
     poolStatus.tranchedPools = []
+    poolStatus.usdcBalance = BigInt.zero()
     poolStatus.save()
   }
   return poolStatus
