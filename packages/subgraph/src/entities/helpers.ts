@@ -210,5 +210,7 @@ export function createTransactionFromEvent(event: ethereum.Event, category: stri
   transaction.category = category
   const user = getOrInitUser(userAddress)
   transaction.user = user.id
+  transaction.amount = BigInt.zero() // just a sane default
+  transaction.amountToken = "USDC" // just a sane default
   return transaction
 }

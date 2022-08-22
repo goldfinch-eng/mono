@@ -109,28 +109,29 @@ jobs:
     - run: npx lerna run build --stream --scope @goldfinch-eng/client --include-dependencies
     - run: npx lerna run test --stream --scope @goldfinch-eng/client
 
-  subgraph:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
-    steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Cache node modules
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-node-modules
-      with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
-        path: ~/.npm
-        key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-    - run: npx lerna bootstrap --ci --scope @goldfinch-eng/subgraph --include-dependencies
-    - run: npx lerna run build --stream --scope @goldfinch-eng/subgraph --include-dependencies
-    - run: npx lerna run test --stream --scope @goldfinch-eng/subgraph
+  # Disabled until further notice. These tests need a big refactor and dependency upgrade. Arguably a total rewrite.
+  # subgraph:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [16.x]
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: Use Node.js ${{ matrix.node-version }}
+  #     uses: actions/setup-node@v1
+  #     with:
+  #       node-version: ${{ matrix.node-version }}
+  #   - name: Cache node modules
+  #     uses: actions/cache@v2
+  #     env:
+  #       cache-name: cache-node-modules
+  #     with:
+  #       # npm cache files are stored in `~/.npm` on Linux/macOS
+  #       path: ~/.npm
+  #       key: ${{ runner.os }}-build-v0-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+  #   - run: npx lerna bootstrap --ci --scope @goldfinch-eng/subgraph --include-dependencies
+  #   - run: npx lerna run build --stream --scope @goldfinch-eng/subgraph --include-dependencies
+  #   - run: npx lerna run test --stream --scope @goldfinch-eng/subgraph
 
   functions:
     runs-on: ubuntu-latest

@@ -22,6 +22,7 @@ import {
   updatePoolRewardsClaimable,
   updatePoolTokensRedeemable,
 } from "../entities/tranched_pool"
+import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
@@ -87,9 +88,7 @@ export function handleEmergencyShutdown(event: EmergencyShutdown): void {
 
 export function handleDrawdownMade(event: DrawdownMade): void {
   const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
-  // ensures that a wallet making a drawdown is correctly considered a user
-  const user = new User(event.params.borrower.toHexString())
-  user.save()
+  getOrInitUser(event.params.borrower) // ensures that a wallet making a drawdown is correctly considered a user
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
   updatePoolTokensRedeemable(tranchedPool)
@@ -102,9 +101,7 @@ export function handleDrawdownMade(event: DrawdownMade): void {
 }
 
 export function handlePaymentApplied(event: PaymentApplied): void {
-  // ensures that a wallet making a payment is correctly considered a user
-  const user = new User(event.params.payer.toHexString())
-  user.save()
+  getOrInitUser(event.params.payer) // ensures that a wallet making a payment is correctly considered a user
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 

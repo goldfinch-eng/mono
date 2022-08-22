@@ -178,6 +178,10 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   if (isCreating) {
     tranchedPool.backers = []
     tranchedPool.tokens = []
+    tranchedPool.numBackers = 0
+    tranchedPool.estimatedJuniorApyFromGfiRaw = BigDecimal.zero()
+    tranchedPool.principalAmountRepaid = BigInt.zero()
+    tranchedPool.interestAmountRepaid = BigInt.zero()
     // V1 style deals do not have a leverage ratio because all capital came from the senior pool
     tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
   }
