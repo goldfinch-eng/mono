@@ -1,9 +1,10 @@
 import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
+import {GoldfinchConfig} from "../../generated/SeniorPool/GoldfinchConfig"
 import {Fidu as FiduContract} from "../../generated/SeniorPool/Fidu"
 import {USDC as UsdcContract} from "../../generated/SeniorPool/USDC"
-import {FIDU_ADDRESS, USDC_CONTRACT_ADDRESS} from "../constants"
+import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
 import {getStakingRewards} from "./staking_rewards"
 
@@ -69,17 +70,22 @@ const SECONDS_PER_YEAR = BigInt.fromString("31536000")
 
 export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
-  let fidu_contract = FiduContract.bind(Address.fromString(FIDU_ADDRESS))
-  const usdc_contract = UsdcContract.bind(Address.fromString(USDC_CONTRACT_ADDRESS))
 
-  let contract = SeniorPoolContract.bind(seniorPoolAddress)
-  let sharePrice = contract.sharePrice()
-  let compoundBalance = contract.compoundBalance()
-  let totalLoansOutstanding = contract.totalLoansOutstanding()
+  const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
+  const configContract = GoldfinchConfig.bind(seniorPoolContract.config())
+  const fidu_contract = FiduContract.bind(configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.Fidu)))
+  const usdc_contract = UsdcContract.bind(configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.USDC)))
+
+  let sharePrice = seniorPoolContract.sharePrice()
+  let compoundBalance = seniorPoolContract.compoundBalance()
+  let totalLoansOutstanding = seniorPoolContract.totalLoansOutstanding()
   let totalSupply = fidu_contract.totalSupply()
   let totalPoolAssets = totalSupply.times(sharePrice)
   let totalPoolAssetsUsdc = totalPoolAssets.times(USDC_DECIMALS).div(FIDU_DECIMALS).div(FIDU_DECIMALS)
-  let balance = contract.assets().minus(contract.totalLoansOutstanding()).plus(contract.totalWritedowns())
+  let balance = seniorPoolContract
+    .assets()
+    .minus(seniorPoolContract.totalLoansOutstanding())
+    .plus(seniorPoolContract.totalWritedowns())
   let rawBalance = balance
 
   let poolStatus = SeniorPoolStatus.load(seniorPool.latestPoolStatus) as SeniorPoolStatus
