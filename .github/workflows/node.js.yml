@@ -109,6 +109,7 @@ jobs:
     - run: npx lerna run build --stream --scope @goldfinch-eng/client --include-dependencies
     - run: npx lerna run test --stream --scope @goldfinch-eng/client
 
+  # Disabled until further notice. These tests need a big refactor and dependency upgrade. Arguably a total rewrite.
   # subgraph:
   #   runs-on: ubuntu-latest
   #   strategy:
