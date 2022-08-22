@@ -28,6 +28,8 @@ dataSources:
           file: ./abis/Fidu.json
         - name: USDC
           file: ./abis/USDC.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade
