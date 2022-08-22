@@ -78,28 +78,6 @@ dataSources:
           handler: handlePoolCreated
 
   - kind: ethereum/contract
-    name: Pool
-    network: mainnet
-    source:
-      address: "0xB01b315e32D1D9B5CE93e296D483e1f0aAD39E75"
-      abi: Pool
-      startBlock: 11370642
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.6
-      language: wasm/assemblyscript
-      file: ./src/mappings/v1_pool.ts
-      entities:
-        - User
-        - SeniorPoolDeposit
-      abis:
-        - name: Pool
-          file: ./abis/Pool.json
-      eventHandlers:
-        - event: DepositMade(indexed address,uint256,uint256)
-          handler: handleDepositMade
-
-  - kind: ethereum/contract
     name: PoolTokens
     network: mainnet
     source:
