@@ -208,7 +208,9 @@ e.g. when the tx.origin !== msg.sender and the tx.origin is the UID holder, a FI
 
 There remains some mild uneasiness with the following issues:
 
-1. Relative lack of clarity of the amount of permission ApproveForAll provides - this would not be clear from the UniqueIdentity contract, someone would need to look over the Go contract as well to understand impact as ApproveForAll does nothing in the context of UniqueIdentity, since UID's are non-transferable.
+1. Relative lack of clarity of the amount of permission ApproveForAll provides.
+   Using ApproveForAll as a flag for delegating UID's to a msg.sender is not immediately clear from the UniqueIdentity contract; someone would need to look over the Go contract as well to understand the impact of ApproveForAll.
+   approveForAll flips the boolean result of isApprovedForAll. Because UniqueIdentity's are non-transferable, it could seem like the value of isApprovedForAll, and transitively approveForAll, are unused.
 
 - **Proposed Solution** Add some comments to our Go contract implementation in which we use tx.origin & ApprovalForAll status to check a user for Go permission. Comments should emphasize that:
   - tx.origin is only used, and should only be used for access control.
