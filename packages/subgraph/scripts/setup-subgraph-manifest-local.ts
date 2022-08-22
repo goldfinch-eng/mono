@@ -74,7 +74,6 @@ for (let dataSource of subgraphManifest.templates) {
 
 const codeSnippet = `// It's OK if this file shows diffs. The only reason it's committed is to prevent "module not found" errors. Unfortunately it doesn't seem The Graph allows env vars for this kind of thing.
 export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolAddress}"
-export const LOCALHOST_POOL_TOKENS_ADDRESS = "${deployedPoolTokensAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
 export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
 `
