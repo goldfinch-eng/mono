@@ -1,9 +1,9 @@
-import { builder, Handler } from "@netlify/functions";
+import { builder } from "@netlify/functions";
 import { createIPXHandler } from "@netlify/ipx";
 
 const standardHandler = createIPXHandler({});
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
-const unbuiltHandler: Handler = (event, _context) => {
+const unbuiltHandler = (event, _context) => {
   const protocol = event.headers["x-forwarded-proto"] || "http";
   if (!["http", "https"].includes(protocol)) {
     console.error(
