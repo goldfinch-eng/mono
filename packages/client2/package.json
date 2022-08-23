@@ -65,6 +65,7 @@
     "@graphql-codegen/typescript": "^2.5.1",
     "@graphql-codegen/typescript-operations": "^2.4.2",
     "@graphql-codegen/typescript-react-apollo": "^3.2.16",
+    "@netlify/ipx": "^1.2.2",
     "@next/bundle-analyzer": "^12.1.0",
     "@storybook/addon-actions": "^6.4.19",
     "@storybook/addon-essentials": "^6.4.19",
