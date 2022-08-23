@@ -1,6 +1,21 @@
 import { builder, Handler } from "@netlify/functions";
+import { createIPXHandler } from "@netlify/ipx";
 
+const standardHandler = createIPXHandler({});
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
-const unbuiltHandler: Handler = (_event, _context) => {};
+const unbuiltHandler: Handler = (event, _context) => {
+  const protocol = event.headers["x-forwarded-proto"] || "http";
+  if (!["http", "https"].includes(protocol)) {
+    console.error(
+      `malicious attacker attempting exploit via x-forwarded-proto, `
+    );
+    return Promise.resolve({
+      statusCode: 403,
+      body: "Invalid protocol in x-forwarded-proto",
+    });
+  } else {
+    return standardHandler(event, _context);
+  }
+};
 
 export const handler = builder(unbuiltHandler);
