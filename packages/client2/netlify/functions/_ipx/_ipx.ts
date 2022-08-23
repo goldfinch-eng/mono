@@ -6,7 +6,7 @@
 const ipx = require("@netlify/ipx");
 const { createIPXHandler } = ipx;
 // const standardHandler: any = createIPXHandler({});
-export const handler: any = async (event: any, _context: any) => {
+const handler: any = async (event: any, _context: any) => {
   console.log(`event: ${JSON.stringify(event)}`);
   const protocol = event.headers["x-forwarded-proto"] || "http";
   console.log(`protocol: ${protocol}`);
@@ -19,3 +19,5 @@ export const handler: any = async (event: any, _context: any) => {
     // return standardHandler(event, _context);
   }
 };
+
+module.exports = { handler };
