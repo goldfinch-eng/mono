@@ -1,6 +1,7 @@
 import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, TranchedPoolToken} from "../../generated/schema"
 import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
@@ -79,6 +80,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   const poolContract = TranchedPoolContract.bind(address)
+  const goldfinchConfigContract = GoldfinchConfigContract.bind(poolContract.config())
+  const seniorPoolAddress = goldfinchConfigContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.SeniorPool))
 
   let version: string = VERSION_BEFORE_V2_2
   let numSlices = BigInt.fromI32(1)
@@ -153,7 +156,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
   tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
-  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
+  tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version, seniorPoolAddress)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
   tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)

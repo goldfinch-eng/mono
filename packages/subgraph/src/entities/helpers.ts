@@ -3,12 +3,7 @@ import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transact
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/GoldfinchConfig/GoldfinchConfig"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
-import {
-  CONFIG_KEYS_NUMBERS,
-  GOLDFINCH_CONFIG_ADDRESS,
-  GOLDFINCH_LEGACY_CONFIG_ADDRESS,
-  SENIOR_POOL_ADDRESS,
-} from "../constants"
+import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, GOLDFINCH_LEGACY_CONFIG_ADDRESS} from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 import {VERSION_BEFORE_V2_2} from "../utils"
 import {getOrInitUser} from "./user"
@@ -54,16 +49,17 @@ export function getJuniorDeposited(juniorTranches: JuniorTrancheInfo[]): BigInt 
 
 const fixedLeverageRatioAddress = Address.fromString("0x9b2ACD3fd9aa6c60B26CF748bfFF682f27893320") // This is hardcoded from mainnet. When running off the local chain, this shouldn't be needed.
 
-export function getEstimatedSeniorPoolInvestment(tranchedPoolAddress: Address, tranchedPoolVersion: string): BigInt {
+export function getEstimatedSeniorPoolInvestment(
+  tranchedPoolAddress: Address,
+  tranchedPoolVersion: string,
+  seniorPoolAddress: Address
+): BigInt {
   if (tranchedPoolVersion == VERSION_BEFORE_V2_2) {
     // This means that the pool is not compatible with multiple slices, so we need to use a hack to estimate senior pool investment
     const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(fixedLeverageRatioAddress)
-    return fixedLeverageRatioStrategyContract.estimateInvestment(
-      Address.fromString(SENIOR_POOL_ADDRESS),
-      tranchedPoolAddress
-    )
+    return fixedLeverageRatioStrategyContract.estimateInvestment(seniorPoolAddress, tranchedPoolAddress)
   }
-  const seniorPoolContract = SeniorPoolContract.bind(Address.fromString(SENIOR_POOL_ADDRESS))
+  const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
   return seniorPoolContract.estimateInvestment(tranchedPoolAddress)
 }
 
