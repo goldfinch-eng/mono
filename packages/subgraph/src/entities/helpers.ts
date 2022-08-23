@@ -8,7 +8,6 @@ import {
   GOLDFINCH_CONFIG_ADDRESS,
   GOLDFINCH_LEGACY_CONFIG_ADDRESS,
   SENIOR_POOL_ADDRESS,
-  OLD_FIXED_LEVERAGE_RATIO_ADDRESS,
 } from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 import {VERSION_BEFORE_V2_2} from "../utils"
@@ -53,12 +52,12 @@ export function getJuniorDeposited(juniorTranches: JuniorTrancheInfo[]): BigInt 
   return juniorDeposited
 }
 
+const fixedLeverageRatioAddress = Address.fromString("0x9b2ACD3fd9aa6c60B26CF748bfFF682f27893320") // This is hardcoded from mainnet. When running off the local chain, this shouldn't be needed.
+
 export function getEstimatedSeniorPoolInvestment(tranchedPoolAddress: Address, tranchedPoolVersion: string): BigInt {
   if (tranchedPoolVersion == VERSION_BEFORE_V2_2) {
     // This means that the pool is not compatible with multiple slices, so we need to use a hack to estimate senior pool investment
-    const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(
-      Address.fromString(OLD_FIXED_LEVERAGE_RATIO_ADDRESS)
-    )
+    const fixedLeverageRatioStrategyContract = FixedLeverageRatioStrategy.bind(fixedLeverageRatioAddress)
     return fixedLeverageRatioStrategyContract.estimateInvestment(
       Address.fromString(SENIOR_POOL_ADDRESS),
       tranchedPoolAddress

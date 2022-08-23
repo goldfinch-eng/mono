@@ -18,7 +18,6 @@ const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.addres
 const deployedGfiAddress = localhostContracts.GFI.address
 const deployedStakingRewardsAddress = localhostContracts.StakingRewards.address
 const deployedBackerRewardsAddress = localhostContracts.BackerRewards.address
-const deployedOldFixedLeverageRatioStrategyAddress = localhostContracts.FixedLeverageRatioStrategy.address
 const deployedUniqueIdentityAddress = localhostContracts.UniqueIdentity.address
 const deployedCommunityRewardsAddress = localhostContracts.CommunityRewards.address
 const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
@@ -75,7 +74,6 @@ for (let dataSource of subgraphManifest.templates) {
 const codeSnippet = `// It's OK if this file shows diffs. The only reason it's committed is to prevent "module not found" errors. Unfortunately it doesn't seem The Graph allows env vars for this kind of thing.
 export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolAddress}"
 export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
-export const LOCALHOST_OLD_FIXED_LEVERAGE_RATIO_STRATEGY_ADDRESS = "${deployedOldFixedLeverageRatioStrategyAddress}"
 `
 
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))
