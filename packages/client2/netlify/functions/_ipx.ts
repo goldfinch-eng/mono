@@ -7,10 +7,10 @@ const unbuiltHandler: Handler = (event, _context) => {
   const protocol = event.headers["x-forwarded-proto"] || "http";
   if (!["http", "https"].includes(protocol)) {
     console.error(
-      `malicious attacker attempting exploit via x-forwarded-proto, `
+      `malicious attacker attempting exploit via x-forwarded-proto: ${protocol}`
     );
     return Promise.resolve({
-      statusCode: 403,
+      statusCode: 404,
       body: "Invalid protocol in x-forwarded-proto",
     });
   } else {
