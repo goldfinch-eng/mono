@@ -8,7 +8,6 @@ import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
   getLeverageRatio,
   getTotalDeposited,
-  getEstimatedTotalAssets,
   isV1StyleDeal,
   estimateJuniorAPY,
   getReserveFeePercent,
@@ -155,8 +154,8 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
   tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
   tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
-  tranchedPool.estimatedTotalAssets = getEstimatedTotalAssets(address, juniorTranches, seniorTranches, version)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
+  tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
   tranchedPool.juniorDeposited = getJuniorDeposited(juniorTranches)
   tranchedPool.isPaused = poolContract.paused()
   tranchedPool.isV1StyleDeal = isV1StyleDeal(address)

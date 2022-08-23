@@ -67,20 +67,6 @@ export function getEstimatedSeniorPoolInvestment(tranchedPoolAddress: Address, t
   return seniorPoolContract.estimateInvestment(tranchedPoolAddress)
 }
 
-export function getEstimatedTotalAssets(
-  address: Address,
-  juniorTranches: JuniorTrancheInfo[],
-  seniorTranches: SeniorTrancheInfo[],
-  version: string
-): BigInt {
-  let totalAssets = new BigInt(0)
-  totalAssets = getTotalDeposited(address, juniorTranches, seniorTranches)
-
-  let estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version)
-  totalAssets = totalAssets.plus(estimatedSeniorPoolContribution)
-  return totalAssets
-}
-
 export function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
   const configAddress = timestamp.lt(BigInt.fromU64(1641349586))
     ? GOLDFINCH_LEGACY_CONFIG_ADDRESS
