@@ -1,9 +1,16 @@
-import { builder } from "@netlify/functions";
-import { createIPXHandler } from "@netlify/ipx";
+/* eslint-disable @typescript-eslint/no-var-requires */
+const functions = require("@netlify/functions");
+const ipx = require("@netlify/ipx");
 
-const standardHandler = createIPXHandler({});
+const { builder } = functions.builder;
+const { createIPXHandler } = ipx;
+
+// import { builder } from "@netlify/functions";
+// import { createIPXHandler } from "@netlify/ipx";
+
+const standardHandler: any = createIPXHandler({});
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-function
-const unbuiltHandler = (event, _context) => {
+const unbuiltHandler: any = (event: any, _context: any) => {
   // eslint-disable-next-line no-console
   console.log(`event: ${JSON.stringify(event)}`);
   const protocol = event.headers["x-forwarded-proto"] || "http";
