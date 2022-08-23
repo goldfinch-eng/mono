@@ -1,6 +1,7 @@
 specVersion: 0.0.4
-features:
-  - nonFatalErrors
+# Had to be disabled because it's not supported on the Decentralized Network
+# features:
+#   - nonFatalErrors
 schema:
   file: ./schema.graphql
 dataSources:
