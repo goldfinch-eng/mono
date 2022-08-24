@@ -15,7 +15,6 @@ import {
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
-  getGoldfinchConfig,
 } from "./helpers"
 import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
@@ -441,9 +440,12 @@ function calculateInitialInterestOwed(creditLine: CreditLine): BigInt {
 }
 
 // Goes through all of the tokens for this pool and updates their rewards claimable
-export function updatePoolRewardsClaimable(tranchedPool: TranchedPool, blockTimestamp: BigInt): void {
-  const goldfinchConfig = getGoldfinchConfig(blockTimestamp)
-  const backerRewardsContractAddress = goldfinchConfig.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.BackerRewards))
+export function updatePoolRewardsClaimable(
+  tranchedPool: TranchedPool,
+  tranchedPoolContract: TranchedPoolContract
+): void {
+  const configContract = GoldfinchConfigContract.bind(tranchedPoolContract.config())
+  const backerRewardsContractAddress = configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.BackerRewards))
   if (backerRewardsContractAddress.equals(Address.zero())) {
     return
   }

@@ -1,6 +1,7 @@
 import {Address} from "@graphprotocol/graph-ts"
 import {TranchedPool, User} from "../../generated/schema"
 import {
+  TranchedPool as TranchedPoolContract,
   CreditLineMigrated,
   DepositMade,
   DrawdownsPaused,
@@ -111,7 +112,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.save()
 
   updatePoolTokensRedeemable(tranchedPool)
-  updatePoolRewardsClaimable(tranchedPool, event.block.timestamp)
+  updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.tranchedPool = event.address.toHexString()
