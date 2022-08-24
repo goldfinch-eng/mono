@@ -4,67 +4,19 @@ import path from "path"
 
 import yaml from "js-yaml"
 
+import devDeployments from "../../protocol/deployments/all_dev.json"
+type ContractName = keyof typeof devDeployments["31337"]["localhost"]["contracts"]
+
 console.log("Updating subgraph-local.yaml")
 
-const devDeployments = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "../../protocol/deployments/all_dev.json")).toString()
-)
-
 const localhostContracts = devDeployments["31337"].localhost.contracts
-const deployedSeniorPoolAddress = localhostContracts.SeniorPool.address
-const deployedGoldfinchFactoryAddress = localhostContracts.GoldfinchFactory.address
-const deployedPoolTokensAddress = localhostContracts.PoolTokens.address
-const deployedGoldfinchConfigAddress = localhostContracts.GoldfinchConfig.address
-const deployedGfiAddress = localhostContracts.GFI.address
-const deployedStakingRewardsAddress = localhostContracts.StakingRewards.address
-const deployedBackerRewardsAddress = localhostContracts.BackerRewards.address
-const deployedUniqueIdentityAddress = localhostContracts.UniqueIdentity.address
-const deployedCommunityRewardsAddress = localhostContracts.CommunityRewards.address
-const deployedMerkleDistributorAddress = localhostContracts.MerkleDistributor.address
-const deployedBackerMerkleDistributorAddress = localhostContracts.BackerMerkleDistributor.address
 
 const subgraphManifest: any = yaml.load(fs.readFileSync(path.resolve(".", "subgraph.yaml")).toString())
 
 for (let dataSource of subgraphManifest.dataSources) {
   dataSource.network = "localhost"
   delete dataSource.source.startBlock
-  switch (dataSource.name) {
-    case "SeniorPool":
-      dataSource.source.address = deployedSeniorPoolAddress
-      break
-    case "GoldfinchFactory":
-      dataSource.source.address = deployedGoldfinchFactoryAddress
-      break
-    case "PoolTokens":
-      dataSource.source.address = deployedPoolTokensAddress
-      break
-    case "GFI":
-      dataSource.source.address = deployedGfiAddress
-      break
-    case "StakingRewards":
-      dataSource.source.address = deployedStakingRewardsAddress
-      break
-    case "BackerRewards":
-      dataSource.source.address = deployedBackerRewardsAddress
-      break
-    case "UniqueIdentity":
-      dataSource.source.address = deployedUniqueIdentityAddress
-      break
-    case "GoldfinchConfig":
-      dataSource.source.address = deployedGoldfinchConfigAddress
-      break
-    case "CommunityRewards":
-      dataSource.source.address = deployedCommunityRewardsAddress
-      break
-    case "MerkleDistributor":
-      dataSource.source.address = deployedMerkleDistributorAddress
-      break
-    case "BackerMerkleDistributor":
-      dataSource.source.address = deployedBackerMerkleDistributorAddress
-      break
-    default:
-      break
-  }
+  dataSource.source.address = localhostContracts[dataSource.name as ContractName].address
 }
 
 for (let dataSource of subgraphManifest.templates) {
