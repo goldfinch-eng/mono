@@ -2,16 +2,22 @@ import {Address, BigDecimal, BigInt, log} from "@graphprotocol/graph-ts"
 import {TranchedPool, JuniorTrancheInfo, SeniorTrancheInfo, CreditLine, TranchedPoolToken} from "../../generated/schema"
 import {TranchedPool as TranchedPoolContract, DepositMade} from "../../generated/templates/TranchedPool/TranchedPool"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
-import {SECONDS_PER_DAY, GFI_DECIMALS, USDC_DECIMALS, SECONDS_PER_YEAR, CONFIG_KEYS_ADDRESSES} from "../constants"
+import {
+  SECONDS_PER_DAY,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+  SECONDS_PER_YEAR,
+  CONFIG_KEYS_ADDRESSES,
+  CONFIG_KEYS_NUMBERS,
+  FIDU_DECIMALS,
+} from "../constants"
 import {getOrInitUser} from "./user"
 import {getOrInitCreditLine, initOrUpdateCreditLine} from "./credit_line"
 import {getOrInitSeniorPoolStatus} from "./senior_pool"
 import {
-  getLeverageRatio,
   getTotalDeposited,
   isV1StyleDeal,
   estimateJuniorAPY,
-  getReserveFeePercent,
   getEstimatedSeniorPoolInvestment,
   getJuniorDeposited,
   getCreatedAtOverride,
@@ -154,7 +160,9 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   }
 
   tranchedPool.juniorFeePercent = poolContract.juniorFeePercent()
-  tranchedPool.reserveFeePercent = getReserveFeePercent(timestamp)
+  tranchedPool.reserveFeePercent = BigInt.fromI32(100).div(
+    goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
+  )
   tranchedPool.estimatedSeniorPoolContribution = getEstimatedSeniorPoolInvestment(address, version, seniorPoolAddress)
   tranchedPool.totalDeposited = getTotalDeposited(address, juniorTranches, seniorTranches)
   tranchedPool.estimatedTotalAssets = tranchedPool.totalDeposited.plus(tranchedPool.estimatedSeniorPoolContribution)
@@ -184,7 +192,14 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.principalAmountRepaid = BigInt.zero()
     tranchedPool.interestAmountRepaid = BigInt.zero()
     // V1 style deals do not have a leverage ratio because all capital came from the senior pool
-    tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
+    if (tranchedPool.isV1StyleDeal) {
+      tranchedPool.estimatedLeverageRatio = null
+    } else {
+      // TODO leverage ratio should be updated after the senior pool invests in case it was lowered due to insufficient senior pool capital. It should also be expressed as a BigDecimal instead of a BigInt
+      tranchedPool.estimatedLeverageRatio = goldfinchConfigContract
+        .getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
+        .div(FIDU_DECIMALS)
+    }
   }
 
   tranchedPool.remainingJuniorCapacity = tranchedPool.estimatedLeverageRatio
@@ -419,15 +434,6 @@ function calculateAnnualizedGfiRewardsPerPrincipalDollar(
     rewardsPerPrincipalDollar.set(tranchedPoolAddress, annualizedPerPrincipalDollar)
   }
   return rewardsPerPrincipalDollar
-}
-
-export function updateTranchedPoolLeverageRatio(tranchedPoolAddress: Address, timestamp: BigInt): void {
-  const tranchedPool = TranchedPool.load(tranchedPoolAddress.toHexString())
-  if (!tranchedPool) {
-    return
-  }
-  tranchedPool.estimatedLeverageRatio = tranchedPool.isV1StyleDeal ? null : getLeverageRatio(timestamp)
-  tranchedPool.save()
 }
 
 // Performs a simple (not compound) interest calculation on the creditLine, using the limit as the principal amount

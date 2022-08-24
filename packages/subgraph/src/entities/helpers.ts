@@ -1,9 +1,7 @@
 import {Address, BigDecimal, BigInt, ethereum} from "@graphprotocol/graph-ts"
 import {JuniorTrancheInfo, SeniorTrancheInfo, TranchedPool, CreditLine, Transaction} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
-import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/GoldfinchConfig/GoldfinchConfig"
 import {FixedLeverageRatioStrategy} from "../../generated/templates/TranchedPool/FixedLeverageRatioStrategy"
-import {CONFIG_KEYS_NUMBERS, GOLDFINCH_CONFIG_ADDRESS, GOLDFINCH_LEGACY_CONFIG_ADDRESS} from "../constants"
 import {MAINNET_METADATA} from "../metadata"
 import {VERSION_BEFORE_V2_2} from "../utils"
 import {getOrInitUser} from "./user"
@@ -61,25 +59,6 @@ export function getEstimatedSeniorPoolInvestment(
   }
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
   return seniorPoolContract.estimateInvestment(tranchedPoolAddress)
-}
-
-export function getGoldfinchConfig(timestamp: BigInt): GoldfinchConfigContract {
-  const configAddress = timestamp.lt(BigInt.fromU64(1641349586))
-    ? GOLDFINCH_LEGACY_CONFIG_ADDRESS
-    : GOLDFINCH_CONFIG_ADDRESS
-  return GoldfinchConfigContract.bind(Address.fromString(configAddress))
-}
-
-export function getLeverageRatio(timestamp: BigInt): BigInt {
-  const goldfinchConfigContract = getGoldfinchConfig(timestamp)
-  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
-}
-
-export function getReserveFeePercent(timestamp: BigInt): BigInt {
-  const goldfinchConfigContract = getGoldfinchConfig(timestamp)
-  return BigInt.fromI32(100).div(
-    goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.ReserveDenominator))
-  )
 }
 
 /**
