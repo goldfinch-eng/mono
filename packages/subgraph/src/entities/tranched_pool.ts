@@ -248,7 +248,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   return tranchedPool
 }
 
-// TODO leverage ratio should really be expressed as a BigDecimal
+// TODO leverage ratio should really be expressed as a BigDecimal https://linear.app/goldfinch/issue/GFI-951/leverage-ratio-should-be-expressed-as-bigdecimal-in-subgraph
 export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigInt {
   return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
 }
