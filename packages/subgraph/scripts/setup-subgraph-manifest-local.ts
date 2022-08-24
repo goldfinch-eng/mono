@@ -71,12 +71,6 @@ for (let dataSource of subgraphManifest.templates) {
   dataSource.network = "localhost"
 }
 
-const codeSnippet = `// It's OK if this file shows diffs. The only reason it's committed is to prevent "module not found" errors. Unfortunately it doesn't seem The Graph allows env vars for this kind of thing.
-export const LOCALHOST_SENIOR_POOL_ADDRESS = "${deployedSeniorPoolAddress}"
-export const LOCALHOST_GOLDFINCH_CONFIG_ADDRESS = "${deployedGoldfinchConfigAddress}"
-`
-
 fs.writeFileSync(path.resolve(__dirname, "../subgraph-local.yaml"), yaml.dump(subgraphManifest, {lineWidth: -1}))
-fs.writeFileSync(path.resolve(__dirname, "../src/localhost-addresses.ts"), codeSnippet)
 
 console.log("Finished updating subgraph-local.yaml")

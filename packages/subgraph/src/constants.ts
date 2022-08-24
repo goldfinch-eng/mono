@@ -1,7 +1,4 @@
-import {dataSource, BigInt} from "@graphprotocol/graph-ts"
-
-import {MAINNET_SENIOR_POOL_ADDRESS} from "./mainnet-addresses"
-import {LOCALHOST_SENIOR_POOL_ADDRESS} from "./localhost-addresses"
+import {BigInt} from "@graphprotocol/graph-ts"
 
 export const V2_2_MIGRATION_TIME = "1643943600"
 export const BACKER_REWARDS_EPOCH = "1644021439"
@@ -10,12 +7,6 @@ export const GFI_DECIMALS = BigInt.fromString("1000000000000000000") // 18 zeroe
 export const USDC_DECIMALS = BigInt.fromString("1000000") // 6 zeroes
 export const SECONDS_PER_DAY = BigInt.fromString("86400")
 export const SECONDS_PER_YEAR = BigInt.fromString("31536000")
-
-export let SENIOR_POOL_ADDRESS = MAINNET_SENIOR_POOL_ADDRESS
-
-if (dataSource.network() == "localhost") {
-  SENIOR_POOL_ADDRESS = LOCALHOST_SENIOR_POOL_ADDRESS
-}
 
 // This config represents the enum config on protocol/core/ConfigOptions.sol where order is fixed
 // (search for `library ConfigOptions` and `CONFIG_KEYS_BY_TYPE`)
