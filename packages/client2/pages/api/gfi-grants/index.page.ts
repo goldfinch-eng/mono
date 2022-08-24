@@ -55,7 +55,7 @@ const filesToSearch = merkleDistributorFiles.concat(
 );
 
 const fileData = filesToSearch.map((file) => {
-  const pathname = path.resolve(`${process.cwd()}/pages/api/gfi-grants`, file);
+  const pathname = path.resolve(`${process.cwd()}/gfi-grants`, file);
   const grantManifest: GrantManifest = JSON.parse(
     fs.readFileSync(pathname, "utf-8")
   );

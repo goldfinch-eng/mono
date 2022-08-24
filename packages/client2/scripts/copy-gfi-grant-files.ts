@@ -7,7 +7,7 @@ console.log(
 );
 
 const sourceDir = "../protocol/blockchain_scripts/merkle";
-const destDir = "./pages/api/gfi-grants";
+const destDir = "./gfi-grants";
 
 fs.copyFileSync(
   path.resolve(
