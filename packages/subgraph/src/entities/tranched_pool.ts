@@ -191,15 +191,12 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.estimatedJuniorApyFromGfiRaw = BigDecimal.zero()
     tranchedPool.principalAmountRepaid = BigInt.zero()
     tranchedPool.interestAmountRepaid = BigInt.zero()
-  }
-  // V1 style deals do not have a leverage ratio because all capital came from the senior pool
-  if (tranchedPool.isV1StyleDeal) {
-    tranchedPool.estimatedLeverageRatio = null
-  } else {
-    // TODO leverage ratio should only be updated after the senior pool invests in case it was lowered due to insufficient senior pool capital. It should also be expressed as a BigDecimal instead of a BigInt
-    tranchedPool.estimatedLeverageRatio = goldfinchConfigContract
-      .getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio))
-      .div(FIDU_DECIMALS)
+    // V1 style deals do not have a leverage ratio because all capital came from the senior pool
+    if (tranchedPool.isV1StyleDeal) {
+      tranchedPool.estimatedLeverageRatio = null
+    } else {
+      tranchedPool.estimatedLeverageRatio = getLeverageRatioFromConfig(goldfinchConfigContract)
+    }
   }
 
   tranchedPool.remainingJuniorCapacity = tranchedPool.estimatedLeverageRatio
@@ -249,6 +246,11 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
   calculateApyFromGfiForAllPools(timestamp)
 
   return tranchedPool
+}
+
+// TODO leverage ratio should really be expressed as a BigDecimal
+export function getLeverageRatioFromConfig(goldfinchConfigContract: GoldfinchConfigContract): BigInt {
+  return goldfinchConfigContract.getNumber(BigInt.fromI32(CONFIG_KEYS_NUMBERS.LeverageRatio)).div(FIDU_DECIMALS)
 }
 
 class Repayment {

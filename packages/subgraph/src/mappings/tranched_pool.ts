@@ -22,6 +22,7 @@ import {
   initOrUpdateTranchedPool,
   updatePoolRewardsClaimable,
   updatePoolTokensRedeemable,
+  getLeverageRatioFromConfig,
 } from "../entities/tranched_pool"
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
@@ -76,6 +77,12 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 export function handleTrancheLocked(event: TrancheLocked): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
+
+  const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+  const goldfinchConfigContract = GoldfinchConfigContract.bind(tranchedPoolContract.config())
+  const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
+  tranchedPool.estimatedLeverageRatio = getLeverageRatioFromConfig(goldfinchConfigContract)
+  tranchedPool.save()
 }
 
 export function handleSliceCreated(event: SliceCreated): void {
