@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/gfi-grants/*": {
+    "pages/api/gfi-grants/index.page.ts": {
       "includeFiles": "pages/api/gfi-grants/**.json"
     }
   }
