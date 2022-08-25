@@ -135,11 +135,22 @@ type CurvePool {
   usdcPerLpToken: BigDecimal!
 }
 
+type BackerSecondaryMarketStat {
+  tokenCount: Int!
+  onSaleCount: Int!
+}
+
+type BackerSecondaryMarket {
+  collectionStats: BackerSecondaryMarketStat!
+  poolStats(poolAddress: String): BackerSecondaryMarketStat!
+}
+
 extend type Query {
   viewer: Viewer!
   isWalletModalOpen: Boolean!
   isVerificationModalOpen: Boolean!
   gfiPrice(fiat: SupportedFiat!): GfiPrice!
+  backerSecondaryMarket: BackerSecondaryMarket!
   currentBlock: BlockInfo
   curvePool: CurvePool!
 }

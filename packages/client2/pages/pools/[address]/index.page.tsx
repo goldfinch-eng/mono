@@ -35,6 +35,7 @@ import ComingSoonPanel from "./coming-soon-panel";
 import DealTermsTable from "./deal-terms-table";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
+import SecondaryMarketPanel from "./secondary-market-panel";
 import {
   StatusSection,
   TRANCHED_POOL_STAT_GRID_FIELDS,
@@ -215,6 +216,11 @@ export default function PoolPage() {
       "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
   }
 
+  const hasBacked = !!(
+    data?.user &&
+    (data.user.tranchedPoolTokens?.length > 0 || data?.user.zaps?.length > 0)
+  );
+
   return (
     <>
       <SEO title={tranchedPool?.name} />
@@ -342,9 +348,7 @@ export default function PoolPage() {
                 />
               )}
 
-              {data?.user &&
-              (data?.user.tranchedPoolTokens.length > 0 ||
-                data?.user.zaps.length > 0) ? (
+              {data.user && hasBacked ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
                   poolTokens={data.user.tranchedPoolTokens}
@@ -370,6 +374,14 @@ export default function PoolPage() {
 
               {poolStatus === PoolStatus.ComingSoon && (
                 <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
+              )}
+
+              {data.user && tranchedPool && poolStatus && (
+                <SecondaryMarketPanel
+                  hasBacked={hasBacked}
+                  poolStatus={poolStatus}
+                  poolAddress={tranchedPool.id}
+                />
               )}
             </div>
           ) : null}
