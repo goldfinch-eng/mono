@@ -63,6 +63,18 @@ export function handleTokenPrincipalWithdrawn(event: TokenPrincipalWithdrawn): v
   }
   token.principalAmount = token.principalAmount.minus(event.params.principalWithdrawn)
   token.principalRedeemable = token.principalRedeemable.minus(event.params.principalWithdrawn)
+  if (token.principalAmount.isZero()) {
+    const tranchedPool = TranchedPool.load(event.params.pool.toHexString())
+    const backerToRemove = event.params.owner.toHexString()
+    if (tranchedPool && tranchedPool.backers.includes(backerToRemove)) {
+      let backers = tranchedPool.backers
+      const index = backers.indexOf(backerToRemove)
+      backers.splice(index, 1)
+      tranchedPool.backers = backers
+      tranchedPool.numBackers = backers.length
+      tranchedPool.save()
+    }
+  }
   token.save()
 }
 
