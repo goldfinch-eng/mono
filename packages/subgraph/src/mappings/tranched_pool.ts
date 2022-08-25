@@ -1,4 +1,3 @@
-import {BigInt} from "@graphprotocol/graph-ts"
 import {TranchedPool} from "../../generated/schema"
 import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
@@ -26,6 +25,7 @@ import {
 } from "../entities/tranched_pool"
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
+import {getAddressFromConfig} from "../utils"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -57,8 +57,7 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   updatePoolCreditLine(event.address, event.block.timestamp)
 
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
-  const goldfinchConfigContract = GoldfinchConfigContract.bind(tranchedPoolContract.config())
-  const seniorPoolAddress = goldfinchConfigContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.SeniorPool))
+  const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
 
   const transaction = createTransactionFromEvent(
     event,

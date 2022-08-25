@@ -1,4 +1,4 @@
-import {Address, BigInt} from "@graphprotocol/graph-ts"
+import {Address} from "@graphprotocol/graph-ts"
 import {
   SeniorPool,
   DepositMade,
@@ -10,18 +10,16 @@ import {
   ReserveFundsCollected,
   WithdrawalMade,
 } from "../../generated/SeniorPool/SeniorPool"
-import {GoldfinchConfig} from "../../generated/SeniorPool/GoldfinchConfig"
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
 import {handleDeposit} from "../entities/user"
+import {getAddressFromConfig} from "../utils"
 
 // Helper function to extract the StakingRewards address from the config on Senior Pool
 function getStakingRewardsAddressFromSeniorPoolAddress(seniorPoolAddress: Address): Address {
   const seniorPoolContract = SeniorPool.bind(seniorPoolAddress)
-  const configContract = GoldfinchConfig.bind(seniorPoolContract.config())
-  const stakingRewardsAddress = configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.StakingRewards))
-  return stakingRewardsAddress
+  return getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.StakingRewards)
 }
 
 export function handleDepositMade(event: DepositMade): void {

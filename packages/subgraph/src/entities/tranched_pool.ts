@@ -22,7 +22,15 @@ import {
   getJuniorDeposited,
   getCreatedAtOverride,
 } from "./helpers"
-import {bigDecimalToBigInt, bigIntMin, ceil, isAfterV2_2, VERSION_BEFORE_V2_2, VERSION_V2_2} from "../utils"
+import {
+  bigDecimalToBigInt,
+  bigIntMin,
+  ceil,
+  getAddressFromConfig,
+  isAfterV2_2,
+  VERSION_BEFORE_V2_2,
+  VERSION_V2_2,
+} from "../utils"
 import {getBackerRewards} from "./backer_rewards"
 import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 
@@ -452,8 +460,7 @@ export function updatePoolRewardsClaimable(
   tranchedPool: TranchedPool,
   tranchedPoolContract: TranchedPoolContract
 ): void {
-  const configContract = GoldfinchConfigContract.bind(tranchedPoolContract.config())
-  const backerRewardsContractAddress = configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.BackerRewards))
+  const backerRewardsContractAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.BackerRewards)
   if (backerRewardsContractAddress.equals(Address.zero())) {
     return
   }

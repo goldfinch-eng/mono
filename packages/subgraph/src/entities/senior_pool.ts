@@ -1,12 +1,12 @@
 import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 import {SeniorPool, SeniorPoolStatus} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
-import {GoldfinchConfig} from "../../generated/SeniorPool/GoldfinchConfig"
 import {Fidu as FiduContract} from "../../generated/SeniorPool/Fidu"
 import {USDC as UsdcContract} from "../../generated/SeniorPool/USDC"
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {calculateEstimatedInterestForTranchedPool} from "./helpers"
 import {getStakingRewards} from "./staking_rewards"
+import {getAddressFromConfig} from "../utils"
 
 export function getOrInitSeniorPool(address: Address): SeniorPool {
   let seniorPool = SeniorPool.load(address.toHexString())
@@ -72,9 +72,8 @@ export function updatePoolStatus(seniorPoolAddress: Address): void {
   let seniorPool = getOrInitSeniorPool(seniorPoolAddress)
 
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
-  const configContract = GoldfinchConfig.bind(seniorPoolContract.config())
-  const fidu_contract = FiduContract.bind(configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.Fidu)))
-  const usdc_contract = UsdcContract.bind(configContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.USDC)))
+  const fidu_contract = FiduContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.Fidu))
+  const usdc_contract = UsdcContract.bind(getAddressFromConfig(seniorPoolContract, CONFIG_KEYS_ADDRESSES.USDC))
 
   let sharePrice = seniorPoolContract.sharePrice()
   let compoundBalance = seniorPoolContract.compoundBalance()

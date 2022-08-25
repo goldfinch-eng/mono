@@ -1,4 +1,4 @@
-import {store, BigInt} from "@graphprotocol/graph-ts"
+import {store} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition, Zap} from "../../generated/schema"
 import {SeniorPool as SeniorPoolContract} from "../../generated/SeniorPool/SeniorPool"
 import {Zapper as ZapperContract} from "../../generated/templates/TranchedPool/Zapper"
@@ -7,16 +7,14 @@ import {
   DepositMade as TranchedPoolDepositMade,
   WithdrawalMade as TranchedPoolWithdrawalMade,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import {GoldfinchConfig as GoldfinchConfigContract_TranchedPool} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {PoolTokens as PoolTokensContract, Transfer as PoolTokenTransfer} from "../../generated/PoolTokens/PoolTokens"
-import {GoldfinchConfig as GoldfinchConfigContract_PoolTokens} from "../../generated/PoolTokens/GoldfinchConfig"
 
 import {CONFIG_KEYS_ADDRESSES} from "../constants"
+import {getAddressFromConfig} from "../utils"
 
 export function createZapMaybe(event: TranchedPoolDepositMade): void {
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
-  const goldfinchConfigContract = GoldfinchConfigContract_TranchedPool.bind(tranchedPoolContract.config())
-  const seniorPoolAddress = goldfinchConfigContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.SeniorPool))
+  const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
 
   const zapperRole = seniorPoolContract.try_ZAPPER_ROLE()
@@ -40,8 +38,7 @@ export function createZapMaybe(event: TranchedPoolDepositMade): void {
 
 export function deleteZapAfterUnzapMaybe(event: TranchedPoolWithdrawalMade): void {
   const tranchedPoolContract = TranchedPoolContract.bind(event.address)
-  const goldfinchConfigContract = GoldfinchConfigContract_TranchedPool.bind(tranchedPoolContract.config())
-  const seniorPoolAddress = goldfinchConfigContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.SeniorPool))
+  const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
 
   const zapperRole = seniorPoolContract.try_ZAPPER_ROLE()
@@ -62,8 +59,7 @@ export function deleteZapAfterUnzapMaybe(event: TranchedPoolWithdrawalMade): voi
 
 export function deleteZapAfterClaimMaybe(event: PoolTokenTransfer): void {
   const tranchedPoolContract = PoolTokensContract.bind(event.address)
-  const goldfinchConfigContract = GoldfinchConfigContract_PoolTokens.bind(tranchedPoolContract.config())
-  const seniorPoolAddress = goldfinchConfigContract.getAddress(BigInt.fromI32(CONFIG_KEYS_ADDRESSES.SeniorPool))
+  const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
   const seniorPoolContract = SeniorPoolContract.bind(seniorPoolAddress)
 
   const zapperRole = seniorPoolContract.try_ZAPPER_ROLE()
