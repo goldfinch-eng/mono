@@ -1,6 +1,7 @@
-import {Address} from "@graphprotocol/graph-ts"
-import {TranchedPool, User} from "../../generated/schema"
+import {TranchedPool} from "../../generated/schema"
+import {GoldfinchConfig as GoldfinchConfigContract} from "../../generated/templates/TranchedPool/GoldfinchConfig"
 import {
+  TranchedPool as TranchedPoolContract,
   CreditLineMigrated,
   DepositMade,
   DrawdownsPaused,
@@ -12,18 +13,19 @@ import {
   DrawdownMade,
   PaymentApplied,
 } from "../../generated/templates/TranchedPool/TranchedPool"
-import {SENIOR_POOL_ADDRESS} from "../constants"
+import {CONFIG_KEYS_ADDRESSES} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {
   handleDeposit,
   updatePoolCreditLine,
   initOrUpdateTranchedPool,
-  updateTranchedPoolLeverageRatio,
   updatePoolRewardsClaimable,
   updatePoolTokensRedeemable,
+  getLeverageRatioFromConfig,
 } from "../entities/tranched_pool"
 import {getOrInitUser} from "../entities/user"
 import {createZapMaybe, deleteZapAfterUnzapMaybe} from "../entities/zapper"
+import {getAddressFromConfig} from "../utils"
 
 export function handleCreditLineMigrated(event: CreditLineMigrated): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
@@ -54,11 +56,12 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
 
+  const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+  const seniorPoolAddress = getAddressFromConfig(tranchedPoolContract, CONFIG_KEYS_ADDRESSES.SeniorPool)
+
   const transaction = createTransactionFromEvent(
     event,
-    event.params.owner.equals(Address.fromString(SENIOR_POOL_ADDRESS))
-      ? "SENIOR_POOL_REDEMPTION"
-      : "TRANCHED_POOL_WITHDRAWAL",
+    event.params.owner.equals(seniorPoolAddress) ? "SENIOR_POOL_REDEMPTION" : "TRANCHED_POOL_WITHDRAWAL",
     event.params.owner
   )
   transaction.transactionHash = event.transaction.hash
@@ -72,8 +75,13 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
 
 export function handleTrancheLocked(event: TrancheLocked): void {
   initOrUpdateTranchedPool(event.address, event.block.timestamp)
-  updateTranchedPoolLeverageRatio(event.address, event.block.timestamp)
   updatePoolCreditLine(event.address, event.block.timestamp)
+
+  const tranchedPoolContract = TranchedPoolContract.bind(event.address)
+  const goldfinchConfigContract = GoldfinchConfigContract.bind(tranchedPoolContract.config())
+  const tranchedPool = assert(TranchedPool.load(event.address.toHexString()))
+  tranchedPool.estimatedLeverageRatio = getLeverageRatioFromConfig(goldfinchConfigContract)
+  tranchedPool.save()
 }
 
 export function handleSliceCreated(event: SliceCreated): void {
@@ -111,7 +119,7 @@ export function handlePaymentApplied(event: PaymentApplied): void {
   tranchedPool.save()
 
   updatePoolTokensRedeemable(tranchedPool)
-  updatePoolRewardsClaimable(tranchedPool, event.block.timestamp)
+  updatePoolRewardsClaimable(tranchedPool, TranchedPoolContract.bind(event.address))
 
   const transaction = createTransactionFromEvent(event, "TRANCHED_POOL_REPAYMENT", event.params.payer)
   transaction.tranchedPool = event.address.toHexString()

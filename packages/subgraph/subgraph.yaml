@@ -1,6 +1,7 @@
 specVersion: 0.0.4
-features:
-  - nonFatalErrors
+# Had to be disabled because it's not supported on the Decentralized Network
+# features:
+#   - nonFatalErrors
 schema:
   file: ./schema.graphql
 dataSources:
@@ -28,6 +29,8 @@ dataSources:
           file: ./abis/Fidu.json
         - name: USDC
           file: ./abis/USDC.json
+        - name: GoldfinchConfig
+          file: ./abis/GoldfinchConfig.json
       eventHandlers:
         - event: DepositMade(indexed address,uint256,uint256)
           handler: handleDepositMade

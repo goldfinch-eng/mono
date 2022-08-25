@@ -5,6 +5,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "module": "CommonJS"
+    "module": "CommonJS",
+    "resolveJsonModule": true
   }
 }
