@@ -77,7 +77,12 @@ gql`
       estimatedLeverageRatio
       fundableAt
       isPaused
-      numBackers
+      # This is being used to get the number of backers
+      tokens(where: { principalAmount_gt: 0 }) {
+        user {
+          id
+        }
+      }
       juniorTranches {
         lockedUntil
       }
@@ -215,6 +220,10 @@ export default function PoolPage() {
       "This offering is only available to non-U.S. persons. This offering has not been registered under the U.S. Securities Act of 1933 (“Securities Act”), as amended, and may not be offered or sold in the United States or to a U.S. person (as defined in Regulation S promulgated under the Securities Act) absent registration or an applicable exemption from the registration requirements.";
   }
 
+  const numBackers = new Set(
+    (data?.tranchedPool?.tokens ?? []).map((token) => token.user.id)
+  ).size;
+
   return (
     <>
       <SEO title={tranchedPool?.name} />
@@ -244,9 +253,9 @@ export default function PoolPage() {
             }
           >
             {poolStatus === PoolStatus.Full
-              ? ["Filled", `${tranchedPool?.numBackers} Backers`]
+              ? ["Filled", `${numBackers} Backers`]
               : poolStatus === PoolStatus.Open
-              ? ["Open", `${tranchedPool?.numBackers} Backers`]
+              ? ["Open", `${numBackers} Backers`]
               : poolStatus === PoolStatus.ComingSoon
               ? "Coming Soon"
               : poolStatus === PoolStatus.Repaid

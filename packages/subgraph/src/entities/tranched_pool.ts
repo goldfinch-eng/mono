@@ -55,13 +55,6 @@ export function handleDeposit(event: DepositMade): void {
     juniorTrancheInfo.save()
   }
 
-  if (!tranchedPool.backers.includes(backer.id)) {
-    const addresses = tranchedPool.backers
-    addresses.push(backer.id)
-    tranchedPool.backers = addresses
-    tranchedPool.numBackers = addresses.length
-  }
-
   tranchedPool.estimatedTotalAssets = tranchedPool.estimatedTotalAssets.plus(event.params.amount)
   tranchedPool.juniorDeposited = tranchedPool.juniorDeposited.plus(event.params.amount)
   const creditLine = CreditLine.load(tranchedPool.creditLine)
@@ -193,9 +186,7 @@ export function initOrUpdateTranchedPool(address: Address, timestamp: BigInt): T
     tranchedPool.remainingCapacity = BigInt.zero()
   }
   if (isCreating) {
-    tranchedPool.backers = []
     tranchedPool.tokens = []
-    tranchedPool.numBackers = 0
     tranchedPool.estimatedJuniorApyFromGfiRaw = BigDecimal.zero()
     tranchedPool.principalAmountRepaid = BigInt.zero()
     tranchedPool.interestAmountRepaid = BigInt.zero()
