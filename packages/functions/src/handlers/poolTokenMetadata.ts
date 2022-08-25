@@ -117,7 +117,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const termEndTime = new BigNumber(tranchedPool.creditLine.termEndTime.toString())
   const termRemainingInSeconds = termEndTime.minus(nowSinceEpoch).toNumber()
   const secondsInDay = 60 * 60 * 24
-  const termRemainingInDays = Math.floor(termRemainingInSeconds / secondsInDay)
+  const termRemainingInDays = Math.max(0, Math.floor(termRemainingInSeconds / secondsInDay))
   const backerApr = new BigNumber(tranchedPool.estimatedJuniorApy.toString())
 
   const totalLoanSize = new BigNumber(tranchedPool.creditLine.limit.toString()).dividedBy(1e6)
@@ -180,7 +180,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "TERM_REMAINING",
-      value: `${termRemainingInDays} days`,
+      value: termEndTime.toNumber() === 0 ? "Not started" : `${termRemainingInDays} days`,
     },
     {
       type: "TOTAL_AMOUNT_REPAID",
