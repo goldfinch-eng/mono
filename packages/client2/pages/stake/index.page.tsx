@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
 import {
@@ -42,7 +42,16 @@ gql`
       id
       latestPoolStatus {
         id
+        estimatedApy
+        estimatedApyFromGfiRaw
         sharePrice
+      }
+    }
+    gfiPrice(fiat: USD) @client {
+      lastUpdated
+      price {
+        amount
+        symbol
       }
     }
     viewer @client {
@@ -153,6 +162,11 @@ export default function StakePage() {
               }
               fiduPositions={data?.user?.stakedFiduPositions ?? []}
               curvePositions={data?.user?.stakedCurvePositions ?? []}
+              gfiApi={
+                seniorPool?.latestPoolStatus?.estimatedApyFromGfiRaw ??
+                FixedNumber.from(0)
+              }
+              gfiPrice={data?.gfiPrice?.price?.amount ?? 0}
               onComplete={refetch}
             />
           </div>

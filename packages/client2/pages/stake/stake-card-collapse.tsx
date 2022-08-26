@@ -1,9 +1,10 @@
 import clsx from "clsx";
+import { FixedNumber } from "ethers";
 import Image from "next/image";
 import { useState, ReactNode } from "react";
 
 import { Icon } from "@/components/design-system";
-import { formatCrypto } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount } from "@/lib/graphql/generated";
 
 import stakeGfImg from "./stake-gf.png";
@@ -12,7 +13,7 @@ interface StakeCardCollapseProps {
   children: ReactNode;
   heading: string;
   subheading: string;
-  apy?: number | null;
+  apy: FixedNumber;
   available?: CryptoAmount | null;
   staked?: CryptoAmount | null;
 }
@@ -49,7 +50,9 @@ export default function StakeCardCollapse({
             </div>
           </div>
         </div>
-        <div className="col-span-2 text-right text-xl">{apy}</div>
+        <div className="col-span-2 text-right text-xl">
+          {formatPercent(apy)}
+        </div>
         <div className="col-span-2 text-right text-xl">
           {available ? formatCrypto(available) : null}
         </div>

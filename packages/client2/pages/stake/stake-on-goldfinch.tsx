@@ -1,8 +1,9 @@
 import { Tab } from "@headlessui/react";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { Paragraph } from "@/components/design-system";
 import { StakedPositionType, CryptoAmount } from "@/lib/graphql/generated";
+import { computeApyFromGfiInFiat } from "@/lib/pools";
 
 import type { SimpleStakedPosition } from "./index.page";
 import StakeCardCollapse from "./stake-card-collapse";
@@ -23,6 +24,8 @@ interface StakeOnGoldfinchProps {
   curvePositions: SimpleStakedPosition[];
   usdcBalance: CryptoAmount;
   sharePrice: BigNumber;
+  gfiApi: FixedNumber;
+  gfiPrice: number;
   onComplete: () => void;
 }
 
@@ -35,6 +38,8 @@ export default function StakeOnGoldfinch({
   sharePrice,
   fiduPositions,
   curvePositions,
+  gfiApi,
+  gfiPrice,
   onComplete,
 }: StakeOnGoldfinchProps) {
   return (
@@ -52,7 +57,7 @@ export default function StakeOnGoldfinch({
           subheading="Goldfinch Token"
           staked={fiduStaked}
           available={fiduBalance}
-          apy={0}
+          apy={computeApyFromGfiInFiat(gfiApi, gfiPrice)}
         >
           <StakeTabGroup>
             <Tab.List>
@@ -103,7 +108,7 @@ export default function StakeOnGoldfinch({
           subheading="Curve LP token"
           staked={curveStaked}
           available={curveBalance}
-          apy={0}
+          apy={FixedNumber.from(0)}
         >
           <StakeTabGroup>
             <Tab.List>
