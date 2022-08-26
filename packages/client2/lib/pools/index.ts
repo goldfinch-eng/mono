@@ -10,8 +10,10 @@ import {
   UserEligibilityFieldsFragment,
   UidType,
   TransactionCategory,
+  StakedPositionType,
+  SeniorPoolStakedPosition,
 } from "@/lib/graphql/generated";
-import { Erc20 } from "@/types/ethers-contracts";
+import { CurveLp, Erc20, Fidu } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
 
@@ -87,6 +89,7 @@ export function sharesToUsdc(numShares: BigNumber, sharePrice: BigNumber) {
     .mul(sharePrice)
     .div(fiduMantissa)
     .div(sharePriceMantissa.div(usdcMantissa));
+
   return { token: SupportedCrypto.Usdc, amount };
 }
 
@@ -205,7 +208,7 @@ export async function approveErc20IfRequired({
   account: string;
   spender: string;
   amount: BigNumber;
-  erc20Contract: Erc20;
+  erc20Contract: Erc20 | Fidu | CurveLp;
 }) {
   const allowance = await erc20Contract.allowance(account, spender);
   const isApprovalRequired = allowance.lt(amount);
@@ -292,4 +295,59 @@ export function getTransactionIcon(transaction: {
   category: TransactionCategory;
 }): IconNameType {
   return transactionIcons[transaction.category];
+}
+
+/**
+ * Mapping of position type to value for transactions
+ */
+export const positionTypeToValue: Record<StakedPositionType, string> = {
+  [StakedPositionType.Fidu]: "0",
+  [StakedPositionType.CurveLp]: "1",
+};
+
+/**
+ * Get the optimal positions to unstake
+ * @param positions     Array of the positions
+ * @param amount        The amount to unstake
+ * @returns Sorted array of positions to unstake
+ */
+export function getOptimalPositionsToUnstake(
+  positions: Partial<SeniorPoolStakedPosition>[],
+  amount: BigNumber
+): { id: string; amount: BigNumber }[] {
+  const unstakeableAmount = positions.reduce(
+    (total, position) => total.add(position.amount || BigNumber.from(0)),
+    BigNumber.from(0)
+  );
+
+  if (unstakeableAmount.lt(amount)) {
+    throw new Error(`Cannot unstake more than ${unstakeableAmount}.`);
+  }
+
+  const sortedUnstakeablePositions = positions
+    .slice()
+    .sort((a, b) =>
+      a.endTime && b.endTime ? b.endTime.sub(a.endTime).toNumber() : 0
+    );
+
+  let amountRemaining = BigNumber.from(amount);
+
+  return sortedUnstakeablePositions
+    .reduce((acc: { id: string; amount: BigNumber }[], position) => {
+      if (!position.id) return acc;
+
+      const id = position.id;
+      const positionAmount = position.amount
+        ? position.amount
+        : BigNumber.from(0);
+
+      const amountToUnstake = positionAmount.lt(amountRemaining)
+        ? positionAmount
+        : amountRemaining;
+
+      amountRemaining = amountRemaining.sub(amountToUnstake);
+
+      return acc.concat([{ id, amount: amountToUnstake }]);
+    }, [])
+    .filter(({ amount }) => amount.gt(BigNumber.from(0)));
 }

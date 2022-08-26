@@ -219,6 +219,8 @@ export default function useStakingData(): StakingData {
     const ticker = positionTypeToTicker(positionType)
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
 
+    console.log(optimalPositionsToUnstake)
+
     for (const {tokenId, amount} of optimalPositionsToUnstake) {
       assertNonNullable(tokenId)
       assertNonNullable(amount)
@@ -322,6 +324,7 @@ export default function useStakingData(): StakingData {
         .div(getMultiplierDecimals(Ticker.FIDU))
         .div(getMultiplierDecimals(Ticker.FIDU))
         .times(getMultiplierDecimals(Ticker.USDC))
+
       await sendFromUser(
         zapper.contract.userWallet.methods.zapStakeToCurve(
           position.tokenId,

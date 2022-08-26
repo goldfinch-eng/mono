@@ -64,6 +64,9 @@ const addresses = {
   BackerMerkleDirectDistributor:
     contracts.BackerMerkleDirectDistributor.address,
   BackerRewards: contracts.BackerRewards.address,
+  CurveLP:
+    contracts.TestFiduUSDCCurveLP?.address ??
+    "0x80aa1a80a30055daa084e599836532f3e58c95e2",
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

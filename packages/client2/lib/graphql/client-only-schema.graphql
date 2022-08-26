@@ -119,7 +119,7 @@ type Viewer {
   usdcBalance: CryptoAmount
   gfiBalance: CryptoAmount
   fiduBalance: CryptoAmount
-
+  curveLpBalance: CryptoAmount
   gfiGrants: [GfiGrant!]!
 }
 

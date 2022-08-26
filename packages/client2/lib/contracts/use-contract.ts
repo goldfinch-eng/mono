@@ -19,6 +19,7 @@ import {
   MerkleDirectDistributor__factory,
   BackerMerkleDirectDistributor__factory,
   BackerRewards__factory,
+  CurveLp__factory,
 } from "@/types/ethers-contracts";
 
 import { useWallet } from "../wallet";
@@ -39,6 +40,7 @@ const supportedContracts = {
   MerkleDirectDistributor: MerkleDirectDistributor__factory.connect,
   BackerMerkleDirectDistributor: BackerMerkleDirectDistributor__factory.connect,
   BackerRewards: BackerRewards__factory.connect,
+  CurveLP: CurveLp__factory.connect,
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

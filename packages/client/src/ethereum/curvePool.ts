@@ -20,6 +20,9 @@ export function getCurvePoolContract(goldfinchProtocol: GoldfinchProtocol): Web3
     // Otherwise use the existing Curve pool contract if we're on mainnet or mainnet forking
     address = MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
   }
+
+  console.log(address)
+
   const readOnly = new web3.readOnly.eth.Contract(
     CurvePoolContract.abi as AbiItem[],
     address
