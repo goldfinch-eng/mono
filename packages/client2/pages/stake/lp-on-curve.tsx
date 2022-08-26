@@ -16,6 +16,12 @@ export default function LpOnCurve({
 }: LpOnCurveProps) {
   return (
     <>
+      <div className="mb-3 grid grid-cols-11 items-center px-6 text-sand-500">
+        <div className="col-span-6">Token to stake</div>
+        <div className="col-span-2 text-right">Est. APY</div>
+        <div className="col-span-2 text-right">Available to deposit</div>
+      </div>
+
       <div className="mb-3">
         <CurveCardCollapse
           heading="Deposit FIDU"

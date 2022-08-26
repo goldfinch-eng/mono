@@ -52,8 +52,8 @@ export default function CurveCardCollapse({
             </div>
           </div>
         </div>
-        <div className="col-span-2 text-xl">{apy}</div>
-        <div className="col-span-2 text-xl">
+        <div className="col-span-2 text-right text-xl">{apy}</div>
+        <div className="col-span-2 text-right text-xl">
           {available ? formatCrypto(available, { includeSymbol: false }) : null}
         </div>
         <div className="col-span-1 text-right">

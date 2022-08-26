@@ -49,11 +49,11 @@ export default function StakeCardCollapse({
             </div>
           </div>
         </div>
-        <div className="col-span-2 text-xl">{apy}</div>
-        <div className="col-span-2 text-xl">
+        <div className="col-span-2 text-right text-xl">{apy}</div>
+        <div className="col-span-2 text-right text-xl">
           {available ? formatCrypto(available) : null}
         </div>
-        <div className="col-span-2 text-xl">
+        <div className="col-span-2 text-right text-xl">
           {staked ? formatCrypto(staked) : null}
         </div>
         <div className="col-span-1 text-right">
