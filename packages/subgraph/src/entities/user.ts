@@ -12,7 +12,7 @@ export function getOrInitUser(address: Address): User {
     user.isUsEntity = false
     user.isNonUsEntity = false
     user.isGoListed = false
-    user.tokens = []
+    user.tranchedPoolTokens = []
     user.save()
   }
   return user

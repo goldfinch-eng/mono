@@ -39,14 +39,10 @@ export function handleTokenMinted(event: TokenMinted): void {
     token.stakingRewardsClaimed = BigInt.zero()
     token.save()
 
-    const tokensOnPool = tranchedPool.tokens
-    tokensOnPool.push(token.id)
-    tranchedPool.tokens = tokensOnPool
+    tranchedPool.tokens = tranchedPool.tokens.concat([token.id])
     tranchedPool.save()
 
-    const tokensOnUser = user.tokens
-    tokensOnUser.push(token.id)
-    user.tokens = tokensOnUser
+    user.tranchedPoolTokens = user.tranchedPoolTokens.concat([token.id])
     user.save()
   }
 }
@@ -64,8 +60,8 @@ export function handleTokenRedeemed(event: TokenRedeemed): void {
 }
 
 function isUserFullyWithdrawnFromPool(user: User, tranchedPool: TranchedPool): boolean {
-  for (let i = 0; i < user.tokens.length; i++) {
-    const token = assert(TranchedPoolToken.load(user.tokens[i]))
+  for (let i = 0; i < user.tranchedPoolTokens.length; i++) {
+    const token = assert(TranchedPoolToken.load(user.tranchedPoolTokens[i]))
     if (token.tranchedPool == tranchedPool.id && !token.principalAmount.isZero()) {
       return false
     }
@@ -100,9 +96,9 @@ export function handleTransfer(event: Transfer): void {
   }
   const oldOwner = getOrInitUser(event.params.from)
   const newOwner = getOrInitUser(event.params.to)
-  oldOwner.tokens = removeFromList(oldOwner.tokens, tokenId)
+  oldOwner.tranchedPoolTokens = removeFromList(oldOwner.tranchedPoolTokens, tokenId)
   oldOwner.save()
-  newOwner.tokens = newOwner.tokens.concat([tokenId])
+  newOwner.tranchedPoolTokens = newOwner.tranchedPoolTokens.concat([tokenId])
   newOwner.save()
   token.user = newOwner.id
   token.save()
