@@ -100,6 +100,7 @@ export default function LpCurveForm({
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <Checkbox
+        id={`checkbox-staking-${type}`}
         {...register("isStaking")}
         label={`I want to stake my Curve LP tokens to earn GFI rewards`}
         inputSize="lg"

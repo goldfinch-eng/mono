@@ -59,8 +59,6 @@ export default function GfiPage() {
     skip: !account,
   });
 
-  console.log(data);
-
   const grantsWithTokens = useMemo(() => {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
       const gfiGrants = data.viewer.gfiGrants;
