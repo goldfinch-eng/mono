@@ -322,7 +322,6 @@ export default function useStakingData(): StakingData {
         .div(getMultiplierDecimals(Ticker.FIDU))
         .div(getMultiplierDecimals(Ticker.FIDU))
         .times(getMultiplierDecimals(Ticker.USDC))
-
       await sendFromUser(
         zapper.contract.userWallet.methods.zapStakeToCurve(
           position.tokenId,
