@@ -9,7 +9,7 @@ import {
 import {TranchedPool, TranchedPoolToken, User} from "../../generated/schema"
 import {getOrInitUser} from "../entities/user"
 import {deleteZapAfterClaimMaybe} from "../entities/zapper"
-import {appendToList, removeFromList} from "../utils"
+import {removeFromList} from "../utils"
 
 export function handleTokenBurned(event: TokenBurned): void {
   const token = TranchedPoolToken.load(event.params.tokenId.toString())
@@ -102,7 +102,7 @@ export function handleTransfer(event: Transfer): void {
   const newOwner = getOrInitUser(event.params.to)
   oldOwner.tokens = removeFromList(oldOwner.tokens, tokenId)
   oldOwner.save()
-  newOwner.tokens = appendToList(newOwner.tokens, tokenId)
+  newOwner.tokens = newOwner.tokens.concat([tokenId])
   newOwner.save()
   token.user = newOwner.id
   token.save()

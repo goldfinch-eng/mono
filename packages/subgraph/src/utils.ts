@@ -62,17 +62,6 @@ export function getAddressFromConfig<T extends ConfigBearer>(contract: T, target
 }
 
 /**
- * Returns a copy of the original array with the desired item appended to the end.
- * @param list
- * @param itemToAdd
- */
-export function appendToList<T>(list: T[], itemToAdd: T): T[] {
-  const listCopy = list.slice(0)
-  listCopy.push(itemToAdd)
-  return listCopy
-}
-
-/**
  * Takes an array and an item to be removed from the array. Returns a copy of the array with the desired item removed. If the desired item is not present in the original array, then this returns a copy of that array.
  * @param list
  * @param itemToRemove
