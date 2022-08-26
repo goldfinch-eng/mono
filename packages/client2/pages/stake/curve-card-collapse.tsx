@@ -6,8 +6,8 @@ import { Icon } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import { CryptoAmount } from "@/lib/graphql/generated";
 
-import stakeFiduImg from "../../public/ui/stake-fidu.png";
-import stakeUsdcImg from "../../public/ui/stake-usdc.png";
+import stakeFiduImg from "./stake-fidu.png";
+import stakeUsdcImg from "./stake-usdc.png";
 
 interface StakeCardCollapseProps {
   children: ReactNode;
