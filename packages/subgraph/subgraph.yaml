@@ -13,7 +13,7 @@ dataSources:
       startBlock: 2680860
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - SeniorPool
@@ -47,7 +47,7 @@ dataSources:
       startBlock: 2680881
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - User
@@ -82,7 +82,7 @@ dataSources:
       startBlock: 2680843
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - User
@@ -112,7 +112,7 @@ dataSources:
       startBlock: 2680834
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - User
@@ -141,7 +141,7 @@ dataSources:
       startBlock: 2680892
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - StakingRewards
@@ -166,7 +166,7 @@ dataSources:
       startBlock: 2680915
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
         - BackerRewards
@@ -190,7 +190,7 @@ templates:
       abi: SeniorPool
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/senior_pool.ts
       entities:
@@ -234,7 +234,7 @@ templates:
       abi: Pool
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/v1_pool.ts
       entities:
@@ -256,7 +256,7 @@ templates:
       abi: GoldfinchFactory
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/goldfinch_factory.ts
       entities:
@@ -290,7 +290,7 @@ templates:
       abi: TranchedPool
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/tranched_pool.ts
       entities:
@@ -356,7 +356,7 @@ templates:
       abi: PoolTokens
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/pool_tokens.ts
       entities:
@@ -403,7 +403,7 @@ templates:
       abi: StakingRewards
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/staking_rewards.ts
       entities:
@@ -430,7 +430,7 @@ templates:
       abi: BackerRewards
     mapping:
       kind: ethereum/events
-      apiVersion: 0.0.5
+      apiVersion: 0.0.6
       language: wasm/assemblyscript
       file: ./src/mappings/backer_rewards.ts
       entities:
