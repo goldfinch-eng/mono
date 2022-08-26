@@ -119,7 +119,7 @@ gql`
     user(id: $userId) {
       id
       ...SupplyPanelUserFields
-      tokens(where: { tranchedPool: $tranchedPoolAddress }) {
+      tranchedPoolTokens(where: { tranchedPool: $tranchedPoolAddress }) {
         ...WithdrawalPanelPoolTokenFields
       }
       zaps(where: { tranchedPool: $tranchedPoolAddress }) {
@@ -343,10 +343,11 @@ export default function PoolPage() {
               )}
 
               {data?.user &&
-              (data?.user.tokens.length > 0 || data?.user.zaps.length > 0) ? (
+              (data?.user.tranchedPoolTokens.length > 0 ||
+                data?.user.zaps.length > 0) ? (
                 <WithdrawalPanel
                   tranchedPoolAddress={tranchedPool.id}
-                  poolTokens={data.user.tokens}
+                  poolTokens={data.user.tranchedPoolTokens}
                   zaps={data.user.zaps}
                   isPoolLocked={
                     !tranchedPool.juniorTranches[0].lockedUntil.isZero() &&
@@ -363,7 +364,7 @@ export default function PoolPage() {
                 <RepaymentProgressPanel
                   poolStatus={poolStatus}
                   tranchedPool={tranchedPool}
-                  userPoolTokens={user?.tokens ?? []}
+                  userPoolTokens={user?.tranchedPoolTokens ?? []}
                 />
               ) : null}
 
