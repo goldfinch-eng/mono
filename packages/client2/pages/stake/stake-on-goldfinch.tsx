@@ -19,7 +19,8 @@ interface StakeOnGoldfinchProps {
   fiduStaked: CryptoAmount;
   curveBalance: CryptoAmount;
   curveStaked: CryptoAmount;
-  positions: SimpleStakedPosition[];
+  fiduPositions: SimpleStakedPosition[];
+  curvePositions: SimpleStakedPosition[];
   usdcBalance: CryptoAmount;
   sharePrice: BigNumber;
   onComplete: () => void;
@@ -30,25 +31,21 @@ export default function StakeOnGoldfinch({
   fiduStaked,
   curveBalance,
   curveStaked,
-  positions,
   usdcBalance,
   sharePrice,
+  fiduPositions,
+  curvePositions,
   onComplete,
 }: StakeOnGoldfinchProps) {
-  const fiduPositions = positions.filter(
-    (pos) =>
-      pos.positionType === StakedPositionType.Fidu &&
-      pos.amount.gt(BigNumber.from(0))
-  );
-
-  const curvePositions = positions.filter(
-    (pos) =>
-      pos.positionType === StakedPositionType.CurveLp &&
-      pos.amount.gt(BigNumber.from(0))
-  );
-
   return (
     <>
+      <div className="mb-3 grid grid-cols-12 items-center px-6 text-sand-500">
+        <div className="col-span-5">Token to stake</div>
+        <div className="col-span-2 text-right">Est. APY</div>
+        <div className="col-span-2 text-right">Available to stake</div>
+        <div className="col-span-2 text-right">Staked</div>
+      </div>
+
       <div className="mb-3">
         <StakeCardCollapse
           heading="FIDU"

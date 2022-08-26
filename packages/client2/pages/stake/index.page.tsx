@@ -1,12 +1,10 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useEffect, useState } from "react";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
 import {
   SupportedCrypto,
   useStakePageQuery,
-  StakedPositionType,
   SeniorPoolStakedPosition,
 } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
@@ -17,7 +15,20 @@ import StakeOnGoldfinch from "./stake-on-goldfinch";
 gql`
   query StakePage($userId: ID!) {
     user(id: $userId) {
-      seniorPoolStakedPositions {
+      stakedFiduPositions: seniorPoolStakedPositions(
+        where: { positionType: Fidu, amount_not: "0" }
+      ) {
+        id
+        initialAmount
+        amount
+        positionType
+        startTime
+        totalRewardsClaimed
+        endTime @client
+      }
+      stakedCurvePositions: seniorPoolStakedPositions(
+        where: { positionType: CurveLP, amount_not: "0" }
+      ) {
         id
         initialAmount
         amount
@@ -67,24 +78,15 @@ export default function StakePage() {
     ? data.seniorPools[0]
     : undefined;
 
-  const [fiduStaked, setFiduStaked] = useState(BigNumber.from(0));
-  const [curveStaked, setCurveStaked] = useState(BigNumber.from(0));
+  const fiduStaked = (data?.user?.stakedFiduPositions ?? []).reduce(
+    (total, pos) => total.add(pos.amount),
+    BigNumber.from(0)
+  );
 
-  useEffect(() => {
-    if (data && data.user) {
-      setFiduStaked(
-        data.user.seniorPoolStakedPositions
-          .filter((pos) => pos.positionType === StakedPositionType.Fidu)
-          .reduce((total, pos) => total.add(pos.amount), BigNumber.from(0))
-      );
-
-      setCurveStaked(
-        data.user.seniorPoolStakedPositions
-          .filter((pos) => pos.positionType === StakedPositionType.CurveLp)
-          .reduce((total, pos) => total.add(pos.amount), BigNumber.from(0))
-      );
-    }
-  }, [data]);
+  const curveStaked = (data?.user?.stakedCurvePositions ?? []).reduce(
+    (total, pos) => total.add(pos.amount),
+    BigNumber.from(0)
+  );
 
   return (
     <div>
@@ -149,7 +151,8 @@ export default function StakePage() {
                   ? seniorPool.latestPoolStatus.sharePrice
                   : BigNumber.from(0)
               }
-              positions={data?.user?.seniorPoolStakedPositions ?? []}
+              fiduPositions={data?.user?.stakedFiduPositions ?? []}
+              curvePositions={data?.user?.stakedCurvePositions ?? []}
               onComplete={refetch}
             />
           </div>
