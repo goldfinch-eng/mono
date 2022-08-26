@@ -9,7 +9,7 @@ export const NAV_ITEMS = [
   {label: "Earn", href: "https://beta.app.goldfinch.finance/earn"},
   {label: "Borrow", href: "/borrow"},
   {label: "GFI", href: "https://beta.app.goldfinch.finance/gfi"},
-  {label: "Stake", href: "/stake"},
+  {label: "Stake", href: "https://beta.app.goldfinch.finance/stake"},
   {label: "Transactions", href: "https://beta.app.goldfinch.finance/transactions"},
 ]
 
