@@ -21,8 +21,6 @@ export function getCurvePoolContract(goldfinchProtocol: GoldfinchProtocol): Web3
     address = MAINNET_FIDU_USDC_CURVE_LP_ADDRESS
   }
 
-  console.log(address)
-
   const readOnly = new web3.readOnly.eth.Contract(
     CurvePoolContract.abi as AbiItem[],
     address

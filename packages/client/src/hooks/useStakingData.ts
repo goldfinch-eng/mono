@@ -219,8 +219,6 @@ export default function useStakingData(): StakingData {
     const ticker = positionTypeToTicker(positionType)
     const optimalPositionsToUnstake = getOptimalPositionsToUnstake(amount, positionType)
 
-    console.log(optimalPositionsToUnstake)
-
     for (const {tokenId, amount} of optimalPositionsToUnstake) {
       assertNonNullable(tokenId)
       assertNonNullable(amount)
