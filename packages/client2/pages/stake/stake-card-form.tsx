@@ -1,4 +1,4 @@
-import { utils } from "ethers";
+import { utils, BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
@@ -100,6 +100,22 @@ export default function StakeCardForm({
     setValue("amount", formatCrypto(balance, { includeSymbol: false }));
   };
 
+  const validateMax = async (value: string) => {
+    const parsedValue = utils.parseUnits(
+      value,
+      positionType === StakedPositionType.Fidu
+        ? FIDU_DECIMALS
+        : CURVE_LP_DECIMALS
+    );
+
+    if (parsedValue.gt(balance.amount)) {
+      return "Amount exceeds available balance";
+    }
+    if (parsedValue.lte(BigNumber.from(0))) {
+      return "Must be more than 0";
+    }
+  };
+
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
       <div className="flex items-start gap-2">
@@ -109,7 +125,7 @@ export default function StakeCardForm({
             name="amount"
             label={`${action === "STAKE" ? "Stake" : "Unstake"} amount`}
             mask={`amount ${tokenMask ?? balance.token}`}
-            rules={{ required: "Required" }}
+            rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
             labelClassName="!text-sm !mb-3"
             onMaxClick={handleMax}

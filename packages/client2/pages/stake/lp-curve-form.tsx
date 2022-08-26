@@ -95,6 +95,21 @@ export default function LpCurveForm({
     setValue("amount", formatCrypto(balance, { includeSymbol: false }));
   };
 
+  const validateMax = async (value: string) => {
+    const parsedValue = utils.parseUnits(
+      value,
+      type === "FIDU" ? FIDU_DECIMALS : USDC_DECIMALS
+    );
+
+    if (parsedValue.gt(balance.amount)) {
+      return "Amount exceeds available balance";
+    }
+
+    if (parsedValue.lte(BigNumber.from(0))) {
+      return "Must be more than 0";
+    }
+  };
+
   const watchIsStaking = watch("isStaking");
 
   return (
@@ -120,7 +135,7 @@ export default function LpCurveForm({
             name="amount"
             label="Amount"
             mask={`amount ${balance.token}`}
-            rules={{ required: "Required" }}
+            rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
             labelClassName="!text-sm !mb-3"
             onMaxClick={handleMax}

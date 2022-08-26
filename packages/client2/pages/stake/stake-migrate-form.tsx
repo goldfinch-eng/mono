@@ -143,6 +143,28 @@ export default function StakeMigrateForm({
     }
   };
 
+  const validateMax = async (balance: BigNumber, max: BigNumber) => {
+    if (balance.gt(max)) {
+      return "Amount exceeds available balance";
+    }
+
+    if (balance.lte(BigNumber.from(0))) {
+      return "Must be more than 0";
+    }
+  };
+
+  const validateMaxFidu = async (value: string) => {
+    const parsedValue = utils.parseUnits(value, FIDU_DECIMALS);
+
+    return validateMax(parsedValue, fiduStaked.amount);
+  };
+
+  const validateMaxUsdc = async (value: string) => {
+    const parsedValue = utils.parseUnits(value, USDC_DECIMALS);
+
+    return validateMax(parsedValue, usdcBalance.amount);
+  };
+
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit} className="relative z-10">
       <div className="mb-8 max-w-xl">
@@ -151,7 +173,7 @@ export default function StakeMigrateForm({
           name="fiduAmount"
           label={`FIDU amount`}
           mask={`amount FIDU`}
-          rules={{ required: "Required" }}
+          rules={{ required: "Required", validate: validateMaxFidu }}
           textSize="xl"
           labelClassName="!text-sm !mb-3"
           onMaxClick={handleMaxFidu}
@@ -161,14 +183,14 @@ export default function StakeMigrateForm({
         />
       </div>
 
-      <div className="flex items-end gap-2">
+      <div className="flex items-start gap-2">
         <div className="max-w-xl flex-1">
           <DollarInput
             control={control}
             name="usdcAmount"
             label={`USDC amount`}
             mask={`amount USDC`}
-            rules={{ required: "Required" }}
+            rules={{ required: "Required", validate: validateMaxUsdc }}
             textSize="xl"
             labelClassName="!text-sm !mb-3"
             onMaxClick={handleMaxUsdc}
