@@ -78,7 +78,7 @@ gql`
       fundableAt
       isPaused
       # This is being used to get the number of backers
-      tokens(where: { principalAmount_gt: 0 }, first: 1000) {
+      tokens(where: { principalAmount_gt: 0 }) {
         user {
           id
         }
