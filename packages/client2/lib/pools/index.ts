@@ -13,7 +13,7 @@ import {
   StakedPositionType,
   SeniorPoolStakedPosition,
 } from "@/lib/graphql/generated";
-import { CurveLp, Erc20, Fidu } from "@/types/ethers-contracts";
+import { Erc20, Fidu } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
 
@@ -208,7 +208,7 @@ export async function approveErc20IfRequired({
   account: string;
   spender: string;
   amount: BigNumber;
-  erc20Contract: Erc20 | Fidu | CurveLp;
+  erc20Contract: Erc20 | Fidu;
 }) {
   const allowance = await erc20Contract.allowance(account, spender);
   const isApprovalRequired = allowance.lt(amount);

@@ -79,7 +79,7 @@ export type SimpleStakedPosition = Omit<
 export default function StakePage() {
   const { account } = useWallet();
 
-  const { data, loading, refetch } = useStakePageQuery({
+  const { data, error, loading, refetch } = useStakePageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
@@ -103,8 +103,14 @@ export default function StakePage() {
         Stake
       </Heading>
 
-      {!account && !loading ? (
+      {!account ? (
         <div>You must connect your wallet to stake your tokens</div>
+      ) : loading ? (
+        <div>Loading</div>
+      ) : error ? (
+        <div className="text-clay-500">{error.message}</div>
+      ) : !data ? (
+        <div className="text-clay-500">Nothing to see here</div>
       ) : (
         <div>
           <div className="mb-3 flex items-center justify-between">
