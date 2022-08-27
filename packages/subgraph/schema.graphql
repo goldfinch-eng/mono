@@ -125,14 +125,14 @@ type PoolBacker @entity {
 
 type CreditLine @entity {
   id: ID!
-  tranchedPool: TranchedPool!
+  tranchedPool: TranchedPool
   limit: BigInt!
   maxLimit: BigInt!
   interestApr: BigInt!
   balance: BigInt!
-  remainingPeriodDueAmount: BigInt!
-  remainingTotalDueAmount: BigInt!
-  availableCredit: BigInt!
+  remainingPeriodDueAmount: BigInt
+  remainingTotalDueAmount: BigInt
+  availableCredit: BigInt
   interestAccruedAsOf: BigInt!
   paymentPeriodInDays: BigInt!
   termInDays: BigInt!
@@ -176,11 +176,11 @@ enum TranchedPoolCreditLineVersion {
 type TranchedPool @entity {
   id: ID!
   estimatedJuniorApy: BigDecimal!
-  estimatedJuniorApyFromGfiRaw: BigDecimal!
+  estimatedJuniorApyFromGfiRaw: BigDecimal
   estimatedTotalAssets: BigInt!
   estimatedLeverageRatio: BigInt!
-  remainingCapacity: BigInt!
-  remainingJuniorCapacity: BigInt!
+  remainingCapacity: BigInt
+  remainingJuniorCapacity: BigInt
   creditLine: CreditLine!
   isPaused: Boolean!
   """
@@ -194,7 +194,7 @@ type TranchedPool @entity {
   fundableAt: BigInt!
   estimatedSeniorPoolContribution: BigInt!
   backers: [PoolBacker!]!
-  numBackers: Int!
+  numBackers: Int
   tokens: [TranchedPoolToken!]!
   deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
