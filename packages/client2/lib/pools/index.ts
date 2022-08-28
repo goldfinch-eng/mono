@@ -312,7 +312,7 @@ export const positionTypeToValue: Record<StakedPositionType, string> = {
  * @returns Sorted array of positions to unstake
  */
 export function getOptimalPositionsToUnstake(
-  positions: Partial<SeniorPoolStakedPosition>[],
+  positions: Pick<SeniorPoolStakedPosition, "id" | "amount" | "endTime">[],
   amount: BigNumber
 ): { id: string; amount: BigNumber }[] {
   const unstakeableAmount = positions.reduce(

@@ -1,3 +1,4 @@
+import { gql } from "@apollo/client";
 import { BigNumber, utils } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -5,7 +6,10 @@ import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
+import {
+  CryptoAmount,
+  MigrateFormPositionFieldsFragment,
+} from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
   getOptimalPositionsToUnstake,
@@ -14,12 +18,18 @@ import { sharesToUsdc, usdcToShares } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import type { SimpleStakedPosition } from "./index.page";
+export const MIGRATE_FORM_POSITION_FIELDS = gql`
+  fragment MigrateFormPositionFields on SeniorPoolStakedPosition {
+    id
+    amount
+    endTime @client
+  }
+`;
 
 interface StakeCardMigrateFormProps {
   fiduStaked: CryptoAmount;
   usdcBalance: CryptoAmount;
-  positions: SimpleStakedPosition[];
+  positions: MigrateFormPositionFieldsFragment[];
   sharePrice: BigNumber;
   onComplete: () => void;
 }

@@ -10,9 +10,11 @@ import {
 import { useWallet } from "@/lib/wallet";
 
 import LpOnCurve from "./lp-on-curve";
+import { MIGRATE_FORM_POSITION_FIELDS } from "./stake-migrate-form";
 import StakeOnGoldfinch from "./stake-on-goldfinch";
 
 gql`
+  ${MIGRATE_FORM_POSITION_FIELDS}
   query StakePage($userId: ID!) {
     user(id: $userId) {
       stakedFiduPositions: seniorPoolStakedPositions(
@@ -25,6 +27,7 @@ gql`
         startTime
         totalRewardsClaimed
         endTime @client
+        ...MigrateFormPositionFields
       }
       stakedCurvePositions: seniorPoolStakedPositions(
         where: { positionType: CurveLP, amount_not: "0" }
@@ -36,6 +39,7 @@ gql`
         startTime
         totalRewardsClaimed
         endTime @client
+        ...MigrateFormPositionFields
       }
     }
     seniorPools(first: 1) {
@@ -109,12 +113,10 @@ export default function StakePage() {
 
       {!account ? (
         <div>You must connect your wallet to stake your tokens</div>
-      ) : loading ? (
+      ) : loading || !data ? (
         <div>Loading</div>
       ) : error ? (
         <div className="text-clay-500">{error.message}</div>
-      ) : !data ? (
-        <div className="text-clay-500">Nothing to see here</div>
       ) : (
         <div>
           <div className="mb-3 flex items-center justify-between">
