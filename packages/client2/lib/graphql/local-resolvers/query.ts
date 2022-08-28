@@ -88,4 +88,9 @@ export const rootQueryResolvers: Resolvers[string] = {
       timestamp: currentBlock.timestamp,
     };
   },
+  async curvePool() {
+    return {
+      __typename: "CurvePool",
+    };
+  },
 };

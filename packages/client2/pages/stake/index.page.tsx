@@ -68,6 +68,9 @@ gql`
         amount
       }
     }
+    curvePool @client {
+      estimatedCurveStakingApyRaw
+    }
   }
 `;
 
@@ -81,6 +84,7 @@ export default function StakePage() {
 
   const { data, error, loading, refetch } = useStakePageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
+    skip: !account,
   });
 
   const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.sharePrice
