@@ -96,8 +96,8 @@ export default function StakeMigrateForm({
       await toastTransaction({
         transaction: zapperContract.zapStakeToCurve(
           position.id,
-          position.amount.toString().split(".")[0],
-          usdcEquivalent.amount.toString().split(".")[0]
+          position.amount,
+          usdcEquivalent.amount
         ),
         pendingPrompt: `Migrating position ID:${position.id} submitted`,
       });
