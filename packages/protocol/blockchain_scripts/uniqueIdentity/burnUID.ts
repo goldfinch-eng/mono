@@ -131,8 +131,8 @@ async function destroyUser(
 }
 
 function getEnvVars() {
-  const network = process.env.NETWORK
-  assertNonNullable(network, "NETWORK undefined")
+  const network = process.env.BURN_UID_NETWORK
+  assertNonNullable(network, "BURN_UID_NETWORK undefined")
   if (!(network === "mainnet" || network === "localhost")) {
     throw new AssertionError(`Expected 'mainnet' or 'localhost' for NETWORK environment var but got ${network}`)
   }
@@ -144,9 +144,9 @@ function getEnvVars() {
   console.log(`burn account: ${burnAccount}`)
 
   // The id type of the UID to burn belonging to `burnAccount`.
-  const burnIdType = process.env.BURN_ID_TYPE
-  assertNonNullable(burnIdType, "BURN_ID_TYPE undefined")
-  console.log(`burnIdType: ${burnIdType}`)
+  const burnUidType = process.env.BURN_UID_TYPE
+  assertNonNullable(burnUidType, "BURN_UID_TYPE undefined")
+  console.log(`burnIdType: ${burnUidType}`)
 
   // This is a relayer with the SIGNER_ROLE on the mainnet UniqueIdentity contract
   // Its signature will allow us to call `burn`. Its address is also whitelisted on
@@ -166,17 +166,17 @@ function getEnvVars() {
   const burnerPrivateKey = process.env.BURNER_PRIVATE_KEY
   assertNonNullable(burnerPrivateKey, "BURNER_PRIVATE_KEY undefined")
 
-  return {network, burnAccount, burnIdType, credentials, burnerPrivateKey, prepareRemintAccount, personaApiKey}
+  return {network, burnAccount, burnUidType, credentials, burnerPrivateKey, prepareRemintAccount, personaApiKey}
 }
 
 async function main(): Promise<void> {
   const network = hre.network.name
-  const {burnAccount, burnIdType, credentials, burnerPrivateKey, prepareRemintAccount} = getEnvVars()
+  const {burnAccount, burnUidType, credentials, burnerPrivateKey, prepareRemintAccount} = getEnvVars()
 
   console.log("Running burnUID script...")
   console.log(`network: ${network}`)
   console.log(`burnAccount: ${burnAccount}`)
-  console.log(`burnIdType: ${burnIdType}`)
+  console.log(`burnUidType: ${burnUidType}`)
   console.log(`defender api key: ${credentials.apiKey}`)
   console.log(`prepareRemintAccount: ${prepareRemintAccount}`)
 
@@ -186,10 +186,10 @@ async function main(): Promise<void> {
   // Remove Firebase user state BEFORE burning the UID so there's no window of opportunity after
   // successful burning in which the Unique Identity Signer could be used to re-mint using the
   // obsolete Persona-related state.
-  await destroyUser(burnAccount, parseInt(burnIdType), network, signer, provider)
+  await destroyUser(burnAccount, parseInt(burnUidType), network, signer, provider)
 
   // On-chain burn. Make sure the burnerPrivateKey wallet is sufficiently funded with ETH
-  await burnUID(burnAccount, burnIdType, signer, burnerPrivateKey)
+  await burnUID(burnAccount, burnUidType, signer, burnerPrivateKey)
 
   if (prepareRemintAccount) {
     // Replacing the user's Persona account's reference id will allow them to pass document verification
