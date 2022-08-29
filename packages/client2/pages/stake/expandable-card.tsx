@@ -10,10 +10,10 @@ interface ExpandableCardProps {
   heading: string;
   subheading: string;
   headingLabel: string;
-  slot1?: ReactNode;
-  slot1Label?: string;
-  slot2?: ReactNode;
-  slot2Label?: ReactNode;
+  slot1: ReactNode;
+  slot1Label: string;
+  slot2: ReactNode;
+  slot2Label: ReactNode;
   slot3?: ReactNode;
   slot3Label?: ReactNode;
   hideTopLabels?: boolean;
@@ -40,8 +40,12 @@ export function ExpandableCard({
   const scale = iconHeight / icon.height;
   const iconWidth = icon.width * scale;
 
-  const slot1PlacementClass =
-    "col-end-12 col-span-4 hidden xs:block md:col-end-8 md:col-span-2";
+  const hasSlot3 = !!(slot3 && slot3Label);
+
+  const slot1PlacementClass = clsx(
+    "col-end-12 col-span-4 hidden xs:block md:col-span-2",
+    hasSlot3 ? "md:col-end-8" : "md:col-end-10"
+  );
   return (
     <div className={className}>
       {!hideTopLabels ? (
@@ -86,7 +90,7 @@ export function ExpandableCard({
           <div className="col-span-2 hidden justify-self-end text-xl text-sand-700 md:block">
             {slot3}
           </div>
-          <div className="col-end-13 flex items-center justify-self-end">
+          <div className="col-end-13 row-start-1 flex items-center justify-self-end">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="before:absolute before:inset-0"
