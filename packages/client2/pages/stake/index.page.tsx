@@ -159,22 +159,6 @@ export default function StakePage() {
           </Paragraph>
 
           <div className="mb-15">
-            {/* <StakeOnGoldfinch
-              fiduStaked={fiduStaked}
-              fiduBalance={fiduBalance}
-              curveStaked={curveStaked}
-              curveBalance={curveBalance}
-              usdcBalance={usdcBalance}
-              sharePrice={data.seniorPools[0].latestPoolStatus.sharePrice}
-              fiduPositions={fiduPositions}
-              curvePositions={curvePositions}
-              gfiApi={computeApyFromGfiInFiat(
-                data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
-                data.gfiPrice.price.amount
-              )}
-              gfiPrice={data?.gfiPrice?.price?.amount ?? 0}
-              onComplete={refetch}
-            /> */}
             <div className="mb-3 grid grid-cols-12 items-center px-6 text-sand-500">
               <div className="col-span-5">Token to stake</div>
               <div className="col-span-2 text-right">Est. APY</div>
