@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   StakedPositionType,
   SupportedCrypto,
@@ -10,10 +11,12 @@ import {
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import { ExpandableCard } from "./expandable-card";
 import LpOnCurve from "./lp-on-curve";
-import StakeCardCollapse from "./stake-card-collapse";
 import StakeCardForm, { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
 import { Tab } from "./stake-card-tabs";
+import curveIcon from "./stake-curve.png";
+import gfIcon from "./stake-gf.png";
 import StakeMigrateForm, {
   MIGRATE_FORM_POSITION_FIELDS,
 } from "./stake-migrate-form";
@@ -153,113 +156,115 @@ export default function StakePage() {
             Or, migrate your staked FIDU to the Curve FIDU-USDC pool.
           </Paragraph>
 
-          <div className="mb-15">
-            <div className="mb-3 grid grid-cols-12 items-center px-6 text-sand-500">
-              <div className="col-span-5">Token to stake</div>
-              <div className="col-span-2 text-right">Est. APY</div>
-              <div className="col-span-2 text-right">Available to stake</div>
-              <div className="col-span-2 text-right">Staked</div>
-            </div>
+          <ExpandableCard
+            className="mb-3"
+            icon={gfIcon}
+            heading="FIDU"
+            subheading="Goldfinch Token"
+            headingLabel="Token to stake"
+            slot1={`${formatPercent(
+              computeApyFromGfiInFiat(
+                data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
+                data.gfiPrice.price.amount
+              )
+            )} GFI`}
+            slot1Label="Est. APY"
+            slot2={formatCrypto(fiduBalance)}
+            slot2Label="Available"
+            slot3={formatCrypto(fiduStaked)}
+            slot3Label="Staked"
+          >
+            <Tab.Group>
+              <Tab.List>
+                <Tab>Stake</Tab>
+                <Tab>Unstake</Tab>
+                <Tab>Migrate</Tab>
+              </Tab.List>
+              <Tab.Panels>
+                <Tab.Panel>
+                  <StakeCardForm
+                    action="STAKE"
+                    balance={fiduBalance}
+                    positions={fiduPositions}
+                    positionType={StakedPositionType.Fidu}
+                    onComplete={refetch}
+                  />
+                </Tab.Panel>
+                <Tab.Panel>
+                  <StakeCardForm
+                    action="UNSTAKE"
+                    balance={fiduStaked}
+                    positions={fiduPositions}
+                    positionType={StakedPositionType.Fidu}
+                    onComplete={refetch}
+                  />
+                </Tab.Panel>
+                <Tab.Panel>
+                  <Paragraph className="mb-6">
+                    Migrate your staked FIDU to deposit it in the Curve
+                    FIDU-USDC liquidity pool, without needing to unstake it on
+                    Goldfinch.
+                  </Paragraph>
+                  <StakeMigrateForm
+                    fiduStaked={fiduStaked}
+                    usdcBalance={usdcBalance}
+                    positions={fiduPositions}
+                    sharePrice={data.seniorPools[0].latestPoolStatus.sharePrice}
+                    onComplete={refetch}
+                  />
+                </Tab.Panel>
+              </Tab.Panels>
+            </Tab.Group>
+          </ExpandableCard>
 
-            <div className="mb-3">
-              <StakeCardCollapse
-                heading="FIDU"
-                subheading="Goldfinch Token"
-                staked={fiduStaked}
-                available={fiduBalance}
-                apy={computeApyFromGfiInFiat(
-                  data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
-                  data.gfiPrice.price.amount
-                )}
-              >
-                <Tab.Group>
-                  <Tab.List>
-                    <Tab>Stake</Tab>
-                    <Tab>Unstake</Tab>
-                    <Tab>Migrate</Tab>
-                  </Tab.List>
-                  <Tab.Panels>
-                    <Tab.Panel>
-                      <StakeCardForm
-                        action="STAKE"
-                        balance={fiduBalance}
-                        positions={fiduPositions}
-                        positionType={StakedPositionType.Fidu}
-                        onComplete={refetch}
-                      />
-                    </Tab.Panel>
-                    <Tab.Panel>
-                      <StakeCardForm
-                        action="UNSTAKE"
-                        balance={fiduStaked}
-                        positions={fiduPositions}
-                        positionType={StakedPositionType.Fidu}
-                        onComplete={refetch}
-                      />
-                    </Tab.Panel>
-                    <Tab.Panel>
-                      <Paragraph className="mb-6">
-                        Migrate your staked FIDU to deposit it in the Curve
-                        FIDU-USDC liquidity pool, without needing to unstake it
-                        on Goldfinch.
-                      </Paragraph>
-                      <StakeMigrateForm
-                        fiduStaked={fiduStaked}
-                        usdcBalance={usdcBalance}
-                        positions={fiduPositions}
-                        sharePrice={
-                          data.seniorPools[0].latestPoolStatus.sharePrice
-                        }
-                        onComplete={refetch}
-                      />
-                    </Tab.Panel>
-                  </Tab.Panels>
-                </Tab.Group>
-              </StakeCardCollapse>
-            </div>
-
-            <div>
-              <StakeCardCollapse
-                heading="FIDU-USDC-F"
-                subheading="Curve LP token"
-                staked={curveStaked}
-                available={curveBalance}
-                apy={computeApyFromGfiInFiat(
-                  data.curvePool.estimatedCurveStakingApyRaw,
-                  data.gfiPrice.price.amount
-                )}
-              >
-                <Tab.Group>
-                  <Tab.List>
-                    <Tab>Stake</Tab>
-                    <Tab>Unstake</Tab>
-                  </Tab.List>
-                  <Tab.Panels>
-                    <Tab.Panel>
-                      <StakeCardForm
-                        action="STAKE"
-                        balance={curveBalance}
-                        positions={curvePositions}
-                        positionType={StakedPositionType.CurveLp}
-                        tokenMask="FIDU-USDC-F"
-                        onComplete={refetch}
-                      />
-                    </Tab.Panel>
-                    <Tab.Panel>
-                      <StakeCardForm
-                        action="UNSTAKE"
-                        balance={curveStaked}
-                        positions={curvePositions}
-                        positionType={StakedPositionType.CurveLp}
-                        tokenMask="FIDU-USDC-F"
-                        onComplete={refetch}
-                      />
-                    </Tab.Panel>
-                  </Tab.Panels>
-                </Tab.Group>
-              </StakeCardCollapse>
-            </div>
-          </div>
+          <ExpandableCard
+            className="mb-15"
+            icon={curveIcon}
+            heading="FIDU-USDC-F"
+            subheading="Curve LP Token"
+            headingLabel="Token to stake"
+            slot1={`${formatPercent(
+              computeApyFromGfiInFiat(
+                data.curvePool.estimatedCurveStakingApyRaw,
+                data.gfiPrice.price.amount
+              )
+            )} GFI`}
+            slot1Label="Est. APY"
+            slot2={formatCrypto(curveBalance)}
+            slot2Label="Available"
+            slot3={formatCrypto(curveStaked)}
+            slot3Label="Staked"
+            hideTopLabels
+          >
+            <Tab.Group>
+              <Tab.List>
+                <Tab>Stake</Tab>
+                <Tab>Unstake</Tab>
+              </Tab.List>
+              <Tab.Panels>
+                <Tab.Panel>
+                  <StakeCardForm
+                    action="STAKE"
+                    balance={curveBalance}
+                    positions={curvePositions}
+                    positionType={StakedPositionType.CurveLp}
+                    tokenMask="FIDU-USDC-F"
+                    onComplete={refetch}
+                  />
+                </Tab.Panel>
+                <Tab.Panel>
+                  <StakeCardForm
+                    action="UNSTAKE"
+                    balance={curveStaked}
+                    positions={curvePositions}
+                    positionType={StakedPositionType.CurveLp}
+                    tokenMask="FIDU-USDC-F"
+                    onComplete={refetch}
+                  />
+                </Tab.Panel>
+              </Tab.Panels>
+            </Tab.Group>
+          </ExpandableCard>
 
           <div className="mb-3 flex items-center justify-between">
             <Heading level={5} className="!font-normal">
