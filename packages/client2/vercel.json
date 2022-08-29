@@ -3,20 +3,5 @@
     "pages/api/gfi-grants/index.page.ts": {
       "includeFiles": "gfi-grants/*.json"
     }
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'self'"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        }
-      ]
-    }
-  ]
+  }
 }
