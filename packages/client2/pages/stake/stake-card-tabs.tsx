@@ -32,16 +32,7 @@ function TabPanel({ children }: { children: ReactNode }) {
   return <HeadlessUiTab.Panel className="mt-8">{children}</HeadlessUiTab.Panel>;
 }
 
-function TabGroup({ children }: { children: ReactNode }) {
-  return (
-    <div className="relative z-10">
-      {/* The z-10 here keeps the Tab group sitting above the card background. Good because otherwise clicking the card background causes the card to collapse */}
-      <HeadlessUiTab.Group>{children}</HeadlessUiTab.Group>
-    </div>
-  );
-}
-
-Tab.Group = TabGroup;
+Tab.Group = HeadlessUiTab.Group;
 Tab.List = TabList;
 Tab.Panels = HeadlessUiTab.Panels;
 Tab.Panel = TabPanel;

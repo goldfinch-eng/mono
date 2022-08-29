@@ -103,7 +103,8 @@ export function ExpandableCard({
           </div>
         </div>
         {isExpanded ? (
-          <>
+          <div className="relative z-10">
+            {/* The relative z-10 classes are here to make sure this content stacks on top of the card, and doesn't cause the card to collapse when clicked */}
             <hr className="my-6 border-t border-sand-300" />
             <div className="gap mb-6 flex flex-col gap-x-12 gap-y-3 xs:flex-row md:hidden">
               <DetailHelper
@@ -123,7 +124,7 @@ export function ExpandableCard({
               />
             </div>
             <div>{children}</div>
-          </>
+          </div>
         ) : null}
       </div>
     </div>
