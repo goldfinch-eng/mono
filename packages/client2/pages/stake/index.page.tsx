@@ -2,18 +2,16 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
-import {
-  SupportedCrypto,
-  useStakePageQuery,
-  SeniorPoolStakedPosition,
-} from "@/lib/graphql/generated";
+import { SupportedCrypto, useStakePageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
 import LpOnCurve from "./lp-on-curve";
+import { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
 import { MIGRATE_FORM_POSITION_FIELDS } from "./stake-migrate-form";
 import StakeOnGoldfinch from "./stake-on-goldfinch";
 
 gql`
+  ${STAKE_FORM_POSITION_FIELDS}
   ${MIGRATE_FORM_POSITION_FIELDS}
   query StakePage($userId: ID!) {
     user(id: $userId) {
@@ -21,23 +19,18 @@ gql`
         where: { positionType: Fidu, amount_not: "0" }
       ) {
         id
-        initialAmount
         amount
         positionType
-        startTime
-        totalRewardsClaimed
         endTime @client
+        ...StakeFormPositionFields
         ...MigrateFormPositionFields
       }
       stakedCurvePositions: seniorPoolStakedPositions(
         where: { positionType: CurveLP, amount_not: "0" }
       ) {
         id
-        initialAmount
         amount
         positionType
-        startTime
-        totalRewardsClaimed
         endTime @client
         ...MigrateFormPositionFields
       }
@@ -77,11 +70,6 @@ gql`
     }
   }
 `;
-
-export type SimpleStakedPosition = Omit<
-  SeniorPoolStakedPosition,
-  "claimable" | "granted" | "rewardEarnRate" | "user"
->;
 
 export default function StakePage() {
   const { account } = useWallet();

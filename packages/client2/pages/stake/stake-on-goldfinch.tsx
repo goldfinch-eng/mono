@@ -2,10 +2,13 @@ import { Tab } from "@headlessui/react";
 import { BigNumber, FixedNumber } from "ethers";
 
 import { Paragraph } from "@/components/design-system";
-import { StakedPositionType, CryptoAmount } from "@/lib/graphql/generated";
+import {
+  StakedPositionType,
+  CryptoAmount,
+  StakeFormPositionFieldsFragment,
+} from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat } from "@/lib/pools";
 
-import type { SimpleStakedPosition } from "./index.page";
 import StakeCardCollapse from "./stake-card-collapse";
 import StakeCardForm from "./stake-card-form";
 import {
@@ -20,8 +23,8 @@ interface StakeOnGoldfinchProps {
   fiduStaked: CryptoAmount;
   curveBalance: CryptoAmount;
   curveStaked: CryptoAmount;
-  fiduPositions: SimpleStakedPosition[];
-  curvePositions: SimpleStakedPosition[];
+  fiduPositions: StakeFormPositionFieldsFragment[];
+  curvePositions: StakeFormPositionFieldsFragment[];
   usdcBalance: CryptoAmount;
   sharePrice: BigNumber;
   gfiApi: FixedNumber;

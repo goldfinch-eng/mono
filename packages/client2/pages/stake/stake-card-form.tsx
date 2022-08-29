@@ -1,3 +1,4 @@
+import { gql } from "@apollo/client";
 import { utils, BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
@@ -5,7 +6,11 @@ import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount, StakedPositionType } from "@/lib/graphql/generated";
+import {
+  CryptoAmount,
+  StakedPositionType,
+  StakeFormPositionFieldsFragment,
+} from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
   positionTypeToValue,
@@ -14,13 +19,19 @@ import {
 import { toastTransaction } from "@/lib/toast";
 import { useWallet } from "@/lib/wallet";
 
-import type { SimpleStakedPosition } from "./index.page";
+export const STAKE_FORM_POSITION_FIELDS = gql`
+  fragment StakeFormPositionFields on SeniorPoolStakedPosition {
+    id
+    amount
+    endTime @client
+  }
+`;
 
 interface StakeCardFormProps {
   balance: CryptoAmount;
   action: "STAKE" | "UNSTAKE";
   positionType: StakedPositionType;
-  positions: SimpleStakedPosition[];
+  positions: StakeFormPositionFieldsFragment[];
   tokenMask?: string;
   onComplete: () => void;
 }
