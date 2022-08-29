@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 const ContentSecurityPolicy = `
-  default-src 'self';
-  script-src 'self';
-  child-src 'self';
-  style-src 'self';
-  font-src 'self';  
+  frame-ancestors 'self';
 `;
 const securityHeaders = [
   {
