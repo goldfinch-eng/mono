@@ -10,6 +10,8 @@ const securityHeaders = [
   },
   {
     key: "Content-Security-Policy",
+    // https://nextjs.org/docs/advanced-features/security-headers#content-security-policy
+    // Replace two spaces with one then trim trailing and leading whitespace
     value: ContentSecurityPolicy.replace(/\s{2,}/g, " ").trim(),
   },
 ];
