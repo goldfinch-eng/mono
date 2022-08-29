@@ -12,16 +12,16 @@ import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { ExpandableCard } from "./expandable-card";
+import curveIcon from "./icons/curve.png";
+import fiduCurve from "./icons/fidu-curve.png";
+import gfIcon from "./icons/fidu.png";
+import usdcCurve from "./icons/usdc-curve.png";
 import LpCurveForm from "./lp-curve-form";
 import StakeCardForm, { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
 import { Tab } from "./stake-card-tabs";
-import curveIcon from "./stake-curve.png";
-import fiduCurve from "./stake-fidu.png";
-import gfIcon from "./stake-gf.png";
 import StakeMigrateForm, {
   MIGRATE_FORM_POSITION_FIELDS,
 } from "./stake-migrate-form";
-import usdcCurve from "./stake-usdc.png";
 
 gql`
   ${STAKE_FORM_POSITION_FIELDS}
