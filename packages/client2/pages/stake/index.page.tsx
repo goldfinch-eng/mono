@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
@@ -12,14 +12,16 @@ import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { ExpandableCard } from "./expandable-card";
-import LpOnCurve from "./lp-on-curve";
+import LpCurveForm from "./lp-curve-form";
 import StakeCardForm, { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
 import { Tab } from "./stake-card-tabs";
 import curveIcon from "./stake-curve.png";
+import fiduCurve from "./stake-fidu.png";
 import gfIcon from "./stake-gf.png";
 import StakeMigrateForm, {
   MIGRATE_FORM_POSITION_FIELDS,
 } from "./stake-migrate-form";
+import usdcCurve from "./stake-usdc.png";
 
 gql`
   ${STAKE_FORM_POSITION_FIELDS}
@@ -118,6 +120,13 @@ export default function StakePage() {
     amount: BigNumber.from(0),
     token: SupportedCrypto.Usdc,
   };
+
+  const curveApyFromGfi = data
+    ? computeApyFromGfiInFiat(
+        data.curvePool.estimatedCurveStakingApyRaw,
+        data.gfiPrice.price.amount
+      )
+    : FixedNumber.from(0);
 
   return (
     <div>
@@ -223,12 +232,7 @@ export default function StakePage() {
             heading="FIDU-USDC-F"
             subheading="Curve LP Token"
             headingLabel="Token to stake"
-            slot1={`${formatPercent(
-              computeApyFromGfiInFiat(
-                data.curvePool.estimatedCurveStakingApyRaw,
-                data.gfiPrice.price.amount
-              )
-            )} GFI`}
+            slot1={`${formatPercent(curveApyFromGfi)} GFI`}
             slot1Label="Est. APY"
             slot2={formatCrypto(curveBalance)}
             slot2Label="Available"
@@ -301,11 +305,40 @@ export default function StakePage() {
             liquidity pool, with the option to stake your resulting Curve LP
             tokens on Goldfinch.
           </Paragraph>
-          <LpOnCurve
-            fiduBalance={fiduBalance}
-            usdcBalance={usdcBalance}
-            onComplete={refetch}
-          />
+          <ExpandableCard
+            className="mb-3"
+            icon={fiduCurve}
+            heading="Deposit FIDU"
+            subheading="via Curve FIDU-USDC pool"
+            headingLabel="Token to deposit"
+            slot1={`${formatPercent(curveApyFromGfi)} GFI`}
+            slot1Label="Est. APY"
+            slot2={formatCrypto(fiduBalance)}
+            slot2Label="Available"
+          >
+            <LpCurveForm
+              balance={fiduBalance}
+              type="FIDU"
+              onComplete={refetch}
+            />
+          </ExpandableCard>
+          <ExpandableCard
+            icon={usdcCurve}
+            heading="Deposit USDC"
+            subheading="via Curve FIDU-USDC pool"
+            headingLabel="Token to deposit"
+            slot1={`${formatPercent(curveApyFromGfi)} GFI`}
+            slot1Label="Est. APY"
+            slot2={formatCrypto(usdcBalance)}
+            slot2Label="Available"
+            hideTopLabels
+          >
+            <LpCurveForm
+              balance={usdcBalance}
+              type="USDC"
+              onComplete={refetch}
+            />
+          </ExpandableCard>
         </div>
       )}
     </div>
