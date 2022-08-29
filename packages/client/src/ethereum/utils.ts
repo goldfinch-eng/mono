@@ -34,6 +34,7 @@ export const RINKEBY = "rinkeby"
 export const MOONBEAM = "moonbeam"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
+const MOONBEAM_LAUNCH_BLOCK = "2680797"
 const USDC_ADDRESSES = {
   [ROPSTEN]: "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
   [MOONBEAM]: "0xb9D2052b5c4d096647eDC9402D3486C8E1D2BF28",
@@ -261,7 +262,7 @@ function getFromBlock(chain: string): string {
   if (chain === MAINNET) {
     return MAINNET_LAUNCH_BLOCK
   } else {
-    return "earliest"
+    return MOONBEAM_LAUNCH_BLOCK
   }
 }
 
