@@ -1,5 +1,4 @@
 import { gql } from "@apollo/client";
-import { Tab } from "@headlessui/react";
 import { BigNumber } from "ethers";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
@@ -14,11 +13,7 @@ import { useWallet } from "@/lib/wallet";
 import LpOnCurve from "./lp-on-curve";
 import StakeCardCollapse from "./stake-card-collapse";
 import StakeCardForm, { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
-import {
-  StakeTabGroup,
-  StakeTabButton,
-  StakeTabContent,
-} from "./stake-card-tabs";
+import { Tab } from "./stake-card-tabs";
 import StakeMigrateForm, {
   MIGRATE_FORM_POSITION_FIELDS,
 } from "./stake-migrate-form";
@@ -177,14 +172,14 @@ export default function StakePage() {
                   data.gfiPrice.price.amount
                 )}
               >
-                <StakeTabGroup>
+                <Tab.Group>
                   <Tab.List>
-                    <StakeTabButton>Stake</StakeTabButton>
-                    <StakeTabButton>Unstake</StakeTabButton>
-                    <StakeTabButton>Migrate</StakeTabButton>
+                    <Tab>Stake</Tab>
+                    <Tab>Unstake</Tab>
+                    <Tab>Migrate</Tab>
                   </Tab.List>
                   <Tab.Panels>
-                    <StakeTabContent>
+                    <Tab.Panel>
                       <StakeCardForm
                         action="STAKE"
                         balance={fiduBalance}
@@ -192,8 +187,8 @@ export default function StakePage() {
                         positionType={StakedPositionType.Fidu}
                         onComplete={refetch}
                       />
-                    </StakeTabContent>
-                    <StakeTabContent>
+                    </Tab.Panel>
+                    <Tab.Panel>
                       <StakeCardForm
                         action="UNSTAKE"
                         balance={fiduStaked}
@@ -201,8 +196,8 @@ export default function StakePage() {
                         positionType={StakedPositionType.Fidu}
                         onComplete={refetch}
                       />
-                    </StakeTabContent>
-                    <StakeTabContent>
+                    </Tab.Panel>
+                    <Tab.Panel>
                       <Paragraph className="mb-6">
                         Migrate your staked FIDU to deposit it in the Curve
                         FIDU-USDC liquidity pool, without needing to unstake it
@@ -217,9 +212,9 @@ export default function StakePage() {
                         }
                         onComplete={refetch}
                       />
-                    </StakeTabContent>
+                    </Tab.Panel>
                   </Tab.Panels>
-                </StakeTabGroup>
+                </Tab.Group>
               </StakeCardCollapse>
             </div>
 
@@ -234,13 +229,13 @@ export default function StakePage() {
                   data.gfiPrice.price.amount
                 )}
               >
-                <StakeTabGroup>
+                <Tab.Group>
                   <Tab.List>
-                    <StakeTabButton>Stake</StakeTabButton>
-                    <StakeTabButton>Unstake</StakeTabButton>
+                    <Tab>Stake</Tab>
+                    <Tab>Unstake</Tab>
                   </Tab.List>
                   <Tab.Panels>
-                    <StakeTabContent>
+                    <Tab.Panel>
                       <StakeCardForm
                         action="STAKE"
                         balance={curveBalance}
@@ -249,8 +244,8 @@ export default function StakePage() {
                         tokenMask="FIDU-USDC-F"
                         onComplete={refetch}
                       />
-                    </StakeTabContent>
-                    <StakeTabContent>
+                    </Tab.Panel>
+                    <Tab.Panel>
                       <StakeCardForm
                         action="UNSTAKE"
                         balance={curveStaked}
@@ -259,9 +254,9 @@ export default function StakePage() {
                         tokenMask="FIDU-USDC-F"
                         onComplete={refetch}
                       />
-                    </StakeTabContent>
+                    </Tab.Panel>
                   </Tab.Panels>
-                </StakeTabGroup>
+                </Tab.Group>
               </StakeCardCollapse>
             </div>
           </div>

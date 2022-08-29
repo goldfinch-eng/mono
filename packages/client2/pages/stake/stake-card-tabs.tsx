@@ -1,41 +1,47 @@
-import { Tab } from "@headlessui/react";
+import { Tab as HeadlessUiTab } from "@headlessui/react";
 import clsx from "clsx";
 import { Fragment } from "react";
-import type { ReactNode } from "react";
+import { ReactNode } from "react";
 
-interface TabProps {
-  children: ReactNode;
-}
+type TabProps = { children: ReactNode };
 
-export function StakeTabGroup({ children }: TabProps) {
+export function Tab({ children }: TabProps) {
   return (
-    <div className="relative z-10">
-      <Tab.Group>{children}</Tab.Group>
-    </div>
-  );
-}
-
-export function StakeTabContent({ children }: TabProps) {
-  return (
-    <Tab.Panel>
-      <div className="relative z-10 pt-8">{children}</div>
-    </Tab.Panel>
-  );
-}
-
-export function StakeTabButton({ children }: TabProps) {
-  return (
-    <Tab as={Fragment}>
+    <HeadlessUiTab as={Fragment}>
       {({ selected }) => (
         <button
           className={clsx(
-            "mr-6 border-b-2 text-lg font-medium",
+            "border-b-2 text-lg font-medium",
             selected ? "border-b-sand-700" : "border-transparent opacity-50"
           )}
         >
           {children}
         </button>
       )}
-    </Tab>
+    </HeadlessUiTab>
   );
 }
+
+function TabList({ children }: { children: ReactNode }) {
+  return (
+    <HeadlessUiTab.List className="flex gap-6">{children}</HeadlessUiTab.List>
+  );
+}
+
+function TabPanel({ children }: { children: ReactNode }) {
+  return <HeadlessUiTab.Panel className="mt-8">{children}</HeadlessUiTab.Panel>;
+}
+
+function TabGroup({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative z-10">
+      {/* The z-10 here keeps the Tab group sitting above the card background. Good because otherwise clicking the card background causes the card to collapse */}
+      <HeadlessUiTab.Group>{children}</HeadlessUiTab.Group>
+    </div>
+  );
+}
+
+Tab.Group = TabGroup;
+Tab.List = TabList;
+Tab.Panels = HeadlessUiTab.Panels;
+Tab.Panel = TabPanel;
