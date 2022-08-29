@@ -1,14 +1,27 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { Tab } from "@headlessui/react";
+import { BigNumber } from "ethers";
 
 import { Heading, Paragraph, Button } from "@/components/design-system";
-import { SupportedCrypto, useStakePageQuery } from "@/lib/graphql/generated";
+import {
+  StakedPositionType,
+  SupportedCrypto,
+  useStakePageQuery,
+} from "@/lib/graphql/generated";
+import { computeApyFromGfiInFiat } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import LpOnCurve from "./lp-on-curve";
-import { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
-import { MIGRATE_FORM_POSITION_FIELDS } from "./stake-migrate-form";
-import StakeOnGoldfinch from "./stake-on-goldfinch";
+import StakeCardCollapse from "./stake-card-collapse";
+import StakeCardForm, { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
+import {
+  StakeTabGroup,
+  StakeTabButton,
+  StakeTabContent,
+} from "./stake-card-tabs";
+import StakeMigrateForm, {
+  MIGRATE_FORM_POSITION_FIELDS,
+} from "./stake-migrate-form";
 
 gql`
   ${STAKE_FORM_POSITION_FIELDS}
@@ -79,19 +92,34 @@ export default function StakePage() {
     skip: !account,
   });
 
-  const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.sharePrice
-    ? data.seniorPools[0]
-    : undefined;
-
-  const fiduStaked = (data?.user?.stakedFiduPositions ?? []).reduce(
-    (total, pos) => total.add(pos.amount),
-    BigNumber.from(0)
-  );
-
-  const curveStaked = (data?.user?.stakedCurvePositions ?? []).reduce(
-    (total, pos) => total.add(pos.amount),
-    BigNumber.from(0)
-  );
+  const fiduPositions = data?.user?.stakedFiduPositions ?? [];
+  const curvePositions = data?.user?.stakedCurvePositions ?? [];
+  const fiduStaked = {
+    amount: (fiduPositions ?? []).reduce(
+      (total, pos) => total.add(pos.amount),
+      BigNumber.from(0)
+    ),
+    token: SupportedCrypto.Fidu,
+  };
+  const curveStaked = {
+    amount: (data?.user?.stakedCurvePositions ?? []).reduce(
+      (total, pos) => total.add(pos.amount),
+      BigNumber.from(0)
+    ),
+    token: SupportedCrypto.CurveLp,
+  };
+  const fiduBalance = data?.viewer.fiduBalance ?? {
+    amount: BigNumber.from(0),
+    token: SupportedCrypto.Fidu,
+  };
+  const curveBalance = data?.viewer.curveLpBalance ?? {
+    amount: BigNumber.from(0),
+    token: SupportedCrypto.CurveLp,
+  };
+  const usdcBalance = data?.viewer.usdcBalance ?? {
+    amount: BigNumber.from(0),
+    token: SupportedCrypto.Usdc,
+  };
 
   return (
     <div>
@@ -131,44 +159,127 @@ export default function StakePage() {
           </Paragraph>
 
           <div className="mb-15">
-            <StakeOnGoldfinch
-              fiduStaked={{ amount: fiduStaked, token: SupportedCrypto.Fidu }}
-              fiduBalance={
-                data?.viewer.fiduBalance ?? {
-                  amount: BigNumber.from(0),
-                  token: SupportedCrypto.Fidu,
-                }
-              }
-              curveStaked={{
-                amount: curveStaked,
-                token: SupportedCrypto.CurveLp,
-              }}
-              curveBalance={
-                data?.viewer.curveLpBalance ?? {
-                  amount: BigNumber.from(0),
-                  token: SupportedCrypto.CurveLp,
-                }
-              }
-              usdcBalance={
-                data?.viewer.usdcBalance ?? {
-                  amount: BigNumber.from(0),
-                  token: SupportedCrypto.Usdc,
-                }
-              }
-              sharePrice={
-                seniorPool
-                  ? seniorPool.latestPoolStatus.sharePrice
-                  : BigNumber.from(0)
-              }
-              fiduPositions={data?.user?.stakedFiduPositions ?? []}
-              curvePositions={data?.user?.stakedCurvePositions ?? []}
-              gfiApi={
-                seniorPool?.latestPoolStatus?.estimatedApyFromGfiRaw ??
-                FixedNumber.from(0)
-              }
+            {/* <StakeOnGoldfinch
+              fiduStaked={fiduStaked}
+              fiduBalance={fiduBalance}
+              curveStaked={curveStaked}
+              curveBalance={curveBalance}
+              usdcBalance={usdcBalance}
+              sharePrice={data.seniorPools[0].latestPoolStatus.sharePrice}
+              fiduPositions={fiduPositions}
+              curvePositions={curvePositions}
+              gfiApi={computeApyFromGfiInFiat(
+                data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
+                data.gfiPrice.price.amount
+              )}
               gfiPrice={data?.gfiPrice?.price?.amount ?? 0}
               onComplete={refetch}
-            />
+            /> */}
+            <div className="mb-3 grid grid-cols-12 items-center px-6 text-sand-500">
+              <div className="col-span-5">Token to stake</div>
+              <div className="col-span-2 text-right">Est. APY</div>
+              <div className="col-span-2 text-right">Available to stake</div>
+              <div className="col-span-2 text-right">Staked</div>
+            </div>
+
+            <div className="mb-3">
+              <StakeCardCollapse
+                heading="FIDU"
+                subheading="Goldfinch Token"
+                staked={fiduStaked}
+                available={fiduBalance}
+                apy={computeApyFromGfiInFiat(
+                  data.seniorPools[0].latestPoolStatus.estimatedApyFromGfiRaw,
+                  data.gfiPrice.price.amount
+                )}
+              >
+                <StakeTabGroup>
+                  <Tab.List>
+                    <StakeTabButton>Stake</StakeTabButton>
+                    <StakeTabButton>Unstake</StakeTabButton>
+                    <StakeTabButton>Migrate</StakeTabButton>
+                  </Tab.List>
+                  <Tab.Panels>
+                    <StakeTabContent>
+                      <StakeCardForm
+                        action="STAKE"
+                        balance={fiduBalance}
+                        positions={fiduPositions}
+                        positionType={StakedPositionType.Fidu}
+                        onComplete={refetch}
+                      />
+                    </StakeTabContent>
+                    <StakeTabContent>
+                      <StakeCardForm
+                        action="UNSTAKE"
+                        balance={fiduStaked}
+                        positions={fiduPositions}
+                        positionType={StakedPositionType.Fidu}
+                        onComplete={refetch}
+                      />
+                    </StakeTabContent>
+                    <StakeTabContent>
+                      <Paragraph className="mb-6">
+                        Migrate your staked FIDU to deposit it in the Curve
+                        FIDU-USDC liquidity pool, without needing to unstake it
+                        on Goldfinch.
+                      </Paragraph>
+                      <StakeMigrateForm
+                        fiduStaked={fiduStaked}
+                        usdcBalance={usdcBalance}
+                        positions={fiduPositions}
+                        sharePrice={
+                          data.seniorPools[0].latestPoolStatus.sharePrice
+                        }
+                        onComplete={refetch}
+                      />
+                    </StakeTabContent>
+                  </Tab.Panels>
+                </StakeTabGroup>
+              </StakeCardCollapse>
+            </div>
+
+            <div>
+              <StakeCardCollapse
+                heading="FIDU-USDC-F"
+                subheading="Curve LP token"
+                staked={curveStaked}
+                available={curveBalance}
+                apy={computeApyFromGfiInFiat(
+                  data.curvePool.estimatedCurveStakingApyRaw,
+                  data.gfiPrice.price.amount
+                )}
+              >
+                <StakeTabGroup>
+                  <Tab.List>
+                    <StakeTabButton>Stake</StakeTabButton>
+                    <StakeTabButton>Unstake</StakeTabButton>
+                  </Tab.List>
+                  <Tab.Panels>
+                    <StakeTabContent>
+                      <StakeCardForm
+                        action="STAKE"
+                        balance={curveBalance}
+                        positions={curvePositions}
+                        positionType={StakedPositionType.CurveLp}
+                        tokenMask="FIDU-USDC-F"
+                        onComplete={refetch}
+                      />
+                    </StakeTabContent>
+                    <StakeTabContent>
+                      <StakeCardForm
+                        action="UNSTAKE"
+                        balance={curveStaked}
+                        positions={curvePositions}
+                        positionType={StakedPositionType.CurveLp}
+                        tokenMask="FIDU-USDC-F"
+                        onComplete={refetch}
+                      />
+                    </StakeTabContent>
+                  </Tab.Panels>
+                </StakeTabGroup>
+              </StakeCardCollapse>
+            </div>
           </div>
 
           <div className="mb-3 flex items-center justify-between">
@@ -207,18 +318,8 @@ export default function StakePage() {
             tokens on Goldfinch.
           </Paragraph>
           <LpOnCurve
-            fiduBalance={
-              data?.viewer.fiduBalance ?? {
-                amount: BigNumber.from(0),
-                token: SupportedCrypto.Fidu,
-              }
-            }
-            usdcBalance={
-              data?.viewer.usdcBalance ?? {
-                amount: BigNumber.from(0),
-                token: SupportedCrypto.Usdc,
-              }
-            }
+            fiduBalance={fiduBalance}
+            usdcBalance={usdcBalance}
             onComplete={refetch}
           />
         </div>
