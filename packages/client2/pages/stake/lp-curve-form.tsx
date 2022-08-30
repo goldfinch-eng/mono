@@ -1,4 +1,5 @@
-import { BigNumber, utils } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { useContract } from "@/lib/contracts";
-import { formatCrypto } from "@/lib/format";
+import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount } from "@/lib/graphql/generated";
 import { approveErc20IfRequired } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
@@ -36,9 +37,12 @@ export default function LpCurveForm({
   const stakingRewardsContract = useContract("StakingRewards");
   const fiduContract = useContract("Fidu");
   const usdcContract = useContract("USDC");
+  const curvePoolContract = useContract("CurvePool");
+  const seniorPoolContract = useContract("SeniorPool");
 
   const rhfMethods = useForm<CurveForm>();
-  const { control, setValue, watch, register } = rhfMethods;
+  const { control, setValue, watch, register, setError, clearErrors } =
+    rhfMethods;
 
   const onSubmit = async (data: CurveForm) => {
     if (!account || !stakingRewardsContract || !fiduContract || !usdcContract) {
@@ -107,6 +111,77 @@ export default function LpCurveForm({
   };
 
   const isStaking = watch("isStaking");
+  const amount = watch("amount");
+
+  useEffect(() => {
+    // ! This calculation doesn't match the price impact shown on https://curve.fi/factory-crypto/23/deposit. Not sure how to replicate their calculation
+    const checkSlippage = async (amount: string) => {
+      if (!curvePoolContract || !seniorPoolContract) {
+        return;
+      }
+      if (!amount) {
+        return;
+      }
+
+      const fiduMantissa = BigNumber.from(10).pow(FIDU_DECIMALS);
+      const usdcMantissa = BigNumber.from(10).pow(USDC_DECIMALS);
+      const value = utils.parseUnits(
+        amount,
+        type === "FIDU" ? FIDU_DECIMALS : USDC_DECIMALS
+      );
+      if (value.isZero()) {
+        return;
+      }
+      const usdcAmount = type === "USDC" ? value : BigNumber.from(0);
+      const fiduAmount = type === "FIDU" ? value : BigNumber.from(0);
+      const fiduSharePrice = await seniorPoolContract.sharePrice();
+      const virtualPrice = await curvePoolContract.lp_price();
+      try {
+        const estimatedTokensReceived =
+          await curvePoolContract.calc_token_amount([fiduAmount, usdcAmount]);
+        const virtualValue = estimatedTokensReceived
+          .mul(virtualPrice)
+          .div(fiduMantissa);
+        const realValue = fiduAmount
+          .mul(fiduSharePrice)
+          .div(fiduMantissa)
+          .add(usdcAmount.mul(fiduMantissa).div(usdcMantissa));
+        const slippage = Math.abs(
+          FixedNumber.from(virtualValue)
+            .divUnsafe(FixedNumber.from(realValue))
+            .subUnsafe(FixedNumber.from(1))
+            .toUnsafeFloat()
+        );
+        const displayPercent = formatPercent(slippage / 100);
+
+        if (slippage > 10) {
+          setError("amount", {
+            message: `Price impact is too high: ${displayPercent}. Reduce the amount you are depositing.`,
+          });
+        } else if (slippage > 0.5) {
+          setError("amount", {
+            type: "warn",
+            message: `High price impact: ${displayPercent}. Consider reducing the amount you are depositing.`,
+          });
+        } else {
+          clearErrors("amount");
+        }
+      } catch (e) {
+        setError("amount", {
+          message:
+            "Price impact is too high. Reduce the amount you're depositing.",
+        });
+      }
+    };
+    checkSlippage(amount);
+  }, [
+    amount,
+    curvePoolContract,
+    seniorPoolContract,
+    type,
+    setError,
+    clearErrors,
+  ]);
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
@@ -124,7 +199,7 @@ export default function LpCurveForm({
         for at least 12 months.
       </Paragraph>
 
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row">
+      <div className="flex flex-col items-start gap-3 sm:flex-row">
         <div className="max-w-xl flex-1">
           <DollarInput
             control={control}
@@ -138,7 +213,7 @@ export default function LpCurveForm({
           />
         </div>
 
-        <Button type="submit" size="xl" className="px-12">
+        <Button type="submit" size="xl" className="px-12 py-5">
           {isStaking ? "Deposit and Stake" : "Deposit"}
         </Button>
       </div>

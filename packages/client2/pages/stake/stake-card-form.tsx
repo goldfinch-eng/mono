@@ -129,7 +129,7 @@ export default function StakeCardForm({
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row">
+      <div className="flex flex-col items-start gap-3 sm:flex-row">
         <div className="max-w-xl flex-1">
           <DollarInput
             control={control}
@@ -143,7 +143,7 @@ export default function StakeCardForm({
           />
         </div>
 
-        <Button type="submit" size="xl" className="px-12">
+        <Button type="submit" size="xl" className="px-12 py-5">
           {`${action === "STAKE" ? "Stake" : "Unstake"}`}
         </Button>
       </div>
