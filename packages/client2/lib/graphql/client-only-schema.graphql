@@ -142,7 +142,7 @@ type BackerSecondaryMarketStat {
 
 type BackerSecondaryMarket {
   collectionStats: BackerSecondaryMarketStat!
-  poolStats(poolAddress: String): BackerSecondaryMarketStat!
+  poolStats(poolAddress: String!): BackerSecondaryMarketStat!
 }
 
 extend type Query {

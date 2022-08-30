@@ -1,14 +1,17 @@
 import { gql } from "@apollo/client";
 import Image from "next/image";
-import React from "react";
+import { ReactNode } from "react";
 
 import { Button } from "@/components/design-system";
 import goldfinchLogo from "@/constants/metadata/icons/goldfinch.png";
-import { useBackerSecondaryMarketStatQuery } from "@/lib/graphql/generated";
+import {
+  BackerSecondaryMarketStatQuery,
+  useBackerSecondaryMarketStatQuery,
+} from "@/lib/graphql/generated";
 import { PoolStatus } from "@/lib/pools";
 
 gql`
-  query BackerSecondaryMarketStat($poolAddress: String) {
+  query BackerSecondaryMarketStat($poolAddress: String!) {
     backerSecondaryMarket @client {
       collectionStats {
         tokenCount
@@ -23,10 +26,10 @@ gql`
 `;
 
 interface PanelProps {
-  title: React.ReactNode;
+  title: ReactNode;
   iconSrc: string;
-  body: React.ReactNode;
-  buttonText: React.ReactNode;
+  body: ReactNode;
+  buttonText: ReactNode;
   buttonHref: string;
 }
 
@@ -60,9 +63,66 @@ function Panel({ title, iconSrc, body, buttonText, buttonHref }: PanelProps) {
 function larkUrl(poolAddress?: string): string {
   const baseUrl = "https://purple-shadow-0471.on.fleek.co/";
   const attributeString = poolAddress
-    ? `?attributes%5BPool+Address%5D=${poolAddress}`
+    ? `?attributes[Pool+Address]=${poolAddress}`
     : "";
   return `${baseUrl}${attributeString}`;
+}
+
+enum PanelState {
+  SELL_POSITIONS,
+  NO_POSITIONS,
+  BUY_POSITIONS,
+  BUY_OTHER_POSITIONS,
+}
+
+function getPanelState({
+  poolStatus,
+  hasBacked,
+  data,
+}: {
+  poolStatus: PoolStatus;
+  hasBacked: boolean;
+  data: BackerSecondaryMarketStatQuery;
+}): PanelState {
+  const collectionPositionsAvailable =
+    data.backerSecondaryMarket.collectionStats.onSaleCount > 0;
+
+  const poolPositionsAvailable =
+    data.backerSecondaryMarket.poolStats.onSaleCount > 0;
+
+  // These are intentionally non-nestd to make the switching logic easier to follow
+  if (poolStatus === PoolStatus.ComingSoon && collectionPositionsAvailable) {
+    return PanelState.BUY_OTHER_POSITIONS;
+  } else if (
+    poolStatus === PoolStatus.ComingSoon &&
+    !collectionPositionsAvailable
+  ) {
+    return PanelState.NO_POSITIONS;
+  } else if (poolStatus === PoolStatus.Open) {
+    return PanelState.SELL_POSITIONS;
+  } else if (poolStatus === PoolStatus.Full && hasBacked) {
+    return PanelState.SELL_POSITIONS;
+  } else if (
+    poolStatus === PoolStatus.Full &&
+    !hasBacked &&
+    poolPositionsAvailable
+  ) {
+    return PanelState.BUY_POSITIONS;
+  } else if (
+    poolStatus === PoolStatus.Full &&
+    !hasBacked &&
+    collectionPositionsAvailable
+  ) {
+    return PanelState.BUY_OTHER_POSITIONS;
+  } else if (
+    poolStatus === PoolStatus.Full &&
+    !hasBacked &&
+    !collectionPositionsAvailable
+  ) {
+    return PanelState.NO_POSITIONS;
+  } else {
+    return PanelState.SELL_POSITIONS;
+  }
 }
 
 interface SecondaryMarketPanelProps {
@@ -80,109 +140,52 @@ export default function SecondaryMarketPanel({
     variables: { poolAddress },
   });
 
+  const panelProps: Record<PanelState, Omit<PanelProps, "iconSrc">> = {
+    [PanelState.SELL_POSITIONS]: {
+      title: "Need liquidity? Sell your position on Lark.",
+      body: "Do you know you can sell your position on lark.market?",
+      buttonText: "View positions",
+      buttonHref: larkUrl(poolAddress),
+    },
+    [PanelState.BUY_OTHER_POSITIONS]: {
+      title: "Purchase positions on Lark",
+      body: "This pool isn't open, but there are other positions available for purchase on lark.market",
+      buttonText: "View positions",
+      buttonHref: larkUrl(),
+    },
+    [PanelState.BUY_POSITIONS]: {
+      title: "Back this pool by purchasing a position on Lark",
+      body: "There are positions for this pool available for purchase on lark.market",
+      buttonText: "View positions",
+      buttonHref: larkUrl(poolAddress),
+    },
+    [PanelState.NO_POSITIONS]: {
+      title: "Buy and sell positions on Lark",
+      body: "Though no positions are available now, positions can be bought and sold on lark.market",
+      buttonText: "View positions",
+      buttonHref: larkUrl(),
+    },
+  };
+
   if (loading) {
-    return <></>;
+    return null;
   }
 
   if (error) {
     return (
       <Panel
-        title={"Need liquidity? Sell your position on Lark."}
+        {...panelProps[PanelState.SELL_POSITIONS]}
         iconSrc={goldfinchLogo.src}
-        body={
-          "Did you know you can sell your backer position on lark.marketplace?"
-        }
-        buttonText={"View positions"}
-        buttonHref={larkUrl()}
       />
     );
   }
 
   if (!data) {
-    return <></>;
+    return null;
   }
 
-  let panelProps: Omit<PanelProps, "iconSrc">;
+  const panelState = getPanelState({ poolStatus, hasBacked, data });
+  const props = panelProps[panelState];
 
-  const collectionPositionsAvailable =
-    data.backerSecondaryMarket.collectionStats.onSaleCount > 0;
-
-  const poolPositionsAvailable =
-    data.backerSecondaryMarket.poolStats.onSaleCount > 0;
-
-  // These are intentionally non-nestd to make the switching logic easier to follow
-  if (poolStatus === PoolStatus.ComingSoon && collectionPositionsAvailable) {
-    panelProps = {
-      title: "Purchase positions on Lark",
-      body: "This pool isn't open, but there are other positions available for purchase on lark.market",
-      buttonText: "View positions",
-      buttonHref: larkUrl(),
-    };
-  } else if (
-    poolStatus === PoolStatus.ComingSoon &&
-    !collectionPositionsAvailable
-  ) {
-    panelProps = {
-      title: "Buy and sell positions on Lark",
-      body: "Though no positions are available now, positions can be bought and sold on lark.market",
-      buttonText: "View positions",
-      buttonHref: larkUrl(),
-    };
-  } else if (poolStatus === PoolStatus.Open) {
-    panelProps = {
-      title: "Need liquidity? Sell your position on Lark.",
-      body: "Do you know you can sell your position on lark.market?",
-      buttonText: "View positions",
-      buttonHref: larkUrl(poolAddress),
-    };
-  } else if (poolStatus === PoolStatus.Full && hasBacked) {
-    panelProps = {
-      title: "Need liquidity? Sell your position on Lark.",
-      body: "Do you know you can sell your position on lark.market?",
-      buttonText: "View positions",
-      buttonHref: larkUrl(poolAddress),
-    };
-  } else if (
-    poolStatus === PoolStatus.Full &&
-    !hasBacked &&
-    poolPositionsAvailable
-  ) {
-    panelProps = {
-      title: "Back this pool by purchasing a position on Lark",
-      body: "There are positions for this pool available for purchase on lark.market",
-      buttonText: "View positions",
-      buttonHref: larkUrl(poolAddress),
-    };
-  } else if (
-    poolStatus === PoolStatus.Full &&
-    !hasBacked &&
-    collectionPositionsAvailable
-  ) {
-    panelProps = {
-      title: "Purchase positions on Lark",
-      body: "This pool isn't open, but there are other positions available for purchase on lark.market",
-      buttonText: "View positions",
-      buttonHref: larkUrl(),
-    };
-  } else if (
-    poolStatus === PoolStatus.Full &&
-    !hasBacked &&
-    !collectionPositionsAvailable
-  ) {
-    panelProps = {
-      title: "Buy and sell positions on Lark",
-      body: "Though no positions are available now, positions can be bought and sold on lark.market",
-      buttonText: "View positions",
-      buttonHref: larkUrl(),
-    };
-  } else {
-    panelProps = {
-      title: "Need liquidity? Sell your position on Lark.",
-      body: "Do you know you can sell your position on lark.market?",
-      buttonText: "View positions",
-      buttonHref: larkUrl(poolAddress),
-    };
-  }
-
-  return <Panel {...panelProps} iconSrc={goldfinchLogo.src} />;
+  return <Panel {...props} iconSrc={goldfinchLogo.src} />;
 }

@@ -23,7 +23,9 @@ export async function fetchBackerSecondaryMarketStat(
     typeof reservoirResponse.stats.tokenCount !== "number" ||
     typeof reservoirResponse.stats.onSaleCount !== "number"
   ) {
-    throw new Error(`Reservoir response JSON failed type guard`);
+    throw new Error(
+      `Reservoir response JSON failed type guard: ${reservoirResponse}`
+    );
   }
 
   return {

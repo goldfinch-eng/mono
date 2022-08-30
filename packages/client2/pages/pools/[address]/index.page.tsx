@@ -376,7 +376,7 @@ export default function PoolPage() {
                 <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
               )}
 
-              {data.user && tranchedPool && poolStatus && (
+              {tranchedPool && poolStatus && (
                 <SecondaryMarketPanel
                   hasBacked={hasBacked}
                   poolStatus={poolStatus}
