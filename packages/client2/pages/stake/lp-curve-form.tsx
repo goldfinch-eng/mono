@@ -19,7 +19,7 @@ import { useWallet } from "@/lib/wallet";
 interface LpCurveFormProps {
   balance: CryptoAmount;
   type: "FIDU" | "USDC";
-  onComplete: () => void;
+  onComplete: () => Promise<unknown>;
 }
 
 interface CurveForm {
@@ -32,7 +32,7 @@ export default function LpCurveForm({
   type,
   onComplete,
 }: LpCurveFormProps) {
-  const { account, provider } = useWallet();
+  const { account } = useWallet();
   const stakingRewardsContract = useContract("StakingRewards");
   const fiduContract = useContract("Fidu");
   const usdcContract = useContract("USDC");
@@ -41,13 +41,7 @@ export default function LpCurveForm({
   const { control, setValue, watch, register } = rhfMethods;
 
   const onSubmit = async (data: CurveForm) => {
-    if (
-      !account ||
-      !provider ||
-      !stakingRewardsContract ||
-      !fiduContract ||
-      !usdcContract
-    ) {
+    if (!account || !stakingRewardsContract || !fiduContract || !usdcContract) {
       return;
     }
 
@@ -56,39 +50,41 @@ export default function LpCurveForm({
       type === "FIDU" ? FIDU_DECIMALS : USDC_DECIMALS
     );
 
-    await approveErc20IfRequired({
-      account,
-      spender: stakingRewardsContract.address,
-      amount: value,
-      erc20Contract: fiduContract,
-    });
-
-    await approveErc20IfRequired({
-      account,
-      spender: stakingRewardsContract.address,
-      amount: value,
-      erc20Contract: usdcContract,
-    });
+    if (type === "FIDU") {
+      await approveErc20IfRequired({
+        account,
+        spender: stakingRewardsContract.address,
+        amount: value,
+        erc20Contract: fiduContract,
+      });
+    } else {
+      await approveErc20IfRequired({
+        account,
+        spender: stakingRewardsContract.address,
+        amount: value,
+        erc20Contract: usdcContract,
+      });
+    }
 
     if (data.isStaking) {
       await toastTransaction({
         transaction: stakingRewardsContract.depositToCurveAndStake(
-          type === "FIDU" ? value.toString() : BigNumber.from(0),
-          type === "USDC" ? value.toString() : BigNumber.from(0)
+          type === "FIDU" ? value : BigNumber.from(0),
+          type === "USDC" ? value : BigNumber.from(0)
         ),
         pendingPrompt: "Depositing and staking transaction submitted",
       });
     } else {
       await toastTransaction({
         transaction: stakingRewardsContract.depositToCurve(
-          type === "FIDU" ? value.toString() : BigNumber.from(0),
-          type === "USDC" ? value.toString() : BigNumber.from(0)
+          type === "FIDU" ? value : BigNumber.from(0),
+          type === "USDC" ? value : BigNumber.from(0)
         ),
         pendingPrompt: "Depositing to curve transaction submitted",
       });
     }
 
-    onComplete();
+    await onComplete();
   };
 
   const handleMax = async () => {
@@ -110,7 +106,7 @@ export default function LpCurveForm({
     }
   };
 
-  const watchIsStaking = watch("isStaking");
+  const isStaking = watch("isStaking");
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
@@ -143,7 +139,7 @@ export default function LpCurveForm({
         </div>
 
         <Button type="submit" size="xl" className="px-12">
-          {watchIsStaking ? "Deposit and Stake" : "Deposit"}
+          {isStaking ? "Deposit and Stake" : "Deposit"}
         </Button>
       </div>
     </Form>
