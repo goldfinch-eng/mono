@@ -17,14 +17,15 @@ import fiduCurve from "./icons/fidu-curve.png";
 import gfIcon from "./icons/fidu.png";
 import usdcCurve from "./icons/usdc-curve.png";
 import LpCurveForm from "./lp-curve-form";
-import StakeCardForm, { STAKE_FORM_POSITION_FIELDS } from "./stake-card-form";
 import { Tab } from "./stake-card-tabs";
+import { StakeForm } from "./stake-form";
 import StakeMigrateForm, {
   MIGRATE_FORM_POSITION_FIELDS,
 } from "./stake-migrate-form";
+import { UnstakeForm, UNSTAKE_FORM_POSITION_FIELDS } from "./unstake-form";
 
 gql`
-  ${STAKE_FORM_POSITION_FIELDS}
+  ${UNSTAKE_FORM_POSITION_FIELDS}
   ${MIGRATE_FORM_POSITION_FIELDS}
   query StakePage($userId: ID!) {
     user(id: $userId) {
@@ -33,9 +34,7 @@ gql`
       ) {
         id
         amount
-        positionType
-        endTime @client
-        ...StakeFormPositionFields
+        ...UnstakeFormPositionFields
         ...MigrateFormPositionFields
       }
       stakedCurvePositions: seniorPoolStakedPositions(
@@ -43,8 +42,7 @@ gql`
       ) {
         id
         amount
-        positionType
-        endTime @client
+        ...UnstakeFormPositionFields
         ...MigrateFormPositionFields
       }
     }
@@ -191,18 +189,15 @@ export default function StakePage() {
               </Tab.List>
               <Tab.Panels>
                 <Tab.Panel>
-                  <StakeCardForm
-                    action="STAKE"
-                    balance={fiduBalance}
-                    positions={fiduPositions}
+                  <StakeForm
+                    max={fiduBalance}
                     positionType={StakedPositionType.Fidu}
                     onComplete={refetch}
                   />
                 </Tab.Panel>
                 <Tab.Panel>
-                  <StakeCardForm
-                    action="UNSTAKE"
-                    balance={fiduStaked}
+                  <UnstakeForm
+                    max={fiduStaked}
                     positions={fiduPositions}
                     positionType={StakedPositionType.Fidu}
                     onComplete={refetch}
@@ -247,22 +242,17 @@ export default function StakePage() {
               </Tab.List>
               <Tab.Panels>
                 <Tab.Panel>
-                  <StakeCardForm
-                    action="STAKE"
-                    balance={curveBalance}
-                    positions={curvePositions}
+                  <StakeForm
+                    max={curveBalance}
                     positionType={StakedPositionType.CurveLp}
-                    tokenMask="FIDU-USDC-F"
                     onComplete={refetch}
                   />
                 </Tab.Panel>
                 <Tab.Panel>
-                  <StakeCardForm
-                    action="UNSTAKE"
-                    balance={curveStaked}
+                  <UnstakeForm
+                    max={curveStaked}
                     positions={curvePositions}
                     positionType={StakedPositionType.CurveLp}
-                    tokenMask="FIDU-USDC-F"
                     onComplete={refetch}
                   />
                 </Tab.Panel>
