@@ -129,21 +129,21 @@ export default function StakeCardForm({
 
   return (
     <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
-      <div className="flex items-start gap-2">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row">
         <div className="max-w-xl flex-1">
           <DollarInput
             control={control}
             name="amount"
             label={`${action === "STAKE" ? "Stake" : "Unstake"} amount`}
+            hideLabel
             mask={`amount ${tokenMask ?? balance.token}`}
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
-            labelClassName="!text-sm !mb-3"
             onMaxClick={handleMax}
           />
         </div>
 
-        <Button type="submit" size="xl" className="mt-8 h-[66px] px-12">
+        <Button type="submit" size="xl" className="px-12">
           {`${action === "STAKE" ? "Stake" : "Unstake"}`}
         </Button>
       </div>

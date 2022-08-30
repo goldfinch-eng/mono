@@ -117,7 +117,7 @@ export default function LpCurveForm({
       <Checkbox
         id={`checkbox-staking-${type}`}
         {...register("isStaking")}
-        label={`I want to stake my Curve LP tokens to earn GFI rewards`}
+        label="I want to stake my Curve LP tokens to earn GFI rewards"
         inputSize="lg"
         className="mb-3"
         labelClassName="text-lg font-medium"
@@ -128,21 +128,21 @@ export default function LpCurveForm({
         for at least 12 months.
       </Paragraph>
 
-      <div className="flex items-start gap-2">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row">
         <div className="max-w-xl flex-1">
           <DollarInput
             control={control}
             name="amount"
             label="Amount"
+            hideLabel
             mask={`amount ${balance.token}`}
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
-            labelClassName="!text-sm !mb-3"
             onMaxClick={handleMax}
           />
         </div>
 
-        <Button type="submit" size="xl" className="mt-8 h-[66px] px-12">
+        <Button type="submit" size="xl" className="px-12">
           {watchIsStaking ? "Deposit and Stake" : "Deposit"}
         </Button>
       </div>
