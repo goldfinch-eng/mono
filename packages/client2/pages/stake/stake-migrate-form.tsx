@@ -99,11 +99,10 @@ export default function StakeMigrateForm({
           position.amount,
           usdcEquivalent.amount
         ),
-        pendingPrompt: `Migrating position ID:${position.id} submitted`,
+        pendingPrompt: `Migrating position ID: ${position.id} submitted`,
       });
-
-      onComplete();
     }
+    onComplete();
   };
 
   const handleMaxFidu = async () => {
@@ -126,17 +125,19 @@ export default function StakeMigrateForm({
     );
   };
 
-  const onChange = async (type: "FIDU" | "USDC") => {
-    const fieldValue = getValues(type === "FIDU" ? "fiduAmount" : "usdcAmount");
+  const syncOtherAmount = (changedAmount: "FIDU" | "USDC") => {
+    const fieldValue = getValues(
+      changedAmount === "FIDU" ? "fiduAmount" : "usdcAmount"
+    );
 
     if (!fieldValue) return;
 
     const value = utils.parseUnits(
-      fieldValue.replace(",", ""),
-      type === "FIDU" ? FIDU_DECIMALS : USDC_DECIMALS
+      fieldValue,
+      changedAmount === "FIDU" ? FIDU_DECIMALS : USDC_DECIMALS
     );
 
-    if (type === "FIDU") {
+    if (changedAmount === "FIDU") {
       setValue(
         "usdcAmount",
         formatCrypto(sharesToUsdc(value, sharePrice), {
@@ -176,41 +177,37 @@ export default function StakeMigrateForm({
   };
 
   return (
-    <Form rhfMethods={rhfMethods} onSubmit={onSubmit} className="relative z-10">
-      <div className="mb-8 max-w-xl">
+    <Form rhfMethods={rhfMethods} onSubmit={onSubmit}>
+      <div className="flex max-w-xl flex-col items-stretch">
         <DollarInput
           control={control}
           name="fiduAmount"
-          label={`FIDU amount`}
-          mask={`amount FIDU`}
+          label={`FIDU amount (max ${formatCrypto(fiduStaked, {
+            includeSymbol: false,
+            includeToken: false,
+          })})`}
+          mask="amount FIDU"
           rules={{ required: "Required", validate: validateMaxFidu }}
           textSize="xl"
-          labelClassName="!text-sm !mb-3"
           onMaxClick={handleMaxFidu}
-          onKeyUp={() => {
-            onChange("FIDU");
-          }}
+          onKeyUp={() => syncOtherAmount("FIDU")}
+          className="mb-8"
         />
-      </div>
-
-      <div className="flex items-start gap-2">
-        <div className="max-w-xl flex-1">
-          <DollarInput
-            control={control}
-            name="usdcAmount"
-            label={`USDC amount`}
-            mask={`amount USDC`}
-            rules={{ required: "Required", validate: validateMaxUsdc }}
-            textSize="xl"
-            labelClassName="!text-sm !mb-3"
-            onMaxClick={handleMaxUsdc}
-            onKeyUp={() => {
-              onChange("USDC");
-            }}
-          />
-        </div>
-
-        <Button type="submit" size="xl" className="mt-8 h-[66px] px-12">
+        <DollarInput
+          control={control}
+          name="usdcAmount"
+          label={`USDC amount (max ${formatCrypto(usdcBalance, {
+            includeSymbol: false,
+            includeToken: false,
+          })})`}
+          mask="amount USDC"
+          rules={{ required: "Required", validate: validateMaxUsdc }}
+          textSize="xl"
+          onMaxClick={handleMaxUsdc}
+          onKeyUp={() => syncOtherAmount("USDC")}
+          className="mb-8"
+        />
+        <Button type="submit" size="xl">
           Migrate
         </Button>
       </div>
