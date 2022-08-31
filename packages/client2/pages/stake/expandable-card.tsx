@@ -57,9 +57,11 @@ export function ExpandableCard({
           <div className="col-span-2 hidden justify-self-end md:block">
             {slot2Label}
           </div>
-          <div className="col-span-2 hidden justify-self-end md:block">
-            {slot3Label}
-          </div>
+          {hasSlot3 ? (
+            <div className="col-span-2 hidden justify-self-end md:block">
+              {slot3Label}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="relative rounded-xl bg-sand-100 py-4 px-6 hover:bg-sand-200">
@@ -87,9 +89,11 @@ export function ExpandableCard({
           <div className="col-span-2 hidden justify-self-end text-xl text-sand-700 md:block">
             {slot2}
           </div>
-          <div className="col-span-2 hidden justify-self-end text-xl text-sand-700 md:block">
-            {slot3}
-          </div>
+          {hasSlot3 ? (
+            <div className="col-span-2 hidden justify-self-end text-xl text-sand-700 md:block">
+              {slot3}
+            </div>
+          ) : null}
           <div className="col-end-13 row-start-1 flex items-center justify-self-end">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
@@ -121,11 +125,13 @@ export function ExpandableCard({
                 value={slot2}
                 className="block md:hidden"
               />
-              <DetailHelper
-                label={slot3Label}
-                value={slot3}
-                className="block md:hidden"
-              />
+              {hasSlot3 ? (
+                <DetailHelper
+                  label={slot3Label}
+                  value={slot3}
+                  className="block md:hidden"
+                />
+              ) : null}
             </div>
             <div>{children}</div>
           </div>
