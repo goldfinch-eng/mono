@@ -102,7 +102,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
   const {erc20, erc20s} = await getERC20s({hre, chainId})
 
-  if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
+  if (!isMainnetForking()) {
     logger("🐳 Funding from local whales")
     await fundFromLocalWhale(gf_deployer, erc20s, {logger})
     await fundFromLocalWhale(borrower, erc20s, {logger})
@@ -112,7 +112,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   if (isMainnetForking()) {
     logger("🐳 Funding from mainnet forking whales")
     const protocolOwner = await getProtocolOwner()
-    await impersonateAccount(hre, protocolOwner)
+    // await impersonateAccount(hre, protocolOwner)
     await fundWithWhales(["ETH"], [protocolOwner])
 
     logger("🐳 Funding protocol_owner with whales")
@@ -125,7 +125,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   }
 
   // Grant local signer role
-  await impersonateAccount(hre, protocol_owner)
+  // await impersonateAccount(hre, protocol_owner)
 
   // setup UID supported types for local dev
   if (!isMainnetForking()) {
@@ -134,10 +134,10 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     )
     const {protocol_owner: trustedSigner} = await getNamedAccounts()
     assertNonNullable(trustedSigner)
-    const tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
+    let tx = await uniqueIdentity.grantRole(SIGNER_ROLE, trustedSigner)
     await tx.wait()
 
-    await uniqueIdentity.setSupportedUIDTypes(
+    tx = await uniqueIdentity.setSupportedUIDTypes(
       [
         await uniqueIdentity.ID_TYPE_0(),
         await uniqueIdentity.ID_TYPE_1(),
@@ -147,16 +147,17 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
       ],
       [true, true, true, true, true]
     )
+    await tx.wait()
   }
 
-  await impersonateAccount(hre, protocol_owner)
+  // await impersonateAccount(hre, protocol_owner)
 
   let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
   let go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
   const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
   if (!isMainnetForking()) {
     go = go.connect(protocolOwnerSigner)
-    await go.setLegacyGoList(goldfinchConfig.address)
+    await (await go.setLegacyGoList(goldfinchConfig.address)).wait()
   }
   const legacyGoldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig", {
     at: await go.legacyGoList(),
@@ -185,9 +186,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   } else {
     await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
-    if (chainId === LOCAL_CHAIN_ID && !isMainnetForking()) {
-      await setUpRewards(erc20, getOrNull, protocol_owner)
-    }
+    // if (!isMainnetForking()) {
+    //   await setUpRewards(erc20, getOrNull, protocol_owner)
+    // }
 
     const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
     const lastEventArgs = getLastEventArgs(result)
@@ -218,38 +219,45 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
 
     // Have the senior fund invest
     seniorPool = seniorPool.connect(protocolOwnerSigner)
-    const txn = await commonPool.lockJuniorCapital()
+    let txn = await commonPool.lockJuniorCapital()
     await txn.wait()
-    await seniorPool.invest(commonPool.address)
+    txn = await seniorPool.invest(commonPool.address)
+    await txn.wait()
     const filter = commonPool.filters.DepositMade(seniorPool.address)
     const depositLog = (await ethers.provider.getLogs(filter))[0]
     assertNonNullable(depositLog)
     const depositEvent = commonPool.interface.parseLog(depositLog)
     const tokenId = depositEvent.args.tokenId
 
-    await commonPool.lockPool()
+    txn = await commonPool.lockPool()
+    await txn.wait()
     let creditLine = await getDeployedAsEthersContract<CreditLine>(getOrNull, "CreditLine")
     creditLine = creditLine.attach(await commonPool.creditLine())
 
     const amount = (await creditLine.limit()).div(2)
-    await commonPool.drawdown(amount)
+    txn = await commonPool.drawdown(amount)
+    await txn.wait()
 
-    await advanceTime({days: 32})
+    // await advanceTime({days: 32})
 
     // Have the borrower repay a portion of their loan
-    await impersonateAccount(hre, protocol_owner)
+    // await impersonateAccount(hre, protocol_owner)
     const borrowerSigner = ethers.provider.getSigner(protocol_owner)
     assertNonNullable(borrowerSigner)
     const bwrCon = (await ethers.getContractAt("Borrower", protocolBorrowerCon)).connect(borrowerSigner) as Borrower
     const payAmount = new BN(100).mul(USDCDecimals)
-    await (erc20 as TestERC20).connect(borrowerSigner).approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
-    await bwrCon.pay(commonPool.address, payAmount.toString())
+    txn = await (erc20 as TestERC20)
+      .connect(borrowerSigner)
+      .approve(bwrCon.address, payAmount.mul(new BN(2)).toString())
+    await txn.wait()
 
-    await advanceTime({days: 32})
+    txn = await bwrCon.pay(commonPool.address, payAmount.toString())
+    await txn.wait()
+    // await advanceTime({days: 32})
 
-    await bwrCon.pay(commonPool.address, payAmount.toString())
-
-    await seniorPool.redeem(tokenId)
+    txn = await bwrCon.pay(commonPool.address, payAmount.toString())
+    await txn.wait()
+    // await seniorPool.redeem(tokenId)
   }
 }
 
@@ -275,14 +283,20 @@ async function setUpRewards(
   const gfi = await getDeployedAsEthersContract<GFI>(getOrNull, "GFI")
 
   if (!isMainnetForking()) {
-    await gfi.mint(protocolOwner, amount.toString(10))
-    await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
-    await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
+    let tx = await gfi.mint(protocolOwner, amount.toString(10))
+    await tx.wait()
+    tx = await gfi.approve(communityRewards.address, rewardsAmount.toString(10))
+    await tx.wait()
+    tx = await gfi.approve(stakingRewards.address, rewardsAmount.toString(10))
+    await tx.wait()
 
-    await communityRewards.loadRewards(rewardsAmount.toString(10))
+    tx = await communityRewards.loadRewards(rewardsAmount.toString(10))
+    await tx.wait()
 
-    await stakingRewards.loadRewards(rewardsAmount.toString(10))
-    await stakingRewards.setRewardsParameters(
+    tx = await stakingRewards.loadRewards(rewardsAmount.toString(10))
+    await tx.wait()
+
+    tx = await stakingRewards.setRewardsParameters(
       toAtomic(new BN(1000), FIDU_DECIMALS),
       new BigNumber("10000000000")
         .multipliedBy(
@@ -296,30 +310,40 @@ async function setUpRewards(
       toAtomic(new BN(3), STAKING_REWARDS_MULTIPLIER_DECIMALS), // 300%
       toAtomic(new BN(0.5), STAKING_REWARDS_MULTIPLIER_DECIMALS) // 50%
     )
+    await tx.wait()
 
     // Have the protocol owner deposit-and-stake something, so that `stakingRewards.currentEarnRatePerToken()` will
     // not be 0 (due to a 0 staked supply), so that there's a non-zero APY from GFI rewards.
     const signer = ethers.provider.getSigner(protocolOwner)
     const usdcAmount = String(usdcVal(50000))
-    await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
-    await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+    tx = await erc20.connect(signer).approve(stakingRewards.address, usdcAmount)
+    await tx.wait()
+    tx = await stakingRewards.depositAndStake(usdcAmount, {from: protocolOwner})
+    await tx.wait()
 
     // If the MerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
     if (merkleDirectDistributor) {
-      await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      tx = await gfi.transfer(merkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      await tx.wait()
     }
 
     // If the BackerMerkleDirectDistributor contract is deployed, fund its GFI balance, so that it has GFI to disburse.
     if (backerMerkleDirectDistributor) {
-      await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      tx = await gfi.transfer(backerMerkleDirectDistributor.address, rewardsAmount.toString(10), {from: protocolOwner})
+      await tx.wait()
     }
   }
 
   // Configure BackerRewards
   const backerRewardsGfiAmount = amount.mul(new BN(BACKER_REWARDS_PERCENT_OF_TOTAL_GFI)).div(new BN(100))
-  await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
-  await backerRewards.setMaxInterestDollarsEligible(BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE, {from: protocolOwner})
-  await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
+  let tx = await gfi.transfer(backerRewards.address, backerRewardsGfiAmount.toString(10))
+  await tx.wait()
+  tx = await backerRewards.setMaxInterestDollarsEligible(BACKER_REWARDS_MAX_INTEREST_DOLLARS_ELIGIBLE, {
+    from: protocolOwner,
+  })
+  await tx.wait()
+  tx = await backerRewards.setTotalRewards(backerRewardsGfiAmount.toString(10), {from: protocolOwner})
+  await tx.wait()
 }
 
 export async function getERC20s({hre, chainId}) {
@@ -359,14 +383,18 @@ async function fundAddressAndDepositToCommonPool({
 }): Promise<void> {
   logger(`Deposit into senior fund address:${depositorAddress}`)
   // fund with address into sr fund
-  await impersonateAccount(hre, depositorAddress)
+  // await impersonateAccount(hre, depositorAddress)
   const signer = ethers.provider.getSigner(depositorAddress)
   const depositAmount = new BN(10000).mul(USDCDecimals)
-  await (erc20 as TestERC20).connect(signer).approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
-  await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
+  let txn = await (erc20 as TestERC20)
+    .connect(signer)
+    .approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
+  await txn.wait()
+  txn = await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
+  await txn.wait()
 
   // Deposit funds into Common Pool
-  let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
+  txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
   await txn.wait()
   txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
   await txn.wait()
@@ -412,7 +440,8 @@ async function createBorrowerContractAndPools({
   let filledPoolTxn = await filledPool.lockJuniorCapital()
   await filledPoolTxn.wait()
   const ownerSigner = ethers.provider.getSigner(protocol_owner)
-  await seniorPool.connect(ownerSigner).invest(filledPool.address)
+  filledPoolTxn = await seniorPool.connect(ownerSigner).invest(filledPool.address)
+  await filledPoolTxn.wait()
 
   filledPoolTxn = await filledPool.lockPool()
   await filledPoolTxn.wait()
@@ -570,10 +599,12 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logge
   logger("💰 Sending money to:", userToFund)
   const [protocol_owner] = await ethers.getSigners()
   if (protocol_owner) {
-    await protocol_owner.sendTransaction({
-      to: userToFund,
-      value: ethers.utils.parseEther("10.0"),
-    })
+    await (
+      await protocol_owner.sendTransaction({
+        to: userToFund,
+        value: ethers.utils.parseEther("10.0"),
+      })
+    ).wait()
   } else {
     throw new Error("🚨 Failed to obtain `protocol_owner`.")
   }
@@ -582,7 +613,7 @@ export async function fundFromLocalWhale(userToFund: string, erc20s: any, {logge
   for (const erc20 of erc20s) {
     const {contract} = erc20
     const decimals = ten.pow(new BN(await contract.decimals()))
-    await contract.transfer(userToFund, String(new BN(250000).mul(decimals)))
+    await (await contract.transfer(userToFund, String(new BN(250000).mul(decimals)))).wait()
   }
 }
 
