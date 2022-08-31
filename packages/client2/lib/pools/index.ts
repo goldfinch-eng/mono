@@ -316,7 +316,7 @@ export function getOptimalPositionsToUnstake(
   amount: BigNumber
 ): { id: string; amount: BigNumber }[] {
   const unstakeableAmount = positions.reduce(
-    (total, position) => total.add(position.amount || BigNumber.from(0)),
+    (total, position) => total.add(position.amount ?? BigNumber.from(0)),
     BigNumber.from(0)
   );
 
@@ -337,10 +337,7 @@ export function getOptimalPositionsToUnstake(
       if (!position.id) return acc;
 
       const id = position.id;
-      const positionAmount = position.amount
-        ? position.amount
-        : BigNumber.from(0);
-
+      const positionAmount = position.amount ?? BigNumber.from(0);
       const amountToUnstake = positionAmount.lt(amountRemaining)
         ? positionAmount
         : amountRemaining;
