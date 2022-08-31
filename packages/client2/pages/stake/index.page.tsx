@@ -1,7 +1,12 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber } from "ethers";
 
-import { Heading, Paragraph, Button } from "@/components/design-system";
+import {
+  Heading,
+  Paragraph,
+  Button,
+  InfoIconTooltip,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import {
   StakedPositionType,
@@ -124,6 +129,13 @@ export default function StakePage() {
       )
     : FixedNumber.from(0);
 
+  const curveApyFromGfiWithTooltip = (
+    <div className="relative z-10 flex items-center">
+      <div>{formatPercent(curveApyFromGfi)} GFI</div>
+      <InfoIconTooltip content="GFI reward APY for the FIDU portion of a Curve LP position. The USDC portion does not receive GFI rewards. The entire Curve LP position accrues swap fees." />
+    </div>
+  );
+
   return (
     <div>
       <Heading level={1} className="mb-12 text-7xl">
@@ -225,7 +237,7 @@ export default function StakePage() {
             heading="FIDU-USDC-F"
             subheading="Curve LP Token"
             headingLabel="Token to stake"
-            slot1={`${formatPercent(curveApyFromGfi)} GFI`}
+            slot1={curveApyFromGfiWithTooltip}
             slot1Label="Est. APY"
             slot2={formatCrypto(curveBalance)}
             slot2Label="Available"
@@ -299,7 +311,7 @@ export default function StakePage() {
             heading="Deposit FIDU"
             subheading="via Curve FIDU-USDC pool"
             headingLabel="Token to deposit"
-            slot1={`${formatPercent(curveApyFromGfi)} GFI`}
+            slot1={curveApyFromGfiWithTooltip}
             slot1Label="Est. APY"
             slot2={formatCrypto(fiduBalance)}
             slot2Label="Available"
@@ -315,7 +327,7 @@ export default function StakePage() {
             heading="Deposit USDC"
             subheading="via Curve FIDU-USDC pool"
             headingLabel="Token to deposit"
-            slot1={`${formatPercent(curveApyFromGfi)} GFI`}
+            slot1={curveApyFromGfiWithTooltip}
             slot1Label="Est. APY"
             slot2={formatCrypto(usdcBalance)}
             slot2Label="Available"
