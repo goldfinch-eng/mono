@@ -130,9 +130,14 @@ export default function StakePage() {
     : FixedNumber.from(0);
 
   const curveApyFromGfiWithTooltip = (
-    <div className="relative z-10 flex items-center">
-      <div>{formatPercent(curveApyFromGfi)} GFI</div>
-      <InfoIconTooltip content="GFI reward APY for the FIDU portion of a Curve LP position. The USDC portion does not receive GFI rewards. The entire Curve LP position accrues swap fees." />
+    <div className="flex items-center">
+      <div className="whitespace-nowrap">
+        {formatPercent(curveApyFromGfi)} GFI
+      </div>
+      <InfoIconTooltip
+        className="relative z-10"
+        content="GFI reward APY for the FIDU portion of a Curve LP position. The USDC portion does not receive GFI rewards. The entire Curve LP position accrues swap fees."
+      />
     </div>
   );
 
