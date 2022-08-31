@@ -49,7 +49,7 @@ export function UnstakeForm({
 
   if (positions.some((p) => p.positionType !== positionType)) {
     throw new Error(
-      "Not all positions given to UnstakeForm have the same type"
+      `Not all positions given to UnstakeForm match type ${positionType}`
     );
   }
 
