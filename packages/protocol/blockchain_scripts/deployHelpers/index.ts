@@ -47,8 +47,26 @@ const LOCAL = "localhost"
 const ROPSTEN = "ropsten"
 const RINKEBY = "rinkeby"
 const MAINNET = "mainnet"
+const FUJI = "fuji"
+const MOONBEAM = "moonbeam"
+const AURORA = "aurora"
+const MUMBAI = "mumbai"
+const ARBITRUM = "arbitrum"
+const BSC = "bsc"
+const EVMOS = "evmos"
 
-export type ChainName = typeof LOCAL | typeof ROPSTEN | typeof RINKEBY | typeof MAINNET
+export type ChainName =
+  | typeof LOCAL
+  | typeof ROPSTEN
+  | typeof RINKEBY
+  | typeof MAINNET
+  | typeof FUJI
+  | typeof MOONBEAM
+  | typeof AURORA
+  | typeof MUMBAI
+  | typeof ARBITRUM
+  | typeof BSC
+  | typeof EVMOS
 
 const MAX_UINT = new BN("115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
@@ -60,10 +78,47 @@ const MAINNET_CHAIN_ID = "1"
 type MainnetChainId = typeof MAINNET_CHAIN_ID
 const RINKEBY_CHAIN_ID = "4"
 type RinkebyChainId = typeof RINKEBY_CHAIN_ID
+const FUJI_CHAIN_ID = "43113"
+type FujiChainId = typeof FUJI_CHAIN_ID
+const MOONBEAM_CHAIN_ID = "1287"
+type MoonbeamChainId = typeof MOONBEAM_CHAIN_ID
+const AURORA_CHAIN_ID = "1313161555"
+type AuroraChainId = typeof AURORA_CHAIN_ID
+const MUMBAI_CHAIN_ID = "80001"
+type MumbaiChainId = typeof MUMBAI_CHAIN_ID
+const ARBITRUM_CHAIN_ID = "421611"
+type ArbitrumChainId = typeof ARBITRUM_CHAIN_ID
+const BSC_CHAIN_ID = "97"
+type BscChainId = typeof BSC_CHAIN_ID
+const EVMOS_CHAIN_ID = "9000"
+type EvmosChainId = typeof EVMOS_CHAIN_ID
 
-export type ChainId = LocalChainId | RopstenChainId | MainnetChainId | RinkebyChainId
+export type ChainId =
+  | LocalChainId
+  | RopstenChainId
+  | MainnetChainId
+  | RinkebyChainId
+  | FujiChainId
+  | MoonbeamChainId
+  | AuroraChainId
+  | MumbaiChainId
+  | ArbitrumChainId
+  | BscChainId
+  | EvmosChainId
 
-const CHAIN_IDS = genExhaustiveTuple<ChainId>()(LOCAL_CHAIN_ID, ROPSTEN_CHAIN_ID, MAINNET_CHAIN_ID, RINKEBY_CHAIN_ID)
+const CHAIN_IDS = genExhaustiveTuple<ChainId>()(
+  LOCAL_CHAIN_ID,
+  ROPSTEN_CHAIN_ID,
+  MAINNET_CHAIN_ID,
+  RINKEBY_CHAIN_ID,
+  FUJI_CHAIN_ID,
+  MOONBEAM_CHAIN_ID,
+  AURORA_CHAIN_ID,
+  MUMBAI_CHAIN_ID,
+  ARBITRUM_CHAIN_ID,
+  BSC_CHAIN_ID,
+  EVMOS_CHAIN_ID
+)
 export const assertIsChainId: (val: unknown) => asserts val is ChainId = (val: unknown): asserts val is ChainId => {
   if (!(CHAIN_IDS as unknown[]).includes(val)) {
     throw new AssertionError(`${val} is not in \`CHAIN_IDS\`.`)
@@ -75,6 +130,13 @@ const CHAIN_NAME_BY_ID: Record<ChainId, ChainName> = {
   [ROPSTEN_CHAIN_ID]: ROPSTEN,
   [MAINNET_CHAIN_ID]: MAINNET,
   [RINKEBY_CHAIN_ID]: RINKEBY,
+  [FUJI_CHAIN_ID]: FUJI,
+  [MOONBEAM_CHAIN_ID]: MOONBEAM,
+  [AURORA_CHAIN_ID]: AURORA,
+  [MUMBAI_CHAIN_ID]: MUMBAI,
+  [ARBITRUM_CHAIN_ID]: ARBITRUM,
+  [BSC_CHAIN_ID]: BSC,
+  [EVMOS_CHAIN_ID]: EVMOS,
 }
 
 export type AddressString = string
@@ -364,18 +426,9 @@ export async function getTempMultisig(): Promise<string> {
 }
 
 async function getProtocolOwner(): Promise<string> {
-  const chainId = await getChainId()
   const {protocol_owner} = await getNamedAccounts()
-  if (isMainnetForking()) {
-    return SAFE_CONFIG[MAINNET_CHAIN_ID].safeAddress
-  } else if (chainId === LOCAL_CHAIN_ID) {
-    assertIsString(protocol_owner)
-    return protocol_owner
-  } else if (SAFE_CONFIG[chainId]) {
-    return SAFE_CONFIG[chainId].safeAddress
-  } else {
-    throw new Error(`Unknown owner for chain id ${chainId}`)
-  }
+  assertIsString(protocol_owner)
+  return protocol_owner
 }
 
 async function currentChainId(): Promise<ChainId> {

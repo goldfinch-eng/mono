@@ -338,8 +338,13 @@ class IndividualTxEffects extends MultisendEffects {
   async execute(safeTxs: SafeTransactionDataPartial[]): Promise<void> {
     const signer = ethers.provider.getSigner(await getProtocolOwner())
 
+    console.log(`${safeTxs.length} transactions to be executed`)
+    let i = 1
     for (const tx of safeTxs) {
-      await signer.sendTransaction({...tx, value: BigNumber.from(tx.value)})
+      console.log(`Executing transaction ${i}...`)
+      console.log(JSON.stringify(tx))
+      await (await signer.sendTransaction({...tx, value: BigNumber.from(tx.value)})).wait()
+      ++i
     }
   }
 }
@@ -388,16 +393,5 @@ export async function getDeployEffects(params?: {
   title?: string
   description?: string
 }): Promise<DeployEffects> {
-  const via = params?.via
-
-  if (isMainnetForking()) {
-    const safe = await getSafe({via})
-    return new MainnetForkingMultisendEffects({safe})
-  } else if ((await currentChainId()) === LOCAL_CHAIN_ID) {
-    return new IndividualTxEffects()
-  } else {
-    const chainId = await hre.getChainId()
-    assertIsChainId(chainId)
-    return new DefenderMultisendEffects({chainId, via, title: params?.title, description: params?.description})
-  }
+  return new IndividualTxEffects()
 }

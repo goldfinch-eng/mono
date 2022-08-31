@@ -50,7 +50,7 @@ export default {
       },
       allowUnlimitedContractSize: true,
       timeout: 1800000,
-      accounts: {mnemonic: "test test test test test test test test test test test junk"},
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
       chainId: process.env.HARDHAT_FORK === "mainnet" ? 1 : 31337,
       forking: process.env.HARDHAT_FORK
         ? {
@@ -72,6 +72,45 @@ export default {
       url: "https://murmuration.goldfinch.finance/_chain",
       chainId: 31337,
       accounts: {mnemonic: "test test test test test test test test test test test junk"},
+    },
+    fuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      // gasPrice: 225000000000,
+      chainId: 43113,
+      // gasPrice: 120000000000
+    },
+    moonbeam: {
+      url: "https://rpc.api.moonbase.moonbeam.network",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 1287,
+    },
+    aurora: {
+      url: "https://testnet.aurora.dev",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 1313161555,
+      // gasPrice: 120 * 1000000000
+    },
+    mumbai: {
+      url: "https://rpc-mumbai.maticvigil.com/",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 80001,
+      // gasPrice: 120 * 1000000000
+    },
+    arbitrum: {
+      url: "https://rinkeby.arbitrum.io/rpc",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 421611,
+    },
+    bsc: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 97,
+    },
+    evmos: {
+      url: "https://eth.bd.evmos.dev:8545",
+      accounts: {mnemonic: process.env.EOA_MNEMONIC},
+      chainId: 9000,
     },
   },
   solidity: {
@@ -115,7 +154,7 @@ export default {
       4: "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
     },
     gf_deployer: {
-      default: 1,
+      default: 0,
       1: "0xa083880F7a5df37Bf00a25380C3eB9AF9cD92D8f",
       4: "0x12B82166fd044aC854D3Fc15C48B5719Ca8Dfb94",
     },
