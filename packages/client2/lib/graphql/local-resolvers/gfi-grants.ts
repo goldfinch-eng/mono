@@ -14,11 +14,6 @@ import {
 export const indirectGfiGrantResolvers: Resolvers[string] = {
   async vested(indirectGfiGrant: IndirectGfiGrant): Promise<BigNumber> {
     const provider = await getProvider();
-    if (!provider) {
-      throw new Error(
-        "No connected provider when calculating vested amount for a GfiGrant"
-      );
-    }
     const chainId = await provider.getSigner().getChainId();
     const communityRewardsContract = getContract({
       name: "CommunityRewards",
@@ -44,11 +39,6 @@ export const indirectGfiGrantResolvers: Resolvers[string] = {
 export const directGfiGrantResolvers: Resolvers[string] = {
   async isAccepted(gfiDirectGrant: DirectGfiGrant): Promise<boolean> {
     const provider = await getProvider();
-    if (!provider) {
-      throw new Error(
-        "No connected provider when checking `isAccepted` on GfiDirectGrant"
-      );
-    }
     const chainId = await provider.getSigner().getChainId();
     switch (gfiDirectGrant.directSource) {
       case DirectGrantSource.MerkleDirectDistributor:
