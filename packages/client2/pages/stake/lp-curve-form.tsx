@@ -28,11 +28,7 @@ interface CurveForm {
   amount: string;
 }
 
-export default function LpCurveForm({
-  balance,
-  type,
-  onComplete,
-}: LpCurveFormProps) {
+export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
   const { account } = useWallet();
   const stakingRewardsContract = useContract("StakingRewards");
   const fiduContract = useContract("Fidu");

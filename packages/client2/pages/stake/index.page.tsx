@@ -16,12 +16,10 @@ import curveIcon from "./icons/curve.png";
 import fiduCurve from "./icons/fidu-curve.png";
 import gfIcon from "./icons/fidu.png";
 import usdcCurve from "./icons/usdc-curve.png";
-import LpCurveForm from "./lp-curve-form";
+import { LpCurveForm } from "./lp-curve-form";
+import { MigrateForm, MIGRATE_FORM_POSITION_FIELDS } from "./migrate-form";
 import { Tab } from "./stake-card-tabs";
 import { StakeForm } from "./stake-form";
-import StakeMigrateForm, {
-  MIGRATE_FORM_POSITION_FIELDS,
-} from "./stake-migrate-form";
 import { UnstakeForm, UNSTAKE_FORM_POSITION_FIELDS } from "./unstake-form";
 
 gql`
@@ -209,7 +207,7 @@ export default function StakePage() {
                     FIDU-USDC liquidity pool, without needing to unstake it on
                     Goldfinch.
                   </Paragraph>
-                  <StakeMigrateForm
+                  <MigrateForm
                     fiduStaked={fiduStaked}
                     usdcBalance={usdcBalance}
                     positions={fiduPositions}

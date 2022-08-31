@@ -39,7 +39,7 @@ interface StakeMigrateForm {
   usdcAmount: string;
 }
 
-export default function StakeMigrateForm({
+export function MigrateForm({
   fiduStaked,
   usdcBalance,
   positions,
