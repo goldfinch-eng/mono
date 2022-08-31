@@ -6,11 +6,11 @@ import closeIcon from "../images/x.svg"
 import menuIcon from "../images/menu.svg"
 
 export const NAV_ITEMS = [
-  {label: "Earn", href: "https://beta.app.goldfinch.finance/earn"},
+  {label: "Earn", href: "/earn"},
   {label: "Borrow", href: "/borrow"},
-  {label: "GFI", href: "https://beta.app.goldfinch.finance/gfi"},
+  {label: "GFI", href: "/gfi"},
   {label: "Stake", href: "/stake"},
-  {label: "Transactions", href: "https://beta.app.goldfinch.finance/transactions"},
+  {label: "Transactions", href: "/transactions"},
 ]
 
 export default function Nav({children}: {children: ReactNode}) {
