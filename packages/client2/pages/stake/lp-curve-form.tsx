@@ -112,6 +112,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
 
   useEffect(() => {
     // ! This calculation doesn't match the price impact shown on https://curve.fi/factory-crypto/23/deposit. Not sure how to replicate their calculation
+    // https://linear.app/goldfinch/issue/GFI-982/slippage-aka-price-impact-values-calculated-by-our-client-do-not-match
     const checkSlippage = async (amount: string) => {
       if (!curvePoolContract || !seniorPoolContract) {
         return;
