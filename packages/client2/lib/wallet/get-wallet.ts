@@ -1,6 +1,9 @@
-import type { Web3Provider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 
+import { DESIRED_CHAIN_ID } from "@/constants";
+
+import { RPC_URLS } from "./chains";
 import { connectorPriorityList } from "./use-wallet";
 
 /**
@@ -8,7 +11,7 @@ import { connectorPriorityList } from "./use-wallet";
  * Please don't use this function if you have access to the `useWallet()` hook.
  * @returns An instance of ethers Web3Provider wrapping the user's connected wallet. If no wallet is connected, this will return null.
  */
-export async function getProvider(): Promise<Web3Provider | null> {
+export async function getProvider() {
   for (const [connector] of connectorPriorityList) {
     if (connector.provider) {
       // ! There's a really annoying bug that stems from wallet eager connection. When the eager connection is attempted, provider.isConnected will wrongly be set to true, even though nothing is actually connected
@@ -26,5 +29,5 @@ export async function getProvider(): Promise<Web3Provider | null> {
       }
     }
   }
-  return null;
+  return new JsonRpcProvider(RPC_URLS[DESIRED_CHAIN_ID], DESIRED_CHAIN_ID);
 }

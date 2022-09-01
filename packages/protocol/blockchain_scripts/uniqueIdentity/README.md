@@ -13,7 +13,7 @@ record.
 
 ## Running in production
 
-The script relies on these environment variables in your .env.local file
+The script relies on these environment variables
 
 - `NETWORK` is network name to execute the burn on. Use "mainnet" for production and "localhost" for testing.
 - `BURN_ACCOUNT` is the wallet address whose UID we want to burn
@@ -24,13 +24,22 @@ The script relies on these environment variables in your .env.local file
 - `PREPARE_REMINT_ACCOUNT` is an optional new address for the user to remint at. If this variable is blank then the user will be able to remint using the same wallet address (`BURN_ACCOUNT`)
 - `BURNER_PRIVATE_KEY` private key of a wallet funded with ETH that will be used to execute the burn
 
-The script can be invoked like
+If you are running the script locally then set them in your .env.local file. If you are running the script in a codespace
+then set them as encrypted environment variables. More info on that [here](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces#using-secrets).
 
 ```
 npx hardhat run --network mainnet burnUID.ts | tee burn-UID-output.txt
 ```
 
 This will write all script output to file `burn-UID-output.txt`
+
+### Setting up Codespace secrets
+This [GitHub page](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces#using-secrets) is a step-by-step guide for how to
+configure the secrets for the script.
+
+Make sure you give the `warbler-labs/mono` repo access to each secret ([screenshot](https://drive.google.com/file/d/1h9-I7_JlOPwuypvNwONVvYTORLXX3VGI/view?usp=sharing))
+
+Your secrets page should look like [this](https://drive.google.com/file/d/1z-nNOM8gyMv9uVvOGavUGHgAiopUbQY4/view?usp=sharing) after configuring the secrets
 
 ## Additional Documentation
 
