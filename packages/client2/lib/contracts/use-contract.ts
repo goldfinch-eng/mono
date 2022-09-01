@@ -63,6 +63,14 @@ const supportedContracts = {
     import("@/types/ethers-contracts/factories/BackerRewards__factory").then(
       (module) => module.BackerRewards__factory.connect
     ),
+  CurvePool: () =>
+    import("@/types/ethers-contracts/factories/CurvePool__factory").then(
+      (module) => module.CurvePool__factory.connect
+    ),
+  CurveLP: () =>
+    import("@/types/ethers-contracts/factories/Erc20__factory").then(
+      (module) => module.Erc20__factory.connect
+    ),
 };
 
 type SupportedContractName = keyof typeof supportedContracts;

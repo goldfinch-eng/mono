@@ -16,7 +16,7 @@ import {
 } from "../generated";
 
 async function erc20Balance(
-  token: Exclude<SupportedCrypto, SupportedCrypto.CurveLp> // curve lp token could be added later
+  token: SupportedCrypto
 ): Promise<CryptoAmount | null> {
   try {
     const provider = await getProvider();
@@ -30,6 +30,8 @@ async function erc20Balance(
           ? "USDC"
           : token === SupportedCrypto.Fidu
           ? "Fidu"
+          : token === SupportedCrypto.CurveLp
+          ? "CurveLP"
           : assertUnreachable(token),
       provider,
     });
@@ -60,6 +62,9 @@ export const viewerResolvers: Resolvers[string] = {
   },
   async fiduBalance(): Promise<CryptoAmount | null> {
     return erc20Balance(SupportedCrypto.Fidu);
+  },
+  async curveLpBalance(): Promise<CryptoAmount | null> {
+    return erc20Balance(SupportedCrypto.CurveLp);
   },
   async gfiGrants(viewer: Viewer) {
     if (!viewer || !viewer.account) {

@@ -7,7 +7,7 @@ export const NAV_ITEMS = [
   { label: "Earn", href: "/earn" },
   { label: "Borrow", href: `${oldClientOrigin}/borrow` },
   { label: "GFI", href: `/gfi` },
-  { label: "Stake", href: `${oldClientOrigin}/stake` },
+  { label: "Stake", href: `/stake` },
   {
     label: "Transactions",
     href: `/transactions`,

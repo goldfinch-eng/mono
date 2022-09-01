@@ -2,6 +2,11 @@
 Goldfinch is a decentralized lending protocol built on the blockchain. This is a monorepo containing Goldfinch's smart contracts, web3 frontend and other supporting code.
 
 ## Installing
+#### Environment
+Copy the .env.example at the workspace root to a new file .env.local. Fill in the `TEST_USER` field with some development address.
+
+If working on the frontend, be sure to follow the same process in packages/client2.
+
 #### Node version
 
 You will need the correct version of node/npm on your local machine.
@@ -32,6 +37,7 @@ npx lerna bootstrap
 
 ##### Troubleshooting
 
+###### File Table Overflow
 If you run in to this error during `npm run bootstrap`
 ```
 ENFILE: file table overflow
@@ -40,6 +46,13 @@ Try increasing the maximum number of files that can be open
 ```
 ulimit -n 10240
 ```
+
+###### Unrecognized network name
+Similar errors: Accounts array must not be empty, ADD_YOUR_METAMASK_ADDRESS_HERE
+
+It's possible your local environment is not set up properly (or at all). You may need to create an .env.local file. Wherever these are needed, there is always an .env.example file that you can copy and rename.
+
+See "One time setup" in "Frontend Development" for an example of this.
 
 ## Developing
 

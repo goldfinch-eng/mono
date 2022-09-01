@@ -5,6 +5,7 @@
 /pools/*        https://beta.app.goldfinch.finance/pools/:splat   302
 /verify         https://beta.app.goldfinch.finance/verify         302
 /gfi            https://beta.app.goldfinch.finance/gfi            302
+/stake          https://beta.app.goldfinch.finance/stake          302
 
 # SPA
 /*  /index.html  200

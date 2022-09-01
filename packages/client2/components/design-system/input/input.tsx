@@ -30,6 +30,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
    */
   errorMessage?: string;
   /**
+   * Indicates the severity of the error message. Severity will be automatically determined if this component is in a `<Form>` component. Will be determined to be `warn` if the `type` of the error
+   */
+  errorSeverity?: "error" | "warn";
+  /**
    * Class that goes specifically on the input element, not on the wrapper. Makes it easier to override input-specific styles like placeholder
    */
   inputClassName?: string;
@@ -59,6 +63,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     type = "text",
     helperText,
     errorMessage,
+    errorSeverity,
     disabled = false,
     decoration,
     labelDecoration,
@@ -73,13 +78,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref
 ) {
   const formContext = useFormContext();
-  let _errorMessage = errorMessage;
-  if (formContext !== null) {
-    _errorMessage = formContext.formState.errors[name]?.message;
-  }
+  const _errorMessage: InputProps["errorMessage"] =
+    errorMessage ?? formContext.formState.errors[name]?.message;
+  const _errorSeverity: InputProps["errorSeverity"] = !_errorMessage
+    ? undefined
+    : errorSeverity
+    ? errorSeverity
+    : formContext.formState.errors[name]?.type === "warn"
+    ? "warn"
+    : "error";
 
   const _id = id ?? name;
-  const isError = !!_errorMessage;
   return (
     <div
       className={clsx(
@@ -116,14 +125,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             colorScheme === "light"
               ? [
                   "border bg-white focus:border-sand-600",
-                  isError
+                  _errorSeverity === "error"
                     ? "border-clay-100 placeholder:text-clay-700"
                     : "border-sand-200 placeholder:text-sand-500",
                 ]
               : colorScheme === "dark"
               ? [
                   "border bg-sky-900 focus:border-white",
-                  isError
+                  _errorSeverity === "error"
                     ? "border-clay-500 placeholder:text-clay-500"
                     : "border-transparent placeholder:text-sand-300",
                 ]
@@ -163,8 +172,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {helperText || _errorMessage ? (
         <HelperText
           className={clsx(
-            isError
+            _errorSeverity === "error"
               ? "text-clay-500"
+              : _errorSeverity === "warn"
+              ? "text-mustard-500"
               : colorScheme === "light"
               ? "text-sand-500"
               : colorScheme === "dark"
