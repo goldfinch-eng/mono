@@ -11,7 +11,7 @@ import {
   UidType,
   TransactionCategory,
 } from "@/lib/graphql/generated";
-import { Erc20 } from "@/types/ethers-contracts";
+import type { Erc20 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
 
