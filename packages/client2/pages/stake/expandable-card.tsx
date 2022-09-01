@@ -115,18 +115,18 @@ export function ExpandableCard({
             {/* The relative z-10 classes are here to make sure this content stacks on top of the card, and doesn't cause the card to collapse when clicked */}
             <hr className="my-6 border-t border-sand-300" />
             <div className="gap mb-6 flex flex-col gap-x-12 gap-y-3 xs:flex-row md:hidden">
-              <DetailHelper
+              <TuckedSlot
                 label={slot1Label}
                 value={slot1}
                 className="block xs:hidden"
               />
-              <DetailHelper
+              <TuckedSlot
                 label={slot2Label}
                 value={slot2}
                 className="block md:hidden"
               />
               {hasSlot3 ? (
-                <DetailHelper
+                <TuckedSlot
                   label={slot3Label}
                   value={slot3}
                   className="block md:hidden"
@@ -141,7 +141,7 @@ export function ExpandableCard({
   );
 }
 
-function DetailHelper({
+function TuckedSlot({
   className,
   label,
   value,
