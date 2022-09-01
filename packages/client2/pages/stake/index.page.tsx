@@ -155,7 +155,7 @@ export default function StakePage() {
         <div className="text-clay-500">{error.message}</div>
       ) : (
         <div>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <Heading level={5} className="!font-normal">
               Stake on Goldfinch
             </Heading>
@@ -275,34 +275,36 @@ export default function StakePage() {
             </Tab.Group>
           </ExpandableCard>
 
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <Heading level={5} className="!font-normal">
               LP on Curve
             </Heading>
-            <Button
-              className="ml-auto block"
-              as="a"
-              size="lg"
-              href="https://curve.fi/factory-crypto/23"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-              target="_blank"
-              colorScheme="secondary"
-            >
-              View pool on Curve
-            </Button>
-            <Button
-              className="ml-3 block"
-              as="a"
-              size="lg"
-              href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
-              iconRight="ArrowTopRight"
-              variant="rounded"
-              target="_blank"
-              colorScheme="secondary"
-            >
-              Learn more
-            </Button>
+            <div>
+              <Button
+                className="ml-auto block"
+                as="a"
+                size="lg"
+                href="https://curve.fi/factory-crypto/23"
+                iconRight="ArrowTopRight"
+                variant="rounded"
+                target="_blank"
+                colorScheme="secondary"
+              >
+                View pool on Curve
+              </Button>
+              <Button
+                className="ml-3 block"
+                as="a"
+                size="lg"
+                href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
+                iconRight="ArrowTopRight"
+                variant="rounded"
+                target="_blank"
+                colorScheme="secondary"
+              >
+                Learn more
+              </Button>
+            </div>
           </div>
 
           <Paragraph className="mb-8 !text-lg">
