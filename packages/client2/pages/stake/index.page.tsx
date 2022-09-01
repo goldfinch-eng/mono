@@ -90,7 +90,6 @@ export default function StakePage() {
 
   const { data, error, loading, refetch } = useStakePageQuery({
     variables: { userId: account?.toLowerCase() ?? "" },
-    skip: !account,
   });
 
   const fiduPositions = data?.user?.stakedFiduPositions ?? [];
@@ -142,8 +141,12 @@ export default function StakePage() {
       </Heading>
 
       {!account ? (
-        <div>You must connect your wallet to stake your tokens</div>
-      ) : loading || !data ? (
+        <div className="mb-12 text-lg font-medium text-clay-500">
+          You must connect your wallet to view your available tokens.
+        </div>
+      ) : null}
+
+      {loading || !data ? (
         <div>Loading</div>
       ) : error ? (
         <div className="text-clay-500">{error.message}</div>
