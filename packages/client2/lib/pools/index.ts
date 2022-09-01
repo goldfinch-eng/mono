@@ -315,10 +315,7 @@ export function getOptimalPositionsToUnstake(
   positions: Pick<SeniorPoolStakedPosition, "id" | "amount" | "endTime">[],
   amount: BigNumber
 ): { id: string; amount: BigNumber }[] {
-  const unstakeableAmount = positions.reduce(
-    (total, position) => total.add(position.amount ?? BigNumber.from(0)),
-    BigNumber.from(0)
-  );
+  const unstakeableAmount = sum("amount", positions);
 
   if (unstakeableAmount.lt(amount)) {
     throw new Error(`Cannot unstake more than ${unstakeableAmount}.`);
@@ -347,4 +344,20 @@ export function getOptimalPositionsToUnstake(
       return acc.concat([{ id, amount: amountToUnstake }]);
     }, [])
     .filter(({ amount }) => amount.gt(BigNumber.from(0)));
+}
+
+/**
+ * Convenience function that allows you to sum one field of an array of objects.
+ * @param field The field to extract from each of the objects.
+ * @param summable Array of objects to be summed over. Each object should have a key named the same as `field` with a value that is a BigNumber
+ * @returns The sum of all `summable[field]` values.
+ */
+export function sum(
+  field: string,
+  summable: Record<string, unknown>[] = []
+): BigNumber {
+  return summable.reduce(
+    (prev, current) => prev.add(current[field] as BigNumber),
+    BigNumber.from(0)
+  );
 }

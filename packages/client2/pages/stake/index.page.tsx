@@ -13,7 +13,7 @@ import {
   SupportedCrypto,
   useStakePageQuery,
 } from "@/lib/graphql/generated";
-import { computeApyFromGfiInFiat } from "@/lib/pools";
+import { computeApyFromGfiInFiat, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { ExpandableCard } from "./expandable-card";
@@ -96,17 +96,11 @@ export default function StakePage() {
   const fiduPositions = data?.user?.stakedFiduPositions ?? [];
   const curvePositions = data?.user?.stakedCurvePositions ?? [];
   const fiduStaked = {
-    amount: (fiduPositions ?? []).reduce(
-      (total, pos) => total.add(pos.amount),
-      BigNumber.from(0)
-    ),
+    amount: sum("amount", fiduPositions),
     token: SupportedCrypto.Fidu,
   };
   const curveStaked = {
-    amount: (data?.user?.stakedCurvePositions ?? []).reduce(
-      (total, pos) => total.add(pos.amount),
-      BigNumber.from(0)
-    ),
+    amount: sum("amount", data?.user?.stakedCurvePositions),
     token: SupportedCrypto.CurveLp,
   };
   const fiduBalance = data?.viewer.fiduBalance ?? {
