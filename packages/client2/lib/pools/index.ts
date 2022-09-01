@@ -352,12 +352,12 @@ export function getOptimalPositionsToUnstake(
  * @param summable Array of objects to be summed over. Each object should have a key named the same as `field` with a value that is a BigNumber
  * @returns The sum of all `summable[field]` values.
  */
-export function sum(
-  field: string,
-  summable: Record<string, unknown>[] = []
+export function sum<T extends string, U extends Record<T, BigNumber>>(
+  field: T,
+  summable: U[] = []
 ): BigNumber {
   return summable.reduce(
-    (prev, current) => prev.add(current[field] as BigNumber),
+    (prev, current) => prev.add(current[field]),
     BigNumber.from(0)
   );
 }
