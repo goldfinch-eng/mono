@@ -286,9 +286,8 @@ export default function StakePage() {
             <Heading level={5} className="!font-normal">
               LP on Curve
             </Heading>
-            <div>
+            <div className="flex flex-wrap gap-3">
               <Button
-                className="ml-auto block"
                 as="a"
                 size="lg"
                 href="https://curve.fi/factory-crypto/23"
@@ -300,7 +299,6 @@ export default function StakePage() {
                 View pool on Curve
               </Button>
               <Button
-                className="ml-3 block"
                 as="a"
                 size="lg"
                 href="https://docs.goldfinch.finance/goldfinch/protocol-mechanics/staking"
