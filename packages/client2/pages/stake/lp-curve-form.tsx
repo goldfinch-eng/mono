@@ -66,6 +66,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
       });
     }
 
+    // For these .deposit calls, keep in mind that they take two parameters: fiduAmount and usdcAmount. Since the UI only offers depositing FIDU or USDC, we conditionally make one of these params 0
     if (data.isStaking) {
       await toastTransaction({
         transaction: stakingRewardsContract.depositToCurveAndStake(
