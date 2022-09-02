@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from "@/components/design-system";
 import { TRANCHES, USDC_DECIMALS } from "@/constants";
-import { generateErc20PermitSignature, useContract } from "@/lib/contracts";
+import { generateErc20PermitSignature, getContract } from "@/lib/contracts";
 import { formatPercent, formatFiat, formatCrypto } from "@/lib/format";
 import {
   SupportedFiat,
@@ -97,10 +97,6 @@ export default function SupplyPanel({
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
-  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
-  const usdcContract = useContract("USDC");
-  const zapperContract = useContract("Zapper");
-  const stakingRewardsContract = useContract("StakingRewards");
 
   const isUserVerified =
     user?.isGoListed ||
@@ -120,7 +116,7 @@ export default function SupplyPanel({
   const { control, watch, register, setValue } = rhfMethods;
 
   const handleMax = async () => {
-    if (!account || !usdcContract) {
+    if (!account) {
       return;
     }
     const userUsdcBalance = availableBalance;
@@ -137,7 +133,7 @@ export default function SupplyPanel({
   };
 
   const validateMaximumAmount = async (value: string) => {
-    if (!account || !usdcContract) {
+    if (!account) {
       return;
     }
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
@@ -156,7 +152,7 @@ export default function SupplyPanel({
   };
 
   const onSubmit = async (data: SupplyForm) => {
-    if (!usdcContract || !provider || !account) {
+    if (!provider || !account) {
       throw new Error("Wallet not connected properly");
     }
 
@@ -169,6 +165,12 @@ export default function SupplyPanel({
     }
 
     if (data.source === "wallet") {
+      const usdcContract = await getContract({ name: "USDC", provider });
+      const tranchedPoolContract = await getContract({
+        name: "TranchedPool",
+        provider,
+        address: tranchedPoolAddress,
+      });
       if (!tranchedPoolContract) {
         throw new Error("Wallet not connected properly");
       }
@@ -209,9 +211,11 @@ export default function SupplyPanel({
         });
       }
     } else {
-      if (!zapperContract || !stakingRewardsContract) {
-        throw new Error("Wallet not connected properly");
-      }
+      const zapperContract = await getContract({ name: "Zapper", provider });
+      const stakingRewardsContract = await getContract({
+        name: "StakingRewards",
+        provider,
+      });
 
       const stakedPositionId = BigNumber.from(data.source.split("-")[1]);
       const tranche = BigNumber.from(2); // TODO this is really lazy. With multi-sliced pools this needs to be dynamic
@@ -245,12 +249,12 @@ export default function SupplyPanel({
   const selectedSource = watch("source");
   const [availableBalance, setAvailableBalance] = useState(BigNumber.from(0));
   useEffect(() => {
-    if (!usdcContract || !account) {
+    if (!account || !provider) {
       return;
     }
     if (selectedSource === "wallet") {
-      usdcContract
-        .balanceOf(account)
+      getContract({ name: "USDC", provider })
+        .then((usdcContract) => usdcContract.balanceOf(account))
         .then((balance) => setAvailableBalance(balance));
     } else if (selectedSource.startsWith("seniorPool")) {
       const id = selectedSource.split("-")[1];
@@ -264,7 +268,7 @@ export default function SupplyPanel({
         sharesToUsdc(seniorPoolPosition.amount, seniorPoolSharePrice).amount
       );
     }
-  }, [selectedSource, usdcContract, account, user, seniorPoolSharePrice]);
+  }, [selectedSource, account, provider, user, seniorPoolSharePrice]);
   const fiatApyFromGfi = computeApyFromGfiInFiat(
     estimatedJuniorApyFromGfiRaw,
     fiatPerGfi

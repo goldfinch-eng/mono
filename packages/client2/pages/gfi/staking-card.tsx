@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   StakedPositionType,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
 import { assertUnreachable } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet";
 
 import {
   displayClaimedStatus,
@@ -56,14 +57,18 @@ export function StakingCard({ position }: StakingCardProps) {
     "MMM d, y"
   );
 
-  const stakingRewardsContract = useContract("StakingRewards");
+  const { provider } = useWallet();
   const apolloClient = useApolloClient();
 
   const rhfMethods = useForm();
   const handleClaim = async () => {
-    if (!stakingRewardsContract) {
+    if (!provider) {
       return;
     }
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
     const transaction = stakingRewardsContract.getReward(position.id);
     await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });

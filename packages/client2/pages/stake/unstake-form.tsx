@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
@@ -42,7 +42,6 @@ export function UnstakeForm({
   onComplete,
 }: UnstakeForm) {
   const { account, provider } = useWallet();
-  const stakingRewardsContract = useContract("StakingRewards");
 
   const rhfMethods = useForm<UnstakeFormFields>();
   const { control, setValue } = rhfMethods;
@@ -54,9 +53,13 @@ export function UnstakeForm({
   }
 
   const onSubmit = async (data: UnstakeFormFields) => {
-    if (!account || !provider || !stakingRewardsContract) {
+    if (!account || !provider) {
       return;
     }
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
 
     const value = utils.parseUnits(
       data.amount,

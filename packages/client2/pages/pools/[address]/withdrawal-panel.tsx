@@ -12,7 +12,7 @@ import {
   Form,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   WithdrawalPanelPoolTokenFieldsFragment,
@@ -20,6 +20,7 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 export const WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS = gql`
   fragment WithdrawalPanelPoolTokenFields on TranchedPoolToken {
@@ -82,20 +83,24 @@ export function WithdrawalPanel({
     .add(totalInterestRedeemable)
     .add(totalZapped);
 
-  const tranchedPoolContract = useContract("TranchedPool", tranchedPoolAddress);
-  const zapperContract = useContract("Zapper");
-
   const rhfMethods = useForm<FormFields>({
     defaultValues: { destination: "wallet" },
   });
   const { control, watch } = rhfMethods;
   const selectedDestination = watch("destination");
   const apolloClient = useApolloClient();
+  const { provider } = useWallet();
 
   const onSubmit = async (data: FormFields) => {
-    if (!tranchedPoolContract || !zapperContract) {
+    if (!provider) {
       throw new Error("Wallet not connected properly");
     }
+    const tranchedPoolContract = await getContract({
+      name: "TranchedPool",
+      provider,
+      address: tranchedPoolAddress,
+    });
+
     if (data.destination === "wallet") {
       const usdcToWithdraw = utils.parseUnits(data.amount, USDC_DECIMALS);
       let transaction;
@@ -139,6 +144,7 @@ export function WithdrawalPanel({
         successPrompt: `Withdrawal from pool ${tranchedPoolAddress} succeeded.`,
       });
     } else {
+      const zapperContract = await getContract({ name: "Zapper", provider });
       const poolTokenId = BigNumber.from(data.destination.split("-")[1]);
       if (isPoolLocked) {
         const transaction = zapperContract
