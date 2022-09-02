@@ -55,19 +55,11 @@ type SeniorPoolStatus @entity {
   remainingCapacity: BigInt # TODO requires goldfinchConfig.totalFundsLimit
 }
 
-enum UserType {
-  BACKER
-  CAPITAL_PROVIDER
-  BORROWER
-}
-
 type User @entity {
   id: ID!
   seniorPoolStakedPositions: [SeniorPoolStakedPosition!]! @derivedFrom(field: "user")
 
-  tranchedPoolsDeposits: [TranchedPoolDeposit!]! @derivedFrom(field: "user")
-  poolBackers: [PoolBacker!]! @derivedFrom(field: "user")
-  tokens: [TranchedPoolToken!]! @derivedFrom(field: "user")
+  tranchedPoolTokens: [TranchedPoolToken!]!
   zaps: [Zap!]! @derivedFrom(field: "user")
 
   isNonUsIndividual: Boolean!
@@ -102,43 +94,14 @@ type JuniorTrancheInfo @entity {
   interestSharePrice: BigInt!
 }
 
-type TranchedPoolDeposit @entity {
-  id: ID! # Set to transaction hash
-  user: User!
-  tranchedPool: TranchedPool!
-  tranche: BigInt!
-  tokenId: BigInt!
-  amount: BigInt!
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
-
-type PoolBacker @entity {
-  id: ID! # Set to `${tranchedPool.id}-${user.id}`
-  user: User!
-  tranchedPool: TranchedPool!
-  balance: BigInt!
-  unrealizedGains: BigInt!
-  principalAmount: BigInt!
-  principalRedeemed: BigInt!
-  interestRedeemed: BigInt!
-  principalAtRisk: BigInt!
-  principalRedeemable: BigInt!
-  interestRedeemable: BigInt!
-  availableToWithdraw: BigInt!
-}
-
 type CreditLine @entity {
   id: ID!
   borrower: Bytes!
-  tranchedPool: TranchedPool!
+  tranchedPool: TranchedPool! @derivedFrom(field: "creditLine")
   limit: BigInt!
   maxLimit: BigInt!
   interestApr: BigInt!
   balance: BigInt!
-  remainingPeriodDueAmount: BigInt!
-  remainingTotalDueAmount: BigInt!
-  availableCredit: BigInt!
   interestAccruedAsOf: BigInt!
   paymentPeriodInDays: BigInt!
   termInDays: BigInt!
@@ -149,16 +112,8 @@ type CreditLine @entity {
   lastFullPaymentTime: BigInt!
   version: TranchedPoolCreditLineVersion!
   lateFeeApr: BigDecimal!
-  # These fields are marked as nullable as they
-  # either require information not yet available on the subgraph,
-  # or are not used on the pages we are integrating.
-  periodDueAmount: BigInt
   interestAprDecimal: BigDecimal!
-  collectedPaymentBalance: BigInt
-  totalDueAmount: BigInt
-  dueDate: String
   isEligibleForRewards: Boolean!
-  name: String
 }
 
 enum TranchedPoolCreditLineVersion {
@@ -201,10 +156,9 @@ type TranchedPool @entity {
   This number is only becomes non-zero after the senior pool invests in a pool, which happens after the junior portion is locked
   """
   estimatedSeniorPoolContribution: BigInt!
-  backers: [PoolBacker!]!
+  backers: [User!]!
   numBackers: Int!
   tokens: [TranchedPoolToken!]!
-  deposits: [TranchedPoolDeposit!]! @derivedFrom(field: "tranchedPool")
   seniorTranches: [SeniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   juniorTranches: [JuniorTrancheInfo!]! @derivedFrom(field: "tranchedPool")
   version: TranchedPoolCreditLineVersion!

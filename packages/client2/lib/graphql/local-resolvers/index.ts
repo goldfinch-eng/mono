@@ -1,6 +1,7 @@
 import type { Resolvers } from "@apollo/client";
 
 import { creditLineResolvers } from "./credit-line";
+import { curvePoolResolvers } from "./curve-pool";
 import {
   directGfiGrantResolvers,
   indirectGfiGrantResolvers,
@@ -16,4 +17,5 @@ export const resolvers: Resolvers = {
   IndirectGfiGrant: indirectGfiGrantResolvers,
   DirectGfiGrant: directGfiGrantResolvers,
   SeniorPoolStakedPosition: stakedPositionResolvers,
+  CurvePool: curvePoolResolvers,
 };

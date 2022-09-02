@@ -7,6 +7,7 @@ interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
   labelClassName?: string;
   id?: string;
   colorScheme?: "light" | "dark";
+  inputSize?: "sm" | "lg";
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
       name,
       colorScheme = "light",
       className,
+      inputSize = "sm",
       ...rest
     },
     ref
@@ -45,12 +47,13 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             type="checkbox"
             ref={ref}
             className={clsx(
-              "peer h-4 w-4 appearance-none rounded disabled:opacity-50",
+              "peer appearance-none rounded disabled:opacity-50",
               colorScheme === "light"
                 ? "border border-sand-300 bg-white text-sand-700 checked:border-sand-700 checked:bg-sand-700 hover:bg-sand-100 hover:checked:bg-sand-600"
                 : colorScheme === "dark"
                 ? "border border-transparent bg-sky-900 text-white hover:bg-sky-800"
-                : null
+                : null,
+              inputSize === "lg" ? "h-8 w-8" : "h-4 w-4"
             )}
           />
           <svg

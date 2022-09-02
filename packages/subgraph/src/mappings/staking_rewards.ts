@@ -1,4 +1,4 @@
-import {Bytes, log} from "@graphprotocol/graph-ts"
+import {BigInt, Bytes, log} from "@graphprotocol/graph-ts"
 import {SeniorPoolStakedPosition} from "../../generated/schema"
 import {
   RewardAdded,
@@ -12,7 +12,7 @@ import {
   UnstakedAndWithdrew,
   UnstakedAndWithdrewMultiple,
   RewardPaid,
-} from "../../generated/templates/StakingRewards/StakingRewards"
+} from "../../generated/StakingRewards/StakingRewards"
 
 import {createTransactionFromEvent} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
@@ -42,6 +42,7 @@ export function handleStaked(event: Staked): void {
   stakedPosition.user = event.params.user.toHexString()
   stakedPosition.startTime = event.block.timestamp
   stakedPosition.positionType = "Fidu" // Curve integration did not exist at this time
+  stakedPosition.totalRewardsClaimed = BigInt.zero()
 
   stakedPosition.save()
 }
@@ -61,6 +62,7 @@ export function handleStaked1(event: Staked1): void {
   } else {
     log.critical("Encountered unrecognized positionType in a Staked event: {}", [event.params.positionType.toString()])
   }
+  stakedPosition.totalRewardsClaimed = BigInt.zero()
 
   stakedPosition.save()
 

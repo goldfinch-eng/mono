@@ -7,6 +7,7 @@ import {assertIsString} from "@goldfinch-eng/utils"
 import {getConfig, getDb, getUsers} from "../db"
 import {genRequestHandler} from "../helpers"
 import firestore = admin.firestore
+import {KycProvider} from "../types"
 
 const verifyRequest = (req: Request) => {
   const personaConfig = getConfig(functions).persona
@@ -88,6 +89,7 @@ export const personaCallback = genRequestHandler({
               id: eventPayload.id,
               status: existingData?.persona?.status === "approved" ? "approved" : status,
             },
+            kycProvider: KycProvider.Persona.valueOf(),
             countryCode: countryCode || existingData?.countryCode || null,
             updatedAt: Date.now(),
           })
@@ -98,6 +100,7 @@ export const personaCallback = genRequestHandler({
               id: eventPayload.id,
               status,
             },
+            kycProvider: KycProvider.Persona.valueOf(),
             countryCode,
             updatedAt: Date.now(),
           })

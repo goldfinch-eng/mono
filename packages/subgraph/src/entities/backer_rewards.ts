@@ -1,7 +1,7 @@
-import {Address, BigDecimal} from "@graphprotocol/graph-ts"
+import {Address, BigDecimal, BigInt} from "@graphprotocol/graph-ts"
 
 import {BackerRewardsData} from "../../generated/schema"
-import {BackerRewards_Implementation as BackerRewardsContract} from "../../generated/templates/BackerRewards/BackerRewards_Implementation"
+import {BackerRewards as BackerRewardsContract} from "../../generated/BackerRewards/BackerRewards"
 import {GFI_DECIMALS} from "../constants"
 
 const BACKER_REWARDS_ID = "1"
@@ -10,6 +10,10 @@ export function getBackerRewards(): BackerRewardsData {
   let backerRewards = BackerRewardsData.load(BACKER_REWARDS_ID)
   if (!backerRewards) {
     backerRewards = new BackerRewardsData(BACKER_REWARDS_ID)
+    backerRewards.contractAddress = ""
+    backerRewards.totalRewards = BigInt.zero()
+    backerRewards.totalRewardPercentOfTotalGFI = BigDecimal.zero()
+    backerRewards.maxInterestDollarsEligible = BigInt.zero()
   }
   return backerRewards
 }

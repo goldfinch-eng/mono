@@ -1,5 +1,20 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+const ContentSecurityPolicy = `
+  frame-ancestors 'self';
+`;
+const securityHeaders = [
+  {
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
+  },
+  {
+    key: "Content-Security-Policy",
+    // https://nextjs.org/docs/advanced-features/security-headers#content-security-policy
+    // Replace two spaces with one then trim trailing and leading whitespace
+    value: ContentSecurityPolicy.replace(/\s{2,}/g, " ").trim(),
+  },
+];
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
 });
@@ -40,6 +55,15 @@ const nextConfig = {
         source: "/",
         destination: "/earn",
         permanent: false,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        // Apply these headers to all routes in your application.
+        source: "/:path*",
+        headers: securityHeaders,
       },
     ];
   },

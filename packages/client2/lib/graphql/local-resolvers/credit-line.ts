@@ -8,9 +8,6 @@ import { CreditLine } from "../generated";
 export const creditLineResolvers: Resolvers[string] = {
   async isLate(creditLine: CreditLine): Promise<boolean | null> {
     const provider = await getProvider();
-    if (!provider) {
-      return null;
-    }
     if (!creditLine.id) {
       throw new Error("CreditLine ID unavailable when querying isLate");
     }

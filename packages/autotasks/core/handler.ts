@@ -3,7 +3,9 @@ import {HandlerParams} from "../types"
 
 import "@sentry/tracing"
 
-if (process.env.NODE_ENV !== "test") {
+// Check for _HANDLER as that should only be present in the autotask runtime environment. Otherwise
+// if the project is running locally we may accidentally report to sentry.
+if (process.env._HANDLER !== "") {
   Sentry.init({
     // https://sentry.io/organizations/goldfinch/projects/autotasks/?project=6592255
     dsn: "https://a544fc1378cb4f24a50cfe9bce55f070@o915675.ingest.sentry.io/6592255",

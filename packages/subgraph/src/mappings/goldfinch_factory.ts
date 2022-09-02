@@ -4,7 +4,7 @@
 import {INVALID_POOLS} from "../../../utils/src/pools"
 import {TranchedPool as TranchedPoolTemplate} from "../../generated/templates"
 import {getOrInitTranchedPool} from "../entities/tranched_pool"
-import {PoolCreated} from "../../generated/templates/GoldfinchFactory/GoldfinchFactory"
+import {PoolCreated} from "../../generated/GoldfinchFactory/GoldfinchFactory"
 
 export function handlePoolCreated(event: PoolCreated): void {
   if (INVALID_POOLS.has(event.params.pool.toHexString())) {
