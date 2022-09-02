@@ -18,10 +18,8 @@ export const curvePoolResolvers: Resolvers[string] = {
         "No provider available when resolving curveLPTokenExchangeRate"
       );
     }
-    const chainId = await provider.getSigner().getChainId();
-    const stakingRewardsContract = getContract({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      chainId,
       provider,
     });
 

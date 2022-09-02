@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import { CryptoAmount, StakedPositionType } from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
@@ -26,23 +26,23 @@ export function StakeForm({
   onComplete,
 }: StakeCardFormProps) {
   const { account, provider } = useWallet();
-  const stakingRewardsContract = useContract("StakingRewards");
-  const fiduContract = useContract("Fidu");
-  const curveLpTokenContract = useContract("CurveLP");
 
   const rhfMethods = useForm<StakeFormFields>();
   const { control, setValue } = rhfMethods;
 
   const onSubmit = async (data: StakeFormFields) => {
-    if (
-      !account ||
-      !provider ||
-      !stakingRewardsContract ||
-      !fiduContract ||
-      !curveLpTokenContract
-    ) {
+    if (!account || !provider) {
       return;
     }
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
+    const fiduContract = await getContract({ name: "Fidu", provider });
+    const curveLpTokenContract = await getContract({
+      name: "CurveLP",
+      provider,
+    });
 
     const value = utils.parseUnits(
       data.amount,

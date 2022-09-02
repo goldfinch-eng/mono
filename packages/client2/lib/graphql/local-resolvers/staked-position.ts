@@ -19,10 +19,8 @@ export const stakedPositionResolvers: Resolvers[string] = {
     position: SeniorPoolStakedPosition
   ): Promise<SeniorPoolStakedPosition["claimable"]> {
     const provider = await getProvider();
-    const chainId = await provider.getSigner().getChainId();
-    const stakingRewardsContract = getContract({
+    const stakingRewardsContract = await getContract({
       name: "StakingRewards",
-      chainId,
       provider,
     });
 
@@ -73,10 +71,8 @@ export const stakedPositionResolvers: Resolvers[string] = {
 // just for convenience in this file
 async function getStakingRewardsContract() {
   const provider = await getProvider();
-  const chainId = await provider.getSigner().getChainId();
-  const stakingRewardsContract = getContract({
+  const stakingRewardsContract = await getContract({
     name: "StakingRewards",
-    chainId,
     provider,
   });
 

@@ -21,9 +21,8 @@ async function erc20Balance(
   try {
     const provider = await getProvider();
     const account = await provider.getSigner().getAddress();
-    const chainId = await provider.getSigner().getChainId();
 
-    const contract = getContract({
+    const contract = await getContract({
       name:
         token === SupportedCrypto.Gfi
           ? "GFI"
@@ -34,7 +33,6 @@ async function erc20Balance(
           : token === SupportedCrypto.CurveLp
           ? "CurveLP"
           : assertUnreachable(token),
-      chainId,
       provider,
     });
     const balance = await contract.balanceOf(account);

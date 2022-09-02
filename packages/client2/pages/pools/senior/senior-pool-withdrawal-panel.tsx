@@ -11,7 +11,7 @@ import {
   InfoIconTooltip,
 } from "@/components/design-system";
 import { USDC_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, usdcToShares, usdcWithinEpsilon } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 export const SENIOR_POOL_WITHDRAWAL_PANEL_POSITION_FIELDS = gql`
   fragment SeniorPoolWithdrawalPanelPositionFields on SeniorPoolStakedPosition {
@@ -54,17 +55,20 @@ export function SeniorPoolWithDrawalPanel({
     ? seniorPoolLiquidity
     : totalSharesUsdc;
 
-  const seniorPoolContract = useContract("SeniorPool");
-  const stakingRewardsContract = useContract("StakingRewards");
   const apolloClient = useApolloClient();
+  const { provider } = useWallet();
 
   const rhfMethods = useForm<FormFields>();
   const { control, setValue } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
-    if (!seniorPoolContract || !stakingRewardsContract) {
+    if (!provider) {
       return;
     }
+    const seniorPoolContract = await getContract({
+      name: "SeniorPool",
+      provider,
+    });
     const sharePrice = await seniorPoolContract.sharePrice(); // ensures that share price is as up-to-date as possible by fetching it when withdrawal is performed.
     let withdrawAmountUsdc = utils.parseUnits(data.amount, USDC_DECIMALS);
     if (usdcWithinEpsilon(withdrawAmountUsdc, maxWithdrawableUsdc)) {
@@ -88,6 +92,10 @@ export function SeniorPoolWithDrawalPanel({
       // they continue to earn vested (i.e. claimable) rewards. Also, note that among the (unstakeable) positions
       // whose rewards vesting schedule has completed, there is no reason to prefer exiting one position versus
       // another, as all such positions earn rewards at the same rate.
+      const stakingRewardsContract = await getContract({
+        name: "StakingRewards",
+        provider,
+      });
       const unstakedWithdrawalPortion = fiduBalance.amount;
       const details = await Promise.all(
         stakedPositions.map((position) =>

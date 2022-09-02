@@ -4,13 +4,14 @@ import { BigNumber } from "ethers";
 import { useForm } from "react-hook-form";
 
 import { Button, Form } from "@/components/design-system";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   BackerCardTokenFieldsFragment,
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { toastTransaction } from "@/lib/toast";
+import { useWallet } from "@/lib/wallet";
 
 import { RewardCardScaffold, Detail } from "./reward-card-scaffold";
 
@@ -40,6 +41,7 @@ interface BackerCardProps {
 }
 
 export function BackerCard({ token }: BackerCardProps) {
+  const { provider } = useWallet();
   const totalAmount = token.rewardsClaimable
     .add(token.rewardsClaimed)
     .add(token.stakingRewardsClaimable)
@@ -49,17 +51,19 @@ export function BackerCard({ token }: BackerCardProps) {
   const rhfMethods = useForm();
   const apolloClient = useApolloClient();
 
-  const backerRewardsContract = useContract("BackerRewards");
-
   const canClaim =
     !token.rewardsClaimable.add(token.stakingRewardsClaimable).isZero() &&
     !token.tranchedPool.creditLine.isLate &&
     !token.tranchedPool.isPaused;
 
   const handleClaim = async () => {
-    if (!backerRewardsContract) {
+    if (!provider) {
       return;
     }
+    const backerRewardsContract = await getContract({
+      name: "BackerRewards",
+      provider,
+    });
     const transaction = backerRewardsContract.withdraw(token.id);
     await toastTransaction({ transaction });
     await apolloClient.refetchQueries({ include: "active" });

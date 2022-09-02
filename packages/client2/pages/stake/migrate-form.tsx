@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 
 import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { useContract } from "@/lib/contracts";
+import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
@@ -47,23 +47,20 @@ export function MigrateForm({
   onComplete,
 }: StakeCardMigrateFormProps) {
   const { account, provider } = useWallet();
-  const stakingRewardsContract = useContract("StakingRewards");
-  const zapperContract = useContract("Zapper");
-  const usdcContract = useContract("USDC");
 
   const rhfMethods = useForm<StakeMigrateForm>();
   const { control, setValue, getValues } = rhfMethods;
 
   const onSubmit = async (data: StakeMigrateForm) => {
-    if (
-      !account ||
-      !provider ||
-      !stakingRewardsContract ||
-      !zapperContract ||
-      !usdcContract
-    ) {
+    if (!account || !provider) {
       return;
     }
+    const stakingRewardsContract = await getContract({
+      name: "StakingRewards",
+      provider,
+    });
+    const zapperContract = await getContract({ name: "Zapper", provider });
+    const usdcContract = await getContract({ name: "USDC", provider });
 
     const fiduValue = utils.parseUnits(data.fiduAmount, FIDU_DECIMALS);
     const usdcValue = utils.parseUnits(data.usdcAmount, USDC_DECIMALS);
