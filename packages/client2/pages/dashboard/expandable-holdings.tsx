@@ -4,7 +4,7 @@ import { ReactNode, useState } from "react";
 
 import { Icon } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
-import { CryptoAmount } from "@/lib/graphql/generated";
+import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 
 interface Holding {
   name: string;
@@ -36,6 +36,13 @@ export function ExpandableHoldings({
     (prev, current) => prev.add(current.quantity),
     BigNumber.from(0)
   );
+  const totalUsdcValue = {
+    token: SupportedCrypto.Usdc,
+    amount: holdings.reduce(
+      (prev, current) => prev.add(current.usdcValue.amount),
+      BigNumber.from(0)
+    ),
+  };
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
       <div className="relative flex justify-between bg-white px-5 py-6 hover:bg-sand-100">
@@ -48,19 +55,22 @@ export function ExpandableHoldings({
         </div>
         <div>{formatPercent(totalPercentage)}</div>
         <div>{quantityFormatter(totalQuantity)}</div>
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="before:absolute before:inset-0"
-        >
-          <Icon
-            name="ChevronDown"
-            size="lg"
-            className={clsx(
-              "transition-transform",
-              isExpanded ? "rotate-180" : null
-            )}
-          />
-        </button>
+        <div className="flex items-center gap-3">
+          <div>{formatCrypto(totalUsdcValue)}</div>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="before:absolute before:inset-0"
+          >
+            <Icon
+              name="ChevronDown"
+              size="md"
+              className={clsx(
+                "transition-transform",
+                isExpanded ? "rotate-180" : null
+              )}
+            />
+          </button>
+        </div>
       </div>
       {isExpanded ? (
         <div className="divide-y divide-sand-200 border-t border-sand-200 bg-sand-50 px-5">
