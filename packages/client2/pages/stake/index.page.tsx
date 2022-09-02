@@ -33,6 +33,7 @@ gql`
   ${MIGRATE_FORM_POSITION_FIELDS}
   query StakePage($userId: ID!) {
     user(id: $userId) {
+      id
       stakedFiduPositions: seniorPoolStakedPositions(
         where: { positionType: Fidu, amount_not: "0" }
       ) {
