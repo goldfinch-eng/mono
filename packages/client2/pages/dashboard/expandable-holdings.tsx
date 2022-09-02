@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { ReactNode, useState } from "react";
 
-import { Icon } from "@/components/design-system";
+import { Icon, InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 
@@ -15,6 +15,7 @@ interface Holding {
 
 interface ExpandableHoldingsProps {
   title: string;
+  tooltip?: string;
   color: string;
   holdings: Holding[];
   quantityFormatter: (n: BigNumber) => ReactNode;
@@ -22,6 +23,7 @@ interface ExpandableHoldingsProps {
 
 export function ExpandableHoldings({
   title,
+  tooltip,
   color,
   holdings,
   quantityFormatter,
@@ -45,13 +47,14 @@ export function ExpandableHoldings({
   };
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
-      <div className="relative flex justify-between bg-white px-5 py-6 hover:bg-sand-100">
-        <div className="flex items-center gap-3">
+      <div className="relative grid grid-cols-5 justify-between justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
+        <div className="relative z-10 col-span-2 flex items-center gap-3 justify-self-start text-lg">
           <div
             className="h-3.5 w-3.5 rounded-full"
             style={{ backgroundColor: color }}
           />
           {title}
+          {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
         </div>
         <div>{formatPercent(totalPercentage)}</div>
         <div>{quantityFormatter(totalQuantity)}</div>
@@ -102,8 +105,8 @@ function IndividualHolding({
   usdcValue,
 }: IndividualHoldingProps) {
   return (
-    <div className="flex justify-between py-5">
-      <div>{name}</div>
+    <div className="grid grid-cols-5 justify-between justify-items-end py-5">
+      <div className="col-span-2 justify-self-start">{name}</div>
       <div>{formatPercent(percentage)}</div>
       <div>{quantityFormatter(quantity)}</div>
       <div>{formatCrypto(usdcValue)}</div>

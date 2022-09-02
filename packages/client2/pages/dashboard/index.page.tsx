@@ -60,9 +60,10 @@ export default function DashboardPage() {
           <Heading level={3} className="font-sans !text-xl">
             Holdings
           </Heading>
-          <div>
+          <div className="space-y-3">
             <ExpandableHoldings
-              title="Tony"
+              title="Borrower Pool Positions"
+              tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
               color="#ff0000"
               holdings={data.tranchedPoolTokens.map((token) => ({
                 name: token.tranchedPool.name,
@@ -78,7 +79,6 @@ export default function DashboardPage() {
               }
             />
           </div>
-          <pre>{JSON.stringify(data, null, 2)}</pre>
         </div>
       )}
     </div>
