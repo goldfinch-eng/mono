@@ -63,29 +63,31 @@ export const rootQueryResolvers: Resolvers[string] = {
   },
   async viewer(): Promise<Partial<Viewer>> {
     const provider = await getProvider();
-    if (!provider) {
+    try {
+      const account = await provider.getSigner().getAddress();
+      return {
+        __typename: "Viewer",
+        account,
+      };
+    } catch (e) {
       return {
         __typename: "Viewer",
         account: null,
       };
     }
-
-    const account = await provider.getSigner().getAddress();
-    return {
-      __typename: "Viewer",
-      account,
-    };
   },
   async currentBlock(): Promise<BlockInfo | null> {
     const provider = await getProvider();
-    if (!provider) {
-      return null;
-    }
     const currentBlock = await provider.getBlock("latest");
     return {
       __typename: "BlockInfo",
       number: currentBlock.number,
       timestamp: currentBlock.timestamp,
+    };
+  },
+  async curvePool() {
+    return {
+      __typename: "CurvePool",
     };
   },
 };

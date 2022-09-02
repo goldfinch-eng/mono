@@ -5,6 +5,7 @@ import {
   useWeb3React,
 } from "@web3-react/core";
 import { MetaMask } from "@web3-react/metamask";
+import { Network } from "@web3-react/network";
 import { WalletConnect } from "@web3-react/walletconnect";
 import { ReactNode } from "react";
 
@@ -13,15 +14,17 @@ import {
   coinbaseWalletHooks,
 } from "./connectors/coinbase-wallet";
 import { metaMask, metaMaskHooks } from "./connectors/metamask";
+import { network, networkHooks } from "./connectors/network";
 import { walletConnect, walletConnectHooks } from "./connectors/walletconnect";
 
 export const connectorPriorityList: [
-  MetaMask | WalletConnect | CoinbaseWallet,
+  MetaMask | WalletConnect | CoinbaseWallet | Network,
   Web3ReactHooks
 ][] = [
   [metaMask, metaMaskHooks],
   [walletConnect, walletConnectHooks],
   [coinbaseWallet, coinbaseWalletHooks],
+  [network, networkHooks],
 ];
 
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -38,6 +41,10 @@ export function useWallet() {
 
 export async function connectEagerly() {
   for (const [connector] of connectorPriorityList) {
-    await connector.connectEagerly();
+    if (connector instanceof Network) {
+      connector.activate();
+    } else {
+      await connector.connectEagerly?.();
+    }
   }
 }

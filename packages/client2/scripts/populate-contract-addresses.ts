@@ -64,6 +64,12 @@ const addresses = {
   BackerMerkleDirectDistributor:
     contracts.BackerMerkleDirectDistributor.address,
   BackerRewards: contracts.BackerRewards.address,
+  CurvePool:
+    contracts.TestFiduUSDCCurveLP?.address ??
+    "0x80aa1a80a30055daa084e599836532f3e58c95e2", // This entry refers to the contract for the Fidu/USDC Curve pool itself, not the LP token
+  CurveLP:
+    contracts.TestFiduUSDCCurveLP?.address ?? // This is a little weird because the TestFiduUSDCCurveLP contract kind of absorbs the job of the CurveLP Token contract
+    "0x42ec68ca5c2c80036044f3eead675447ab3a8065",
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

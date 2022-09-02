@@ -64,8 +64,10 @@ export const Button = forwardRef<
     const {
       formState: { isSubmitting, errors },
     } = formContext;
-    // Can't use the built-in isValid on formState because that only updates when the mode is set to onChange/onBlur/whatever
-    const isValid = Object.keys(errors).length === 0;
+    const filteredOutWarnings = Object.fromEntries(
+      Object.entries(errors).filter(([, value]) => value.type !== "warn")
+    );
+    const isValid = Object.keys(filteredOutWarnings).length === 0;
     _disabled = disabled || isSubmitting || !isValid;
     _isLoading = isSubmitting;
   }
