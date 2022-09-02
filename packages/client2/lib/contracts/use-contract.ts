@@ -12,16 +12,16 @@ const supportedContracts = {
       (module) => module.TranchedPool__factory.connect
     ),
   GFI: () =>
-    import("@/types/ethers-contracts/factories/Gfi__factory").then(
-      (module) => module.Gfi__factory.connect
+    import("@/types/ethers-contracts/factories/Erc20__factory").then(
+      (module) => module.Erc20__factory.connect
     ),
   USDC: () =>
     import("@/types/ethers-contracts/factories/Erc20__factory").then(
       (module) => module.Erc20__factory.connect
     ),
   Fidu: () =>
-    import("@/types/ethers-contracts/factories/Fidu__factory").then(
-      (module) => module.Fidu__factory.connect
+    import("@/types/ethers-contracts/factories/Erc20__factory").then(
+      (module) => module.Erc20__factory.connect
     ),
   UniqueIdentity: () =>
     import("@/types/ethers-contracts/factories/UniqueIdentity__factory").then(
