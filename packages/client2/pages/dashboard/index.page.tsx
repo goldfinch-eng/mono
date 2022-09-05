@@ -78,24 +78,26 @@ export default function DashboardPage() {
             Holdings
           </Heading>
           <div className="space-y-3">
-            <ExpandableHoldings
-              title="Borrower Pool Positions"
-              tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
-              color="#ff0000"
-              holdings={data.tranchedPoolTokens.map((token) => ({
-                name: token.tranchedPool.name,
-                percentage: 0,
-                quantity: BigNumber.from(1),
-                usdcValue: {
-                  token: SupportedCrypto.Usdc,
-                  amount: token.principalAmount,
-                },
-                url: `/pools/${token.tranchedPool.id}`,
-              }))}
-              quantityFormatter={(n: BigNumber) =>
-                `${n.toString()} NFT${n.gt(BigNumber.from(1)) ? "s" : ""}`
-              }
-            />
+            {data.tranchedPoolTokens.length > 0 ? (
+              <ExpandableHoldings
+                title="Borrower Pool Positions"
+                tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
+                color="#ff0000"
+                holdings={data.tranchedPoolTokens.map((token) => ({
+                  name: token.tranchedPool.name,
+                  percentage: 0,
+                  quantity: BigNumber.from(1),
+                  usdcValue: {
+                    token: SupportedCrypto.Usdc,
+                    amount: token.principalAmount,
+                  },
+                  url: `/pools/${token.tranchedPool.id}`,
+                }))}
+                quantityFormatter={(n: BigNumber) =>
+                  `${n.toString()} NFT${n.gt(BigNumber.from(1)) ? "s" : ""}`
+                }
+              />
+            ) : null}
             <ExpandableHoldings
               title="FIDU"
               tooltip="Your investment in the Goldfinch Senior Pool. This is represented by a token called FIDU."
