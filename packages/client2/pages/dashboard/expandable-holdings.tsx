@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
+import Link from "next/link";
 import { ReactNode, useState } from "react";
 
 import { Icon, InfoIconTooltip } from "@/components/design-system";
@@ -11,6 +12,7 @@ interface Holding {
   percentage: number;
   quantity: BigNumber;
   usdcValue: CryptoAmount;
+  url?: string;
 }
 
 interface ExpandableHoldingsProps {
@@ -76,7 +78,7 @@ export function ExpandableHoldings({
         </div>
       </div>
       {isExpanded ? (
-        <div className="divide-y divide-sand-200 border-t border-sand-200 bg-sand-50 px-5">
+        <div className="divide-y divide-sand-200 border-t border-sand-200">
           {holdings.map((holding, index) => (
             <IndividualHolding
               key={holding.name + index}
@@ -85,6 +87,7 @@ export function ExpandableHoldings({
               quantity={holding.quantity}
               quantityFormatter={quantityFormatter}
               usdcValue={holding.usdcValue}
+              url={holding.url}
             />
           ))}
         </div>
@@ -103,13 +106,34 @@ function IndividualHolding({
   quantity,
   quantityFormatter,
   usdcValue,
+  url,
 }: IndividualHoldingProps) {
   return (
-    <div className="grid grid-cols-5 justify-between justify-items-end py-5">
-      <div className="col-span-2 justify-self-start">{name}</div>
+    <div
+      className={clsx(
+        "group grid grid-cols-5 justify-between justify-items-end bg-sand-50 p-5",
+        url ? "relative hover:bg-sand-100" : null
+      )}
+    >
+      <div className="col-span-2 justify-self-start">
+        {url ? (
+          <Link href={url}>
+            <a className="before:absolute before:inset-0 group-hover:underline">
+              {name}
+            </a>
+          </Link>
+        ) : (
+          name
+        )}
+      </div>
       <div>{formatPercent(percentage)}</div>
       <div>{quantityFormatter(quantity)}</div>
-      <div>{formatCrypto(usdcValue)}</div>
+      <div className="flex items-center">
+        {formatCrypto(usdcValue)}
+        {url ? (
+          <Icon name="ChevronDown" className="ml-3 -rotate-90" size="md" />
+        ) : null}
+      </div>
     </div>
   );
 }

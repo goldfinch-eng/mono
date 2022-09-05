@@ -73,6 +73,7 @@ export default function DashboardPage() {
                   token: SupportedCrypto.Usdc,
                   amount: token.principalAmount,
                 },
+                url: `/pools/${token.tranchedPool.id}`,
               }))}
               quantityFormatter={(n: BigNumber) =>
                 `${n.toString()} NFT${n.gt(BigNumber.from(1)) ? "s" : ""}`
