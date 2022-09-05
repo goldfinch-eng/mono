@@ -54,10 +54,10 @@ export default function DashboardPage() {
         <div>Loading</div>
       ) : (
         <div>
-          <Heading level={2} className="font-sans !text-3xl !font-normal">
+          <Heading level={2} className="mb-9 !font-sans !text-3xl !font-normal">
             Portfolio summary
           </Heading>
-          <Heading level={3} className="font-sans !text-xl">
+          <Heading level={3} className="mb-6 !font-sans !text-xl">
             Holdings
           </Heading>
           <div className="space-y-3">
