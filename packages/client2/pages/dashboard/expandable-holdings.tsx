@@ -130,9 +130,11 @@ function IndividualHolding({
       <div>{quantityFormatter(quantity)}</div>
       <div className="flex items-center">
         {formatCrypto(usdcValue)}
-        {url ? (
-          <Icon name="ChevronDown" className="ml-3 -rotate-90" size="md" />
-        ) : null}
+        <Icon
+          name="ChevronDown"
+          className={clsx("ml-3 -rotate-90", !url ? "invisible" : "")}
+          size="md"
+        />
       </div>
     </div>
   );

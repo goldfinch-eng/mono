@@ -2,16 +2,25 @@ import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
 
 import { Heading } from "@/components/design-system";
+import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
   useDashboardPageQuery,
 } from "@/lib/graphql/generated";
+import { sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { ExpandableHoldings } from "./expandable-holdings";
 
 gql`
   query DashboardPage($userId: String!) {
+    seniorPools {
+      id
+      latestPoolStatus {
+        id
+        sharePrice
+      }
+    }
     viewer @client {
       fiduBalance {
         token
@@ -29,6 +38,14 @@ gql`
         id
         name @client
       }
+    }
+    seniorPoolStakedPositions(
+      where: { user: $userId, amount_gt: 0, positionType: Fidu }
+      orderBy: startTime
+      orderDirection: desc
+    ) {
+      id
+      amount
     }
   }
 `;
@@ -77,6 +94,28 @@ export default function DashboardPage() {
               }))}
               quantityFormatter={(n: BigNumber) =>
                 `${n.toString()} NFT${n.gt(BigNumber.from(1)) ? "s" : ""}`
+              }
+            />
+            <ExpandableHoldings
+              title="FIDU"
+              tooltip="Your investment in the Goldfinch Senior Pool. This is represented by a token called FIDU."
+              color="#00ff00"
+              holdings={[
+                ...data.seniorPoolStakedPositions.map((stakedPosition) => ({
+                  name: "Senior Pool Staked Position",
+                  percentage: 0,
+                  quantity: stakedPosition.amount,
+                  usdcValue: sharesToUsdc(
+                    stakedPosition.amount,
+                    data.seniorPools[0].latestPoolStatus.sharePrice
+                  ),
+                })),
+              ]}
+              quantityFormatter={(n: BigNumber) =>
+                formatCrypto(
+                  { amount: n, token: SupportedCrypto.Fidu },
+                  { includeToken: true }
+                )
               }
             />
           </div>
