@@ -98,43 +98,46 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
-            <ExpandableHoldings
-              title="Goldfinch Senior Pool"
-              tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
-              color="#00ff00"
-              holdings={[
-                ...data.seniorPoolStakedPositions.map((stakedPosition) => ({
-                  name: "Staked Senior Pool Position",
-                  percentage: 0,
-                  quantity: stakedPosition.amount,
-                  usdcValue: sharesToUsdc(
-                    stakedPosition.amount,
-                    data.seniorPools[0].latestPoolStatus.sharePrice
-                  ),
-                  url: "/pools/senior",
-                })),
-                ...(data.viewer.fiduBalance
-                  ? [
-                      {
-                        name: "Unstaked Senior Pool Position",
-                        percentage: 0,
-                        quantity: data.viewer.fiduBalance.amount,
-                        usdcValue: sharesToUsdc(
-                          data.viewer.fiduBalance.amount,
-                          data.seniorPools[0].latestPoolStatus.sharePrice
-                        ),
-                        url: "/pools/senior",
-                      },
-                    ]
-                  : []),
-              ]}
-              quantityFormatter={(n: BigNumber) =>
-                formatCrypto(
-                  { amount: n, token: SupportedCrypto.Fidu },
-                  { includeToken: true }
-                )
-              }
-            />
+            {data.viewer.fiduBalance ||
+            data.seniorPoolStakedPositions.length > 0 ? (
+              <ExpandableHoldings
+                title="Goldfinch Senior Pool"
+                tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
+                color="#00ff00"
+                holdings={[
+                  ...data.seniorPoolStakedPositions.map((stakedPosition) => ({
+                    name: "Staked Senior Pool Position",
+                    percentage: 0,
+                    quantity: stakedPosition.amount,
+                    usdcValue: sharesToUsdc(
+                      stakedPosition.amount,
+                      data.seniorPools[0].latestPoolStatus.sharePrice
+                    ),
+                    url: "/pools/senior",
+                  })),
+                  ...(data.viewer.fiduBalance
+                    ? [
+                        {
+                          name: "Unstaked Senior Pool Position",
+                          percentage: 0,
+                          quantity: data.viewer.fiduBalance.amount,
+                          usdcValue: sharesToUsdc(
+                            data.viewer.fiduBalance.amount,
+                            data.seniorPools[0].latestPoolStatus.sharePrice
+                          ),
+                          url: "/pools/senior",
+                        },
+                      ]
+                    : []),
+                ]}
+                quantityFormatter={(n: BigNumber) =>
+                  formatCrypto(
+                    { amount: n, token: SupportedCrypto.Fidu },
+                    { includeToken: true }
+                  )
+                }
+              />
+            ) : null}
           </div>
         </div>
       )}
