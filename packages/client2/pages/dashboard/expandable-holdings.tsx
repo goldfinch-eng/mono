@@ -132,7 +132,10 @@ function IndividualHolding({
         {formatCrypto(usdcValue)}
         <Icon
           name="ChevronDown"
-          className={clsx("ml-3 -rotate-90", !url ? "invisible" : "")}
+          className={clsx(
+            "pointer-events-none ml-3 -rotate-90",
+            !url ? "invisible" : ""
+          )}
           size="md"
         />
       </div>

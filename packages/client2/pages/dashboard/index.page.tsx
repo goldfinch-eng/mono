@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 
 import { Heading } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
@@ -26,6 +26,13 @@ gql`
         token
         amount
       }
+      curveLpBalance {
+        token
+        amount
+      }
+    }
+    curvePool @client {
+      usdcPerLpToken
     }
     tranchedPoolTokens(
       where: { user: $userId, principalAmount_gt: 0 }
@@ -138,9 +145,47 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
+            {data.viewer.curveLpBalance ? (
+              <ExpandableHoldings
+                title="Curve Liquidity Provider"
+                tooltip="Tokens earned from providing liquidity on the Goldfinch FIDU/USDC pool on Curve."
+                color="#0000ff"
+                holdings={[
+                  {
+                    name: "Unstaked LP Tokens",
+                    percentage: 0,
+                    quantity: data.viewer.curveLpBalance.amount,
+                    usdcValue: curveLpTokensToUsdc(
+                      data.viewer.curveLpBalance.amount,
+                      data.curvePool.usdcPerLpToken
+                    ),
+                    url: "/stake",
+                  },
+                ]}
+                quantityFormatter={(n: BigNumber) =>
+                  formatCrypto(
+                    { token: SupportedCrypto.CurveLp, amount: n },
+                    { includeToken: true }
+                  )
+                }
+              />
+            ) : null}
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function curveLpTokensToUsdc(
+  lpTokens: BigNumber,
+  usdPerCurveLpToken: FixedNumber
+) {
+  const usdcValue = usdPerCurveLpToken
+    .mulUnsafe(FixedNumber.from(lpTokens))
+    .round();
+  return {
+    amount: BigNumber.from(usdcValue.toString().split(".")[0]),
+    token: SupportedCrypto.Usdc,
+  };
 }
