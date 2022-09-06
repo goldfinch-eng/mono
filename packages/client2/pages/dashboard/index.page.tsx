@@ -46,8 +46,16 @@ gql`
         name @client
       }
     }
-    seniorPoolStakedPositions(
+    stakedFiduPositions: seniorPoolStakedPositions(
       where: { user: $userId, amount_gt: 0, positionType: Fidu }
+      orderBy: startTime
+      orderDirection: desc
+    ) {
+      id
+      amount
+    }
+    stakedCurveLpPositions: seniorPoolStakedPositions(
+      where: { user: $userId, amount_gt: 0, positionType: CurveLP }
       orderBy: startTime
       orderDirection: desc
     ) {
@@ -105,14 +113,13 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
-            {data.viewer.fiduBalance ||
-            data.seniorPoolStakedPositions.length > 0 ? (
+            {data.viewer.fiduBalance || data.stakedFiduPositions.length > 0 ? (
               <ExpandableHoldings
                 title="Goldfinch Senior Pool"
                 tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
                 color="#00ff00"
                 holdings={[
-                  ...data.seniorPoolStakedPositions.map((stakedPosition) => ({
+                  ...data.stakedFiduPositions.map((stakedPosition) => ({
                     name: "Staked Senior Pool Position",
                     percentage: 0,
                     quantity: stakedPosition.amount,
@@ -145,22 +152,37 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
-            {data.viewer.curveLpBalance ? (
+            {data.viewer.curveLpBalance ||
+            data.stakedCurveLpPositions.length > 0 ? (
               <ExpandableHoldings
                 title="Curve Liquidity Provider"
                 tooltip="Tokens earned from providing liquidity on the Goldfinch FIDU/USDC pool on Curve."
                 color="#0000ff"
                 holdings={[
-                  {
-                    name: "Unstaked LP Tokens",
+                  ...data.stakedCurveLpPositions.map((stakedPosition) => ({
+                    name: "Staked Curve LP Tokens",
                     percentage: 0,
-                    quantity: data.viewer.curveLpBalance.amount,
+                    quantity: stakedPosition.amount,
                     usdcValue: curveLpTokensToUsdc(
-                      data.viewer.curveLpBalance.amount,
+                      stakedPosition.amount,
                       data.curvePool.usdcPerLpToken
                     ),
                     url: "/stake",
-                  },
+                  })),
+                  ...(data.viewer.curveLpBalance
+                    ? [
+                        {
+                          name: "Unstaked LP Tokens",
+                          percentage: 0,
+                          quantity: data.viewer.curveLpBalance.amount,
+                          usdcValue: curveLpTokensToUsdc(
+                            data.viewer.curveLpBalance.amount,
+                            data.curvePool.usdcPerLpToken
+                          ),
+                          url: "/stake",
+                        },
+                      ]
+                    : []),
                 ]}
                 quantityFormatter={(n: BigNumber) =>
                   formatCrypto(
