@@ -1,9 +1,11 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber } from "ethers";
+import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { Heading } from "@/components/design-system";
+import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
+  CryptoAmount,
   SupportedCrypto,
   useDashboardPageQuery,
 } from "@/lib/graphql/generated";
@@ -26,9 +28,19 @@ gql`
         token
         amount
       }
+      gfiBalance {
+        token
+        amount
+      }
       curveLpBalance {
         token
         amount
+      }
+    }
+    gfiPrice(fiat: USD) @client {
+      price {
+        amount
+        symbol
       }
     }
     curvePool @client {
@@ -192,11 +204,48 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
+            {data.viewer.gfiBalance &&
+            !data.viewer.gfiBalance.amount.isZero() ? (
+              <ExpandableHoldings
+                title="GFI"
+                tooltip="Your GFI tokens"
+                color="#ffff00"
+                holdings={[
+                  {
+                    name: "Wallet holdings",
+                    percentage: 0,
+                    quantity: data.viewer.gfiBalance.amount,
+                    usdcValue: gfiToUsdc(
+                      data.viewer.gfiBalance,
+                      data.gfiPrice.price.amount
+                    ),
+                  },
+                ]}
+                quantityFormatter={(n: BigNumber) =>
+                  formatCrypto(
+                    { token: SupportedCrypto.Gfi, amount: n },
+                    { includeToken: true }
+                  )
+                }
+              />
+            ) : null}
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
+  const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
+  const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
+    FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())
+  );
+  const amount = FixedNumber.from(formattedGfi).mulUnsafe(usdcPerGfi);
+  return {
+    token: SupportedCrypto.Usdc,
+    amount: BigNumber.from(amount.toString().split(".")[0]),
+  };
 }
 
 function curveLpTokensToUsdc(
