@@ -125,7 +125,9 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
-            {data.viewer.fiduBalance || data.stakedFiduPositions.length > 0 ? (
+            {(data.viewer.fiduBalance &&
+              !data.viewer.fiduBalance.amount.isZero()) ||
+            data.stakedFiduPositions.length > 0 ? (
               <ExpandableHoldings
                 title="Goldfinch Senior Pool"
                 tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
@@ -141,7 +143,8 @@ export default function DashboardPage() {
                     ),
                     url: "/pools/senior",
                   })),
-                  ...(data.viewer.fiduBalance
+                  ...(data.viewer.fiduBalance &&
+                  !data.viewer.fiduBalance.amount.isZero()
                     ? [
                         {
                           name: "Unstaked Senior Pool Position",
@@ -164,7 +167,8 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
-            {data.viewer.curveLpBalance ||
+            {(data.viewer.curveLpBalance &&
+              !data.viewer.curveLpBalance.amount.isZero()) ||
             data.stakedCurveLpPositions.length > 0 ? (
               <ExpandableHoldings
                 title="Curve Liquidity Provider"
@@ -181,7 +185,8 @@ export default function DashboardPage() {
                     ),
                     url: "/stake",
                   })),
-                  ...(data.viewer.curveLpBalance
+                  ...(data.viewer.curveLpBalance &&
+                  !data.viewer.curveLpBalance.amount.isZero()
                     ? [
                         {
                           name: "Unstaked LP Tokens",
