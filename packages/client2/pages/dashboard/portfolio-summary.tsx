@@ -34,7 +34,7 @@ export function PortfolioSummary({
   return (
     <div
       className={clsx(
-        "grid grid-cols-4 gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200",
+        "grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200 sm:grid-cols-2 lg:grid-cols-4",
         className
       )}
     >
