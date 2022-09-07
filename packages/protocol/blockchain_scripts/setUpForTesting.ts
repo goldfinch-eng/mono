@@ -188,9 +188,9 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   } else {
     await addUsersToGoList(legacyGoldfinchConfig, [underwriter])
 
-    if (!isMainnetForking()) {
-      await setUpRewards(erc20, getOrNull, protocol_owner)
-    }
+    // if (!isMainnetForking()) {
+    //   await setUpRewards(erc20, getOrNull, protocol_owner)
+    // }
 
     const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
     const lastEventArgs = getLastEventArgs(result)
