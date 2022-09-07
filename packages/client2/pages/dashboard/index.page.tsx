@@ -379,5 +379,8 @@ function curveLpTokensToUsdc(
 }
 
 function computePercentage(n: BigNumber, total: BigNumber): number {
+  if (total.isZero()) {
+    return 0;
+  }
   return FixedNumber.from(n).divUnsafe(FixedNumber.from(total)).toUnsafeFloat();
 }
