@@ -18,7 +18,7 @@ interface Holding {
 interface ExpandableHoldingsProps {
   title: string;
   tooltip?: string;
-  color: string;
+  colorClass: string;
   holdings: Holding[];
   quantityFormatter: (n: BigNumber) => ReactNode;
 }
@@ -26,7 +26,7 @@ interface ExpandableHoldingsProps {
 export function ExpandableHoldings({
   title,
   tooltip,
-  color,
+  colorClass,
   holdings,
   quantityFormatter,
 }: ExpandableHoldingsProps) {
@@ -52,8 +52,10 @@ export function ExpandableHoldings({
       <div className="relative grid grid-cols-5 justify-between justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
         <div className="relative z-10 col-span-2 flex items-center gap-3 justify-self-start text-lg">
           <div
-            className="h-3.5 w-3.5 rounded-full"
-            style={{ backgroundColor: color }}
+            className={clsx(
+              "h-3.5 w-3.5 flex-shrink-0 rounded-full",
+              colorClass
+            )}
           />
           {title}
           {tooltip ? <InfoIconTooltip content={tooltip} /> : null}

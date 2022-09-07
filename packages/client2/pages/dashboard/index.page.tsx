@@ -79,6 +79,11 @@ gql`
   }
 `;
 
+const borrowerPoolColorClass = "bg-eggplant-300";
+const gfiColorClass = "bg-mustard-450";
+const seniorPoolColorClass = "bg-mint-300";
+const curveColorClass = "bg-tidepool-600";
+
 export default function DashboardPage() {
   const { account } = useWallet();
   const { data, loading, error } = useDashboardPageQuery({
@@ -127,7 +132,7 @@ export default function DashboardPage() {
       {
         name: "Borrower Pools",
         usdc: borrowerPoolTotal,
-        colorClass: "bg-eggplant-300",
+        colorClass: borrowerPoolColorClass,
         percentage: computePercentage(
           borrowerPoolTotal.amount,
           totalUsdc.amount
@@ -137,19 +142,19 @@ export default function DashboardPage() {
         name: "GFI",
         usdc: gfiTotal,
         percentage: computePercentage(gfiTotal.amount, totalUsdc.amount),
-        colorClass: "bg-mustard-450",
+        colorClass: gfiColorClass,
       },
       {
         name: "Senior Pool",
         usdc: seniorPoolTotal,
         percentage: computePercentage(seniorPoolTotal.amount, totalUsdc.amount),
-        colorClass: "bg-mint-300",
+        colorClass: seniorPoolColorClass,
       },
       {
         name: "Curve LP",
         usdc: curveLpTotal,
         percentage: computePercentage(curveLpTotal.amount, totalUsdc.amount),
-        colorClass: "bg-tidepool-600",
+        colorClass: curveColorClass,
       },
     ];
 
@@ -170,16 +175,11 @@ export default function DashboardPage() {
         </div>
       ) : error ? (
         <div className="text-clay-500">Error: {error.message}</div>
-      ) : !data || loading ? (
+      ) : !data || !totalUsdc || !summaryHoldings || loading ? (
         <div>Loading</div>
       ) : (
         <div>
-          {summaryHoldings && totalUsdc ? (
-            <PortfolioSummary
-              holdings={summaryHoldings}
-              totalUsdc={totalUsdc}
-            />
-          ) : null}
+          <PortfolioSummary holdings={summaryHoldings} totalUsdc={totalUsdc} />
           <Heading level={3} className="mb-6 !font-sans !text-xl">
             Holdings
           </Heading>
@@ -188,10 +188,13 @@ export default function DashboardPage() {
               <ExpandableHoldings
                 title="Borrower Pool Positions"
                 tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
-                color="#ff0000"
+                colorClass={borrowerPoolColorClass}
                 holdings={data.tranchedPoolTokens.map((token) => ({
                   name: token.tranchedPool.name,
-                  percentage: 0,
+                  percentage: computePercentage(
+                    token.principalAmount,
+                    totalUsdc.amount
+                  ),
                   quantity: BigNumber.from(1),
                   usdcValue: {
                     token: SupportedCrypto.Usdc,
@@ -210,11 +213,17 @@ export default function DashboardPage() {
               <ExpandableHoldings
                 title="Goldfinch Senior Pool"
                 tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
-                color="#00ff00"
+                colorClass={seniorPoolColorClass}
                 holdings={[
                   ...data.stakedFiduPositions.map((stakedPosition) => ({
                     name: "Staked Senior Pool Position",
-                    percentage: 0,
+                    percentage: computePercentage(
+                      sharesToUsdc(
+                        stakedPosition.amount,
+                        data.seniorPools[0].latestPoolStatus.sharePrice
+                      ).amount,
+                      totalUsdc.amount
+                    ),
                     quantity: stakedPosition.amount,
                     usdcValue: sharesToUsdc(
                       stakedPosition.amount,
@@ -227,7 +236,13 @@ export default function DashboardPage() {
                     ? [
                         {
                           name: "Unstaked Senior Pool Position",
-                          percentage: 0,
+                          percentage: computePercentage(
+                            sharesToUsdc(
+                              data.viewer.fiduBalance.amount,
+                              data.seniorPools[0].latestPoolStatus.sharePrice
+                            ).amount,
+                            totalUsdc.amount
+                          ),
                           quantity: data.viewer.fiduBalance.amount,
                           usdcValue: sharesToUsdc(
                             data.viewer.fiduBalance.amount,
@@ -252,11 +267,17 @@ export default function DashboardPage() {
               <ExpandableHoldings
                 title="Curve Liquidity Provider"
                 tooltip="Tokens earned from providing liquidity on the Goldfinch FIDU/USDC pool on Curve."
-                color="#0000ff"
+                colorClass={curveColorClass}
                 holdings={[
                   ...data.stakedCurveLpPositions.map((stakedPosition) => ({
                     name: "Staked Curve LP Tokens",
-                    percentage: 0,
+                    percentage: computePercentage(
+                      curveLpTokensToUsdc(
+                        stakedPosition.amount,
+                        data.curvePool.usdcPerLpToken
+                      ).amount,
+                      totalUsdc.amount
+                    ),
                     quantity: stakedPosition.amount,
                     usdcValue: curveLpTokensToUsdc(
                       stakedPosition.amount,
@@ -269,7 +290,13 @@ export default function DashboardPage() {
                     ? [
                         {
                           name: "Unstaked LP Tokens",
-                          percentage: 0,
+                          percentage: computePercentage(
+                            curveLpTokensToUsdc(
+                              data.viewer.curveLpBalance.amount,
+                              data.curvePool.usdcPerLpToken
+                            ).amount,
+                            totalUsdc.amount
+                          ),
                           quantity: data.viewer.curveLpBalance.amount,
                           usdcValue: curveLpTokensToUsdc(
                             data.viewer.curveLpBalance.amount,
@@ -293,11 +320,17 @@ export default function DashboardPage() {
               <ExpandableHoldings
                 title="GFI"
                 tooltip="Your GFI tokens"
-                color="#ffff00"
+                colorClass={gfiColorClass}
                 holdings={[
                   {
                     name: "Wallet holdings",
-                    percentage: 0,
+                    percentage: computePercentage(
+                      gfiToUsdc(
+                        data.viewer.gfiBalance,
+                        data.gfiPrice.price.amount
+                      ).amount,
+                      totalUsdc.amount
+                    ),
                     quantity: data.viewer.gfiBalance.amount,
                     usdcValue: gfiToUsdc(
                       data.viewer.gfiBalance,
