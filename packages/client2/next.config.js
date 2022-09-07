@@ -1,12 +1,40 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
+// Guidance for security headers: https://nextjs.org/docs/advanced-features/security-headers
+// Note: we attempted to have a very restrictive connect-src and image-src, but the various third-party modules we use have so many external dependencies that it was difficult to list them all out (and they're subject to change without warning)
 const ContentSecurityPolicy = `
+  script-src ${
+    process.env.NODE_ENV === "production" ? `'self'` : `'self' 'unsafe-eval'` // Next.js devtools (like fast refresh) are eval'd scripts
+  };
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/;
+  font-src 'self' https://fonts.gstatic.com/;
+  frame-src 'self' https://withpersona.com/;
   frame-ancestors 'self';
 `;
 const securityHeaders = [
   {
+    key: "X-DNS-Prefetch-Control",
+    value: "on",
+  },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains; preload",
+  },
+  {
+    key: "X-XSS-Protection",
+    value: "1; mode=block",
+  },
+  {
     key: "X-Frame-Options",
     value: "SAMEORIGIN",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "origin-when-cross-origin",
   },
   {
     key: "Content-Security-Policy",
