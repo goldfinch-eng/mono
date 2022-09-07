@@ -22,7 +22,7 @@ export function Nav() {
         </div>
 
         <div className="flex flex-1">
-          <NextLink href="/" passHref>
+          <NextLink href="/dashboard" passHref>
             <a className="flex items-center justify-center p-3">
               <GoldfinchLogo className="h-7 w-7" />
             </a>
