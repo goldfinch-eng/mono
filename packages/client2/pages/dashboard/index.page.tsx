@@ -1,5 +1,6 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
+import { useMemo } from "react";
 
 import { Heading } from "@/components/design-system";
 import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
@@ -9,10 +10,11 @@ import {
   SupportedCrypto,
   useDashboardPageQuery,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc } from "@/lib/pools";
+import { sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { ExpandableHoldings } from "./expandable-holdings";
+import { PortfolioSummary } from "./portfolio-summary";
 
 gql`
   query DashboardPage($userId: String!) {
@@ -83,6 +85,80 @@ export default function DashboardPage() {
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
+  const { summaryHoldings, totalUsdc } = useMemo(() => {
+    if (!data) {
+      return {};
+    }
+    const borrowerPoolTotal = {
+      token: SupportedCrypto.Usdc,
+      amount: sum("principalAmount", data.tranchedPoolTokens),
+    };
+    const gfiTotal = data.viewer.gfiBalance
+      ? gfiToUsdc(data.viewer.gfiBalance, data.gfiPrice.price.amount)
+      : {
+          token: SupportedCrypto.Usdc,
+          amount: BigNumber.from(0),
+        };
+    const seniorPoolTotal = sharesToUsdc(
+      sum("amount", data.stakedFiduPositions).add(
+        data.viewer.fiduBalance?.amount ?? BigNumber.from(0)
+      ),
+      data.seniorPools[0].latestPoolStatus.sharePrice
+    );
+    const curveLpTotal = curveLpTokensToUsdc(
+      sum("amount", data.stakedCurveLpPositions).add(
+        data.viewer.curveLpBalance
+          ? data.viewer.curveLpBalance.amount
+          : BigNumber.from(0)
+      ),
+      data.curvePool.usdcPerLpToken
+    );
+    const totalUsdc = {
+      token: SupportedCrypto.Usdc,
+      amount: sum("amount", [
+        borrowerPoolTotal,
+        gfiTotal,
+        seniorPoolTotal,
+        curveLpTotal,
+      ]),
+    };
+
+    const summaryHoldings = [
+      {
+        name: "Borrower Pools",
+        usdc: borrowerPoolTotal,
+        colorClass: "bg-eggplant-300",
+        percentage: computePercentage(
+          borrowerPoolTotal.amount,
+          totalUsdc.amount
+        ),
+      },
+      {
+        name: "GFI",
+        usdc: gfiTotal,
+        percentage: computePercentage(gfiTotal.amount, totalUsdc.amount),
+        colorClass: "bg-mustard-450",
+      },
+      {
+        name: "Senior Pool",
+        usdc: seniorPoolTotal,
+        percentage: computePercentage(seniorPoolTotal.amount, totalUsdc.amount),
+        colorClass: "bg-mint-300",
+      },
+      {
+        name: "Curve LP",
+        usdc: curveLpTotal,
+        percentage: computePercentage(curveLpTotal.amount, totalUsdc.amount),
+        colorClass: "bg-tidepool-600",
+      },
+    ];
+
+    return {
+      totalUsdc,
+      summaryHoldings,
+    };
+  }, [data]);
+
   return (
     <div>
       <Heading level={1} className="mb-12">
@@ -98,9 +174,12 @@ export default function DashboardPage() {
         <div>Loading</div>
       ) : (
         <div>
-          <Heading level={2} className="mb-9 !font-sans !text-3xl !font-normal">
-            Portfolio summary
-          </Heading>
+          {summaryHoldings && totalUsdc ? (
+            <PortfolioSummary
+              holdings={summaryHoldings}
+              totalUsdc={totalUsdc}
+            />
+          ) : null}
           <Heading level={3} className="mb-6 !font-sans !text-xl">
             Holdings
           </Heading>
@@ -264,4 +343,8 @@ function curveLpTokensToUsdc(
     amount: BigNumber.from(usdcValue.toString().split(".")[0]),
     token: SupportedCrypto.Usdc,
   };
+}
+
+function computePercentage(n: BigNumber, total: BigNumber): number {
+  return FixedNumber.from(n).divUnsafe(FixedNumber.from(total)).toUnsafeFloat();
 }
