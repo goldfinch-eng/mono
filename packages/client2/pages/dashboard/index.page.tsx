@@ -179,7 +179,11 @@ export default function DashboardPage() {
         <div>Loading</div>
       ) : (
         <div>
-          <PortfolioSummary holdings={summaryHoldings} totalUsdc={totalUsdc} />
+          <PortfolioSummary
+            className="mb-15"
+            holdings={summaryHoldings}
+            totalUsdc={totalUsdc}
+          />
           <Heading level={3} className="mb-6 !font-sans !text-xl">
             Holdings
           </Heading>

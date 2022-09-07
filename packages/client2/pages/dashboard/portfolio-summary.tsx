@@ -21,16 +21,23 @@ interface Holding {
 }
 
 interface PortfolioSummaryProps {
+  className?: string;
   holdings: Holding[];
   totalUsdc: CryptoAmount;
 }
 
 export function PortfolioSummary({
+  className,
   holdings,
   totalUsdc,
 }: PortfolioSummaryProps) {
   return (
-    <div className="grid grid-cols-4 gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200">
+    <div
+      className={clsx(
+        "grid grid-cols-4 gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200",
+        className
+      )}
+    >
       <div className="col-span-full bg-white px-5 py-7">
         <div className="mb-9 flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
           <Heading level={2} className="!font-sans !text-3xl !font-normal">
