@@ -6,6 +6,11 @@ import { Heading } from "@/components/design-system";
 import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
+  stitchGrantsWithTokens,
+  sumTotalClaimable,
+  sumTotalLocked,
+} from "@/lib/gfi-rewards";
+import {
   CryptoAmount,
   SupportedCrypto,
   useDashboardPageQuery,
@@ -17,6 +22,13 @@ import { ExpandableHoldings } from "./expandable-holdings";
 import { PortfolioSummary } from "./portfolio-summary";
 
 gql`
+  fragment StakedPositionFields on SeniorPoolStakedPosition {
+    id
+    amount
+    claimable @client
+    granted @client
+    totalRewardsClaimed
+  }
   query DashboardPage($userId: String!) {
     seniorPools {
       id
@@ -38,6 +50,19 @@ gql`
         token
         amount
       }
+      gfiGrants {
+        __typename
+        id
+        index
+        amount
+        ... on IndirectGfiGrant {
+          indirectSource
+          vested
+        }
+        ... on DirectGfiGrant {
+          isAccepted
+        }
+      }
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -55,6 +80,8 @@ gql`
     ) {
       id
       principalAmount
+      rewardsClaimable
+      stakingRewardsClaimable
       tranchedPool {
         id
         name @client
@@ -65,16 +92,20 @@ gql`
       orderBy: startTime
       orderDirection: desc
     ) {
-      id
-      amount
+      ...StakedPositionFields
     }
     stakedCurveLpPositions: seniorPoolStakedPositions(
       where: { user: $userId, amount_gt: 0, positionType: CurveLP }
       orderBy: startTime
       orderDirection: desc
     ) {
+      ...StakedPositionFields
+    }
+    communityRewardsTokens(where: { user: $userId }) {
       id
-      amount
+      source
+      index
+      totalClaimed
     }
   }
 `;
@@ -90,6 +121,26 @@ export default function DashboardPage() {
     variables: { userId: account?.toLowerCase() ?? "" },
   });
 
+  const gfiRewardsTotal = useMemo(() => {
+    if (!data) {
+      return BigNumber.from(0);
+    }
+    const grantsWithTokens = stitchGrantsWithTokens(
+      data.viewer.gfiGrants,
+      data.communityRewardsTokens
+    );
+    const gfiTotalClaimable = sumTotalClaimable(
+      grantsWithTokens,
+      data.tranchedPoolTokens,
+      data.stakedFiduPositions.concat(data.stakedCurveLpPositions)
+    );
+    const gfiTotalLocked = sumTotalLocked(
+      grantsWithTokens,
+      data.stakedFiduPositions.concat(data.stakedCurveLpPositions)
+    );
+    return gfiTotalClaimable.add(gfiTotalLocked);
+  }, [data]);
+
   const { summaryHoldings, totalUsdc } = useMemo(() => {
     if (!data) {
       return {};
@@ -98,18 +149,27 @@ export default function DashboardPage() {
       token: SupportedCrypto.Usdc,
       amount: sum("principalAmount", data.tranchedPoolTokens),
     };
+
     const gfiTotal = data.viewer.gfiBalance
-      ? gfiToUsdc(data.viewer.gfiBalance, data.gfiPrice.price.amount)
+      ? gfiToUsdc(
+          {
+            token: SupportedCrypto.Gfi,
+            amount: data.viewer.gfiBalance.amount.add(gfiRewardsTotal),
+          },
+          data.gfiPrice.price.amount
+        )
       : {
           token: SupportedCrypto.Usdc,
-          amount: BigNumber.from(0),
+          amount: gfiRewardsTotal,
         };
+
     const seniorPoolTotal = sharesToUsdc(
       sum("amount", data.stakedFiduPositions).add(
         data.viewer.fiduBalance?.amount ?? BigNumber.from(0)
       ),
       data.seniorPools[0].latestPoolStatus.sharePrice
     );
+
     const curveLpTotal = curveLpTokensToUsdc(
       sum("amount", data.stakedCurveLpPositions).add(
         data.viewer.curveLpBalance
@@ -118,6 +178,7 @@ export default function DashboardPage() {
       ),
       data.curvePool.usdcPerLpToken
     );
+
     const totalUsdc = {
       token: SupportedCrypto.Usdc,
       amount: sum("amount", [
@@ -162,7 +223,7 @@ export default function DashboardPage() {
       totalUsdc,
       summaryHoldings,
     };
-  }, [data]);
+  }, [data, gfiRewardsTotal]);
 
   return (
     <div>
@@ -319,28 +380,60 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
-            {data.viewer.gfiBalance &&
-            !data.viewer.gfiBalance.amount.isZero() ? (
+            {(data.viewer.gfiBalance &&
+              !data.viewer.gfiBalance.amount.isZero()) ||
+            !gfiRewardsTotal.isZero() ? (
               <ExpandableHoldings
                 title="GFI"
                 tooltip="Your GFI tokens"
                 colorClass={gfiColorClass}
                 holdings={[
-                  {
-                    name: "Wallet holdings",
-                    percentage: computePercentage(
-                      gfiToUsdc(
-                        data.viewer.gfiBalance,
-                        data.gfiPrice.price.amount
-                      ).amount,
-                      totalUsdc.amount
-                    ),
-                    quantity: data.viewer.gfiBalance.amount,
-                    usdcValue: gfiToUsdc(
-                      data.viewer.gfiBalance,
-                      data.gfiPrice.price.amount
-                    ),
-                  },
+                  ...(data.viewer.gfiBalance &&
+                  !data.viewer.gfiBalance.amount.isZero()
+                    ? [
+                        {
+                          name: "Wallet holdings",
+                          percentage: computePercentage(
+                            gfiToUsdc(
+                              data.viewer.gfiBalance,
+                              data.gfiPrice.price.amount
+                            ).amount,
+                            totalUsdc.amount
+                          ),
+                          quantity: data.viewer.gfiBalance.amount,
+                          usdcValue: gfiToUsdc(
+                            data.viewer.gfiBalance,
+                            data.gfiPrice.price.amount
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(!gfiRewardsTotal.isZero()
+                    ? [
+                        {
+                          name: "GFI Rewards",
+                          percentage: computePercentage(
+                            gfiToUsdc(
+                              {
+                                token: SupportedCrypto.Gfi,
+                                amount: gfiRewardsTotal,
+                              },
+                              data.gfiPrice.price.amount
+                            ).amount,
+                            totalUsdc.amount
+                          ),
+                          quantity: gfiRewardsTotal,
+                          usdcValue: gfiToUsdc(
+                            {
+                              token: SupportedCrypto.Gfi,
+                              amount: gfiRewardsTotal,
+                            },
+                            data.gfiPrice.price.amount
+                          ),
+                          url: "/gfi",
+                        },
+                      ]
+                    : []),
                 ]}
                 quantityFormatter={(n: BigNumber) =>
                   formatCrypto(
