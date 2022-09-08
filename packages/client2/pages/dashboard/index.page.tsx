@@ -2,7 +2,14 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 import { useMemo } from "react";
 
-import { Heading } from "@/components/design-system";
+import {
+  Heading,
+  TabButton,
+  TabContent,
+  TabGroup,
+  TabList,
+  TabPanels,
+} from "@/components/design-system";
 import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
 import {
@@ -241,216 +248,244 @@ export default function DashboardPage() {
         <div>Loading</div>
       ) : (
         <div>
-          <PortfolioSummary
-            className="mb-15"
-            holdings={summaryHoldings}
-            totalUsdc={totalUsdc}
-          />
-          <Heading level={3} className="mb-6 !font-sans !text-xl">
-            Holdings
-          </Heading>
-          <div className="mb-24 space-y-3">
-            {data.tranchedPoolTokens.length > 0 ? (
-              <ExpandableHoldings
-                title="Borrower Pool Positions"
-                tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
-                colorClass={borrowerPoolColorClass}
-                holdings={data.tranchedPoolTokens.map((token) => ({
-                  name: token.tranchedPool.name,
-                  percentage: computePercentage(
-                    token.principalAmount,
-                    totalUsdc.amount
-                  ),
-                  quantity: BigNumber.from(1),
-                  usdcValue: {
-                    token: SupportedCrypto.Usdc,
-                    amount: token.principalAmount,
-                  },
-                  url: `/pools/${token.tranchedPool.id}`,
-                }))}
-                quantityFormatter={(n: BigNumber) =>
-                  `${n.toString()} NFT${n.gt(BigNumber.from(1)) ? "s" : ""}`
-                }
-              />
-            ) : null}
-            {(data.viewer.gfiBalance &&
-              !data.viewer.gfiBalance.amount.isZero()) ||
-            !gfiRewardsTotal.isZero() ? (
-              <ExpandableHoldings
-                title="GFI"
-                tooltip="Your GFI tokens"
-                colorClass={gfiColorClass}
-                holdings={[
-                  ...(data.viewer.gfiBalance &&
-                  !data.viewer.gfiBalance.amount.isZero()
-                    ? [
-                        {
-                          name: "Wallet holdings",
-                          percentage: computePercentage(
-                            gfiToUsdc(
-                              data.viewer.gfiBalance,
-                              data.gfiPrice.price.amount
-                            ).amount,
-                            totalUsdc.amount
-                          ),
-                          quantity: data.viewer.gfiBalance.amount,
-                          usdcValue: gfiToUsdc(
-                            data.viewer.gfiBalance,
-                            data.gfiPrice.price.amount
-                          ),
+          <TabGroup>
+            <TabList>
+              <TabButton>Overview</TabButton>
+              <TabButton>Activity</TabButton>
+            </TabList>
+            <TabPanels>
+              <TabContent>
+                <PortfolioSummary
+                  className="mb-15"
+                  holdings={summaryHoldings}
+                  totalUsdc={totalUsdc}
+                />
+                <Heading level={3} className="mb-6 !font-sans !text-xl">
+                  Holdings
+                </Heading>
+                <div className="mb-24 space-y-3">
+                  {data.tranchedPoolTokens.length > 0 ? (
+                    <ExpandableHoldings
+                      title="Borrower Pool Positions"
+                      tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
+                      colorClass={borrowerPoolColorClass}
+                      holdings={data.tranchedPoolTokens.map((token) => ({
+                        name: token.tranchedPool.name,
+                        percentage: computePercentage(
+                          token.principalAmount,
+                          totalUsdc.amount
+                        ),
+                        quantity: BigNumber.from(1),
+                        usdcValue: {
+                          token: SupportedCrypto.Usdc,
+                          amount: token.principalAmount,
                         },
-                      ]
-                    : []),
-                  ...(!gfiRewardsTotal.isZero()
-                    ? [
-                        {
-                          name: "GFI Rewards",
-                          percentage: computePercentage(
-                            gfiToUsdc(
+                        url: `/pools/${token.tranchedPool.id}`,
+                      }))}
+                      quantityFormatter={(n: BigNumber) =>
+                        `${n.toString()} NFT${
+                          n.gt(BigNumber.from(1)) ? "s" : ""
+                        }`
+                      }
+                    />
+                  ) : null}
+                  {(data.viewer.gfiBalance &&
+                    !data.viewer.gfiBalance.amount.isZero()) ||
+                  !gfiRewardsTotal.isZero() ? (
+                    <ExpandableHoldings
+                      title="GFI"
+                      tooltip="Your GFI tokens"
+                      colorClass={gfiColorClass}
+                      holdings={[
+                        ...(data.viewer.gfiBalance &&
+                        !data.viewer.gfiBalance.amount.isZero()
+                          ? [
                               {
-                                token: SupportedCrypto.Gfi,
-                                amount: gfiRewardsTotal,
+                                name: "Wallet holdings",
+                                percentage: computePercentage(
+                                  gfiToUsdc(
+                                    data.viewer.gfiBalance,
+                                    data.gfiPrice.price.amount
+                                  ).amount,
+                                  totalUsdc.amount
+                                ),
+                                quantity: data.viewer.gfiBalance.amount,
+                                usdcValue: gfiToUsdc(
+                                  data.viewer.gfiBalance,
+                                  data.gfiPrice.price.amount
+                                ),
                               },
-                              data.gfiPrice.price.amount
-                            ).amount,
-                            totalUsdc.amount
-                          ),
-                          quantity: gfiRewardsTotal,
-                          usdcValue: gfiToUsdc(
-                            {
-                              token: SupportedCrypto.Gfi,
-                              amount: gfiRewardsTotal,
-                            },
-                            data.gfiPrice.price.amount
-                          ),
-                          url: "/gfi",
-                        },
-                      ]
-                    : []),
-                ]}
-                quantityFormatter={(n: BigNumber) =>
-                  formatCrypto(
-                    { token: SupportedCrypto.Gfi, amount: n },
-                    { includeToken: true }
-                  )
-                }
-              />
-            ) : null}
-            {(data.viewer.fiduBalance &&
-              !data.viewer.fiduBalance.amount.isZero()) ||
-            data.stakedFiduPositions.length > 0 ? (
-              <ExpandableHoldings
-                title="Goldfinch Senior Pool"
-                tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
-                colorClass={seniorPoolColorClass}
-                holdings={[
-                  ...data.stakedFiduPositions.map((stakedPosition) => ({
-                    name: "Staked Senior Pool Position",
-                    percentage: computePercentage(
-                      sharesToUsdc(
-                        stakedPosition.amount,
-                        data.seniorPools[0].latestPoolStatus.sharePrice
-                      ).amount,
-                      totalUsdc.amount
-                    ),
-                    quantity: stakedPosition.amount,
-                    usdcValue: sharesToUsdc(
-                      stakedPosition.amount,
-                      data.seniorPools[0].latestPoolStatus.sharePrice
-                    ),
-                    url: "/pools/senior",
-                  })),
-                  ...(data.viewer.fiduBalance &&
-                  !data.viewer.fiduBalance.amount.isZero()
-                    ? [
-                        {
-                          name: "Unstaked Senior Pool Position",
+                            ]
+                          : []),
+                        ...(!gfiRewardsTotal.isZero()
+                          ? [
+                              {
+                                name: "GFI Rewards",
+                                percentage: computePercentage(
+                                  gfiToUsdc(
+                                    {
+                                      token: SupportedCrypto.Gfi,
+                                      amount: gfiRewardsTotal,
+                                    },
+                                    data.gfiPrice.price.amount
+                                  ).amount,
+                                  totalUsdc.amount
+                                ),
+                                quantity: gfiRewardsTotal,
+                                usdcValue: gfiToUsdc(
+                                  {
+                                    token: SupportedCrypto.Gfi,
+                                    amount: gfiRewardsTotal,
+                                  },
+                                  data.gfiPrice.price.amount
+                                ),
+                                url: "/gfi",
+                              },
+                            ]
+                          : []),
+                      ]}
+                      quantityFormatter={(n: BigNumber) =>
+                        formatCrypto(
+                          { token: SupportedCrypto.Gfi, amount: n },
+                          { includeToken: true }
+                        )
+                      }
+                    />
+                  ) : null}
+                  {(data.viewer.fiduBalance &&
+                    !data.viewer.fiduBalance.amount.isZero()) ||
+                  data.stakedFiduPositions.length > 0 ? (
+                    <ExpandableHoldings
+                      title="Goldfinch Senior Pool"
+                      tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
+                      colorClass={seniorPoolColorClass}
+                      holdings={[
+                        ...data.stakedFiduPositions.map((stakedPosition) => ({
+                          name: "Staked Senior Pool Position",
                           percentage: computePercentage(
                             sharesToUsdc(
-                              data.viewer.fiduBalance.amount,
+                              stakedPosition.amount,
                               data.seniorPools[0].latestPoolStatus.sharePrice
                             ).amount,
                             totalUsdc.amount
                           ),
-                          quantity: data.viewer.fiduBalance.amount,
+                          quantity: stakedPosition.amount,
                           usdcValue: sharesToUsdc(
-                            data.viewer.fiduBalance.amount,
+                            stakedPosition.amount,
                             data.seniorPools[0].latestPoolStatus.sharePrice
                           ),
                           url: "/pools/senior",
-                        },
-                      ]
-                    : []),
-                ]}
-                quantityFormatter={(n: BigNumber) =>
-                  formatCrypto(
-                    { amount: n, token: SupportedCrypto.Fidu },
-                    { includeToken: true }
-                  )
-                }
-              />
-            ) : null}
-            {(data.viewer.curveLpBalance &&
-              !data.viewer.curveLpBalance.amount.isZero()) ||
-            data.stakedCurveLpPositions.length > 0 ? (
-              <ExpandableHoldings
-                title="Curve Liquidity Provider"
-                tooltip="Tokens earned from providing liquidity on the Goldfinch FIDU/USDC pool on Curve."
-                colorClass={curveColorClass}
-                holdings={[
-                  ...data.stakedCurveLpPositions.map((stakedPosition) => ({
-                    name: "Staked Curve LP Tokens",
-                    percentage: computePercentage(
-                      curveLpTokensToUsdc(
-                        stakedPosition.amount,
-                        data.curvePool.usdcPerLpToken
-                      ).amount,
-                      totalUsdc.amount
-                    ),
-                    quantity: stakedPosition.amount,
-                    usdcValue: curveLpTokensToUsdc(
-                      stakedPosition.amount,
-                      data.curvePool.usdcPerLpToken
-                    ),
-                    url: "/stake",
-                  })),
-                  ...(data.viewer.curveLpBalance &&
-                  !data.viewer.curveLpBalance.amount.isZero()
-                    ? [
-                        {
-                          name: "Unstaked LP Tokens",
-                          percentage: computePercentage(
-                            curveLpTokensToUsdc(
-                              data.viewer.curveLpBalance.amount,
+                        })),
+                        ...(data.viewer.fiduBalance &&
+                        !data.viewer.fiduBalance.amount.isZero()
+                          ? [
+                              {
+                                name: "Unstaked Senior Pool Position",
+                                percentage: computePercentage(
+                                  sharesToUsdc(
+                                    data.viewer.fiduBalance.amount,
+                                    data.seniorPools[0].latestPoolStatus
+                                      .sharePrice
+                                  ).amount,
+                                  totalUsdc.amount
+                                ),
+                                quantity: data.viewer.fiduBalance.amount,
+                                usdcValue: sharesToUsdc(
+                                  data.viewer.fiduBalance.amount,
+                                  data.seniorPools[0].latestPoolStatus
+                                    .sharePrice
+                                ),
+                                url: "/pools/senior",
+                              },
+                            ]
+                          : []),
+                      ]}
+                      quantityFormatter={(n: BigNumber) =>
+                        formatCrypto(
+                          { amount: n, token: SupportedCrypto.Fidu },
+                          { includeToken: true }
+                        )
+                      }
+                    />
+                  ) : null}
+                  {(data.viewer.curveLpBalance &&
+                    !data.viewer.curveLpBalance.amount.isZero()) ||
+                  data.stakedCurveLpPositions.length > 0 ? (
+                    <ExpandableHoldings
+                      title="Curve Liquidity Provider"
+                      tooltip="Tokens earned from providing liquidity on the Goldfinch FIDU/USDC pool on Curve."
+                      colorClass={curveColorClass}
+                      holdings={[
+                        ...data.stakedCurveLpPositions.map(
+                          (stakedPosition) => ({
+                            name: "Staked Curve LP Tokens",
+                            percentage: computePercentage(
+                              curveLpTokensToUsdc(
+                                stakedPosition.amount,
+                                data.curvePool.usdcPerLpToken
+                              ).amount,
+                              totalUsdc.amount
+                            ),
+                            quantity: stakedPosition.amount,
+                            usdcValue: curveLpTokensToUsdc(
+                              stakedPosition.amount,
                               data.curvePool.usdcPerLpToken
-                            ).amount,
-                            totalUsdc.amount
-                          ),
-                          quantity: data.viewer.curveLpBalance.amount,
-                          usdcValue: curveLpTokensToUsdc(
-                            data.viewer.curveLpBalance.amount,
-                            data.curvePool.usdcPerLpToken
-                          ),
-                          url: "/stake",
-                        },
-                      ]
-                    : []),
-                ]}
-                quantityFormatter={(n: BigNumber) =>
-                  formatCrypto(
-                    { token: SupportedCrypto.CurveLp, amount: n },
-                    { includeToken: true }
-                  )
-                }
-              />
-            ) : null}
-          </div>
+                            ),
+                            url: "/stake",
+                          })
+                        ),
+                        ...(data.viewer.curveLpBalance &&
+                        !data.viewer.curveLpBalance.amount.isZero()
+                          ? [
+                              {
+                                name: "Unstaked LP Tokens",
+                                percentage: computePercentage(
+                                  curveLpTokensToUsdc(
+                                    data.viewer.curveLpBalance.amount,
+                                    data.curvePool.usdcPerLpToken
+                                  ).amount,
+                                  totalUsdc.amount
+                                ),
+                                quantity: data.viewer.curveLpBalance.amount,
+                                usdcValue: curveLpTokensToUsdc(
+                                  data.viewer.curveLpBalance.amount,
+                                  data.curvePool.usdcPerLpToken
+                                ),
+                                url: "/stake",
+                              },
+                            ]
+                          : []),
+                      ]}
+                      quantityFormatter={(n: BigNumber) =>
+                        formatCrypto(
+                          { token: SupportedCrypto.CurveLp, amount: n },
+                          { includeToken: true }
+                        )
+                      }
+                    />
+                  ) : null}
+                </div>
+                <Heading
+                  level={2}
+                  className="mb-6 !font-sans !text-3xl !font-normal"
+                >
+                  Activity
+                </Heading>
+                <TransactionTable isPreview />
+              </TabContent>
+              <TabContent>
+                <Heading
+                  level={2}
+                  className="mb-6 !font-sans !text-3xl !font-normal"
+                >
+                  Activity
+                </Heading>
+                <TransactionTable />
+              </TabContent>
+            </TabPanels>
+          </TabGroup>
         </div>
       )}
-      <Heading level={2} className="mb-6 !font-sans !text-3xl !font-normal">
-        Activity
-      </Heading>
-      <TransactionTable isPreview />
     </div>
   );
 }

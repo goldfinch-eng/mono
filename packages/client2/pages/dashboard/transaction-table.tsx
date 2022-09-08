@@ -62,60 +62,62 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
     data?.transactions
   );
 
-  const rows = filteredTxs.map((transaction) => {
-    const amount =
-      transaction.amount && !transaction.amount.isZero()
-        ? (subtractiveIconTransactionCategories.includes(transaction.category)
-            ? "-"
-            : "+") +
-          formatCrypto(
-            {
-              token: transaction.amountToken,
-              amount: transaction.amount,
-            },
-            { includeToken: true }
-          )
-        : null;
+  const rows = (isPreview ? filteredTxs.slice(0, 5) : filteredTxs).map(
+    (transaction) => {
+      const amount =
+        transaction.amount && !transaction.amount.isZero()
+          ? (subtractiveIconTransactionCategories.includes(transaction.category)
+              ? "-"
+              : "+") +
+            formatCrypto(
+              {
+                token: transaction.amountToken,
+                amount: transaction.amount,
+              },
+              { includeToken: true }
+            )
+          : null;
 
-    const date = new Date(transaction.timestamp * 1000);
+      const date = new Date(transaction.timestamp * 1000);
 
-    return [
-      <div
-        key={`${transaction.id}-category`}
-        className="flex items-center gap-3 text-left"
-      >
-        <Icon name={getTransactionIcon(transaction)} size="sm" />
-        {getTransactionLabel(transaction)}
-      </div>,
-      <div key={`${transaction.id}-amount`} className="text-left">
-        {amount}
-      </div>,
-      <div key={`${transaction.id}-date`} className="text-left">
-        {format(date, "MMM d, y")}
-      </div>,
-      <div key={`${transaction.id}-pool`} className="text-left">
-        {transaction.tranchedPool ? (
-          <Link
-            href={`/pools/${transaction.tranchedPool.id}`}
-            iconRight="ArrowTopRight"
-            className="text-sand-400"
-          >
-            Pool
-          </Link>
-        ) : null}
-      </div>,
-      <Link
-        href={`https://etherscan.io/tx/${transaction.transactionHash}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sand-400"
-        key={`${transaction.id}-link`}
-        iconRight="ArrowTopRight"
-      >
-        Tx
-      </Link>,
-    ];
-  });
+      return [
+        <div
+          key={`${transaction.id}-category`}
+          className="flex items-center gap-3 text-left"
+        >
+          <Icon name={getTransactionIcon(transaction)} size="sm" />
+          {getTransactionLabel(transaction)}
+        </div>,
+        <div key={`${transaction.id}-amount`} className="text-left">
+          {amount}
+        </div>,
+        <div key={`${transaction.id}-date`} className="text-left">
+          {format(date, "MMM d, y")}
+        </div>,
+        <div key={`${transaction.id}-pool`} className="text-left">
+          {transaction.tranchedPool ? (
+            <Link
+              href={`/pools/${transaction.tranchedPool.id}`}
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              Pool
+            </Link>
+          ) : null}
+        </div>,
+        <Link
+          href={`https://etherscan.io/tx/${transaction.transactionHash}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sand-400"
+          key={`${transaction.id}-link`}
+          iconRight="ArrowTopRight"
+        >
+          Tx
+        </Link>,
+      ];
+    }
+  );
 
   const onScrollBottom = useCallback(() => {
     if (data?.transactions) {
