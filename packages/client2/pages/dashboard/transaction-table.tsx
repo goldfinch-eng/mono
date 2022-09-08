@@ -43,6 +43,15 @@ const subtractiveIconTransactionCategories = [
   TransactionCategory.TranchedPoolWithdrawal,
 ];
 
+const seniorPoolCategories = [
+  TransactionCategory.SeniorPoolDeposit,
+  TransactionCategory.SeniorPoolDepositAndStake,
+  TransactionCategory.SeniorPoolStake,
+  TransactionCategory.SeniorPoolUnstake,
+  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
+  TransactionCategory.SeniorPoolWithdrawal,
+];
+
 interface TransactionTableProps {
   isPreview?: boolean;
 }
@@ -88,11 +97,11 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
           <Icon name={getTransactionIcon(transaction)} size="sm" />
           {getTransactionLabel(transaction)}
         </div>,
-        <div key={`${transaction.id}-amount`} className="text-left">
-          {amount}
-        </div>,
         <div key={`${transaction.id}-date`} className="text-left">
           {format(date, "MMM d, y")}
+        </div>,
+        <div key={`${transaction.id}-amount`} className="text-left">
+          {amount}
         </div>,
         <div key={`${transaction.id}-pool`} className="text-left">
           {transaction.tranchedPool ? (
@@ -102,6 +111,14 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
               className="text-sand-400"
             >
               Pool
+            </Link>
+          ) : seniorPoolCategories.includes(transaction.category) ? (
+            <Link
+              href="/pools/senior"
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              Senior Pool
             </Link>
           ) : null}
         </div>,
@@ -144,7 +161,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
     </div>
   ) : (
     <Table
-      headings={["Type", "Amount", "Date", "Link", ""]}
+      headings={["Type", "Date", "Amount", "Link", ""]}
       rows={rows}
       onScrollBottom={!isPreview ? onScrollBottom : undefined}
     />
