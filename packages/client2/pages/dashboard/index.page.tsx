@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   Button,
@@ -241,6 +241,8 @@ export default function DashboardPage() {
     Record<string, ExpandableHoldingsRef | null>
   >({});
 
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
   return (
     <div>
       <Heading level={1} className="mb-12">
@@ -256,7 +258,10 @@ export default function DashboardPage() {
         <div>Loading</div>
       ) : (
         <div>
-          <TabGroup>
+          <TabGroup
+            selectedIndex={selectedTabIndex}
+            onChange={setSelectedTabIndex}
+          >
             <TabList>
               <TabButton>Overview</TabButton>
               <TabButton>Activity</TabButton>
@@ -268,8 +273,8 @@ export default function DashboardPage() {
                   holdings={summaryHoldings}
                   totalUsdc={totalUsdc}
                 />
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Heading level={3} className="mb-6 !font-sans !text-xl">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <Heading level={3} className="!font-sans !text-xl">
                     Holdings
                   </Heading>
                   <Button
@@ -498,12 +503,23 @@ export default function DashboardPage() {
                     />
                   ) : null}
                 </div>
-                <Heading
-                  level={2}
-                  className="mb-6 !font-sans !text-3xl !font-normal"
-                >
-                  Activity
-                </Heading>
+
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <Heading
+                    level={2}
+                    className="!font-sans !text-3xl !font-normal"
+                  >
+                    Activity
+                  </Heading>
+                  <Button
+                    colorScheme="secondary"
+                    variant="rounded"
+                    iconRight="ArrowSmRight"
+                    onClick={() => setSelectedTabIndex(1)}
+                  >
+                    View all
+                  </Button>
+                </div>
                 <TransactionTable isPreview />
               </TabContent>
               <TabContent>
