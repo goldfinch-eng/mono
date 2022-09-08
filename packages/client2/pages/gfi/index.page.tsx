@@ -1,10 +1,13 @@
 import { gql } from "@apollo/client";
-import { BigNumber } from "ethers";
 import { useMemo } from "react";
 
 import { Heading, Shimmer, Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
-import { stitchGrantsWithTokens } from "@/lib/gfi-rewards";
+import {
+  stitchGrantsWithTokens,
+  sumTotalClaimable,
+  sumTotalLocked,
+} from "@/lib/gfi-rewards";
 import { SupportedCrypto, useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -68,47 +71,15 @@ export default function GfiPage() {
     }
   }, [data]);
 
-  const grantsTotalClaimable =
-    grantsWithTokens?.reduce(
-      (prev, current) => prev.add(current.claimable),
-      BigNumber.from(0)
-    ) ?? BigNumber.from(0);
-  const grantsTotalLocked =
-    grantsWithTokens?.reduce(
-      (prev, current) => prev.add(current.locked),
-      BigNumber.from(0)
-    ) ?? BigNumber.from(0);
-
-  const backerTotalClaimable =
-    data?.tranchedPoolTokens.reduce(
-      (prev, current) =>
-        prev.add(current.rewardsClaimable.add(current.stakingRewardsClaimable)),
-      BigNumber.from(0)
-    ) ?? BigNumber.from(0);
-  const backerTotalLocked = BigNumber.from(0);
-
-  const stakingTotalClaimable =
-    data?.seniorPoolStakedPositions.reduce(
-      (prev, current) => prev.add(current.claimable),
-      BigNumber.from(0)
-    ) ?? BigNumber.from(0);
-  const stakingTotalLocked =
-    data?.seniorPoolStakedPositions.reduce(
-      (prev, current) =>
-        prev.add(
-          current.granted
-            .sub(current.claimable)
-            .sub(current.totalRewardsClaimed)
-        ),
-      BigNumber.from(0)
-    ) ?? BigNumber.from(0);
-
-  const totalClaimable = grantsTotalClaimable
-    .add(backerTotalClaimable)
-    .add(stakingTotalClaimable);
-  const totalLocked = grantsTotalLocked
-    .add(backerTotalLocked)
-    .add(stakingTotalLocked);
+  const totalClaimable = sumTotalClaimable(
+    grantsWithTokens,
+    data?.tranchedPoolTokens,
+    data?.seniorPoolStakedPositions
+  );
+  const totalLocked = sumTotalLocked(
+    grantsWithTokens,
+    data?.seniorPoolStakedPositions
+  );
 
   const userHasRewards =
     (data?.seniorPoolStakedPositions.length ?? 0) +
