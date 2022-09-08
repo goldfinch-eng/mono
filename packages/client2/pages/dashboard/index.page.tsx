@@ -20,6 +20,7 @@ import { useWallet } from "@/lib/wallet";
 
 import { ExpandableHoldings } from "./expandable-holdings";
 import { PortfolioSummary } from "./portfolio-summary";
+import { TransactionTable } from "./transaction-table";
 
 gql`
   fragment StakedPositionFields on SeniorPoolStakedPosition {
@@ -248,7 +249,7 @@ export default function DashboardPage() {
           <Heading level={3} className="mb-6 !font-sans !text-xl">
             Holdings
           </Heading>
-          <div className="space-y-3">
+          <div className="mb-24 space-y-3">
             {data.tranchedPoolTokens.length > 0 ? (
               <ExpandableHoldings
                 title="Borrower Pool Positions"
@@ -446,6 +447,10 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      <Heading level={2} className="mb-6 !font-sans !text-3xl !font-normal">
+        Activity
+      </Heading>
+      <TransactionTable isPreview />
     </div>
   );
 }
