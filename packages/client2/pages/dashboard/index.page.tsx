@@ -272,6 +272,69 @@ export default function DashboardPage() {
                 }
               />
             ) : null}
+            {(data.viewer.gfiBalance &&
+              !data.viewer.gfiBalance.amount.isZero()) ||
+            !gfiRewardsTotal.isZero() ? (
+              <ExpandableHoldings
+                title="GFI"
+                tooltip="Your GFI tokens"
+                colorClass={gfiColorClass}
+                holdings={[
+                  ...(data.viewer.gfiBalance &&
+                  !data.viewer.gfiBalance.amount.isZero()
+                    ? [
+                        {
+                          name: "Wallet holdings",
+                          percentage: computePercentage(
+                            gfiToUsdc(
+                              data.viewer.gfiBalance,
+                              data.gfiPrice.price.amount
+                            ).amount,
+                            totalUsdc.amount
+                          ),
+                          quantity: data.viewer.gfiBalance.amount,
+                          usdcValue: gfiToUsdc(
+                            data.viewer.gfiBalance,
+                            data.gfiPrice.price.amount
+                          ),
+                        },
+                      ]
+                    : []),
+                  ...(!gfiRewardsTotal.isZero()
+                    ? [
+                        {
+                          name: "GFI Rewards",
+                          percentage: computePercentage(
+                            gfiToUsdc(
+                              {
+                                token: SupportedCrypto.Gfi,
+                                amount: gfiRewardsTotal,
+                              },
+                              data.gfiPrice.price.amount
+                            ).amount,
+                            totalUsdc.amount
+                          ),
+                          quantity: gfiRewardsTotal,
+                          usdcValue: gfiToUsdc(
+                            {
+                              token: SupportedCrypto.Gfi,
+                              amount: gfiRewardsTotal,
+                            },
+                            data.gfiPrice.price.amount
+                          ),
+                          url: "/gfi",
+                        },
+                      ]
+                    : []),
+                ]}
+                quantityFormatter={(n: BigNumber) =>
+                  formatCrypto(
+                    { token: SupportedCrypto.Gfi, amount: n },
+                    { includeToken: true }
+                  )
+                }
+              />
+            ) : null}
             {(data.viewer.fiduBalance &&
               !data.viewer.fiduBalance.amount.isZero()) ||
             data.stakedFiduPositions.length > 0 ? (
@@ -375,69 +438,6 @@ export default function DashboardPage() {
                 quantityFormatter={(n: BigNumber) =>
                   formatCrypto(
                     { token: SupportedCrypto.CurveLp, amount: n },
-                    { includeToken: true }
-                  )
-                }
-              />
-            ) : null}
-            {(data.viewer.gfiBalance &&
-              !data.viewer.gfiBalance.amount.isZero()) ||
-            !gfiRewardsTotal.isZero() ? (
-              <ExpandableHoldings
-                title="GFI"
-                tooltip="Your GFI tokens"
-                colorClass={gfiColorClass}
-                holdings={[
-                  ...(data.viewer.gfiBalance &&
-                  !data.viewer.gfiBalance.amount.isZero()
-                    ? [
-                        {
-                          name: "Wallet holdings",
-                          percentage: computePercentage(
-                            gfiToUsdc(
-                              data.viewer.gfiBalance,
-                              data.gfiPrice.price.amount
-                            ).amount,
-                            totalUsdc.amount
-                          ),
-                          quantity: data.viewer.gfiBalance.amount,
-                          usdcValue: gfiToUsdc(
-                            data.viewer.gfiBalance,
-                            data.gfiPrice.price.amount
-                          ),
-                        },
-                      ]
-                    : []),
-                  ...(!gfiRewardsTotal.isZero()
-                    ? [
-                        {
-                          name: "GFI Rewards",
-                          percentage: computePercentage(
-                            gfiToUsdc(
-                              {
-                                token: SupportedCrypto.Gfi,
-                                amount: gfiRewardsTotal,
-                              },
-                              data.gfiPrice.price.amount
-                            ).amount,
-                            totalUsdc.amount
-                          ),
-                          quantity: gfiRewardsTotal,
-                          usdcValue: gfiToUsdc(
-                            {
-                              token: SupportedCrypto.Gfi,
-                              amount: gfiRewardsTotal,
-                            },
-                            data.gfiPrice.price.amount
-                          ),
-                          url: "/gfi",
-                        },
-                      ]
-                    : []),
-                ]}
-                quantityFormatter={(n: BigNumber) =>
-                  formatCrypto(
-                    { token: SupportedCrypto.Gfi, amount: n },
                     { includeToken: true }
                   )
                 }
