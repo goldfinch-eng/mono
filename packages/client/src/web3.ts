@@ -14,7 +14,7 @@ import WebsocketProvider from "web3-providers-ws"
 import HttpProvider from "web3-providers-http"
 import {JsonRpcPayload, JsonRpcResponse, WebsocketProviderOptions} from "web3-core-helpers"
 import {Web3IO, UserWalletWeb3Status} from "./types/web3"
-import {MAINNET, MOONBEAM} from "./ethereum/utils"
+import {MAINNET, MOONBEAM, MUMBAI} from "./ethereum/utils"
 import {GFITokenImageURL} from "./utils"
 import {isWalletConnectProvider, WalletConnectWeb3Provider, web3Modal} from "./walletConnect"
 import {getERC20, Ticker} from "./ethereum/erc20"
@@ -41,6 +41,7 @@ const networkNameByChainId: {[chainId: string]: string} = {
   "0x1": MAINNET,
   "0x4": "rinkeby",
   "0x507": "moonbeam",
+  "0x13881": "mumbai",
 }
 
 const websocketOptions: WebsocketProviderOptions = {
@@ -179,6 +180,12 @@ const getWeb3ProviderConfig = (networkName: string): Web3ProviderConfig | undefi
     ? {
         websocketUrl: "wss://wss.api.moonbase.moonbeam.network",
         httpUrl: "https://rpc.api.moonbase.moonbeam.network",
+        name: "Alchemy",
+      }
+    : networkName === MUMBAI
+    ? {
+        websocketUrl: "wss://rpc-mumbai.maticvigil.com/ws/v1/a4239c6b78a420cf81bd3c23e9ddc5f682be6970",
+        httpUrl: "https://rpc-mumbai.matic.today",
         name: "Alchemy",
       }
     : undefined

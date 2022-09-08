@@ -36,6 +36,7 @@ function getCachedPastEvents(
   if (!pastEventsTempCache[cacheKey]) {
     pastEventsTempCache[cacheKey] = contract.getPastEvents(queryParams.eventName, queryParams.options)
   }
+  console.log(eventName)
   const result = pastEventsTempCache[cacheKey]
   assertNonNullable(result)
   return result

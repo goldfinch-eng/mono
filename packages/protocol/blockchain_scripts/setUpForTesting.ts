@@ -193,8 +193,8 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     // }
 
     const result = await (await goldfinchFactory.createBorrower(protocol_owner)).wait()
-    const lastEventArgs = getLastEventArgs(result)
-    const protocolBorrowerCon = lastEventArgs[0]
+    // const lastEventArgs = getLastEventArgs(result)
+    const protocolBorrowerCon = protocol_owner
     logger(`Created borrower contract: ${protocolBorrowerCon} for ${protocol_owner}`)
 
     const commonPool = await createPoolForBorrower({
@@ -556,9 +556,10 @@ async function writePoolMetadata({
 }
 
 function getLastEventArgs(result: ContractReceipt): Result {
+  console.log(result)
   const events = result.events
   assertNonNullable(events)
-  const lastEvent = events[events.length - 1]
+  const lastEvent = events[events.length - 2]
   assertNonNullable(lastEvent)
   assertNonNullable(lastEvent.args)
   return lastEvent.args

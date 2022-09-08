@@ -32,12 +32,15 @@ const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
 export const RINKEBY = "rinkeby"
 export const MOONBEAM = "moonbeam"
+export const MUMBAI = "mumbai"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
-const MOONBEAM_LAUNCH_BLOCK = "2796198"
+// const MOONBEAM_LAUNCH_BLOCK = "2796198"
+const MUMBAI_LAUNCH_BLOCK = "27992805"
 const USDC_ADDRESSES = {
   [ROPSTEN]: "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
   [MOONBEAM]: "0x7Bf9D0796c11D08e936bF756c59faDc543fAeF1d",
+  [MUMBAI]: "0x2BaB4eD3ef8aC787F9A669f32c7488EcbD5F9d89",
   [MAINNET]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
 }
 
@@ -69,9 +72,10 @@ const ONE_INCH_ADDRESSES = {
 const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
-  private: MOONBEAM,
+  private: MUMBAI,
   rinkeby: RINKEBY,
   moonbeam: MOONBEAM,
+  mumbai: MUMBAI,
 }
 
 const chainIdToNetworkID = {
@@ -79,6 +83,7 @@ const chainIdToNetworkID = {
   4: RINKEBY,
   31337: "localhost",
   1287: "moonbeam",
+  80001: "mumbai",
 }
 
 const SUPPORTED_NETWORKS: Record<string, boolean> = {
@@ -86,6 +91,7 @@ const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [LOCAL]: true,
   [RINKEBY]: true,
   [MOONBEAM]: true,
+  [MUMBAI]: true,
 }
 
 enum SupportedChainId {
@@ -94,6 +100,7 @@ enum SupportedChainId {
   LOCAL = 31337,
   MURMURATION = 31337,
   MOONBEAM = 1287,
+  MUMBAI = 80001,
 }
 
 const MURMURATION_RPC_URL = "https://murmuration.goldfinch.finance/_chain"
@@ -262,7 +269,7 @@ function getFromBlock(chain: string): string {
   if (chain === MAINNET) {
     return MAINNET_LAUNCH_BLOCK
   } else {
-    return MOONBEAM_LAUNCH_BLOCK
+    return MUMBAI_LAUNCH_BLOCK
   }
 }
 
