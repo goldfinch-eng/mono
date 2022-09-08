@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { Heading, Shimmer, Stat, StatGrid } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
+import { stitchGrantsWithTokens } from "@/lib/gfi-rewards";
 import { SupportedCrypto, useGfiPageQuery } from "@/lib/graphql/generated";
 import { useWallet } from "@/lib/wallet";
 
@@ -63,30 +64,7 @@ export default function GfiPage() {
     if (data?.viewer.gfiGrants && data?.communityRewardsTokens) {
       const gfiGrants = data.viewer.gfiGrants;
       const communityRewardsTokens = data.communityRewardsTokens;
-      const grantsWithTokens = [];
-      for (const grant of gfiGrants) {
-        const correspondingToken = communityRewardsTokens.find(
-          (token) =>
-            grant.__typename === "IndirectGfiGrant" &&
-            token.source.toString() === grant.indirectSource.toString() &&
-            token.index === grant.index
-        );
-        grantsWithTokens.push({
-          grant: grant,
-          token: correspondingToken,
-          locked:
-            grant.__typename === "DirectGfiGrant"
-              ? BigNumber.from(0)
-              : grant.amount.sub(grant.vested),
-          claimable:
-            grant.__typename === "DirectGfiGrant"
-              ? grant.isAccepted
-                ? BigNumber.from(0)
-                : grant.amount
-              : grant.vested.sub(correspondingToken?.totalClaimed ?? 0),
-        });
-      }
-      return grantsWithTokens;
+      return stitchGrantsWithTokens(gfiGrants, communityRewardsTokens);
     }
   }, [data]);
 

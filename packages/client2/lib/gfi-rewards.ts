@@ -1,6 +1,9 @@
+import { BigNumber } from "ethers";
+
 import type {
   DirectGfiGrant,
   IndirectGfiGrant,
+  CommunityRewardsToken,
   GrantReason,
   DirectGrantSource,
   IndirectGrantSource,
@@ -71,4 +74,46 @@ export function grantComparator(a: I | D, b: I | D) {
     return sourceOrdering[aSource] - sourceOrdering[bSource];
   }
   return a.index - b.index;
+}
+
+type GfiGrant =
+  | Required<
+      Pick<
+        IndirectGfiGrant,
+        "__typename" | "indirectSource" | "index" | "amount" | "vested"
+      >
+    >
+  | Required<Pick<DirectGfiGrant, "__typename" | "isAccepted" | "amount">>;
+
+export function stitchGrantsWithTokens<
+  G extends GfiGrant,
+  C extends Pick<CommunityRewardsToken, "source" | "index" | "totalClaimed">
+>(
+  gfiGrants: G[],
+  communityRewardsTokens: C[]
+): { grant: G; token?: C; locked: BigNumber; claimable: BigNumber }[] {
+  const grantsWithTokens = [];
+  for (const grant of gfiGrants) {
+    const correspondingToken = communityRewardsTokens.find(
+      (token) =>
+        grant.__typename === "IndirectGfiGrant" &&
+        token.source.toString() === grant.indirectSource.toString() &&
+        token.index === grant.index
+    );
+    grantsWithTokens.push({
+      grant: grant,
+      token: correspondingToken,
+      locked:
+        grant.__typename === "DirectGfiGrant"
+          ? BigNumber.from(0)
+          : grant.amount.sub(grant.vested),
+      claimable:
+        grant.__typename === "DirectGfiGrant"
+          ? grant.isAccepted
+            ? BigNumber.from(0)
+            : grant.amount
+          : grant.vested.sub(correspondingToken?.totalClaimed ?? 0),
+    });
+  }
+  return grantsWithTokens;
 }
