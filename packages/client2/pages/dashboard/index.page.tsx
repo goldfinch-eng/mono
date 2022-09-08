@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Button,
@@ -26,10 +26,7 @@ import {
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
-import {
-  ExpandableHoldings,
-  ExpandableHoldingsRef,
-} from "./expandable-holdings";
+import { ExpandableHoldings } from "./expandable-holdings";
 import { PortfolioSummary } from "./portfolio-summary";
 import { TransactionTable } from "./transaction-table";
 
@@ -237,9 +234,13 @@ export default function DashboardPage() {
     };
   }, [data, gfiRewardsTotal]);
 
-  const expandableHoldingsRef = useRef<
-    Record<string, ExpandableHoldingsRef | null>
-  >({});
+  const [expanded, setExpanded] = useState({
+    borrower: false,
+    gfi: false,
+    senior: false,
+    curve: false,
+  });
+  const areAllSectionsExpanded = !Object.values(expanded).includes(false);
 
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 
@@ -281,12 +282,12 @@ export default function DashboardPage() {
                     colorScheme="secondary"
                     variant="rounded"
                     onClick={() =>
-                      Object.values(expandableHoldingsRef.current).forEach(
-                        (ref) => ref?.expand()
-                      )
+                      areAllSectionsExpanded
+                        ? setExpanded(setAll(expanded, false))
+                        : setExpanded(setAll(expanded, true))
                     }
                   >
-                    Expand all
+                    {areAllSectionsExpanded ? "Collapse all" : "Expand all"}
                   </Button>
                 </div>
                 <div className="mb-24 space-y-3">
@@ -313,8 +314,12 @@ export default function DashboardPage() {
                           n.gt(BigNumber.from(1)) ? "s" : ""
                         }`
                       }
-                      ref={(node) =>
-                        (expandableHoldingsRef.current["borrower"] = node)
+                      isExpanded={expanded["borrower"]}
+                      onClick={() =>
+                        setExpanded({
+                          ...expanded,
+                          borrower: !expanded.borrower,
+                        })
                       }
                     />
                   ) : null}
@@ -379,8 +384,12 @@ export default function DashboardPage() {
                           { includeToken: true }
                         )
                       }
-                      ref={(node) =>
-                        (expandableHoldingsRef.current["gfi"] = node)
+                      isExpanded={expanded["gfi"]}
+                      onClick={() =>
+                        setExpanded({
+                          ...expanded,
+                          gfi: !expanded.gfi,
+                        })
                       }
                     />
                   ) : null}
@@ -438,8 +447,12 @@ export default function DashboardPage() {
                           { includeToken: true }
                         )
                       }
-                      ref={(node) =>
-                        (expandableHoldingsRef.current["senior"] = node)
+                      isExpanded={expanded["senior"]}
+                      onClick={() =>
+                        setExpanded({
+                          ...expanded,
+                          senior: !expanded.senior,
+                        })
                       }
                     />
                   ) : null}
@@ -497,8 +510,12 @@ export default function DashboardPage() {
                           { includeToken: true }
                         )
                       }
-                      ref={(node) =>
-                        (expandableHoldingsRef.current["curve"] = node)
+                      isExpanded={expanded["curve"]}
+                      onClick={() =>
+                        setExpanded({
+                          ...expanded,
+                          curve: !expanded.curve,
+                        })
                       }
                     />
                   ) : null}
@@ -569,4 +586,17 @@ function computePercentage(n: BigNumber, total: BigNumber): number {
     return 0;
   }
   return FixedNumber.from(n).divUnsafe(FixedNumber.from(total)).toUnsafeFloat();
+}
+
+function setAll<S extends string, T>(
+  obj: Record<S, T>,
+  value: T
+): Record<S, T> {
+  return Object.keys(obj).reduce(
+    (prev, current) => {
+      prev[current as S] = value;
+      return prev;
+    },
+    { ...obj }
+  );
 }

@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import Link from "next/link";
-import { ReactNode, useState, forwardRef, useImperativeHandle } from "react";
+import { ReactNode } from "react";
 
 import { Icon, InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
@@ -21,26 +21,19 @@ interface ExpandableHoldingsProps {
   colorClass: string;
   holdings: Holding[];
   quantityFormatter: (n: BigNumber) => ReactNode;
+  isExpanded: boolean;
+  onClick: () => void;
 }
 
-export interface ExpandableHoldingsRef {
-  expand: () => void;
-  collapse: () => void;
-}
-
-export const ExpandableHoldings = forwardRef<
-  ExpandableHoldingsRef,
-  ExpandableHoldingsProps
->(function ExpandableHoldings(
-  { title, tooltip, colorClass, holdings, quantityFormatter },
-  ref
-) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  useImperativeHandle(ref, () => ({
-    expand: () => setIsExpanded(true),
-    collapse: () => setIsExpanded(false),
-  }));
-
+export function ExpandableHoldings({
+  title,
+  tooltip,
+  colorClass,
+  holdings,
+  quantityFormatter,
+  isExpanded,
+  onClick,
+}: ExpandableHoldingsProps) {
   const totalPercentage = holdings.reduce(
     (prev, current) => prev + current.percentage,
     0
@@ -73,10 +66,7 @@ export const ExpandableHoldings = forwardRef<
         <div>{quantityFormatter(totalQuantity)}</div>
         <div className="flex items-center gap-3">
           <div>{formatCrypto(totalUsdcValue)}</div>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="before:absolute before:inset-0"
-          >
+          <button onClick={onClick} className="before:absolute before:inset-0">
             <Icon
               name="ChevronDown"
               size="md"
@@ -105,7 +95,7 @@ export const ExpandableHoldings = forwardRef<
       ) : null}
     </div>
   );
-});
+}
 
 interface IndividualHoldingProps extends Holding {
   quantityFormatter: ExpandableHoldingsProps["quantityFormatter"];
