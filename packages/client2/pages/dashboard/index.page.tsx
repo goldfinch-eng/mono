@@ -1,8 +1,9 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 import {
+  Button,
   Heading,
   TabButton,
   TabContent,
@@ -25,7 +26,10 @@ import {
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
-import { ExpandableHoldings } from "./expandable-holdings";
+import {
+  ExpandableHoldings,
+  ExpandableHoldingsRef,
+} from "./expandable-holdings";
 import { PortfolioSummary } from "./portfolio-summary";
 import { TransactionTable } from "./transaction-table";
 
@@ -233,6 +237,10 @@ export default function DashboardPage() {
     };
   }, [data, gfiRewardsTotal]);
 
+  const expandableHoldingsRef = useRef<
+    Record<string, ExpandableHoldingsRef | null>
+  >({});
+
   return (
     <div>
       <Heading level={1} className="mb-12">
@@ -260,9 +268,22 @@ export default function DashboardPage() {
                   holdings={summaryHoldings}
                   totalUsdc={totalUsdc}
                 />
-                <Heading level={3} className="mb-6 !font-sans !text-xl">
-                  Holdings
-                </Heading>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <Heading level={3} className="mb-6 !font-sans !text-xl">
+                    Holdings
+                  </Heading>
+                  <Button
+                    colorScheme="secondary"
+                    variant="rounded"
+                    onClick={() =>
+                      Object.values(expandableHoldingsRef.current).forEach(
+                        (ref) => ref?.expand()
+                      )
+                    }
+                  >
+                    Expand all
+                  </Button>
+                </div>
                 <div className="mb-24 space-y-3">
                   {data.tranchedPoolTokens.length > 0 ? (
                     <ExpandableHoldings
@@ -286,6 +307,9 @@ export default function DashboardPage() {
                         `${n.toString()} NFT${
                           n.gt(BigNumber.from(1)) ? "s" : ""
                         }`
+                      }
+                      ref={(node) =>
+                        (expandableHoldingsRef.current["borrower"] = node)
                       }
                     />
                   ) : null}
@@ -350,6 +374,9 @@ export default function DashboardPage() {
                           { includeToken: true }
                         )
                       }
+                      ref={(node) =>
+                        (expandableHoldingsRef.current["gfi"] = node)
+                      }
                     />
                   ) : null}
                   {(data.viewer.fiduBalance &&
@@ -406,6 +433,9 @@ export default function DashboardPage() {
                           { includeToken: true }
                         )
                       }
+                      ref={(node) =>
+                        (expandableHoldingsRef.current["senior"] = node)
+                      }
                     />
                   ) : null}
                   {(data.viewer.curveLpBalance &&
@@ -461,6 +491,9 @@ export default function DashboardPage() {
                           { token: SupportedCrypto.CurveLp, amount: n },
                           { includeToken: true }
                         )
+                      }
+                      ref={(node) =>
+                        (expandableHoldingsRef.current["curve"] = node)
                       }
                     />
                   ) : null}

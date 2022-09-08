@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import Link from "next/link";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, forwardRef, useImperativeHandle } from "react";
 
 import { Icon, InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
@@ -23,14 +23,23 @@ interface ExpandableHoldingsProps {
   quantityFormatter: (n: BigNumber) => ReactNode;
 }
 
-export function ExpandableHoldings({
-  title,
-  tooltip,
-  colorClass,
-  holdings,
-  quantityFormatter,
-}: ExpandableHoldingsProps) {
+export interface ExpandableHoldingsRef {
+  expand: () => void;
+  collapse: () => void;
+}
+
+export const ExpandableHoldings = forwardRef<
+  ExpandableHoldingsRef,
+  ExpandableHoldingsProps
+>(function ExpandableHoldings(
+  { title, tooltip, colorClass, holdings, quantityFormatter },
+  ref
+) {
   const [isExpanded, setIsExpanded] = useState(false);
+  useImperativeHandle(ref, () => ({
+    expand: () => setIsExpanded(true),
+    collapse: () => setIsExpanded(false),
+  }));
 
   const totalPercentage = holdings.reduce(
     (prev, current) => prev + current.percentage,
@@ -96,7 +105,7 @@ export function ExpandableHoldings({
       ) : null}
     </div>
   );
-}
+});
 
 interface IndividualHoldingProps extends Holding {
   quantityFormatter: ExpandableHoldingsProps["quantityFormatter"];
