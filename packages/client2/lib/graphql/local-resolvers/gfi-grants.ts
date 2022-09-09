@@ -23,7 +23,9 @@ export const indirectGfiGrantResolvers: Resolvers[string] = {
       indirectGfiGrant.end,
       indirectGfiGrant.amount,
       indirectGfiGrant.cliffLength,
-      indirectGfiGrant.vestingInterval,
+      indirectGfiGrant.vestingInterval.isZero() // This seems unintuitive, but check the code for CommunityRewards.grant(). When a grant with vestingInterval of 0 is claimed, vestingLength is used as the interval instead. If we don't do this there's a divide-by-zero error for some grants
+        ? indirectGfiGrant.vestingLength
+        : indirectGfiGrant.vestingInterval,
       BigNumber.from(0),
       (
         await provider.getBlock("latest")
