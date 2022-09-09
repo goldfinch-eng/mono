@@ -33,14 +33,8 @@ function Sidebar(props) {
         <NavLink to={EARN_ROUTE} onClick={closeSidebar}>
           Earn
         </NavLink>
-        <NavLink to={STAKE_ROUTE} onClick={closeSidebar}>
-          Stake
-        </NavLink>
         <NavLink to={BORROW_ROUTE} onClick={closeSidebar}>
           Borrow
-        </NavLink>
-        <NavLink to={GFI_ROUTE} onClick={closeSidebar}>
-          GFI
         </NavLink>
         <NavLink to={TRANSACTIONS_ROUTE} onClick={closeSidebar}>
           Transactions

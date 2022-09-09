@@ -173,32 +173,6 @@ export default function Earn() {
       )}
       <div className="pools">
         <PoolList
-          title="Senior Pool"
-          subtitle="The simple, lower risk, lower return option. Capital is automatically diversified across Borrower pools, and protected by Backer capital."
-        >
-          {seniorPoolStatus.loaded ? (
-            <SeniorPoolCard
-              balance={displayDollars(usdcFromAtomic(seniorPoolStatus.value.totalPoolAssets))}
-              userBalance={displayDollars(seniorPoolStatus.value.availableToWithdrawInDollars)}
-              estimatedApyFromSupplying={seniorPoolStatus.value.estimatedApy}
-              estimatedApyFromGfi={pool?.info.value.poolData.estimatedApyFromGfi}
-              estimatedApy={
-                seniorPoolStatus.value.estimatedApy || pool?.info.value.poolData.estimatedApyFromGfi
-                  ? (seniorPoolStatus.value.estimatedApy || new BigNumber(0)).plus(
-                      pool?.info.value.poolData.estimatedApyFromGfi || new BigNumber(0)
-                    )
-                  : undefined
-              }
-              limit={limitToDisplay}
-              remainingCapacity={seniorPoolStatus.value.remainingCapacity}
-              disabled={!loaded}
-              userBalanceDisabled={!seniorPoolStatus.value.availableToWithdrawInDollars}
-            />
-          ) : (
-            <SeniorPoolCardSkeleton />
-          )}
-        </PoolList>
-        <PoolList
           title="Borrower Pools"
           subtitle="The more active, higher risk, higher return option. Earn higher APYs by vetting borrowers and supplying first-loss capital directly to individual pools."
         >
