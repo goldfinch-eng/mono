@@ -148,18 +148,13 @@ export function ExpandableHoldingsPlaceholder() {
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
       <div className="relative grid grid-cols-5 justify-between justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
-        <div className="col-span-2 justify-self-start text-lg">
-          <Shimmer className="w-64" />
-        </div>
-        <div>
-          <Shimmer className="w-32" />
-        </div>
-        <div>
-          <Shimmer className="w-32" />
-        </div>
-        <div>
-          <Shimmer className="w-32" />
-        </div>
+        <Shimmer
+          isTruncated
+          className="col-span-2 justify-self-start text-lg"
+        />
+        <Shimmer isTruncated />
+        <Shimmer isTruncated />
+        <Shimmer isTruncated />
       </div>
     </div>
   );
