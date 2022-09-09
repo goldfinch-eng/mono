@@ -272,18 +272,18 @@ export function getShortTransactionLabel(transaction: {
 }
 
 const transactionIcons: Record<TransactionCategory, IconNameType> = {
-  [TransactionCategory.SeniorPoolStake]: "ArrowUpCircle",
-  [TransactionCategory.SeniorPoolDeposit]: "ArrowUpCircle",
-  [TransactionCategory.SeniorPoolDepositAndStake]: "ArrowUpCircle",
-  [TransactionCategory.SeniorPoolUnstake]: "ArrowDownCircle",
-  [TransactionCategory.SeniorPoolWithdrawal]: "ArrowDownCircle",
-  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "ArrowDownCircle",
-  [TransactionCategory.SeniorPoolRedemption]: "ArrowDownCircle",
-  [TransactionCategory.TranchedPoolDeposit]: "ArrowUpCircle",
-  [TransactionCategory.TranchedPoolWithdrawal]: "ArrowDownCircle",
-  [TransactionCategory.TranchedPoolRepayment]: "ArrowUpCircle",
-  [TransactionCategory.TranchedPoolDrawdown]: "ArrowDownCircle",
-  [TransactionCategory.UidMinted]: "CheckmarkCircle",
+  [TransactionCategory.SeniorPoolStake]: "ArrowUp",
+  [TransactionCategory.SeniorPoolDeposit]: "ArrowUp",
+  [TransactionCategory.SeniorPoolDepositAndStake]: "ArrowUp",
+  [TransactionCategory.SeniorPoolUnstake]: "ArrowDown",
+  [TransactionCategory.SeniorPoolWithdrawal]: "ArrowDown",
+  [TransactionCategory.SeniorPoolUnstakeAndWithdrawal]: "ArrowDown",
+  [TransactionCategory.SeniorPoolRedemption]: "ArrowDown",
+  [TransactionCategory.TranchedPoolDeposit]: "ArrowUp",
+  [TransactionCategory.TranchedPoolWithdrawal]: "ArrowDown",
+  [TransactionCategory.TranchedPoolRepayment]: "ArrowUp",
+  [TransactionCategory.TranchedPoolDrawdown]: "ArrowDown",
+  [TransactionCategory.UidMinted]: "Checkmark",
 };
 
 /**
