@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { useCallback } from "react";
 
 import { Link, ShimmerLines, Table, Icon } from "@/components/design-system";
-import { formatCrypto } from "@/lib/format";
 import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
@@ -11,6 +10,8 @@ import {
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
 import { useWallet } from "@/lib/wallet";
+
+import { FormatWithIcon } from "./format-with-icon";
 
 gql`
   query CurrentUserTransactions($account: String!, $first: Int!, $skip: Int!) {
@@ -74,18 +75,21 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
   const rows = (isPreview ? filteredTxs.slice(0, 5) : filteredTxs).map(
     (transaction) => {
       const amount =
-        transaction.amount && !transaction.amount.isZero()
-          ? (subtractiveIconTransactionCategories.includes(transaction.category)
-              ? "-"
-              : "+") +
-            formatCrypto(
-              {
-                token: transaction.amountToken,
-                amount: transaction.amount,
-              },
-              { includeToken: true }
-            )
-          : null;
+        transaction.amount && !transaction.amount.isZero() ? (
+          <FormatWithIcon
+            cryptoAmount={{
+              token: transaction.amountToken,
+              amount: transaction.amount,
+            }}
+            prefix={
+              subtractiveIconTransactionCategories.includes(
+                transaction.category
+              )
+                ? "-"
+                : "+"
+            }
+          />
+        ) : null;
 
       const date = new Date(transaction.timestamp * 1000);
 

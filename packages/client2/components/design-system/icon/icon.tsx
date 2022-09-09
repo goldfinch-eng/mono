@@ -1,6 +1,8 @@
 import clsx from "clsx";
+import Image from "next/image";
 import { forwardRef } from "react";
 
+import Curve from "./raster/curve.png";
 import ArrowDownCircle from "./svg/arrow-down-circle-solid.svg";
 import ArrowDown from "./svg/arrow-down.svg";
 import ArrowSmRight from "./svg/arrow-sm-right.svg";
@@ -35,6 +37,7 @@ export const iconManifest = {
   CheckmarkCircle,
   ChevronDown,
   Copy,
+  Curve,
   Discord,
   DotsHorizontal,
   Exclamation,
@@ -77,6 +80,33 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
   ref
 ) {
   const IconComponent = iconManifest[name];
+  if (typeof IconComponent === "string" || IconComponent.width) {
+    return (
+      <div
+        className={clsx(
+          sizeToClassName(size),
+          "relative inline shrink-0 p-0.5",
+          className
+        )}
+      >
+        <Image
+          src={IconComponent}
+          layout="fill"
+          sizes={
+            size === "xs"
+              ? "16px"
+              : size === "sm"
+              ? "20px"
+              : size === "md"
+              ? "24px"
+              : "32px"
+          }
+          alt=""
+          aria-hidden="true"
+        />
+      </div>
+    );
+  }
   return (
     <IconComponent
       aria-hidden="true"

@@ -12,7 +12,6 @@ import {
   TabPanels,
 } from "@/components/design-system";
 import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
-import { formatCrypto } from "@/lib/format";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
@@ -30,6 +29,7 @@ import {
   ExpandableHoldings,
   ExpandableHoldingsPlaceholder,
 } from "./expandable-holdings";
+import { FormatWithIcon } from "./format-with-icon";
 import {
   PortfolioSummary,
   PortfolioSummaryPlaceholder,
@@ -396,12 +396,14 @@ export default function DashboardPage() {
                                 ]
                               : []),
                           ]}
-                          quantityFormatter={(n: BigNumber) =>
-                            formatCrypto(
-                              { token: SupportedCrypto.Gfi, amount: n },
-                              { includeToken: true }
-                            )
-                          }
+                          quantityFormatter={(n: BigNumber) => (
+                            <FormatWithIcon
+                              cryptoAmount={{
+                                token: SupportedCrypto.Gfi,
+                                amount: n,
+                              }}
+                            />
+                          )}
                           isExpanded={expanded["gfi"]}
                           onClick={() =>
                             setExpanded({
@@ -463,12 +465,14 @@ export default function DashboardPage() {
                                 ]
                               : []),
                           ]}
-                          quantityFormatter={(n: BigNumber) =>
-                            formatCrypto(
-                              { amount: n, token: SupportedCrypto.Fidu },
-                              { includeToken: true }
-                            )
-                          }
+                          quantityFormatter={(n: BigNumber) => (
+                            <FormatWithIcon
+                              cryptoAmount={{
+                                amount: n,
+                                token: SupportedCrypto.Fidu,
+                              }}
+                            />
+                          )}
                           isExpanded={expanded["senior"]}
                           onClick={() =>
                             setExpanded({
@@ -526,12 +530,14 @@ export default function DashboardPage() {
                                 ]
                               : []),
                           ]}
-                          quantityFormatter={(n: BigNumber) =>
-                            formatCrypto(
-                              { token: SupportedCrypto.CurveLp, amount: n },
-                              { includeToken: true }
-                            )
-                          }
+                          quantityFormatter={(n: BigNumber) => (
+                            <FormatWithIcon
+                              cryptoAmount={{
+                                token: SupportedCrypto.CurveLp,
+                                amount: n,
+                              }}
+                            />
+                          )}
                           isExpanded={expanded["curve"]}
                           onClick={() =>
                             setExpanded({
