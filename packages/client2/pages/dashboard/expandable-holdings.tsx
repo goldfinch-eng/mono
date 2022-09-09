@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import Link from "next/link";
 import { ReactNode } from "react";
 
-import { Icon, InfoIconTooltip } from "@/components/design-system";
+import { Icon, InfoIconTooltip, Shimmer } from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount, SupportedCrypto } from "@/lib/graphql/generated";
 
@@ -139,6 +139,27 @@ function IndividualHolding({
           )}
           size="md"
         />
+      </div>
+    </div>
+  );
+}
+
+export function ExpandableHoldingsPlaceholder() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-sand-200">
+      <div className="relative grid grid-cols-5 justify-between justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
+        <div className="col-span-2 justify-self-start text-lg">
+          <Shimmer className="w-64" />
+        </div>
+        <div>
+          <Shimmer className="w-32" />
+        </div>
+        <div>
+          <Shimmer className="w-32" />
+        </div>
+        <div>
+          <Shimmer className="w-32" />
+        </div>
       </div>
     </div>
   );

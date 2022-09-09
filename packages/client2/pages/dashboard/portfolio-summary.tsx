@@ -1,6 +1,11 @@
 import clsx from "clsx";
 
-import { Heading, Icon, InfoIconTooltip } from "@/components/design-system";
+import {
+  Heading,
+  Icon,
+  InfoIconTooltip,
+  ShimmerLines,
+} from "@/components/design-system";
 import { formatCrypto, formatPercent } from "@/lib/format";
 import { CryptoAmount } from "@/lib/graphql/generated";
 
@@ -84,6 +89,35 @@ function Holding({ name, tooltip, colorClass, usdc, percentage }: Holding) {
         </div>
         <div className="text-sand-500">{formatPercent(percentage)}</div>
       </div>
+    </div>
+  );
+}
+
+export function PortfolioSummaryPlaceholder({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        "grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200 sm:grid-cols-2 lg:grid-cols-4",
+        className
+      )}
+    >
+      <div className="col-span-full bg-white px-5 py-7">
+        <div className="mb-9 flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+          <Heading level={2} className="!font-sans !text-3xl !font-normal">
+            Portfolio summary
+          </Heading>
+        </div>
+        <div className="flex h-8 w-full items-stretch overflow-hidden rounded"></div>
+      </div>
+      {[0, 1, 2, 3].map((nonce) => (
+        <div key={nonce} className="bg-white px-5 py-6">
+          <ShimmerLines lines={2} />
+        </div>
+      ))}
     </div>
   );
 }
