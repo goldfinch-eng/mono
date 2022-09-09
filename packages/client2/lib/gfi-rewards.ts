@@ -45,6 +45,8 @@ const reasonLabels: Record<GrantReason, string> = {
   FLIGHT_ACADEMY_AND_LIQUIDITY_PROVIDER:
     "Flight Academy and Liquidity Provider",
   GOLDFINCH_INVESTMENT: "Goldfinch Investment",
+  CONTRIBUTOR: "Goldfinch Contributor",
+  ADVISOR: "Goldfinch Advisor",
 };
 
 export function getReasonLabel(reason: string) {

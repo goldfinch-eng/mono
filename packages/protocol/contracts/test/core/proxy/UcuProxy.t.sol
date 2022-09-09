@@ -226,6 +226,7 @@ contract TestImplementationRepository is Test {
   }
 
   function testTransferOwnershipFailsWhenNotOwner(address caller, address newOwner) public impersonating(caller) {
+    vm.assume(caller != proxy.owner());
     vm.expectRevert(bytes("NA"));
     proxy.transferOwnership(newOwner);
   }
