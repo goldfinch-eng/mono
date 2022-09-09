@@ -249,6 +249,7 @@ export default function DashboardPage() {
   const areAllSectionsExpanded = !Object.values(expanded).includes(false);
 
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
   return (
     <div>
       <Heading level={1} className="mb-12">
