@@ -136,6 +136,7 @@ const descriptionMapping: Record<GrantReason, string> = {
   [GrantReason.Backer]: "participating as a Backer",
   [GrantReason.LiquidityProvider]: "participating as a Liquidity Provider",
   [GrantReason.GoldfinchInvestment]: "participating as a Goldfinch investor",
+  [GrantReason.Contributor]: "being a contributor",
 };
 
 function displayGrantDescription(
