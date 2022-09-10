@@ -25,6 +25,10 @@ interface ExpandableHoldingsProps {
   onClick: () => void;
 }
 
+const gridClasses =
+  "grid grid-cols-1 xs:grid-cols-3 gap-3 md:grid-cols-5 justify-items-end";
+const gridHeadingClasses = "justify-self-start xs:col-span-3 md:col-span-2";
+
 export function ExpandableHoldings({
   title,
   tooltip,
@@ -51,8 +55,18 @@ export function ExpandableHoldings({
   };
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
-      <div className="relative grid grid-cols-5 justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
-        <div className="relative z-10 col-span-2 flex items-center gap-3 justify-self-start text-lg">
+      <div
+        className={clsx(
+          gridClasses,
+          "relative bg-white px-5 py-6 hover:bg-sand-100"
+        )}
+      >
+        <div
+          className={clsx(
+            gridHeadingClasses,
+            "relative z-10 flex items-center gap-3 text-lg"
+          )}
+        >
           <div
             className={clsx(
               "h-3.5 w-3.5 flex-shrink-0 rounded-full",
@@ -112,11 +126,12 @@ function IndividualHolding({
   return (
     <div
       className={clsx(
-        "group grid grid-cols-5 justify-items-end bg-sand-50 p-5",
+        gridClasses,
+        "group bg-sand-50 p-5",
         url ? "relative hover:bg-sand-100" : null
       )}
     >
-      <div className="col-span-2 justify-self-start">
+      <div className={gridHeadingClasses}>
         {url ? (
           <Link href={url}>
             <a className="before:absolute before:inset-0 group-hover:underline">
@@ -147,11 +162,8 @@ function IndividualHolding({
 export function ExpandableHoldingsPlaceholder() {
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
-      <div className="relative grid grid-cols-5 justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
-        <Shimmer
-          isTruncated
-          className="col-span-2 justify-self-start text-lg"
-        />
+      <div className={clsx(gridClasses, "bg-white px-5 py-6")}>
+        <Shimmer isTruncated className={gridHeadingClasses} />
         <Shimmer isTruncated />
         <Shimmer isTruncated />
         <Shimmer isTruncated />
