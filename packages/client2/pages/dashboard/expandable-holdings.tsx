@@ -51,7 +51,7 @@ export function ExpandableHoldings({
   };
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
-      <div className="relative grid grid-cols-5 justify-between justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
+      <div className="relative grid grid-cols-5 justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
         <div className="relative z-10 col-span-2 flex items-center gap-3 justify-self-start text-lg">
           <div
             className={clsx(
@@ -112,7 +112,7 @@ function IndividualHolding({
   return (
     <div
       className={clsx(
-        "group grid grid-cols-5 justify-between justify-items-end bg-sand-50 p-5",
+        "group grid grid-cols-5 justify-items-end bg-sand-50 p-5",
         url ? "relative hover:bg-sand-100" : null
       )}
     >
@@ -147,7 +147,7 @@ function IndividualHolding({
 export function ExpandableHoldingsPlaceholder() {
   return (
     <div className="overflow-hidden rounded-xl border border-sand-200">
-      <div className="relative grid grid-cols-5 justify-between justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
+      <div className="relative grid grid-cols-5 justify-items-end bg-white px-5 py-6 hover:bg-sand-100">
         <Shimmer
           isTruncated
           className="col-span-2 justify-self-start text-lg"
