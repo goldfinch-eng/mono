@@ -309,6 +309,11 @@ export default function DashboardPage() {
                       </Button>
                     </div>
                     <div className="mb-24 space-y-3">
+                      {totalUsdc.amount.isZero() ? (
+                        <div className="rounded bg-sand-50 p-3 text-center text-sm text-sand-400">
+                          You have no holdings in Goldfinch yet
+                        </div>
+                      ) : null}
                       {data.tranchedPoolTokens.length > 0 ? (
                         <ExpandableHoldings
                           title="Borrower Pool Positions"
