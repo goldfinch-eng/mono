@@ -213,7 +213,7 @@ export function WalletStatus({ onWalletDisconnect }: WalletInfoProps) {
       <div className="py-4">
         <div className="mb-4 flex items-start justify-between">
           <div className="text-lg font-semibold">Recent Transactions</div>
-          <Link className="text-sm" href="/transactions">
+          <Link className="text-sm" href="/dashboard#activity">
             View all
           </Link>
         </div>

@@ -1,6 +1,7 @@
 import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Button,
@@ -249,6 +250,21 @@ export default function DashboardPage() {
   const areAllSectionsExpanded = !Object.values(expanded).includes(false);
 
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
+  // Cheap trick to allow links to /dashboard#activity
+  // If more tabs get added and we need to link to the tab internals, this might have to become more robust.
+  const router = useRouter();
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+    const hash = new URL(router.asPath, "https://placeholder.com").hash;
+    if (!hash) {
+      return;
+    } else if (hash === "#activity") {
+      setSelectedTabIndex(1);
+    }
+  }, [router.asPath, router.isReady]);
 
   return (
     <div>
