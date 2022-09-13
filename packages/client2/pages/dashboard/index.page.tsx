@@ -207,7 +207,9 @@ export default function DashboardPage() {
 
     const summaryHoldings = [
       {
-        name: "Borrower Pools",
+        name: "Backer Positions",
+        tooltip:
+          "Your active investment in Borrower Pools, represented by your Backer PoolToken NFTs.",
         usdc: borrowerPoolTotal,
         colorClass: borrowerPoolColorClass,
         percentage: computePercentage(
@@ -217,18 +219,24 @@ export default function DashboardPage() {
       },
       {
         name: "GFI",
+        tooltip:
+          "Your GFI token holdings, including claimable and locked GFI rewards.",
         usdc: gfiTotal,
         percentage: computePercentage(gfiTotal.amount, totalUsdc.amount),
         colorClass: gfiColorClass,
       },
       {
-        name: "Senior Pool",
+        name: "FIDU",
+        tooltip:
+          "Your active investment in the Senior Pool, represented by the value of your FIDU token holdings.",
         usdc: seniorPoolTotal,
         percentage: computePercentage(seniorPoolTotal.amount, totalUsdc.amount),
         colorClass: seniorPoolColorClass,
       },
       {
-        name: "Curve LP",
+        name: "Curve LP Tokens",
+        tooltip:
+          "The value of your crvFIDU-USDC tokens, representing your FIDU-USDC LP position on Curve.",
         usdc: curveLpTotal,
         percentage: computePercentage(curveLpTotal.amount, totalUsdc.amount),
         colorClass: curveColorClass,
@@ -332,8 +340,8 @@ export default function DashboardPage() {
                       ) : null}
                       {data.tranchedPoolTokens.length > 0 ? (
                         <ExpandableHoldings
-                          title="Borrower Pool Positions"
-                          tooltip="Your investment in Goldfinch borrower pools. Each investment position is represented by an NFT."
+                          title="Backer Positions"
+                          tooltip="Your active investment in Goldfinch Borrower Pools. Each investment position, including its claimable interest, is represented by a unique Backer PoolToken NFT held in your linked wallet."
                           colorClass={borrowerPoolColorClass}
                           holdings={data.tranchedPoolTokens.map((token) => ({
                             name: token.tranchedPool.name,
@@ -367,7 +375,7 @@ export default function DashboardPage() {
                       !gfiRewardsTotal.isZero() ? (
                         <ExpandableHoldings
                           title="GFI"
-                          tooltip="Your GFI tokens"
+                          tooltip="Your GFI token holdings, including your claimable GFI rewards, locked GFI rewards, and any GFI held in your linked wallet."
                           colorClass={gfiColorClass}
                           holdings={[
                             ...(data.viewer.gfiBalance &&
@@ -438,8 +446,8 @@ export default function DashboardPage() {
                         !data.viewer.fiduBalance.amount.isZero()) ||
                       data.stakedFiduPositions.length > 0 ? (
                         <ExpandableHoldings
-                          title="Goldfinch Senior Pool"
-                          tooltip="Your investment in the Goldfinch Senior Pool. This is quantified by a token called FIDU."
+                          title="FIDU"
+                          tooltip="Your active investment in the Goldfinch Senior Pool, represented by the value of your FIDU token holdings. This includes FIDU held in your linked wallet and any FIDU you are staking."
                           colorClass={seniorPoolColorClass}
                           holdings={[
                             ...data.stakedFiduPositions.map(
@@ -507,8 +515,8 @@ export default function DashboardPage() {
                         !data.viewer.curveLpBalance.amount.isZero()) ||
                       data.stakedCurveLpPositions.length > 0 ? (
                         <ExpandableHoldings
-                          title="Curve Liquidity Provider"
-                          tooltip="Tokens earned from providing liquidity on the Goldfinch FIDU/USDC pool on Curve."
+                          title="Curve LP Tokens"
+                          tooltip="The value of your crvFIDU-USDC tokens, received on Curve for participating as a liquidity provider in the Curve FIDU-USDC Pool. This includes crvFIDU-USDC tokens you are staking on Goldfinch and any held in your linked wallet."
                           colorClass={curveColorClass}
                           holdings={[
                             ...data.stakedCurveLpPositions.map(
