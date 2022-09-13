@@ -154,7 +154,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   // await impersonateAccount(hre, protocol_owner)
   await setupTestForwarder(deployer, config, getOrNull, protocol_owner)
 
-  let seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
+  const seniorPool: SeniorPool = await getDeployedAsEthersContract<SeniorPool>(getOrNull, "SeniorPool")
   let go = await getDeployedAsEthersContract<Go>(getOrNull, "Go")
   const goldfinchConfig = await getEthersContract<GoldfinchConfig>("GoldfinchConfig")
   if (!isMainnetForking()) {
@@ -168,7 +168,7 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
   config = config.connect(protocolOwnerSigner)
 
   await updateConfig(config, "number", CONFIG_KEYS.TotalFundsLimit, String(usdcVal(100_000_000)))
-  await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 300, {logger})
+  await updateConfig(config, "number", CONFIG_KEYS.DrawdownPeriodInSeconds, 10, {logger})
 
   await addUsersToGoList(legacyGoldfinchConfig, [borrower])
 
@@ -220,16 +220,16 @@ export async function setUpForTesting(hre: HardhatRuntimeEnvironment, {overrideA
     await fundAddressAndDepositToCommonPool({erc20, depositorAddress: borrower, commonPool, seniorPool})
 
     // Have the senior fund invest
-    seniorPool = seniorPool.connect(protocolOwnerSigner)
+    // seniorPool = seniorPool.connect(protocolOwnerSigner)
     let txn = await commonPool.lockJuniorCapital()
     await txn.wait()
-    txn = await seniorPool.invest(commonPool.address)
-    await txn.wait()
-    const filter = commonPool.filters.DepositMade(seniorPool.address)
-    const depositLog = (await ethers.provider.getLogs(filter))[0]
-    assertNonNullable(depositLog)
-    const depositEvent = commonPool.interface.parseLog(depositLog)
-    const tokenId = depositEvent.args.tokenId
+    // txn = await seniorPool.invest(commonPool.address)
+    // await txn.wait()
+    // const filter = commonPool.filters.DepositMade(seniorPool.address)
+    // const depositLog = (await ethers.provider.getLogs(filter))[0]
+    // assertNonNullable(depositLog)
+    // const depositEvent = commonPool.interface.parseLog(depositLog)
+    // const tokenId = depositEvent.args.tokenId
 
     txn = await commonPool.lockPool()
     await txn.wait()
@@ -393,15 +393,15 @@ async function fundAddressAndDepositToCommonPool({
   // await impersonateAccount(hre, depositorAddress)
   const signer = ethers.provider.getSigner(depositorAddress)
   const depositAmount = new BN(10000).mul(USDCDecimals)
-  let txn = await (erc20 as TestERC20)
-    .connect(signer)
-    .approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
-  await txn.wait()
-  txn = await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
-  await txn.wait()
+  // let txn = await (erc20 as TestERC20)
+  //   .connect(signer)
+  //   .approve(seniorPool.address, depositAmount.mul(new BN(5)).toString())
+  // await txn.wait()
+  // txn = await seniorPool.connect(signer).deposit(depositAmount.mul(new BN(5)).toString())
+  // await txn.wait()
 
   // Deposit funds into Common Pool
-  txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
+  let txn = await erc20.connect(signer).approve(commonPool.address, String(depositAmount))
   await txn.wait()
   txn = await commonPool.connect(signer).deposit(TRANCHES.Junior, String(depositAmount))
   await txn.wait()

@@ -33,6 +33,7 @@ class BorrowerInterface {
     goldfinchProtocol: GoldfinchProtocol,
     oneInch: Web3IO<Contract>
   ) {
+    console.log(borrowerContract)
     this.userAddress = userAddress
     this.borrowerContract = borrowerContract
     this.goldfinchProtocol = goldfinchProtocol

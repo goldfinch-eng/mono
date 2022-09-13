@@ -1,16 +1,16 @@
 const hre = require("hardhat")
 
-const BORROWER = "0x618C20c64cAc5211E099D355ba213790708e7462"
-const GOLDFINCH_FACTORY = "0x318B051eeb3035b99fE658BAbC3C6cf1F8201806"
-const JUNIOR_FEE_PERCENT = "20"
-const LIMIT = "10000"
-const INTEREST_APR = "5"
-const PAYMENT_PERIOD_IN_DAYS = "30"
-const TERM_IN_DAYS = "360"
+const BORROWER = "0xd48D73Acc0bE37936BBa4E9fC326A87Fc1FeD7E5"
+const GOLDFINCH_FACTORY = "0xa8B84432e5353e9820c22E45D6B14A5406cb6879"
+const JUNIOR_FEE_PERCENT = "100"
+const LIMIT = "10000000000"
+const INTEREST_APR = "500000000000000000" // 50% APR
+const PAYMENT_PERIOD_IN_DAYS = "1"
+const TERM_IN_DAYS = "36000"
 const LATE_FEE_APR = "0"
-const PRINCIPAL_GRACE_PERIOD_IN_DAYS = "185"
+const PRINCIPAL_GRACE_PERIOD_IN_DAYS = "36000"
 const FUNDABLE_AT = "0"
-const ALLOWED_UID = [1, 2, 3]
+const ALLOWED_UID = [0, 1, 2, 3, 4]
 
 async function main() {
   const GoldfinchFactory = await hre.ethers.getContractFactory("GoldfinchFactory")

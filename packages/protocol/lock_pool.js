@@ -1,7 +1,7 @@
 const hre = require("hardhat")
 
-const TRANCHED_POOL = "0x017a79d8d1ebca11abdd9e12addea89705fd0be8"
-const TRANCHING_LOGIC = "0x899aB3c6A8C6e8786b5C1ea8bF415541eeD2A107"
+const TRANCHED_POOL = "0xcEF36C72A1F6e07f7eea547e3133ab7182491c7d"
+const TRANCHING_LOGIC = "0xa1B72e5EF8ADc4a23f0bE88afC3dc33DC7a93390"
 
 async function main() {
   const TranchedPool = await hre.ethers.getContractFactory("TranchedPool", {
