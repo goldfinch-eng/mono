@@ -226,7 +226,7 @@ export default function DashboardPage() {
         colorClass: gfiColorClass,
       },
       {
-        name: "FIDU",
+        name: "Senior Pool Position",
         tooltip:
           "Your active investment in the Senior Pool, represented by the value of your FIDU token holdings.",
         usdc: seniorPoolTotal,
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                         !data.viewer.fiduBalance.amount.isZero()) ||
                       data.stakedFiduPositions.length > 0 ? (
                         <ExpandableHoldings
-                          title="FIDU"
+                          title="Senior Pool Position"
                           tooltip="Your active investment in the Goldfinch Senior Pool, represented by the value of your FIDU token holdings. This includes FIDU held in your linked wallet and any FIDU you are staking."
                           colorClass={seniorPoolColorClass}
                           holdings={[
