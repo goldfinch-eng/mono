@@ -2,7 +2,13 @@ import { ComponentProps } from "react";
 import { useController, UseControllerProps } from "react-hook-form";
 import { IMaskMixin } from "react-imask";
 
-import { USDC_DECIMALS } from "@/constants";
+import {
+  CURVE_LP_DECIMALS,
+  FIDU_DECIMALS,
+  GFI_DECIMALS,
+  USDC_DECIMALS,
+} from "@/constants";
+import { SupportedCrypto, SupportedFiat } from "@/lib/graphql/generated";
 
 import { Input } from "./input";
 
@@ -11,21 +17,31 @@ const MaskedInput = IMaskMixin(({ inputRef, ...props }) => {
   return <Input ref={inputRef} {...props} />;
 });
 
+type Unit = SupportedFiat | SupportedCrypto;
+
 type DollarInputProps = ComponentProps<typeof Input> &
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   UseControllerProps<any> & {
-    /**
-     * Note that mask must contain "amount" The hard-coded block in this mask revolves around the "amount" key. Example: $amount USDC
-     */
-    mask?: string;
+    unit?: Unit;
     /**
      * If this prop is included, a "MAX" button will be included on the input. When that button is clicked, this callback will be invoked.
      */
     onMaxClick?: () => void;
   };
 
+const unitProperties: Record<Unit, { mask: string; scale: number }> = {
+  [SupportedFiat.Usd]: { mask: "$amount", scale: 2 },
+  [SupportedCrypto.Usdc]: { mask: "$amount USDC", scale: USDC_DECIMALS },
+  [SupportedCrypto.Fidu]: { mask: "amount FIDU", scale: FIDU_DECIMALS },
+  [SupportedCrypto.Gfi]: { mask: "amount GFI", scale: GFI_DECIMALS },
+  [SupportedCrypto.CurveLp]: {
+    mask: "amount FIDU-USDC-F",
+    scale: CURVE_LP_DECIMALS,
+  },
+};
+
 export function DollarInput({
-  mask = "$amount USDC",
+  unit = SupportedCrypto.Usdc,
   onMaxClick,
   name,
   rules,
@@ -46,13 +62,13 @@ export function DollarInput({
 
   return (
     <MaskedInput
-      mask={mask}
+      mask={unitProperties[unit].mask}
       blocks={{
         amount: {
           mask: Number,
           thousandsSeparator: ",",
           lazy: false,
-          scale: USDC_DECIMALS,
+          scale: unitProperties[unit].scale,
           radix: ".",
         },
       }}

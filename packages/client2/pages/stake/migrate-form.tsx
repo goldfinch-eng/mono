@@ -9,6 +9,7 @@ import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   MigrateFormPositionFieldsFragment,
+  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import {
   approveErc20IfRequired,
@@ -103,21 +104,35 @@ export function MigrateForm({
   };
 
   const handleMaxFidu = async () => {
-    setValue("fiduAmount", formatCrypto(fiduStaked, { includeSymbol: false }));
+    setValue(
+      "fiduAmount",
+      formatCrypto(fiduStaked, {
+        includeSymbol: false,
+        useMaximumPrecision: true,
+      })
+    );
     setValue(
       "usdcAmount",
       formatCrypto(sharesToUsdc(fiduStaked.amount, sharePrice), {
         includeSymbol: false,
+        useMaximumPrecision: true,
       })
     );
   };
 
   const handleMaxUsdc = async () => {
-    setValue("usdcAmount", formatCrypto(usdcBalance, { includeSymbol: false }));
+    setValue(
+      "usdcAmount",
+      formatCrypto(usdcBalance, {
+        includeSymbol: false,
+        useMaximumPrecision: true,
+      })
+    );
     setValue(
       "fiduAmount",
       formatCrypto(usdcToShares(usdcBalance.amount, sharePrice), {
         includeSymbol: false,
+        useMaximumPrecision: true,
       })
     );
   };
@@ -183,7 +198,7 @@ export function MigrateForm({
             includeSymbol: false,
             includeToken: false,
           })})`}
-          mask="amount FIDU"
+          unit={SupportedCrypto.Fidu}
           rules={{ required: "Required", validate: validateMaxFidu }}
           textSize="xl"
           onMaxClick={handleMaxFidu}
@@ -197,7 +212,7 @@ export function MigrateForm({
             includeSymbol: false,
             includeToken: false,
           })})`}
-          mask="amount USDC"
+          unit={SupportedCrypto.Usdc}
           rules={{ required: "Required", validate: validateMaxUsdc }}
           textSize="xl"
           onMaxClick={handleMaxUsdc}

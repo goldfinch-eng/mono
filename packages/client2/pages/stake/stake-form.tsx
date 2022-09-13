@@ -5,9 +5,14 @@ import { Form, DollarInput, Button } from "@/components/design-system";
 import { FIDU_DECIMALS, CURVE_LP_DECIMALS } from "@/constants";
 import { getContract } from "@/lib/contracts";
 import { formatCrypto } from "@/lib/format";
-import { CryptoAmount, StakedPositionType } from "@/lib/graphql/generated";
+import {
+  CryptoAmount,
+  StakedPositionType,
+  SupportedCrypto,
+} from "@/lib/graphql/generated";
 import { approveErc20IfRequired, positionTypeToValue } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
+import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 interface StakeCardFormProps {
@@ -72,7 +77,10 @@ export function StakeForm({
   };
 
   const handleMax = async () => {
-    setValue("amount", formatCrypto(max, { includeSymbol: false }));
+    setValue(
+      "amount",
+      formatCrypto(max, { includeSymbol: false, useMaximumPrecision: true })
+    );
   };
 
   const validateMax = async (value: string) => {
@@ -100,9 +108,13 @@ export function StakeForm({
             name="amount"
             label="Stake amount"
             hideLabel
-            mask={`amount ${
-              positionType === StakedPositionType.Fidu ? "FIDU" : "FIDU-USDC-F"
-            }`}
+            unit={
+              positionType === StakedPositionType.Fidu
+                ? SupportedCrypto.Fidu
+                : positionType === StakedPositionType.CurveLp
+                ? SupportedCrypto.CurveLp
+                : assertUnreachable(positionType)
+            }
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
             onMaxClick={handleMax}
