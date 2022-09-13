@@ -41,9 +41,6 @@ gql`
   fragment StakedPositionFields on SeniorPoolStakedPosition {
     id
     amount
-    claimable @client
-    granted @client
-    totalRewardsClaimed
   }
   query DashboardPage($userId: String!) {
     seniorPools {
@@ -117,6 +114,15 @@ gql`
     ) {
       ...StakedPositionFields
     }
+    # Need to include old staked positions that have been unstaked, because they can still have some GFI vesting
+    pastAndCurrentSeniorPoolPositions: seniorPoolStakedPositions(
+      where: { user: $userId }
+    ) {
+      id
+      claimable @client
+      granted @client
+      totalRewardsClaimed
+    }
     communityRewardsTokens(where: { user: $userId }) {
       id
       source
@@ -148,11 +154,11 @@ export default function DashboardPage() {
     const gfiTotalClaimable = sumTotalClaimable(
       grantsWithTokens,
       data.tranchedPoolTokens,
-      data.stakedFiduPositions.concat(data.stakedCurveLpPositions)
+      data.pastAndCurrentSeniorPoolPositions
     );
     const gfiTotalLocked = sumTotalLocked(
       grantsWithTokens,
-      data.stakedFiduPositions.concat(data.stakedCurveLpPositions)
+      data.pastAndCurrentSeniorPoolPositions
     );
     return gfiTotalClaimable.add(gfiTotalLocked);
   }, [data]);
