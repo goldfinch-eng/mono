@@ -1,10 +1,6 @@
 ## V2Migrator
 
-**Deployment on Ethereum mainnet: **
-
-https://etherscan.io/address/0xd44FE8Ec5D6cFB96A06e02e17bC109Ab98d506a5
-
-**Deployment on Ethereum mainnet: **
+**Deployment on Ethereum mainnet:**
 
 https://etherscan.io/address/0xd44FE8Ec5D6cFB96A06e02e17bC109Ab98d506a5
 
