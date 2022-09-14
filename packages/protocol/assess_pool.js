@@ -8,11 +8,8 @@ async function main() {
     libraries: {TranchingLogic: TRANCHING_LOGIC},
   })
   const pool = await TranchedPool.attach(TRANCHED_POOL)
-  let receipt = await pool.lockJuniorCapital()
+  let receipt = await pool.assess()
   let result = await receipt.wait()
-  console.log(result)
-  receipt = await pool.lockPool()
-  result = await receipt.wait()
   console.log(result)
 }
 
