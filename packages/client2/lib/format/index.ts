@@ -9,10 +9,11 @@ const percentageFormatter = new Intl.NumberFormat("en-US", {
 });
 
 export function formatPercent(n: number | FixedNumber) {
-  if (n instanceof FixedNumber) {
-    return percentageFormatter.format(n.toUnsafeFloat());
+  const nAsFloat = n instanceof FixedNumber ? n.toUnsafeFloat() : n;
+  if (n > 0 && n < 0.01) {
+    return "<0.01%";
   }
-  return percentageFormatter.format(n);
+  return percentageFormatter.format(nAsFloat);
 }
 
 export * from "./currency-units";
