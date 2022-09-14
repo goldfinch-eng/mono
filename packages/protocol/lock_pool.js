@@ -1,6 +1,6 @@
 const hre = require("hardhat")
 
-const TRANCHED_POOL = "0x462df1A332f93D3Fe2891AF9ae12166E4c2084C2"
+const TRANCHED_POOL = "0xcEF36C72A1F6e07f7eea547e3133ab7182491c7d"
 const TRANCHING_LOGIC = "0xa1B72e5EF8ADc4a23f0bE88afC3dc33DC7a93390"
 
 async function main() {

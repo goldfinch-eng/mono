@@ -112,7 +112,7 @@ app.post("/advanceTimeOneDay", async (req, res) => {
 
   try {
     await advanceTime({days: 1})
-    await mineBlock()
+    // await mineBlock()
   } catch (e) {
     console.error("advanceTimeOneDay error", e)
     return res.status(500).send({message: "advanceTimeOneDay error"})
@@ -127,8 +127,8 @@ app.post("/advanceTimeThirtyDays", async (req, res) => {
   }
 
   try {
-    await advanceTime({days: 30})
-    await mineBlock()
+    await advanceTime({days: 365})
+    // await mineBlock()
   } catch (e) {
     console.error("advanceTimeThirtyDays error", e)
     return res.status(500).send({message: "advanceTimeThirtyDays error"})

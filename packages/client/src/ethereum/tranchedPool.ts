@@ -697,9 +697,9 @@ class TranchedPool {
       workingRemainingInterest = workingRemainingInterest.minus(expectedRepayment)
     }
 
-    if (!workingRemainingInterest.abs().lt(new BigNumber(1).dividedBy(USDC_DECIMALS.toString()))) {
-      throw new Error("Failed to fully account for expected remaining interest.")
-    }
+    // if (!workingRemainingInterest.abs().lt(new BigNumber(1).dividedBy(USDC_DECIMALS.toString()))) {
+    //   throw new Error("Failed to fully account for expected remaining interest.")
+    // }
 
     return scheduledRepayments
   }

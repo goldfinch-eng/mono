@@ -80,7 +80,7 @@ export default function DevTools() {
               })
             }
           >
-            advanceTimeThirtyDays
+            advanceTime365Days
           </DevToolsButton>
           <DevToolsButton disabled={disabled} setDisabled={setDisabled} onClick={async () => setPanel("kyc")}>
             KYC
