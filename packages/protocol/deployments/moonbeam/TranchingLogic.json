@@ -1,0 +1,863 @@
+{
+  "address": "0x3251dE4c019d952676BB8EDCe5cF27e7b9AE256f",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "pool",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tranche",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "principalSharePrice",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "principalDelta",
+          "type": "int256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "interestSharePrice",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "int256",
+          "name": "interestDelta",
+          "type": "int256"
+        }
+      ],
+      "name": "SharePriceUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "FP_SCALING_FACTOR",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ONE_HUNDRED",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amountRemaining",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "currentSharePrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "desiredAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "applyToSharePrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeposited",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalSharePrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "interestSharePrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockedUntil",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.TrancheInfo",
+          "name": "tranche",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "seniorTranche",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "juniorTranche",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalInterestAccrued",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeployed",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.PoolSlice",
+          "name": "slice",
+          "type": "tuple"
+        }
+      ],
+      "name": "calculateExpectedSharePrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "desiredSharePrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "actualSharePrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "desiredAmountFromSharePrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "seniorTranche",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "juniorTranche",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalInterestAccrued",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeployed",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.PoolSlice",
+          "name": "slice",
+          "type": "tuple"
+        },
+        {
+          "internalType": "contract IV2CreditLine",
+          "name": "creditLine",
+          "type": "IV2CreditLine"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalDeployed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "reserveFeePercent",
+          "type": "uint256"
+        }
+      ],
+      "name": "getSliceInfo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "reserveFeePercent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "interestAccrued",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalAccrued",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.SliceInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "seniorTranche",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "juniorTranche",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalInterestAccrued",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeployed",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.PoolSlice",
+          "name": "slice",
+          "type": "tuple"
+        },
+        {
+          "internalType": "contract IV2CreditLine",
+          "name": "creditLine",
+          "type": "IV2CreditLine"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalDeployed",
+          "type": "uint256"
+        }
+      ],
+      "name": "getTotalInterestAndPrincipal",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "interestAccrued",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "principalAccrued",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "fraction",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "total",
+          "type": "uint256"
+        }
+      ],
+      "name": "scaleByFraction",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeposited",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalSharePrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "interestSharePrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockedUntil",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.TrancheInfo",
+          "name": "tranche",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "seniorTranche",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "juniorTranche",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalInterestAccrued",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeployed",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.PoolSlice",
+          "name": "slice",
+          "type": "tuple"
+        }
+      ],
+      "name": "scaleByPercentOwnership",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "seniorTranche",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalDeposited",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "principalSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "interestSharePrice",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lockedUntil",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ITranchedPool.TrancheInfo",
+              "name": "juniorTranche",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalInterestAccrued",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "principalDeployed",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ITranchedPool.PoolSlice",
+          "name": "slice",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalDeployed",
+          "type": "uint256"
+        }
+      ],
+      "name": "scaleForSlice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "sharePrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "sharePriceToUsdc",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalShares",
+          "type": "uint256"
+        }
+      ],
+      "name": "usdcToSharePrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x53b84f73f6628e77d369507dfebfece31e34d727acff7c585dd031e25773b08d",
+  "receipt": {
+    "to": null,
+    "from": "0x618C20c64cAc5211E099D355ba213790708e7462",
+    "contractAddress": "0x3251dE4c019d952676BB8EDCe5cF27e7b9AE256f",
+    "transactionIndex": 0,
+    "gasUsed": "2067594",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x654828e389c2e1e2abc602b27f4bc9d9380dec8b43185fa5eaf8444a860e556e",
+    "transactionHash": "0x53b84f73f6628e77d369507dfebfece31e34d727acff7c585dd031e25773b08d",
+    "logs": [],
+    "blockNumber": 2840898,
+    "cumulativeGasUsed": "2067594",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "a67c4f293a964d2cac7bbf8c9f65d46c",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"pool\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tranche\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"principalDelta\",\"type\":\"int256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"int256\",\"name\":\"interestDelta\",\"type\":\"int256\"}],\"name\":\"SharePriceUpdated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"FP_SCALING_FACTOR\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"ONE_HUNDRED\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amountRemaining\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"currentSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"desiredAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalShares\",\"type\":\"uint256\"}],\"name\":\"applyToSharePrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"tranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"seniorTranche\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"juniorTranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"totalInterestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeployed\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.PoolSlice\",\"name\":\"slice\",\"type\":\"tuple\"}],\"name\":\"calculateExpectedSharePrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"desiredSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"actualSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalShares\",\"type\":\"uint256\"}],\"name\":\"desiredAmountFromSharePrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"seniorTranche\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"juniorTranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"totalInterestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeployed\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.PoolSlice\",\"name\":\"slice\",\"type\":\"tuple\"},{\"internalType\":\"contract IV2CreditLine\",\"name\":\"creditLine\",\"type\":\"IV2CreditLine\"},{\"internalType\":\"uint256\",\"name\":\"totalDeployed\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"reserveFeePercent\",\"type\":\"uint256\"}],\"name\":\"getSliceInfo\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"reserveFeePercent\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalAccrued\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.SliceInfo\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"seniorTranche\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"juniorTranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"totalInterestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeployed\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.PoolSlice\",\"name\":\"slice\",\"type\":\"tuple\"},{\"internalType\":\"contract IV2CreditLine\",\"name\":\"creditLine\",\"type\":\"IV2CreditLine\"},{\"internalType\":\"uint256\",\"name\":\"totalDeployed\",\"type\":\"uint256\"}],\"name\":\"getTotalInterestAndPrincipal\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"interestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalAccrued\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fraction\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"total\",\"type\":\"uint256\"}],\"name\":\"scaleByFraction\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"tranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"seniorTranche\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"juniorTranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"totalInterestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeployed\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.PoolSlice\",\"name\":\"slice\",\"type\":\"tuple\"}],\"name\":\"scaleByPercentOwnership\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"seniorTranche\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeposited\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"interestSharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lockedUntil\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.TrancheInfo\",\"name\":\"juniorTranche\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"totalInterestAccrued\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"principalDeployed\",\"type\":\"uint256\"}],\"internalType\":\"struct ITranchedPool.PoolSlice\",\"name\":\"slice\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalDeployed\",\"type\":\"uint256\"}],\"name\":\"scaleForSlice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"sharePrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalShares\",\"type\":\"uint256\"}],\"name\":\"sharePriceToUsdc\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalShares\",\"type\":\"uint256\"}],\"name\":\"usdcToSharePrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Goldfinch\",\"kind\":\"dev\",\"methods\":{},\"title\":\"TranchingLogic\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"Library for handling the payments waterfall\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/protocol/core/TranchingLogic.sol\":\"TranchingLogic\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":100},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-ethereum-package/contracts/introspection/IERC165.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\n/**\\n * @dev Interface of the ERC165 standard, as defined in the\\n * https://eips.ethereum.org/EIPS/eip-165[EIP].\\n *\\n * Implementers can declare support of contract interfaces, which can then be\\n * queried by others ({ERC165Checker}).\\n *\\n * For an implementation, see {ERC165}.\\n */\\ninterface IERC165 {\\n    /**\\n     * @dev Returns true if this contract implements the interface defined by\\n     * `interfaceId`. See the corresponding\\n     * https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[EIP section]\\n     * to learn more about how these ids are created.\\n     *\\n     * This function call must use less than 30 000 gas.\\n     */\\n    function supportsInterface(bytes4 interfaceId) external view returns (bool);\\n}\\n\",\"keccak256\":\"0x9175561c374ec1fc33045e5dfdde2057e63e00debf432875f9e1e3395d99c149\"},\"@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\n/**\\n * @dev Standard math utilities missing in the Solidity language.\\n */\\nlibrary Math {\\n    /**\\n     * @dev Returns the largest of two numbers.\\n     */\\n    function max(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a >= b ? a : b;\\n    }\\n\\n    /**\\n     * @dev Returns the smallest of two numbers.\\n     */\\n    function min(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a < b ? a : b;\\n    }\\n\\n    /**\\n     * @dev Returns the average of two numbers. The result is rounded towards\\n     * zero.\\n     */\\n    function average(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // (a + b) / 2 can overflow, so we distribute\\n        return (a / 2) + (b / 2) + ((a % 2 + b % 2) / 2);\\n    }\\n}\\n\",\"keccak256\":\"0x50280546205978ca6573541955e15453b4c07a19e6c8ec4f6785a5ae0d7343fb\"},\"@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\n/**\\n * @dev Wrappers over Solidity's arithmetic operations with added overflow\\n * checks.\\n *\\n * Arithmetic operations in Solidity wrap on overflow. This can easily result\\n * in bugs, because programmers usually assume that an overflow raises an\\n * error, which is the standard behavior in high level programming languages.\\n * `SafeMath` restores this intuition by reverting the transaction when an\\n * operation overflows.\\n *\\n * Using this library instead of the unchecked operations eliminates an entire\\n * class of bugs, so it's recommended to use it always.\\n */\\nlibrary SafeMath {\\n    /**\\n     * @dev Returns the addition of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `+` operator.\\n     *\\n     * Requirements:\\n     * - Addition cannot overflow.\\n     */\\n    function add(uint256 a, uint256 b) internal pure returns (uint256) {\\n        uint256 c = a + b;\\n        require(c >= a, \\\"SafeMath: addition overflow\\\");\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return sub(a, b, \\\"SafeMath: subtraction overflow\\\");\\n    }\\n\\n    /**\\n     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on\\n     * overflow (when the result is negative).\\n     *\\n     * Counterpart to Solidity's `-` operator.\\n     *\\n     * Requirements:\\n     * - Subtraction cannot overflow.\\n     */\\n    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b <= a, errorMessage);\\n        uint256 c = a - b;\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the multiplication of two unsigned integers, reverting on\\n     * overflow.\\n     *\\n     * Counterpart to Solidity's `*` operator.\\n     *\\n     * Requirements:\\n     * - Multiplication cannot overflow.\\n     */\\n    function mul(uint256 a, uint256 b) internal pure returns (uint256) {\\n        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n        // benefit is lost if 'b' is also tested.\\n        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n        if (a == 0) {\\n            return 0;\\n        }\\n\\n        uint256 c = a * b;\\n        require(c / a == b, \\\"SafeMath: multiplication overflow\\\");\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers. Reverts on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return div(a, b, \\\"SafeMath: division by zero\\\");\\n    }\\n\\n    /**\\n     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on\\n     * division by zero. The result is rounded towards zero.\\n     *\\n     * Counterpart to Solidity's `/` operator. Note: this function uses a\\n     * `revert` opcode (which leaves remaining gas untouched) while Solidity\\n     * uses an invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        // Solidity only automatically asserts when dividing by 0\\n        require(b > 0, errorMessage);\\n        uint256 c = a / b;\\n        // assert(a == b * c + a % b); // There is no case in which this doesn't hold\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * Reverts when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return mod(a, b, \\\"SafeMath: modulo by zero\\\");\\n    }\\n\\n    /**\\n     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),\\n     * Reverts with custom message when dividing by zero.\\n     *\\n     * Counterpart to Solidity's `%` operator. This function uses a `revert`\\n     * opcode (which leaves remaining gas untouched) while Solidity uses an\\n     * invalid opcode to revert (consuming all remaining gas).\\n     *\\n     * Requirements:\\n     * - The divisor cannot be zero.\\n     */\\n    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {\\n        require(b != 0, errorMessage);\\n        return a % b;\\n    }\\n}\\n\",\"keccak256\":\"0x04d34b3cd5677bea25f8dfceb6dec0eaa071d4d4b789a43f13fe0c415ba4c296\"},\"@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.sol\":{\"content\":\"pragma solidity ^0.6.0;\\n\\n/**\\n * @title SignedSafeMath\\n * @dev Signed math operations with safety checks that revert on error.\\n */\\nlibrary SignedSafeMath {\\n    int256 constant private _INT256_MIN = -2**255;\\n\\n    /**\\n     * @dev Multiplies two signed integers, reverts on overflow.\\n     */\\n    function mul(int256 a, int256 b) internal pure returns (int256) {\\n        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the\\n        // benefit is lost if 'b' is also tested.\\n        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522\\n        if (a == 0) {\\n            return 0;\\n        }\\n\\n        require(!(a == -1 && b == _INT256_MIN), \\\"SignedSafeMath: multiplication overflow\\\");\\n\\n        int256 c = a * b;\\n        require(c / a == b, \\\"SignedSafeMath: multiplication overflow\\\");\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Integer division of two signed integers truncating the quotient, reverts on division by zero.\\n     */\\n    function div(int256 a, int256 b) internal pure returns (int256) {\\n        require(b != 0, \\\"SignedSafeMath: division by zero\\\");\\n        require(!(b == -1 && a == _INT256_MIN), \\\"SignedSafeMath: division overflow\\\");\\n\\n        int256 c = a / b;\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Subtracts two signed integers, reverts on overflow.\\n     */\\n    function sub(int256 a, int256 b) internal pure returns (int256) {\\n        int256 c = a - b;\\n        require((b >= 0 && c <= a) || (b < 0 && c > a), \\\"SignedSafeMath: subtraction overflow\\\");\\n\\n        return c;\\n    }\\n\\n    /**\\n     * @dev Adds two signed integers, reverts on overflow.\\n     */\\n    function add(int256 a, int256 b) internal pure returns (int256) {\\n        int256 c = a + b;\\n        require((b >= 0 && c >= a) || (b < 0 && c < a), \\\"SignedSafeMath: addition overflow\\\");\\n\\n        return c;\\n    }\\n}\\n\",\"keccak256\":\"0xfadc24a31d75d6b3f955190cffe13bbe6e24a274c12b2b60e8c4004131487ce8\"},\"@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol\":{\"content\":\"pragma solidity ^0.6.2;\\n\\nimport \\\"../../introspection/IERC165.sol\\\";\\n\\n/**\\n * @dev Required interface of an ERC721 compliant contract.\\n */\\ninterface IERC721 is IERC165 {\\n    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);\\n    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);\\n    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);\\n\\n    /**\\n     * @dev Returns the number of NFTs in ``owner``'s account.\\n     */\\n    function balanceOf(address owner) external view returns (uint256 balance);\\n\\n    /**\\n     * @dev Returns the owner of the NFT specified by `tokenId`.\\n     */\\n    function ownerOf(uint256 tokenId) external view returns (address owner);\\n\\n    /**\\n     * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to\\n     * another (`to`).\\n     *\\n     *\\n     *\\n     * Requirements:\\n     * - `from`, `to` cannot be zero.\\n     * - `tokenId` must be owned by `from`.\\n     * - If the caller is not `from`, it must be have been allowed to move this\\n     * NFT by either {approve} or {setApprovalForAll}.\\n     */\\n    function safeTransferFrom(address from, address to, uint256 tokenId) external;\\n    /**\\n     * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Requirements:\\n     * - If the caller is not `from`, it must be approved to move this NFT by\\n     * either {approve} or {setApprovalForAll}.\\n     */\\n    function transferFrom(address from, address to, uint256 tokenId) external;\\n    function approve(address to, uint256 tokenId) external;\\n    function getApproved(uint256 tokenId) external view returns (address operator);\\n\\n    function setApprovalForAll(address operator, bool _approved) external;\\n    function isApprovedForAll(address owner, address operator) external view returns (bool);\\n\\n\\n    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;\\n}\\n\",\"keccak256\":\"0x734b5bedb78074a59bca6aff9e5a1801c9c7e9c5314daf32e14857161fb36932\"},\"contracts/external/FixedPoint.sol\":{\"content\":\"// SPDX-License-Identifier: AGPL-3.0-only\\n// solhint-disable\\n// Imported from https://github.com/UMAprotocol/protocol/blob/4d1c8cc47a4df5e79f978cb05647a7432e111a3d/packages/core/contracts/common/implementation/FixedPoint.sol\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol\\\";\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/math/SignedSafeMath.sol\\\";\\n\\n/**\\n * @title Library for fixed point arithmetic on uints\\n */\\nlibrary FixedPoint {\\n  using SafeMath for uint256;\\n  using SignedSafeMath for int256;\\n\\n  // Supports 18 decimals. E.g., 1e18 represents \\\"1\\\", 5e17 represents \\\"0.5\\\".\\n  // For unsigned values:\\n  //   This can represent a value up to (2^256 - 1)/10^18 = ~10^59. 10^59 will be stored internally as uint256 10^77.\\n  uint256 private constant FP_SCALING_FACTOR = 10**18;\\n\\n  // --------------------------------------- UNSIGNED -----------------------------------------------------------------------------\\n  struct Unsigned {\\n    uint256 rawValue;\\n  }\\n\\n  /**\\n   * @notice Constructs an `Unsigned` from an unscaled uint, e.g., `b=5` gets stored internally as `5**18`.\\n   * @param a uint to convert into a FixedPoint.\\n   * @return the converted FixedPoint.\\n   */\\n  function fromUnscaledUint(uint256 a) internal pure returns (Unsigned memory) {\\n    return Unsigned(a.mul(FP_SCALING_FACTOR));\\n  }\\n\\n  /**\\n   * @notice Whether `a` is equal to `b`.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return True if equal, or False.\\n   */\\n  function isEqual(Unsigned memory a, uint256 b) internal pure returns (bool) {\\n    return a.rawValue == fromUnscaledUint(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is equal to `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return True if equal, or False.\\n   */\\n  function isEqual(Unsigned memory a, Unsigned memory b) internal pure returns (bool) {\\n    return a.rawValue == b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return True if `a > b`, or False.\\n   */\\n  function isGreaterThan(Unsigned memory a, Unsigned memory b) internal pure returns (bool) {\\n    return a.rawValue > b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than `b`.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return True if `a > b`, or False.\\n   */\\n  function isGreaterThan(Unsigned memory a, uint256 b) internal pure returns (bool) {\\n    return a.rawValue > fromUnscaledUint(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than `b`.\\n   * @param a a uint256.\\n   * @param b a FixedPoint.\\n   * @return True if `a > b`, or False.\\n   */\\n  function isGreaterThan(uint256 a, Unsigned memory b) internal pure returns (bool) {\\n    return fromUnscaledUint(a).rawValue > b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than or equal to `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return True if `a >= b`, or False.\\n   */\\n  function isGreaterThanOrEqual(Unsigned memory a, Unsigned memory b) internal pure returns (bool) {\\n    return a.rawValue >= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than or equal to `b`.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return True if `a >= b`, or False.\\n   */\\n  function isGreaterThanOrEqual(Unsigned memory a, uint256 b) internal pure returns (bool) {\\n    return a.rawValue >= fromUnscaledUint(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than or equal to `b`.\\n   * @param a a uint256.\\n   * @param b a FixedPoint.\\n   * @return True if `a >= b`, or False.\\n   */\\n  function isGreaterThanOrEqual(uint256 a, Unsigned memory b) internal pure returns (bool) {\\n    return fromUnscaledUint(a).rawValue >= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return True if `a < b`, or False.\\n   */\\n  function isLessThan(Unsigned memory a, Unsigned memory b) internal pure returns (bool) {\\n    return a.rawValue < b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than `b`.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return True if `a < b`, or False.\\n   */\\n  function isLessThan(Unsigned memory a, uint256 b) internal pure returns (bool) {\\n    return a.rawValue < fromUnscaledUint(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than `b`.\\n   * @param a a uint256.\\n   * @param b a FixedPoint.\\n   * @return True if `a < b`, or False.\\n   */\\n  function isLessThan(uint256 a, Unsigned memory b) internal pure returns (bool) {\\n    return fromUnscaledUint(a).rawValue < b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than or equal to `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return True if `a <= b`, or False.\\n   */\\n  function isLessThanOrEqual(Unsigned memory a, Unsigned memory b) internal pure returns (bool) {\\n    return a.rawValue <= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than or equal to `b`.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return True if `a <= b`, or False.\\n   */\\n  function isLessThanOrEqual(Unsigned memory a, uint256 b) internal pure returns (bool) {\\n    return a.rawValue <= fromUnscaledUint(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than or equal to `b`.\\n   * @param a a uint256.\\n   * @param b a FixedPoint.\\n   * @return True if `a <= b`, or False.\\n   */\\n  function isLessThanOrEqual(uint256 a, Unsigned memory b) internal pure returns (bool) {\\n    return fromUnscaledUint(a).rawValue <= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice The minimum of `a` and `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the minimum of `a` and `b`.\\n   */\\n  function min(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    return a.rawValue < b.rawValue ? a : b;\\n  }\\n\\n  /**\\n   * @notice The maximum of `a` and `b`.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the maximum of `a` and `b`.\\n   */\\n  function max(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    return a.rawValue > b.rawValue ? a : b;\\n  }\\n\\n  /**\\n   * @notice Adds two `Unsigned`s, reverting on overflow.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the sum of `a` and `b`.\\n   */\\n  function add(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    return Unsigned(a.rawValue.add(b.rawValue));\\n  }\\n\\n  /**\\n   * @notice Adds an `Unsigned` to an unscaled uint, reverting on overflow.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return the sum of `a` and `b`.\\n   */\\n  function add(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory) {\\n    return add(a, fromUnscaledUint(b));\\n  }\\n\\n  /**\\n   * @notice Subtracts two `Unsigned`s, reverting on overflow.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the difference of `a` and `b`.\\n   */\\n  function sub(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    return Unsigned(a.rawValue.sub(b.rawValue));\\n  }\\n\\n  /**\\n   * @notice Subtracts an unscaled uint256 from an `Unsigned`, reverting on overflow.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return the difference of `a` and `b`.\\n   */\\n  function sub(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory) {\\n    return sub(a, fromUnscaledUint(b));\\n  }\\n\\n  /**\\n   * @notice Subtracts an `Unsigned` from an unscaled uint256, reverting on overflow.\\n   * @param a a uint256.\\n   * @param b a FixedPoint.\\n   * @return the difference of `a` and `b`.\\n   */\\n  function sub(uint256 a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    return sub(fromUnscaledUint(a), b);\\n  }\\n\\n  /**\\n   * @notice Multiplies two `Unsigned`s, reverting on overflow.\\n   * @dev This will \\\"floor\\\" the product.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mul(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    // There are two caveats with this computation:\\n    // 1. Max output for the represented number is ~10^41, otherwise an intermediate value overflows. 10^41 is\\n    // stored internally as a uint256 ~10^59.\\n    // 2. Results that can't be represented exactly are truncated not rounded. E.g., 1.4 * 2e-18 = 2.8e-18, which\\n    // would round to 3, but this computation produces the result 2.\\n    // No need to use SafeMath because FP_SCALING_FACTOR != 0.\\n    return Unsigned(a.rawValue.mul(b.rawValue) / FP_SCALING_FACTOR);\\n  }\\n\\n  /**\\n   * @notice Multiplies an `Unsigned` and an unscaled uint256, reverting on overflow.\\n   * @dev This will \\\"floor\\\" the product.\\n   * @param a a FixedPoint.\\n   * @param b a uint256.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mul(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory) {\\n    return Unsigned(a.rawValue.mul(b));\\n  }\\n\\n  /**\\n   * @notice Multiplies two `Unsigned`s and \\\"ceil's\\\" the product, reverting on overflow.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mulCeil(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    uint256 mulRaw = a.rawValue.mul(b.rawValue);\\n    uint256 mulFloor = mulRaw / FP_SCALING_FACTOR;\\n    uint256 mod = mulRaw.mod(FP_SCALING_FACTOR);\\n    if (mod != 0) {\\n      return Unsigned(mulFloor.add(1));\\n    } else {\\n      return Unsigned(mulFloor);\\n    }\\n  }\\n\\n  /**\\n   * @notice Multiplies an `Unsigned` and an unscaled uint256 and \\\"ceil's\\\" the product, reverting on overflow.\\n   * @param a a FixedPoint.\\n   * @param b a FixedPoint.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mulCeil(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory) {\\n    // Since b is an int, there is no risk of truncation and we can just mul it normally\\n    return Unsigned(a.rawValue.mul(b));\\n  }\\n\\n  /**\\n   * @notice Divides one `Unsigned` by an `Unsigned`, reverting on overflow or division by 0.\\n   * @dev This will \\\"floor\\\" the quotient.\\n   * @param a a FixedPoint numerator.\\n   * @param b a FixedPoint denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function div(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    // There are two caveats with this computation:\\n    // 1. Max value for the number dividend `a` represents is ~10^41, otherwise an intermediate value overflows.\\n    // 10^41 is stored internally as a uint256 10^59.\\n    // 2. Results that can't be represented exactly are truncated not rounded. E.g., 2 / 3 = 0.6 repeating, which\\n    // would round to 0.666666666666666667, but this computation produces the result 0.666666666666666666.\\n    return Unsigned(a.rawValue.mul(FP_SCALING_FACTOR).div(b.rawValue));\\n  }\\n\\n  /**\\n   * @notice Divides one `Unsigned` by an unscaled uint256, reverting on overflow or division by 0.\\n   * @dev This will \\\"floor\\\" the quotient.\\n   * @param a a FixedPoint numerator.\\n   * @param b a uint256 denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function div(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory) {\\n    return Unsigned(a.rawValue.div(b));\\n  }\\n\\n  /**\\n   * @notice Divides one unscaled uint256 by an `Unsigned`, reverting on overflow or division by 0.\\n   * @dev This will \\\"floor\\\" the quotient.\\n   * @param a a uint256 numerator.\\n   * @param b a FixedPoint denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function div(uint256 a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    return div(fromUnscaledUint(a), b);\\n  }\\n\\n  /**\\n   * @notice Divides one `Unsigned` by an `Unsigned` and \\\"ceil's\\\" the quotient, reverting on overflow or division by 0.\\n   * @param a a FixedPoint numerator.\\n   * @param b a FixedPoint denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function divCeil(Unsigned memory a, Unsigned memory b) internal pure returns (Unsigned memory) {\\n    uint256 aScaled = a.rawValue.mul(FP_SCALING_FACTOR);\\n    uint256 divFloor = aScaled.div(b.rawValue);\\n    uint256 mod = aScaled.mod(b.rawValue);\\n    if (mod != 0) {\\n      return Unsigned(divFloor.add(1));\\n    } else {\\n      return Unsigned(divFloor);\\n    }\\n  }\\n\\n  /**\\n   * @notice Divides one `Unsigned` by an unscaled uint256 and \\\"ceil's\\\" the quotient, reverting on overflow or division by 0.\\n   * @param a a FixedPoint numerator.\\n   * @param b a uint256 denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function divCeil(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory) {\\n    // Because it is possible that a quotient gets truncated, we can't just call \\\"Unsigned(a.rawValue.div(b))\\\"\\n    // similarly to mulCeil with a uint256 as the second parameter. Therefore we need to convert b into an Unsigned.\\n    // This creates the possibility of overflow if b is very large.\\n    return divCeil(a, fromUnscaledUint(b));\\n  }\\n\\n  /**\\n   * @notice Raises an `Unsigned` to the power of an unscaled uint256, reverting on overflow. E.g., `b=2` squares `a`.\\n   * @dev This will \\\"floor\\\" the result.\\n   * @param a a FixedPoint numerator.\\n   * @param b a uint256 denominator.\\n   * @return output is `a` to the power of `b`.\\n   */\\n  function pow(Unsigned memory a, uint256 b) internal pure returns (Unsigned memory output) {\\n    output = fromUnscaledUint(1);\\n    for (uint256 i = 0; i < b; i = i.add(1)) {\\n      output = mul(output, a);\\n    }\\n  }\\n\\n  // ------------------------------------------------- SIGNED -------------------------------------------------------------\\n  // Supports 18 decimals. E.g., 1e18 represents \\\"1\\\", 5e17 represents \\\"0.5\\\".\\n  // For signed values:\\n  //   This can represent a value up (or down) to +-(2^255 - 1)/10^18 = ~10^58. 10^58 will be stored internally as int256 10^76.\\n  int256 private constant SFP_SCALING_FACTOR = 10**18;\\n\\n  struct Signed {\\n    int256 rawValue;\\n  }\\n\\n  function fromSigned(Signed memory a) internal pure returns (Unsigned memory) {\\n    require(a.rawValue >= 0, \\\"Negative value provided\\\");\\n    return Unsigned(uint256(a.rawValue));\\n  }\\n\\n  function fromUnsigned(Unsigned memory a) internal pure returns (Signed memory) {\\n    require(a.rawValue <= uint256(type(int256).max), \\\"Unsigned too large\\\");\\n    return Signed(int256(a.rawValue));\\n  }\\n\\n  /**\\n   * @notice Constructs a `Signed` from an unscaled int, e.g., `b=5` gets stored internally as `5**18`.\\n   * @param a int to convert into a FixedPoint.Signed.\\n   * @return the converted FixedPoint.Signed.\\n   */\\n  function fromUnscaledInt(int256 a) internal pure returns (Signed memory) {\\n    return Signed(a.mul(SFP_SCALING_FACTOR));\\n  }\\n\\n  /**\\n   * @notice Whether `a` is equal to `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a int256.\\n   * @return True if equal, or False.\\n   */\\n  function isEqual(Signed memory a, int256 b) internal pure returns (bool) {\\n    return a.rawValue == fromUnscaledInt(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is equal to `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if equal, or False.\\n   */\\n  function isEqual(Signed memory a, Signed memory b) internal pure returns (bool) {\\n    return a.rawValue == b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a > b`, or False.\\n   */\\n  function isGreaterThan(Signed memory a, Signed memory b) internal pure returns (bool) {\\n    return a.rawValue > b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return True if `a > b`, or False.\\n   */\\n  function isGreaterThan(Signed memory a, int256 b) internal pure returns (bool) {\\n    return a.rawValue > fromUnscaledInt(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than `b`.\\n   * @param a an int256.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a > b`, or False.\\n   */\\n  function isGreaterThan(int256 a, Signed memory b) internal pure returns (bool) {\\n    return fromUnscaledInt(a).rawValue > b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than or equal to `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a >= b`, or False.\\n   */\\n  function isGreaterThanOrEqual(Signed memory a, Signed memory b) internal pure returns (bool) {\\n    return a.rawValue >= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than or equal to `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return True if `a >= b`, or False.\\n   */\\n  function isGreaterThanOrEqual(Signed memory a, int256 b) internal pure returns (bool) {\\n    return a.rawValue >= fromUnscaledInt(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is greater than or equal to `b`.\\n   * @param a an int256.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a >= b`, or False.\\n   */\\n  function isGreaterThanOrEqual(int256 a, Signed memory b) internal pure returns (bool) {\\n    return fromUnscaledInt(a).rawValue >= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a < b`, or False.\\n   */\\n  function isLessThan(Signed memory a, Signed memory b) internal pure returns (bool) {\\n    return a.rawValue < b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return True if `a < b`, or False.\\n   */\\n  function isLessThan(Signed memory a, int256 b) internal pure returns (bool) {\\n    return a.rawValue < fromUnscaledInt(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than `b`.\\n   * @param a an int256.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a < b`, or False.\\n   */\\n  function isLessThan(int256 a, Signed memory b) internal pure returns (bool) {\\n    return fromUnscaledInt(a).rawValue < b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than or equal to `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a <= b`, or False.\\n   */\\n  function isLessThanOrEqual(Signed memory a, Signed memory b) internal pure returns (bool) {\\n    return a.rawValue <= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than or equal to `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return True if `a <= b`, or False.\\n   */\\n  function isLessThanOrEqual(Signed memory a, int256 b) internal pure returns (bool) {\\n    return a.rawValue <= fromUnscaledInt(b).rawValue;\\n  }\\n\\n  /**\\n   * @notice Whether `a` is less than or equal to `b`.\\n   * @param a an int256.\\n   * @param b a FixedPoint.Signed.\\n   * @return True if `a <= b`, or False.\\n   */\\n  function isLessThanOrEqual(int256 a, Signed memory b) internal pure returns (bool) {\\n    return fromUnscaledInt(a).rawValue <= b.rawValue;\\n  }\\n\\n  /**\\n   * @notice The minimum of `a` and `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the minimum of `a` and `b`.\\n   */\\n  function min(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    return a.rawValue < b.rawValue ? a : b;\\n  }\\n\\n  /**\\n   * @notice The maximum of `a` and `b`.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the maximum of `a` and `b`.\\n   */\\n  function max(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    return a.rawValue > b.rawValue ? a : b;\\n  }\\n\\n  /**\\n   * @notice Adds two `Signed`s, reverting on overflow.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the sum of `a` and `b`.\\n   */\\n  function add(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    return Signed(a.rawValue.add(b.rawValue));\\n  }\\n\\n  /**\\n   * @notice Adds an `Signed` to an unscaled int, reverting on overflow.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return the sum of `a` and `b`.\\n   */\\n  function add(Signed memory a, int256 b) internal pure returns (Signed memory) {\\n    return add(a, fromUnscaledInt(b));\\n  }\\n\\n  /**\\n   * @notice Subtracts two `Signed`s, reverting on overflow.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the difference of `a` and `b`.\\n   */\\n  function sub(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    return Signed(a.rawValue.sub(b.rawValue));\\n  }\\n\\n  /**\\n   * @notice Subtracts an unscaled int256 from an `Signed`, reverting on overflow.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return the difference of `a` and `b`.\\n   */\\n  function sub(Signed memory a, int256 b) internal pure returns (Signed memory) {\\n    return sub(a, fromUnscaledInt(b));\\n  }\\n\\n  /**\\n   * @notice Subtracts an `Signed` from an unscaled int256, reverting on overflow.\\n   * @param a an int256.\\n   * @param b a FixedPoint.Signed.\\n   * @return the difference of `a` and `b`.\\n   */\\n  function sub(int256 a, Signed memory b) internal pure returns (Signed memory) {\\n    return sub(fromUnscaledInt(a), b);\\n  }\\n\\n  /**\\n   * @notice Multiplies two `Signed`s, reverting on overflow.\\n   * @dev This will \\\"floor\\\" the product.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mul(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    // There are two caveats with this computation:\\n    // 1. Max output for the represented number is ~10^41, otherwise an intermediate value overflows. 10^41 is\\n    // stored internally as an int256 ~10^59.\\n    // 2. Results that can't be represented exactly are truncated not rounded. E.g., 1.4 * 2e-18 = 2.8e-18, which\\n    // would round to 3, but this computation produces the result 2.\\n    // No need to use SafeMath because SFP_SCALING_FACTOR != 0.\\n    return Signed(a.rawValue.mul(b.rawValue) / SFP_SCALING_FACTOR);\\n  }\\n\\n  /**\\n   * @notice Multiplies an `Signed` and an unscaled int256, reverting on overflow.\\n   * @dev This will \\\"floor\\\" the product.\\n   * @param a a FixedPoint.Signed.\\n   * @param b an int256.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mul(Signed memory a, int256 b) internal pure returns (Signed memory) {\\n    return Signed(a.rawValue.mul(b));\\n  }\\n\\n  /**\\n   * @notice Multiplies two `Signed`s and \\\"ceil's\\\" the product, reverting on overflow.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mulAwayFromZero(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    int256 mulRaw = a.rawValue.mul(b.rawValue);\\n    int256 mulTowardsZero = mulRaw / SFP_SCALING_FACTOR;\\n    // Manual mod because SignedSafeMath doesn't support it.\\n    int256 mod = mulRaw % SFP_SCALING_FACTOR;\\n    if (mod != 0) {\\n      bool isResultPositive = isLessThan(a, 0) == isLessThan(b, 0);\\n      int256 valueToAdd = isResultPositive ? int256(1) : int256(-1);\\n      return Signed(mulTowardsZero.add(valueToAdd));\\n    } else {\\n      return Signed(mulTowardsZero);\\n    }\\n  }\\n\\n  /**\\n   * @notice Multiplies an `Signed` and an unscaled int256 and \\\"ceil's\\\" the product, reverting on overflow.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a FixedPoint.Signed.\\n   * @return the product of `a` and `b`.\\n   */\\n  function mulAwayFromZero(Signed memory a, int256 b) internal pure returns (Signed memory) {\\n    // Since b is an int, there is no risk of truncation and we can just mul it normally\\n    return Signed(a.rawValue.mul(b));\\n  }\\n\\n  /**\\n   * @notice Divides one `Signed` by an `Signed`, reverting on overflow or division by 0.\\n   * @dev This will \\\"floor\\\" the quotient.\\n   * @param a a FixedPoint numerator.\\n   * @param b a FixedPoint denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function div(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    // There are two caveats with this computation:\\n    // 1. Max value for the number dividend `a` represents is ~10^41, otherwise an intermediate value overflows.\\n    // 10^41 is stored internally as an int256 10^59.\\n    // 2. Results that can't be represented exactly are truncated not rounded. E.g., 2 / 3 = 0.6 repeating, which\\n    // would round to 0.666666666666666667, but this computation produces the result 0.666666666666666666.\\n    return Signed(a.rawValue.mul(SFP_SCALING_FACTOR).div(b.rawValue));\\n  }\\n\\n  /**\\n   * @notice Divides one `Signed` by an unscaled int256, reverting on overflow or division by 0.\\n   * @dev This will \\\"floor\\\" the quotient.\\n   * @param a a FixedPoint numerator.\\n   * @param b an int256 denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function div(Signed memory a, int256 b) internal pure returns (Signed memory) {\\n    return Signed(a.rawValue.div(b));\\n  }\\n\\n  /**\\n   * @notice Divides one unscaled int256 by an `Signed`, reverting on overflow or division by 0.\\n   * @dev This will \\\"floor\\\" the quotient.\\n   * @param a an int256 numerator.\\n   * @param b a FixedPoint denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function div(int256 a, Signed memory b) internal pure returns (Signed memory) {\\n    return div(fromUnscaledInt(a), b);\\n  }\\n\\n  /**\\n   * @notice Divides one `Signed` by an `Signed` and \\\"ceil's\\\" the quotient, reverting on overflow or division by 0.\\n   * @param a a FixedPoint numerator.\\n   * @param b a FixedPoint denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function divAwayFromZero(Signed memory a, Signed memory b) internal pure returns (Signed memory) {\\n    int256 aScaled = a.rawValue.mul(SFP_SCALING_FACTOR);\\n    int256 divTowardsZero = aScaled.div(b.rawValue);\\n    // Manual mod because SignedSafeMath doesn't support it.\\n    int256 mod = aScaled % b.rawValue;\\n    if (mod != 0) {\\n      bool isResultPositive = isLessThan(a, 0) == isLessThan(b, 0);\\n      int256 valueToAdd = isResultPositive ? int256(1) : int256(-1);\\n      return Signed(divTowardsZero.add(valueToAdd));\\n    } else {\\n      return Signed(divTowardsZero);\\n    }\\n  }\\n\\n  /**\\n   * @notice Divides one `Signed` by an unscaled int256 and \\\"ceil's\\\" the quotient, reverting on overflow or division by 0.\\n   * @param a a FixedPoint numerator.\\n   * @param b an int256 denominator.\\n   * @return the quotient of `a` divided by `b`.\\n   */\\n  function divAwayFromZero(Signed memory a, int256 b) internal pure returns (Signed memory) {\\n    // Because it is possible that a quotient gets truncated, we can't just call \\\"Signed(a.rawValue.div(b))\\\"\\n    // similarly to mulCeil with an int256 as the second parameter. Therefore we need to convert b into an Signed.\\n    // This creates the possibility of overflow if b is very large.\\n    return divAwayFromZero(a, fromUnscaledInt(b));\\n  }\\n\\n  /**\\n   * @notice Raises an `Signed` to the power of an unscaled uint256, reverting on overflow. E.g., `b=2` squares `a`.\\n   * @dev This will \\\"floor\\\" the result.\\n   * @param a a FixedPoint.Signed.\\n   * @param b a uint256 (negative exponents are not allowed).\\n   * @return output is `a` to the power of `b`.\\n   */\\n  function pow(Signed memory a, uint256 b) internal pure returns (Signed memory output) {\\n    output = fromUnscaledInt(1);\\n    for (uint256 i = 0; i < b; i = i.add(1)) {\\n      output = mul(output, a);\\n    }\\n  }\\n}\\n\",\"keccak256\":\"0x36f2dc0c18a1ad4363388d19a70c852d84914af7a83fc88cdb3e759bafcb921c\",\"license\":\"AGPL-3.0-only\"},\"contracts/interfaces/ICreditLine.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\ninterface ICreditLine {\\n  function borrower() external view returns (address);\\n\\n  function limit() external view returns (uint256);\\n\\n  function maxLimit() external view returns (uint256);\\n\\n  function interestApr() external view returns (uint256);\\n\\n  function paymentPeriodInDays() external view returns (uint256);\\n\\n  function principalGracePeriodInDays() external view returns (uint256);\\n\\n  function termInDays() external view returns (uint256);\\n\\n  function lateFeeApr() external view returns (uint256);\\n\\n  function isLate() external view returns (bool);\\n\\n  function withinPrincipalGracePeriod() external view returns (bool);\\n\\n  // Accounting variables\\n  function balance() external view returns (uint256);\\n\\n  function interestOwed() external view returns (uint256);\\n\\n  function principalOwed() external view returns (uint256);\\n\\n  function termEndTime() external view returns (uint256);\\n\\n  function nextDueTime() external view returns (uint256);\\n\\n  function interestAccruedAsOf() external view returns (uint256);\\n\\n  function lastFullPaymentTime() external view returns (uint256);\\n}\\n\",\"keccak256\":\"0x09e43bbbca3f80c1c1dfc588dfe365792b89e9267026b01408b7ddf6b035c21a\",\"license\":\"MIT\"},\"contracts/interfaces/IPoolTokens.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/IERC721.sol\\\";\\n\\ninterface IPoolTokens is IERC721 {\\n  event TokenMinted(\\n    address indexed owner,\\n    address indexed pool,\\n    uint256 indexed tokenId,\\n    uint256 amount,\\n    uint256 tranche\\n  );\\n\\n  event TokenRedeemed(\\n    address indexed owner,\\n    address indexed pool,\\n    uint256 indexed tokenId,\\n    uint256 principalRedeemed,\\n    uint256 interestRedeemed,\\n    uint256 tranche\\n  );\\n  event TokenBurned(address indexed owner, address indexed pool, uint256 indexed tokenId);\\n\\n  struct TokenInfo {\\n    address pool;\\n    uint256 tranche;\\n    uint256 principalAmount;\\n    uint256 principalRedeemed;\\n    uint256 interestRedeemed;\\n  }\\n\\n  struct MintParams {\\n    uint256 principalAmount;\\n    uint256 tranche;\\n  }\\n\\n  function mint(MintParams calldata params, address to) external returns (uint256);\\n\\n  function redeem(\\n    uint256 tokenId,\\n    uint256 principalRedeemed,\\n    uint256 interestRedeemed\\n  ) external;\\n\\n  function withdrawPrincipal(uint256 tokenId, uint256 principalAmount) external;\\n\\n  function burn(uint256 tokenId) external;\\n\\n  function onPoolCreated(address newPool) external;\\n\\n  function getTokenInfo(uint256 tokenId) external view returns (TokenInfo memory);\\n\\n  function validPool(address sender) external view returns (bool);\\n\\n  function isApprovedOrOwner(address spender, uint256 tokenId) external view returns (bool);\\n}\\n\",\"keccak256\":\"0xde447b1c8018dae988b90f93aeba62fe203a6aa822bf524c916233ce81d4ed04\",\"license\":\"MIT\"},\"contracts/interfaces/ITranchedPool.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"./IV2CreditLine.sol\\\";\\n\\nabstract contract ITranchedPool {\\n  IV2CreditLine public creditLine;\\n  uint256 public createdAt;\\n  enum Tranches {\\n    Reserved,\\n    Senior,\\n    Junior\\n  }\\n\\n  struct TrancheInfo {\\n    uint256 id;\\n    uint256 principalDeposited;\\n    uint256 principalSharePrice;\\n    uint256 interestSharePrice;\\n    uint256 lockedUntil;\\n  }\\n\\n  struct PoolSlice {\\n    TrancheInfo seniorTranche;\\n    TrancheInfo juniorTranche;\\n    uint256 totalInterestAccrued;\\n    uint256 principalDeployed;\\n  }\\n\\n  struct SliceInfo {\\n    uint256 reserveFeePercent;\\n    uint256 interestAccrued;\\n    uint256 principalAccrued;\\n  }\\n\\n  struct ApplyResult {\\n    uint256 interestRemaining;\\n    uint256 principalRemaining;\\n    uint256 reserveDeduction;\\n    uint256 oldInterestSharePrice;\\n    uint256 oldPrincipalSharePrice;\\n  }\\n\\n  function initialize(\\n    address _config,\\n    address _borrower,\\n    uint256 _juniorFeePercent,\\n    uint256 _limit,\\n    uint256 _interestApr,\\n    uint256 _paymentPeriodInDays,\\n    uint256 _termInDays,\\n    uint256 _lateFeeApr,\\n    uint256 _principalGracePeriodInDays,\\n    uint256 _fundableAt,\\n    uint256[] calldata _allowedUIDTypes\\n  ) public virtual;\\n\\n  function getTranche(uint256 tranche) external view virtual returns (TrancheInfo memory);\\n\\n  function pay(uint256 amount) external virtual;\\n\\n  function lockJuniorCapital() external virtual;\\n\\n  function lockPool() external virtual;\\n\\n  function initializeNextSlice(uint256 _fundableAt) external virtual;\\n\\n  function totalJuniorDeposits() external view virtual returns (uint256);\\n\\n  function drawdown(uint256 amount) external virtual;\\n\\n  function setFundableAt(uint256 timestamp) external virtual;\\n\\n  function deposit(uint256 tranche, uint256 amount) external virtual returns (uint256 tokenId);\\n\\n  function assess() external virtual;\\n\\n  function depositWithPermit(\\n    uint256 tranche,\\n    uint256 amount,\\n    uint256 deadline,\\n    uint8 v,\\n    bytes32 r,\\n    bytes32 s\\n  ) external virtual returns (uint256 tokenId);\\n\\n  function availableToWithdraw(uint256 tokenId)\\n    external\\n    view\\n    virtual\\n    returns (uint256 interestRedeemable, uint256 principalRedeemable);\\n\\n  function withdraw(uint256 tokenId, uint256 amount)\\n    external\\n    virtual\\n    returns (uint256 interestWithdrawn, uint256 principalWithdrawn);\\n\\n  function withdrawMax(uint256 tokenId)\\n    external\\n    virtual\\n    returns (uint256 interestWithdrawn, uint256 principalWithdrawn);\\n\\n  function withdrawMultiple(uint256[] calldata tokenIds, uint256[] calldata amounts) external virtual;\\n\\n  function numSlices() external view virtual returns (uint256);\\n}\\n\",\"keccak256\":\"0x575480005a216f68c9856ba9381095cd50e324668c3a6bc55a52f11036bed4b7\",\"license\":\"MIT\"},\"contracts/interfaces/IV2CreditLine.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"./ICreditLine.sol\\\";\\n\\nabstract contract IV2CreditLine is ICreditLine {\\n  function principal() external view virtual returns (uint256);\\n\\n  function totalInterestAccrued() external view virtual returns (uint256);\\n\\n  function termStartTime() external view virtual returns (uint256);\\n\\n  function setLimit(uint256 newAmount) external virtual;\\n\\n  function setMaxLimit(uint256 newAmount) external virtual;\\n\\n  function setBalance(uint256 newBalance) external virtual;\\n\\n  function setPrincipal(uint256 _principal) external virtual;\\n\\n  function setTotalInterestAccrued(uint256 _interestAccrued) external virtual;\\n\\n  function drawdown(uint256 amount) external virtual;\\n\\n  function assess()\\n    external\\n    virtual\\n    returns (\\n      uint256,\\n      uint256,\\n      uint256\\n    );\\n\\n  function initialize(\\n    address _config,\\n    address owner,\\n    address _borrower,\\n    uint256 _limit,\\n    uint256 _interestApr,\\n    uint256 _paymentPeriodInDays,\\n    uint256 _termInDays,\\n    uint256 _lateFeeApr,\\n    uint256 _principalGracePeriodInDays\\n  ) public virtual;\\n\\n  function setTermEndTime(uint256 newTermEndTime) external virtual;\\n\\n  function setNextDueTime(uint256 newNextDueTime) external virtual;\\n\\n  function setInterestOwed(uint256 newInterestOwed) external virtual;\\n\\n  function setPrincipalOwed(uint256 newPrincipalOwed) external virtual;\\n\\n  function setInterestAccruedAsOf(uint256 newInterestAccruedAsOf) external virtual;\\n\\n  function setWritedownAmount(uint256 newWritedownAmount) external virtual;\\n\\n  function setLastFullPaymentTime(uint256 newLastFullPaymentTime) external virtual;\\n\\n  function setLateFeeApr(uint256 newLateFeeApr) external virtual;\\n\\n  function updateGoldfinchConfig() external virtual;\\n}\\n\",\"keccak256\":\"0x67ccd4b2d3a3fffb97bbd5453175bbc8812af616a05349834a6d140cd6efbda6\",\"license\":\"MIT\"},\"contracts/protocol/core/TranchingLogic.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity 0.6.12;\\npragma experimental ABIEncoderV2;\\n\\nimport \\\"../../interfaces/IV2CreditLine.sol\\\";\\nimport \\\"../../interfaces/ITranchedPool.sol\\\";\\nimport \\\"../../interfaces/IPoolTokens.sol\\\";\\nimport \\\"../../external/FixedPoint.sol\\\";\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol\\\";\\nimport \\\"@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol\\\";\\n\\n/**\\n * @title TranchingLogic\\n * @notice Library for handling the payments waterfall\\n * @author Goldfinch\\n */\\n\\nlibrary TranchingLogic {\\n  using SafeMath for uint256;\\n  using FixedPoint for FixedPoint.Unsigned;\\n  using FixedPoint for uint256;\\n\\n  event SharePriceUpdated(\\n    address indexed pool,\\n    uint256 indexed tranche,\\n    uint256 principalSharePrice,\\n    int256 principalDelta,\\n    uint256 interestSharePrice,\\n    int256 interestDelta\\n  );\\n\\n  uint256 public constant FP_SCALING_FACTOR = 1e18;\\n  uint256 public constant ONE_HUNDRED = 100; // Need this because we cannot call .div on a literal 100\\n\\n  function usdcToSharePrice(uint256 amount, uint256 totalShares) public pure returns (uint256) {\\n    return totalShares == 0 ? 0 : amount.mul(FP_SCALING_FACTOR).div(totalShares);\\n  }\\n\\n  function sharePriceToUsdc(uint256 sharePrice, uint256 totalShares) public pure returns (uint256) {\\n    return sharePrice.mul(totalShares).div(FP_SCALING_FACTOR);\\n  }\\n\\n  function redeemableInterestAndPrincipal(\\n    ITranchedPool.TrancheInfo storage trancheInfo,\\n    IPoolTokens.TokenInfo memory tokenInfo\\n  ) public view returns (uint256 interestRedeemable, uint256 principalRedeemable) {\\n    // This supports withdrawing before or after locking because principal share price starts at 1\\n    // and is set to 0 on lock. Interest share price is always 0 until interest payments come back, when it increases\\n    uint256 maxPrincipalRedeemable = sharePriceToUsdc(trancheInfo.principalSharePrice, tokenInfo.principalAmount);\\n    // The principalAmount is used as the totalShares because we want the interestSharePrice to be expressed as a\\n    // percent of total loan value e.g. if the interest is 10% APR, the interestSharePrice should approach a max of 0.1.\\n    uint256 maxInterestRedeemable = sharePriceToUsdc(trancheInfo.interestSharePrice, tokenInfo.principalAmount);\\n\\n    interestRedeemable = maxInterestRedeemable.sub(tokenInfo.interestRedeemed);\\n    principalRedeemable = maxPrincipalRedeemable.sub(tokenInfo.principalRedeemed);\\n\\n    return (interestRedeemable, principalRedeemable);\\n  }\\n\\n  function calculateExpectedSharePrice(\\n    ITranchedPool.TrancheInfo memory tranche,\\n    uint256 amount,\\n    ITranchedPool.PoolSlice memory slice\\n  ) public pure returns (uint256) {\\n    uint256 sharePrice = usdcToSharePrice(amount, tranche.principalDeposited);\\n    return scaleByPercentOwnership(tranche, sharePrice, slice);\\n  }\\n\\n  function scaleForSlice(\\n    ITranchedPool.PoolSlice memory slice,\\n    uint256 amount,\\n    uint256 totalDeployed\\n  ) public pure returns (uint256) {\\n    return scaleByFraction(amount, slice.principalDeployed, totalDeployed);\\n  }\\n\\n  // We need to create this struct so we don't run into a stack too deep error due to too many variables\\n  function getSliceInfo(\\n    ITranchedPool.PoolSlice memory slice,\\n    IV2CreditLine creditLine,\\n    uint256 totalDeployed,\\n    uint256 reserveFeePercent\\n  ) public view returns (ITranchedPool.SliceInfo memory) {\\n    (uint256 interestAccrued, uint256 principalAccrued) = getTotalInterestAndPrincipal(\\n      slice,\\n      creditLine,\\n      totalDeployed\\n    );\\n    return\\n      ITranchedPool.SliceInfo({\\n        reserveFeePercent: reserveFeePercent,\\n        interestAccrued: interestAccrued,\\n        principalAccrued: principalAccrued\\n      });\\n  }\\n\\n  function getTotalInterestAndPrincipal(\\n    ITranchedPool.PoolSlice memory slice,\\n    IV2CreditLine creditLine,\\n    uint256 totalDeployed\\n  ) public view returns (uint256 interestAccrued, uint256 principalAccrued) {\\n    principalAccrued = creditLine.principalOwed();\\n    // In addition to principal actually owed, we need to account for early principal payments\\n    // If the borrower pays back 5K early on a 10K loan, the actual principal accrued should be\\n    // 5K (balance- deployed) + 0 (principal owed)\\n    principalAccrued = totalDeployed.sub(creditLine.balance()).add(principalAccrued);\\n    // Now we need to scale that correctly for the slice we're interested in\\n    principalAccrued = scaleForSlice(slice, principalAccrued, totalDeployed);\\n    // Finally, we need to account for partial drawdowns. e.g. If 20K was deposited, and only 10K was drawn down,\\n    // Then principal accrued should start at 10K (total deposited - principal deployed), not 0. This is because\\n    // share price starts at 1, and is decremented by what was drawn down.\\n    uint256 totalDeposited = slice.seniorTranche.principalDeposited.add(slice.juniorTranche.principalDeposited);\\n    principalAccrued = totalDeposited.sub(slice.principalDeployed).add(principalAccrued);\\n    return (slice.totalInterestAccrued, principalAccrued);\\n  }\\n\\n  function scaleByFraction(\\n    uint256 amount,\\n    uint256 fraction,\\n    uint256 total\\n  ) public pure returns (uint256) {\\n    FixedPoint.Unsigned memory totalAsFixedPoint = FixedPoint.fromUnscaledUint(total);\\n    FixedPoint.Unsigned memory fractionAsFixedPoint = FixedPoint.fromUnscaledUint(fraction);\\n    return fractionAsFixedPoint.div(totalAsFixedPoint).mul(amount).div(FP_SCALING_FACTOR).rawValue;\\n  }\\n\\n  function applyToAllSeniorTranches(\\n    ITranchedPool.PoolSlice[] storage poolSlices,\\n    uint256 interest,\\n    uint256 principal,\\n    uint256 reserveFeePercent,\\n    uint256 totalDeployed,\\n    IV2CreditLine creditLine,\\n    uint256 juniorFeePercent\\n  ) public returns (ITranchedPool.ApplyResult memory) {\\n    ITranchedPool.ApplyResult memory seniorApplyResult;\\n    for (uint256 i = 0; i < poolSlices.length; i++) {\\n      ITranchedPool.SliceInfo memory sliceInfo = getSliceInfo(\\n        poolSlices[i],\\n        creditLine,\\n        totalDeployed,\\n        reserveFeePercent\\n      );\\n\\n      // Since slices cannot be created when the loan is late, all interest collected can be assumed to split\\n      // pro-rata across the slices. So we scale the interest and principal to the slice\\n      ITranchedPool.ApplyResult memory applyResult = applyToSeniorTranche(\\n        poolSlices[i],\\n        scaleForSlice(poolSlices[i], interest, totalDeployed),\\n        scaleForSlice(poolSlices[i], principal, totalDeployed),\\n        juniorFeePercent,\\n        sliceInfo\\n      );\\n      emitSharePriceUpdatedEvent(poolSlices[i].seniorTranche, applyResult);\\n      seniorApplyResult.interestRemaining = seniorApplyResult.interestRemaining.add(applyResult.interestRemaining);\\n      seniorApplyResult.principalRemaining = seniorApplyResult.principalRemaining.add(applyResult.principalRemaining);\\n      seniorApplyResult.reserveDeduction = seniorApplyResult.reserveDeduction.add(applyResult.reserveDeduction);\\n    }\\n    return seniorApplyResult;\\n  }\\n\\n  function applyToAllJuniorTranches(\\n    ITranchedPool.PoolSlice[] storage poolSlices,\\n    uint256 interest,\\n    uint256 principal,\\n    uint256 reserveFeePercent,\\n    uint256 totalDeployed,\\n    IV2CreditLine creditLine\\n  ) public returns (uint256 totalReserveAmount) {\\n    for (uint256 i = 0; i < poolSlices.length; i++) {\\n      ITranchedPool.SliceInfo memory sliceInfo = getSliceInfo(\\n        poolSlices[i],\\n        creditLine,\\n        totalDeployed,\\n        reserveFeePercent\\n      );\\n      // Any remaining interest and principal is then shared pro-rata with the junior slices\\n      ITranchedPool.ApplyResult memory applyResult = applyToJuniorTranche(\\n        poolSlices[i],\\n        scaleForSlice(poolSlices[i], interest, totalDeployed),\\n        scaleForSlice(poolSlices[i], principal, totalDeployed),\\n        sliceInfo\\n      );\\n      emitSharePriceUpdatedEvent(poolSlices[i].juniorTranche, applyResult);\\n      totalReserveAmount = totalReserveAmount.add(applyResult.reserveDeduction);\\n    }\\n    return totalReserveAmount;\\n  }\\n\\n  function emitSharePriceUpdatedEvent(\\n    ITranchedPool.TrancheInfo memory tranche,\\n    ITranchedPool.ApplyResult memory applyResult\\n  ) internal {\\n    emit SharePriceUpdated(\\n      address(this),\\n      tranche.id,\\n      tranche.principalSharePrice,\\n      int256(tranche.principalSharePrice.sub(applyResult.oldPrincipalSharePrice)),\\n      tranche.interestSharePrice,\\n      int256(tranche.interestSharePrice.sub(applyResult.oldInterestSharePrice))\\n    );\\n  }\\n\\n  function applyToSeniorTranche(\\n    ITranchedPool.PoolSlice storage slice,\\n    uint256 interestRemaining,\\n    uint256 principalRemaining,\\n    uint256 juniorFeePercent,\\n    ITranchedPool.SliceInfo memory sliceInfo\\n  ) public returns (ITranchedPool.ApplyResult memory) {\\n    // First determine the expected share price for the senior tranche. This is the gross amount the senior\\n    // tranche should receive.\\n    uint256 expectedInterestSharePrice = calculateExpectedSharePrice(\\n      slice.seniorTranche,\\n      sliceInfo.interestAccrued,\\n      slice\\n    );\\n    uint256 expectedPrincipalSharePrice = calculateExpectedSharePrice(\\n      slice.seniorTranche,\\n      sliceInfo.principalAccrued,\\n      slice\\n    );\\n\\n    // Deduct the junior fee and the protocol reserve\\n    uint256 desiredNetInterestSharePrice = scaleByFraction(\\n      expectedInterestSharePrice,\\n      ONE_HUNDRED.sub(juniorFeePercent.add(sliceInfo.reserveFeePercent)),\\n      ONE_HUNDRED\\n    );\\n    // Collect protocol fee interest received (we've subtracted this from the senior portion above)\\n    uint256 reserveDeduction = scaleByFraction(interestRemaining, sliceInfo.reserveFeePercent, ONE_HUNDRED);\\n    interestRemaining = interestRemaining.sub(reserveDeduction);\\n    uint256 oldInterestSharePrice = slice.seniorTranche.interestSharePrice;\\n    uint256 oldPrincipalSharePrice = slice.seniorTranche.principalSharePrice;\\n    // Apply the interest remaining so we get up to the netInterestSharePrice\\n    (interestRemaining, principalRemaining) = applyBySharePrice(\\n      slice.seniorTranche,\\n      interestRemaining,\\n      principalRemaining,\\n      desiredNetInterestSharePrice,\\n      expectedPrincipalSharePrice\\n    );\\n    return\\n      ITranchedPool.ApplyResult({\\n        interestRemaining: interestRemaining,\\n        principalRemaining: principalRemaining,\\n        reserveDeduction: reserveDeduction,\\n        oldInterestSharePrice: oldInterestSharePrice,\\n        oldPrincipalSharePrice: oldPrincipalSharePrice\\n      });\\n  }\\n\\n  function applyToJuniorTranche(\\n    ITranchedPool.PoolSlice storage slice,\\n    uint256 interestRemaining,\\n    uint256 principalRemaining,\\n    ITranchedPool.SliceInfo memory sliceInfo\\n  ) public returns (ITranchedPool.ApplyResult memory) {\\n    // Then fill up the junior tranche with all the interest remaining, upto the principal share price\\n    uint256 expectedInterestSharePrice = slice.juniorTranche.interestSharePrice.add(\\n      usdcToSharePrice(interestRemaining, slice.juniorTranche.principalDeposited)\\n    );\\n    uint256 expectedPrincipalSharePrice = calculateExpectedSharePrice(\\n      slice.juniorTranche,\\n      sliceInfo.principalAccrued,\\n      slice\\n    );\\n    uint256 oldInterestSharePrice = slice.juniorTranche.interestSharePrice;\\n    uint256 oldPrincipalSharePrice = slice.juniorTranche.principalSharePrice;\\n    (interestRemaining, principalRemaining) = applyBySharePrice(\\n      slice.juniorTranche,\\n      interestRemaining,\\n      principalRemaining,\\n      expectedInterestSharePrice,\\n      expectedPrincipalSharePrice\\n    );\\n\\n    // All remaining interest and principal is applied towards the junior tranche as interest\\n    interestRemaining = interestRemaining.add(principalRemaining);\\n    // Since any principal remaining is treated as interest (there is \\\"extra\\\" interest to be distributed)\\n    // we need to make sure to collect the protocol fee on the additional interest (we only deducted the\\n    // fee on the original interest portion)\\n    uint256 reserveDeduction = scaleByFraction(principalRemaining, sliceInfo.reserveFeePercent, ONE_HUNDRED);\\n    interestRemaining = interestRemaining.sub(reserveDeduction);\\n    principalRemaining = 0;\\n\\n    (interestRemaining, principalRemaining) = applyByAmount(\\n      slice.juniorTranche,\\n      interestRemaining.add(principalRemaining),\\n      0,\\n      interestRemaining.add(principalRemaining),\\n      0\\n    );\\n    return\\n      ITranchedPool.ApplyResult({\\n        interestRemaining: interestRemaining,\\n        principalRemaining: principalRemaining,\\n        reserveDeduction: reserveDeduction,\\n        oldInterestSharePrice: oldInterestSharePrice,\\n        oldPrincipalSharePrice: oldPrincipalSharePrice\\n      });\\n  }\\n\\n  function applyBySharePrice(\\n    ITranchedPool.TrancheInfo storage tranche,\\n    uint256 interestRemaining,\\n    uint256 principalRemaining,\\n    uint256 desiredInterestSharePrice,\\n    uint256 desiredPrincipalSharePrice\\n  ) public returns (uint256, uint256) {\\n    uint256 desiredInterestAmount = desiredAmountFromSharePrice(\\n      desiredInterestSharePrice,\\n      tranche.interestSharePrice,\\n      tranche.principalDeposited\\n    );\\n    uint256 desiredPrincipalAmount = desiredAmountFromSharePrice(\\n      desiredPrincipalSharePrice,\\n      tranche.principalSharePrice,\\n      tranche.principalDeposited\\n    );\\n    return applyByAmount(tranche, interestRemaining, principalRemaining, desiredInterestAmount, desiredPrincipalAmount);\\n  }\\n\\n  function applyByAmount(\\n    ITranchedPool.TrancheInfo storage tranche,\\n    uint256 interestRemaining,\\n    uint256 principalRemaining,\\n    uint256 desiredInterestAmount,\\n    uint256 desiredPrincipalAmount\\n  ) public returns (uint256, uint256) {\\n    uint256 totalShares = tranche.principalDeposited;\\n    uint256 newSharePrice;\\n\\n    (interestRemaining, newSharePrice) = applyToSharePrice(\\n      interestRemaining,\\n      tranche.interestSharePrice,\\n      desiredInterestAmount,\\n      totalShares\\n    );\\n    tranche.interestSharePrice = newSharePrice;\\n\\n    (principalRemaining, newSharePrice) = applyToSharePrice(\\n      principalRemaining,\\n      tranche.principalSharePrice,\\n      desiredPrincipalAmount,\\n      totalShares\\n    );\\n    tranche.principalSharePrice = newSharePrice;\\n    return (interestRemaining, principalRemaining);\\n  }\\n\\n  function migrateAccountingVariables(address originalClAddr, address newClAddr) public {\\n    IV2CreditLine originalCl = IV2CreditLine(originalClAddr);\\n    IV2CreditLine newCl = IV2CreditLine(newClAddr);\\n\\n    // Copy over all accounting variables\\n    newCl.setBalance(originalCl.balance());\\n    newCl.setLimit(originalCl.limit());\\n    newCl.setInterestOwed(originalCl.interestOwed());\\n    newCl.setPrincipalOwed(originalCl.principalOwed());\\n    newCl.setTermEndTime(originalCl.termEndTime());\\n    newCl.setNextDueTime(originalCl.nextDueTime());\\n    newCl.setInterestAccruedAsOf(originalCl.interestAccruedAsOf());\\n    newCl.setLastFullPaymentTime(originalCl.lastFullPaymentTime());\\n    newCl.setTotalInterestAccrued(originalCl.totalInterestAccrued());\\n  }\\n\\n  function closeCreditLine(address originalCl) public {\\n    // Close out old CL\\n    IV2CreditLine oldCreditLine = IV2CreditLine(originalCl);\\n    oldCreditLine.setBalance(0);\\n    oldCreditLine.setLimit(0);\\n    oldCreditLine.setMaxLimit(0);\\n  }\\n\\n  function desiredAmountFromSharePrice(\\n    uint256 desiredSharePrice,\\n    uint256 actualSharePrice,\\n    uint256 totalShares\\n  ) public pure returns (uint256) {\\n    // If the desired share price is lower, then ignore it, and leave it unchanged\\n    if (desiredSharePrice < actualSharePrice) {\\n      desiredSharePrice = actualSharePrice;\\n    }\\n    uint256 sharePriceDifference = desiredSharePrice.sub(actualSharePrice);\\n    return sharePriceToUsdc(sharePriceDifference, totalShares);\\n  }\\n\\n  function applyToSharePrice(\\n    uint256 amountRemaining,\\n    uint256 currentSharePrice,\\n    uint256 desiredAmount,\\n    uint256 totalShares\\n  ) public pure returns (uint256, uint256) {\\n    // If no money left to apply, or don't need any changes, return the original amounts\\n    if (amountRemaining == 0 || desiredAmount == 0) {\\n      return (amountRemaining, currentSharePrice);\\n    }\\n    if (amountRemaining < desiredAmount) {\\n      // We don't have enough money to adjust share price to the desired level. So just use whatever amount is left\\n      desiredAmount = amountRemaining;\\n    }\\n    uint256 sharePriceDifference = usdcToSharePrice(desiredAmount, totalShares);\\n    return (amountRemaining.sub(desiredAmount), currentSharePrice.add(sharePriceDifference));\\n  }\\n\\n  function scaleByPercentOwnership(\\n    ITranchedPool.TrancheInfo memory tranche,\\n    uint256 amount,\\n    ITranchedPool.PoolSlice memory slice\\n  ) public pure returns (uint256) {\\n    uint256 totalDeposited = slice.juniorTranche.principalDeposited.add(slice.seniorTranche.principalDeposited);\\n    return scaleByFraction(amount, tranche.principalDeposited, totalDeposited);\\n  }\\n}\\n\",\"keccak256\":\"0x8e94d9b2732c42369121ba6978db5f0e16e52274b4f6283a6b2f4851f9bd8251\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x612474610026600b82828239805160001a60731461001957fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106101415760003560e01c80638c48a764116100c2578063bfaa8cca11610086578063bfaa8cca146102e6578063cde88845146102ee578063cee38ee414610301578063d8eb673e14610314578063f7fc24b214610334578063ff0825bc1461034757610141565b80638c48a764146102605780638e3875b6146102805780639d82cfd2146102a0578063a59387cd146102b3578063af5f5753146102d357610141565b80635df6b2ed116101095780635df6b2ed146101e557806368dcfdc0146101f85780636dd0a9b51461020057806384810cb01461022057806385bd324d1461023357610141565b80630174b449146101465780630a9f9a141461016f57806321a0aa7d146101915780632e76cb89146101a457806330785368146101c5575b600080fd5b61015961015436600461222a565b610367565b60405161016691906122a7565b60405180910390f35b81801561017b57600080fd5b5061018f61018a366004611ed3565b61038e565b005b61015961019f36600461224b565b6104b1565b6101b76101b2366004612276565b6104e0565b6040516101669291906123f1565b8180156101d157600080fd5b506101596101e0366004611f27565b61053a565b6101b76101f3366004611fda565b610876565b6101596109d1565b81801561020c57600080fd5b506101b761021b3660046121d8565b6109dd565b61015961022e366004612064565b610a2f565b81801561023f57600080fd5b5061025361024e366004611f7b565b610a48565b604051610166919061237b565b81801561026c57600080fd5b506101b761027b3660046121d8565b610dc3565b61029361028e36600461201c565b610e11565b60405161016691906123b5565b6101596102ae366004612122565b610e4b565b8180156102bf57600080fd5b506102536102ce3660046120d9565b610e69565b6101596102e1366004612122565b6110e1565b610159611118565b6101596102fc36600461222a565b61111d565b61015961030f36600461224b565b611149565b81801561032057600080fd5b5061025361032f36600461209a565b6111a2565b6101b7610342366004612160565b611373565b81801561035357600080fd5b5061018f610362366004611eef565b6113dd565b6000610385670de0b6b3a764000061037f8585611b2b565b90611b6e565b90505b92915050565b604051637d8b34e560e11b815281906001600160a01b0382169063fb1669ca906103bd906000906004016122a7565b600060405180830381600087803b1580156103d757600080fd5b505af11580156103eb573d6000803e3d6000fd5b50506040516327ea6f2b60e01b81526001600160a01b03841692506327ea6f2b915061041c906000906004016122a7565b600060405180830381600087803b15801561043657600080fd5b505af115801561044a573d6000803e3d6000fd5b5050604051632fe2f3b960e21b81526001600160a01b038416925063bf8bcee4915061047b906000906004016122a7565b600060405180830381600087803b15801561049557600080fd5b505af11580156104a9573d6000803e3d6000fd5b505050505050565b6000828410156104bf578293505b60006104cb8585611bb0565b90506104d78184610367565b95945050505050565b6000808515806104ee575083155b156104fd575084905083610531565b83861015610509578593505b6000610515858561111d565b90506105218786611bb0565b61052b8783611bf2565b92509250505b94509492505050565b6000805b875481101561086b5761054f611d8e565b61061f89838154811061055e57fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b82015481525050858789610e11565b9050610629611daf565b6107ea8a848154811061063857fe5b90600052602060002090600c02016107158c868154811061065557fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508c8a610a2f565b6107e48d878154811061072457fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508c8b610a2f565b856111a2565b905061084f8a84815481106107fb57fe5b90600052602060002090600c02016005016040518060a00160405290816000820154815260200160018201548152602001600282015481526020016003820154815260200160048201548152505082611c17565b604081015161085f908590611bf2565b9350505060010161053e565b509695505050505050565b600080836001600160a01b031663193501146040518163ffffffff1660e01b815260040160206040518083038186803b1580156108b257600080fd5b505afa1580156108c6573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108ea9190612212565b90506109718161096b866001600160a01b031663b69ef8a86040518163ffffffff1660e01b815260040160206040518083038186803b15801561092c57600080fd5b505afa158015610940573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109649190612212565b8690611bb0565b90611bf2565b905061097e858285610a2f565b905060006109a5866020015160200151876000015160200151611bf290919063ffffffff16565b90506109c28261096b886060015184611bb090919063ffffffff16565b60409096015196945050505050565b670de0b6b3a764000081565b60008060008760010154905060006109fb888a6003015488856104e0565b60038b0181905560028b01549199509150610a1990889087856104e0565b60029a909a019990995550959795505050505050565b6000610a4083856060015184611149565b949350505050565b610a50611daf565b610a58611daf565b60005b8954811015610db657610a6c611d8e565b610b3c8b8381548110610a7b57fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b8201548152505087898b610e11565b9050610b46611daf565b610d088c8481548110610b5557fe5b90600052602060002090600c0201610c328e8681548110610b7257fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508e8c610a2f565b610d018f8781548110610c4157fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508e8d610a2f565b8986610e69565b9050610d6d8c8481548110610d1957fe5b90600052602060002090600c02016000016040518060a00160405290816000820154815260200160018201548152602001600282015481526020016003820154815260200160048201548152505082611c17565b80518451610d7a91611bf2565b845260208082015190850151610d8f91611bf2565b602085015260408082015190850151610da791611bf2565b60408501525050600101610a5b565b5098975050505050505050565b6000806000610ddb8589600301548a600101546104b1565b90506000610df2858a600201548b600101546104b1565b9050610e0189898985856109dd565b9350935050509550959350505050565b610e19611d8e565b600080610e27878787610876565b60408051606081018252878152602081019390935282015292505050949350505050565b600080610e5c84866020015161111d565b90506104d78582856110e1565b610e71611daf565b6040805160a08082018352885480835260018a0154602080850182905260028c015485870181905260038d0154606080880182905260048f01546080808a018290528c8601518b5161012081018d52808301998a52808b019890985260c088019590955260e08701939093526101008601529484528751958601885260058e0154865260068e01548684015260078e01548689015260088e01548686015260098e01549086015290820193909352600a8b015494810194909452600b8a015490840152600092610f42929190610e4b565b90506000611040886000016040518060a00160405290816000820154815260200160018201548152602001600282015481526020016003820154815260200160048201548152505085604001518a604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b82015481525050610e4b565b905060006110718361106a61106288600001518a611bf290919063ffffffff16565b606490611bb0565b6064611149565b905060006110858987600001516064611149565b90506110918982611bb0565b60038b015460028c0154919a50906110ac8c8c8c8789610dc3565b6040805160a0810182529283526020830191909152810193909352606083019190915260808201529998505050505050505050565b600080611107836000015160200151846020015160200151611bf290919063ffffffff16565b90506104d784866020015183611149565b606481565b600081156111405761113b8261037f85670de0b6b3a7640000611b2b565b610385565b50600092915050565b6000611153611dde565b61115c83611c83565b9050611166611dde565b61116f85611c83565b9050611197670de0b6b3a76400006111918861118b8587611cb1565b90611ce9565b90611d0a565b519695505050505050565b6111aa611daf565b60006111cb6111c086886005016001015461111d565b600888015490611bf2565b905060006112c9876005016040518060a001604052908160008201548152602001600182015481526020016002820154815260200160038201548152602001600482015481525050856040015189604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b82015481525050610e4b565b60088801546007890154919250906112e760058a0189898787610dc3565b90985096506112f68888611bf2565b9750600061130a8888600001516064611149565b90506113168982611bb0565b98506000975061134060058b0161132d8b8b611bf2565b60006113398d8d611bf2565b60006109dd565b6040805160a081018252928352602083019190915281019190915260608101929092526080820152979650505050505050565b600080600061138a85600201548560400151610367565b905060006113a086600301548660400151610367565b90506113b9856080015182611bb090919063ffffffff16565b93506113d2856060015183611bb090919063ffffffff16565b925050509250929050565b60008290506000829050806001600160a01b031663fb1669ca836001600160a01b031663b69ef8a86040518163ffffffff1660e01b815260040160206040518083038186803b15801561142f57600080fd5b505afa158015611443573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906114679190612212565b6040518263ffffffff1660e01b815260040161148391906122a7565b600060405180830381600087803b15801561149d57600080fd5b505af11580156114b1573d6000803e3d6000fd5b50505050806001600160a01b03166327ea6f2b836001600160a01b031663a4d66daf6040518163ffffffff1660e01b815260040160206040518083038186803b1580156114fd57600080fd5b505afa158015611511573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906115359190612212565b6040518263ffffffff1660e01b815260040161155191906122a7565b600060405180830381600087803b15801561156b57600080fd5b505af115801561157f573d6000803e3d6000fd5b50505050806001600160a01b03166396c8df37836001600160a01b03166321856b366040518163ffffffff1660e01b815260040160206040518083038186803b1580156115cb57600080fd5b505afa1580156115df573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116039190612212565b6040518263ffffffff1660e01b815260040161161f91906122a7565b600060405180830381600087803b15801561163957600080fd5b505af115801561164d573d6000803e3d6000fd5b50505050806001600160a01b031663b3b8a9c7836001600160a01b031663193501146040518163ffffffff1660e01b815260040160206040518083038186803b15801561169957600080fd5b505afa1580156116ad573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116d19190612212565b6040518263ffffffff1660e01b81526004016116ed91906122a7565b600060405180830381600087803b15801561170757600080fd5b505af115801561171b573d6000803e3d6000fd5b50505050806001600160a01b0316637ae14b09836001600160a01b03166364fb2d956040518163ffffffff1660e01b815260040160206040518083038186803b15801561176757600080fd5b505afa15801561177b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061179f9190612212565b6040518263ffffffff1660e01b81526004016117bb91906122a7565b600060405180830381600087803b1580156117d557600080fd5b505af11580156117e9573d6000803e3d6000fd5b50505050806001600160a01b03166326a40e82836001600160a01b031663d28459776040518163ffffffff1660e01b815260040160206040518083038186803b15801561183557600080fd5b505afa158015611849573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061186d9190612212565b6040518263ffffffff1660e01b815260040161188991906122a7565b600060405180830381600087803b1580156118a357600080fd5b505af11580156118b7573d6000803e3d6000fd5b50505050806001600160a01b031663a6b1ae0d836001600160a01b031663bbafcb406040518163ffffffff1660e01b815260040160206040518083038186803b15801561190357600080fd5b505afa158015611917573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061193b9190612212565b6040518263ffffffff1660e01b815260040161195791906122a7565b600060405180830381600087803b15801561197157600080fd5b505af1158015611985573d6000803e3d6000fd5b50505050806001600160a01b03166336d91494836001600160a01b031663ce78290d6040518163ffffffff1660e01b815260040160206040518083038186803b1580156119d157600080fd5b505afa1580156119e5573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611a099190612212565b6040518263ffffffff1660e01b8152600401611a2591906122a7565b600060405180830381600087803b158015611a3f57600080fd5b505af1158015611a53573d6000803e3d6000fd5b50505050806001600160a01b031663033669cf836001600160a01b0316631cd724ac6040518163ffffffff1660e01b815260040160206040518083038186803b158015611a9f57600080fd5b505afa158015611ab3573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611ad79190612212565b6040518263ffffffff1660e01b8152600401611af391906122a7565b600060405180830381600087803b158015611b0d57600080fd5b505af1158015611b21573d6000803e3d6000fd5b5050505050505050565b600082611b3a57506000610388565b82820282848281611b4757fe5b04146103855760405162461bcd60e51b8152600401611b659061233a565b60405180910390fd5b600061038583836040518060400160405280601a81526020017f536166654d6174683a206469766973696f6e206279207a65726f000000000000815250611d2b565b600061038583836040518060400160405280601e81526020017f536166654d6174683a207375627472616374696f6e206f766572666c6f770000815250611d62565b6000828201838110156103855760405162461bcd60e51b8152600401611b6590612303565b81516040830151608083015130917f42a55d7508b1c40b53524cf7cc2558b0f6bc7c4f262a3e929b65cd48bec2b68791611c52908290611bb0565b60608088015190870151611c67908290611bb0565b604051611c7794939291906123d6565b60405180910390a35050565b611c8b611dde565b604080516020810190915280611ca984670de0b6b3a7640000611b2b565b905292915050565b611cb9611dde565b6040805160208101909152825184518291611ce09161037f90670de0b6b3a7640000611b2b565b90529392505050565b611cf1611dde565b604080516020810190915283518190611ce09085611b2b565b611d12611dde565b604080516020810190915283518190611ce09085611b6e565b60008183611d4c5760405162461bcd60e51b8152600401611b6591906122b0565b506000838581611d5857fe5b0495945050505050565b60008184841115611d865760405162461bcd60e51b8152600401611b6591906122b0565b505050900390565b60405180606001604052806000815260200160008152602001600081525090565b6040518060a0016040528060008152602001600081526020016000815260200160008152602001600081525090565b6040518060200160405280600081525090565b60006101808284031215611e03578081fd5b611e0d60806123ff565b9050611e198383611e84565b8152611e288360a08401611e84565b60208201526101408201356040820152610160820135606082015292915050565b600060608284031215611e5a578081fd5b611e6460606123ff565b905081358152602082013560208201526040820135604082015292915050565b600060a08284031215611e95578081fd5b611e9f60a06123ff565b9050813581526020820135602082015260408201356040820152606082013560608201526080820135608082015292915050565b600060208284031215611ee4578081fd5b813561038581612426565b60008060408385031215611f01578081fd5b8235611f0c81612426565b91506020830135611f1c81612426565b809150509250929050565b60008060008060008060c08789031215611f3f578182fd5b863595506020870135945060408701359350606087013592506080870135915060a0870135611f6d81612426565b809150509295509295509295565b600080600080600080600060e0888a031215611f95578081fd5b873596506020880135955060408801359450606088013593506080880135925060a0880135611fc381612426565b8092505060c0880135905092959891949750929550565b60008060006101c08486031215611fef578283fd5b611ff98585611df1565b925061018084013561200a81612426565b929592945050506101a0919091013590565b6000806000806101e08587031215612032578384fd5b61203c8686611df1565b935061018085013561204d81612426565b93969395505050506101a0820135916101c0013590565b60008060006101c08486031215612079578081fd5b6120838585611df1565b9561018085013595506101a0909401359392505050565b60008060008060c085870312156120af578182fd5b8435935060208501359250604085013591506120ce8660608701611e49565b905092959194509250565b600080600080600060e086880312156120f0578283fd5b853594506020860135935060408601359250606086013591506121168760808801611e49565b90509295509295909350565b60008060006102408486031215612137578081fd5b6121418585611e84565b925060a084013591506121578560c08601611df1565b90509250925092565b60008082840360c0811215612173578283fd5b8335925060a0601f1982011215612188578182fd5b5061219360a06123ff565b60208401356121a181612426565b8082525060408401356020820152606084013560408201526080840135606082015260a08401356080820152809150509250929050565b600080600080600060a086880312156121ef578283fd5b505083359560208501359550604085013594606081013594506080013592509050565b600060208284031215612223578081fd5b5051919050565b6000806040838503121561223c578182fd5b50508035926020909101359150565b60008060006060848603121561225f578081fd5b505081359360208301359350604090920135919050565b6000806000806080858703121561228b578182fd5b5050823594602084013594506040840135936060013592509050565b90815260200190565b6000602080835283518082850152825b818110156122dc578581018301518582016040015282016122c0565b818111156122ed5783604083870101525b50601f01601f1916929092016040019392505050565b6020808252601b908201527f536166654d6174683a206164646974696f6e206f766572666c6f770000000000604082015260600190565b60208082526021908201527f536166654d6174683a206d756c7469706c69636174696f6e206f766572666c6f6040820152607760f81b606082015260800190565b600060a082019050825182526020830151602083015260408301516040830152606083015160608301526080830151608083015292915050565b81518152602080830151908201526040918201519181019190915260600190565b93845260208401929092526040830152606082015260800190565b918252602082015260400190565b60405181810167ffffffffffffffff8111828210171561241e57600080fd5b604052919050565b6001600160a01b038116811461243b57600080fd5b5056fea26469706673582212201e8f11b622618543f96d2ae542c01b297404f284ce26224e73a61069281f236e64736f6c634300060c0033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106101415760003560e01c80638c48a764116100c2578063bfaa8cca11610086578063bfaa8cca146102e6578063cde88845146102ee578063cee38ee414610301578063d8eb673e14610314578063f7fc24b214610334578063ff0825bc1461034757610141565b80638c48a764146102605780638e3875b6146102805780639d82cfd2146102a0578063a59387cd146102b3578063af5f5753146102d357610141565b80635df6b2ed116101095780635df6b2ed146101e557806368dcfdc0146101f85780636dd0a9b51461020057806384810cb01461022057806385bd324d1461023357610141565b80630174b449146101465780630a9f9a141461016f57806321a0aa7d146101915780632e76cb89146101a457806330785368146101c5575b600080fd5b61015961015436600461222a565b610367565b60405161016691906122a7565b60405180910390f35b81801561017b57600080fd5b5061018f61018a366004611ed3565b61038e565b005b61015961019f36600461224b565b6104b1565b6101b76101b2366004612276565b6104e0565b6040516101669291906123f1565b8180156101d157600080fd5b506101596101e0366004611f27565b61053a565b6101b76101f3366004611fda565b610876565b6101596109d1565b81801561020c57600080fd5b506101b761021b3660046121d8565b6109dd565b61015961022e366004612064565b610a2f565b81801561023f57600080fd5b5061025361024e366004611f7b565b610a48565b604051610166919061237b565b81801561026c57600080fd5b506101b761027b3660046121d8565b610dc3565b61029361028e36600461201c565b610e11565b60405161016691906123b5565b6101596102ae366004612122565b610e4b565b8180156102bf57600080fd5b506102536102ce3660046120d9565b610e69565b6101596102e1366004612122565b6110e1565b610159611118565b6101596102fc36600461222a565b61111d565b61015961030f36600461224b565b611149565b81801561032057600080fd5b5061025361032f36600461209a565b6111a2565b6101b7610342366004612160565b611373565b81801561035357600080fd5b5061018f610362366004611eef565b6113dd565b6000610385670de0b6b3a764000061037f8585611b2b565b90611b6e565b90505b92915050565b604051637d8b34e560e11b815281906001600160a01b0382169063fb1669ca906103bd906000906004016122a7565b600060405180830381600087803b1580156103d757600080fd5b505af11580156103eb573d6000803e3d6000fd5b50506040516327ea6f2b60e01b81526001600160a01b03841692506327ea6f2b915061041c906000906004016122a7565b600060405180830381600087803b15801561043657600080fd5b505af115801561044a573d6000803e3d6000fd5b5050604051632fe2f3b960e21b81526001600160a01b038416925063bf8bcee4915061047b906000906004016122a7565b600060405180830381600087803b15801561049557600080fd5b505af11580156104a9573d6000803e3d6000fd5b505050505050565b6000828410156104bf578293505b60006104cb8585611bb0565b90506104d78184610367565b95945050505050565b6000808515806104ee575083155b156104fd575084905083610531565b83861015610509578593505b6000610515858561111d565b90506105218786611bb0565b61052b8783611bf2565b92509250505b94509492505050565b6000805b875481101561086b5761054f611d8e565b61061f89838154811061055e57fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b82015481525050858789610e11565b9050610629611daf565b6107ea8a848154811061063857fe5b90600052602060002090600c02016107158c868154811061065557fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508c8a610a2f565b6107e48d878154811061072457fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508c8b610a2f565b856111a2565b905061084f8a84815481106107fb57fe5b90600052602060002090600c02016005016040518060a00160405290816000820154815260200160018201548152602001600282015481526020016003820154815260200160048201548152505082611c17565b604081015161085f908590611bf2565b9350505060010161053e565b509695505050505050565b600080836001600160a01b031663193501146040518163ffffffff1660e01b815260040160206040518083038186803b1580156108b257600080fd5b505afa1580156108c6573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906108ea9190612212565b90506109718161096b866001600160a01b031663b69ef8a86040518163ffffffff1660e01b815260040160206040518083038186803b15801561092c57600080fd5b505afa158015610940573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906109649190612212565b8690611bb0565b90611bf2565b905061097e858285610a2f565b905060006109a5866020015160200151876000015160200151611bf290919063ffffffff16565b90506109c28261096b886060015184611bb090919063ffffffff16565b60409096015196945050505050565b670de0b6b3a764000081565b60008060008760010154905060006109fb888a6003015488856104e0565b60038b0181905560028b01549199509150610a1990889087856104e0565b60029a909a019990995550959795505050505050565b6000610a4083856060015184611149565b949350505050565b610a50611daf565b610a58611daf565b60005b8954811015610db657610a6c611d8e565b610b3c8b8381548110610a7b57fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b8201548152505087898b610e11565b9050610b46611daf565b610d088c8481548110610b5557fe5b90600052602060002090600c0201610c328e8681548110610b7257fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508e8c610a2f565b610d018f8781548110610c4157fe5b90600052602060002090600c0201604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b820154815250508e8d610a2f565b8986610e69565b9050610d6d8c8481548110610d1957fe5b90600052602060002090600c02016000016040518060a00160405290816000820154815260200160018201548152602001600282015481526020016003820154815260200160048201548152505082611c17565b80518451610d7a91611bf2565b845260208082015190850151610d8f91611bf2565b602085015260408082015190850151610da791611bf2565b60408501525050600101610a5b565b5098975050505050505050565b6000806000610ddb8589600301548a600101546104b1565b90506000610df2858a600201548b600101546104b1565b9050610e0189898985856109dd565b9350935050509550959350505050565b610e19611d8e565b600080610e27878787610876565b60408051606081018252878152602081019390935282015292505050949350505050565b600080610e5c84866020015161111d565b90506104d78582856110e1565b610e71611daf565b6040805160a08082018352885480835260018a0154602080850182905260028c015485870181905260038d0154606080880182905260048f01546080808a018290528c8601518b5161012081018d52808301998a52808b019890985260c088019590955260e08701939093526101008601529484528751958601885260058e0154865260068e01548684015260078e01548689015260088e01548686015260098e01549086015290820193909352600a8b015494810194909452600b8a015490840152600092610f42929190610e4b565b90506000611040886000016040518060a00160405290816000820154815260200160018201548152602001600282015481526020016003820154815260200160048201548152505085604001518a604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b82015481525050610e4b565b905060006110718361106a61106288600001518a611bf290919063ffffffff16565b606490611bb0565b6064611149565b905060006110858987600001516064611149565b90506110918982611bb0565b60038b015460028c0154919a50906110ac8c8c8c8789610dc3565b6040805160a0810182529283526020830191909152810193909352606083019190915260808201529998505050505050505050565b600080611107836000015160200151846020015160200151611bf290919063ffffffff16565b90506104d784866020015183611149565b606481565b600081156111405761113b8261037f85670de0b6b3a7640000611b2b565b610385565b50600092915050565b6000611153611dde565b61115c83611c83565b9050611166611dde565b61116f85611c83565b9050611197670de0b6b3a76400006111918861118b8587611cb1565b90611ce9565b90611d0a565b519695505050505050565b6111aa611daf565b60006111cb6111c086886005016001015461111d565b600888015490611bf2565b905060006112c9876005016040518060a001604052908160008201548152602001600182015481526020016002820154815260200160038201548152602001600482015481525050856040015189604051806080016040529081600082016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600582016040518060a0016040529081600082015481526020016001820154815260200160028201548152602001600382015481526020016004820154815250508152602001600a8201548152602001600b82015481525050610e4b565b60088801546007890154919250906112e760058a0189898787610dc3565b90985096506112f68888611bf2565b9750600061130a8888600001516064611149565b90506113168982611bb0565b98506000975061134060058b0161132d8b8b611bf2565b60006113398d8d611bf2565b60006109dd565b6040805160a081018252928352602083019190915281019190915260608101929092526080820152979650505050505050565b600080600061138a85600201548560400151610367565b905060006113a086600301548660400151610367565b90506113b9856080015182611bb090919063ffffffff16565b93506113d2856060015183611bb090919063ffffffff16565b925050509250929050565b60008290506000829050806001600160a01b031663fb1669ca836001600160a01b031663b69ef8a86040518163ffffffff1660e01b815260040160206040518083038186803b15801561142f57600080fd5b505afa158015611443573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906114679190612212565b6040518263ffffffff1660e01b815260040161148391906122a7565b600060405180830381600087803b15801561149d57600080fd5b505af11580156114b1573d6000803e3d6000fd5b50505050806001600160a01b03166327ea6f2b836001600160a01b031663a4d66daf6040518163ffffffff1660e01b815260040160206040518083038186803b1580156114fd57600080fd5b505afa158015611511573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906115359190612212565b6040518263ffffffff1660e01b815260040161155191906122a7565b600060405180830381600087803b15801561156b57600080fd5b505af115801561157f573d6000803e3d6000fd5b50505050806001600160a01b03166396c8df37836001600160a01b03166321856b366040518163ffffffff1660e01b815260040160206040518083038186803b1580156115cb57600080fd5b505afa1580156115df573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116039190612212565b6040518263ffffffff1660e01b815260040161161f91906122a7565b600060405180830381600087803b15801561163957600080fd5b505af115801561164d573d6000803e3d6000fd5b50505050806001600160a01b031663b3b8a9c7836001600160a01b031663193501146040518163ffffffff1660e01b815260040160206040518083038186803b15801561169957600080fd5b505afa1580156116ad573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116d19190612212565b6040518263ffffffff1660e01b81526004016116ed91906122a7565b600060405180830381600087803b15801561170757600080fd5b505af115801561171b573d6000803e3d6000fd5b50505050806001600160a01b0316637ae14b09836001600160a01b03166364fb2d956040518163ffffffff1660e01b815260040160206040518083038186803b15801561176757600080fd5b505afa15801561177b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061179f9190612212565b6040518263ffffffff1660e01b81526004016117bb91906122a7565b600060405180830381600087803b1580156117d557600080fd5b505af11580156117e9573d6000803e3d6000fd5b50505050806001600160a01b03166326a40e82836001600160a01b031663d28459776040518163ffffffff1660e01b815260040160206040518083038186803b15801561183557600080fd5b505afa158015611849573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061186d9190612212565b6040518263ffffffff1660e01b815260040161188991906122a7565b600060405180830381600087803b1580156118a357600080fd5b505af11580156118b7573d6000803e3d6000fd5b50505050806001600160a01b031663a6b1ae0d836001600160a01b031663bbafcb406040518163ffffffff1660e01b815260040160206040518083038186803b15801561190357600080fd5b505afa158015611917573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061193b9190612212565b6040518263ffffffff1660e01b815260040161195791906122a7565b600060405180830381600087803b15801561197157600080fd5b505af1158015611985573d6000803e3d6000fd5b50505050806001600160a01b03166336d91494836001600160a01b031663ce78290d6040518163ffffffff1660e01b815260040160206040518083038186803b1580156119d157600080fd5b505afa1580156119e5573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611a099190612212565b6040518263ffffffff1660e01b8152600401611a2591906122a7565b600060405180830381600087803b158015611a3f57600080fd5b505af1158015611a53573d6000803e3d6000fd5b50505050806001600160a01b031663033669cf836001600160a01b0316631cd724ac6040518163ffffffff1660e01b815260040160206040518083038186803b158015611a9f57600080fd5b505afa158015611ab3573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611ad79190612212565b6040518263ffffffff1660e01b8152600401611af391906122a7565b600060405180830381600087803b158015611b0d57600080fd5b505af1158015611b21573d6000803e3d6000fd5b5050505050505050565b600082611b3a57506000610388565b82820282848281611b4757fe5b04146103855760405162461bcd60e51b8152600401611b659061233a565b60405180910390fd5b600061038583836040518060400160405280601a81526020017f536166654d6174683a206469766973696f6e206279207a65726f000000000000815250611d2b565b600061038583836040518060400160405280601e81526020017f536166654d6174683a207375627472616374696f6e206f766572666c6f770000815250611d62565b6000828201838110156103855760405162461bcd60e51b8152600401611b6590612303565b81516040830151608083015130917f42a55d7508b1c40b53524cf7cc2558b0f6bc7c4f262a3e929b65cd48bec2b68791611c52908290611bb0565b60608088015190870151611c67908290611bb0565b604051611c7794939291906123d6565b60405180910390a35050565b611c8b611dde565b604080516020810190915280611ca984670de0b6b3a7640000611b2b565b905292915050565b611cb9611dde565b6040805160208101909152825184518291611ce09161037f90670de0b6b3a7640000611b2b565b90529392505050565b611cf1611dde565b604080516020810190915283518190611ce09085611b2b565b611d12611dde565b604080516020810190915283518190611ce09085611b6e565b60008183611d4c5760405162461bcd60e51b8152600401611b6591906122b0565b506000838581611d5857fe5b0495945050505050565b60008184841115611d865760405162461bcd60e51b8152600401611b6591906122b0565b505050900390565b60405180606001604052806000815260200160008152602001600081525090565b6040518060a0016040528060008152602001600081526020016000815260200160008152602001600081525090565b6040518060200160405280600081525090565b60006101808284031215611e03578081fd5b611e0d60806123ff565b9050611e198383611e84565b8152611e288360a08401611e84565b60208201526101408201356040820152610160820135606082015292915050565b600060608284031215611e5a578081fd5b611e6460606123ff565b905081358152602082013560208201526040820135604082015292915050565b600060a08284031215611e95578081fd5b611e9f60a06123ff565b9050813581526020820135602082015260408201356040820152606082013560608201526080820135608082015292915050565b600060208284031215611ee4578081fd5b813561038581612426565b60008060408385031215611f01578081fd5b8235611f0c81612426565b91506020830135611f1c81612426565b809150509250929050565b60008060008060008060c08789031215611f3f578182fd5b863595506020870135945060408701359350606087013592506080870135915060a0870135611f6d81612426565b809150509295509295509295565b600080600080600080600060e0888a031215611f95578081fd5b873596506020880135955060408801359450606088013593506080880135925060a0880135611fc381612426565b8092505060c0880135905092959891949750929550565b60008060006101c08486031215611fef578283fd5b611ff98585611df1565b925061018084013561200a81612426565b929592945050506101a0919091013590565b6000806000806101e08587031215612032578384fd5b61203c8686611df1565b935061018085013561204d81612426565b93969395505050506101a0820135916101c0013590565b60008060006101c08486031215612079578081fd5b6120838585611df1565b9561018085013595506101a0909401359392505050565b60008060008060c085870312156120af578182fd5b8435935060208501359250604085013591506120ce8660608701611e49565b905092959194509250565b600080600080600060e086880312156120f0578283fd5b853594506020860135935060408601359250606086013591506121168760808801611e49565b90509295509295909350565b60008060006102408486031215612137578081fd5b6121418585611e84565b925060a084013591506121578560c08601611df1565b90509250925092565b60008082840360c0811215612173578283fd5b8335925060a0601f1982011215612188578182fd5b5061219360a06123ff565b60208401356121a181612426565b8082525060408401356020820152606084013560408201526080840135606082015260a08401356080820152809150509250929050565b600080600080600060a086880312156121ef578283fd5b505083359560208501359550604085013594606081013594506080013592509050565b600060208284031215612223578081fd5b5051919050565b6000806040838503121561223c578182fd5b50508035926020909101359150565b60008060006060848603121561225f578081fd5b505081359360208301359350604090920135919050565b6000806000806080858703121561228b578182fd5b5050823594602084013594506040840135936060013592509050565b90815260200190565b6000602080835283518082850152825b818110156122dc578581018301518582016040015282016122c0565b818111156122ed5783604083870101525b50601f01601f1916929092016040019392505050565b6020808252601b908201527f536166654d6174683a206164646974696f6e206f766572666c6f770000000000604082015260600190565b60208082526021908201527f536166654d6174683a206d756c7469706c69636174696f6e206f766572666c6f6040820152607760f81b606082015260800190565b600060a082019050825182526020830151602083015260408301516040830152606083015160608301526080830151608083015292915050565b81518152602080830151908201526040918201519181019190915260600190565b93845260208401929092526040830152606082015260800190565b918252602082015260400190565b60405181810167ffffffffffffffff8111828210171561241e57600080fd5b604052919050565b6001600160a01b038116811461243b57600080fd5b5056fea26469706673582212201e8f11b622618543f96d2ae542c01b297404f284ce26224e73a61069281f236e64736f6c634300060c0033",
+  "devdoc": {
+    "author": "Goldfinch",
+    "kind": "dev",
+    "methods": {},
+    "title": "TranchingLogic",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "notice": "Library for handling the payments waterfall",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
