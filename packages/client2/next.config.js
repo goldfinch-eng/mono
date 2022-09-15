@@ -82,7 +82,7 @@ const nextConfig = {
     return [
       {
         source: "/",
-        destination: "/earn",
+        destination: "/dashboard",
         permanent: false,
       },
     ];
