@@ -110,3 +110,12 @@ curl --request POST \
 }
 '
 ```
+
+### Potential issue after merging UID's
+Summary of the problem: The user's country code was null in our database, causing UID verification to fail
+Explanation:
+The country code is pulled from the persona ID verification ("Verifications" tab in the web app). The verification must have a "passed" status. In this case, the verification for the new inequity never passed due to the duplicate inquiry at the time when the user was attempting verification.
+Manually approving the inquiry does not change the verification status, so that's why it didn't solve the issue
+Solution:
+I manually unapproved + reapproved the old inquiry to re-trigger webhook with a "passed" verification. This correctly set country code for the user.
+I intend to redact the new inquiry since it is invalid and the user already has a valid inquiry.
