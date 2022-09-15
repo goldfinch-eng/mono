@@ -402,7 +402,7 @@ export default function DashboardPage() {
                             !data.viewer.gfiBalance.amount.isZero()
                               ? [
                                   {
-                                    name: "Wallet holdings",
+                                    name: "Wallet Holdings",
                                     percentage: computePercentage(
                                       gfiToUsdc(
                                         data.viewer.gfiBalance,

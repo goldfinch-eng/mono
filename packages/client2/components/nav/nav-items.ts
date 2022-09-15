@@ -4,8 +4,8 @@ const oldClientOrigin =
     : "https://app.goldfinch.finance";
 
 export const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard" },
   { label: "Earn", href: "/earn" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Borrow", href: `${oldClientOrigin}/borrow` },
   { label: "GFI", href: `/gfi` },
   { label: "Stake", href: `/stake` },

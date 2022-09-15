@@ -6,8 +6,8 @@ import closeIcon from "../images/x.svg"
 import menuIcon from "../images/menu.svg"
 
 export const NAV_ITEMS = [
-  {label: "Dashboard", href: "https://beta.app.goldfinch.finance/dashboard"},
   {label: "Earn", href: "https://beta.app.goldfinch.finance/earn"},
+  {label: "Dashboard", href: "https://beta.app.goldfinch.finance/dashboard"},
   {label: "Borrow", href: "/borrow"},
   {label: "GFI", href: "https://beta.app.goldfinch.finance/gfi"},
   {label: "Stake", href: "https://beta.app.goldfinch.finance/stake"},
