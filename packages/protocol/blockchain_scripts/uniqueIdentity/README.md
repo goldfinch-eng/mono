@@ -66,6 +66,7 @@ Persona (which we haven't deleted).
 
 
 #### How to merge Persona IDs
+If the user's inquiries are being declined because they have successful inquiries from a different persona account, we have to merge the old account into their new one.
 
 1) Update "old/expired" account reference id to null
 https://docs.withpersona.com/reference/update-an-account
