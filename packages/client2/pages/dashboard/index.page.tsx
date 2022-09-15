@@ -93,6 +93,8 @@ gql`
     ) {
       id
       principalAmount
+      interestRedeemable
+      interestRedeemed
       rewardsClaimable
       stakingRewardsClaimable
       tranchedPool {
@@ -169,7 +171,9 @@ export default function DashboardPage() {
     }
     const borrowerPoolTotal = {
       token: SupportedCrypto.Usdc,
-      amount: sum("principalAmount", data.tranchedPoolTokens),
+      amount: sum("principalAmount", data.tranchedPoolTokens)
+        .add(sum("interestRedeemable", data.tranchedPoolTokens))
+        .add(sum("interestRedeemed", data.tranchedPoolTokens)),
     };
 
     const gfiTotal = data.viewer.gfiBalance
@@ -352,13 +356,17 @@ export default function DashboardPage() {
                           holdings={data.tranchedPoolTokens.map((token) => ({
                             name: token.tranchedPool.name,
                             percentage: computePercentage(
-                              token.principalAmount,
+                              token.principalAmount
+                                .add(token.interestRedeemable)
+                                .add(token.interestRedeemed),
                               totalUsdc.amount
                             ),
                             quantity: BigNumber.from(1),
                             usdcValue: {
                               token: SupportedCrypto.Usdc,
-                              amount: token.principalAmount,
+                              amount: token.principalAmount
+                                .add(token.interestRedeemable)
+                                .add(token.interestRedeemed),
                             },
                             url: `/pools/${token.tranchedPool.id}`,
                           }))}
