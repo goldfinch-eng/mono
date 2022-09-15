@@ -24,6 +24,7 @@ import {
   useDashboardPageQuery,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
+import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
 import {
@@ -292,6 +293,11 @@ export default function DashboardPage() {
       {!account && !loading ? (
         <div className="text-lg font-medium text-clay-500">
           You must connect your wallet to view your dashboard
+          <div className="mt-3">
+            <Button size="xl" onClick={openWalletModal}>
+              Connect Wallet
+            </Button>
+          </div>
         </div>
       ) : error ? (
         <div className="text-clay-500">Error: {error.message}</div>
