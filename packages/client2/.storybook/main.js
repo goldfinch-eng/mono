@@ -56,6 +56,11 @@ module.exports = {
       ],
     });
 
+    // Mocks the Next.js <Image /> component for Storybook
+    config.resolve.alias["next/image"] = require.resolve(
+      "./__mocks__/next-image.js"
+    );
+
     return config;
   },
 };

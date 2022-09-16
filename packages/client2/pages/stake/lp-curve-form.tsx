@@ -90,7 +90,10 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
   };
 
   const handleMax = async () => {
-    setValue("amount", formatCrypto(balance, { includeSymbol: false }));
+    setValue(
+      "amount",
+      formatCrypto(balance, { includeSymbol: false, useMaximumPrecision: true })
+    );
   };
 
   const validateMax = async (value: string) => {
@@ -203,7 +206,7 @@ export function LpCurveForm({ balance, type, onComplete }: LpCurveFormProps) {
             name="amount"
             label="Amount"
             hideLabel
-            mask={`amount ${balance.token}`}
+            unit={balance.token}
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
             onMaxClick={handleMax}
