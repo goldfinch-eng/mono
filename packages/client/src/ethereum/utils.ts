@@ -31,10 +31,13 @@ const ONE_QUADRILLION_USDC = "1000000000000000000000"
 const MAINNET = "mainnet"
 const ROPSTEN = "ropsten"
 export const RINKEBY = "rinkeby"
+export const AURORA = "aurora"
 const LOCAL = "localhost"
 const MAINNET_LAUNCH_BLOCK = "11370658"
+const AURORA_LAUNCH_BLOCK = "100329406"
 const USDC_ADDRESSES = {
   [ROPSTEN]: "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
+  [AURORA]: "0x891342BA3e1092FCeC117090f3C4D607263661Ea",
   [MAINNET]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
 }
 
@@ -66,20 +69,23 @@ const ONE_INCH_ADDRESSES = {
 const mapNetworkToID: Record<string, string> = {
   main: MAINNET,
   ropsten: ROPSTEN,
-  private: "localhost",
+  private: AURORA,
   rinkeby: RINKEBY,
+  aurora: AURORA,
 }
 
 const chainIdToNetworkID = {
   1: MAINNET,
   4: RINKEBY,
   31337: "localhost",
+  1313161555: "aurora",
 }
 
 const SUPPORTED_NETWORKS: Record<string, boolean> = {
   [MAINNET]: true,
   [LOCAL]: true,
   [RINKEBY]: true,
+  [AURORA]: true,
 }
 
 enum SupportedChainId {
@@ -87,6 +93,7 @@ enum SupportedChainId {
   ROPSTEN = 3,
   LOCAL = 31337,
   MURMURATION = 31337,
+  AURORA = 1313161555,
 }
 
 const MURMURATION_RPC_URL = "https://murmuration.goldfinch.finance/_chain"
@@ -255,7 +262,7 @@ function getFromBlock(chain: string): string {
   if (chain === MAINNET) {
     return MAINNET_LAUNCH_BLOCK
   } else {
-    return "earliest"
+    return AURORA_LAUNCH_BLOCK
   }
 }
 

@@ -69,7 +69,7 @@
     "lint:fix": "eslint . --fix && prettier . --write",
     "pre-commit": "lint-staged",
     "tsc": "tsc",
-    "gen-graphql-types": "npx apollo client:codegen ./src/graphql/types.ts --endpoint=https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch --target=typescript --outputFlat --tagName=gql --includes=./src/graphql/*.ts"
+    "gen-graphql-types": "npx apollo client:codegen ./src/graphql/types.ts --endpoint=https://api.thegraph.com/subgraphs/name/ctindogaru/free-artists --target=typescript --outputFlat --tagName=gql --includes=./src/graphql/*.ts"
   },
   "lint-staged": {
     "*.(js(x)?|ts(x)?)": [

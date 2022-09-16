@@ -309,6 +309,7 @@ export async function switchNetworkIfRequired(networkConfig: NetworkConfig): Pro
   } else if (process.env.REACT_APP_MURMURATION === "yes" || process.env.NODE_ENV === "development") {
     idealNetworkId = SupportedChainId.LOCAL
   }
+  idealNetworkId = SupportedChainId.AURORA
 
   if (idealNetworkId && currentNetwork !== idealNetworkId) {
     await switchToNetwork(web3.userWallet.currentProvider as AbstractProvider, idealNetworkId)

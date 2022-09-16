@@ -35,7 +35,7 @@ const getProviderOptions = (): {infuraId?: string; rpc?: {[chainId: number]: str
   // To test on your local network, disable the infuraID to activate this rpc
   // configuration, we recommend tunneling (like ngrok) so that way your
   // local rpc server is visible to walletconnect bridge server.
-  return {rpc: {31337: "http://localhost:8545/"}}
+  return {rpc: {1313161555: "https://testnet.aurora.dev/"}}
 }
 
 const providerOptions = {

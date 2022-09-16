@@ -5,6 +5,7 @@ import {isProductionAndPrivateNetwork} from "../utils"
 const API_URLS = {
   mainnet: "https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch",
   localhost: "http://localhost:8000/subgraphs/name/goldfinch-subgraph",
+  aurora: "https://api.thegraph.com/subgraphs/name/ctindogaru/free-artists",
 }
 
 const getApolloClient = (network: NetworkConfig | undefined): ApolloClient<NormalizedCacheObject> => {
