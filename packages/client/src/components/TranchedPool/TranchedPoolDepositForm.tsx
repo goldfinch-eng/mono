@@ -8,7 +8,7 @@ import {KnownGoldfinchClient} from "../../hooks/useGoldfinchClient"
 import useNonNullContext from "../../hooks/useNonNullContext"
 import useSendFromUser from "../../hooks/useSendFromUser"
 import {KnownSession, useSignIn} from "../../hooks/useSignIn"
-import {SUPPLY_TX_TYPE} from "../../types/transactions"
+import {SUPPLY_TX_TYPE, USDC_APPROVAL_TX_TYPE} from "../../types/transactions"
 import {assertError, displayDollars} from "../../utils"
 import LoadingButton from "../loadingButton"
 import TransactionForm from "../transactionForm"
@@ -55,22 +55,22 @@ export function TranchedPoolDepositForm({
       value: new BigNumber(depositAmount),
       spender: tranchedPool.address,
     })
-    return sendFromUser(
-      tranchedPool.contract.userWallet.methods.depositWithPermit(
-        TRANCHES.Junior,
-        signatureData.value,
-        signatureData.deadline,
-        signatureData.v,
-        signatureData.r,
-        signatureData.s
-      ),
+    sendFromUser(
+      usdc.contract.userWallet.methods.approve(tranchedPool.address, signatureData.value),
       {
-        type: SUPPLY_TX_TYPE,
+        type: USDC_APPROVAL_TX_TYPE,
         data: {
           amount: transactionAmount,
         },
-      }
-    ).then(actionComplete)
+      },
+      {rejectOnError: true}
+    )
+    return sendFromUser(tranchedPool.contract.userWallet.methods.deposit(TRANCHES.Junior, signatureData.value), {
+      type: SUPPLY_TX_TYPE,
+      data: {
+        amount: transactionAmount,
+      },
+    }).then(actionComplete)
   }
 
   function renderForm({formMethods}) {
