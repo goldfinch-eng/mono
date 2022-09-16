@@ -109,21 +109,21 @@ export class ContractDeployer {
     const newOptions = {...options}
 
     // If gasPrice is specified, then the intent was to run a pre-EIP-1559 tx
-    if (!options.gasPrice) {
-      const feeData = await ethers.provider.getFeeData()
-      if (!feeData.maxPriorityFeePerGas) {
-        console.warn("maxPriorityFeePerGas from ethers was undefined. Defaulting to 1 gwei...")
-        feeData.maxPriorityFeePerGas = ethers.utils.parseUnits("1", "gwei")
-      }
-      assertNonNullable(feeData.maxFeePerGas, "Error fetching fee data (maxFeePerGas)")
-      assertNonNullable(feeData.maxPriorityFeePerGas, "Error fetching fee data (maxPriorityFeePerGas)")
-      if (!newOptions.maxFeePerGas) {
-        newOptions.maxFeePerGas = feeData.maxFeePerGas
-      }
-      if (!newOptions.maxPriorityFeePerGas) {
-        newOptions.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
-      }
-    }
+    // if (!options.gasPrice) {
+    //   const feeData = await ethers.provider.getFeeData()
+    //   if (!feeData.maxPriorityFeePerGas) {
+    //     console.warn("maxPriorityFeePerGas from ethers was undefined. Defaulting to 1 gwei...")
+    //     feeData.maxPriorityFeePerGas = ethers.utils.parseUnits("1", "gwei")
+    //   }
+    //   assertNonNullable(feeData.maxFeePerGas, "Error fetching fee data (maxFeePerGas)")
+    //   assertNonNullable(feeData.maxPriorityFeePerGas, "Error fetching fee data (maxPriorityFeePerGas)")
+    //   if (!newOptions.maxFeePerGas) {
+    //     newOptions.maxFeePerGas = feeData.maxFeePerGas
+    //   }
+    //   if (!newOptions.maxPriorityFeePerGas) {
+    //     newOptions.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
+    //   }
+    // }
 
     return newOptions
   }

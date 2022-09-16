@@ -27,7 +27,7 @@ if (process.env.HARDHAT_FORK) {
 }
 
 export default {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "aurora",
   networks: {
     hardhat: {
       mining: {
