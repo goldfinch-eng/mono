@@ -1,9 +1,9 @@
 {
-  "name": "payload-starter-typescript",
-  "description": "Blank template - no collections",
+  "name": "@goldfinch-eng/cms",
+  "description": "Goldfinch Payload CMS",
+  "private": true,
   "version": "1.0.0",
   "main": "dist/server.js",
-  "license": "MIT",
   "scripts": {
     "predev": "npm run generate:types && npm run generate:graphQLSchema",
     "dev": "cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts nodemon",
@@ -13,7 +13,11 @@
     "serve": "cross-env PAYLOAD_CONFIG_PATH=dist/payload.config.js NODE_ENV=production node dist/server.js",
     "copyfiles": "copyfiles -u 1 \"src/**/*.{html,css,scss,ttf,woff,woff2,eot,svg,jpg,png}\" dist/",
     "generate:types": "cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts payload generate:types",
-    "generate:graphQLSchema": "PAYLOAD_CONFIG_PATH=src/payload.config.ts payload generate:graphQLSchema"
+    "generate:graphQLSchema": "PAYLOAD_CONFIG_PATH=src/payload.config.ts payload generate:graphQLSchema",
+    "db:start": "docker compose up -d",
+    "db:stop": "docker compose stop",
+    "db:destroy": "docker compose down",
+    "start": "npm run db:start && npm run dev"
   },
   "dependencies": {
     "cors": "^2.8.5",
