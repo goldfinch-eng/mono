@@ -622,6 +622,7 @@ type CMSBorrower {
   updatedAt: DateTime!
   name: String!
   logo(where: CMSBorrower_Logo_where): CMSMedia
+  subheading: String
   bio: String
   history: String
   market: String
@@ -2333,6 +2334,7 @@ type CMSBorrowers {
 input CMSBorrower_where {
   name: CMSBorrower_name_operator
   logo: CMSBorrower_logo_operator
+  subheading: CMSBorrower_subheading_operator
   bio: CMSBorrower_bio_operator
   history: CMSBorrower_history_operator
   market: CMSBorrower_market_operator
@@ -2376,6 +2378,14 @@ input CMSBorrower_name_operator {
 input CMSBorrower_logo_operator {
   equals: String
   not_equals: String
+  exists: Boolean
+}
+
+input CMSBorrower_subheading_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
   exists: Boolean
 }
 
@@ -2619,6 +2629,7 @@ input CMSBorrower_updatedAt_operator {
 input CMSBorrower_where_or {
   name: CMSBorrower_name_operator
   logo: CMSBorrower_logo_operator
+  subheading: CMSBorrower_subheading_operator
   bio: CMSBorrower_bio_operator
   history: CMSBorrower_history_operator
   market: CMSBorrower_market_operator
@@ -2653,6 +2664,7 @@ input CMSBorrower_where_or {
 input CMSBorrower_where_and {
   name: CMSBorrower_name_operator
   logo: CMSBorrower_logo_operator
+  subheading: CMSBorrower_subheading_operator
   bio: CMSBorrower_bio_operator
   history: CMSBorrower_history_operator
   market: CMSBorrower_market_operator
@@ -3952,6 +3964,7 @@ type CMSBorrowerAccess {
 type CMSBorrowerFields {
   name: CMSBorrowerFields_name
   logo: CMSBorrowerFields_logo
+  subheading: CMSBorrowerFields_subheading
   bio: CMSBorrowerFields_bio
   history: CMSBorrowerFields_history
   market: CMSBorrowerFields_market
@@ -4013,6 +4026,29 @@ type CMSBorrowerFields_logo_Update {
 }
 
 type CMSBorrowerFields_logo_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_subheading {
+  create: CMSBorrowerFields_subheading_Create
+  read: CMSBorrowerFields_subheading_Read
+  update: CMSBorrowerFields_subheading_Update
+  delete: CMSBorrowerFields_subheading_Delete
+}
+
+type CMSBorrowerFields_subheading_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_subheading_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_subheading_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_subheading_Delete {
   permission: Boolean!
 }
 
@@ -5610,6 +5646,7 @@ input mutationCMSMediaUpdate_Sizes_portraitInput {
 input mutationCMSBorrowerInput {
   name: String!
   logo: String
+  subheading: String
   bio: String
   history: String
   market: String
@@ -5675,6 +5712,7 @@ input mutationCMSBorrower_ContactInfoInput {
 input mutationCMSBorrowerUpdateInput {
   name: String
   logo: String
+  subheading: String
   bio: String
   history: String
   market: String

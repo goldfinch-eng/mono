@@ -78,6 +78,7 @@ export interface CMSBorrower {
   id: string;
   name: string;
   logo?: string | CMSMedia;
+  subheading?: string;
   bio?: string;
   history?: string;
   market?: string;
