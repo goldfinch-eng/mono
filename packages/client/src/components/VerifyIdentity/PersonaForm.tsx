@@ -6,6 +6,7 @@ export default function PersonaForm({entityType, onEvent, network, address, form
   const PERSONA_CONFIG = {
     mainnet: {templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "production"},
     localhost: {templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox"},
+    aurora: {templateId: "tmpl_vD1HECndpPFNeYHaaPQWjd6H", environment: "sandbox"},
   }
 
   function verifyOnPersona(data, e) {

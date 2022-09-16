@@ -73,7 +73,7 @@ const _getBlockchain = (origin: string): BaseProvider => {
   const network = typeof blockchain === "number" ? getNetwork(blockchain) : blockchain
   // If we're using urls for the network (hardhat or murmuration) use the default provider
   if (typeof network === "string" && network.match(/^(ws|http)s?:/i)) {
-    return ethers.getDefaultProvider(network)
+    return new ethers.providers.WebSocketProvider("wss://testnet.aurora.dev")
   } else {
     return new ethers.providers.InfuraProvider(network, INFURA_PROJECT_ID)
   }
