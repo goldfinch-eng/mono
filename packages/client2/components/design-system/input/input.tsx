@@ -79,12 +79,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 ) {
   const formContext = useFormContext();
   const _errorMessage: InputProps["errorMessage"] =
-    errorMessage ?? formContext.formState.errors[name]?.message;
+    errorMessage ?? formContext?.formState.errors[name]?.message;
   const _errorSeverity: InputProps["errorSeverity"] = !_errorMessage
     ? undefined
     : errorSeverity
     ? errorSeverity
-    : formContext.formState.errors[name]?.type === "warn"
+    : formContext?.formState.errors[name]?.type === "warn"
     ? "warn"
     : "error";
 

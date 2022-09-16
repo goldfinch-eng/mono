@@ -9,10 +9,12 @@ import { formatCrypto } from "@/lib/format";
 import {
   CryptoAmount,
   StakedPositionType,
+  SupportedCrypto,
   UnstakeFormPositionFieldsFragment,
 } from "@/lib/graphql/generated";
 import { getOptimalPositionsToUnstake } from "@/lib/pools";
 import { toastTransaction } from "@/lib/toast";
+import { assertUnreachable } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
 export const UNSTAKE_FORM_POSITION_FIELDS = gql`
@@ -80,8 +82,11 @@ export function UnstakeForm({
     }
   };
 
-  const handleMax = async () => {
-    setValue("amount", formatCrypto(max, { includeSymbol: false }));
+  const handleMax = () => {
+    setValue(
+      "amount",
+      formatCrypto(max, { includeSymbol: false, useMaximumPrecision: true })
+    );
   };
 
   const validateMax = async (value: string) => {
@@ -109,9 +114,13 @@ export function UnstakeForm({
             name="amount"
             label="Unstake amount"
             hideLabel
-            mask={`amount ${
-              positionType === StakedPositionType.Fidu ? "FIDU" : "FIDU-USDC-F"
-            }`}
+            unit={
+              positionType === StakedPositionType.Fidu
+                ? SupportedCrypto.Fidu
+                : positionType === StakedPositionType.CurveLp
+                ? SupportedCrypto.CurveLp
+                : assertUnreachable(positionType)
+            }
             rules={{ required: "Required", validate: validateMax }}
             textSize="xl"
             onMaxClick={handleMax}
