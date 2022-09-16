@@ -8,7 +8,7 @@ interface BreadcrumbProps {
   /**
    * Optional image to show beside the breadcrumb: URL, PNG string, or Static import
    */
-  image?: string;
+  image?: string | null;
 
   /**
    * The title of the breadcrumb

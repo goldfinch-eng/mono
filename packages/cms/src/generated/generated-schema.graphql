@@ -1,0 +1,5795 @@
+type Query {
+  CMSUser(id: String!, draft: Boolean): CMSUser
+  CMSUsers(where: CMSUser_where, draft: Boolean, page: Int, limit: Int, sort: String): CMSUsers
+  meCMSUser: cms_usersMe
+  initializedCMSUser: Boolean
+  CMSMedia(id: String!, draft: Boolean): CMSMedia
+  allCMSMedia(where: CMSMedia_where, draft: Boolean, page: Int, limit: Int, sort: String): allCMSMedia
+  CMSBorrower(id: String!, draft: Boolean): CMSBorrower
+  CMSBorrowers(where: CMSBorrower_where, draft: Boolean, page: Int, limit: Int, sort: String): CMSBorrowers
+  CMSDeal(id: String!, draft: Boolean): CMSDeal
+  CMSDeals(where: CMSDeal_where, draft: Boolean, page: Int, limit: Int, sort: String): CMSDeals
+  Preference(key: String): Preference
+  Access: Access
+}
+
+type CMSUser {
+  id: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  email: EmailAddress
+  resetPasswordToken: String
+  resetPasswordExpiration: DateTime
+  loginAttempts: Float
+  lockUntil: DateTime
+  password: String!
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.
+"""
+scalar DateTime
+
+"""
+A field whose value conforms to the standard internet email address format as specified in RFC822: https://www.w3.org/Protocols/rfc822/.
+"""
+scalar EmailAddress @specifiedBy(url: "https://www.w3.org/Protocols/rfc822/")
+
+type CMSUsers {
+  docs: [CMSUser]
+  totalDocs: Int
+  offset: Int
+  limit: Int
+  totalPages: Int
+  page: Int
+  pagingCounter: Int
+  hasPrevPage: Boolean
+  hasNextPage: Boolean
+  prevPage: Boolean
+  nextPage: Boolean
+}
+
+input CMSUser_where {
+  email: CMSUser_email_operator
+  id: CMSUser_id_operator
+  createdAt: CMSUser_createdAt_operator
+  updatedAt: CMSUser_updatedAt_operator
+  OR: [CMSUser_where_or]
+  AND: [CMSUser_where_and]
+}
+
+input CMSUser_email_operator {
+  equals: EmailAddress
+  not_equals: EmailAddress
+  like: EmailAddress
+  contains: EmailAddress
+  exists: Boolean
+}
+
+input CMSUser_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+input CMSUser_createdAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSUser_updatedAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSUser_where_or {
+  email: CMSUser_email_operator
+  id: CMSUser_id_operator
+  createdAt: CMSUser_createdAt_operator
+  updatedAt: CMSUser_updatedAt_operator
+}
+
+input CMSUser_where_and {
+  email: CMSUser_email_operator
+  id: CMSUser_id_operator
+  createdAt: CMSUser_createdAt_operator
+  updatedAt: CMSUser_updatedAt_operator
+}
+
+type cms_usersMe {
+  token: String
+  user: CMSUser
+  exp: Int
+  collection: String
+}
+
+type CMSMedia {
+  id: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  alt: String
+  url: String
+  filename: String
+  mimeType: String
+  filesize: Float
+  width: Float
+  height: Float
+  sizes: CMSMedia_Sizes
+}
+
+type CMSMedia_Sizes {
+  thumbnail: CMSMedia_Sizes_thumbnail
+  medium: CMSMedia_Sizes_medium
+  large: CMSMedia_Sizes_large
+  portrait: CMSMedia_Sizes_portrait
+}
+
+type CMSMedia_Sizes_thumbnail {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+type CMSMedia_Sizes_medium {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+type CMSMedia_Sizes_large {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+type CMSMedia_Sizes_portrait {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+type allCMSMedia {
+  docs: [CMSMedia]
+  totalDocs: Int
+  offset: Int
+  limit: Int
+  totalPages: Int
+  page: Int
+  pagingCounter: Int
+  hasPrevPage: Boolean
+  hasNextPage: Boolean
+  prevPage: Boolean
+  nextPage: Boolean
+}
+
+input CMSMedia_where {
+  alt: CMSMedia_alt_operator
+  url: CMSMedia_url_operator
+  filename: CMSMedia_filename_operator
+  mimeType: CMSMedia_mimeType_operator
+  filesize: CMSMedia_filesize_operator
+  width: CMSMedia_width_operator
+  height: CMSMedia_height_operator
+  sizes__thumbnail__url: CMSMedia_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSMedia_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSMedia_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSMedia_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSMedia_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSMedia_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSMedia_sizes__medium__url_operator
+  sizes__medium__width: CMSMedia_sizes__medium__width_operator
+  sizes__medium__height: CMSMedia_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSMedia_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSMedia_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSMedia_sizes__medium__filename_operator
+  sizes__large__url: CMSMedia_sizes__large__url_operator
+  sizes__large__width: CMSMedia_sizes__large__width_operator
+  sizes__large__height: CMSMedia_sizes__large__height_operator
+  sizes__large__mimeType: CMSMedia_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSMedia_sizes__large__filesize_operator
+  sizes__large__filename: CMSMedia_sizes__large__filename_operator
+  sizes__portrait__url: CMSMedia_sizes__portrait__url_operator
+  sizes__portrait__width: CMSMedia_sizes__portrait__width_operator
+  sizes__portrait__height: CMSMedia_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSMedia_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSMedia_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSMedia_sizes__portrait__filename_operator
+  id: CMSMedia_id_operator
+  createdAt: CMSMedia_createdAt_operator
+  updatedAt: CMSMedia_updatedAt_operator
+  OR: [CMSMedia_where_or]
+  AND: [CMSMedia_where_and]
+}
+
+input CMSMedia_alt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__thumbnail__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__thumbnail__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__thumbnail__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__thumbnail__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__thumbnail__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__thumbnail__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__medium__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__medium__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__medium__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__medium__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__medium__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__medium__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__large__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__large__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__large__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__large__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__large__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__large__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__portrait__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__portrait__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__portrait__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__portrait__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_sizes__portrait__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSMedia_sizes__portrait__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSMedia_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input CMSMedia_createdAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSMedia_updatedAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSMedia_where_or {
+  alt: CMSMedia_alt_operator
+  url: CMSMedia_url_operator
+  filename: CMSMedia_filename_operator
+  mimeType: CMSMedia_mimeType_operator
+  filesize: CMSMedia_filesize_operator
+  width: CMSMedia_width_operator
+  height: CMSMedia_height_operator
+  sizes__thumbnail__url: CMSMedia_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSMedia_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSMedia_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSMedia_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSMedia_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSMedia_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSMedia_sizes__medium__url_operator
+  sizes__medium__width: CMSMedia_sizes__medium__width_operator
+  sizes__medium__height: CMSMedia_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSMedia_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSMedia_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSMedia_sizes__medium__filename_operator
+  sizes__large__url: CMSMedia_sizes__large__url_operator
+  sizes__large__width: CMSMedia_sizes__large__width_operator
+  sizes__large__height: CMSMedia_sizes__large__height_operator
+  sizes__large__mimeType: CMSMedia_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSMedia_sizes__large__filesize_operator
+  sizes__large__filename: CMSMedia_sizes__large__filename_operator
+  sizes__portrait__url: CMSMedia_sizes__portrait__url_operator
+  sizes__portrait__width: CMSMedia_sizes__portrait__width_operator
+  sizes__portrait__height: CMSMedia_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSMedia_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSMedia_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSMedia_sizes__portrait__filename_operator
+  id: CMSMedia_id_operator
+  createdAt: CMSMedia_createdAt_operator
+  updatedAt: CMSMedia_updatedAt_operator
+}
+
+input CMSMedia_where_and {
+  alt: CMSMedia_alt_operator
+  url: CMSMedia_url_operator
+  filename: CMSMedia_filename_operator
+  mimeType: CMSMedia_mimeType_operator
+  filesize: CMSMedia_filesize_operator
+  width: CMSMedia_width_operator
+  height: CMSMedia_height_operator
+  sizes__thumbnail__url: CMSMedia_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSMedia_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSMedia_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSMedia_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSMedia_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSMedia_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSMedia_sizes__medium__url_operator
+  sizes__medium__width: CMSMedia_sizes__medium__width_operator
+  sizes__medium__height: CMSMedia_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSMedia_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSMedia_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSMedia_sizes__medium__filename_operator
+  sizes__large__url: CMSMedia_sizes__large__url_operator
+  sizes__large__width: CMSMedia_sizes__large__width_operator
+  sizes__large__height: CMSMedia_sizes__large__height_operator
+  sizes__large__mimeType: CMSMedia_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSMedia_sizes__large__filesize_operator
+  sizes__large__filename: CMSMedia_sizes__large__filename_operator
+  sizes__portrait__url: CMSMedia_sizes__portrait__url_operator
+  sizes__portrait__width: CMSMedia_sizes__portrait__width_operator
+  sizes__portrait__height: CMSMedia_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSMedia_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSMedia_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSMedia_sizes__portrait__filename_operator
+  id: CMSMedia_id_operator
+  createdAt: CMSMedia_createdAt_operator
+  updatedAt: CMSMedia_updatedAt_operator
+}
+
+type CMSBorrower {
+  id: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  name: String!
+  logo(where: CMSBorrower_Logo_where): CMSMedia
+  bio: String
+  history: String
+  market: String
+  website: String
+  twitter: String
+  linkedin: String
+  incorporatedCountry: String
+  operatingCountry: String
+  highlights: [CMSBorrower_Highlights!]
+  borrowerFinancials: CMSBorrower_BorrowerFinancials
+  underwritingPerformance: CMSBorrower_UnderwritingandPerformance
+  team: CMSBorrower_Team
+  mediaLinks: [CMSBorrower_Medialinks!]
+  contactInfo: CMSBorrower_ContactInfo
+  documents: [CMSBorrower_Documents!]
+  deals: [CMSDeal!]
+}
+
+input CMSBorrower_Logo_where {
+  alt: CMSBorrower_Logo_alt_operator
+  url: CMSBorrower_Logo_url_operator
+  filename: CMSBorrower_Logo_filename_operator
+  mimeType: CMSBorrower_Logo_mimeType_operator
+  filesize: CMSBorrower_Logo_filesize_operator
+  width: CMSBorrower_Logo_width_operator
+  height: CMSBorrower_Logo_height_operator
+  sizes__thumbnail__url: CMSBorrower_Logo_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSBorrower_Logo_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSBorrower_Logo_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSBorrower_Logo_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSBorrower_Logo_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSBorrower_Logo_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSBorrower_Logo_sizes__medium__url_operator
+  sizes__medium__width: CMSBorrower_Logo_sizes__medium__width_operator
+  sizes__medium__height: CMSBorrower_Logo_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSBorrower_Logo_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSBorrower_Logo_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSBorrower_Logo_sizes__medium__filename_operator
+  sizes__large__url: CMSBorrower_Logo_sizes__large__url_operator
+  sizes__large__width: CMSBorrower_Logo_sizes__large__width_operator
+  sizes__large__height: CMSBorrower_Logo_sizes__large__height_operator
+  sizes__large__mimeType: CMSBorrower_Logo_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSBorrower_Logo_sizes__large__filesize_operator
+  sizes__large__filename: CMSBorrower_Logo_sizes__large__filename_operator
+  sizes__portrait__url: CMSBorrower_Logo_sizes__portrait__url_operator
+  sizes__portrait__width: CMSBorrower_Logo_sizes__portrait__width_operator
+  sizes__portrait__height: CMSBorrower_Logo_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSBorrower_Logo_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSBorrower_Logo_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSBorrower_Logo_sizes__portrait__filename_operator
+  id: CMSBorrower_Logo_id_operator
+  OR: [CMSBorrower_Logo_where_or]
+  AND: [CMSBorrower_Logo_where_and]
+}
+
+input CMSBorrower_Logo_alt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__thumbnail__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__thumbnail__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__thumbnail__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__thumbnail__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__thumbnail__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__thumbnail__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__medium__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__medium__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__medium__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__medium__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__medium__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__medium__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__large__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__large__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__large__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__large__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__large__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__large__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__portrait__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__portrait__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__portrait__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__portrait__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__portrait__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_sizes__portrait__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input CMSBorrower_Logo_where_or {
+  alt: CMSBorrower_Logo_alt_operator
+  url: CMSBorrower_Logo_url_operator
+  filename: CMSBorrower_Logo_filename_operator
+  mimeType: CMSBorrower_Logo_mimeType_operator
+  filesize: CMSBorrower_Logo_filesize_operator
+  width: CMSBorrower_Logo_width_operator
+  height: CMSBorrower_Logo_height_operator
+  sizes__thumbnail__url: CMSBorrower_Logo_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSBorrower_Logo_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSBorrower_Logo_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSBorrower_Logo_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSBorrower_Logo_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSBorrower_Logo_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSBorrower_Logo_sizes__medium__url_operator
+  sizes__medium__width: CMSBorrower_Logo_sizes__medium__width_operator
+  sizes__medium__height: CMSBorrower_Logo_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSBorrower_Logo_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSBorrower_Logo_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSBorrower_Logo_sizes__medium__filename_operator
+  sizes__large__url: CMSBorrower_Logo_sizes__large__url_operator
+  sizes__large__width: CMSBorrower_Logo_sizes__large__width_operator
+  sizes__large__height: CMSBorrower_Logo_sizes__large__height_operator
+  sizes__large__mimeType: CMSBorrower_Logo_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSBorrower_Logo_sizes__large__filesize_operator
+  sizes__large__filename: CMSBorrower_Logo_sizes__large__filename_operator
+  sizes__portrait__url: CMSBorrower_Logo_sizes__portrait__url_operator
+  sizes__portrait__width: CMSBorrower_Logo_sizes__portrait__width_operator
+  sizes__portrait__height: CMSBorrower_Logo_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSBorrower_Logo_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSBorrower_Logo_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSBorrower_Logo_sizes__portrait__filename_operator
+  id: CMSBorrower_Logo_id_operator
+}
+
+input CMSBorrower_Logo_where_and {
+  alt: CMSBorrower_Logo_alt_operator
+  url: CMSBorrower_Logo_url_operator
+  filename: CMSBorrower_Logo_filename_operator
+  mimeType: CMSBorrower_Logo_mimeType_operator
+  filesize: CMSBorrower_Logo_filesize_operator
+  width: CMSBorrower_Logo_width_operator
+  height: CMSBorrower_Logo_height_operator
+  sizes__thumbnail__url: CMSBorrower_Logo_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSBorrower_Logo_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSBorrower_Logo_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSBorrower_Logo_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSBorrower_Logo_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSBorrower_Logo_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSBorrower_Logo_sizes__medium__url_operator
+  sizes__medium__width: CMSBorrower_Logo_sizes__medium__width_operator
+  sizes__medium__height: CMSBorrower_Logo_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSBorrower_Logo_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSBorrower_Logo_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSBorrower_Logo_sizes__medium__filename_operator
+  sizes__large__url: CMSBorrower_Logo_sizes__large__url_operator
+  sizes__large__width: CMSBorrower_Logo_sizes__large__width_operator
+  sizes__large__height: CMSBorrower_Logo_sizes__large__height_operator
+  sizes__large__mimeType: CMSBorrower_Logo_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSBorrower_Logo_sizes__large__filesize_operator
+  sizes__large__filename: CMSBorrower_Logo_sizes__large__filename_operator
+  sizes__portrait__url: CMSBorrower_Logo_sizes__portrait__url_operator
+  sizes__portrait__width: CMSBorrower_Logo_sizes__portrait__width_operator
+  sizes__portrait__height: CMSBorrower_Logo_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSBorrower_Logo_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSBorrower_Logo_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSBorrower_Logo_sizes__portrait__filename_operator
+  id: CMSBorrower_Logo_id_operator
+}
+
+type CMSBorrower_Highlights {
+  text: String
+  id: String
+}
+
+type CMSBorrower_BorrowerFinancials {
+  aum: Float
+  pastOffChainDeals: [CMSBorrower_BorrowerFinancials_Pastdealsoff_chain!]
+  otherProducts: [CMSBorrower_BorrowerFinancials_Otherproductsoffered!]
+  projections: String
+}
+
+type CMSBorrower_BorrowerFinancials_Pastdealsoff_chain {
+  text: String
+  id: String
+}
+
+type CMSBorrower_BorrowerFinancials_Otherproductsoffered {
+  text: String
+  id: String
+}
+
+type CMSBorrower_UnderwritingandPerformance {
+  performanceDocument(where: CMSBorrower_UnderwritingandPerformance_Performancedocument_where): CMSMedia
+  underwritingDescription: String
+  defaultRate: Float
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_where {
+  alt: CMSBorrower_UnderwritingandPerformance_Performancedocument_alt_operator
+  url: CMSBorrower_UnderwritingandPerformance_Performancedocument_url_operator
+  filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_filename_operator
+  mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_mimeType_operator
+  filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_filesize_operator
+  width: CMSBorrower_UnderwritingandPerformance_Performancedocument_width_operator
+  height: CMSBorrower_UnderwritingandPerformance_Performancedocument_height_operator
+  sizes__thumbnail__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__url_operator
+  sizes__medium__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__width_operator
+  sizes__medium__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filename_operator
+  sizes__large__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__url_operator
+  sizes__large__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__width_operator
+  sizes__large__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__height_operator
+  sizes__large__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filesize_operator
+  sizes__large__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filename_operator
+  sizes__portrait__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__url_operator
+  sizes__portrait__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__width_operator
+  sizes__portrait__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filename_operator
+  id: CMSBorrower_UnderwritingandPerformance_Performancedocument_id_operator
+  OR: [CMSBorrower_UnderwritingandPerformance_Performancedocument_where_or]
+  AND: [CMSBorrower_UnderwritingandPerformance_Performancedocument_where_and]
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_alt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_where_or {
+  alt: CMSBorrower_UnderwritingandPerformance_Performancedocument_alt_operator
+  url: CMSBorrower_UnderwritingandPerformance_Performancedocument_url_operator
+  filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_filename_operator
+  mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_mimeType_operator
+  filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_filesize_operator
+  width: CMSBorrower_UnderwritingandPerformance_Performancedocument_width_operator
+  height: CMSBorrower_UnderwritingandPerformance_Performancedocument_height_operator
+  sizes__thumbnail__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__url_operator
+  sizes__medium__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__width_operator
+  sizes__medium__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filename_operator
+  sizes__large__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__url_operator
+  sizes__large__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__width_operator
+  sizes__large__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__height_operator
+  sizes__large__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filesize_operator
+  sizes__large__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filename_operator
+  sizes__portrait__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__url_operator
+  sizes__portrait__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__width_operator
+  sizes__portrait__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filename_operator
+  id: CMSBorrower_UnderwritingandPerformance_Performancedocument_id_operator
+}
+
+input CMSBorrower_UnderwritingandPerformance_Performancedocument_where_and {
+  alt: CMSBorrower_UnderwritingandPerformance_Performancedocument_alt_operator
+  url: CMSBorrower_UnderwritingandPerformance_Performancedocument_url_operator
+  filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_filename_operator
+  mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_mimeType_operator
+  filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_filesize_operator
+  width: CMSBorrower_UnderwritingandPerformance_Performancedocument_width_operator
+  height: CMSBorrower_UnderwritingandPerformance_Performancedocument_height_operator
+  sizes__thumbnail__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__thumbnail__filename_operator
+  sizes__medium__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__url_operator
+  sizes__medium__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__width_operator
+  sizes__medium__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__height_operator
+  sizes__medium__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__mimeType_operator
+  sizes__medium__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filesize_operator
+  sizes__medium__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__medium__filename_operator
+  sizes__large__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__url_operator
+  sizes__large__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__width_operator
+  sizes__large__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__height_operator
+  sizes__large__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__mimeType_operator
+  sizes__large__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filesize_operator
+  sizes__large__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__large__filename_operator
+  sizes__portrait__url: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__url_operator
+  sizes__portrait__width: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__width_operator
+  sizes__portrait__height: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__height_operator
+  sizes__portrait__mimeType: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filesize_operator
+  sizes__portrait__filename: CMSBorrower_UnderwritingandPerformance_Performancedocument_sizes__portrait__filename_operator
+  id: CMSBorrower_UnderwritingandPerformance_Performancedocument_id_operator
+}
+
+type CMSBorrower_Team {
+  description: String
+  members: [CMSBorrower_Team_Members!]
+}
+
+union CMSBorrower_Team_Members = TeamMember
+
+type TeamMember {
+  name: String
+  position: String
+  image(where: TeamMember_Image_where): CMSMedia
+  linkedin: String
+  id: String
+  blockName: String
+  blockType: String
+}
+
+input TeamMember_Image_where {
+  alt: TeamMember_Image_alt_operator
+  url: TeamMember_Image_url_operator
+  filename: TeamMember_Image_filename_operator
+  mimeType: TeamMember_Image_mimeType_operator
+  filesize: TeamMember_Image_filesize_operator
+  width: TeamMember_Image_width_operator
+  height: TeamMember_Image_height_operator
+  sizes__thumbnail__url: TeamMember_Image_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: TeamMember_Image_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: TeamMember_Image_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: TeamMember_Image_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: TeamMember_Image_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: TeamMember_Image_sizes__thumbnail__filename_operator
+  sizes__medium__url: TeamMember_Image_sizes__medium__url_operator
+  sizes__medium__width: TeamMember_Image_sizes__medium__width_operator
+  sizes__medium__height: TeamMember_Image_sizes__medium__height_operator
+  sizes__medium__mimeType: TeamMember_Image_sizes__medium__mimeType_operator
+  sizes__medium__filesize: TeamMember_Image_sizes__medium__filesize_operator
+  sizes__medium__filename: TeamMember_Image_sizes__medium__filename_operator
+  sizes__large__url: TeamMember_Image_sizes__large__url_operator
+  sizes__large__width: TeamMember_Image_sizes__large__width_operator
+  sizes__large__height: TeamMember_Image_sizes__large__height_operator
+  sizes__large__mimeType: TeamMember_Image_sizes__large__mimeType_operator
+  sizes__large__filesize: TeamMember_Image_sizes__large__filesize_operator
+  sizes__large__filename: TeamMember_Image_sizes__large__filename_operator
+  sizes__portrait__url: TeamMember_Image_sizes__portrait__url_operator
+  sizes__portrait__width: TeamMember_Image_sizes__portrait__width_operator
+  sizes__portrait__height: TeamMember_Image_sizes__portrait__height_operator
+  sizes__portrait__mimeType: TeamMember_Image_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: TeamMember_Image_sizes__portrait__filesize_operator
+  sizes__portrait__filename: TeamMember_Image_sizes__portrait__filename_operator
+  id: TeamMember_Image_id_operator
+  OR: [TeamMember_Image_where_or]
+  AND: [TeamMember_Image_where_and]
+}
+
+input TeamMember_Image_alt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__thumbnail__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__thumbnail__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__thumbnail__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__thumbnail__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__thumbnail__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__thumbnail__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__medium__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__medium__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__medium__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__medium__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__medium__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__medium__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__large__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__large__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__large__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__large__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__large__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__large__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__portrait__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__portrait__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__portrait__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__portrait__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__portrait__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input TeamMember_Image_sizes__portrait__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input TeamMember_Image_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input TeamMember_Image_where_or {
+  alt: TeamMember_Image_alt_operator
+  url: TeamMember_Image_url_operator
+  filename: TeamMember_Image_filename_operator
+  mimeType: TeamMember_Image_mimeType_operator
+  filesize: TeamMember_Image_filesize_operator
+  width: TeamMember_Image_width_operator
+  height: TeamMember_Image_height_operator
+  sizes__thumbnail__url: TeamMember_Image_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: TeamMember_Image_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: TeamMember_Image_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: TeamMember_Image_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: TeamMember_Image_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: TeamMember_Image_sizes__thumbnail__filename_operator
+  sizes__medium__url: TeamMember_Image_sizes__medium__url_operator
+  sizes__medium__width: TeamMember_Image_sizes__medium__width_operator
+  sizes__medium__height: TeamMember_Image_sizes__medium__height_operator
+  sizes__medium__mimeType: TeamMember_Image_sizes__medium__mimeType_operator
+  sizes__medium__filesize: TeamMember_Image_sizes__medium__filesize_operator
+  sizes__medium__filename: TeamMember_Image_sizes__medium__filename_operator
+  sizes__large__url: TeamMember_Image_sizes__large__url_operator
+  sizes__large__width: TeamMember_Image_sizes__large__width_operator
+  sizes__large__height: TeamMember_Image_sizes__large__height_operator
+  sizes__large__mimeType: TeamMember_Image_sizes__large__mimeType_operator
+  sizes__large__filesize: TeamMember_Image_sizes__large__filesize_operator
+  sizes__large__filename: TeamMember_Image_sizes__large__filename_operator
+  sizes__portrait__url: TeamMember_Image_sizes__portrait__url_operator
+  sizes__portrait__width: TeamMember_Image_sizes__portrait__width_operator
+  sizes__portrait__height: TeamMember_Image_sizes__portrait__height_operator
+  sizes__portrait__mimeType: TeamMember_Image_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: TeamMember_Image_sizes__portrait__filesize_operator
+  sizes__portrait__filename: TeamMember_Image_sizes__portrait__filename_operator
+  id: TeamMember_Image_id_operator
+}
+
+input TeamMember_Image_where_and {
+  alt: TeamMember_Image_alt_operator
+  url: TeamMember_Image_url_operator
+  filename: TeamMember_Image_filename_operator
+  mimeType: TeamMember_Image_mimeType_operator
+  filesize: TeamMember_Image_filesize_operator
+  width: TeamMember_Image_width_operator
+  height: TeamMember_Image_height_operator
+  sizes__thumbnail__url: TeamMember_Image_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: TeamMember_Image_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: TeamMember_Image_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: TeamMember_Image_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: TeamMember_Image_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: TeamMember_Image_sizes__thumbnail__filename_operator
+  sizes__medium__url: TeamMember_Image_sizes__medium__url_operator
+  sizes__medium__width: TeamMember_Image_sizes__medium__width_operator
+  sizes__medium__height: TeamMember_Image_sizes__medium__height_operator
+  sizes__medium__mimeType: TeamMember_Image_sizes__medium__mimeType_operator
+  sizes__medium__filesize: TeamMember_Image_sizes__medium__filesize_operator
+  sizes__medium__filename: TeamMember_Image_sizes__medium__filename_operator
+  sizes__large__url: TeamMember_Image_sizes__large__url_operator
+  sizes__large__width: TeamMember_Image_sizes__large__width_operator
+  sizes__large__height: TeamMember_Image_sizes__large__height_operator
+  sizes__large__mimeType: TeamMember_Image_sizes__large__mimeType_operator
+  sizes__large__filesize: TeamMember_Image_sizes__large__filesize_operator
+  sizes__large__filename: TeamMember_Image_sizes__large__filename_operator
+  sizes__portrait__url: TeamMember_Image_sizes__portrait__url_operator
+  sizes__portrait__width: TeamMember_Image_sizes__portrait__width_operator
+  sizes__portrait__height: TeamMember_Image_sizes__portrait__height_operator
+  sizes__portrait__mimeType: TeamMember_Image_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: TeamMember_Image_sizes__portrait__filesize_operator
+  sizes__portrait__filename: TeamMember_Image_sizes__portrait__filename_operator
+  id: TeamMember_Image_id_operator
+}
+
+type CMSBorrower_Medialinks {
+  title: String
+  url: String
+  id: String
+}
+
+type CMSBorrower_ContactInfo {
+  description: String
+  email: EmailAddress
+}
+
+union CMSBorrower_Documents = Document
+
+type Document {
+  title: String
+  subtitle: String
+  file(where: Document_File_where): CMSMedia
+  id: String
+  blockName: String
+  blockType: String
+}
+
+input Document_File_where {
+  alt: Document_File_alt_operator
+  url: Document_File_url_operator
+  filename: Document_File_filename_operator
+  mimeType: Document_File_mimeType_operator
+  filesize: Document_File_filesize_operator
+  width: Document_File_width_operator
+  height: Document_File_height_operator
+  sizes__thumbnail__url: Document_File_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: Document_File_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: Document_File_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: Document_File_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: Document_File_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: Document_File_sizes__thumbnail__filename_operator
+  sizes__medium__url: Document_File_sizes__medium__url_operator
+  sizes__medium__width: Document_File_sizes__medium__width_operator
+  sizes__medium__height: Document_File_sizes__medium__height_operator
+  sizes__medium__mimeType: Document_File_sizes__medium__mimeType_operator
+  sizes__medium__filesize: Document_File_sizes__medium__filesize_operator
+  sizes__medium__filename: Document_File_sizes__medium__filename_operator
+  sizes__large__url: Document_File_sizes__large__url_operator
+  sizes__large__width: Document_File_sizes__large__width_operator
+  sizes__large__height: Document_File_sizes__large__height_operator
+  sizes__large__mimeType: Document_File_sizes__large__mimeType_operator
+  sizes__large__filesize: Document_File_sizes__large__filesize_operator
+  sizes__large__filename: Document_File_sizes__large__filename_operator
+  sizes__portrait__url: Document_File_sizes__portrait__url_operator
+  sizes__portrait__width: Document_File_sizes__portrait__width_operator
+  sizes__portrait__height: Document_File_sizes__portrait__height_operator
+  sizes__portrait__mimeType: Document_File_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: Document_File_sizes__portrait__filesize_operator
+  sizes__portrait__filename: Document_File_sizes__portrait__filename_operator
+  id: Document_File_id_operator
+  OR: [Document_File_where_or]
+  AND: [Document_File_where_and]
+}
+
+input Document_File_alt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__thumbnail__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__thumbnail__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__thumbnail__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__thumbnail__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__thumbnail__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__thumbnail__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__medium__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__medium__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__medium__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__medium__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__medium__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__medium__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__large__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__large__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__large__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__large__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__large__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__large__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__portrait__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__portrait__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__portrait__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__portrait__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_sizes__portrait__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Document_File_sizes__portrait__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Document_File_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input Document_File_where_or {
+  alt: Document_File_alt_operator
+  url: Document_File_url_operator
+  filename: Document_File_filename_operator
+  mimeType: Document_File_mimeType_operator
+  filesize: Document_File_filesize_operator
+  width: Document_File_width_operator
+  height: Document_File_height_operator
+  sizes__thumbnail__url: Document_File_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: Document_File_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: Document_File_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: Document_File_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: Document_File_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: Document_File_sizes__thumbnail__filename_operator
+  sizes__medium__url: Document_File_sizes__medium__url_operator
+  sizes__medium__width: Document_File_sizes__medium__width_operator
+  sizes__medium__height: Document_File_sizes__medium__height_operator
+  sizes__medium__mimeType: Document_File_sizes__medium__mimeType_operator
+  sizes__medium__filesize: Document_File_sizes__medium__filesize_operator
+  sizes__medium__filename: Document_File_sizes__medium__filename_operator
+  sizes__large__url: Document_File_sizes__large__url_operator
+  sizes__large__width: Document_File_sizes__large__width_operator
+  sizes__large__height: Document_File_sizes__large__height_operator
+  sizes__large__mimeType: Document_File_sizes__large__mimeType_operator
+  sizes__large__filesize: Document_File_sizes__large__filesize_operator
+  sizes__large__filename: Document_File_sizes__large__filename_operator
+  sizes__portrait__url: Document_File_sizes__portrait__url_operator
+  sizes__portrait__width: Document_File_sizes__portrait__width_operator
+  sizes__portrait__height: Document_File_sizes__portrait__height_operator
+  sizes__portrait__mimeType: Document_File_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: Document_File_sizes__portrait__filesize_operator
+  sizes__portrait__filename: Document_File_sizes__portrait__filename_operator
+  id: Document_File_id_operator
+}
+
+input Document_File_where_and {
+  alt: Document_File_alt_operator
+  url: Document_File_url_operator
+  filename: Document_File_filename_operator
+  mimeType: Document_File_mimeType_operator
+  filesize: Document_File_filesize_operator
+  width: Document_File_width_operator
+  height: Document_File_height_operator
+  sizes__thumbnail__url: Document_File_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: Document_File_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: Document_File_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: Document_File_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: Document_File_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: Document_File_sizes__thumbnail__filename_operator
+  sizes__medium__url: Document_File_sizes__medium__url_operator
+  sizes__medium__width: Document_File_sizes__medium__width_operator
+  sizes__medium__height: Document_File_sizes__medium__height_operator
+  sizes__medium__mimeType: Document_File_sizes__medium__mimeType_operator
+  sizes__medium__filesize: Document_File_sizes__medium__filesize_operator
+  sizes__medium__filename: Document_File_sizes__medium__filename_operator
+  sizes__large__url: Document_File_sizes__large__url_operator
+  sizes__large__width: Document_File_sizes__large__width_operator
+  sizes__large__height: Document_File_sizes__large__height_operator
+  sizes__large__mimeType: Document_File_sizes__large__mimeType_operator
+  sizes__large__filesize: Document_File_sizes__large__filesize_operator
+  sizes__large__filename: Document_File_sizes__large__filename_operator
+  sizes__portrait__url: Document_File_sizes__portrait__url_operator
+  sizes__portrait__width: Document_File_sizes__portrait__width_operator
+  sizes__portrait__height: Document_File_sizes__portrait__height_operator
+  sizes__portrait__mimeType: Document_File_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: Document_File_sizes__portrait__filesize_operator
+  sizes__portrait__filename: Document_File_sizes__portrait__filename_operator
+  id: Document_File_id_operator
+}
+
+type CMSDeal {
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  id: String!
+  name: String!
+  category: String!
+  borrower: CMSBorrower
+  overview: String!
+  defaultInterestRate: Float
+  highlights: [CMSDeal_Highlights!]
+  useOfFunds: String
+  risks: String
+  securitiesAndRecourse: CMSDeal_SecuritiesandRecourse
+  documents: [CMSDeal_Documents!]
+}
+
+type CMSDeal_Highlights {
+  text: String
+  id: String
+}
+
+type CMSDeal_SecuritiesandRecourse {
+  secured: Boolean
+  type: String
+  description: String
+  value: Float
+  recourse: Boolean
+  recourseDescription: String
+  covenants: String
+}
+
+union CMSDeal_Documents = Document
+
+type CMSBorrowers {
+  docs: [CMSBorrower]
+  totalDocs: Int
+  offset: Int
+  limit: Int
+  totalPages: Int
+  page: Int
+  pagingCounter: Int
+  hasPrevPage: Boolean
+  hasNextPage: Boolean
+  prevPage: Boolean
+  nextPage: Boolean
+}
+
+input CMSBorrower_where {
+  name: CMSBorrower_name_operator
+  logo: CMSBorrower_logo_operator
+  bio: CMSBorrower_bio_operator
+  history: CMSBorrower_history_operator
+  market: CMSBorrower_market_operator
+  website: CMSBorrower_website_operator
+  twitter: CMSBorrower_twitter_operator
+  linkedin: CMSBorrower_linkedin_operator
+  incorporatedCountry: CMSBorrower_incorporatedCountry_operator
+  operatingCountry: CMSBorrower_operatingCountry_operator
+  highlights__text: CMSBorrower_highlights__text_operator
+  highlights__id: CMSBorrower_highlights__id_operator
+  borrowerFinancials__aum: CMSBorrower_borrowerFinancials__aum_operator
+  borrowerFinancials__pastOffChainDeals__text: CMSBorrower_borrowerFinancials__pastOffChainDeals__text_operator
+  borrowerFinancials__pastOffChainDeals__id: CMSBorrower_borrowerFinancials__pastOffChainDeals__id_operator
+  borrowerFinancials__otherProducts__text: CMSBorrower_borrowerFinancials__otherProducts__text_operator
+  borrowerFinancials__otherProducts__id: CMSBorrower_borrowerFinancials__otherProducts__id_operator
+  borrowerFinancials__projections: CMSBorrower_borrowerFinancials__projections_operator
+  underwritingPerformance__performanceDocument: CMSBorrower_underwritingPerformance__performanceDocument_operator
+  underwritingPerformance__underwritingDescription: CMSBorrower_underwritingPerformance__underwritingDescription_operator
+  underwritingPerformance__defaultRate: CMSBorrower_underwritingPerformance__defaultRate_operator
+  team__description: CMSBorrower_team__description_operator
+  mediaLinks__title: CMSBorrower_mediaLinks__title_operator
+  mediaLinks__url: CMSBorrower_mediaLinks__url_operator
+  mediaLinks__id: CMSBorrower_mediaLinks__id_operator
+  contactInfo__description: CMSBorrower_contactInfo__description_operator
+  contactInfo__email: CMSBorrower_contactInfo__email_operator
+  deals: CMSBorrower_deals_operator
+  id: CMSBorrower_id_operator
+  createdAt: CMSBorrower_createdAt_operator
+  updatedAt: CMSBorrower_updatedAt_operator
+  OR: [CMSBorrower_where_or]
+  AND: [CMSBorrower_where_and]
+}
+
+input CMSBorrower_name_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSBorrower_logo_operator {
+  equals: String
+  not_equals: String
+  exists: Boolean
+}
+
+input CMSBorrower_bio_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_history_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_market_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_website_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_twitter_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_linkedin_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_incorporatedCountry_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_operatingCountry_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_highlights__text_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSBorrower_highlights__id_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_borrowerFinancials__aum_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_borrowerFinancials__pastOffChainDeals__text_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSBorrower_borrowerFinancials__pastOffChainDeals__id_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_borrowerFinancials__otherProducts__text_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSBorrower_borrowerFinancials__otherProducts__id_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_borrowerFinancials__projections_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_underwritingPerformance__performanceDocument_operator {
+  equals: String
+  not_equals: String
+  exists: Boolean
+}
+
+input CMSBorrower_underwritingPerformance__underwritingDescription_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_underwritingPerformance__defaultRate_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSBorrower_team__description_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_mediaLinks__title_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSBorrower_mediaLinks__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSBorrower_mediaLinks__id_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_contactInfo__description_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSBorrower_contactInfo__email_operator {
+  equals: EmailAddress
+  not_equals: EmailAddress
+  like: EmailAddress
+  contains: EmailAddress
+  exists: Boolean
+}
+
+input CMSBorrower_deals_operator {
+  equals: String
+  not_equals: String
+  in: [String]
+  not_in: [String]
+  all: [String]
+  exists: Boolean
+}
+
+input CMSBorrower_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input CMSBorrower_createdAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSBorrower_updatedAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSBorrower_where_or {
+  name: CMSBorrower_name_operator
+  logo: CMSBorrower_logo_operator
+  bio: CMSBorrower_bio_operator
+  history: CMSBorrower_history_operator
+  market: CMSBorrower_market_operator
+  website: CMSBorrower_website_operator
+  twitter: CMSBorrower_twitter_operator
+  linkedin: CMSBorrower_linkedin_operator
+  incorporatedCountry: CMSBorrower_incorporatedCountry_operator
+  operatingCountry: CMSBorrower_operatingCountry_operator
+  highlights__text: CMSBorrower_highlights__text_operator
+  highlights__id: CMSBorrower_highlights__id_operator
+  borrowerFinancials__aum: CMSBorrower_borrowerFinancials__aum_operator
+  borrowerFinancials__pastOffChainDeals__text: CMSBorrower_borrowerFinancials__pastOffChainDeals__text_operator
+  borrowerFinancials__pastOffChainDeals__id: CMSBorrower_borrowerFinancials__pastOffChainDeals__id_operator
+  borrowerFinancials__otherProducts__text: CMSBorrower_borrowerFinancials__otherProducts__text_operator
+  borrowerFinancials__otherProducts__id: CMSBorrower_borrowerFinancials__otherProducts__id_operator
+  borrowerFinancials__projections: CMSBorrower_borrowerFinancials__projections_operator
+  underwritingPerformance__performanceDocument: CMSBorrower_underwritingPerformance__performanceDocument_operator
+  underwritingPerformance__underwritingDescription: CMSBorrower_underwritingPerformance__underwritingDescription_operator
+  underwritingPerformance__defaultRate: CMSBorrower_underwritingPerformance__defaultRate_operator
+  team__description: CMSBorrower_team__description_operator
+  mediaLinks__title: CMSBorrower_mediaLinks__title_operator
+  mediaLinks__url: CMSBorrower_mediaLinks__url_operator
+  mediaLinks__id: CMSBorrower_mediaLinks__id_operator
+  contactInfo__description: CMSBorrower_contactInfo__description_operator
+  contactInfo__email: CMSBorrower_contactInfo__email_operator
+  deals: CMSBorrower_deals_operator
+  id: CMSBorrower_id_operator
+  createdAt: CMSBorrower_createdAt_operator
+  updatedAt: CMSBorrower_updatedAt_operator
+}
+
+input CMSBorrower_where_and {
+  name: CMSBorrower_name_operator
+  logo: CMSBorrower_logo_operator
+  bio: CMSBorrower_bio_operator
+  history: CMSBorrower_history_operator
+  market: CMSBorrower_market_operator
+  website: CMSBorrower_website_operator
+  twitter: CMSBorrower_twitter_operator
+  linkedin: CMSBorrower_linkedin_operator
+  incorporatedCountry: CMSBorrower_incorporatedCountry_operator
+  operatingCountry: CMSBorrower_operatingCountry_operator
+  highlights__text: CMSBorrower_highlights__text_operator
+  highlights__id: CMSBorrower_highlights__id_operator
+  borrowerFinancials__aum: CMSBorrower_borrowerFinancials__aum_operator
+  borrowerFinancials__pastOffChainDeals__text: CMSBorrower_borrowerFinancials__pastOffChainDeals__text_operator
+  borrowerFinancials__pastOffChainDeals__id: CMSBorrower_borrowerFinancials__pastOffChainDeals__id_operator
+  borrowerFinancials__otherProducts__text: CMSBorrower_borrowerFinancials__otherProducts__text_operator
+  borrowerFinancials__otherProducts__id: CMSBorrower_borrowerFinancials__otherProducts__id_operator
+  borrowerFinancials__projections: CMSBorrower_borrowerFinancials__projections_operator
+  underwritingPerformance__performanceDocument: CMSBorrower_underwritingPerformance__performanceDocument_operator
+  underwritingPerformance__underwritingDescription: CMSBorrower_underwritingPerformance__underwritingDescription_operator
+  underwritingPerformance__defaultRate: CMSBorrower_underwritingPerformance__defaultRate_operator
+  team__description: CMSBorrower_team__description_operator
+  mediaLinks__title: CMSBorrower_mediaLinks__title_operator
+  mediaLinks__url: CMSBorrower_mediaLinks__url_operator
+  mediaLinks__id: CMSBorrower_mediaLinks__id_operator
+  contactInfo__description: CMSBorrower_contactInfo__description_operator
+  contactInfo__email: CMSBorrower_contactInfo__email_operator
+  deals: CMSBorrower_deals_operator
+  id: CMSBorrower_id_operator
+  createdAt: CMSBorrower_createdAt_operator
+  updatedAt: CMSBorrower_updatedAt_operator
+}
+
+type CMSDeals {
+  docs: [CMSDeal]
+  totalDocs: Int
+  offset: Int
+  limit: Int
+  totalPages: Int
+  page: Int
+  pagingCounter: Int
+  hasPrevPage: Boolean
+  hasNextPage: Boolean
+  prevPage: Boolean
+  nextPage: Boolean
+}
+
+input CMSDeal_where {
+  id: CMSDeal_id_operator
+  name: CMSDeal_name_operator
+  category: CMSDeal_category_operator
+  borrower: CMSDeal_borrower_operator
+  overview: CMSDeal_overview_operator
+  defaultInterestRate: CMSDeal_defaultInterestRate_operator
+  highlights__text: CMSDeal_highlights__text_operator
+  highlights__id: CMSDeal_highlights__id_operator
+  useOfFunds: CMSDeal_useOfFunds_operator
+  risks: CMSDeal_risks_operator
+  securitiesAndRecourse__secured: CMSDeal_securitiesAndRecourse__secured_operator
+  securitiesAndRecourse__type: CMSDeal_securitiesAndRecourse__type_operator
+  securitiesAndRecourse__description: CMSDeal_securitiesAndRecourse__description_operator
+  securitiesAndRecourse__value: CMSDeal_securitiesAndRecourse__value_operator
+  securitiesAndRecourse__recourse: CMSDeal_securitiesAndRecourse__recourse_operator
+  securitiesAndRecourse__recourseDescription: CMSDeal_securitiesAndRecourse__recourseDescription_operator
+  securitiesAndRecourse__covenants: CMSDeal_securitiesAndRecourse__covenants_operator
+  createdAt: CMSDeal_createdAt_operator
+  updatedAt: CMSDeal_updatedAt_operator
+  OR: [CMSDeal_where_or]
+  AND: [CMSDeal_where_and]
+}
+
+input CMSDeal_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input CMSDeal_name_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSDeal_category_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSDeal_borrower_operator {
+  equals: String
+  not_equals: String
+  in: [String]
+  not_in: [String]
+  all: [String]
+}
+
+input CMSDeal_overview_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSDeal_defaultInterestRate_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSDeal_highlights__text_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+}
+
+input CMSDeal_highlights__id_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_useOfFunds_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_risks_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__secured_operator {
+  equals: Boolean
+  not_equals: Boolean
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__type_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__description_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__value_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__recourse_operator {
+  equals: Boolean
+  not_equals: Boolean
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__recourseDescription_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_securitiesAndRecourse__covenants_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input CMSDeal_createdAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSDeal_updatedAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input CMSDeal_where_or {
+  id: CMSDeal_id_operator
+  name: CMSDeal_name_operator
+  category: CMSDeal_category_operator
+  borrower: CMSDeal_borrower_operator
+  overview: CMSDeal_overview_operator
+  defaultInterestRate: CMSDeal_defaultInterestRate_operator
+  highlights__text: CMSDeal_highlights__text_operator
+  highlights__id: CMSDeal_highlights__id_operator
+  useOfFunds: CMSDeal_useOfFunds_operator
+  risks: CMSDeal_risks_operator
+  securitiesAndRecourse__secured: CMSDeal_securitiesAndRecourse__secured_operator
+  securitiesAndRecourse__type: CMSDeal_securitiesAndRecourse__type_operator
+  securitiesAndRecourse__description: CMSDeal_securitiesAndRecourse__description_operator
+  securitiesAndRecourse__value: CMSDeal_securitiesAndRecourse__value_operator
+  securitiesAndRecourse__recourse: CMSDeal_securitiesAndRecourse__recourse_operator
+  securitiesAndRecourse__recourseDescription: CMSDeal_securitiesAndRecourse__recourseDescription_operator
+  securitiesAndRecourse__covenants: CMSDeal_securitiesAndRecourse__covenants_operator
+  createdAt: CMSDeal_createdAt_operator
+  updatedAt: CMSDeal_updatedAt_operator
+}
+
+input CMSDeal_where_and {
+  id: CMSDeal_id_operator
+  name: CMSDeal_name_operator
+  category: CMSDeal_category_operator
+  borrower: CMSDeal_borrower_operator
+  overview: CMSDeal_overview_operator
+  defaultInterestRate: CMSDeal_defaultInterestRate_operator
+  highlights__text: CMSDeal_highlights__text_operator
+  highlights__id: CMSDeal_highlights__id_operator
+  useOfFunds: CMSDeal_useOfFunds_operator
+  risks: CMSDeal_risks_operator
+  securitiesAndRecourse__secured: CMSDeal_securitiesAndRecourse__secured_operator
+  securitiesAndRecourse__type: CMSDeal_securitiesAndRecourse__type_operator
+  securitiesAndRecourse__description: CMSDeal_securitiesAndRecourse__description_operator
+  securitiesAndRecourse__value: CMSDeal_securitiesAndRecourse__value_operator
+  securitiesAndRecourse__recourse: CMSDeal_securitiesAndRecourse__recourse_operator
+  securitiesAndRecourse__recourseDescription: CMSDeal_securitiesAndRecourse__recourseDescription_operator
+  securitiesAndRecourse__covenants: CMSDeal_securitiesAndRecourse__covenants_operator
+  createdAt: CMSDeal_createdAt_operator
+  updatedAt: CMSDeal_updatedAt_operator
+}
+
+type Preference {
+  key: String!
+  value: JSON
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Access {
+  canAccessAdmin: Boolean!
+  cms_users: CMSUserAccess
+  cms_media: CMSMediaAccess
+  cms_borrowers: CMSBorrowerAccess
+  cms_deals: CMSDealAccess
+}
+
+type CMSUserAccess {
+  fields: CMSUserFields
+  create: CMSUserCreateAccess
+  read: CMSUserReadAccess
+  update: CMSUserUpdateAccess
+  delete: CMSUserDeleteAccess
+  unlock: CMSUserUnlockAccess
+}
+
+type CMSUserFields {
+  email: CMSUserFields_email
+  password: CMSUserFields_password
+}
+
+type CMSUserFields_email {
+  create: CMSUserFields_email_Create
+  read: CMSUserFields_email_Read
+  update: CMSUserFields_email_Update
+  delete: CMSUserFields_email_Delete
+}
+
+type CMSUserFields_email_Create {
+  permission: Boolean!
+}
+
+type CMSUserFields_email_Read {
+  permission: Boolean!
+}
+
+type CMSUserFields_email_Update {
+  permission: Boolean!
+}
+
+type CMSUserFields_email_Delete {
+  permission: Boolean!
+}
+
+type CMSUserFields_password {
+  create: CMSUserFields_password_Create
+  read: CMSUserFields_password_Read
+  update: CMSUserFields_password_Update
+  delete: CMSUserFields_password_Delete
+}
+
+type CMSUserFields_password_Create {
+  permission: Boolean!
+}
+
+type CMSUserFields_password_Read {
+  permission: Boolean!
+}
+
+type CMSUserFields_password_Update {
+  permission: Boolean!
+}
+
+type CMSUserFields_password_Delete {
+  permission: Boolean!
+}
+
+type CMSUserCreateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+type CMSUserReadAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSUserUpdateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSUserDeleteAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSUserUnlockAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSMediaAccess {
+  fields: CMSMediaFields
+  create: CMSMediaCreateAccess
+  read: CMSMediaReadAccess
+  update: CMSMediaUpdateAccess
+  delete: CMSMediaDeleteAccess
+}
+
+type CMSMediaFields {
+  alt: CMSMediaFields_alt
+  url: CMSMediaFields_url
+  filename: CMSMediaFields_filename
+  mimeType: CMSMediaFields_mimeType
+  filesize: CMSMediaFields_filesize
+  width: CMSMediaFields_width
+  height: CMSMediaFields_height
+  sizes: CMSMediaFields_sizes
+}
+
+type CMSMediaFields_alt {
+  create: CMSMediaFields_alt_Create
+  read: CMSMediaFields_alt_Read
+  update: CMSMediaFields_alt_Update
+  delete: CMSMediaFields_alt_Delete
+}
+
+type CMSMediaFields_alt_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_alt_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_alt_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_alt_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_url {
+  create: CMSMediaFields_url_Create
+  read: CMSMediaFields_url_Read
+  update: CMSMediaFields_url_Update
+  delete: CMSMediaFields_url_Delete
+}
+
+type CMSMediaFields_url_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_url_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_url_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_url_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filename {
+  create: CMSMediaFields_filename_Create
+  read: CMSMediaFields_filename_Read
+  update: CMSMediaFields_filename_Update
+  delete: CMSMediaFields_filename_Delete
+}
+
+type CMSMediaFields_filename_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filename_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filename_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filename_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_mimeType {
+  create: CMSMediaFields_mimeType_Create
+  read: CMSMediaFields_mimeType_Read
+  update: CMSMediaFields_mimeType_Update
+  delete: CMSMediaFields_mimeType_Delete
+}
+
+type CMSMediaFields_mimeType_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_mimeType_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_mimeType_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_mimeType_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filesize {
+  create: CMSMediaFields_filesize_Create
+  read: CMSMediaFields_filesize_Read
+  update: CMSMediaFields_filesize_Update
+  delete: CMSMediaFields_filesize_Delete
+}
+
+type CMSMediaFields_filesize_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filesize_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filesize_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_filesize_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_width {
+  create: CMSMediaFields_width_Create
+  read: CMSMediaFields_width_Read
+  update: CMSMediaFields_width_Update
+  delete: CMSMediaFields_width_Delete
+}
+
+type CMSMediaFields_width_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_width_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_width_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_width_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_height {
+  create: CMSMediaFields_height_Create
+  read: CMSMediaFields_height_Read
+  update: CMSMediaFields_height_Update
+  delete: CMSMediaFields_height_Delete
+}
+
+type CMSMediaFields_height_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_height_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_height_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_height_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes {
+  create: CMSMediaFields_sizes_Create
+  read: CMSMediaFields_sizes_Read
+  update: CMSMediaFields_sizes_Update
+  delete: CMSMediaFields_sizes_Delete
+  fields: CMSMediaFields_sizes_Fields
+}
+
+type CMSMediaFields_sizes_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_Fields {
+  thumbnail: CMSMediaFields_sizes_thumbnail
+  medium: CMSMediaFields_sizes_medium
+  large: CMSMediaFields_sizes_large
+  portrait: CMSMediaFields_sizes_portrait
+}
+
+type CMSMediaFields_sizes_thumbnail {
+  create: CMSMediaFields_sizes_thumbnail_Create
+  read: CMSMediaFields_sizes_thumbnail_Read
+  update: CMSMediaFields_sizes_thumbnail_Update
+  delete: CMSMediaFields_sizes_thumbnail_Delete
+  fields: CMSMediaFields_sizes_thumbnail_Fields
+}
+
+type CMSMediaFields_sizes_thumbnail_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_Fields {
+  url: CMSMediaFields_sizes_thumbnail_url
+  width: CMSMediaFields_sizes_thumbnail_width
+  height: CMSMediaFields_sizes_thumbnail_height
+  mimeType: CMSMediaFields_sizes_thumbnail_mimeType
+  filesize: CMSMediaFields_sizes_thumbnail_filesize
+  filename: CMSMediaFields_sizes_thumbnail_filename
+}
+
+type CMSMediaFields_sizes_thumbnail_url {
+  create: CMSMediaFields_sizes_thumbnail_url_Create
+  read: CMSMediaFields_sizes_thumbnail_url_Read
+  update: CMSMediaFields_sizes_thumbnail_url_Update
+  delete: CMSMediaFields_sizes_thumbnail_url_Delete
+}
+
+type CMSMediaFields_sizes_thumbnail_url_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_url_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_url_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_url_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_width {
+  create: CMSMediaFields_sizes_thumbnail_width_Create
+  read: CMSMediaFields_sizes_thumbnail_width_Read
+  update: CMSMediaFields_sizes_thumbnail_width_Update
+  delete: CMSMediaFields_sizes_thumbnail_width_Delete
+}
+
+type CMSMediaFields_sizes_thumbnail_width_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_width_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_width_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_width_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_height {
+  create: CMSMediaFields_sizes_thumbnail_height_Create
+  read: CMSMediaFields_sizes_thumbnail_height_Read
+  update: CMSMediaFields_sizes_thumbnail_height_Update
+  delete: CMSMediaFields_sizes_thumbnail_height_Delete
+}
+
+type CMSMediaFields_sizes_thumbnail_height_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_height_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_height_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_height_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_mimeType {
+  create: CMSMediaFields_sizes_thumbnail_mimeType_Create
+  read: CMSMediaFields_sizes_thumbnail_mimeType_Read
+  update: CMSMediaFields_sizes_thumbnail_mimeType_Update
+  delete: CMSMediaFields_sizes_thumbnail_mimeType_Delete
+}
+
+type CMSMediaFields_sizes_thumbnail_mimeType_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_mimeType_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_mimeType_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_mimeType_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filesize {
+  create: CMSMediaFields_sizes_thumbnail_filesize_Create
+  read: CMSMediaFields_sizes_thumbnail_filesize_Read
+  update: CMSMediaFields_sizes_thumbnail_filesize_Update
+  delete: CMSMediaFields_sizes_thumbnail_filesize_Delete
+}
+
+type CMSMediaFields_sizes_thumbnail_filesize_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filesize_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filesize_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filesize_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filename {
+  create: CMSMediaFields_sizes_thumbnail_filename_Create
+  read: CMSMediaFields_sizes_thumbnail_filename_Read
+  update: CMSMediaFields_sizes_thumbnail_filename_Update
+  delete: CMSMediaFields_sizes_thumbnail_filename_Delete
+}
+
+type CMSMediaFields_sizes_thumbnail_filename_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filename_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filename_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_thumbnail_filename_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium {
+  create: CMSMediaFields_sizes_medium_Create
+  read: CMSMediaFields_sizes_medium_Read
+  update: CMSMediaFields_sizes_medium_Update
+  delete: CMSMediaFields_sizes_medium_Delete
+  fields: CMSMediaFields_sizes_medium_Fields
+}
+
+type CMSMediaFields_sizes_medium_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_Fields {
+  url: CMSMediaFields_sizes_medium_url
+  width: CMSMediaFields_sizes_medium_width
+  height: CMSMediaFields_sizes_medium_height
+  mimeType: CMSMediaFields_sizes_medium_mimeType
+  filesize: CMSMediaFields_sizes_medium_filesize
+  filename: CMSMediaFields_sizes_medium_filename
+}
+
+type CMSMediaFields_sizes_medium_url {
+  create: CMSMediaFields_sizes_medium_url_Create
+  read: CMSMediaFields_sizes_medium_url_Read
+  update: CMSMediaFields_sizes_medium_url_Update
+  delete: CMSMediaFields_sizes_medium_url_Delete
+}
+
+type CMSMediaFields_sizes_medium_url_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_url_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_url_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_url_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_width {
+  create: CMSMediaFields_sizes_medium_width_Create
+  read: CMSMediaFields_sizes_medium_width_Read
+  update: CMSMediaFields_sizes_medium_width_Update
+  delete: CMSMediaFields_sizes_medium_width_Delete
+}
+
+type CMSMediaFields_sizes_medium_width_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_width_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_width_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_width_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_height {
+  create: CMSMediaFields_sizes_medium_height_Create
+  read: CMSMediaFields_sizes_medium_height_Read
+  update: CMSMediaFields_sizes_medium_height_Update
+  delete: CMSMediaFields_sizes_medium_height_Delete
+}
+
+type CMSMediaFields_sizes_medium_height_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_height_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_height_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_height_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_mimeType {
+  create: CMSMediaFields_sizes_medium_mimeType_Create
+  read: CMSMediaFields_sizes_medium_mimeType_Read
+  update: CMSMediaFields_sizes_medium_mimeType_Update
+  delete: CMSMediaFields_sizes_medium_mimeType_Delete
+}
+
+type CMSMediaFields_sizes_medium_mimeType_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_mimeType_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_mimeType_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_mimeType_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filesize {
+  create: CMSMediaFields_sizes_medium_filesize_Create
+  read: CMSMediaFields_sizes_medium_filesize_Read
+  update: CMSMediaFields_sizes_medium_filesize_Update
+  delete: CMSMediaFields_sizes_medium_filesize_Delete
+}
+
+type CMSMediaFields_sizes_medium_filesize_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filesize_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filesize_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filesize_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filename {
+  create: CMSMediaFields_sizes_medium_filename_Create
+  read: CMSMediaFields_sizes_medium_filename_Read
+  update: CMSMediaFields_sizes_medium_filename_Update
+  delete: CMSMediaFields_sizes_medium_filename_Delete
+}
+
+type CMSMediaFields_sizes_medium_filename_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filename_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filename_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_medium_filename_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large {
+  create: CMSMediaFields_sizes_large_Create
+  read: CMSMediaFields_sizes_large_Read
+  update: CMSMediaFields_sizes_large_Update
+  delete: CMSMediaFields_sizes_large_Delete
+  fields: CMSMediaFields_sizes_large_Fields
+}
+
+type CMSMediaFields_sizes_large_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_Fields {
+  url: CMSMediaFields_sizes_large_url
+  width: CMSMediaFields_sizes_large_width
+  height: CMSMediaFields_sizes_large_height
+  mimeType: CMSMediaFields_sizes_large_mimeType
+  filesize: CMSMediaFields_sizes_large_filesize
+  filename: CMSMediaFields_sizes_large_filename
+}
+
+type CMSMediaFields_sizes_large_url {
+  create: CMSMediaFields_sizes_large_url_Create
+  read: CMSMediaFields_sizes_large_url_Read
+  update: CMSMediaFields_sizes_large_url_Update
+  delete: CMSMediaFields_sizes_large_url_Delete
+}
+
+type CMSMediaFields_sizes_large_url_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_url_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_url_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_url_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_width {
+  create: CMSMediaFields_sizes_large_width_Create
+  read: CMSMediaFields_sizes_large_width_Read
+  update: CMSMediaFields_sizes_large_width_Update
+  delete: CMSMediaFields_sizes_large_width_Delete
+}
+
+type CMSMediaFields_sizes_large_width_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_width_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_width_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_width_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_height {
+  create: CMSMediaFields_sizes_large_height_Create
+  read: CMSMediaFields_sizes_large_height_Read
+  update: CMSMediaFields_sizes_large_height_Update
+  delete: CMSMediaFields_sizes_large_height_Delete
+}
+
+type CMSMediaFields_sizes_large_height_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_height_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_height_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_height_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_mimeType {
+  create: CMSMediaFields_sizes_large_mimeType_Create
+  read: CMSMediaFields_sizes_large_mimeType_Read
+  update: CMSMediaFields_sizes_large_mimeType_Update
+  delete: CMSMediaFields_sizes_large_mimeType_Delete
+}
+
+type CMSMediaFields_sizes_large_mimeType_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_mimeType_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_mimeType_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_mimeType_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filesize {
+  create: CMSMediaFields_sizes_large_filesize_Create
+  read: CMSMediaFields_sizes_large_filesize_Read
+  update: CMSMediaFields_sizes_large_filesize_Update
+  delete: CMSMediaFields_sizes_large_filesize_Delete
+}
+
+type CMSMediaFields_sizes_large_filesize_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filesize_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filesize_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filesize_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filename {
+  create: CMSMediaFields_sizes_large_filename_Create
+  read: CMSMediaFields_sizes_large_filename_Read
+  update: CMSMediaFields_sizes_large_filename_Update
+  delete: CMSMediaFields_sizes_large_filename_Delete
+}
+
+type CMSMediaFields_sizes_large_filename_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filename_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filename_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_large_filename_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait {
+  create: CMSMediaFields_sizes_portrait_Create
+  read: CMSMediaFields_sizes_portrait_Read
+  update: CMSMediaFields_sizes_portrait_Update
+  delete: CMSMediaFields_sizes_portrait_Delete
+  fields: CMSMediaFields_sizes_portrait_Fields
+}
+
+type CMSMediaFields_sizes_portrait_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_Fields {
+  url: CMSMediaFields_sizes_portrait_url
+  width: CMSMediaFields_sizes_portrait_width
+  height: CMSMediaFields_sizes_portrait_height
+  mimeType: CMSMediaFields_sizes_portrait_mimeType
+  filesize: CMSMediaFields_sizes_portrait_filesize
+  filename: CMSMediaFields_sizes_portrait_filename
+}
+
+type CMSMediaFields_sizes_portrait_url {
+  create: CMSMediaFields_sizes_portrait_url_Create
+  read: CMSMediaFields_sizes_portrait_url_Read
+  update: CMSMediaFields_sizes_portrait_url_Update
+  delete: CMSMediaFields_sizes_portrait_url_Delete
+}
+
+type CMSMediaFields_sizes_portrait_url_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_url_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_url_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_url_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_width {
+  create: CMSMediaFields_sizes_portrait_width_Create
+  read: CMSMediaFields_sizes_portrait_width_Read
+  update: CMSMediaFields_sizes_portrait_width_Update
+  delete: CMSMediaFields_sizes_portrait_width_Delete
+}
+
+type CMSMediaFields_sizes_portrait_width_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_width_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_width_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_width_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_height {
+  create: CMSMediaFields_sizes_portrait_height_Create
+  read: CMSMediaFields_sizes_portrait_height_Read
+  update: CMSMediaFields_sizes_portrait_height_Update
+  delete: CMSMediaFields_sizes_portrait_height_Delete
+}
+
+type CMSMediaFields_sizes_portrait_height_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_height_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_height_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_height_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_mimeType {
+  create: CMSMediaFields_sizes_portrait_mimeType_Create
+  read: CMSMediaFields_sizes_portrait_mimeType_Read
+  update: CMSMediaFields_sizes_portrait_mimeType_Update
+  delete: CMSMediaFields_sizes_portrait_mimeType_Delete
+}
+
+type CMSMediaFields_sizes_portrait_mimeType_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_mimeType_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_mimeType_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_mimeType_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filesize {
+  create: CMSMediaFields_sizes_portrait_filesize_Create
+  read: CMSMediaFields_sizes_portrait_filesize_Read
+  update: CMSMediaFields_sizes_portrait_filesize_Update
+  delete: CMSMediaFields_sizes_portrait_filesize_Delete
+}
+
+type CMSMediaFields_sizes_portrait_filesize_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filesize_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filesize_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filesize_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filename {
+  create: CMSMediaFields_sizes_portrait_filename_Create
+  read: CMSMediaFields_sizes_portrait_filename_Read
+  update: CMSMediaFields_sizes_portrait_filename_Update
+  delete: CMSMediaFields_sizes_portrait_filename_Delete
+}
+
+type CMSMediaFields_sizes_portrait_filename_Create {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filename_Read {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filename_Update {
+  permission: Boolean!
+}
+
+type CMSMediaFields_sizes_portrait_filename_Delete {
+  permission: Boolean!
+}
+
+type CMSMediaCreateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSMediaReadAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSMediaUpdateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSMediaDeleteAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSBorrowerAccess {
+  fields: CMSBorrowerFields
+  create: CMSBorrowerCreateAccess
+  read: CMSBorrowerReadAccess
+  update: CMSBorrowerUpdateAccess
+  delete: CMSBorrowerDeleteAccess
+}
+
+type CMSBorrowerFields {
+  name: CMSBorrowerFields_name
+  logo: CMSBorrowerFields_logo
+  bio: CMSBorrowerFields_bio
+  history: CMSBorrowerFields_history
+  market: CMSBorrowerFields_market
+  website: CMSBorrowerFields_website
+  twitter: CMSBorrowerFields_twitter
+  linkedin: CMSBorrowerFields_linkedin
+  incorporatedCountry: CMSBorrowerFields_incorporatedCountry
+  operatingCountry: CMSBorrowerFields_operatingCountry
+  highlights: CMSBorrowerFields_highlights
+  borrowerFinancials: CMSBorrowerFields_borrowerFinancials
+  underwritingPerformance: CMSBorrowerFields_underwritingPerformance
+  team: CMSBorrowerFields_team
+  mediaLinks: CMSBorrowerFields_mediaLinks
+  contactInfo: CMSBorrowerFields_contactInfo
+  documents: CMSBorrowerFields_documents
+  deals: CMSBorrowerFields_deals
+}
+
+type CMSBorrowerFields_name {
+  create: CMSBorrowerFields_name_Create
+  read: CMSBorrowerFields_name_Read
+  update: CMSBorrowerFields_name_Update
+  delete: CMSBorrowerFields_name_Delete
+}
+
+type CMSBorrowerFields_name_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_name_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_name_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_name_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_logo {
+  create: CMSBorrowerFields_logo_Create
+  read: CMSBorrowerFields_logo_Read
+  update: CMSBorrowerFields_logo_Update
+  delete: CMSBorrowerFields_logo_Delete
+}
+
+type CMSBorrowerFields_logo_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_logo_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_logo_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_logo_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_bio {
+  create: CMSBorrowerFields_bio_Create
+  read: CMSBorrowerFields_bio_Read
+  update: CMSBorrowerFields_bio_Update
+  delete: CMSBorrowerFields_bio_Delete
+}
+
+type CMSBorrowerFields_bio_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_bio_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_bio_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_bio_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_history {
+  create: CMSBorrowerFields_history_Create
+  read: CMSBorrowerFields_history_Read
+  update: CMSBorrowerFields_history_Update
+  delete: CMSBorrowerFields_history_Delete
+}
+
+type CMSBorrowerFields_history_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_history_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_history_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_history_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_market {
+  create: CMSBorrowerFields_market_Create
+  read: CMSBorrowerFields_market_Read
+  update: CMSBorrowerFields_market_Update
+  delete: CMSBorrowerFields_market_Delete
+}
+
+type CMSBorrowerFields_market_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_market_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_market_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_market_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_website {
+  create: CMSBorrowerFields_website_Create
+  read: CMSBorrowerFields_website_Read
+  update: CMSBorrowerFields_website_Update
+  delete: CMSBorrowerFields_website_Delete
+}
+
+type CMSBorrowerFields_website_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_website_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_website_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_website_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_twitter {
+  create: CMSBorrowerFields_twitter_Create
+  read: CMSBorrowerFields_twitter_Read
+  update: CMSBorrowerFields_twitter_Update
+  delete: CMSBorrowerFields_twitter_Delete
+}
+
+type CMSBorrowerFields_twitter_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_twitter_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_twitter_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_twitter_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_linkedin {
+  create: CMSBorrowerFields_linkedin_Create
+  read: CMSBorrowerFields_linkedin_Read
+  update: CMSBorrowerFields_linkedin_Update
+  delete: CMSBorrowerFields_linkedin_Delete
+}
+
+type CMSBorrowerFields_linkedin_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_linkedin_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_linkedin_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_linkedin_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_incorporatedCountry {
+  create: CMSBorrowerFields_incorporatedCountry_Create
+  read: CMSBorrowerFields_incorporatedCountry_Read
+  update: CMSBorrowerFields_incorporatedCountry_Update
+  delete: CMSBorrowerFields_incorporatedCountry_Delete
+}
+
+type CMSBorrowerFields_incorporatedCountry_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_incorporatedCountry_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_incorporatedCountry_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_incorporatedCountry_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_operatingCountry {
+  create: CMSBorrowerFields_operatingCountry_Create
+  read: CMSBorrowerFields_operatingCountry_Read
+  update: CMSBorrowerFields_operatingCountry_Update
+  delete: CMSBorrowerFields_operatingCountry_Delete
+}
+
+type CMSBorrowerFields_operatingCountry_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_operatingCountry_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_operatingCountry_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_operatingCountry_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights {
+  create: CMSBorrowerFields_highlights_Create
+  read: CMSBorrowerFields_highlights_Read
+  update: CMSBorrowerFields_highlights_Update
+  delete: CMSBorrowerFields_highlights_Delete
+  fields: CMSBorrowerFields_highlights_Fields
+}
+
+type CMSBorrowerFields_highlights_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_Fields {
+  text: CMSBorrowerFields_highlights_text
+  id: CMSBorrowerFields_highlights_id
+}
+
+type CMSBorrowerFields_highlights_text {
+  create: CMSBorrowerFields_highlights_text_Create
+  read: CMSBorrowerFields_highlights_text_Read
+  update: CMSBorrowerFields_highlights_text_Update
+  delete: CMSBorrowerFields_highlights_text_Delete
+}
+
+type CMSBorrowerFields_highlights_text_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_text_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_text_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_text_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_id {
+  create: CMSBorrowerFields_highlights_id_Create
+  read: CMSBorrowerFields_highlights_id_Read
+  update: CMSBorrowerFields_highlights_id_Update
+  delete: CMSBorrowerFields_highlights_id_Delete
+}
+
+type CMSBorrowerFields_highlights_id_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_id_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_id_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_highlights_id_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials {
+  create: CMSBorrowerFields_borrowerFinancials_Create
+  read: CMSBorrowerFields_borrowerFinancials_Read
+  update: CMSBorrowerFields_borrowerFinancials_Update
+  delete: CMSBorrowerFields_borrowerFinancials_Delete
+  fields: CMSBorrowerFields_borrowerFinancials_Fields
+}
+
+type CMSBorrowerFields_borrowerFinancials_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_Fields {
+  aum: CMSBorrowerFields_borrowerFinancials_aum
+  pastOffChainDeals: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals
+  otherProducts: CMSBorrowerFields_borrowerFinancials_otherProducts
+  projections: CMSBorrowerFields_borrowerFinancials_projections
+}
+
+type CMSBorrowerFields_borrowerFinancials_aum {
+  create: CMSBorrowerFields_borrowerFinancials_aum_Create
+  read: CMSBorrowerFields_borrowerFinancials_aum_Read
+  update: CMSBorrowerFields_borrowerFinancials_aum_Update
+  delete: CMSBorrowerFields_borrowerFinancials_aum_Delete
+}
+
+type CMSBorrowerFields_borrowerFinancials_aum_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_aum_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_aum_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_aum_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals {
+  create: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Create
+  read: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Read
+  update: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Update
+  delete: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Delete
+  fields: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Fields
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_Fields {
+  text: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text
+  id: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text {
+  create: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Create
+  read: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Read
+  update: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Update
+  delete: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Delete
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_text_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id {
+  create: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Create
+  read: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Read
+  update: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Update
+  delete: CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Delete
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_pastOffChainDeals_id_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts {
+  create: CMSBorrowerFields_borrowerFinancials_otherProducts_Create
+  read: CMSBorrowerFields_borrowerFinancials_otherProducts_Read
+  update: CMSBorrowerFields_borrowerFinancials_otherProducts_Update
+  delete: CMSBorrowerFields_borrowerFinancials_otherProducts_Delete
+  fields: CMSBorrowerFields_borrowerFinancials_otherProducts_Fields
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_Fields {
+  text: CMSBorrowerFields_borrowerFinancials_otherProducts_text
+  id: CMSBorrowerFields_borrowerFinancials_otherProducts_id
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_text {
+  create: CMSBorrowerFields_borrowerFinancials_otherProducts_text_Create
+  read: CMSBorrowerFields_borrowerFinancials_otherProducts_text_Read
+  update: CMSBorrowerFields_borrowerFinancials_otherProducts_text_Update
+  delete: CMSBorrowerFields_borrowerFinancials_otherProducts_text_Delete
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_text_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_text_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_text_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_text_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_id {
+  create: CMSBorrowerFields_borrowerFinancials_otherProducts_id_Create
+  read: CMSBorrowerFields_borrowerFinancials_otherProducts_id_Read
+  update: CMSBorrowerFields_borrowerFinancials_otherProducts_id_Update
+  delete: CMSBorrowerFields_borrowerFinancials_otherProducts_id_Delete
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_id_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_id_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_id_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_otherProducts_id_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_projections {
+  create: CMSBorrowerFields_borrowerFinancials_projections_Create
+  read: CMSBorrowerFields_borrowerFinancials_projections_Read
+  update: CMSBorrowerFields_borrowerFinancials_projections_Update
+  delete: CMSBorrowerFields_borrowerFinancials_projections_Delete
+}
+
+type CMSBorrowerFields_borrowerFinancials_projections_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_projections_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_projections_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_borrowerFinancials_projections_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance {
+  create: CMSBorrowerFields_underwritingPerformance_Create
+  read: CMSBorrowerFields_underwritingPerformance_Read
+  update: CMSBorrowerFields_underwritingPerformance_Update
+  delete: CMSBorrowerFields_underwritingPerformance_Delete
+  fields: CMSBorrowerFields_underwritingPerformance_Fields
+}
+
+type CMSBorrowerFields_underwritingPerformance_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_Fields {
+  performanceDocument: CMSBorrowerFields_underwritingPerformance_performanceDocument
+  underwritingDescription: CMSBorrowerFields_underwritingPerformance_underwritingDescription
+  defaultRate: CMSBorrowerFields_underwritingPerformance_defaultRate
+}
+
+type CMSBorrowerFields_underwritingPerformance_performanceDocument {
+  create: CMSBorrowerFields_underwritingPerformance_performanceDocument_Create
+  read: CMSBorrowerFields_underwritingPerformance_performanceDocument_Read
+  update: CMSBorrowerFields_underwritingPerformance_performanceDocument_Update
+  delete: CMSBorrowerFields_underwritingPerformance_performanceDocument_Delete
+}
+
+type CMSBorrowerFields_underwritingPerformance_performanceDocument_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_performanceDocument_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_performanceDocument_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_performanceDocument_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_underwritingDescription {
+  create: CMSBorrowerFields_underwritingPerformance_underwritingDescription_Create
+  read: CMSBorrowerFields_underwritingPerformance_underwritingDescription_Read
+  update: CMSBorrowerFields_underwritingPerformance_underwritingDescription_Update
+  delete: CMSBorrowerFields_underwritingPerformance_underwritingDescription_Delete
+}
+
+type CMSBorrowerFields_underwritingPerformance_underwritingDescription_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_underwritingDescription_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_underwritingDescription_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_underwritingDescription_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_defaultRate {
+  create: CMSBorrowerFields_underwritingPerformance_defaultRate_Create
+  read: CMSBorrowerFields_underwritingPerformance_defaultRate_Read
+  update: CMSBorrowerFields_underwritingPerformance_defaultRate_Update
+  delete: CMSBorrowerFields_underwritingPerformance_defaultRate_Delete
+}
+
+type CMSBorrowerFields_underwritingPerformance_defaultRate_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_defaultRate_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_defaultRate_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_underwritingPerformance_defaultRate_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team {
+  create: CMSBorrowerFields_team_Create
+  read: CMSBorrowerFields_team_Read
+  update: CMSBorrowerFields_team_Update
+  delete: CMSBorrowerFields_team_Delete
+  fields: CMSBorrowerFields_team_Fields
+}
+
+type CMSBorrowerFields_team_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_Fields {
+  description: CMSBorrowerFields_team_description
+  members: CMSBorrowerFields_team_members
+}
+
+type CMSBorrowerFields_team_description {
+  create: CMSBorrowerFields_team_description_Create
+  read: CMSBorrowerFields_team_description_Read
+  update: CMSBorrowerFields_team_description_Update
+  delete: CMSBorrowerFields_team_description_Delete
+}
+
+type CMSBorrowerFields_team_description_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_description_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_description_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_description_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_members {
+  create: CMSBorrowerFields_team_members_Create
+  read: CMSBorrowerFields_team_members_Read
+  update: CMSBorrowerFields_team_members_Update
+  delete: CMSBorrowerFields_team_members_Delete
+}
+
+type CMSBorrowerFields_team_members_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_members_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_members_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_team_members_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks {
+  create: CMSBorrowerFields_mediaLinks_Create
+  read: CMSBorrowerFields_mediaLinks_Read
+  update: CMSBorrowerFields_mediaLinks_Update
+  delete: CMSBorrowerFields_mediaLinks_Delete
+  fields: CMSBorrowerFields_mediaLinks_Fields
+}
+
+type CMSBorrowerFields_mediaLinks_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_Fields {
+  title: CMSBorrowerFields_mediaLinks_title
+  url: CMSBorrowerFields_mediaLinks_url
+  id: CMSBorrowerFields_mediaLinks_id
+}
+
+type CMSBorrowerFields_mediaLinks_title {
+  create: CMSBorrowerFields_mediaLinks_title_Create
+  read: CMSBorrowerFields_mediaLinks_title_Read
+  update: CMSBorrowerFields_mediaLinks_title_Update
+  delete: CMSBorrowerFields_mediaLinks_title_Delete
+}
+
+type CMSBorrowerFields_mediaLinks_title_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_title_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_title_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_title_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_url {
+  create: CMSBorrowerFields_mediaLinks_url_Create
+  read: CMSBorrowerFields_mediaLinks_url_Read
+  update: CMSBorrowerFields_mediaLinks_url_Update
+  delete: CMSBorrowerFields_mediaLinks_url_Delete
+}
+
+type CMSBorrowerFields_mediaLinks_url_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_url_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_url_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_url_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_id {
+  create: CMSBorrowerFields_mediaLinks_id_Create
+  read: CMSBorrowerFields_mediaLinks_id_Read
+  update: CMSBorrowerFields_mediaLinks_id_Update
+  delete: CMSBorrowerFields_mediaLinks_id_Delete
+}
+
+type CMSBorrowerFields_mediaLinks_id_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_id_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_id_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_mediaLinks_id_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo {
+  create: CMSBorrowerFields_contactInfo_Create
+  read: CMSBorrowerFields_contactInfo_Read
+  update: CMSBorrowerFields_contactInfo_Update
+  delete: CMSBorrowerFields_contactInfo_Delete
+  fields: CMSBorrowerFields_contactInfo_Fields
+}
+
+type CMSBorrowerFields_contactInfo_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_Fields {
+  description: CMSBorrowerFields_contactInfo_description
+  email: CMSBorrowerFields_contactInfo_email
+}
+
+type CMSBorrowerFields_contactInfo_description {
+  create: CMSBorrowerFields_contactInfo_description_Create
+  read: CMSBorrowerFields_contactInfo_description_Read
+  update: CMSBorrowerFields_contactInfo_description_Update
+  delete: CMSBorrowerFields_contactInfo_description_Delete
+}
+
+type CMSBorrowerFields_contactInfo_description_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_description_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_description_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_description_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_email {
+  create: CMSBorrowerFields_contactInfo_email_Create
+  read: CMSBorrowerFields_contactInfo_email_Read
+  update: CMSBorrowerFields_contactInfo_email_Update
+  delete: CMSBorrowerFields_contactInfo_email_Delete
+}
+
+type CMSBorrowerFields_contactInfo_email_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_email_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_email_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_contactInfo_email_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_documents {
+  create: CMSBorrowerFields_documents_Create
+  read: CMSBorrowerFields_documents_Read
+  update: CMSBorrowerFields_documents_Update
+  delete: CMSBorrowerFields_documents_Delete
+}
+
+type CMSBorrowerFields_documents_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_documents_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_documents_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_documents_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_deals {
+  create: CMSBorrowerFields_deals_Create
+  read: CMSBorrowerFields_deals_Read
+  update: CMSBorrowerFields_deals_Update
+  delete: CMSBorrowerFields_deals_Delete
+}
+
+type CMSBorrowerFields_deals_Create {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_deals_Read {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_deals_Update {
+  permission: Boolean!
+}
+
+type CMSBorrowerFields_deals_Delete {
+  permission: Boolean!
+}
+
+type CMSBorrowerCreateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSBorrowerReadAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSBorrowerUpdateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSBorrowerDeleteAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSDealAccess {
+  fields: CMSDealFields
+  create: CMSDealCreateAccess
+  read: CMSDealReadAccess
+  update: CMSDealUpdateAccess
+  delete: CMSDealDeleteAccess
+}
+
+type CMSDealFields {
+  id: CMSDealFields_id
+  name: CMSDealFields_name
+  category: CMSDealFields_category
+  borrower: CMSDealFields_borrower
+  overview: CMSDealFields_overview
+  defaultInterestRate: CMSDealFields_defaultInterestRate
+  highlights: CMSDealFields_highlights
+  useOfFunds: CMSDealFields_useOfFunds
+  risks: CMSDealFields_risks
+  securitiesAndRecourse: CMSDealFields_securitiesAndRecourse
+  documents: CMSDealFields_documents
+}
+
+type CMSDealFields_id {
+  create: CMSDealFields_id_Create
+  read: CMSDealFields_id_Read
+  update: CMSDealFields_id_Update
+  delete: CMSDealFields_id_Delete
+}
+
+type CMSDealFields_id_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_id_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_id_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_id_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_name {
+  create: CMSDealFields_name_Create
+  read: CMSDealFields_name_Read
+  update: CMSDealFields_name_Update
+  delete: CMSDealFields_name_Delete
+}
+
+type CMSDealFields_name_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_name_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_name_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_name_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_category {
+  create: CMSDealFields_category_Create
+  read: CMSDealFields_category_Read
+  update: CMSDealFields_category_Update
+  delete: CMSDealFields_category_Delete
+}
+
+type CMSDealFields_category_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_category_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_category_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_category_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_borrower {
+  create: CMSDealFields_borrower_Create
+  read: CMSDealFields_borrower_Read
+  update: CMSDealFields_borrower_Update
+  delete: CMSDealFields_borrower_Delete
+}
+
+type CMSDealFields_borrower_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_borrower_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_borrower_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_borrower_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_overview {
+  create: CMSDealFields_overview_Create
+  read: CMSDealFields_overview_Read
+  update: CMSDealFields_overview_Update
+  delete: CMSDealFields_overview_Delete
+}
+
+type CMSDealFields_overview_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_overview_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_overview_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_overview_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_defaultInterestRate {
+  create: CMSDealFields_defaultInterestRate_Create
+  read: CMSDealFields_defaultInterestRate_Read
+  update: CMSDealFields_defaultInterestRate_Update
+  delete: CMSDealFields_defaultInterestRate_Delete
+}
+
+type CMSDealFields_defaultInterestRate_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_defaultInterestRate_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_defaultInterestRate_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_defaultInterestRate_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights {
+  create: CMSDealFields_highlights_Create
+  read: CMSDealFields_highlights_Read
+  update: CMSDealFields_highlights_Update
+  delete: CMSDealFields_highlights_Delete
+  fields: CMSDealFields_highlights_Fields
+}
+
+type CMSDealFields_highlights_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_Fields {
+  text: CMSDealFields_highlights_text
+  id: CMSDealFields_highlights_id
+}
+
+type CMSDealFields_highlights_text {
+  create: CMSDealFields_highlights_text_Create
+  read: CMSDealFields_highlights_text_Read
+  update: CMSDealFields_highlights_text_Update
+  delete: CMSDealFields_highlights_text_Delete
+}
+
+type CMSDealFields_highlights_text_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_text_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_text_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_text_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_id {
+  create: CMSDealFields_highlights_id_Create
+  read: CMSDealFields_highlights_id_Read
+  update: CMSDealFields_highlights_id_Update
+  delete: CMSDealFields_highlights_id_Delete
+}
+
+type CMSDealFields_highlights_id_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_id_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_id_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_highlights_id_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_useOfFunds {
+  create: CMSDealFields_useOfFunds_Create
+  read: CMSDealFields_useOfFunds_Read
+  update: CMSDealFields_useOfFunds_Update
+  delete: CMSDealFields_useOfFunds_Delete
+}
+
+type CMSDealFields_useOfFunds_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_useOfFunds_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_useOfFunds_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_useOfFunds_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_risks {
+  create: CMSDealFields_risks_Create
+  read: CMSDealFields_risks_Read
+  update: CMSDealFields_risks_Update
+  delete: CMSDealFields_risks_Delete
+}
+
+type CMSDealFields_risks_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_risks_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_risks_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_risks_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse {
+  create: CMSDealFields_securitiesAndRecourse_Create
+  read: CMSDealFields_securitiesAndRecourse_Read
+  update: CMSDealFields_securitiesAndRecourse_Update
+  delete: CMSDealFields_securitiesAndRecourse_Delete
+  fields: CMSDealFields_securitiesAndRecourse_Fields
+}
+
+type CMSDealFields_securitiesAndRecourse_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_Fields {
+  secured: CMSDealFields_securitiesAndRecourse_secured
+  type: CMSDealFields_securitiesAndRecourse_type
+  description: CMSDealFields_securitiesAndRecourse_description
+  value: CMSDealFields_securitiesAndRecourse_value
+  recourse: CMSDealFields_securitiesAndRecourse_recourse
+  recourseDescription: CMSDealFields_securitiesAndRecourse_recourseDescription
+  covenants: CMSDealFields_securitiesAndRecourse_covenants
+}
+
+type CMSDealFields_securitiesAndRecourse_secured {
+  create: CMSDealFields_securitiesAndRecourse_secured_Create
+  read: CMSDealFields_securitiesAndRecourse_secured_Read
+  update: CMSDealFields_securitiesAndRecourse_secured_Update
+  delete: CMSDealFields_securitiesAndRecourse_secured_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_secured_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_secured_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_secured_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_secured_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_type {
+  create: CMSDealFields_securitiesAndRecourse_type_Create
+  read: CMSDealFields_securitiesAndRecourse_type_Read
+  update: CMSDealFields_securitiesAndRecourse_type_Update
+  delete: CMSDealFields_securitiesAndRecourse_type_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_type_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_type_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_type_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_type_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_description {
+  create: CMSDealFields_securitiesAndRecourse_description_Create
+  read: CMSDealFields_securitiesAndRecourse_description_Read
+  update: CMSDealFields_securitiesAndRecourse_description_Update
+  delete: CMSDealFields_securitiesAndRecourse_description_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_description_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_description_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_description_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_description_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_value {
+  create: CMSDealFields_securitiesAndRecourse_value_Create
+  read: CMSDealFields_securitiesAndRecourse_value_Read
+  update: CMSDealFields_securitiesAndRecourse_value_Update
+  delete: CMSDealFields_securitiesAndRecourse_value_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_value_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_value_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_value_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_value_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourse {
+  create: CMSDealFields_securitiesAndRecourse_recourse_Create
+  read: CMSDealFields_securitiesAndRecourse_recourse_Read
+  update: CMSDealFields_securitiesAndRecourse_recourse_Update
+  delete: CMSDealFields_securitiesAndRecourse_recourse_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_recourse_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourse_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourse_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourse_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourseDescription {
+  create: CMSDealFields_securitiesAndRecourse_recourseDescription_Create
+  read: CMSDealFields_securitiesAndRecourse_recourseDescription_Read
+  update: CMSDealFields_securitiesAndRecourse_recourseDescription_Update
+  delete: CMSDealFields_securitiesAndRecourse_recourseDescription_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_recourseDescription_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourseDescription_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourseDescription_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_recourseDescription_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_covenants {
+  create: CMSDealFields_securitiesAndRecourse_covenants_Create
+  read: CMSDealFields_securitiesAndRecourse_covenants_Read
+  update: CMSDealFields_securitiesAndRecourse_covenants_Update
+  delete: CMSDealFields_securitiesAndRecourse_covenants_Delete
+}
+
+type CMSDealFields_securitiesAndRecourse_covenants_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_covenants_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_covenants_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_securitiesAndRecourse_covenants_Delete {
+  permission: Boolean!
+}
+
+type CMSDealFields_documents {
+  create: CMSDealFields_documents_Create
+  read: CMSDealFields_documents_Read
+  update: CMSDealFields_documents_Update
+  delete: CMSDealFields_documents_Delete
+}
+
+type CMSDealFields_documents_Create {
+  permission: Boolean!
+}
+
+type CMSDealFields_documents_Read {
+  permission: Boolean!
+}
+
+type CMSDealFields_documents_Update {
+  permission: Boolean!
+}
+
+type CMSDealFields_documents_Delete {
+  permission: Boolean!
+}
+
+type CMSDealCreateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSDealReadAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSDealUpdateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type CMSDealDeleteAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type Mutation {
+  createCMSUser(data: mutationCMSUserInput!, draft: Boolean): CMSUser
+  updateCMSUser(id: String!, data: mutationCMSUserUpdateInput!, draft: Boolean, autosave: Boolean): CMSUser
+  deleteCMSUser(id: String!): CMSUser
+  refreshTokenCMSUser(token: String): cms_usersRefreshedCMSUser
+  logoutCMSUser: String
+  unlockCMSUser(email: String!): Boolean!
+  loginCMSUser(email: String, password: String): cms_usersLoginResult
+  forgotPasswordCMSUser(email: String!, disableEmail: Boolean, expiration: Int): Boolean!
+  resetPasswordCMSUser(token: String, password: String): cms_usersResetPassword
+  verifyEmailCMSUser(token: String): Boolean
+  createCMSMedia(data: mutationCMSMediaInput!, draft: Boolean): CMSMedia
+  updateCMSMedia(id: String!, data: mutationCMSMediaUpdateInput!, draft: Boolean, autosave: Boolean): CMSMedia
+  deleteCMSMedia(id: String!): CMSMedia
+  createCMSBorrower(data: mutationCMSBorrowerInput!, draft: Boolean): CMSBorrower
+  updateCMSBorrower(id: String!, data: mutationCMSBorrowerUpdateInput!, draft: Boolean, autosave: Boolean): CMSBorrower
+  deleteCMSBorrower(id: String!): CMSBorrower
+  createCMSDeal(data: mutationCMSDealInput!, draft: Boolean): CMSDeal
+  updateCMSDeal(id: String!, data: mutationCMSDealUpdateInput!, draft: Boolean, autosave: Boolean): CMSDeal
+  deleteCMSDeal(id: String!): CMSDeal
+  updatePreference(key: String!, value: JSON): Preference
+  deletePreference(key: String!): Preference
+}
+
+input mutationCMSUserInput {
+  email: String
+  resetPasswordToken: String
+  resetPasswordExpiration: String
+  loginAttempts: Float
+  lockUntil: String
+  password: String!
+}
+
+input mutationCMSUserUpdateInput {
+  email: String
+  resetPasswordToken: String
+  resetPasswordExpiration: String
+  loginAttempts: Float
+  lockUntil: String
+  password: String
+}
+
+type cms_usersRefreshedCMSUser {
+  user: cms_usersJWT
+  refreshedToken: String
+  exp: Int
+}
+
+type cms_usersJWT {
+  email: EmailAddress!
+  collection: String!
+}
+
+type cms_usersLoginResult {
+  token: String
+  user: CMSUser
+  exp: Int
+}
+
+type cms_usersResetPassword {
+  token: String
+  user: CMSUser
+}
+
+input mutationCMSMediaInput {
+  alt: String
+  url: String
+  filename: String
+  mimeType: String
+  filesize: Float
+  width: Float
+  height: Float
+  sizes: mutationCMSMedia_SizesInput
+}
+
+input mutationCMSMedia_SizesInput {
+  thumbnail: mutationCMSMedia_Sizes_thumbnailInput
+  medium: mutationCMSMedia_Sizes_mediumInput
+  large: mutationCMSMedia_Sizes_largeInput
+  portrait: mutationCMSMedia_Sizes_portraitInput
+}
+
+input mutationCMSMedia_Sizes_thumbnailInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMedia_Sizes_mediumInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMedia_Sizes_largeInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMedia_Sizes_portraitInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMediaUpdateInput {
+  alt: String
+  url: String
+  filename: String
+  mimeType: String
+  filesize: Float
+  width: Float
+  height: Float
+  sizes: mutationCMSMediaUpdate_SizesInput
+}
+
+input mutationCMSMediaUpdate_SizesInput {
+  thumbnail: mutationCMSMediaUpdate_Sizes_thumbnailInput
+  medium: mutationCMSMediaUpdate_Sizes_mediumInput
+  large: mutationCMSMediaUpdate_Sizes_largeInput
+  portrait: mutationCMSMediaUpdate_Sizes_portraitInput
+}
+
+input mutationCMSMediaUpdate_Sizes_thumbnailInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMediaUpdate_Sizes_mediumInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMediaUpdate_Sizes_largeInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSMediaUpdate_Sizes_portraitInput {
+  url: String
+  width: Float
+  height: Float
+  mimeType: String
+  filesize: Float
+  filename: String
+}
+
+input mutationCMSBorrowerInput {
+  name: String!
+  logo: String
+  bio: String
+  history: String
+  market: String
+  website: String
+  twitter: String
+  linkedin: String
+  incorporatedCountry: String
+  operatingCountry: String
+  highlights: [mutationCMSBorrower_HighlightsInput]
+  borrowerFinancials: mutationCMSBorrower_BorrowerFinancialsInput
+  underwritingPerformance: mutationCMSBorrower_UnderwritingandPerformanceInput
+  team: mutationCMSBorrower_TeamInput
+  mediaLinks: [mutationCMSBorrower_MedialinksInput]
+  contactInfo: mutationCMSBorrower_ContactInfoInput
+  documents: JSON
+  deals: [String]
+}
+
+input mutationCMSBorrower_HighlightsInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSBorrower_BorrowerFinancialsInput {
+  aum: Float
+  pastOffChainDeals: [mutationCMSBorrower_BorrowerFinancials_Pastdealsoff_chainInput]
+  otherProducts: [mutationCMSBorrower_BorrowerFinancials_OtherproductsofferedInput]
+  projections: String
+}
+
+input mutationCMSBorrower_BorrowerFinancials_Pastdealsoff_chainInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSBorrower_BorrowerFinancials_OtherproductsofferedInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSBorrower_UnderwritingandPerformanceInput {
+  performanceDocument: String
+  underwritingDescription: String
+  defaultRate: Float
+}
+
+input mutationCMSBorrower_TeamInput {
+  description: String
+  members: JSON
+}
+
+input mutationCMSBorrower_MedialinksInput {
+  title: String!
+  url: String!
+  id: String
+}
+
+input mutationCMSBorrower_ContactInfoInput {
+  description: String
+  email: String
+}
+
+input mutationCMSBorrowerUpdateInput {
+  name: String
+  logo: String
+  bio: String
+  history: String
+  market: String
+  website: String
+  twitter: String
+  linkedin: String
+  incorporatedCountry: String
+  operatingCountry: String
+  highlights: [mutationCMSBorrowerUpdate_HighlightsInput]
+  borrowerFinancials: mutationCMSBorrowerUpdate_BorrowerFinancialsInput
+  underwritingPerformance: mutationCMSBorrowerUpdate_UnderwritingandPerformanceInput
+  team: mutationCMSBorrowerUpdate_TeamInput
+  mediaLinks: [mutationCMSBorrowerUpdate_MedialinksInput]
+  contactInfo: mutationCMSBorrowerUpdate_ContactInfoInput
+  documents: JSON
+  deals: [String]
+}
+
+input mutationCMSBorrowerUpdate_HighlightsInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSBorrowerUpdate_BorrowerFinancialsInput {
+  aum: Float
+  pastOffChainDeals: [mutationCMSBorrowerUpdate_BorrowerFinancials_Pastdealsoff_chainInput]
+  otherProducts: [mutationCMSBorrowerUpdate_BorrowerFinancials_OtherproductsofferedInput]
+  projections: String
+}
+
+input mutationCMSBorrowerUpdate_BorrowerFinancials_Pastdealsoff_chainInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSBorrowerUpdate_BorrowerFinancials_OtherproductsofferedInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSBorrowerUpdate_UnderwritingandPerformanceInput {
+  performanceDocument: String
+  underwritingDescription: String
+  defaultRate: Float
+}
+
+input mutationCMSBorrowerUpdate_TeamInput {
+  description: String
+  members: JSON
+}
+
+input mutationCMSBorrowerUpdate_MedialinksInput {
+  title: String!
+  url: String!
+  id: String
+}
+
+input mutationCMSBorrowerUpdate_ContactInfoInput {
+  description: String
+  email: String
+}
+
+input mutationCMSDealInput {
+  id: String!
+  name: String!
+  category: String!
+  borrower: String
+  overview: String!
+  defaultInterestRate: Float
+  highlights: [mutationCMSDeal_HighlightsInput]
+  useOfFunds: String
+  risks: String
+  securitiesAndRecourse: mutationCMSDeal_SecuritiesandRecourseInput
+  documents: JSON
+}
+
+input mutationCMSDeal_HighlightsInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSDeal_SecuritiesandRecourseInput {
+  secured: Boolean
+  type: String
+  description: String
+  value: Float
+  recourse: Boolean
+  recourseDescription: String
+  covenants: String
+}
+
+input mutationCMSDealUpdateInput {
+  name: String
+  category: String
+  borrower: String
+  overview: String
+  defaultInterestRate: Float
+  highlights: [mutationCMSDealUpdate_HighlightsInput]
+  useOfFunds: String
+  risks: String
+  securitiesAndRecourse: mutationCMSDealUpdate_SecuritiesandRecourseInput
+  documents: JSON
+}
+
+input mutationCMSDealUpdate_HighlightsInput {
+  text: String!
+  id: String
+}
+
+input mutationCMSDealUpdate_SecuritiesandRecourseInput {
+  secured: Boolean
+  type: String
+  description: String
+  value: Float
+  recourse: Boolean
+  recourseDescription: String
+  covenants: String
+}

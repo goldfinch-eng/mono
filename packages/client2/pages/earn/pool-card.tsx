@@ -9,8 +9,12 @@ import {
   InfoIconTooltip,
   ShimmerLines,
 } from "@/components/design-system";
+import { CDN_URL } from "@/constants";
 import { formatPercent } from "@/lib/format";
-import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
+import {
+  TranchedPoolCardFieldsFragment,
+  CmsTranchedPoolCardFieldsFragment,
+} from "@/lib/graphql/generated";
 import {
   PoolStatus,
   getTranchedPoolStatus,
@@ -175,7 +179,26 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   }
 `;
 
+export const CMS_TRANCHED_POOL_CARD_FIELDS = gql`
+  fragment CMSTranchedPoolCardFields on CMSDeal {
+    id
+    name
+    category
+    borrower {
+      logo {
+        url
+        sizes {
+          thumbnail {
+            url
+          }
+        }
+      }
+    }
+  }
+`;
+
 interface TranchedPoolCardProps {
+  details?: CmsTranchedPoolCardFieldsFragment | null;
   tranchedPool: TranchedPoolCardFieldsFragment;
   href: string;
   fiatPerGfi: number;
@@ -183,6 +206,7 @@ interface TranchedPoolCardProps {
 }
 
 export function TranchedPoolCard({
+  details,
   tranchedPool,
   href,
   fiatPerGfi,
@@ -206,9 +230,12 @@ export function TranchedPoolCard({
 
   return (
     <PoolCard
-      title={tranchedPool.name}
-      subtitle={tranchedPool.category}
-      icon={tranchedPool.icon}
+      title={details?.name}
+      subtitle={details?.category}
+      icon={`${CDN_URL}${
+        details?.borrower?.logo?.sizes?.thumbnail?.url ??
+        details?.borrower?.logo?.url
+      }`}
       apy={tranchedPool.estimatedJuniorApy}
       apyWithGfi={totalApyWithGfi}
       apyTooltipContent={

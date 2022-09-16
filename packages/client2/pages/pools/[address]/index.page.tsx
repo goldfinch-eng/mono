@@ -1,6 +1,8 @@
+import { ParsedUrlQuery } from "querystring";
+
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useRouter } from "next/router";
+import { GetStaticPaths, GetStaticProps } from "next";
 
 import {
   Breadcrumb,
@@ -18,10 +20,14 @@ import {
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
+import { CDN_URL } from "@/constants";
+import { apolloClient } from "@/lib/graphql/apollo";
 import {
   SupportedCrypto,
   UidType,
   useSingleTranchedPoolDataQuery,
+  SinglePoolCmsQuery,
+  PoolPageCmsQuery,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -30,9 +36,20 @@ import {
 } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
-import { BorrowerProfile, BORROWER_PROFILE_FIELDS } from "./borrower-profile";
+import {
+  BorrowerProfile,
+  CMS_BORROWER_PROFILE_FIELDS,
+  BORROWER_OTHER_POOL_FIELDS,
+} from "./borrower-profile";
+import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
 import ComingSoonPanel from "./coming-soon-panel";
-import DealTermsTable from "./deal-terms-table";
+import DealSummary from "./deal-summary";
+import {
+  SECURITIES_RECOURSE_TABLE_FIELDS,
+  BORROWER_FINANCIALS_TABLE_FIELDS,
+  BORROWER_PERFORMANCE_TABLE_FIELDS,
+} from "./deal-tables";
+import { CMS_DOCUMENT_FIELDS } from "./documents-list";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
 import {
@@ -43,7 +60,6 @@ import SupplyPanel, {
   SUPPLY_PANEL_TRANCHED_POOL_FIELDS,
   SUPPLY_PANEL_USER_FIELDS,
 } from "./supply-panel";
-import { TransactionTable } from "./transaction-table";
 import {
   WithdrawalPanel,
   WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS,
@@ -57,21 +73,15 @@ gql`
   ${SUPPLY_PANEL_USER_FIELDS}
   ${WITHDRAWAL_PANEL_POOL_TOKEN_FIELDS}
   ${WITHDRAWAL_PANEL_ZAP_FIELDS}
-  ${BORROWER_PROFILE_FIELDS}
+  ${BORROWER_OTHER_POOL_FIELDS}
   query SingleTranchedPoolData(
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
     $userId: ID!
+    $allBorrowerPools: [ID!]
   ) {
     tranchedPool(id: $tranchedPoolId) {
       id
-      name @client
-      category @client
-      icon @client
-      description @client
-      highlights @client
-      agreement @client
-      dataroom @client
       estimatedJuniorApy
       estimatedJuniorApyFromGfiRaw
       estimatedLeverageRatio
@@ -100,7 +110,9 @@ gql`
       interestAmountRepaid
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
-      ...BorrowerProfileFields
+    }
+    borrowerPools: tranchedPools(where: { id_in: $allBorrowerPools }) {
+      ...BorrowerOtherPoolFields
     }
     seniorPools(first: 1) {
       id
@@ -132,24 +144,73 @@ gql`
   }
 `;
 
-export default function PoolPage() {
-  const {
-    query: { address },
-  } = useRouter();
+const allPoolsCMSQuery = gql`
+  query PoolPageCMS @api(name: cms) {
+    CMSDeals {
+      docs {
+        id
+      }
+    }
+  }
+`;
+
+const singlePoolCMSQuery = gql`
+  ${CMS_DOCUMENT_FIELDS}
+  ${CMS_TEAM_MEMBER_FIELDS}
+  ${SECURITIES_RECOURSE_TABLE_FIELDS}
+  ${BORROWER_FINANCIALS_TABLE_FIELDS}
+  ${BORROWER_PERFORMANCE_TABLE_FIELDS}
+  ${CMS_BORROWER_PROFILE_FIELDS}
+  query SinglePoolCMS($id: String!) @api(name: cms) {
+    CMSDeal(id: $id) {
+      id
+      name
+      category
+      borrower {
+        ...CMSBorrowerProfileFields
+      }
+      overview
+      highlights {
+        text
+      }
+      useOfFunds
+      risks
+      securitiesAndRecourse {
+        ...SecuritiesRecourseTableFields
+      }
+      defaultInterestRate
+      documents {
+        ...CMSDocumentFields
+      }
+    }
+  }
+`;
+
+interface PoolPageProps {
+  poolDetails: SinglePoolCmsQuery["CMSDeal"];
+}
+
+export default function PoolPage({ poolDetails }: PoolPageProps) {
   const { account } = useWallet();
 
+  const borrower = poolDetails?.borrower;
+  const allBorrowerPools = (borrower?.deals || []).map((pool) => pool.id);
+  const poolId = poolDetails?.id;
+
   const { data, error } = useSingleTranchedPoolDataQuery({
-    skip: !address,
+    skip: !poolDetails?.id,
     variables: {
-      tranchedPoolId: address as string,
-      tranchedPoolAddress: address as string,
+      tranchedPoolId: poolDetails?.id as string,
+      tranchedPoolAddress: poolDetails?.id as string,
       userId: account?.toLowerCase() ?? "",
+      allBorrowerPools,
     },
     returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
 
   const tranchedPool = data?.tranchedPool;
   const seniorPool = data?.seniorPools?.[0];
+  const borrowerPools = data?.borrowerPools;
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
@@ -217,7 +278,7 @@ export default function PoolPage() {
 
   return (
     <>
-      <SEO title={tranchedPool?.name} />
+      <SEO title={poolDetails?.name} />
 
       {initialBannerContent && expandedBannerContent ? (
         <BannerPortal>
@@ -263,8 +324,10 @@ export default function PoolPage() {
           <div className="mb-8 flex flex-wrap justify-between gap-2">
             <div>
               <Breadcrumb
-                label={tranchedPool?.name}
-                image={tranchedPool?.icon}
+                label={poolDetails?.name}
+                image={`${CDN_URL}${
+                  borrower?.logo?.sizes?.thumbnail?.url ?? borrower?.logo?.url
+                }`}
               />
             </div>
             {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
@@ -285,8 +348,8 @@ export default function PoolPage() {
             level={1}
             className="mb-12 text-center text-sand-800 md:text-left"
           >
-            {tranchedPool ? (
-              tranchedPool.name
+            {poolDetails ? (
+              poolDetails.name
             ) : (
               <ShimmerLines truncateFirstLine={false} lines={2} />
             )}
@@ -383,59 +446,23 @@ export default function PoolPage() {
             </TabList>
             <TabPanels>
               <TabContent>
-                <div className="mb-20">
-                  <h2 className="mb-8 text-3xl">Deal Overview</h2>
-                  {tranchedPool ? (
-                    <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
-                      {tranchedPool.description}
-                    </p>
-                  ) : (
-                    <ShimmerLines lines={3} />
-                  )}
-                  {tranchedPool?.dataroom ? (
-                    <Button
-                      as="a"
-                      variant="rounded"
-                      iconRight="ArrowTopRight"
-                      href={tranchedPool.dataroom}
-                      target="_blank"
-                      rel="noreferrer"
-                      size="lg"
-                      className="block"
-                    >
-                      Dataroom
-                    </Button>
-                  ) : null}
-                </div>
-
-                <div className="mb-20">
-                  <h2 className="mb-8 text-lg font-semibold">
-                    Recent Activity
-                  </h2>
-                  {tranchedPool ? (
-                    <TransactionTable tranchedPoolId={tranchedPool.id} />
-                  ) : null}
-                </div>
-
-                {tranchedPool?.highlights ? (
-                  <div className="mb-20">
-                    <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-                    <ul className="list-outside list-disc space-y-5 pl-5">
-                      {tranchedPool?.highlights?.map((item, idx) => (
-                        <li key={`pool-highlight-${address}-${idx}`}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <DealTermsTable
-                  tranchedPool={tranchedPool}
-                  poolStatus={poolStatus}
-                />
+                {tranchedPool && poolDetails ? (
+                  <DealSummary
+                    poolDetails={poolDetails}
+                    poolChainData={tranchedPool}
+                    poolStatus={poolStatus}
+                  />
+                ) : (
+                  <ShimmerLines lines={3} />
+                )}
               </TabContent>
               <TabContent>
-                {tranchedPool ? (
-                  <BorrowerProfile tranchedPool={tranchedPool} />
+                {tranchedPool && poolDetails?.borrower ? (
+                  <BorrowerProfile
+                    poolId={poolId}
+                    borrower={poolDetails.borrower}
+                    borrowerPools={borrowerPools}
+                  />
                 ) : null}
               </TabContent>
             </TabPanels>
@@ -445,3 +472,43 @@ export default function PoolPage() {
     </>
   );
 }
+
+interface StaticParams extends ParsedUrlQuery {
+  address: string;
+}
+
+export const getStaticPaths: GetStaticPaths<StaticParams> = async () => {
+  const res = await apolloClient.query<PoolPageCmsQuery>({
+    query: allPoolsCMSQuery,
+  });
+
+  const paths =
+    res.data.CMSDeals?.docs?.map((pool) => ({
+      params: {
+        address: pool?.id || "",
+      },
+    })) || [];
+
+  return {
+    paths,
+    fallback: false,
+  };
+};
+
+export const getStaticProps: GetStaticProps<
+  PoolPageProps,
+  StaticParams
+> = async (context) => {
+  const res = await apolloClient.query<SinglePoolCmsQuery>({
+    query: singlePoolCMSQuery,
+    variables: {
+      id: context.params?.address,
+    },
+  });
+
+  return {
+    props: {
+      poolDetails: res.data.CMSDeal,
+    },
+  };
+};

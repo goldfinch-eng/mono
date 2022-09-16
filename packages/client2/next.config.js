@@ -78,6 +78,9 @@ const nextConfig = {
     "page.mdx",
     "page.md",
   ],
+  images: {
+    domains: ["localhost"],
+  },
   async redirects() {
     return [
       {

@@ -1,4 +1,10 @@
-import { ApolloClient, InMemoryCache, from, HttpLink } from "@apollo/client";
+import {
+  ApolloClient,
+  InMemoryCache,
+  from,
+  createHttpLink,
+} from "@apollo/client";
+import { MultiAPILink } from "@habx/apollo-multi-endpoint-link";
 import { withScalars } from "apollo-link-scalars";
 import { buildClientSchema, IntrospectionQuery } from "graphql";
 
@@ -21,7 +27,38 @@ const graphQlApiUrl =
 if (!graphQlApiUrl) {
   throw new Error("Could not determine GraphQL API URL");
 }
-const httpLink = new HttpLink({ uri: graphQlApiUrl });
+
+const cmsApiUrl =
+  typeof process.env.NEXT_PUBLIC_GRAPHQL_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_GRAPHQL_URL
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
+    ? "http://localhost:3010/api/graphql"
+    : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
+    ? "http://localhost:3010/api/graphql"
+    : null;
+if (!cmsApiUrl) {
+  throw new Error("Could not determine CMS API URL");
+}
+
+const multiHttpLink = new MultiAPILink({
+  endpoints: {
+    subgraph: graphQlApiUrl,
+    cms: cmsApiUrl,
+  },
+  defaultEndpoint: "subgraph",
+  httpSuffix: "", // required, otherwise adds /graphql by default
+  createHttpLink: () => createHttpLink(),
+  getContext: (endpoint) => {
+    if (endpoint === "cms") {
+      return {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      };
+    }
+    return {};
+  },
+});
 
 const schema = buildClientSchema(
   introspectionResult as unknown as IntrospectionQuery
@@ -34,7 +71,7 @@ export const apolloClient = new ApolloClient({
     possibleTypes: { GfiGrant: ["IndirectGfiGrant", "DirectGfiGrant"] },
   }),
   typeDefs: localSchema,
-  link: from([scalarLink, nonFatalErrorLink, errorLink, httpLink]),
+  link: from([scalarLink, nonFatalErrorLink, errorLink, multiHttpLink]),
   defaultOptions: {
     watchQuery: {
       errorPolicy: "all",

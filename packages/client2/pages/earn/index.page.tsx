@@ -1,8 +1,10 @@
 import { gql } from "@apollo/client";
+import { InferGetStaticPropsType } from "next";
 
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
-import { useEarnPageQuery } from "@/lib/graphql/generated";
+import { apolloClient } from "@/lib/graphql/apollo";
+import { useEarnPageQuery, EarnPageCmsQuery } from "@/lib/graphql/generated";
 import { computeApyFromGfiInFiat, PoolStatus } from "@/lib/pools";
 
 import {
@@ -10,6 +12,7 @@ import {
   PoolCardPlaceholder,
   TranchedPoolCard,
   TRANCHED_POOL_CARD_FIELDS,
+  CMS_TRANCHED_POOL_CARD_FIELDS,
 } from "./pool-card";
 
 gql`
@@ -47,7 +50,20 @@ gql`
   }
 `;
 
-export default function EarnPage() {
+const earnCmsQuery = gql`
+  ${CMS_TRANCHED_POOL_CARD_FIELDS}
+  query EarnPageCMS @api(name: cms) {
+    CMSDeals {
+      docs {
+        ...CMSTranchedPoolCardFields
+      }
+    }
+  }
+`;
+
+export default function EarnPage({
+  poolInfo,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
   const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.estimatedApy
@@ -158,6 +174,7 @@ export default function EarnPage() {
           ? tranchedPools.map((tranchedPool) => (
               <TranchedPoolCard
                 key={tranchedPool.id}
+                details={poolInfo?.find((pool) => pool?.id === tranchedPool.id)}
                 tranchedPool={tranchedPool}
                 href={`/pools/${tranchedPool.id}`}
                 fiatPerGfi={fiatPerGfi}
@@ -175,3 +192,15 @@ export default function EarnPage() {
     </div>
   );
 }
+
+export const getStaticProps = async () => {
+  const res = await apolloClient.query<EarnPageCmsQuery>({
+    query: earnCmsQuery,
+  });
+
+  return {
+    props: {
+      poolInfo: res.data.CMSDeals?.docs,
+    },
+  };
+};
