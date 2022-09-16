@@ -1,25 +1,15 @@
 import {ethers} from "ethers"
 import {assertNonNullable, INVALID_POOLS} from "@goldfinch-eng/utils"
 import {Response} from "@sentry/serverless/dist/gcpfunction/general"
-import {genRequestHandler, getBlockchain} from "../helpers"
+import {genRequestHandler} from "../helpers"
 import POOL_METADATA from "@goldfinch-eng/pools/metadata/mainnet.json"
 import {GraphQLClient} from "graphql-request"
 import {getSdk, PoolTokenMetadataQuery} from "../graphql/generated/graphql"
 import {BigNumber} from "bignumber.js"
-import type {GoldfinchConfig} from "@goldfinch-eng/protocol/typechain/ethers/GoldfinchConfig"
-import GOLDFINCH_CONFIG_DEPLOYMENT from "@goldfinch-eng/protocol/deployments/mainnet/GoldfinchConfig.json"
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import {createSVGWindow} from "svgdom"
 import {SVG, registerWindow, Container} from "@svgdotjs/svg.js"
-
-// Ideally we would import from CONFIG_KEYS in @goldfinch-eng/protocol
-// but importing a typescript file causes build to fail with this error:
-//
-//   "It appears your code is written in Typescript, which must be compiled before emulation."
-//
-// Hardcoding for now.
-const LATENESS_GRACE_PERIOD_CONFIG_KEY = 5
 
 const BASE_URLS = {
   prod: "https://us-central1-goldfinch-frontends-prod.cloudfunctions.net",
@@ -80,7 +70,6 @@ type AttributeType =
   | "TERM_REMAINING"
   | "TOTAL_AMOUNT_REPAID"
   | "NEXT_REPAYMENT_DATE"
-  | "PAYMENT_STATUS"
   | "LAST_UPDATED_AT"
 type TokenAttribute = {type: AttributeType; value: string}
 
@@ -93,14 +82,6 @@ type TokenAttribute = {type: AttributeType; value: string}
 async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute>> {
   const client = new GraphQLClient("https://api.thegraph.com/subgraphs/name/goldfinch-eng/goldfinch-v2")
   const sdk = getSdk(client)
-
-  const provider = getBlockchain("https://app.goldfinch.finance")
-  const goldfinchConfig = new ethers.Contract(
-    GOLDFINCH_CONFIG_DEPLOYMENT.address,
-    GOLDFINCH_CONFIG_DEPLOYMENT.abi,
-    provider,
-  ) as unknown as GoldfinchConfig
-  const latenessGracePeriodInDays = await goldfinchConfig.getNumber(LATENESS_GRACE_PERIOD_CONFIG_KEY)
 
   const graphQlResponse = await sdk.poolTokenMetadata({id: tokenId.toString()})
   const {tranchedPoolToken} = graphQlResponse
@@ -131,11 +112,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const totalAmountRepaid = new BigNumber(tranchedPoolToken.tranchedPool.principalAmountRepaid.toString()).plus(
     new BigNumber(tranchedPoolToken.tranchedPool.interestAmountRepaid.toString()),
   )
-
-  const lastFullPaymentTimeInSeconds = new BigNumber(tranchedPool.creditLine.lastFullPaymentTime.toString()).toNumber()
-  const latenessGracePeriodInSeconds = new BigNumber(latenessGracePeriodInDays.toString()).toNumber() * secondsInDay
-  const isLate = nowSinceEpoch > lastFullPaymentTimeInSeconds + latenessGracePeriodInSeconds
-  const paymentStatus = isLate ? "Late" : "Current"
 
   return [
     {
@@ -191,10 +167,6 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
       value: nextRepaymentDate.toISOString(),
     },
     {
-      type: "PAYMENT_STATUS",
-      value: paymentStatus,
-    },
-    {
       type: "LAST_UPDATED_AT",
       value: now.toISOString(),
     },
@@ -221,7 +193,6 @@ function formatForMetadataUri(attributes: Array<TokenAttribute>) {
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
     NEXT_REPAYMENT_DATE: "Next Repayment Date",
-    PAYMENT_STATUS: "Payment Status",
     LAST_UPDATED_AT: "Last Updated At",
   }
 
@@ -251,7 +222,6 @@ function formatForImageUri(attributes: Array<TokenAttribute>) {
     TERM_REMAINING: "Term Remaining",
     TOTAL_AMOUNT_REPAID: "Total Amount Repaid",
     NEXT_REPAYMENT_DATE: "Next Repayment Date",
-    PAYMENT_STATUS: "Payment Status",
     LAST_UPDATED_AT: "Updated At",
   }
 
@@ -343,7 +313,6 @@ export const poolTokenImage = genRequestHandler({
       "TERM_REMAINING",
       "TOTAL_LOAN_SIZE",
       "TOTAL_AMOUNT_REPAID",
-      "PAYMENT_STATUS",
       "LAST_UPDATED_AT",
     ]
     const attributeTypeToValue: {[traitType: string]: any} = {}
