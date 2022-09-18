@@ -1,14 +1,14 @@
 import { gql } from "@apollo/client";
-import Image from "next/image";
 import { ReactNode } from "react";
 
 import { Button } from "@/components/design-system";
-import goldfinchLogo from "@/constants/metadata/icons/goldfinch.png";
 import {
   BackerSecondaryMarketStatQuery,
   useBackerSecondaryMarketStatQuery,
 } from "@/lib/graphql/generated";
 import { PoolStatus } from "@/lib/pools";
+
+import LarkLogo from "./lark-logo.svg";
 
 gql`
   query BackerSecondaryMarketStat($poolAddress: String!) {
@@ -27,19 +27,19 @@ gql`
 
 interface PanelProps {
   title: ReactNode;
-  iconSrc: string;
+  icon: ReactNode;
   body: ReactNode;
   buttonText: ReactNode;
   buttonHref: string;
 }
 
-function Panel({ title, iconSrc, body, buttonText, buttonHref }: PanelProps) {
+function Panel({ title, icon, body, buttonText, buttonHref }: PanelProps) {
   return (
     <div className="flex flex-col rounded-xl bg-clay-50">
       <div className="mx-5 px-5 py-10">
         <div className="mb-3 flex flex-row items-center justify-between gap-3 text-xl font-semibold">
           <p>{title}</p>
-          <Image src={iconSrc} alt={`Lark icon`} width={40} height={40} />
+          {icon}
         </div>
         <p className="mb-5">{body}</p>
         <Button
@@ -61,7 +61,7 @@ function Panel({ title, iconSrc, body, buttonText, buttonHref }: PanelProps) {
 }
 
 function larkUrl(poolAddress?: string): string {
-  const baseUrl = "https://purple-shadow-0471.on.fleek.co/";
+  const baseUrl = "https://lark.market/";
   const attributeString = poolAddress
     ? `?attributes[Pool+Address]=${poolAddress}`
     : "";
@@ -140,7 +140,7 @@ export default function SecondaryMarketPanel({
     variables: { poolAddress },
   });
 
-  const panelProps: Record<PanelState, Omit<PanelProps, "iconSrc">> = {
+  const panelProps: Record<PanelState, Omit<PanelProps, "icon">> = {
     [PanelState.SELL_POSITIONS]: {
       title: "Need liquidity? Sell your position on Lark.",
       body: "Do you know you can sell your position on lark.market?",
@@ -175,7 +175,7 @@ export default function SecondaryMarketPanel({
     return (
       <Panel
         {...panelProps[PanelState.SELL_POSITIONS]}
-        iconSrc={goldfinchLogo.src}
+        icon={<LarkLogo className="h-8 w-8" />}
       />
     );
   }
@@ -187,5 +187,5 @@ export default function SecondaryMarketPanel({
   const panelState = getPanelState({ poolStatus, hasBacked, data });
   const props = panelProps[panelState];
 
-  return <Panel {...props} iconSrc={goldfinchLogo.src} />;
+  return <Panel {...props} icon={<LarkLogo className="h-8 w-8" />} />;
 }
