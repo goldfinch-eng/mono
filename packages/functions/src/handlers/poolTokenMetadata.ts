@@ -73,6 +73,8 @@ type AttributeType =
   | "LAST_UPDATED_AT"
 type TokenAttribute = {type: AttributeType; value: string}
 
+const isTermStarted = (termEndTime: BigNumber) => termEndTime.toNumber() !== 0
+
 /**
  * Get attributes for a given PoolToken token ID. These attributes are used in
  * the PoolToken's metadata endpoint, as well as a dynamic SVG image.
@@ -103,7 +105,10 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
 
   const totalLoanSize = new BigNumber(tranchedPool.creditLine.limit.toString()).dividedBy(1e6)
 
-  const nextRepaymentDate = new Date(ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() * 1000)
+  const nextRepaymentDate =
+    isTermStarted(termEndTime) && ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() !== 0
+      ? new Date(ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() * 1000)
+      : undefined
 
   const principalAmount = new BigNumber(tranchedPoolToken.principalAmount.toString())
   const nav = await calculateNAV(tranchedPoolToken)
@@ -156,7 +161,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "TERM_REMAINING",
-      value: termEndTime.toNumber() === 0 ? "Not started" : `${termRemainingInDays} days`,
+      value: isTermStarted(termEndTime) ? `${termRemainingInDays} days` : "Not started",
     },
     {
       type: "TOTAL_AMOUNT_REPAID",
@@ -164,7 +169,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
     },
     {
       type: "NEXT_REPAYMENT_DATE",
-      value: nextRepaymentDate.toISOString(),
+      value: nextRepaymentDate?.toISOString() || "N/A",
     },
     {
       type: "LAST_UPDATED_AT",
