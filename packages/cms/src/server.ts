@@ -25,4 +25,4 @@ payload.init({
 });
 
 // Listen
-app.listen(process.env.PORT || 3010);
+app.listen(parseInt(process.env.PORT) || 3010);
