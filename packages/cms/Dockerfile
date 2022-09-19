@@ -21,6 +21,4 @@ RUN npm install -g cross-env
 # Install dependencies
 RUN npm install
 
-EXPOSE 3010
-
 CMD ["npm","run","start:prod"]
