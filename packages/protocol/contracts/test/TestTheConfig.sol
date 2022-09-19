@@ -29,6 +29,9 @@ contract TestTheConfig {
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.DrawdownPeriodInSeconds), 8);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.TransferRestrictionPeriodInDays), 9);
     GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.LeverageRatio), 10);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalEpochDuration), 11);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationPercent), 12);
+    GoldfinchConfig(configAddress).setNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalProRataMin), 13);
 
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Fidu), fiduAddress);
     GoldfinchConfig(configAddress).setAddress(uint256(ConfigOptions.Addresses.Pool), poolAddress);

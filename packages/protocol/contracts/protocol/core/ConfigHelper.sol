@@ -193,4 +193,16 @@ library ConfigHelper {
   function getLeverageRatio(GoldfinchConfig config) internal view returns (uint256) {
     return config.getNumber(uint256(ConfigOptions.Numbers.LeverageRatio));
   }
+
+  function getSeniorPoolWithdrawalEpochDuration(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalEpochDuration));
+  }
+
+  function getSeniorPoolWithdrawalCancelationPercent(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationPercent));
+  }
+
+  function getSeniorPoolWithdrawalProRataMin(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalProRataMin));
+  }
 }

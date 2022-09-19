@@ -2761,7 +2761,7 @@ describe("StakingRewards", function () {
 
     it("distributes rewards based on new multiplier", async () => {
       // Threshold of 5 seconds of rewards to account for slight block.timestamp increases
-      const threshold = new BN(5).mul(maxRate)
+      const threshold = new BN(10).mul(maxRate)
 
       // anotherUser stakes the same number of FIDU tokens
       const anotherUserToken = await stake({
