@@ -36,7 +36,7 @@ export default function Nav({children}: {children: ReactNode}) {
 
       <div className="main-nav-links">
         {NAV_ITEMS.map(({label, href}) => {
-          return !href.includes("beta") ? (
+          return !href.includes("https://") ? (
             <NavLink key={`${label}-${href}`} to={href}>
               {label}
             </NavLink>
@@ -71,7 +71,7 @@ export default function Nav({children}: {children: ReactNode}) {
           </div>
 
           {NAV_ITEMS.map(({label, href}) => {
-            return !href.includes("beta") ? (
+            return !href.includes("https://") ? (
               <NavLink key={`${label}-${href}`} to={href}>
                 {label}
               </NavLink>
