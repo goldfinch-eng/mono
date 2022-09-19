@@ -17,16 +17,17 @@
     "db:start": "docker compose up -d",
     "db:stop": "docker compose stop",
     "db:destroy": "docker compose down",
-    "start": "npm run db:start && npm run dev"
+    "start:dev": "npm run db:start && npm run dev",
+    "start:prod": "npm run build && npm run serve"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "@google-cloud/storage": "^6.4.2",
+    "@payloadcms/plugin-cloud-storage": "^1.0.9",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "payload": "^1.0.31"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.12",
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.9",
     "copyfiles": "^2.4.1",
