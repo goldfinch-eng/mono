@@ -232,10 +232,14 @@ export function TranchedPoolCard({
     <PoolCard
       title={details?.name}
       subtitle={details?.category}
-      icon={`${CDN_URL}${
-        details?.borrower?.logo?.sizes?.thumbnail?.url ??
-        details?.borrower?.logo?.url
-      }`}
+      icon={
+        details?.borrower?.logo
+          ? `${CDN_URL}${
+              details?.borrower?.logo?.sizes?.thumbnail?.url ??
+              details?.borrower?.logo?.url
+            }`
+          : null
+      }
       apy={tranchedPool.estimatedJuniorApy}
       apyWithGfi={totalApyWithGfi}
       apyTooltipContent={

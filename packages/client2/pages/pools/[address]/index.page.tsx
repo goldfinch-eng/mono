@@ -325,9 +325,14 @@ export default function PoolPage({ poolDetails }: PoolPageProps) {
             <div>
               <Breadcrumb
                 label={poolDetails?.name}
-                image={`${CDN_URL}${
-                  borrower?.logo?.sizes?.thumbnail?.url ?? borrower?.logo?.url
-                }`}
+                image={
+                  borrower?.logo
+                    ? `${CDN_URL}${
+                        borrower?.logo?.sizes?.thumbnail?.url ??
+                        borrower?.logo?.url
+                      }`
+                    : null
+                }
               />
             </div>
             {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
