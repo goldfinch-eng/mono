@@ -38,7 +38,7 @@ import { useWallet } from "@/lib/wallet";
 
 import {
   BorrowerProfile,
-  CMS_BORROWER_PROFILE_FIELDS,
+  BORROWER_PROFILE_FIELDS,
   BORROWER_OTHER_POOL_FIELDS,
 } from "./borrower-profile";
 import { CMS_TEAM_MEMBER_FIELDS } from "./borrower-team";
@@ -49,7 +49,7 @@ import {
   BORROWER_FINANCIALS_TABLE_FIELDS,
   BORROWER_PERFORMANCE_TABLE_FIELDS,
 } from "./deal-tables";
-import { CMS_DOCUMENT_FIELDS } from "./documents-list";
+import { DOCUMENT_FIELDS } from "./documents-list";
 import FundingBar from "./funding-bar";
 import RepaymentProgressPanel from "./repayment-progress-panel";
 import {
@@ -146,7 +146,7 @@ gql`
 
 const allPoolsCMSQuery = gql`
   query PoolPageCMS @api(name: cms) {
-    CMSDeals {
+    Deals {
       docs {
         id
       }
@@ -155,19 +155,19 @@ const allPoolsCMSQuery = gql`
 `;
 
 const singlePoolCMSQuery = gql`
-  ${CMS_DOCUMENT_FIELDS}
+  ${DOCUMENT_FIELDS}
   ${CMS_TEAM_MEMBER_FIELDS}
   ${SECURITIES_RECOURSE_TABLE_FIELDS}
   ${BORROWER_FINANCIALS_TABLE_FIELDS}
   ${BORROWER_PERFORMANCE_TABLE_FIELDS}
-  ${CMS_BORROWER_PROFILE_FIELDS}
+  ${BORROWER_PROFILE_FIELDS}
   query SinglePoolCMS($id: String!) @api(name: cms) {
-    CMSDeal(id: $id) {
+    Deal(id: $id) {
       id
       name
       category
       borrower {
-        ...CMSBorrowerProfileFields
+        ...BorrowerProfileFields
       }
       overview
       highlights {
@@ -180,14 +180,14 @@ const singlePoolCMSQuery = gql`
       }
       defaultInterestRate
       documents {
-        ...CMSDocumentFields
+        ...DocumentFields
       }
     }
   }
 `;
 
 interface PoolPageProps {
-  poolDetails: SinglePoolCmsQuery["CMSDeal"];
+  poolDetails: SinglePoolCmsQuery["Deal"];
 }
 
 export default function PoolPage({ poolDetails }: PoolPageProps) {
@@ -488,7 +488,7 @@ export const getStaticPaths: GetStaticPaths<StaticParams> = async () => {
   });
 
   const paths =
-    res.data.CMSDeals?.docs?.map((pool) => ({
+    res.data.Deals?.docs?.map((pool) => ({
       params: {
         address: pool?.id || "",
       },
@@ -513,7 +513,7 @@ export const getStaticProps: GetStaticProps<
 
   return {
     props: {
-      poolDetails: res.data.CMSDeal,
+      poolDetails: res.data.Deal,
     },
   };
 };

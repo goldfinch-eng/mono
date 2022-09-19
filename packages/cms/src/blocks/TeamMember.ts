@@ -17,7 +17,7 @@ const TeamMember: Block = {
     {
       name: "image",
       type: "upload",
-      relationTo: "cms-media",
+      relationTo: "media",
     },
     {
       name: "linkedin",

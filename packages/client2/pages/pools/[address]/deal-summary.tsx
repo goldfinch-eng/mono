@@ -9,7 +9,7 @@ import { DocumentsList } from "./documents-list";
 import { TransactionTable } from "./transaction-table";
 
 interface DealSummaryProps {
-  poolDetails?: SinglePoolCmsQuery["CMSDeal"] | null;
+  poolDetails?: SinglePoolCmsQuery["Deal"] | null;
   poolChainData?: SingleTranchedPoolDataQuery["tranchedPool"] | null;
   poolStatus: PoolStatus | null;
 }

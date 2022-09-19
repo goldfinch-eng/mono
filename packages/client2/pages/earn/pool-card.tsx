@@ -179,7 +179,7 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
 `;
 
 export const CMS_TRANCHED_POOL_CARD_FIELDS = gql`
-  fragment CMSTranchedPoolCardFields on CMSDeal {
+  fragment CMSTranchedPoolCardFields on Deal {
     id
     name
     category

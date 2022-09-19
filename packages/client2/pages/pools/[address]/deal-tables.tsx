@@ -39,7 +39,7 @@ export const DEAL_TERMS_TABLE_FIELDS = gql`
 `;
 
 export const SECURITIES_RECOURSE_TABLE_FIELDS = gql`
-  fragment SecuritiesRecourseTableFields on CMSDeal_SecuritiesandRecourse {
+  fragment SecuritiesRecourseTableFields on Deal_SecuritiesandRecourse {
     secured
     type
     description
@@ -51,7 +51,7 @@ export const SECURITIES_RECOURSE_TABLE_FIELDS = gql`
 `;
 
 export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
-  fragment BorrowerFinancialsTableFields on CMSBorrower_BorrowerFinancials {
+  fragment BorrowerFinancialsTableFields on Borrower_BorrowerFinancials {
     aum
     pastOffChainDeals {
       text
@@ -64,7 +64,7 @@ export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
 `;
 
 export const BORROWER_PERFORMANCE_TABLE_FIELDS = gql`
-  fragment BorrowerPerformanceTableFields on CMSBorrower_UnderwritingandPerformance {
+  fragment BorrowerPerformanceTableFields on Borrower_UnderwritingandPerformance {
     performanceDocument {
       id
       filename

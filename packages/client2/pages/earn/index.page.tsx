@@ -53,7 +53,7 @@ gql`
 const earnCmsQuery = gql`
   ${CMS_TRANCHED_POOL_CARD_FIELDS}
   query EarnPageCMS @api(name: cms) {
-    CMSDeals {
+    Deals {
       docs {
         ...CMSTranchedPoolCardFields
       }
@@ -200,7 +200,7 @@ export const getStaticProps = async () => {
 
   return {
     props: {
-      poolInfo: res.data.CMSDeals?.docs,
+      poolInfo: res.data.Deals?.docs,
     },
   };
 };

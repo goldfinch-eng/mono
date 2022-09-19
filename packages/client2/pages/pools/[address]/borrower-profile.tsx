@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Chip, Icon } from "@/components/design-system";
 import { CDN_URL } from "@/constants";
 import {
-  CmsBorrowerProfileFieldsFragment,
+  BorrowerProfileFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
 } from "@/lib/graphql/generated";
 
@@ -26,8 +26,8 @@ export const BORROWER_OTHER_POOL_FIELDS = gql`
   }
 `;
 
-export const CMS_BORROWER_PROFILE_FIELDS = gql`
-  fragment CMSBorrowerProfileFields on CMSBorrower {
+export const BORROWER_PROFILE_FIELDS = gql`
+  fragment BorrowerProfileFields on Borrower {
     id
     name
     logo {
@@ -71,7 +71,7 @@ export const CMS_BORROWER_PROFILE_FIELDS = gql`
       description
     }
     documents {
-      ...CMSDocumentFields
+      ...DocumentFields
     }
     deals {
       id
@@ -82,7 +82,7 @@ export const CMS_BORROWER_PROFILE_FIELDS = gql`
 
 interface BorrowerProfileProps {
   poolId?: string | null;
-  borrower: CmsBorrowerProfileFieldsFragment;
+  borrower: BorrowerProfileFieldsFragment;
   borrowerPools?: BorrowerOtherPoolFieldsFragment[];
 }
 
