@@ -1,11 +1,11 @@
-# Redirect existing client to beta
-/               https://beta.app.goldfinch.finance/earn           302!
-/earn           https://beta.app.goldfinch.finance/earn           302
-/pools/senior   https://beta.app.goldfinch.finance/pools/senior   302
-/pools/*        https://beta.app.goldfinch.finance/pools/:splat   302
-/verify         https://beta.app.goldfinch.finance/verify         302
-/gfi            https://beta.app.goldfinch.finance/gfi            302
-/stake          https://beta.app.goldfinch.finance/stake          302
+# Redirect the legacy client to the production one
+/               https://app.goldfinch.finance/earn           302!
+/earn           https://app.goldfinch.finance/earn           302
+/pools/senior   https://app.goldfinch.finance/pools/senior   302
+/pools/*        https://app.goldfinch.finance/pools/:splat   302
+/verify         https://app.goldfinch.finance/verify         302
+/gfi            https://app.goldfinch.finance/gfi            302
+/stake          https://app.goldfinch.finance/stake          302
 
 # SPA
 /*  /index.html  200
