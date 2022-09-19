@@ -45,8 +45,8 @@ type CMSUsers {
   pagingCounter: Int
   hasPrevPage: Boolean
   hasNextPage: Boolean
-  prevPage: Boolean
-  nextPage: Boolean
+  prevPage: Int
+  nextPage: Int
 }
 
 input CMSUser_where {
@@ -190,8 +190,8 @@ type allCMSMedia {
   pagingCounter: Int
   hasPrevPage: Boolean
   hasNextPage: Boolean
-  prevPage: Boolean
-  nextPage: Boolean
+  prevPage: Int
+  nextPage: Int
 }
 
 input CMSMedia_where {
@@ -2327,8 +2327,8 @@ type CMSBorrowers {
   pagingCounter: Int
   hasPrevPage: Boolean
   hasNextPage: Boolean
-  prevPage: Boolean
-  nextPage: Boolean
+  prevPage: Int
+  nextPage: Int
 }
 
 input CMSBorrower_where {
@@ -2706,8 +2706,8 @@ type CMSDeals {
   pagingCounter: Int
   hasPrevPage: Boolean
   hasNextPage: Boolean
-  prevPage: Boolean
-  nextPage: Boolean
+  prevPage: Int
+  nextPage: Int
 }
 
 input CMSDeal_where {

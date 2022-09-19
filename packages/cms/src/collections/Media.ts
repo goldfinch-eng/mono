@@ -1,5 +1,4 @@
-import { CollectionConfig } from "payload/types";
-import path from "path";
+import type { CollectionConfig } from "payload/types";
 
 const Media: CollectionConfig = {
   slug: "cms-media",
@@ -14,9 +13,8 @@ const Media: CollectionConfig = {
     useAsTitle: "filename",
   },
   upload: {
-    adminThumbnail: "thumbnail",
-    staticDir: path.resolve(__dirname, "../../media"),
     mimeTypes: ["image/*", "application/pdf"],
+    adminThumbnail: "thumbnail",
     imageSizes: [
       {
         name: "thumbnail",

@@ -1,4 +1,6 @@
 import { buildConfig } from "payload/config";
+import { cloudStorage } from "@payloadcms/plugin-cloud-storage";
+import { gcsAdapter } from "@payloadcms/plugin-cloud-storage/gcs";
 import path from "path";
 
 import Users from "./collections/Users";
@@ -12,6 +14,14 @@ export const whitelist = [
   "https://app.goldfinch.finance/",
   "https://beta.app.goldfinch.finance/",
 ];
+
+const adapter = gcsAdapter({
+  options: {
+    apiEndpoint: process.env.GCS_ENDPOINT,
+    projectId: process.env.GCS_PROJECT_ID,
+  },
+  bucket: process.env.GCS_BUCKET,
+});
 
 export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_URL,
@@ -29,6 +39,15 @@ export default buildConfig({
       "generated-schema.graphql"
     ),
   },
+  plugins: [
+    cloudStorage({
+      collections: {
+        "cms-media": {
+          adapter,
+        },
+      },
+    }),
+  ],
   csrf: whitelist,
   cors: whitelist,
 });

@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3"
 
 services:
   mongodb:
@@ -10,5 +10,26 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=user
       - MONGO_INITDB_ROOT_PASSWORD=pass
+  google-cloud-storage:
+    image: fsouza/fake-gcs-server
+    restart: always
+    command:
+      [
+        "-scheme",
+        "http",
+        "-port",
+        "4443",
+        "-public-host",
+        "http://localhost:4443",
+        "-external-url",
+        "http://localhost:4443",
+        "-backend",
+        "memory",
+      ]
+    ports:
+      - "4443:4443"
+    volumes:
+      - ./google-cloud-storage/cms:/data/cms
 volumes:
   mongodb:
+  google-cloud-storage:
