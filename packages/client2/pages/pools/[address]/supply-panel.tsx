@@ -10,7 +10,6 @@ import {
   Icon,
   InfoIconTooltip,
   Input,
-  Link,
   Select,
   Tooltip,
 } from "@/components/design-system";
@@ -40,7 +39,6 @@ export const SUPPLY_PANEL_TRANCHED_POOL_FIELDS = gql`
     id
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
-    agreement @client
     remainingJuniorCapacity
     estimatedLeverageRatio
     allowedUidTypes
@@ -86,7 +84,6 @@ export default function SupplyPanel({
     id: tranchedPoolAddress,
     estimatedJuniorApy,
     estimatedJuniorApyFromGfiRaw,
-    agreement,
     remainingJuniorCapacity,
     allowedUidTypes,
   },
@@ -465,14 +462,8 @@ export default function SupplyPanel({
           <div className="mb-3 text-xs">
             By entering my name and clicking “Supply” below, I hereby agree and
             acknowledge that (i) I am electronically signing and becoming a
-            party to the{" "}
-            {agreement ? (
-              <Link href={agreement}>Loan Agreement</Link>
-            ) : (
-              "Loan Agreement"
-            )}{" "}
-            for this pool, and (ii) my name and transaction information may be
-            shared with the borrower.
+            party to the Loan Agreement for this pool, and (ii) my name and
+            transaction information may be shared with the borrower.
           </div>
           <Button
             className="block w-full"

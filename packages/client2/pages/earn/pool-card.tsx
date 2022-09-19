@@ -167,7 +167,6 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   fragment TranchedPoolCardFields on TranchedPool {
     id
     name @client
-    category @client
     icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
