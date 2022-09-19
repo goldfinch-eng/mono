@@ -8,13 +8,15 @@ Payload CMS is a code first headless CMS built on MongoDB, Express and Node. Pay
 
 ## Local Development
 
+The local development environment will initalize a local instance of MongoDB and a mock google cloud storage service using Docker.
+
 ### Prerequsities
 
 - Docker
 
 ### Steps
 
-1. Make sure you created a `.env` file (see `.end.example`)
+1. Make sure you created a `.env` file (see `.env.example`)
 2. Start your local environment:
 
 ```
