@@ -106,7 +106,7 @@ async function getTokenAttributes(tokenId: number): Promise<Array<TokenAttribute
   const totalLoanSize = new BigNumber(tranchedPool.creditLine.limit.toString()).dividedBy(1e6)
 
   const nextRepaymentDate =
-    isTermStarted(termEndTime) && termRemainingInSeconds > 0
+    isTermStarted(termEndTime) && ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() !== 0
       ? new Date(ethers.BigNumber.from(tranchedPool.creditLine.nextDueTime).toNumber() * 1000)
       : undefined
 
