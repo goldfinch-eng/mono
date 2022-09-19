@@ -24,6 +24,6 @@ Example get variables
 `gcloud beta runtime-config configs variables get-value allowed_origins --config-name kyc --project <projects>`
 
 Example set variable `--is-text` is a needed param
-`gcloud beta runtime-config configs variables set allowed_origins "https://app.goldfinch.finance,https://beta.app.goldfinch.finance,https://deploy-preview-*--goldfinchfi.netlify.app" --config-name kyc --project <projects> --is-text`
+`gcloud beta runtime-config configs variables set allowed_origins "https://app.goldfinch.finance,https://deploy-preview-*--goldfinchfi.netlify.app" --config-name kyc --project <projects> --is-text`
 
 NOTE: If you want to be able to use the remote cloud functions when running locally, then `http://localhost:3000` should be included as one of those allowed origins ^^^.
