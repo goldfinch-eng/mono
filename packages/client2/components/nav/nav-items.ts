@@ -1,7 +1,7 @@
 const oldClientOrigin =
   process.env.NEXT_PUBLIC_NETWORK_NAME === "murmuration"
     ? "https://murmuration.goldfinch.finance"
-    : "https://app.goldfinch.finance";
+    : "https://borrow.app.goldfinch.finance";
 
 export const NAV_ITEMS = [
   { label: "Earn", href: "/earn" },
