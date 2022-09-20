@@ -17,7 +17,7 @@ const Document: Block = {
     {
       name: "file",
       type: "upload",
-      relationTo: "cms-media",
+      relationTo: "media",
     },
   ],
 };

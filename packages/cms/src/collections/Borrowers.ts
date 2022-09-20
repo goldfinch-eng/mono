@@ -6,10 +6,10 @@ import TeamMember from "../blocks/TeamMember";
 import Document from "../blocks/Document";
 
 const Borrowers: CollectionConfig = {
-  slug: "cms-borrowers",
+  slug: "borrowers",
   labels: {
-    singular: "CMS Borrower",
-    plural: "CMS Borrowers",
+    singular: "Borrower",
+    plural: "Borrowers",
   },
   admin: {
     useAsTitle: "name",
@@ -27,7 +27,7 @@ const Borrowers: CollectionConfig = {
     {
       name: "logo",
       type: "upload",
-      relationTo: "cms-media",
+      relationTo: "media",
     },
     {
       name: "subheading",
@@ -140,7 +140,7 @@ const Borrowers: CollectionConfig = {
           name: "performanceDocument",
           label: "Performance document",
           type: "upload",
-          relationTo: "cms-media",
+          relationTo: "media",
         },
         {
           name: "underwritingDescription",
@@ -213,7 +213,7 @@ const Borrowers: CollectionConfig = {
     {
       name: "deals",
       type: "relationship",
-      relationTo: "cms-deals",
+      relationTo: "deals",
       hasMany: true,
       admin: {
         disabled: true,

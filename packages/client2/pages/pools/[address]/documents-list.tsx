@@ -1,13 +1,13 @@
 import { gql } from "@apollo/client";
 
 import { CDN_URL } from "@/constants";
-import { CmsDocumentFieldsFragment } from "@/lib/graphql/generated";
+import { DocumentFieldsFragment } from "@/lib/graphql/generated";
 
 import FileFolder from "./file-folder.svg";
 import FilePDF from "./file-pdf.svg";
 
-export const CMS_DOCUMENT_FIELDS = gql`
-  fragment CMSDocumentFields on Document {
+export const DOCUMENT_FIELDS = gql`
+  fragment DocumentFields on Document {
     id
     title
     subtitle
@@ -18,7 +18,7 @@ export const CMS_DOCUMENT_FIELDS = gql`
 `;
 
 interface DocumentsListProps {
-  documents: CmsDocumentFieldsFragment[];
+  documents: DocumentFieldsFragment[];
 }
 
 const getFiletypeImage = (filename?: string | null) => {
