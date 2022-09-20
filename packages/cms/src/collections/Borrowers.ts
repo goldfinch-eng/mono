@@ -93,7 +93,21 @@ const Borrowers: CollectionConfig = {
       name: "borrowerFinancials",
       label: "Borrower Financials",
       type: "group",
+      admin: {
+        description:
+          "These values should include both on-chain and off-chain loans.",
+      },
       fields: [
+        {
+          name: "totalLoansOriginated",
+          type: "number",
+          label: "Total loans originated to date ($)",
+        },
+        {
+          name: "currentLoansOutstanding",
+          type: "number",
+          label: "Current loans outstanding ($)",
+        },
         {
           name: "aum",
           type: "number",

@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import { FixedNumber, BigNumber } from "ethers";
+import { FixedNumber } from "ethers";
 import { ReactNode } from "react";
 
 import {
@@ -52,6 +52,8 @@ export const SECURITIES_RECOURSE_TABLE_FIELDS = gql`
 
 export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
   fragment BorrowerFinancialsTableFields on Borrower_BorrowerFinancials {
+    totalLoansOriginated
+    currentLoansOutstanding
     aum
     pastOffChainDeals {
       text
@@ -211,106 +213,96 @@ export function SecuritiesRecourseTable({
 }
 
 interface BorrowerFinancialsTableProps {
-  currentPool?: string | null;
-  allDeals: {
-    id: string;
-    name: string;
-    pool: BorrowerOtherPoolFieldsFragment;
-  }[];
+  otherPools: BorrowerOtherPoolFieldsFragment[];
   borrowerFinancials?: BorrowerFinancialsTableFieldsFragment | null;
 }
 
 export function BorrowerFinancialsTable({
-  currentPool,
-  allDeals,
+  otherPools,
   borrowerFinancials,
 }: BorrowerFinancialsTableProps) {
-  const totalLoans = allDeals.reduce((total, deal) => {
-    return total.add(deal.pool.creditLine.maxLimit);
-  }, BigNumber.from(0));
+  const rows: TableRow[] = [];
 
-  const totalOutstanding = totalLoans.sub(
-    allDeals.reduce((total, deal) => {
-      return total.add(deal.pool.principalAmountRepaid);
-    }, BigNumber.from(0))
-  );
-
-  const otherDeals = allDeals.filter((deal) => deal.id !== currentPool);
-
+  if (borrowerFinancials?.totalLoansOriginated) {
+    rows.push([
+      "Total amount of loans originated to date",
+      null,
+      formatFiat({
+        amount: borrowerFinancials.totalLoansOriginated,
+        symbol: SupportedFiat.Usd,
+      }),
+    ]);
+  }
+  if (borrowerFinancials?.currentLoansOutstanding) {
+    rows.push([
+      "Current loans outstanding",
+      null,
+      formatFiat({
+        amount: borrowerFinancials.currentLoansOutstanding,
+        symbol: SupportedFiat.Usd,
+      }),
+    ]);
+  }
+  if (borrowerFinancials?.aum) {
+    rows.push([
+      "AUM",
+      null,
+      formatFiat({
+        symbol: SupportedFiat.Usd,
+        amount: borrowerFinancials.aum,
+      }),
+    ]);
+  }
+  if (otherPools.length > 0) {
+    rows.push([
+      "Past deals on-chain",
+      null,
+      <ul key="borrower-financials-list">
+        {otherPools.map((deal) => (
+          <li key={`borrower-financials-list-deal-${deal.id}`}>
+            <Link href={`/pools/${deal.id}`} className="text-eggplant-700">
+              {deal.name}
+            </Link>
+          </li>
+        ))}
+      </ul>,
+    ]);
+  }
+  if (
+    borrowerFinancials?.pastOffChainDeals &&
+    borrowerFinancials.pastOffChainDeals.length > 0
+  ) {
+    rows.push([
+      "Past deals off-chain",
+      null,
+      <ul key="borrower-offchain-deals-list">
+        {borrowerFinancials.pastOffChainDeals.map((item, idx) => (
+          <li key={`borrower-offdeals-list-deal-${idx}`}>{item.text}</li>
+        ))}
+      </ul>,
+    ]);
+  }
+  if (
+    borrowerFinancials?.otherProducts &&
+    borrowerFinancials.otherProducts.length > 0
+  ) {
+    rows.push([
+      "Other products offered",
+      null,
+      <ul key="borrower-products-list">
+        {borrowerFinancials.otherProducts.map((item, idx) => (
+          <li key={`borrower-products-list-item-${idx}`}>{item.text}</li>
+        ))}
+      </ul>,
+    ]);
+  }
+  if (borrowerFinancials?.projections) {
+    rows.push(["Projections", null, borrowerFinancials.projections]);
+  }
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Borrower Financials</h2>
-      <Table
-        rows={[
-          [
-            "Total amount of loans originated to date",
-            null,
-            formatCrypto({
-              token: SupportedCrypto.Usdc,
-              amount: totalLoans,
-            }),
-          ],
-          [
-            "Current loans outstanding ",
-            null,
-            formatCrypto({
-              token: SupportedCrypto.Usdc,
-              amount: totalOutstanding,
-            }),
-          ],
-          [
-            "AUM",
-            null,
-            borrowerFinancials?.aum
-              ? formatFiat({
-                  symbol: SupportedFiat.Usd,
-                  amount: borrowerFinancials?.aum,
-                })
-              : null,
-          ],
-          [
-            "Past deals on-chain",
-            null,
-            <ul key={`borrower-financials-list-${currentPool}`}>
-              {otherDeals.map((deal) => (
-                <li key={`borrower-financials-list-deal-${deal.id}`}>
-                  <Link
-                    href={`/pools/${deal.id}`}
-                    className="text-eggplant-700"
-                  >
-                    {deal.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>,
-          ],
-          [
-            "Past deals off-chain",
-            null,
-            <ul key={`borrower-offdeals-list-${currentPool}`}>
-              {borrowerFinancials?.pastOffChainDeals?.map((item, idx) => (
-                <li key={`borrower-offdeals-list-deal-${idx}`}>{item.text}</li>
-              ))}
-            </ul>,
-          ],
-          [
-            "Other products offered",
-            null,
-            <ul key={`borrower-products-list-${currentPool}`}>
-              {borrowerFinancials?.otherProducts?.map((item, idx) => (
-                <li key={`borrower-products-list-item-${idx}`}>{item.text}</li>
-              ))}
-            </ul>,
-          ],
-          [
-            "Projections",
-            null,
-            <div key={`borrower-projetions-${currentPool}`}>
-              {borrowerFinancials?.projections}
-            </div>,
-          ],
-        ]}
-      />
+      <Table rows={rows} />
     </div>
   );
 }
@@ -358,7 +350,9 @@ export function UnderwritingPerformanceTable({
   );
 }
 
-function Table({ rows }: { rows: [string, string | null, ReactNode][] }) {
+type TableRow = [string, string | null, ReactNode];
+
+function Table({ rows }: { rows: TableRow[] }) {
   return (
     <div className="overflow-auto">
       <table className="w-full border-collapse border border-sand-200 text-sand-600">

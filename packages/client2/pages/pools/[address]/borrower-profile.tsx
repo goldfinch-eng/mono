@@ -18,11 +18,7 @@ import { DocumentsList } from "./documents-list";
 export const BORROWER_OTHER_POOL_FIELDS = gql`
   fragment BorrowerOtherPoolFields on TranchedPool {
     id
-    principalAmountRepaid
-    creditLine {
-      id
-      maxLimit
-    }
+    name @client
   }
 `;
 
@@ -81,25 +77,14 @@ export const BORROWER_PROFILE_FIELDS = gql`
 `;
 
 interface BorrowerProfileProps {
-  poolId?: string | null;
   borrower: BorrowerProfileFieldsFragment;
-  borrowerPools?: BorrowerOtherPoolFieldsFragment[];
+  borrowerPools: BorrowerOtherPoolFieldsFragment[];
 }
 
 export function BorrowerProfile({
-  poolId,
   borrower,
   borrowerPools,
 }: BorrowerProfileProps) {
-  // Combine CMS and on chain data
-  const allDeals = (borrower.deals || []).map((deal) => ({
-    id: deal.id,
-    name: deal.name,
-    pool: {
-      ...borrowerPools?.find((pool) => deal.id === pool.id),
-    } as BorrowerOtherPoolFieldsFragment,
-  }));
-
   return (
     <div>
       <div className="mb-20">
@@ -221,8 +206,7 @@ export function BorrowerProfile({
 
       <div className="mb-20">
         <BorrowerFinancialsTable
-          currentPool={poolId}
-          allDeals={allDeals}
+          otherPools={borrowerPools}
           borrowerFinancials={borrower.borrowerFinancials}
         />
       </div>

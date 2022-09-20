@@ -78,7 +78,7 @@ gql`
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
     $userId: ID!
-    $allBorrowerPools: [ID!]
+    $borrowerOtherPools: [ID!]
   ) {
     tranchedPool(id: $tranchedPoolId) {
       id
@@ -111,7 +111,9 @@ gql`
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
     }
-    borrowerPools: tranchedPools(where: { id_in: $allBorrowerPools }) {
+    borrowerOtherPools: tranchedPools(
+      where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
+    ) {
       ...BorrowerOtherPoolFields
     }
     seniorPools(first: 1) {
@@ -185,22 +187,22 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const borrower = dealDetails.borrower!;
-  const allBorrowerPools = (borrower.deals || []).map((pool) => pool.id);
-  const poolId = dealDetails.id;
+  const otherPoolsFromThisBorrower = (borrower.deals || []).map(
+    (deal) => deal.id
+  );
 
   const { data, error } = useSingleTranchedPoolDataQuery({
     variables: {
       tranchedPoolId: dealDetails?.id as string,
       tranchedPoolAddress: dealDetails?.id as string,
       userId: account?.toLowerCase() ?? "",
-      allBorrowerPools,
+      borrowerOtherPools: otherPoolsFromThisBorrower,
     },
     returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
 
   const tranchedPool = data?.tranchedPool;
   const seniorPool = data?.seniorPools?.[0];
-  const borrowerPools = data?.borrowerPools;
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
@@ -438,11 +440,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 )}
               </TabContent>
               <TabContent>
-                {tranchedPool ? (
+                {data ? (
                   <BorrowerProfile
-                    poolId={poolId}
                     borrower={borrower}
-                    borrowerPools={borrowerPools}
+                    borrowerPools={data.borrowerOtherPools}
                   />
                 ) : null}
               </TabContent>
