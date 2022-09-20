@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { InferGetStaticPropsType } from "next";
+import { GetStaticProps, InferGetStaticPropsType } from "next";
 
 import { Heading, HelperText, Paragraph } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
@@ -12,7 +12,7 @@ import {
   PoolCardPlaceholder,
   TranchedPoolCard,
   TRANCHED_POOL_CARD_FIELDS,
-  CMS_TRANCHED_POOL_CARD_FIELDS,
+  TRANCHED_POOL_CARD_DEAL_FIELDS,
 } from "./pool-card";
 
 gql`
@@ -51,26 +51,27 @@ gql`
 `;
 
 const earnCmsQuery = gql`
-  ${CMS_TRANCHED_POOL_CARD_FIELDS}
+  ${TRANCHED_POOL_CARD_DEAL_FIELDS}
   query EarnPageCMS @api(name: cms) {
     Deals {
       docs {
-        ...CMSTranchedPoolCardFields
+        ...TranchedPoolCardDealFields
       }
     }
   }
 `;
 
 export default function EarnPage({
-  poolInfo,
+  dealMetadata,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { data, error } = useEarnPageQuery();
 
   const seniorPool = data?.seniorPools?.[0]?.latestPoolStatus?.estimatedApy
     ? data.seniorPools[0]
     : undefined;
+  // Only display tranched pools for which we have deal metadata
   const tranchedPools = data?.tranchedPools?.filter(
-    (tranchedPool) => tranchedPool.name !== null
+    (tranchedPool) => !!dealMetadata[tranchedPool.id]
   );
   const fiatPerGfi = data?.gfiPrice?.price.amount;
 
@@ -174,7 +175,7 @@ export default function EarnPage({
           ? tranchedPools.map((tranchedPool) => (
               <TranchedPoolCard
                 key={tranchedPool.id}
-                details={poolInfo?.find((pool) => pool?.id === tranchedPool.id)}
+                details={dealMetadata[tranchedPool.id]}
                 tranchedPool={tranchedPool}
                 href={`/pools/${tranchedPool.id}`}
                 fiatPerGfi={fiatPerGfi}
@@ -193,14 +194,32 @@ export default function EarnPage({
   );
 }
 
-export const getStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const res = await apolloClient.query<EarnPageCmsQuery>({
     query: earnCmsQuery,
   });
 
+  const deals = res.data.Deals?.docs;
+  if (!deals) {
+    throw new Error("No metadata found for any deals");
+  }
+
+  // This type is a crime against humanity. Blame PayloadCMS for having way too many nullable fields in the schema (https://github.com/payloadcms/payload/issues/1148)
+  const dealMetadata: Record<
+    string,
+    NonNullable<
+      NonNullable<NonNullable<EarnPageCmsQuery["Deals"]>["docs"]>[number]
+    >
+  > = {};
+  deals.forEach((d) => {
+    if (d) {
+      dealMetadata[d.id] = d;
+    }
+  });
+
   return {
     props: {
-      poolInfo: res.data.Deals?.docs,
+      dealMetadata,
     },
   };
 };
