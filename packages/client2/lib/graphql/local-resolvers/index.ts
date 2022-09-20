@@ -8,6 +8,7 @@ import {
 } from "./gfi-grants";
 import { rootQueryResolvers } from "./query";
 import { stakedPositionResolvers } from "./staked-position";
+import { tranchedPoolResolvers } from "./tranched-pool";
 import { viewerResolvers } from "./viewer";
 
 export const resolvers: Resolvers = {
@@ -18,4 +19,5 @@ export const resolvers: Resolvers = {
   DirectGfiGrant: directGfiGrantResolvers,
   SeniorPoolStakedPosition: stakedPositionResolvers,
   CurvePool: curvePoolResolvers,
+  TranchedPool: tranchedPoolResolvers,
 };

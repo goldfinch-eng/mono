@@ -46,10 +46,7 @@ gql`
         id
         name @client
         icon @client
-        borrower @client {
-          name
-          logo
-        }
+        borrowerName @client
       }
     }
   }
@@ -99,7 +96,7 @@ export function TransactionTable() {
                 alt=""
               />
             </div>
-            <div>{transaction.tranchedPool?.borrower.name}</div>
+            <div>{transaction.tranchedPool?.borrowerName}</div>
           </>
         ) : (
           <Address address={transaction.user.id} />

@@ -6,9 +6,9 @@ import type {
   CollectionAfterDeleteHook,
 } from "payload/types";
 
-import type { CMSDeal, CMSBorrower } from "../generated/payload-types";
+import type { Deal, Borrower } from "../generated/payload-types";
 
-export const beforeDealChange: CollectionBeforeChangeHook<CMSDeal> = async ({
+export const beforeDealChange: CollectionBeforeChangeHook<Deal> = async ({
   data,
   operation,
 }) => {
@@ -20,14 +20,14 @@ export const beforeDealChange: CollectionBeforeChangeHook<CMSDeal> = async ({
   return data;
 };
 
-export const afterDealChange: CollectionAfterChangeHook<CMSDeal> = async ({
+export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
   doc,
   previousDoc,
   operation,
 }) => {
   // Get new borrower
-  const newBorrower = await payload.findByID<CMSBorrower>({
-    collection: "cms-borrowers",
+  const newBorrower = await payload.findByID<Borrower>({
+    collection: "borrowers",
     id: doc.borrower as string,
     depth: 0,
   });
@@ -35,7 +35,7 @@ export const afterDealChange: CollectionAfterChangeHook<CMSDeal> = async ({
   // Add deal to borrower if it is not there
   if (!(newBorrower.deals || []).includes(doc.id)) {
     await payload.update({
-      collection: "cms-borrowers",
+      collection: "borrowers",
       id: newBorrower.id,
       data: {
         deals: [...(newBorrower.deals || []), doc.id],
@@ -49,14 +49,14 @@ export const afterDealChange: CollectionAfterChangeHook<CMSDeal> = async ({
       return doc;
     }
 
-    const oldBorrower = await payload.findByID<CMSBorrower>({
-      collection: "cms-borrowers",
+    const oldBorrower = await payload.findByID<Borrower>({
+      collection: "borrowers",
       id: previousDoc.borrower as string,
       depth: 0,
     });
 
     await payload.update({
-      collection: "cms-borrowers",
+      collection: "borrowers",
       id: oldBorrower.id,
       data: {
         deals: (oldBorrower.deals || []).filter((deal) => deal !== doc.id),
@@ -67,18 +67,18 @@ export const afterDealChange: CollectionAfterChangeHook<CMSDeal> = async ({
   return doc;
 };
 
-export const afterDealDelete: CollectionAfterDeleteHook<CMSDeal> = async ({
+export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({
   id,
   doc,
 }) => {
-  const borrower = await payload.findByID<CMSBorrower>({
-    collection: "cms-borrowers",
+  const borrower = await payload.findByID<Borrower>({
+    collection: "borrowers",
     id: doc.borrower as string,
     depth: 0,
   });
 
   await payload.update({
-    collection: "cms-borrowers",
+    collection: "borrowers",
     id: borrower.id,
     data: {
       deals: (borrower.deals || []).filter((deal) => deal !== id),

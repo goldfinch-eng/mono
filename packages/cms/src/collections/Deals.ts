@@ -9,10 +9,10 @@ import {
 import Document from "../blocks/Document";
 
 const Deals: CollectionConfig = {
-  slug: "cms-deals",
+  slug: "deals",
   labels: {
-    singular: "CMS Deal",
-    plural: "CMS Deals",
+    singular: "Deal",
+    plural: "Deals",
   },
   admin: {
     useAsTitle: "name",
@@ -51,7 +51,7 @@ const Deals: CollectionConfig = {
     {
       name: "borrower",
       type: "relationship",
-      relationTo: "cms-borrowers",
+      relationTo: "borrowers",
       hasMany: false,
       required: true,
     },

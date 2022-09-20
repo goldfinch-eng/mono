@@ -42,7 +42,7 @@ export default buildConfig({
   plugins: [
     cloudStorage({
       collections: {
-        "cms-media": {
+        media: {
           adapter,
         },
       },

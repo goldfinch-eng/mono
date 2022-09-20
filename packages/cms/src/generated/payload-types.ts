@@ -22,9 +22,9 @@ export interface CMSUser {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cms-media".
+ * via the `definition` "media".
  */
-export interface CMSMedia {
+export interface Media {
   id: string;
   alt?: string;
   url?: string;
@@ -72,12 +72,12 @@ export interface CMSMedia {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cms-borrowers".
+ * via the `definition` "borrowers".
  */
-export interface CMSBorrower {
+export interface Borrower {
   id: string;
   name: string;
-  logo?: string | CMSMedia;
+  logo?: string | Media;
   subheading?: string;
   bio?: string;
   history?: string;
@@ -104,7 +104,7 @@ export interface CMSBorrower {
     projections?: string;
   };
   underwritingPerformance: {
-    performanceDocument?: string | CMSMedia;
+    performanceDocument?: string | Media;
     underwritingDescription?: string;
     defaultRate?: number;
   };
@@ -113,7 +113,7 @@ export interface CMSBorrower {
     members: {
       name: string;
       position?: string;
-      image?: string | CMSMedia;
+      image?: string | Media;
       linkedin?: string;
       id?: string;
       blockName?: string;
@@ -132,24 +132,24 @@ export interface CMSBorrower {
   documents: {
     title: string;
     subtitle?: string;
-    file?: string | CMSMedia;
+    file?: string | Media;
     id?: string;
     blockName?: string;
     blockType: 'document';
   }[];
-  deals?: (string | CMSDeal)[];
+  deals?: (string | Deal)[];
   createdAt: string;
   updatedAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cms-deals".
+ * via the `definition` "deals".
  */
-export interface CMSDeal {
+export interface Deal {
   id: string;
   name: string;
   category: string;
-  borrower: string | CMSBorrower;
+  borrower: string | Borrower;
   overview: string;
   defaultInterestRate?: number;
   highlights: {
@@ -170,7 +170,7 @@ export interface CMSDeal {
   documents: {
     title: string;
     subtitle?: string;
-    file?: string | CMSMedia;
+    file?: string | Media;
     id?: string;
     blockName?: string;
     blockType: 'document';
