@@ -110,7 +110,7 @@ const Deals: CollectionConfig = {
         {
           name: "value",
           type: "number",
-          label: "Security value",
+          label: "Loan to Value ratio",
         },
         {
           name: "recourse",
