@@ -1,5 +1,5 @@
 import {
-  SinglePoolCmsQuery,
+  SingleDealQuery,
   SingleTranchedPoolDataQuery,
 } from "@/lib/graphql/generated";
 import { PoolStatus } from "@/lib/pools";
@@ -9,7 +9,7 @@ import { DocumentsList } from "./documents-list";
 import { TransactionTable } from "./transaction-table";
 
 interface DealSummaryProps {
-  poolDetails?: SinglePoolCmsQuery["Deal"] | null;
+  poolDetails?: SingleDealQuery["Deal"] | null;
   poolChainData?: SingleTranchedPoolDataQuery["tranchedPool"] | null;
   poolStatus: PoolStatus | null;
 }
