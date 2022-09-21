@@ -1041,6 +1041,8 @@ type Borrower_Highlights {
 }
 
 type Borrower_BorrowerFinancials {
+  totalLoansOriginated: Float
+  currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [Borrower_BorrowerFinancials_Pastdealsoff_chain!]
   otherProducts: [Borrower_BorrowerFinancials_Otherproductsoffered!]
@@ -2345,6 +2347,8 @@ input Borrower_where {
   operatingCountry: Borrower_operatingCountry_operator
   highlights__text: Borrower_highlights__text_operator
   highlights__id: Borrower_highlights__id_operator
+  borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
+  borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
@@ -2465,6 +2469,26 @@ input Borrower_highlights__id_operator {
   not_equals: String
   like: String
   contains: String
+  exists: Boolean
+}
+
+input Borrower_borrowerFinancials__totalLoansOriginated_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_borrowerFinancials__currentLoansOutstanding_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
   exists: Boolean
 }
 
@@ -2640,6 +2664,8 @@ input Borrower_where_or {
   operatingCountry: Borrower_operatingCountry_operator
   highlights__text: Borrower_highlights__text_operator
   highlights__id: Borrower_highlights__id_operator
+  borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
+  borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
@@ -2675,6 +2701,8 @@ input Borrower_where_and {
   operatingCountry: Borrower_operatingCountry_operator
   highlights__text: Borrower_highlights__text_operator
   highlights__id: Borrower_highlights__id_operator
+  borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
+  borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
@@ -4336,10 +4364,58 @@ type BorrowerFields_borrowerFinancials_Delete {
 }
 
 type BorrowerFields_borrowerFinancials_Fields {
+  totalLoansOriginated: BorrowerFields_borrowerFinancials_totalLoansOriginated
+  currentLoansOutstanding: BorrowerFields_borrowerFinancials_currentLoansOutstanding
   aum: BorrowerFields_borrowerFinancials_aum
   pastOffChainDeals: BorrowerFields_borrowerFinancials_pastOffChainDeals
   otherProducts: BorrowerFields_borrowerFinancials_otherProducts
   projections: BorrowerFields_borrowerFinancials_projections
+}
+
+type BorrowerFields_borrowerFinancials_totalLoansOriginated {
+  create: BorrowerFields_borrowerFinancials_totalLoansOriginated_Create
+  read: BorrowerFields_borrowerFinancials_totalLoansOriginated_Read
+  update: BorrowerFields_borrowerFinancials_totalLoansOriginated_Update
+  delete: BorrowerFields_borrowerFinancials_totalLoansOriginated_Delete
+}
+
+type BorrowerFields_borrowerFinancials_totalLoansOriginated_Create {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_totalLoansOriginated_Read {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_totalLoansOriginated_Update {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_totalLoansOriginated_Delete {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_currentLoansOutstanding {
+  create: BorrowerFields_borrowerFinancials_currentLoansOutstanding_Create
+  read: BorrowerFields_borrowerFinancials_currentLoansOutstanding_Read
+  update: BorrowerFields_borrowerFinancials_currentLoansOutstanding_Update
+  delete: BorrowerFields_borrowerFinancials_currentLoansOutstanding_Delete
+}
+
+type BorrowerFields_borrowerFinancials_currentLoansOutstanding_Create {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_currentLoansOutstanding_Read {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_currentLoansOutstanding_Update {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_currentLoansOutstanding_Delete {
+  permission: Boolean!
 }
 
 type BorrowerFields_borrowerFinancials_aum {
@@ -5671,6 +5747,8 @@ input mutationBorrower_HighlightsInput {
 }
 
 input mutationBorrower_BorrowerFinancialsInput {
+  totalLoansOriginated: Float
+  currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [mutationBorrower_BorrowerFinancials_Pastdealsoff_chainInput]
   otherProducts: [mutationBorrower_BorrowerFinancials_OtherproductsofferedInput]
@@ -5737,6 +5815,8 @@ input mutationBorrowerUpdate_HighlightsInput {
 }
 
 input mutationBorrowerUpdate_BorrowerFinancialsInput {
+  totalLoansOriginated: Float
+  currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [mutationBorrowerUpdate_BorrowerFinancials_Pastdealsoff_chainInput]
   otherProducts: [mutationBorrowerUpdate_BorrowerFinancials_OtherproductsofferedInput]
