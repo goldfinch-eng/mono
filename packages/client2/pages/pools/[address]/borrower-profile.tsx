@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import Image from "next/image";
 
-import { Chip, Icon, Link } from "@/components/design-system";
+import { ChipLink, Link } from "@/components/design-system";
 import { CDN_URL } from "@/constants";
 import {
   BorrowerProfileFieldsFragment,
@@ -108,52 +108,34 @@ export function BorrowerProfile({
           </div>
           <div className="flex gap-2">
             {borrower.website ? (
-              <Chip
-                className="relative flex items-center sm:gap-2"
-                colorScheme="sand"
+              <ChipLink
+                iconLeft="Link"
+                href={borrower.website}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Icon name="Link" size="sm" />
-                <a
-                  className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                  href={borrower.website}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="sr-only sm:not-sr-only">Website</span>
-                </a>
-              </Chip>
+                Website
+              </ChipLink>
             ) : null}
             {borrower.linkedin ? (
-              <Chip
-                className="relative flex items-center sm:gap-2"
-                colorScheme="sand"
+              <ChipLink
+                iconLeft="LinkedIn"
+                href={borrower.linkedin}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Icon name="LinkedIn" size="sm" />
-                <a
-                  className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                  href={borrower.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="sr-only sm:not-sr-only">LinkedIn</span>
-                </a>
-              </Chip>
+                LinkedIn
+              </ChipLink>
             ) : null}
             {borrower.twitter ? (
-              <Chip
-                className="relative flex items-center sm:gap-2"
-                colorScheme="sand"
+              <ChipLink
+                iconLeft="Twitter"
+                href={borrower.twitter}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Icon name="Twitter" size="sm" />
-                <a
-                  className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                  href={borrower.twitter}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="sr-only sm:not-sr-only">Twitter</span>
-                </a>
-              </Chip>
+                Twitter
+              </ChipLink>
             ) : null}
           </div>
         </div>

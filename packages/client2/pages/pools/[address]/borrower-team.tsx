@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import Image from "next/image";
 
-import { Chip, Icon } from "@/components/design-system";
+import { ChipLink } from "@/components/design-system";
 import { CDN_URL } from "@/constants";
 import { CmsTeamMemberFieldsFragment } from "@/lib/graphql/generated";
 
@@ -84,24 +84,20 @@ function EmployeeCard({ image, name, position, linkedin }: EmployeeCardProps) {
             />
           </div>
         ) : null}
-        <div className="flex flex-col whitespace-pre-wrap break-words">
-          <h5 className="mb-2 font-medium">{name}</h5>
-          {position ? <p className="mb-0">{position}</p> : null}
+        <div className="flex flex-col items-start justify-between whitespace-pre-wrap break-words">
+          <div>
+            <h5 className="mb-2 font-medium">{name}</h5>
+            {position ? <p className="mb-0">{position}</p> : null}
+          </div>
           {linkedin ? (
-            <Chip
-              className="relative mt-auto flex items-center sm:gap-2"
-              colorScheme="sand"
+            <ChipLink
+              iconLeft="LinkedIn"
+              href={linkedin}
+              target="_blank"
+              rel="noreferrer"
             >
-              <Icon name="LinkedIn" size="sm" />
-              <a
-                className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                href={linkedin}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span className="sr-only sm:not-sr-only">LinkedIn</span>
-              </a>
-            </Chip>
+              LinkedIn
+            </ChipLink>
           ) : null}
         </div>
       </div>
