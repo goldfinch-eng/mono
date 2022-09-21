@@ -9,7 +9,6 @@ import {
   ShimmerLines,
   Link,
 } from "@/components/design-system";
-import { CDN_URL } from "@/constants";
 import { formatCrypto, formatPercent, formatFiat } from "@/lib/format";
 import {
   SupportedCrypto,
@@ -299,6 +298,9 @@ export function BorrowerFinancialsTable({
   if (borrowerFinancials?.projections) {
     rows.push(["Projections", null, borrowerFinancials.projections]);
   }
+  if (rows.length === 0) {
+    return null;
+  }
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Borrower Financials</h2>
@@ -314,38 +316,41 @@ interface UnderwritingPerformanceTableProps {
 export function UnderwritingPerformanceTable({
   details,
 }: UnderwritingPerformanceTableProps) {
+  const rows: TableRow[] = [];
+  if (details?.performanceDocument) {
+    rows.push([
+      "Performance and loss rate",
+      null,
+      <Link
+        key={`borrower-performance-file-${details.performanceDocument.id}`}
+        href={details.performanceDocument.url as string}
+        target="_blank"
+        className="text-eggplant-700 underline"
+        rel="noreferrer"
+      >
+        {details.performanceDocument.filename as string}
+      </Link>,
+    ]);
+  }
+  if (details?.defaultRate) {
+    rows.push(["Default rate", null, formatPercent(details.defaultRate)]);
+  }
+  if (details?.underwritingDescription) {
+    rows.push([
+      "Underwriting description",
+      null,
+      details.underwritingDescription,
+    ]);
+  }
+  if (rows.length === 0) {
+    return null;
+  }
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">
         Underwriting &amp; Performance
       </h2>
-      {!details ? (
-        <ShimmerLines truncateFirstLine={false} lines={8} />
-      ) : (
-        <Table
-          rows={[
-            [
-              "Performance and loss rate",
-              null,
-              <a
-                key={`borrower-performance-file-${details.performanceDocument?.id}`}
-                href={`${CDN_URL}${details.performanceDocument?.url}`}
-                target="_blank"
-                className="text-eggplant-700 underline"
-                rel="noreferrer"
-              >
-                {details.performanceDocument?.filename}
-              </a>,
-            ],
-            [
-              "Default rate",
-              null,
-              details.defaultRate ? formatPercent(details.defaultRate) : null,
-            ],
-            ["Underwriting description", null, details.underwritingDescription],
-          ]}
-        />
-      )}
+      <Table rows={rows} />
     </div>
   );
 }

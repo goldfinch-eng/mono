@@ -1,7 +1,7 @@
 import { gql } from "@apollo/client";
 import Image from "next/image";
 
-import { Chip, Icon } from "@/components/design-system";
+import { Chip, Icon, Link } from "@/components/design-system";
 import { CDN_URL } from "@/constants";
 import {
   BorrowerProfileFieldsFragment,
@@ -86,8 +86,8 @@ export function BorrowerProfile({
   borrowerPools,
 }: BorrowerProfileProps) {
   return (
-    <div>
-      <div className="mb-20">
+    <div className="space-y-20">
+      <div>
         <div className="mb-8 items-center justify-between lg:flex">
           <div className="mb-3 flex items-center">
             {borrower.logo && (
@@ -191,8 +191,8 @@ export function BorrowerProfile({
         </div>
       </div>
 
-      {borrower.highlights ? (
-        <div className="mb-20">
+      {borrower.highlights && borrower.highlights.length > 0 ? (
+        <div>
           <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
           <ul className="list-outside list-disc space-y-5 pl-5">
             {borrower.highlights.map((item, idx) => (
@@ -204,31 +204,25 @@ export function BorrowerProfile({
         </div>
       ) : null}
 
-      <div className="mb-20">
-        <BorrowerFinancialsTable
-          otherPools={borrowerPools}
-          borrowerFinancials={borrower.borrowerFinancials}
-        />
-      </div>
+      <BorrowerFinancialsTable
+        otherPools={borrowerPools}
+        borrowerFinancials={borrower.borrowerFinancials}
+      />
 
-      <div className="mb-20">
-        <UnderwritingPerformanceTable
-          details={borrower.underwritingPerformance}
-        />
-      </div>
+      <UnderwritingPerformanceTable
+        details={borrower.underwritingPerformance}
+      />
 
       {borrower.team &&
       (borrower.team.members || borrower.team?.description) ? (
-        <div className="mb-20">
-          <BorrowerTeam
-            members={borrower.team.members}
-            description={borrower.team.description}
-          />
-        </div>
+        <BorrowerTeam
+          members={borrower.team.members}
+          description={borrower.team.description}
+        />
       ) : null}
 
-      {borrower.mediaLinks ? (
-        <div className="mb-20">
+      {borrower.mediaLinks && borrower.mediaLinks.length > 0 ? (
+        <div>
           <h3 className="mb-8 text-lg font-semibold">Media</h3>
           <ul>
             {borrower.mediaLinks.map((link, idx) => (
@@ -236,23 +230,23 @@ export function BorrowerProfile({
                 key={`borrower-media-link-${link.url}-${idx}`}
                 className="py-1"
               >
-                <a
-                  href={link.url ?? ""}
+                <Link
+                  href={link.url as string}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1 text-eggplant-700 underline sm:gap-2"
+                  iconRight="ArrowTopRight"
                 >
-                  {link.title}
-                  <Icon name="ArrowTopRight" size="sm" />
-                </a>
+                  {link.title as string}
+                </Link>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
 
-      {borrower.contactInfo ? (
-        <div className="mb-20">
+      {borrower.contactInfo?.description || borrower.contactInfo?.email ? (
+        <div>
           <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
           {borrower.contactInfo.description ? (
             <p>{borrower.contactInfo.description}</p>
@@ -268,7 +262,7 @@ export function BorrowerProfile({
         </div>
       ) : null}
 
-      {borrower.documents ? (
+      {borrower.documents && borrower.documents.length > 0 ? (
         <DocumentsList documents={borrower.documents} />
       ) : null}
     </div>
