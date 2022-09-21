@@ -20,14 +20,14 @@ import {
 } from "@/components/design-system";
 import { BannerPortal, SubnavPortal } from "@/components/layout";
 import { SEO } from "@/components/seo";
-import { CDN_URL } from "@/constants";
 import { apolloClient } from "@/lib/graphql/apollo";
 import {
   SupportedCrypto,
   UidType,
   useSingleTranchedPoolDataQuery,
-  SinglePoolCmsQuery,
-  PoolPageCmsQuery,
+  SingleDealQuery,
+  AllDealsQuery,
+  SingleDealQueryVariables,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -78,7 +78,7 @@ gql`
     $tranchedPoolId: ID!
     $tranchedPoolAddress: String!
     $userId: ID!
-    $allBorrowerPools: [ID!]
+    $borrowerOtherPools: [ID!]
   ) {
     tranchedPool(id: $tranchedPoolId) {
       id
@@ -111,7 +111,9 @@ gql`
       ...TranchedPoolStatusFields
       ...SupplyPanelTranchedPoolFields
     }
-    borrowerPools: tranchedPools(where: { id_in: $allBorrowerPools }) {
+    borrowerOtherPools: tranchedPools(
+      where: { id_in: $borrowerOtherPools, id_not: $tranchedPoolId }
+    ) {
       ...BorrowerOtherPoolFields
     }
     seniorPools(first: 1) {
@@ -144,24 +146,14 @@ gql`
   }
 `;
 
-const allPoolsCMSQuery = gql`
-  query PoolPageCMS @api(name: cms) {
-    Deals {
-      docs {
-        id
-      }
-    }
-  }
-`;
-
-const singlePoolCMSQuery = gql`
+const singleDealQuery = gql`
   ${DOCUMENT_FIELDS}
   ${CMS_TEAM_MEMBER_FIELDS}
   ${SECURITIES_RECOURSE_TABLE_FIELDS}
   ${BORROWER_FINANCIALS_TABLE_FIELDS}
   ${BORROWER_PERFORMANCE_TABLE_FIELDS}
   ${BORROWER_PROFILE_FIELDS}
-  query SinglePoolCMS($id: String!) @api(name: cms) {
+  query SingleDeal($id: String!) @api(name: cms) {
     Deal(id: $id) {
       id
       name
@@ -187,30 +179,30 @@ const singlePoolCMSQuery = gql`
 `;
 
 interface PoolPageProps {
-  poolDetails: SinglePoolCmsQuery["Deal"];
+  dealDetails: NonNullable<SingleDealQuery["Deal"]>;
 }
 
-export default function PoolPage({ poolDetails }: PoolPageProps) {
+export default function PoolPage({ dealDetails }: PoolPageProps) {
   const { account } = useWallet();
 
-  const borrower = poolDetails?.borrower;
-  const allBorrowerPools = (borrower?.deals || []).map((pool) => pool.id);
-  const poolId = poolDetails?.id;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const borrower = dealDetails.borrower!;
+  const otherPoolsFromThisBorrower = (borrower.deals || []).map(
+    (deal) => deal.id
+  );
 
   const { data, error } = useSingleTranchedPoolDataQuery({
-    skip: !poolDetails?.id,
     variables: {
-      tranchedPoolId: poolDetails?.id as string,
-      tranchedPoolAddress: poolDetails?.id as string,
+      tranchedPoolId: dealDetails?.id as string,
+      tranchedPoolAddress: dealDetails?.id as string,
       userId: account?.toLowerCase() ?? "",
-      allBorrowerPools,
+      borrowerOtherPools: otherPoolsFromThisBorrower,
     },
     returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
 
   const tranchedPool = data?.tranchedPool;
   const seniorPool = data?.seniorPools?.[0];
-  const borrowerPools = data?.borrowerPools;
   const user = data?.user ?? null;
   const fiatPerGfi = data?.gfiPrice.price.amount;
 
@@ -278,7 +270,7 @@ export default function PoolPage({ poolDetails }: PoolPageProps) {
 
   return (
     <>
-      <SEO title={poolDetails?.name} />
+      <SEO title={dealDetails.name} />
 
       {initialBannerContent && expandedBannerContent ? (
         <BannerPortal>
@@ -323,17 +315,7 @@ export default function PoolPage({ poolDetails }: PoolPageProps) {
         <div style={{ gridArea: "heading" }}>
           <div className="mb-8 flex flex-wrap justify-between gap-2">
             <div>
-              <Breadcrumb
-                label={poolDetails?.name}
-                image={
-                  borrower?.logo
-                    ? `${CDN_URL}${
-                        borrower?.logo?.sizes?.thumbnail?.url ??
-                        borrower?.logo?.url
-                      }`
-                    : null
-                }
-              />
+              <Breadcrumb label={dealDetails.name} image={borrower.logo?.url} />
             </div>
             {tranchedPool && poolStatus !== PoolStatus.ComingSoon ? (
               <Button
@@ -353,11 +335,7 @@ export default function PoolPage({ poolDetails }: PoolPageProps) {
             level={1}
             className="mb-12 text-center text-sand-800 md:text-left"
           >
-            {poolDetails ? (
-              poolDetails.name
-            ) : (
-              <ShimmerLines truncateFirstLine={false} lines={2} />
-            )}
+            {dealDetails.name}
           </Heading>
 
           {error ? (
@@ -451,22 +429,21 @@ export default function PoolPage({ poolDetails }: PoolPageProps) {
             </TabList>
             <TabPanels>
               <TabContent>
-                {tranchedPool && poolDetails ? (
+                {tranchedPool && poolStatus ? (
                   <DealSummary
-                    poolDetails={poolDetails}
+                    poolDetails={dealDetails}
                     poolChainData={tranchedPool}
                     poolStatus={poolStatus}
                   />
                 ) : (
-                  <ShimmerLines lines={3} />
+                  <ShimmerLines lines={10} />
                 )}
               </TabContent>
               <TabContent>
-                {tranchedPool && poolDetails?.borrower ? (
+                {data ? (
                   <BorrowerProfile
-                    poolId={poolId}
-                    borrower={poolDetails.borrower}
-                    borrowerPools={borrowerPools}
+                    borrower={borrower}
+                    borrowerPools={data.borrowerOtherPools}
                   />
                 ) : null}
               </TabContent>
@@ -482,9 +459,19 @@ interface StaticParams extends ParsedUrlQuery {
   address: string;
 }
 
+const allDealsQuery = gql`
+  query AllDeals @api(name: cms) {
+    Deals {
+      docs {
+        id
+      }
+    }
+  }
+`;
+
 export const getStaticPaths: GetStaticPaths<StaticParams> = async () => {
-  const res = await apolloClient.query<PoolPageCmsQuery>({
-    query: allPoolsCMSQuery,
+  const res = await apolloClient.query<AllDealsQuery>({
+    query: allDealsQuery,
   });
 
   const paths =
@@ -504,16 +491,28 @@ export const getStaticProps: GetStaticProps<
   PoolPageProps,
   StaticParams
 > = async (context) => {
-  const res = await apolloClient.query<SinglePoolCmsQuery>({
-    query: singlePoolCMSQuery,
+  const address = context.params?.address;
+  if (!address) {
+    throw new Error("No address param in getStaticProps");
+  }
+  const res = await apolloClient.query<
+    SingleDealQuery,
+    SingleDealQueryVariables
+  >({
+    query: singleDealQuery,
     variables: {
-      id: context.params?.address,
+      id: address,
     },
   });
 
+  const poolDetails = res.data.Deal;
+  if (!poolDetails) {
+    throw new Error(`No deal metadata found for pool with address ${address}`);
+  }
+
   return {
     props: {
-      poolDetails: res.data.Deal,
+      dealDetails: poolDetails,
     },
   };
 };

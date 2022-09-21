@@ -15,13 +15,16 @@ export const whitelist = [
   "https://beta.app.goldfinch.finance/",
 ];
 
-const adapter = gcsAdapter({
-  options: {
-    apiEndpoint: process.env.GCS_ENDPOINT,
-    projectId: process.env.GCS_PROJECT_ID,
-  },
-  bucket: process.env.GCS_BUCKET,
-});
+// Local filesystem will be used if the env var for GCS bucket is not set. Can be used for running the CMS on local machine.
+const adapter = process.env.GCS_BUCKET
+  ? gcsAdapter({
+      options: {
+        apiEndpoint: process.env.GCS_ENDPOINT,
+        projectId: process.env.GCS_PROJECT_ID,
+      },
+      bucket: process.env.GCS_BUCKET,
+    })
+  : null;
 
 export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_URL,

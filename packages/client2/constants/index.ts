@@ -65,9 +65,3 @@ export const UNIQUE_IDENTITY_SIGNER_URL =
 export const UNIQUE_IDENTITY_MINT_PRICE = "830000000000000";
 
 export const TOKEN_LAUNCH_TIME = 1641920400; // Tuesday, January 11, 2022 09:00:00 AM GMT-08:00 (note that this number is in seconds, not ms)
-
-export const CDN_URL = process.env.NEXT_PUBLIC_CDN_URL
-  ? process.env.NEXT_PUBLIC_CDN_URL
-  : networkName === "mainnet"
-  ? "" // CDN url will go here for mainnet
-  : "http://localhost:3010";

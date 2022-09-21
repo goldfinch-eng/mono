@@ -9,11 +9,10 @@ import {
   InfoIconTooltip,
   ShimmerLines,
 } from "@/components/design-system";
-import { CDN_URL } from "@/constants";
 import { formatPercent } from "@/lib/format";
 import {
   TranchedPoolCardFieldsFragment,
-  CmsTranchedPoolCardFieldsFragment,
+  TranchedPoolCardDealFieldsFragment,
 } from "@/lib/graphql/generated";
 import {
   PoolStatus,
@@ -23,8 +22,8 @@ import {
 } from "@/lib/pools";
 
 interface PoolCardProps {
-  title?: string | null;
-  subtitle?: string | null;
+  title: string;
+  subtitle: string;
   apy: FixedNumber;
   apyWithGfi: FixedNumber;
   apyTooltipContent: ReactNode;
@@ -166,8 +165,6 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   fragment TranchedPoolCardFields on TranchedPool {
     id
-    name @client
-    icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     creditLine {
@@ -178,26 +175,21 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   }
 `;
 
-export const CMS_TRANCHED_POOL_CARD_FIELDS = gql`
-  fragment CMSTranchedPoolCardFields on Deal {
+export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
+  fragment TranchedPoolCardDealFields on Deal {
     id
     name
     category
     borrower {
       logo {
         url
-        sizes {
-          thumbnail {
-            url
-          }
-        }
       }
     }
   }
 `;
 
 interface TranchedPoolCardProps {
-  details?: CmsTranchedPoolCardFieldsFragment | null;
+  details: TranchedPoolCardDealFieldsFragment;
   tranchedPool: TranchedPoolCardFieldsFragment;
   href: string;
   fiatPerGfi: number;
@@ -229,16 +221,9 @@ export function TranchedPoolCard({
 
   return (
     <PoolCard
-      title={details?.name}
-      subtitle={details?.category}
-      icon={
-        details?.borrower?.logo
-          ? `${CDN_URL}${
-              details?.borrower?.logo?.sizes?.thumbnail?.url ??
-              details?.borrower?.logo?.url
-            }`
-          : null
-      }
+      title={details.name}
+      subtitle={details.category}
+      icon={details.borrower?.logo?.url}
       apy={tranchedPool.estimatedJuniorApy}
       apyWithGfi={totalApyWithGfi}
       apyTooltipContent={

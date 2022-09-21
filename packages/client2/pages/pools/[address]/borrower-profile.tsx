@@ -1,8 +1,7 @@
 import { gql } from "@apollo/client";
 import Image from "next/image";
 
-import { Chip, Icon } from "@/components/design-system";
-import { CDN_URL } from "@/constants";
+import { ChipLink, Link } from "@/components/design-system";
 import {
   BorrowerProfileFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
@@ -18,11 +17,7 @@ import { DocumentsList } from "./documents-list";
 export const BORROWER_OTHER_POOL_FIELDS = gql`
   fragment BorrowerOtherPoolFields on TranchedPool {
     id
-    principalAmountRepaid
-    creditLine {
-      id
-      maxLimit
-    }
+    name @client
   }
 `;
 
@@ -32,11 +27,6 @@ export const BORROWER_PROFILE_FIELDS = gql`
     name
     logo {
       url
-      sizes {
-        thumbnail {
-          url
-        }
-      }
     }
     subheading
     bio
@@ -81,36 +71,23 @@ export const BORROWER_PROFILE_FIELDS = gql`
 `;
 
 interface BorrowerProfileProps {
-  poolId?: string | null;
   borrower: BorrowerProfileFieldsFragment;
-  borrowerPools?: BorrowerOtherPoolFieldsFragment[];
+  borrowerPools: BorrowerOtherPoolFieldsFragment[];
 }
 
 export function BorrowerProfile({
-  poolId,
   borrower,
   borrowerPools,
 }: BorrowerProfileProps) {
-  // Combine CMS and on chain data
-  const allDeals = (borrower.deals || []).map((deal) => ({
-    id: deal.id,
-    name: deal.name,
-    pool: {
-      ...borrowerPools?.find((pool) => deal.id === pool.id),
-    } as BorrowerOtherPoolFieldsFragment,
-  }));
-
   return (
-    <div>
-      <div className="mb-20">
+    <div className="space-y-20">
+      <div>
         <div className="mb-8 items-center justify-between lg:flex">
           <div className="mb-3 flex items-center">
             {borrower.logo && (
               <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200">
                 <Image
-                  src={`${CDN_URL}${
-                    borrower.logo?.sizes?.thumbnail?.url ?? borrower.logo?.url
-                  }`}
+                  src={borrower.logo.url as string}
                   alt={borrower.name}
                   className="block h-full w-full object-contain object-center"
                   layout="fill"
@@ -123,52 +100,34 @@ export function BorrowerProfile({
           </div>
           <div className="flex gap-2">
             {borrower.website ? (
-              <Chip
-                className="relative flex items-center sm:gap-2"
-                colorScheme="sand"
+              <ChipLink
+                iconLeft="Link"
+                href={borrower.website}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Icon name="Link" size="sm" />
-                <a
-                  className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                  href={borrower.website}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="sr-only sm:not-sr-only">Website</span>
-                </a>
-              </Chip>
+                Website
+              </ChipLink>
             ) : null}
             {borrower.linkedin ? (
-              <Chip
-                className="relative flex items-center sm:gap-2"
-                colorScheme="sand"
+              <ChipLink
+                iconLeft="LinkedIn"
+                href={borrower.linkedin}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Icon name="LinkedIn" size="sm" />
-                <a
-                  className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                  href={borrower.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="sr-only sm:not-sr-only">LinkedIn</span>
-                </a>
-              </Chip>
+                LinkedIn
+              </ChipLink>
             ) : null}
             {borrower.twitter ? (
-              <Chip
-                className="relative flex items-center sm:gap-2"
-                colorScheme="sand"
+              <ChipLink
+                iconLeft="Twitter"
+                href={borrower.twitter}
+                target="_blank"
+                rel="noreferrer"
               >
-                <Icon name="Twitter" size="sm" />
-                <a
-                  className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                  href={borrower.twitter}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="sr-only sm:not-sr-only">Twitter</span>
-                </a>
-              </Chip>
+                Twitter
+              </ChipLink>
             ) : null}
           </div>
         </div>
@@ -206,8 +165,8 @@ export function BorrowerProfile({
         </div>
       </div>
 
-      {borrower.highlights ? (
-        <div className="mb-20">
+      {borrower.highlights && borrower.highlights.length > 0 ? (
+        <div>
           <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
           <ul className="list-outside list-disc space-y-5 pl-5">
             {borrower.highlights.map((item, idx) => (
@@ -219,32 +178,25 @@ export function BorrowerProfile({
         </div>
       ) : null}
 
-      <div className="mb-20">
-        <BorrowerFinancialsTable
-          currentPool={poolId}
-          allDeals={allDeals}
-          borrowerFinancials={borrower.borrowerFinancials}
-        />
-      </div>
+      <BorrowerFinancialsTable
+        otherPools={borrowerPools}
+        borrowerFinancials={borrower.borrowerFinancials}
+      />
 
-      <div className="mb-20">
-        <UnderwritingPerformanceTable
-          details={borrower.underwritingPerformance}
-        />
-      </div>
+      <UnderwritingPerformanceTable
+        details={borrower.underwritingPerformance}
+      />
 
       {borrower.team &&
       (borrower.team.members || borrower.team?.description) ? (
-        <div className="mb-20">
-          <BorrowerTeam
-            members={borrower.team.members}
-            description={borrower.team.description}
-          />
-        </div>
+        <BorrowerTeam
+          members={borrower.team.members}
+          description={borrower.team.description}
+        />
       ) : null}
 
-      {borrower.mediaLinks ? (
-        <div className="mb-20">
+      {borrower.mediaLinks && borrower.mediaLinks.length > 0 ? (
+        <div>
           <h3 className="mb-8 text-lg font-semibold">Media</h3>
           <ul>
             {borrower.mediaLinks.map((link, idx) => (
@@ -252,23 +204,23 @@ export function BorrowerProfile({
                 key={`borrower-media-link-${link.url}-${idx}`}
                 className="py-1"
               >
-                <a
-                  href={link.url ?? ""}
+                <Link
+                  href={link.url as string}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1 text-eggplant-700 underline sm:gap-2"
+                  iconRight="ArrowTopRight"
                 >
-                  {link.title}
-                  <Icon name="ArrowTopRight" size="sm" />
-                </a>
+                  {link.title as string}
+                </Link>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
 
-      {borrower.contactInfo ? (
-        <div className="mb-20">
+      {borrower.contactInfo?.description || borrower.contactInfo?.email ? (
+        <div>
           <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
           {borrower.contactInfo.description ? (
             <p>{borrower.contactInfo.description}</p>
@@ -284,7 +236,7 @@ export function BorrowerProfile({
         </div>
       ) : null}
 
-      {borrower.documents ? (
+      {borrower.documents && borrower.documents.length > 0 ? (
         <DocumentsList documents={borrower.documents} />
       ) : null}
     </div>

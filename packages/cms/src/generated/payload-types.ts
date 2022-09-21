@@ -92,6 +92,8 @@ export interface Borrower {
     id?: string;
   }[];
   borrowerFinancials: {
+    totalLoansOriginated?: number;
+    currentLoansOutstanding?: number;
     aum?: number;
     pastOffChainDeals: {
       text: string;

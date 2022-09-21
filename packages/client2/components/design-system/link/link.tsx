@@ -2,6 +2,7 @@ import clsx from "clsx";
 import NextLink, { LinkProps as NextLinkProps } from "next/link";
 import { AnchorHTMLAttributes } from "react";
 
+import { Chip } from "../chip";
 import { IconNameType, Icon } from "../icon";
 
 interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -42,5 +43,46 @@ export function Link({
         {iconRight ? <Icon name={iconRight} size="sm" /> : null}
       </a>
     </NextLink>
+  );
+}
+
+interface ChipLinkProps extends Omit<LinkProps, "iconRight"> {
+  iconLeft: IconNameType;
+  hideTextOnSmallScreens?: boolean;
+}
+
+export function ChipLink({
+  children,
+  href,
+  nextLinkProps,
+  className,
+  iconLeft,
+  hideTextOnSmallScreens = true,
+  ...rest
+}: ChipLinkProps) {
+  return (
+    <Chip
+      className={clsx(
+        "group relative flex items-center hover:bg-sand-200 sm:gap-2",
+        className
+      )}
+      colorScheme="sand"
+    >
+      <Icon name={iconLeft} size="sm" />
+      <NextLink passHref {...nextLinkProps} href={href}>
+        <a
+          className="before:absolute before:inset-0 group-hover:underline"
+          {...rest}
+        >
+          <span
+            className={clsx(
+              hideTextOnSmallScreens ? "sr-only sm:not-sr-only" : null
+            )}
+          >
+            {children}
+          </span>
+        </a>
+      </NextLink>
+    </Chip>
   );
 }
