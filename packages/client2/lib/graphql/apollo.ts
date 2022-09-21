@@ -29,10 +29,10 @@ if (!graphQlApiUrl) {
 }
 
 const cmsApiUrl =
-  typeof process.env.NEXT_PUBLIC_GRAPHQL_URL !== "undefined"
-    ? process.env.NEXT_PUBLIC_GRAPHQL_URL
+  typeof process.env.CMS_GRAPHQL_API_URL !== "undefined"
+    ? process.env.CMS_GRAPHQL_API_URL
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
-    ? "http://localhost:3010/api/graphql"
+    ? ""
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
     ? "http://localhost:3010/api/graphql"
     : null;
