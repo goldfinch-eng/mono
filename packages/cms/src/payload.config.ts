@@ -43,7 +43,7 @@ export default buildConfig({
     cloudStorage({
       collections: {
         media: {
-          adapter,
+          adapter: process.env.NODE_ENV === "production" ? adapter : null,
         },
       },
     }),
