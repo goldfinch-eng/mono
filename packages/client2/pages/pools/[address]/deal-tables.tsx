@@ -189,24 +189,28 @@ interface SecuritiesRecourseTableProps {
 export function SecuritiesRecourseTable({
   details,
 }: SecuritiesRecourseTableProps) {
+  const rows: TableRow[] = [];
+  rows.push(["Secured", null, details?.secured ? "Yes" : "No"]);
+  if (details?.type) {
+    rows.push(["Type of security", null, details.type]);
+  }
+  if (details?.description) {
+    rows.push(["Security description", null, details.description]);
+  }
+  if (details?.value) {
+    rows.push(["Security value", null, details.value.toString()]);
+  }
+  rows.push(["Recourse to Borrower", null, details?.recourse ? "Yes" : "No"]);
+  if (details?.recourseDescription) {
+    rows.push(["Recourse description", null, details.recourseDescription]);
+  }
+  if (details?.covenants) {
+    rows.push(["Covenants", null, details.covenants]);
+  }
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Securities and recourse</h2>
-      {!details ? (
-        <ShimmerLines truncateFirstLine={false} lines={8} />
-      ) : (
-        <Table
-          rows={[
-            ["Secured", null, details?.secured ? "Yes" : "No"],
-            ["Type of security", null, details?.type ?? ""],
-            ["Security description", null, details?.description ?? ""],
-            ["Security value", null, details?.value?.toString() ?? ""],
-            ["Recourse to Borrower", null, details?.recourse ? "Yes" : "No"],
-            ["Recourse description", null, details?.recourseDescription ?? ""],
-            ["Covenants", null, details?.covenants ?? ""],
-          ]}
-        />
-      )}
+      <Table rows={rows} />
     </div>
   );
 }
