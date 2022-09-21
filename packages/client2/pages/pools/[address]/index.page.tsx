@@ -429,14 +429,14 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             </TabList>
             <TabPanels>
               <TabContent>
-                {tranchedPool ? (
+                {tranchedPool && poolStatus ? (
                   <DealSummary
                     poolDetails={dealDetails}
                     poolChainData={tranchedPool}
                     poolStatus={poolStatus}
                   />
                 ) : (
-                  <ShimmerLines lines={3} />
+                  <ShimmerLines lines={10} />
                 )}
               </TabContent>
               <TabContent>
