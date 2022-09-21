@@ -2,7 +2,6 @@ import { gql } from "@apollo/client";
 import Image from "next/image";
 
 import { ChipLink, Link } from "@/components/design-system";
-import { CDN_URL } from "@/constants";
 import {
   BorrowerProfileFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
@@ -28,11 +27,6 @@ export const BORROWER_PROFILE_FIELDS = gql`
     name
     logo {
       url
-      sizes {
-        thumbnail {
-          url
-        }
-      }
     }
     subheading
     bio
@@ -93,9 +87,7 @@ export function BorrowerProfile({
             {borrower.logo && (
               <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200">
                 <Image
-                  src={`${CDN_URL}${
-                    borrower.logo?.sizes?.thumbnail?.url ?? borrower.logo?.url
-                  }`}
+                  src={borrower.logo.url as string}
                   alt={borrower.name}
                   className="block h-full w-full object-contain object-center"
                   layout="fill"
