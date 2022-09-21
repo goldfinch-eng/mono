@@ -55,22 +55,51 @@ The current production deployment should use the image `cms` tagged with `stable
 
 Deployment to Payload updates is done through the `gcloud` CLI tool and docker itself:
 
-1. Run the following command to authenticate your docker with the Google account
+1. Authenticate `gcloud` and login with your account
+
+```
+gcloud auth login
+```
+
+2. Run the following command to authenticate your docker with the Google account
 
 ```
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-2. Once authenticated, build the image and tag it:
+3. Once authenticated, build the image and tag it:
 
 ```
 docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG>
 ```
 
-3. Deploy the tagged image to the Artifact Registry
+4. Deploy the tagged image to the Artifact Registry
 
 ```
 docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:<TAG>
 ```
 
-4. Once the image is sent to the registry, you can use the image to launch or re-launch the Payload CMS server
+5. Once the image is sent to the registry, you can use the image to launch or re-launch the Payload CMS server. If a Payload server is already running, you will have to **Restart** the machine for the new image to be loaded
+
+#### Target deployment by tagging image builds
+
+The default production server deploys from the `cms` image tagged with `stable` in the Artifact Registry. Pushing an image as `cms:stable` will automatically be used on production after the next restart.
+
+Tagging allows us to easily deploy images and target different environments.
+For example, a staging or testing server can be set to use `cms:latest` image, where a different build can be used.
+
+An image can also have multiple tags
+
+```
+docker build . \
+--tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable \
+--tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:latest
+```
+
+Tags can also be added to existing images
+
+```
+docker tag \
+  us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:latest \
+  us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:latest
+```
