@@ -17,6 +17,7 @@ COPY . .
 RUN npm install -g typescript
 RUN npm install -g copyfiles
 RUN npm install -g cross-env
+RUN npm install -g ts-node
 
 # Install dependencies
 RUN npm install

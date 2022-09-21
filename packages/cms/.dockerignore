@@ -1,5 +1,6 @@
 node_modules
 google-cloud-storage
+media
 .env
 .env.example
 .gcloudignore
