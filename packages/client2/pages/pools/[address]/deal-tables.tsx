@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import { FixedNumber } from "ethers";
 import { ReactNode } from "react";
 
 import {
@@ -146,7 +145,7 @@ export function DealTermsTable({
               "An additional interest rate paid by the Borrower if they are late on their payments following the grace period. The total interest rate a Borrower in default pays =  interest rate + default interest rate.",
               formatPercent(
                 defaultInterestRate
-                  ? FixedNumber.fromString(`${defaultInterestRate}`)
+                  ? defaultInterestRate
                   : tranchedPool.creditLine.lateFeeApr
               ),
             ],
