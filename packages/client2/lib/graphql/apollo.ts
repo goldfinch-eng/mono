@@ -29,8 +29,8 @@ if (!graphQlApiUrl) {
 }
 
 const cmsApiUrl =
-  typeof process.env.CMS_GRAPHQL_API_URL !== "undefined"
-    ? process.env.CMS_GRAPHQL_API_URL
+  typeof process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL !== "undefined"
+    ? process.env.NEXT_PUBLIC_CMS_GRAPHQL_API_URL
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "mainnet"
     ? ""
     : process.env.NEXT_PUBLIC_NETWORK_NAME === "localhost"
