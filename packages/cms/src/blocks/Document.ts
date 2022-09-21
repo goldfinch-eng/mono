@@ -1,7 +1,5 @@
 import type { Block } from "payload/types";
 
-import { isValidURL } from "../lib/validation";
-
 const Document: Block = {
   slug: "document",
   fields: [
