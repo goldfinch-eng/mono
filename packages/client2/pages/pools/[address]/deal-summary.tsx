@@ -74,7 +74,7 @@ export default function DealSummary({
         />
       </div>
 
-      {poolDetails.documents ? (
+      {poolDetails.documents && poolDetails.documents.length > 0 ? (
         <DocumentsList documents={poolDetails.documents} />
       ) : null}
     </div>

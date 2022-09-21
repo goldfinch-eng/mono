@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { CDN_URL } from "@/constants";
+import { Link } from "@/components/design-system";
 import { DocumentFieldsFragment } from "@/lib/graphql/generated";
 
 import FileFolder from "./file-folder.svg";
@@ -31,36 +31,27 @@ export function DocumentsList({ documents }: DocumentsListProps) {
   return (
     <div>
       <h2 className="mb-8 text-lg font-semibold">Documents</h2>
-      <ul className="m-0 list-none border-t border-sand-100 p-0">
+      <ul className="divide-y divide-sand-100 border-y border-sand-100">
         {documents.map((doc) => {
           const Thumbnail = getFiletypeImage(doc.file?.url);
 
           return (
-            <li
-              key={`document-list-${doc.id}`}
-              className="flex w-full items-center border-b border-sand-100 py-6"
-            >
-              <div>
-                <a
-                  href={`${CDN_URL}${doc.file?.url}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Thumbnail className="w-14 sm:w-[70px]" />
-                </a>
-              </div>
-              <div className="ml-6 sm:ml-10">
-                <h5 className="mb-1 font-medium">
-                  <a
-                    href={`${CDN_URL}${doc.file?.url}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline"
-                  >
-                    {doc.title}
-                  </a>
-                </h5>
-                {doc.subtitle}
+            <li key={`document-list-${doc.id}`} className="py-6">
+              <div className="relative flex items-center">
+                <Thumbnail className="w-14 flex-shrink-0 sm:w-16" />
+                <div className="ml-6 sm:ml-10">
+                  <h5 className="mb-1 font-medium">
+                    <Link
+                      href={doc.file?.url as string}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="before:absolute before:inset-0"
+                    >
+                      {doc.title as string}
+                    </Link>
+                  </h5>
+                  {doc.subtitle}
+                </div>
               </div>
             </li>
           );
