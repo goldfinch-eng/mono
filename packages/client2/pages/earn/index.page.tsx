@@ -221,5 +221,6 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       dealMetadata,
     },
+    revalidate: 600,
   };
 };

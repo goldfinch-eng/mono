@@ -514,5 +514,6 @@ export const getStaticProps: GetStaticProps<
     props: {
       dealDetails: poolDetails,
     },
+    revalidate: 600,
   };
 };
