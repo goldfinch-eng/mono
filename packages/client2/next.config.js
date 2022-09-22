@@ -79,7 +79,7 @@ const nextConfig = {
     "page.md",
   ],
   images: {
-    domains: ["localhost"],
+    domains: ["localhost", "34.133.55.171"],
   },
   async redirects() {
     return [
