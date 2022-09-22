@@ -461,7 +461,7 @@ interface StaticParams extends ParsedUrlQuery {
 
 const allDealsQuery = gql`
   query AllDeals @api(name: cms) {
-    Deals {
+    Deals(limit: 100) {
       docs {
         id
       }
