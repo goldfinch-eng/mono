@@ -1,6 +1,7 @@
 node_modules
 google-cloud-storage
 media
+dist
 .env
 .env.example
 .dockerignore
