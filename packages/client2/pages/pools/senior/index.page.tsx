@@ -177,7 +177,7 @@ export default function SeniorPoolPage() {
                 fiduBalance={data.viewer.fiduBalance}
                 sharePrice={seniorPool?.latestPoolStatus.sharePrice}
                 estimatedApyFromGfiRaw={
-                  seniorPool?.latestPoolStatus.estimatedApy
+                  seniorPool?.latestPoolStatus.estimatedApyFromGfiRaw
                 }
                 fiatPerGfi={fiatPerGfi}
               />
