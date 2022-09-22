@@ -2,7 +2,14 @@ import { Resolvers } from "@apollo/client";
 
 import { getProvider } from "@/lib/wallet";
 
-import { BlockInfo, GfiPrice, SupportedFiat, Viewer } from "../generated";
+import {
+  BackerSecondaryMarket,
+  BlockInfo,
+  GfiPrice,
+  SupportedFiat,
+  Viewer,
+} from "../generated";
+import { fetchBackerSecondaryMarketStat } from "./backer-secondary-market";
 
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toLowerCase();
@@ -88,6 +95,16 @@ export const rootQueryResolvers: Resolvers[string] = {
   async curvePool() {
     return {
       __typename: "CurvePool",
+    };
+  },
+  async backerSecondaryMarket(): Promise<Partial<BackerSecondaryMarket>> {
+    const { tokenCount, onSaleCount } = await fetchBackerSecondaryMarketStat();
+    return {
+      __typename: "BackerSecondaryMarket",
+      collectionStats: {
+        tokenCount,
+        onSaleCount,
+      },
     };
   },
 };
