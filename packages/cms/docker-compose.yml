@@ -20,7 +20,7 @@ services:
         "-port",
         "4443",
         "-public-host",
-        "http://localhost:4443",
+        "localhost",
         "-external-url",
         "http://localhost:4443",
         "-backend",
