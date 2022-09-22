@@ -910,6 +910,22 @@ describe("SeniorPool", () => {
         expect(finalSharePrice).to.be.bignumber.closeTo(originalSharePrice.sub(delta), fiduTolerance)
       })
 
+      it("should apply USDC in the credit line before writedown", async () => {
+        // We expect the senior pool to assess the pool before writing it down. This prevents
+        // accidentally writing down a pool that has received a payment that is still unapplied
+
+        // Two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
+        // Send payment directly to the credit line
+        erc20Transfer(usdc, [creditLine.address], usdcVal(100), borrower)
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {unchanged: true}],
+          [seniorPool.assets, {unchanged: true}],
+        ])
+      })
+
       it("should reset the writedowns to 0 if fully paid back", async () => {
         // Assess for two periods of lateness
         const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
@@ -962,6 +978,40 @@ describe("SeniorPool", () => {
         assertNonNullable(event)
         expect(event.args.tranchedPool).to.equal(tranchedPool.address)
         expect(event.args.amount).to.bignumber.closeTo(expectedWritedown, fiduTolerance)
+      })
+    })
+
+    context("after termEndTime", () => {
+      beforeEach(async () => {
+        // Advance to the end of the loan while making on-time payments
+        while (!(await creditLine.nextDueTime()).eq(await creditLine.termEndTime())) {
+          await advanceTime({toSecond: await creditLine.nextDueTime()})
+          await tranchedPool.assess()
+          const interestOwed = await creditLine.interestOwed()
+          await tranchedPool.pay(interestOwed, {from: borrower})
+        }
+        await advanceTime({toSecond: await creditLine.termEndTime()})
+        await tranchedPool.assess()
+      })
+      it("should have daysLate proportional to days after termEndTime + totalOwed / totalOwedPerDay", async () => {
+        // At term end time we're not yet past the grace period so the writedown amount should be 0
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [() => seniorPool.writedowns(tranchedPool.address), {unchanged: true}],
+        ])
+
+        // Advance two payment period past term end time.
+        await advanceTime({
+          toSecond: (await creditLine.termEndTime()).add(paymentPeriodInDays.mul(new BN(2)).mul(SECONDS_PER_DAY)),
+        })
+
+        // 60 days past termEndTime + ~1 days late on (interestOwed + principalOwed) / (interestOwedPerDay and principalOwedPerDay)
+        // ~= 61 - 30 / 4 = 26%
+        const expectedWritedown = usdcVal(80).mul(new BN(26)).div(new BN(100))
+
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([
+          [seniorPool.totalWritedowns, {byCloseTo: expectedWritedown}],
+          [seniorPool.assets, {byCloseTo: expectedWritedown.neg()}],
+        ])
       })
     })
 
