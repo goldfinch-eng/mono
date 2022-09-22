@@ -30,6 +30,16 @@ export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_URL,
   admin: {
     user: Users.slug,
+    webpack: (config) => ({
+      ...config,
+      resolve: {
+        ...config.resolve,
+        alias: {
+          ...config.resolve.alias,
+          "@payloadcms/plugin-cloud-storage": "./mocks/plugin-cloud-storage", // mocks out the entire cloud storage plugin. there's an issue where it causes the Payload frontend to not build
+        },
+      },
+    }),
   },
   collections: [Users, Media, Borrowers, Deals],
   typescript: {
