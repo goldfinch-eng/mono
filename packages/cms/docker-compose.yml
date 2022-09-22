@@ -28,5 +28,8 @@ services:
       ]
     ports:
       - "4443:4443"
+    volumes:
+      - google-cloud-storage:/data/cms
 volumes:
   mongodb:
+  google-cloud-storage:
