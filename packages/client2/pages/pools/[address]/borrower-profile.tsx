@@ -49,10 +49,7 @@ export const BORROWER_PROFILE_FIELDS = gql`
       url
       title
     }
-    contactInfo {
-      email
-      description
-    }
+    contactInfo
     documents {
       ...DocumentFields
     }
@@ -172,20 +169,10 @@ export function BorrowerProfile({
         </div>
       ) : null}
 
-      {borrower.contactInfo?.description || borrower.contactInfo?.email ? (
+      {borrower.contactInfo ? (
         <div>
           <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
-          {borrower.contactInfo.description ? (
-            <p>{borrower.contactInfo.description}</p>
-          ) : null}
-          {borrower.contactInfo.email ? (
-            <a
-              href={`mailto:${borrower.contactInfo.email}`}
-              className="text-eggplant-700 underline"
-            >
-              {borrower.contactInfo.email}
-            </a>
-          ) : null}
+          {renderRichText(borrower.contactInfo)}
         </div>
       ) : null}
 

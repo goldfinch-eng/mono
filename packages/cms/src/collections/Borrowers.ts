@@ -13,7 +13,7 @@ const Borrowers: CollectionConfig = {
   },
   admin: {
     useAsTitle: "name",
-    defaultColumns: ["name"],
+    defaultColumns: ["name", "createdAt", "updatedAt"],
   },
   access: {
     read: () => true,
@@ -175,17 +175,11 @@ const Borrowers: CollectionConfig = {
     },
     {
       name: "contactInfo",
-      type: "group",
-      fields: [
-        {
-          name: "description",
-          type: "textarea",
-        },
-        {
-          name: "email",
-          type: "email",
-        },
-      ],
+      type: "richText",
+      admin: {
+        elements: ["link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
     {
       name: "documents",

@@ -120,10 +120,9 @@ export interface Borrower {
     url: string;
     id?: string;
   }[];
-  contactInfo: {
-    description?: string;
-    email?: string;
-  };
+  contactInfo?: {
+    [k: string]: unknown;
+  }[];
   documents: {
     title: string;
     subtitle?: string;
