@@ -18,7 +18,8 @@
     "services:stop": "docker compose stop",
     "services:destroy": "docker compose down -v",
     "start:dev": "npm run services:start && npm run dev",
-    "start:prod": "npm run build && npm run serve"
+    "start:prod": "npm run build && npm run serve",
+    "deploy:prod": "docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable && docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.4.2",
