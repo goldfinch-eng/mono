@@ -13,5 +13,14 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {"source": "/", "destination": "https://app.goldfinch.finance/earn", "permanent": false},
+    {"source": "/earn", "destination": "https://app.goldfinch.finance/earn", "permanent": false},
+    {"source": "/pools/senior", "destination": "https://app.goldfinch.finance/pools/senior", "permanent": false},
+    {"source": "/pools/:path*", "destination": "https://app.goldfinch.finance/pools/:path*", "permanent": false},
+    {"source": "/verify", "destination": "https://app.goldfinch.finance/verify", "permanent": false},
+    {"source": "/gfi", "destination": "https://app.goldfinch.finance/gfi", "permanent": false},
+    {"source": "/stake", "destination": "https://app.goldfinch.finance/stake", "permanent": false}
   ]
 }

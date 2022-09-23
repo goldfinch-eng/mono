@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { FixedNumber } from "ethers";
-import Image from "next/image";
+import Image from "next/future/image";
 import NextLink from "next/link";
 import { ReactNode } from "react";
 
@@ -49,9 +49,9 @@ export function PoolCard({
           <Image
             src={icon}
             alt={`${title} icon`}
-            layout="fill"
+            fill
+            className="object-contain"
             sizes="48px"
-            objectFit="contain"
           />
         ) : null
       }

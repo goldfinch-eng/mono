@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import Image from "next/image";
+import Image from "next/future/image";
 import { forwardRef } from "react";
 
 import Curve from "./raster/curve.png";
@@ -82,29 +82,25 @@ export const Icon = forwardRef<SVGElement, IconProps>(function Icon(
   const IconComponent = iconManifest[name];
   if (typeof IconComponent === "string" || IconComponent.width) {
     return (
-      <div
+      <Image
+        src={IconComponent}
         className={clsx(
           sizeToClassName(size),
-          "relative inline shrink-0 p-0.5",
-          className
+          "inline shrink-0 object-contain p-0.5"
         )}
-      >
-        <Image
-          src={IconComponent}
-          layout="fill"
-          sizes={
-            size === "xs"
-              ? "16px"
-              : size === "sm"
-              ? "20px"
-              : size === "md"
-              ? "24px"
-              : "32px"
-          }
-          alt=""
-          aria-hidden="true"
-        />
-      </div>
+        sizes={
+          size === "xs"
+            ? "16px"
+            : size === "sm"
+            ? "20px"
+            : size === "md"
+            ? "24px"
+            : "32px"
+        }
+        alt=""
+        aria-hidden="true"
+        quality={100}
+      />
     );
   }
   return (

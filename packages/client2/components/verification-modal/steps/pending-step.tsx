@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 
 import { ExitFlowButton } from "../exit-flow-button";
 import clock from "./clock.png";

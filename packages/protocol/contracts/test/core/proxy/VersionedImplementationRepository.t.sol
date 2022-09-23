@@ -6,10 +6,11 @@ pragma experimental ABIEncoderV2;
 import {
   VersionedImplementationRepository as Repo
 } from "../../../protocol/core/proxy/VersionedImplementationRepository.sol";
+import {BaseTest} from "../BaseTest.t.sol";
 import {Test} from "forge-std/Test.sol";
 import {IVersioned} from "../../../interfaces/IVersioned.sol";
 
-contract VersionedImplementationRepositoryTest is Test {
+contract VersionedImplementationRepositoryTest is BaseTest {
   address internal constant owner = 0x8b0dD65C31EBDC4586AE55855577de020601E36d;
   Repo internal repo = new Repo();
   IVersioned internal initialImpl = new InitialImpl();
@@ -17,7 +18,8 @@ contract VersionedImplementationRepositoryTest is Test {
   IVersioned internal secondImpl = new Impl1();
   IVersioned internal invalidImpl = IVersioned(address(new InvalidImpl()));
 
-  function setUp() public {
+  function setUp() public override {
+    super.setUp();
     vm.label(owner, "owner");
     vm.label(address(repo), "repo");
     vm.label(address(initialImpl), "initial impl");
@@ -82,11 +84,6 @@ contract VersionedImplementationRepositoryTest is Test {
   function testTagIsAssociatedWithAppendedImplementation() public afterInit impersonating(owner) {
     repo.append(address(secondImpl));
     assertEq(address(repo.getByVersion(secondImpl.getVersion())), address(secondImpl));
-  }
-
-  modifier impersonating(address x) {
-    vm.startPrank(x);
-    _;
   }
 
   function assertVersionEq(

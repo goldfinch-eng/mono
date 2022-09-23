@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import Image from "next/image";
+import Image from "next/future/image";
 
 import { ChipLink, Link } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
@@ -75,15 +75,13 @@ export function BorrowerProfile({
         <div className="mb-8 items-center justify-between lg:flex">
           <div className="mb-3 flex items-center">
             {borrower.logo && (
-              <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200">
-                <Image
-                  src={borrower.logo.url as string}
-                  alt={borrower.name}
-                  className="block h-full w-full object-contain object-center"
-                  layout="fill"
-                  sizes="32px"
-                />
-              </div>
+              <Image
+                src={borrower.logo.url as string}
+                alt={borrower.name}
+                className="mr-3 overflow-hidden rounded-full border border-sand-200 object-contain object-center"
+                height={32}
+                width={32}
+              />
             )}
 
             <h2 className="text-3xl lg:mb-0">{borrower.name}</h2>
