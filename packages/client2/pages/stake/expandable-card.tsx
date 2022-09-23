@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import Image from "next/image";
+import Image, { StaticImageData } from "next/image";
 import { ReactNode, useState } from "react";
 
 import { Icon } from "@/components/design-system";
