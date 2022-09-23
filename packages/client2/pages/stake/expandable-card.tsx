@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import Image, { StaticImageData } from "next/image";
+import Image, { StaticImageData } from "next/future/image";
 import { ReactNode, useState } from "react";
 
 import { Icon } from "@/components/design-system";
@@ -68,13 +68,7 @@ export function ExpandableCard({
         <div className="grid grid-cols-12 items-center">
           <div className="col-span-11 xs:col-span-7 md:col-span-5">
             <div className="flex items-center">
-              <Image
-                src={icon}
-                layout="fixed"
-                height={iconHeight}
-                width={iconWidth}
-                alt=""
-              />
+              <Image src={icon} height={iconHeight} width={iconWidth} alt="" />
               <div className="ml-4">
                 <div className="mb-1.5 text-xl font-medium">{heading}</div>
                 <div className="text-sand-700">{subheading}</div>

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "next/future/image";
 import { useWizard } from "react-use-wizard";
 
 import { Button } from "@/components/design-system";

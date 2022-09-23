@@ -1,5 +1,5 @@
 import { useApolloClient } from "@apollo/client";
-import Image from "next/image";
+import Image from "next/future/image";
 import { useCallback, useState } from "react";
 
 import { Button, InfoIconTooltip, Spinner } from "@/components/design-system";
@@ -149,14 +149,13 @@ export function MintStep() {
                   alt="UID"
                 />
                 {isMinted ? (
-                  <div className="absolute -top-2 -right-2">
-                    <Image
-                      src={greenCheckmark}
-                      width={40}
-                      height={40}
-                      alt="Minted"
-                    />
-                  </div>
+                  <Image
+                    src={greenCheckmark}
+                    width={40}
+                    height={40}
+                    alt="Minted"
+                    className="absolute -top-2 -right-2"
+                  />
                 ) : null}
               </div>
               <div>
