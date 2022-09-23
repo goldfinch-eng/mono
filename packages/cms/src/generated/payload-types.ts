@@ -78,19 +78,12 @@ export interface Borrower {
   id: string;
   name: string;
   logo?: string | Media;
-  subheading?: string;
-  bio?: string;
-  history?: string;
-  market?: string;
+  bio?: {
+    [k: string]: unknown;
+  }[];
   website?: string;
   twitter?: string;
   linkedin?: string;
-  incorporatedCountry?: string;
-  operatingCountry?: string;
-  highlights: {
-    text: string;
-    id?: string;
-  }[];
   borrowerFinancials: {
     totalLoansOriginated?: number;
     currentLoansOutstanding?: number;

@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import Image from "next/image";
 
 import { ChipLink, Link } from "@/components/design-system";
+import { renderRichText } from "@/components/rich-text";
 import {
   BorrowerProfileFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
@@ -28,18 +29,10 @@ export const BORROWER_PROFILE_FIELDS = gql`
     logo {
       url
     }
-    subheading
     bio
-    market
-    history
     website
     twitter
     linkedin
-    incorporatedCountry
-    operatingCountry
-    highlights {
-      text
-    }
     underwritingPerformance {
       ...BorrowerPerformanceTableFields
     }
@@ -132,51 +125,10 @@ export function BorrowerProfile({
           </div>
         </div>
 
-        {borrower.subheading ? (
-          <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
-            {borrower.subheading}
-          </p>
+        {borrower.bio ? (
+          <div className="mb-8">{renderRichText(borrower.bio)}</div>
         ) : null}
-
-        {borrower.bio ? <div className="mb-8">{borrower.bio}</div> : null}
-
-        {borrower.history ? (
-          <div className="mb-8">
-            <h3 className="mb-5 font-semibold">History</h3>
-            <p>{borrower.history}</p>
-          </div>
-        ) : null}
-
-        {borrower.market ? (
-          <div className="mb-8">
-            <h3 className="mb-5 font-semibold">Market</h3>
-            <p>{borrower.market}</p>
-          </div>
-        ) : null}
-
-        <div className="mb-8">
-          {borrower.operatingCountry ? (
-            <p>Operating in {borrower.operatingCountry}</p>
-          ) : null}
-
-          {borrower.incorporatedCountry ? (
-            <p>Incorporated in {borrower.incorporatedCountry}</p>
-          ) : null}
-        </div>
       </div>
-
-      {borrower.highlights && borrower.highlights.length > 0 ? (
-        <div>
-          <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-          <ul className="list-outside list-disc space-y-5 pl-5">
-            {borrower.highlights.map((item, idx) => (
-              <li key={`borrower-highlight-${borrower?.id}-${idx}`}>
-                {item.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
 
       <BorrowerFinancialsTable
         otherPools={borrowerPools}
@@ -188,7 +140,8 @@ export function BorrowerProfile({
       />
 
       {borrower.team &&
-      (borrower.team.members || borrower.team?.description) ? (
+      ((borrower.team.members && borrower.team.members.length > 0) ||
+        borrower.team?.description) ? (
         <BorrowerTeam
           members={borrower.team.members}
           description={borrower.team.description}

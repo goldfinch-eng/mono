@@ -622,16 +622,10 @@ type Borrower {
   updatedAt: DateTime!
   name: String!
   logo(where: Borrower_Logo_where): Media
-  subheading: String
-  bio: String
-  history: String
-  market: String
+  bio(depth: Int): JSON
   website: String
   twitter: String
   linkedin: String
-  incorporatedCountry: String
-  operatingCountry: String
-  highlights: [Borrower_Highlights!]
   borrowerFinancials: Borrower_BorrowerFinancials
   underwritingPerformance: Borrower_UnderwritingandPerformance
   team: Borrower_Team
@@ -1033,11 +1027,6 @@ input Borrower_Logo_where_and {
   sizes__portrait__filesize: Borrower_Logo_sizes__portrait__filesize_operator
   sizes__portrait__filename: Borrower_Logo_sizes__portrait__filename_operator
   id: Borrower_Logo_id_operator
-}
-
-type Borrower_Highlights {
-  text: String
-  id: String
 }
 
 type Borrower_BorrowerFinancials {
@@ -2336,17 +2325,10 @@ type Borrowers {
 input Borrower_where {
   name: Borrower_name_operator
   logo: Borrower_logo_operator
-  subheading: Borrower_subheading_operator
   bio: Borrower_bio_operator
-  history: Borrower_history_operator
-  market: Borrower_market_operator
   website: Borrower_website_operator
   twitter: Borrower_twitter_operator
   linkedin: Borrower_linkedin_operator
-  incorporatedCountry: Borrower_incorporatedCountry_operator
-  operatingCountry: Borrower_operatingCountry_operator
-  highlights__text: Borrower_highlights__text_operator
-  highlights__id: Borrower_highlights__id_operator
   borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
   borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
@@ -2385,35 +2367,11 @@ input Borrower_logo_operator {
   exists: Boolean
 }
 
-input Borrower_subheading_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
 input Borrower_bio_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_history_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_market_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -2434,37 +2392,6 @@ input Borrower_twitter_operator {
 }
 
 input Borrower_linkedin_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_incorporatedCountry_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_operatingCountry_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_highlights__text_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-}
-
-input Borrower_highlights__id_operator {
   equals: String
   not_equals: String
   like: String
@@ -2653,17 +2580,10 @@ input Borrower_updatedAt_operator {
 input Borrower_where_or {
   name: Borrower_name_operator
   logo: Borrower_logo_operator
-  subheading: Borrower_subheading_operator
   bio: Borrower_bio_operator
-  history: Borrower_history_operator
-  market: Borrower_market_operator
   website: Borrower_website_operator
   twitter: Borrower_twitter_operator
   linkedin: Borrower_linkedin_operator
-  incorporatedCountry: Borrower_incorporatedCountry_operator
-  operatingCountry: Borrower_operatingCountry_operator
-  highlights__text: Borrower_highlights__text_operator
-  highlights__id: Borrower_highlights__id_operator
   borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
   borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
@@ -2690,17 +2610,10 @@ input Borrower_where_or {
 input Borrower_where_and {
   name: Borrower_name_operator
   logo: Borrower_logo_operator
-  subheading: Borrower_subheading_operator
   bio: Borrower_bio_operator
-  history: Borrower_history_operator
-  market: Borrower_market_operator
   website: Borrower_website_operator
   twitter: Borrower_twitter_operator
   linkedin: Borrower_linkedin_operator
-  incorporatedCountry: Borrower_incorporatedCountry_operator
-  operatingCountry: Borrower_operatingCountry_operator
-  highlights__text: Borrower_highlights__text_operator
-  highlights__id: Borrower_highlights__id_operator
   borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
   borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
@@ -3992,16 +3905,10 @@ type BorrowerAccess {
 type BorrowerFields {
   name: BorrowerFields_name
   logo: BorrowerFields_logo
-  subheading: BorrowerFields_subheading
   bio: BorrowerFields_bio
-  history: BorrowerFields_history
-  market: BorrowerFields_market
   website: BorrowerFields_website
   twitter: BorrowerFields_twitter
   linkedin: BorrowerFields_linkedin
-  incorporatedCountry: BorrowerFields_incorporatedCountry
-  operatingCountry: BorrowerFields_operatingCountry
-  highlights: BorrowerFields_highlights
   borrowerFinancials: BorrowerFields_borrowerFinancials
   underwritingPerformance: BorrowerFields_underwritingPerformance
   team: BorrowerFields_team
@@ -4057,29 +3964,6 @@ type BorrowerFields_logo_Delete {
   permission: Boolean!
 }
 
-type BorrowerFields_subheading {
-  create: BorrowerFields_subheading_Create
-  read: BorrowerFields_subheading_Read
-  update: BorrowerFields_subheading_Update
-  delete: BorrowerFields_subheading_Delete
-}
-
-type BorrowerFields_subheading_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_subheading_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_subheading_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_subheading_Delete {
-  permission: Boolean!
-}
-
 type BorrowerFields_bio {
   create: BorrowerFields_bio_Create
   read: BorrowerFields_bio_Read
@@ -4100,52 +3984,6 @@ type BorrowerFields_bio_Update {
 }
 
 type BorrowerFields_bio_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_history {
-  create: BorrowerFields_history_Create
-  read: BorrowerFields_history_Read
-  update: BorrowerFields_history_Update
-  delete: BorrowerFields_history_Delete
-}
-
-type BorrowerFields_history_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_history_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_history_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_history_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_market {
-  create: BorrowerFields_market_Create
-  read: BorrowerFields_market_Read
-  update: BorrowerFields_market_Update
-  delete: BorrowerFields_market_Delete
-}
-
-type BorrowerFields_market_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_market_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_market_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_market_Delete {
   permission: Boolean!
 }
 
@@ -4215,127 +4053,6 @@ type BorrowerFields_linkedin_Update {
 }
 
 type BorrowerFields_linkedin_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry {
-  create: BorrowerFields_incorporatedCountry_Create
-  read: BorrowerFields_incorporatedCountry_Read
-  update: BorrowerFields_incorporatedCountry_Update
-  delete: BorrowerFields_incorporatedCountry_Delete
-}
-
-type BorrowerFields_incorporatedCountry_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry {
-  create: BorrowerFields_operatingCountry_Create
-  read: BorrowerFields_operatingCountry_Read
-  update: BorrowerFields_operatingCountry_Update
-  delete: BorrowerFields_operatingCountry_Delete
-}
-
-type BorrowerFields_operatingCountry_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights {
-  create: BorrowerFields_highlights_Create
-  read: BorrowerFields_highlights_Read
-  update: BorrowerFields_highlights_Update
-  delete: BorrowerFields_highlights_Delete
-  fields: BorrowerFields_highlights_Fields
-}
-
-type BorrowerFields_highlights_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Fields {
-  text: BorrowerFields_highlights_text
-  id: BorrowerFields_highlights_id
-}
-
-type BorrowerFields_highlights_text {
-  create: BorrowerFields_highlights_text_Create
-  read: BorrowerFields_highlights_text_Read
-  update: BorrowerFields_highlights_text_Update
-  delete: BorrowerFields_highlights_text_Delete
-}
-
-type BorrowerFields_highlights_text_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_text_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_text_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_text_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id {
-  create: BorrowerFields_highlights_id_Create
-  read: BorrowerFields_highlights_id_Read
-  update: BorrowerFields_highlights_id_Update
-  delete: BorrowerFields_highlights_id_Delete
-}
-
-type BorrowerFields_highlights_id_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id_Delete {
   permission: Boolean!
 }
 
@@ -5722,16 +5439,10 @@ input mutationMediaUpdate_Sizes_portraitInput {
 input mutationBorrowerInput {
   name: String!
   logo: String
-  subheading: String
-  bio: String
-  history: String
-  market: String
+  bio: JSON
   website: String
   twitter: String
   linkedin: String
-  incorporatedCountry: String
-  operatingCountry: String
-  highlights: [mutationBorrower_HighlightsInput]
   borrowerFinancials: mutationBorrower_BorrowerFinancialsInput
   underwritingPerformance: mutationBorrower_UnderwritingandPerformanceInput
   team: mutationBorrower_TeamInput
@@ -5739,11 +5450,6 @@ input mutationBorrowerInput {
   contactInfo: mutationBorrower_ContactInfoInput
   documents: JSON
   deals: [String]
-}
-
-input mutationBorrower_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationBorrower_BorrowerFinancialsInput {
@@ -5790,16 +5496,10 @@ input mutationBorrower_ContactInfoInput {
 input mutationBorrowerUpdateInput {
   name: String
   logo: String
-  subheading: String
-  bio: String
-  history: String
-  market: String
+  bio: JSON
   website: String
   twitter: String
   linkedin: String
-  incorporatedCountry: String
-  operatingCountry: String
-  highlights: [mutationBorrowerUpdate_HighlightsInput]
   borrowerFinancials: mutationBorrowerUpdate_BorrowerFinancialsInput
   underwritingPerformance: mutationBorrowerUpdate_UnderwritingandPerformanceInput
   team: mutationBorrowerUpdate_TeamInput
@@ -5807,11 +5507,6 @@ input mutationBorrowerUpdateInput {
   contactInfo: mutationBorrowerUpdate_ContactInfoInput
   documents: JSON
   deals: [String]
-}
-
-input mutationBorrowerUpdate_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationBorrowerUpdate_BorrowerFinancialsInput {
