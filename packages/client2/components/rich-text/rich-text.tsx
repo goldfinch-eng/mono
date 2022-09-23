@@ -14,7 +14,7 @@ type RichTextNode = {
   url?: string;
 };
 
-export function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
+function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
   if (!documentNodes) {
     return null;
   }
@@ -100,4 +100,13 @@ export function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
         );
     }
   });
+}
+
+interface RichTextProps {
+  content: Parameters<typeof renderRichText>[0];
+  className?: string;
+}
+
+export function RichText({ content, className }: RichTextProps) {
+  return <div className={className}>{renderRichText(content)}</div>;
 }

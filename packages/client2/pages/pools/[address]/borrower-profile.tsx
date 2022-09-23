@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import Image from "next/image";
 
 import { ChipLink, Link } from "@/components/design-system";
-import { renderRichText } from "@/components/rich-text";
+import { RichText } from "@/components/rich-text";
 import {
   BorrowerProfileFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
@@ -123,7 +123,7 @@ export function BorrowerProfile({
         </div>
 
         {borrower.bio ? (
-          <div className="mb-8">{renderRichText(borrower.bio)}</div>
+          <RichText content={borrower.bio} className="mb-8" />
         ) : null}
       </div>
 
@@ -172,7 +172,7 @@ export function BorrowerProfile({
       {borrower.contactInfo ? (
         <div>
           <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
-          {renderRichText(borrower.contactInfo)}
+          <RichText content={borrower.contactInfo} />
         </div>
       ) : null}
 
