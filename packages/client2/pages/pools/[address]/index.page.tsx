@@ -198,7 +198,6 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       userId: account?.toLowerCase() ?? "",
       borrowerOtherPools: otherPoolsFromThisBorrower,
     },
-    returnPartialData: true, // This is turned on that if you connect your wallet on this page, it doesn't wipe out `data` as the query re-runs with the user param
   });
 
   const tranchedPool = data?.tranchedPool;
