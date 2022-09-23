@@ -198,6 +198,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
       userId: account?.toLowerCase() ?? "",
       borrowerOtherPools: otherPoolsFromThisBorrower,
     },
+    returnPartialData: true,
   });
 
   const tranchedPool = data?.tranchedPool;
@@ -439,7 +440,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 )}
               </TabContent>
               <TabContent>
-                {data ? (
+                {data && data.borrowerOtherPools ? (
                   <BorrowerProfile
                     borrower={borrower}
                     borrowerPools={data.borrowerOtherPools}
