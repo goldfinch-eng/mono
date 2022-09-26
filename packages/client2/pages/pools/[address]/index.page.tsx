@@ -491,7 +491,7 @@ export const getStaticPaths: GetStaticPaths<StaticParams> = async () => {
 
   return {
     paths,
-    fallback: false,
+    fallback: "blocking",
   };
 };
 
@@ -516,7 +516,7 @@ export const getStaticProps: GetStaticProps<
 
   const poolDetails = res.data.Deal;
   if (!poolDetails) {
-    throw new Error(`No deal metadata found for pool with address ${address}`);
+    return { notFound: true };
   }
 
   return {
