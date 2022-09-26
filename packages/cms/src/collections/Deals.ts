@@ -4,6 +4,7 @@ import {
   beforeDealChange,
   afterDealChange,
   afterDealDelete,
+  revalidateDeal,
 } from "../hooks/deals";
 
 import Document from "../blocks/Document";
@@ -23,7 +24,7 @@ const Deals: CollectionConfig = {
   },
   hooks: {
     beforeChange: [beforeDealChange],
-    afterChange: [afterDealChange],
+    afterChange: [afterDealChange, revalidateDeal],
     afterDelete: [afterDealDelete],
   },
   fields: [

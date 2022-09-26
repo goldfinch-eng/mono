@@ -46,14 +46,6 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
 
   // Remove from previous if updating
   if (operation === "update") {
-    revalidate(`/pools/${doc.id}`);
-    if (
-      doc.name !== previousDoc.name ||
-      doc.category !== previousDoc.category
-    ) {
-      revalidate("/earn");
-    }
-
     if (doc.borrower === previousDoc.borrower) {
       return doc;
     }
@@ -74,6 +66,21 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
   }
 
   return doc;
+};
+
+export const revalidateDeal: CollectionAfterChangeHook<Deal> = async ({
+  doc,
+  previousDoc,
+  operation,
+}) => {
+  revalidate(`/pools/${doc.id}`);
+  if (
+    operation === "create" ||
+    (operation === "update" &&
+      (doc.name !== previousDoc.name || doc.category !== previousDoc.category))
+  ) {
+    revalidate("/earn");
+  }
 };
 
 export const afterDealDelete: CollectionAfterDeleteHook<Deal> = async ({

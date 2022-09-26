@@ -3,7 +3,7 @@ import type { CollectionAfterChangeHook } from "payload/types";
 import type { Borrower } from "../generated/payload-types";
 import { revalidate } from "../lib/revalidate";
 
-export const afterBorrowerChange: CollectionAfterChangeHook<Borrower> = async ({
+export const revalidateBorrower: CollectionAfterChangeHook<Borrower> = async ({
   doc,
   previousDoc,
   operation,

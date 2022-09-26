@@ -17,7 +17,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.json({ revalidated: true });
   } catch (err) {
     // Even if there's an error here, Next.js will continue to serve the last valid version of this page
-    return res.status(500).send("Error revalidating");
+    return res.status(500).send({ message: "Error revalidating" });
   }
 };
 export default withSentry(handler);
