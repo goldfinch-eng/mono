@@ -6,7 +6,6 @@ extend type SeniorPool {
 
 extend type TranchedPool {
   name: String!
-  icon: String!
   borrowerName: String!
   borrowerLogo: String!
 }

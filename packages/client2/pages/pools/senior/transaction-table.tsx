@@ -45,8 +45,8 @@ gql`
       tranchedPool {
         id
         name @client
-        icon @client
         borrowerName @client
+        borrowerLogo @client
       }
     }
   }
@@ -89,7 +89,7 @@ export function TransactionTable() {
         transaction.category === TransactionCategory.TranchedPoolRepayment ? (
           <>
             <Image
-              src={transaction.tranchedPool?.icon as string}
+              src={transaction.tranchedPool?.borrowerLogo as string}
               width={24}
               height={24}
               className="shrink-0 overflow-hidden rounded-full"
