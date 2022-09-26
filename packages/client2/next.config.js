@@ -10,7 +10,7 @@ const ContentSecurityPolicy = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com/;
   font-src 'self' https://fonts.gstatic.com/;
   frame-src 'self' https://withpersona.com/;
-  frame-ancestors 'self';
+  frame-ancestors 'self' https://magic.store/;
 `;
 const securityHeaders = [
   {
@@ -24,10 +24,6 @@ const securityHeaders = [
   {
     key: "X-XSS-Protection",
     value: "1; mode=block",
-  },
-  {
-    key: "X-Frame-Options",
-    value: "SAMEORIGIN",
   },
   {
     key: "X-Content-Type-Options",

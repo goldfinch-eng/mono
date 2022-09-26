@@ -1,7 +1,8 @@
 import { gql } from "@apollo/client";
-import Image from "next/image";
+import Image from "next/future/image";
 
 import { ChipLink, Link } from "@/components/design-system";
+import { RichText } from "@/components/rich-text";
 import {
   BorrowerProfileFieldsFragment,
   BorrowerOtherPoolFieldsFragment,
@@ -28,18 +29,10 @@ export const BORROWER_PROFILE_FIELDS = gql`
     logo {
       url
     }
-    subheading
     bio
-    market
-    history
     website
     twitter
     linkedin
-    incorporatedCountry
-    operatingCountry
-    highlights {
-      text
-    }
     underwritingPerformance {
       ...BorrowerPerformanceTableFields
     }
@@ -56,10 +49,7 @@ export const BORROWER_PROFILE_FIELDS = gql`
       url
       title
     }
-    contactInfo {
-      email
-      description
-    }
+    contactInfo
     documents {
       ...DocumentFields
     }
@@ -85,15 +75,13 @@ export function BorrowerProfile({
         <div className="mb-8 items-center justify-between lg:flex">
           <div className="mb-3 flex items-center">
             {borrower.logo && (
-              <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200">
-                <Image
-                  src={borrower.logo.url as string}
-                  alt={borrower.name}
-                  className="block h-full w-full object-contain object-center"
-                  layout="fill"
-                  sizes="32px"
-                />
-              </div>
+              <Image
+                src={borrower.logo.url as string}
+                alt={borrower.name}
+                className="mr-3 overflow-hidden rounded-full border border-sand-200 object-contain object-center"
+                height={32}
+                width={32}
+              />
             )}
 
             <h2 className="text-3xl lg:mb-0">{borrower.name}</h2>
@@ -132,51 +120,10 @@ export function BorrowerProfile({
           </div>
         </div>
 
-        {borrower.subheading ? (
-          <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
-            {borrower.subheading}
-          </p>
+        {borrower.bio ? (
+          <RichText content={borrower.bio} className="mb-8" />
         ) : null}
-
-        {borrower.bio ? <div className="mb-8">{borrower.bio}</div> : null}
-
-        {borrower.history ? (
-          <div className="mb-8">
-            <h3 className="mb-5 font-semibold">History</h3>
-            <p>{borrower.history}</p>
-          </div>
-        ) : null}
-
-        {borrower.market ? (
-          <div className="mb-8">
-            <h3 className="mb-5 font-semibold">Market</h3>
-            <p>{borrower.market}</p>
-          </div>
-        ) : null}
-
-        <div className="mb-8">
-          {borrower.operatingCountry ? (
-            <p>Operating in {borrower.operatingCountry}</p>
-          ) : null}
-
-          {borrower.incorporatedCountry ? (
-            <p>Incorporated in {borrower.incorporatedCountry}</p>
-          ) : null}
-        </div>
       </div>
-
-      {borrower.highlights && borrower.highlights.length > 0 ? (
-        <div>
-          <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-          <ul className="list-outside list-disc space-y-5 pl-5">
-            {borrower.highlights.map((item, idx) => (
-              <li key={`borrower-highlight-${borrower?.id}-${idx}`}>
-                {item.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
 
       <BorrowerFinancialsTable
         otherPools={borrowerPools}
@@ -188,7 +135,8 @@ export function BorrowerProfile({
       />
 
       {borrower.team &&
-      (borrower.team.members || borrower.team?.description) ? (
+      ((borrower.team.members && borrower.team.members.length > 0) ||
+        borrower.team?.description) ? (
         <BorrowerTeam
           members={borrower.team.members}
           description={borrower.team.description}
@@ -219,20 +167,10 @@ export function BorrowerProfile({
         </div>
       ) : null}
 
-      {borrower.contactInfo?.description || borrower.contactInfo?.email ? (
+      {borrower.contactInfo ? (
         <div>
           <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
-          {borrower.contactInfo.description ? (
-            <p>{borrower.contactInfo.description}</p>
-          ) : null}
-          {borrower.contactInfo.email ? (
-            <a
-              href={`mailto:${borrower.contactInfo.email}`}
-              className="text-eggplant-700 underline"
-            >
-              {borrower.contactInfo.email}
-            </a>
-          ) : null}
+          <RichText content={borrower.contactInfo} />
         </div>
       ) : null}
 

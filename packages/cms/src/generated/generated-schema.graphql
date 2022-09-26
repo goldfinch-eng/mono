@@ -622,21 +622,15 @@ type Borrower {
   updatedAt: DateTime!
   name: String!
   logo(where: Borrower_Logo_where): Media
-  subheading: String
-  bio: String
-  history: String
-  market: String
+  bio(depth: Int): JSON
   website: String
   twitter: String
   linkedin: String
-  incorporatedCountry: String
-  operatingCountry: String
-  highlights: [Borrower_Highlights!]
   borrowerFinancials: Borrower_BorrowerFinancials
   underwritingPerformance: Borrower_UnderwritingandPerformance
   team: Borrower_Team
   mediaLinks: [Borrower_Medialinks!]
-  contactInfo: Borrower_ContactInfo
+  contactInfo(depth: Int): JSON
   documents: [Borrower_Documents!]
   deals: [Deal!]
 }
@@ -1033,11 +1027,6 @@ input Borrower_Logo_where_and {
   sizes__portrait__filesize: Borrower_Logo_sizes__portrait__filesize_operator
   sizes__portrait__filename: Borrower_Logo_sizes__portrait__filename_operator
   id: Borrower_Logo_id_operator
-}
-
-type Borrower_Highlights {
-  text: String
-  id: String
 }
 
 type Borrower_BorrowerFinancials {
@@ -1876,11 +1865,6 @@ type Borrower_Medialinks {
   id: String
 }
 
-type Borrower_ContactInfo {
-  description: String
-  email: EmailAddress
-}
-
 union Borrower_Documents = Document
 
 type Document {
@@ -2293,18 +2277,11 @@ type Deal {
   name: String!
   category: String!
   borrower: Borrower
-  overview: String!
+  overview(depth: Int): JSON!
   defaultInterestRate: Float
-  highlights: [Deal_Highlights!]
-  useOfFunds: String
-  risks: String
+  details(depth: Int): JSON
   securitiesAndRecourse: Deal_SecuritiesandRecourse
   documents: [Deal_Documents!]
-}
-
-type Deal_Highlights {
-  text: String
-  id: String
 }
 
 type Deal_SecuritiesandRecourse {
@@ -2336,17 +2313,10 @@ type Borrowers {
 input Borrower_where {
   name: Borrower_name_operator
   logo: Borrower_logo_operator
-  subheading: Borrower_subheading_operator
   bio: Borrower_bio_operator
-  history: Borrower_history_operator
-  market: Borrower_market_operator
   website: Borrower_website_operator
   twitter: Borrower_twitter_operator
   linkedin: Borrower_linkedin_operator
-  incorporatedCountry: Borrower_incorporatedCountry_operator
-  operatingCountry: Borrower_operatingCountry_operator
-  highlights__text: Borrower_highlights__text_operator
-  highlights__id: Borrower_highlights__id_operator
   borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
   borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
@@ -2362,8 +2332,7 @@ input Borrower_where {
   mediaLinks__title: Borrower_mediaLinks__title_operator
   mediaLinks__url: Borrower_mediaLinks__url_operator
   mediaLinks__id: Borrower_mediaLinks__id_operator
-  contactInfo__description: Borrower_contactInfo__description_operator
-  contactInfo__email: Borrower_contactInfo__email_operator
+  contactInfo: Borrower_contactInfo_operator
   deals: Borrower_deals_operator
   id: Borrower_id_operator
   createdAt: Borrower_createdAt_operator
@@ -2385,35 +2354,11 @@ input Borrower_logo_operator {
   exists: Boolean
 }
 
-input Borrower_subheading_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
 input Borrower_bio_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_history_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_market_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -2434,37 +2379,6 @@ input Borrower_twitter_operator {
 }
 
 input Borrower_linkedin_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_incorporatedCountry_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_operatingCountry_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_highlights__text_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-}
-
-input Borrower_highlights__id_operator {
   equals: String
   not_equals: String
   like: String
@@ -2594,19 +2508,11 @@ input Borrower_mediaLinks__id_operator {
   exists: Boolean
 }
 
-input Borrower_contactInfo__description_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Borrower_contactInfo__email_operator {
-  equals: EmailAddress
-  not_equals: EmailAddress
-  like: EmailAddress
-  contains: EmailAddress
+input Borrower_contactInfo_operator {
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -2653,17 +2559,10 @@ input Borrower_updatedAt_operator {
 input Borrower_where_or {
   name: Borrower_name_operator
   logo: Borrower_logo_operator
-  subheading: Borrower_subheading_operator
   bio: Borrower_bio_operator
-  history: Borrower_history_operator
-  market: Borrower_market_operator
   website: Borrower_website_operator
   twitter: Borrower_twitter_operator
   linkedin: Borrower_linkedin_operator
-  incorporatedCountry: Borrower_incorporatedCountry_operator
-  operatingCountry: Borrower_operatingCountry_operator
-  highlights__text: Borrower_highlights__text_operator
-  highlights__id: Borrower_highlights__id_operator
   borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
   borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
@@ -2679,8 +2578,7 @@ input Borrower_where_or {
   mediaLinks__title: Borrower_mediaLinks__title_operator
   mediaLinks__url: Borrower_mediaLinks__url_operator
   mediaLinks__id: Borrower_mediaLinks__id_operator
-  contactInfo__description: Borrower_contactInfo__description_operator
-  contactInfo__email: Borrower_contactInfo__email_operator
+  contactInfo: Borrower_contactInfo_operator
   deals: Borrower_deals_operator
   id: Borrower_id_operator
   createdAt: Borrower_createdAt_operator
@@ -2690,17 +2588,10 @@ input Borrower_where_or {
 input Borrower_where_and {
   name: Borrower_name_operator
   logo: Borrower_logo_operator
-  subheading: Borrower_subheading_operator
   bio: Borrower_bio_operator
-  history: Borrower_history_operator
-  market: Borrower_market_operator
   website: Borrower_website_operator
   twitter: Borrower_twitter_operator
   linkedin: Borrower_linkedin_operator
-  incorporatedCountry: Borrower_incorporatedCountry_operator
-  operatingCountry: Borrower_operatingCountry_operator
-  highlights__text: Borrower_highlights__text_operator
-  highlights__id: Borrower_highlights__id_operator
   borrowerFinancials__totalLoansOriginated: Borrower_borrowerFinancials__totalLoansOriginated_operator
   borrowerFinancials__currentLoansOutstanding: Borrower_borrowerFinancials__currentLoansOutstanding_operator
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
@@ -2716,8 +2607,7 @@ input Borrower_where_and {
   mediaLinks__title: Borrower_mediaLinks__title_operator
   mediaLinks__url: Borrower_mediaLinks__url_operator
   mediaLinks__id: Borrower_mediaLinks__id_operator
-  contactInfo__description: Borrower_contactInfo__description_operator
-  contactInfo__email: Borrower_contactInfo__email_operator
+  contactInfo: Borrower_contactInfo_operator
   deals: Borrower_deals_operator
   id: Borrower_id_operator
   createdAt: Borrower_createdAt_operator
@@ -2745,10 +2635,7 @@ input Deal_where {
   borrower: Deal_borrower_operator
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
-  highlights__text: Deal_highlights__text_operator
-  highlights__id: Deal_highlights__id_operator
-  useOfFunds: Deal_useOfFunds_operator
-  risks: Deal_risks_operator
+  details: Deal_details_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -2794,10 +2681,10 @@ input Deal_borrower_operator {
 }
 
 input Deal_overview_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
 }
 
 input Deal_defaultInterestRate_operator {
@@ -2810,34 +2697,11 @@ input Deal_defaultInterestRate_operator {
   exists: Boolean
 }
 
-input Deal_highlights__text_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-}
-
-input Deal_highlights__id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Deal_useOfFunds_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Deal_risks_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+input Deal_details_operator {
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -2924,10 +2788,7 @@ input Deal_where_or {
   borrower: Deal_borrower_operator
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
-  highlights__text: Deal_highlights__text_operator
-  highlights__id: Deal_highlights__id_operator
-  useOfFunds: Deal_useOfFunds_operator
-  risks: Deal_risks_operator
+  details: Deal_details_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -2946,10 +2807,7 @@ input Deal_where_and {
   borrower: Deal_borrower_operator
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
-  highlights__text: Deal_highlights__text_operator
-  highlights__id: Deal_highlights__id_operator
-  useOfFunds: Deal_useOfFunds_operator
-  risks: Deal_risks_operator
+  details: Deal_details_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -3992,16 +3850,10 @@ type BorrowerAccess {
 type BorrowerFields {
   name: BorrowerFields_name
   logo: BorrowerFields_logo
-  subheading: BorrowerFields_subheading
   bio: BorrowerFields_bio
-  history: BorrowerFields_history
-  market: BorrowerFields_market
   website: BorrowerFields_website
   twitter: BorrowerFields_twitter
   linkedin: BorrowerFields_linkedin
-  incorporatedCountry: BorrowerFields_incorporatedCountry
-  operatingCountry: BorrowerFields_operatingCountry
-  highlights: BorrowerFields_highlights
   borrowerFinancials: BorrowerFields_borrowerFinancials
   underwritingPerformance: BorrowerFields_underwritingPerformance
   team: BorrowerFields_team
@@ -4057,29 +3909,6 @@ type BorrowerFields_logo_Delete {
   permission: Boolean!
 }
 
-type BorrowerFields_subheading {
-  create: BorrowerFields_subheading_Create
-  read: BorrowerFields_subheading_Read
-  update: BorrowerFields_subheading_Update
-  delete: BorrowerFields_subheading_Delete
-}
-
-type BorrowerFields_subheading_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_subheading_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_subheading_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_subheading_Delete {
-  permission: Boolean!
-}
-
 type BorrowerFields_bio {
   create: BorrowerFields_bio_Create
   read: BorrowerFields_bio_Read
@@ -4100,52 +3929,6 @@ type BorrowerFields_bio_Update {
 }
 
 type BorrowerFields_bio_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_history {
-  create: BorrowerFields_history_Create
-  read: BorrowerFields_history_Read
-  update: BorrowerFields_history_Update
-  delete: BorrowerFields_history_Delete
-}
-
-type BorrowerFields_history_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_history_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_history_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_history_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_market {
-  create: BorrowerFields_market_Create
-  read: BorrowerFields_market_Read
-  update: BorrowerFields_market_Update
-  delete: BorrowerFields_market_Delete
-}
-
-type BorrowerFields_market_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_market_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_market_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_market_Delete {
   permission: Boolean!
 }
 
@@ -4215,127 +3998,6 @@ type BorrowerFields_linkedin_Update {
 }
 
 type BorrowerFields_linkedin_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry {
-  create: BorrowerFields_incorporatedCountry_Create
-  read: BorrowerFields_incorporatedCountry_Read
-  update: BorrowerFields_incorporatedCountry_Update
-  delete: BorrowerFields_incorporatedCountry_Delete
-}
-
-type BorrowerFields_incorporatedCountry_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_incorporatedCountry_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry {
-  create: BorrowerFields_operatingCountry_Create
-  read: BorrowerFields_operatingCountry_Read
-  update: BorrowerFields_operatingCountry_Update
-  delete: BorrowerFields_operatingCountry_Delete
-}
-
-type BorrowerFields_operatingCountry_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_operatingCountry_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights {
-  create: BorrowerFields_highlights_Create
-  read: BorrowerFields_highlights_Read
-  update: BorrowerFields_highlights_Update
-  delete: BorrowerFields_highlights_Delete
-  fields: BorrowerFields_highlights_Fields
-}
-
-type BorrowerFields_highlights_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_Fields {
-  text: BorrowerFields_highlights_text
-  id: BorrowerFields_highlights_id
-}
-
-type BorrowerFields_highlights_text {
-  create: BorrowerFields_highlights_text_Create
-  read: BorrowerFields_highlights_text_Read
-  update: BorrowerFields_highlights_text_Update
-  delete: BorrowerFields_highlights_text_Delete
-}
-
-type BorrowerFields_highlights_text_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_text_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_text_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_text_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id {
-  create: BorrowerFields_highlights_id_Create
-  read: BorrowerFields_highlights_id_Read
-  update: BorrowerFields_highlights_id_Update
-  delete: BorrowerFields_highlights_id_Delete
-}
-
-type BorrowerFields_highlights_id_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_highlights_id_Delete {
   permission: Boolean!
 }
 
@@ -4892,7 +4554,6 @@ type BorrowerFields_contactInfo {
   read: BorrowerFields_contactInfo_Read
   update: BorrowerFields_contactInfo_Update
   delete: BorrowerFields_contactInfo_Delete
-  fields: BorrowerFields_contactInfo_Fields
 }
 
 type BorrowerFields_contactInfo_Create {
@@ -4908,57 +4569,6 @@ type BorrowerFields_contactInfo_Update {
 }
 
 type BorrowerFields_contactInfo_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_Fields {
-  description: BorrowerFields_contactInfo_description
-  email: BorrowerFields_contactInfo_email
-}
-
-type BorrowerFields_contactInfo_description {
-  create: BorrowerFields_contactInfo_description_Create
-  read: BorrowerFields_contactInfo_description_Read
-  update: BorrowerFields_contactInfo_description_Update
-  delete: BorrowerFields_contactInfo_description_Delete
-}
-
-type BorrowerFields_contactInfo_description_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_description_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_description_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_description_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_email {
-  create: BorrowerFields_contactInfo_email_Create
-  read: BorrowerFields_contactInfo_email_Read
-  update: BorrowerFields_contactInfo_email_Update
-  delete: BorrowerFields_contactInfo_email_Delete
-}
-
-type BorrowerFields_contactInfo_email_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_email_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_email_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_contactInfo_email_Delete {
   permission: Boolean!
 }
 
@@ -5043,9 +4653,7 @@ type DealFields {
   borrower: DealFields_borrower
   overview: DealFields_overview
   defaultInterestRate: DealFields_defaultInterestRate
-  highlights: DealFields_highlights
-  useOfFunds: DealFields_useOfFunds
-  risks: DealFields_risks
+  details: DealFields_details
   securitiesAndRecourse: DealFields_securitiesAndRecourse
   documents: DealFields_documents
 }
@@ -5188,124 +4796,26 @@ type DealFields_defaultInterestRate_Delete {
   permission: Boolean!
 }
 
-type DealFields_highlights {
-  create: DealFields_highlights_Create
-  read: DealFields_highlights_Read
-  update: DealFields_highlights_Update
-  delete: DealFields_highlights_Delete
-  fields: DealFields_highlights_Fields
+type DealFields_details {
+  create: DealFields_details_Create
+  read: DealFields_details_Read
+  update: DealFields_details_Update
+  delete: DealFields_details_Delete
 }
 
-type DealFields_highlights_Create {
+type DealFields_details_Create {
   permission: Boolean!
 }
 
-type DealFields_highlights_Read {
+type DealFields_details_Read {
   permission: Boolean!
 }
 
-type DealFields_highlights_Update {
+type DealFields_details_Update {
   permission: Boolean!
 }
 
-type DealFields_highlights_Delete {
-  permission: Boolean!
-}
-
-type DealFields_highlights_Fields {
-  text: DealFields_highlights_text
-  id: DealFields_highlights_id
-}
-
-type DealFields_highlights_text {
-  create: DealFields_highlights_text_Create
-  read: DealFields_highlights_text_Read
-  update: DealFields_highlights_text_Update
-  delete: DealFields_highlights_text_Delete
-}
-
-type DealFields_highlights_text_Create {
-  permission: Boolean!
-}
-
-type DealFields_highlights_text_Read {
-  permission: Boolean!
-}
-
-type DealFields_highlights_text_Update {
-  permission: Boolean!
-}
-
-type DealFields_highlights_text_Delete {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id {
-  create: DealFields_highlights_id_Create
-  read: DealFields_highlights_id_Read
-  update: DealFields_highlights_id_Update
-  delete: DealFields_highlights_id_Delete
-}
-
-type DealFields_highlights_id_Create {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id_Read {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id_Update {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id_Delete {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds {
-  create: DealFields_useOfFunds_Create
-  read: DealFields_useOfFunds_Read
-  update: DealFields_useOfFunds_Update
-  delete: DealFields_useOfFunds_Delete
-}
-
-type DealFields_useOfFunds_Create {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds_Read {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds_Update {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds_Delete {
-  permission: Boolean!
-}
-
-type DealFields_risks {
-  create: DealFields_risks_Create
-  read: DealFields_risks_Read
-  update: DealFields_risks_Update
-  delete: DealFields_risks_Delete
-}
-
-type DealFields_risks_Create {
-  permission: Boolean!
-}
-
-type DealFields_risks_Read {
-  permission: Boolean!
-}
-
-type DealFields_risks_Update {
-  permission: Boolean!
-}
-
-type DealFields_risks_Delete {
+type DealFields_details_Delete {
   permission: Boolean!
 }
 
@@ -5722,28 +5232,17 @@ input mutationMediaUpdate_Sizes_portraitInput {
 input mutationBorrowerInput {
   name: String!
   logo: String
-  subheading: String
-  bio: String
-  history: String
-  market: String
+  bio: JSON
   website: String
   twitter: String
   linkedin: String
-  incorporatedCountry: String
-  operatingCountry: String
-  highlights: [mutationBorrower_HighlightsInput]
   borrowerFinancials: mutationBorrower_BorrowerFinancialsInput
   underwritingPerformance: mutationBorrower_UnderwritingandPerformanceInput
   team: mutationBorrower_TeamInput
   mediaLinks: [mutationBorrower_MedialinksInput]
-  contactInfo: mutationBorrower_ContactInfoInput
+  contactInfo: JSON
   documents: JSON
   deals: [String]
-}
-
-input mutationBorrower_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationBorrower_BorrowerFinancialsInput {
@@ -5782,36 +5281,20 @@ input mutationBorrower_MedialinksInput {
   id: String
 }
 
-input mutationBorrower_ContactInfoInput {
-  description: String
-  email: String
-}
-
 input mutationBorrowerUpdateInput {
   name: String
   logo: String
-  subheading: String
-  bio: String
-  history: String
-  market: String
+  bio: JSON
   website: String
   twitter: String
   linkedin: String
-  incorporatedCountry: String
-  operatingCountry: String
-  highlights: [mutationBorrowerUpdate_HighlightsInput]
   borrowerFinancials: mutationBorrowerUpdate_BorrowerFinancialsInput
   underwritingPerformance: mutationBorrowerUpdate_UnderwritingandPerformanceInput
   team: mutationBorrowerUpdate_TeamInput
   mediaLinks: [mutationBorrowerUpdate_MedialinksInput]
-  contactInfo: mutationBorrowerUpdate_ContactInfoInput
+  contactInfo: JSON
   documents: JSON
   deals: [String]
-}
-
-input mutationBorrowerUpdate_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationBorrowerUpdate_BorrowerFinancialsInput {
@@ -5850,28 +5333,16 @@ input mutationBorrowerUpdate_MedialinksInput {
   id: String
 }
 
-input mutationBorrowerUpdate_ContactInfoInput {
-  description: String
-  email: String
-}
-
 input mutationDealInput {
   id: String!
   name: String!
   category: String!
   borrower: String
-  overview: String!
+  overview: JSON!
   defaultInterestRate: Float
-  highlights: [mutationDeal_HighlightsInput]
-  useOfFunds: String
-  risks: String
+  details: JSON
   securitiesAndRecourse: mutationDeal_SecuritiesandRecourseInput
   documents: JSON
-}
-
-input mutationDeal_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationDeal_SecuritiesandRecourseInput {
@@ -5888,18 +5359,11 @@ input mutationDealUpdateInput {
   name: String
   category: String
   borrower: String
-  overview: String
+  overview: JSON
   defaultInterestRate: Float
-  highlights: [mutationDealUpdate_HighlightsInput]
-  useOfFunds: String
-  risks: String
+  details: JSON
   securitiesAndRecourse: mutationDealUpdate_SecuritiesandRecourseInput
   documents: JSON
-}
-
-input mutationDealUpdate_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationDealUpdate_SecuritiesandRecourseInput {

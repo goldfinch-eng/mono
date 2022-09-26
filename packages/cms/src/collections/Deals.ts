@@ -57,8 +57,13 @@ const Deals: CollectionConfig = {
     },
     {
       name: "overview",
-      type: "textarea",
+      type: "richText",
       required: true,
+      admin: {
+        description: "This content will appear near the top of the page.",
+        elements: ["h3", "h4", "h5", "link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
     {
       name: "defaultInterestRate",
@@ -66,25 +71,14 @@ const Deals: CollectionConfig = {
       type: "number",
     },
     {
-      name: "highlights",
-      type: "array",
-      minRows: 0,
-      fields: [
-        {
-          name: "text",
-          type: "text",
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "useOfFunds",
-      label: "Use of funds",
-      type: "textarea",
-    },
-    {
-      name: "risks",
-      type: "textarea",
+      name: "details",
+      type: "richText",
+      admin: {
+        description:
+          'This content will appear after the "Recent activity" table',
+        elements: ["h3", "h4", "h5", "link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
     {
       name: "securitiesAndRecourse",

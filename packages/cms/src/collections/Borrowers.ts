@@ -13,7 +13,7 @@ const Borrowers: CollectionConfig = {
   },
   admin: {
     useAsTitle: "name",
-    defaultColumns: ["name"],
+    defaultColumns: ["name", "createdAt", "updatedAt"],
   },
   access: {
     read: () => true,
@@ -30,20 +30,12 @@ const Borrowers: CollectionConfig = {
       relationTo: "media",
     },
     {
-      name: "subheading",
-      type: "textarea",
-    },
-    {
       name: "bio",
-      type: "textarea",
-    },
-    {
-      name: "history",
-      type: "textarea",
-    },
-    {
-      name: "market",
-      type: "textarea",
+      type: "richText",
+      admin: {
+        elements: ["h3", "h4", "h5", "link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
     {
       name: "website",
@@ -66,28 +58,6 @@ const Borrowers: CollectionConfig = {
       validate: (val) => {
         return isValidURL(val, false);
       },
-    },
-    {
-      name: "incorporatedCountry",
-      label: "Incorporated in",
-      type: "text",
-    },
-    {
-      name: "operatingCountry",
-      label: "Operating in",
-      type: "text",
-    },
-    {
-      name: "highlights",
-      type: "array",
-      minRows: 0,
-      fields: [
-        {
-          name: "text",
-          type: "text",
-          required: true,
-        },
-      ],
     },
     {
       name: "borrowerFinancials",
@@ -205,17 +175,11 @@ const Borrowers: CollectionConfig = {
     },
     {
       name: "contactInfo",
-      type: "group",
-      fields: [
-        {
-          name: "description",
-          type: "textarea",
-        },
-        {
-          name: "email",
-          type: "email",
-        },
-      ],
+      type: "richText",
+      admin: {
+        elements: ["link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
     {
       name: "documents",

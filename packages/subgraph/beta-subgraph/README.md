@@ -1,6 +1,6 @@
 # beta-subgraph
 
-This subdirectory contains info related to provisioning and deploying a version of our subgraph on AWS ECS, using the [Docker Compose integration with ECS](https://docs.docker.com/cloud/ecs-integration/). We call this the "beta" subgraph as it's intended to support the https://beta.app.goldfinch.finance app. This subgraph is configured to index from the Tenderly fork whose RPC url is defined in `.env.beta-subgraph`.
+This subdirectory contains info related to provisioning and deploying a version of our subgraph on AWS ECS, using the [Docker Compose integration with ECS](https://docs.docker.com/cloud/ecs-integration/). We call this the "beta" subgraph as it's intended to support the https://app.goldfinch.finance (formerly beta.app.goldfinch.finance) app. This subgraph is configured to index from the Tenderly fork whose RPC url is defined in `.env.beta-subgraph`.
 
 ## ECS provisioning
 

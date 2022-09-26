@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-require("dotenv").config();
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 // Initialize Payload
 payload.init({
@@ -41,13 +41,46 @@ const seedBorrowers = async () => {
 
         console.log(`Importing: ${borrower.name}`);
 
+        const bio: {
+          [k: string]: unknown;
+        }[] = [
+          {
+            children: [
+              {
+                text: borrower.bio,
+              },
+            ],
+          },
+          ...(borrower.highlights
+            ? [
+                {
+                  children: [
+                    {
+                      text: "Highlights",
+                    },
+                  ],
+                  type: "h3",
+                },
+                {
+                  children: borrower.highlights.map((item) => ({
+                    children: [
+                      {
+                        text: item,
+                      },
+                    ],
+                    type: "li",
+                  })),
+                  type: "ul",
+                },
+              ]
+            : []),
+        ];
+
         return await payload.create({
           collection: "borrowers",
           data: {
             ...borrower,
-            highlights: borrower.highlights
-              ? borrower.highlights.map((h) => ({ text: h }))
-              : [],
+            bio,
           },
         });
       } catch (e) {
@@ -66,6 +99,20 @@ const seedBorrowers = async () => {
 const seedDeals = async () => {
   console.log(`Importing deal data: (${Object.keys(dealsData).length} total)`);
 
+  // Keep track of deals per borrower
+  let dealMapping: {
+    [borrowerId: string]: string[];
+  } = {};
+
+  // Get all borrowers
+  const allBorrowersRequest = await payload.find({
+    collection: "borrowers",
+    depth: 0,
+    limit: 100,
+  });
+
+  const borrowers = allBorrowersRequest.docs;
+
   await Promise.all(
     Object.keys(dealsData).map(async (id) => {
       try {
@@ -73,32 +120,51 @@ const seedDeals = async () => {
 
         console.log(`Importing: ${id}`);
 
-        const borrower = await payload.find({
-          collection: "borrowers",
-          where: {
-            name: {
-              equals: borrowersData[deal.borrower].name,
-            },
-          },
-          depth: 0,
-        });
+        const borrower = borrowers.find(
+          (b) => b.name === borrowersData[deal.borrower].name
+        );
 
-        if (borrower.docs.length > 0) {
-          console.log(`Found borrower: ${borrower.docs[0].name}`);
+        if (borrower) {
+          // Add to mapping
+          if (dealMapping[borrower.id]) {
+            dealMapping[borrower.id] = [...dealMapping[borrower.id], id];
+          } else {
+            dealMapping[borrower.id] = [id];
+          }
 
-          return await payload.create({
+          await payload.create({
             collection: "deals",
             depth: 0,
             data: {
               ...deal,
               id,
               _id: id,
-              highlights: deal.highlights
-                ? deal.highlights.map((h) => ({ text: h }))
-                : [],
-              overview: deal.description,
+              overview: [{ text: deal.description }],
+              details: deal.highlights
+                ? [
+                    {
+                      children: [
+                        {
+                          text: "Highlights",
+                        },
+                      ],
+                      type: "h3",
+                    },
+                    {
+                      children: deal.highlights.map((item) => ({
+                        children: [
+                          {
+                            text: item,
+                          },
+                        ],
+                        type: "li",
+                      })),
+                      type: "ul",
+                    },
+                  ]
+                : null,
               defaultInterestRate: deal.lateFeeApr ?? null,
-              borrower: borrower.docs[0].id,
+              borrower: borrower.id,
             },
           });
         } else {
@@ -109,6 +175,20 @@ const seedDeals = async () => {
 
         throw new Error(`Deal error: ${e.message}`);
       }
+    })
+  );
+
+  // Set borrower relation
+  await Promise.all(
+    Object.keys(dealMapping).map(async (borrowerId) => {
+      return await payload.update({
+        id: borrowerId,
+        collection: "borrowers",
+        depth: 0,
+        data: {
+          deals: dealMapping[borrowerId],
+        },
+      });
     })
   );
 
