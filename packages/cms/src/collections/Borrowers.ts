@@ -4,6 +4,7 @@ import { isValidURL } from "../lib/validation";
 
 import TeamMember from "../blocks/TeamMember";
 import Document from "../blocks/Document";
+import { afterBorrowerChange } from "../hooks/borrowers";
 
 const Borrowers: CollectionConfig = {
   slug: "borrowers",
@@ -17,6 +18,9 @@ const Borrowers: CollectionConfig = {
   },
   access: {
     read: () => true,
+  },
+  hooks: {
+    afterChange: [afterBorrowerChange],
   },
   fields: [
     {

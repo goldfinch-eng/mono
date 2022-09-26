@@ -197,6 +197,7 @@ export default function EarnPage({
 export const getStaticProps: GetStaticProps = async () => {
   const res = await apolloClient.query<EarnPageCmsQuery>({
     query: earnCmsQuery,
+    fetchPolicy: "network-only",
   });
 
   const deals = res.data.Deals?.docs;
@@ -221,6 +222,5 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       dealMetadata,
     },
-    revalidate: 600,
   };
 };

@@ -7,6 +7,7 @@ import type {
 } from "payload/types";
 
 import type { Deal, Borrower } from "../generated/payload-types";
+import { revalidate } from "../lib/revalidate";
 
 export const beforeDealChange: CollectionBeforeChangeHook<Deal> = async ({
   data,
@@ -45,6 +46,14 @@ export const afterDealChange: CollectionAfterChangeHook<Deal> = async ({
 
   // Remove from previous if updating
   if (operation === "update") {
+    revalidate(`/pools/${doc.id}`);
+    if (
+      doc.name !== previousDoc.name ||
+      doc.category !== previousDoc.category
+    ) {
+      revalidate("/earn");
+    }
+
     if (doc.borrower === previousDoc.borrower) {
       return doc;
     }

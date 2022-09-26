@@ -511,6 +511,7 @@ export const getStaticProps: GetStaticProps<
     variables: {
       id: address,
     },
+    fetchPolicy: "network-only",
   });
 
   const poolDetails = res.data.Deal;
@@ -522,6 +523,5 @@ export const getStaticProps: GetStaticProps<
     props: {
       dealDetails: poolDetails,
     },
-    revalidate: 600,
   };
 };
