@@ -103,3 +103,31 @@ docker tag \
   us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:latest \
   us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:latest
 ```
+
+### Scripts
+
+Payload also contains a Local API which allows us to run scripts against our Payload instance. This can be useful for operations such as seeding new data.
+
+The optional `local` parameter disables the UI and only allows the use of the Local API.
+
+```
+// Initialize Payload
+payload.init({
+  secret: process.env.PAYLOAD_SECRET,
+  mongoURL: process.env.MONGODB_URI,
+  mongoOptions: {
+    dbName: "payload",
+  },
+  local: true,
+});
+```
+
+#### Running a script
+
+Scripts are stored inside of the `src/scripts` directory. Since the location of the Payload configuration file (`payload.config.ts`) is already pre-determined, any scripts that initialize Payload must be executed from the src folder of the repository. This also ensures that your `.env` file is imported accordingly if you are running the script locally
+
+Running the seeding script:
+
+```
+ts-node scripts/seed.ts
+```

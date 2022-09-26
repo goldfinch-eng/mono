@@ -7,6 +7,7 @@ services:
       - 27069:27017
     volumes:
       - mongodb:/data/db
+      - mongodb_config:/data/configdb
     environment:
       - MONGO_INITDB_ROOT_USERNAME=user
       - MONGO_INITDB_ROOT_PASSWORD=pass
@@ -32,4 +33,5 @@ services:
       - google-cloud-storage:/data/cms
 volumes:
   mongodb:
+  mongodb_config:
   google-cloud-storage:
