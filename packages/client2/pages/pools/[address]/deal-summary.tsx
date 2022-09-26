@@ -1,3 +1,4 @@
+import { RichText } from "@/components/rich-text";
 import {
   SingleDealQuery,
   SingleTranchedPoolDataQuery,
@@ -9,13 +10,13 @@ import { DocumentsList } from "./documents-list";
 import { TransactionTable } from "./transaction-table";
 
 interface DealSummaryProps {
-  poolDetails: NonNullable<SingleDealQuery["Deal"]>;
+  dealData: NonNullable<SingleDealQuery["Deal"]>;
   poolChainData: NonNullable<SingleTranchedPoolDataQuery["tranchedPool"]>;
   poolStatus: PoolStatus;
 }
 
 export default function DealSummary({
-  poolDetails,
+  dealData,
   poolChainData,
   poolStatus,
 }: DealSummaryProps) {
@@ -24,9 +25,10 @@ export default function DealSummary({
       <div className="mb-20">
         <h2 className="mb-8 text-3xl">Deal Overview</h2>
 
-        <p className="mb-8 whitespace-pre-wrap text-2xl font-light">
-          {poolDetails.overview}
-        </p>
+        <RichText
+          content={dealData.overview}
+          className="mb-8 whitespace-pre-wrap text-2xl font-light"
+        />
       </div>
 
       <div className="mb-20">
@@ -35,47 +37,24 @@ export default function DealSummary({
         <TransactionTable tranchedPoolId={poolChainData.id} />
       </div>
 
-      {poolDetails.highlights && poolDetails.highlights.length > 0 ? (
-        <div className="mb-20">
-          <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-          <ul className="list-outside list-disc space-y-5 pl-5">
-            {poolDetails.highlights.map((item, idx) => (
-              <li key={`pool-highlight-${poolDetails.id}-${idx}`}>
-                {item.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {poolDetails.useOfFunds ? (
-        <div className="mb-20">
-          <h3 className="mb-8 text-lg font-semibold">Use of Funds</h3>
-          <p>{poolDetails.useOfFunds}</p>
-        </div>
-      ) : null}
-
-      {poolDetails.risks ? (
-        <div className="mb-20">
-          <h3 className="mb-8 text-lg font-semibold">Risks</h3>
-          <p>{poolDetails.risks}</p>
-        </div>
+      {dealData.details ? (
+        <RichText content={dealData.details} className="mb-20" />
       ) : null}
 
       <div className="mb-20">
-        <SecuritiesRecourseTable details={poolDetails.securitiesAndRecourse} />
+        <SecuritiesRecourseTable details={dealData.securitiesAndRecourse} />
       </div>
 
       <div className="mb-20">
         <DealTermsTable
           tranchedPool={poolChainData}
           poolStatus={poolStatus}
-          defaultInterestRate={poolDetails.defaultInterestRate}
+          defaultInterestRate={dealData.defaultInterestRate}
         />
       </div>
 
-      {poolDetails.documents && poolDetails.documents.length > 0 ? (
-        <DocumentsList documents={poolDetails.documents} />
+      {dealData.documents && dealData.documents.length > 0 ? (
+        <DocumentsList documents={dealData.documents} />
       ) : null}
     </div>
   );

@@ -19,7 +19,8 @@
     "services:destroy": "docker compose down -v",
     "start:dev": "npm run services:start && npm run dev",
     "start:prod": "npm run build && npm run serve",
-    "deploy:prod": "docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable && docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable"
+    "deploy:prod": "docker build . --tag us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable && docker push us-central1-docker.pkg.dev/goldfinch-frontends-prod/goldfinch-docker-images/cms:stable",
+    "seed": "PAYLOAD_CONFIG_PATH=src/payload.config.ts npx ts-node src/scripts/seed.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^6.4.2",

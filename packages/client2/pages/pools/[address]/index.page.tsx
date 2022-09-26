@@ -163,11 +163,7 @@ const singleDealQuery = gql`
         ...BorrowerProfileFields
       }
       overview
-      highlights {
-        text
-      }
-      useOfFunds
-      risks
+      details
       securitiesAndRecourse {
         ...SecuritiesRecourseTableFields
       }
@@ -443,7 +439,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
               <TabContent>
                 {tranchedPool && poolStatus ? (
                   <DealSummary
-                    poolDetails={dealDetails}
+                    dealData={dealDetails}
                     poolChainData={tranchedPool}
                     poolStatus={poolStatus}
                   />

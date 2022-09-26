@@ -139,10 +139,30 @@ const seedDeals = async () => {
               ...deal,
               id,
               _id: id,
-              highlights: deal.highlights
-                ? deal.highlights.map((h) => ({ text: h }))
-                : [],
-              overview: deal.description,
+              overview: [{ text: deal.description }],
+              details: deal.highlights
+                ? [
+                    {
+                      children: [
+                        {
+                          text: "Highlights",
+                        },
+                      ],
+                      type: "h3",
+                    },
+                    {
+                      children: deal.highlights.map((item) => ({
+                        children: [
+                          {
+                            text: item,
+                          },
+                        ],
+                        type: "li",
+                      })),
+                      type: "ul",
+                    },
+                  ]
+                : null,
               defaultInterestRate: deal.lateFeeApr ?? null,
               borrower: borrower.id,
             },

@@ -144,14 +144,13 @@ export interface Deal {
   name: string;
   category: string;
   borrower: string | Borrower;
-  overview: string;
-  defaultInterestRate?: number;
-  highlights: {
-    text: string;
-    id?: string;
+  overview: {
+    [k: string]: unknown;
   }[];
-  useOfFunds?: string;
-  risks?: string;
+  defaultInterestRate?: number;
+  details?: {
+    [k: string]: unknown;
+  }[];
   securitiesAndRecourse: {
     secured?: boolean;
     type?: string;

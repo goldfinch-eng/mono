@@ -2277,18 +2277,11 @@ type Deal {
   name: String!
   category: String!
   borrower: Borrower
-  overview: String!
+  overview(depth: Int): JSON!
   defaultInterestRate: Float
-  highlights: [Deal_Highlights!]
-  useOfFunds: String
-  risks: String
+  details(depth: Int): JSON
   securitiesAndRecourse: Deal_SecuritiesandRecourse
   documents: [Deal_Documents!]
-}
-
-type Deal_Highlights {
-  text: String
-  id: String
 }
 
 type Deal_SecuritiesandRecourse {
@@ -2642,10 +2635,7 @@ input Deal_where {
   borrower: Deal_borrower_operator
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
-  highlights__text: Deal_highlights__text_operator
-  highlights__id: Deal_highlights__id_operator
-  useOfFunds: Deal_useOfFunds_operator
-  risks: Deal_risks_operator
+  details: Deal_details_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -2691,10 +2681,10 @@ input Deal_borrower_operator {
 }
 
 input Deal_overview_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
 }
 
 input Deal_defaultInterestRate_operator {
@@ -2707,34 +2697,11 @@ input Deal_defaultInterestRate_operator {
   exists: Boolean
 }
 
-input Deal_highlights__text_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-}
-
-input Deal_highlights__id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Deal_useOfFunds_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
-input Deal_risks_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+input Deal_details_operator {
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -2821,10 +2788,7 @@ input Deal_where_or {
   borrower: Deal_borrower_operator
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
-  highlights__text: Deal_highlights__text_operator
-  highlights__id: Deal_highlights__id_operator
-  useOfFunds: Deal_useOfFunds_operator
-  risks: Deal_risks_operator
+  details: Deal_details_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -2843,10 +2807,7 @@ input Deal_where_and {
   borrower: Deal_borrower_operator
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
-  highlights__text: Deal_highlights__text_operator
-  highlights__id: Deal_highlights__id_operator
-  useOfFunds: Deal_useOfFunds_operator
-  risks: Deal_risks_operator
+  details: Deal_details_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -4692,9 +4653,7 @@ type DealFields {
   borrower: DealFields_borrower
   overview: DealFields_overview
   defaultInterestRate: DealFields_defaultInterestRate
-  highlights: DealFields_highlights
-  useOfFunds: DealFields_useOfFunds
-  risks: DealFields_risks
+  details: DealFields_details
   securitiesAndRecourse: DealFields_securitiesAndRecourse
   documents: DealFields_documents
 }
@@ -4837,124 +4796,26 @@ type DealFields_defaultInterestRate_Delete {
   permission: Boolean!
 }
 
-type DealFields_highlights {
-  create: DealFields_highlights_Create
-  read: DealFields_highlights_Read
-  update: DealFields_highlights_Update
-  delete: DealFields_highlights_Delete
-  fields: DealFields_highlights_Fields
+type DealFields_details {
+  create: DealFields_details_Create
+  read: DealFields_details_Read
+  update: DealFields_details_Update
+  delete: DealFields_details_Delete
 }
 
-type DealFields_highlights_Create {
+type DealFields_details_Create {
   permission: Boolean!
 }
 
-type DealFields_highlights_Read {
+type DealFields_details_Read {
   permission: Boolean!
 }
 
-type DealFields_highlights_Update {
+type DealFields_details_Update {
   permission: Boolean!
 }
 
-type DealFields_highlights_Delete {
-  permission: Boolean!
-}
-
-type DealFields_highlights_Fields {
-  text: DealFields_highlights_text
-  id: DealFields_highlights_id
-}
-
-type DealFields_highlights_text {
-  create: DealFields_highlights_text_Create
-  read: DealFields_highlights_text_Read
-  update: DealFields_highlights_text_Update
-  delete: DealFields_highlights_text_Delete
-}
-
-type DealFields_highlights_text_Create {
-  permission: Boolean!
-}
-
-type DealFields_highlights_text_Read {
-  permission: Boolean!
-}
-
-type DealFields_highlights_text_Update {
-  permission: Boolean!
-}
-
-type DealFields_highlights_text_Delete {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id {
-  create: DealFields_highlights_id_Create
-  read: DealFields_highlights_id_Read
-  update: DealFields_highlights_id_Update
-  delete: DealFields_highlights_id_Delete
-}
-
-type DealFields_highlights_id_Create {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id_Read {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id_Update {
-  permission: Boolean!
-}
-
-type DealFields_highlights_id_Delete {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds {
-  create: DealFields_useOfFunds_Create
-  read: DealFields_useOfFunds_Read
-  update: DealFields_useOfFunds_Update
-  delete: DealFields_useOfFunds_Delete
-}
-
-type DealFields_useOfFunds_Create {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds_Read {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds_Update {
-  permission: Boolean!
-}
-
-type DealFields_useOfFunds_Delete {
-  permission: Boolean!
-}
-
-type DealFields_risks {
-  create: DealFields_risks_Create
-  read: DealFields_risks_Read
-  update: DealFields_risks_Update
-  delete: DealFields_risks_Delete
-}
-
-type DealFields_risks_Create {
-  permission: Boolean!
-}
-
-type DealFields_risks_Read {
-  permission: Boolean!
-}
-
-type DealFields_risks_Update {
-  permission: Boolean!
-}
-
-type DealFields_risks_Delete {
+type DealFields_details_Delete {
   permission: Boolean!
 }
 
@@ -5477,18 +5338,11 @@ input mutationDealInput {
   name: String!
   category: String!
   borrower: String
-  overview: String!
+  overview: JSON!
   defaultInterestRate: Float
-  highlights: [mutationDeal_HighlightsInput]
-  useOfFunds: String
-  risks: String
+  details: JSON
   securitiesAndRecourse: mutationDeal_SecuritiesandRecourseInput
   documents: JSON
-}
-
-input mutationDeal_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationDeal_SecuritiesandRecourseInput {
@@ -5505,18 +5359,11 @@ input mutationDealUpdateInput {
   name: String
   category: String
   borrower: String
-  overview: String
+  overview: JSON
   defaultInterestRate: Float
-  highlights: [mutationDealUpdate_HighlightsInput]
-  useOfFunds: String
-  risks: String
+  details: JSON
   securitiesAndRecourse: mutationDealUpdate_SecuritiesandRecourseInput
   documents: JSON
-}
-
-input mutationDealUpdate_HighlightsInput {
-  text: String!
-  id: String
 }
 
 input mutationDealUpdate_SecuritiesandRecourseInput {
