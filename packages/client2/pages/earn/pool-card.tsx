@@ -181,6 +181,7 @@ export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
     name
     category
     borrower {
+      id
       logo {
         url
       }
