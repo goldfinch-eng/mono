@@ -83,10 +83,12 @@ export async function getContract<T extends SupportedContractName>({
   name,
   provider,
   address,
+  useSigner = true,
 }: {
   name: T;
   provider: JsonRpcProvider;
   address?: string;
+  useSigner?: boolean;
 }): Promise<Contract<T>> {
   const _address =
     address ?? CONTRACT_ADDRESSES[name as keyof typeof CONTRACT_ADDRESSES];
@@ -95,6 +97,9 @@ export async function getContract<T extends SupportedContractName>({
   }
   const connectFn = await supportedContracts[name]();
   if (connectFn)
-    return connectFn(_address, provider.getSigner()) as Contract<T>; // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
+    return connectFn(
+      _address,
+      useSigner ? provider.getSigner() : provider
+    ) as Contract<T>; // yeah the type coercion to <Contract<T>> is weird but it's the only way to make the compiler stop complaining about the conditional return type
   throw new Error("Invalid contract name");
 }
