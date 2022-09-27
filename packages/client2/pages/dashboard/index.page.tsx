@@ -22,6 +22,7 @@ import {
   CryptoAmount,
   SupportedCrypto,
   useDashboardPageQuery,
+  DashboardPageQuery,
 } from "@/lib/graphql/generated";
 import { sharesToUsdc, sum } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
@@ -94,6 +95,8 @@ gql`
     ) {
       id
       principalAmount
+      principalRedeemable
+      principalRedeemed
       interestRedeemable
       interestRedeemed
       rewardsClaimable
@@ -172,9 +175,10 @@ export default function DashboardPage() {
     }
     const borrowerPoolTotal = {
       token: SupportedCrypto.Usdc,
-      amount: sum("principalAmount", data.tranchedPoolTokens)
-        .add(sum("interestRedeemable", data.tranchedPoolTokens))
-        .add(sum("interestRedeemed", data.tranchedPoolTokens)),
+      amount: data.tranchedPoolTokens.reduce(
+        (prev, current) => prev.add(valueOfPoolToken(current)),
+        BigNumber.from(0)
+      ),
     };
 
     const gfiTotal = data.viewer.gfiBalance
@@ -362,17 +366,13 @@ export default function DashboardPage() {
                           holdings={data.tranchedPoolTokens.map((token) => ({
                             name: token.tranchedPool.name,
                             percentage: computePercentage(
-                              token.principalAmount
-                                .add(token.interestRedeemable)
-                                .add(token.interestRedeemed),
+                              valueOfPoolToken(token),
                               totalUsdc.amount
                             ),
                             quantity: BigNumber.from(1),
                             usdcValue: {
                               token: SupportedCrypto.Usdc,
-                              amount: token.principalAmount
-                                .add(token.interestRedeemable)
-                                .add(token.interestRedeemed),
+                              amount: valueOfPoolToken(token),
                             },
                             url: `/pools/${token.tranchedPool.id}`,
                           }))}
@@ -678,4 +678,18 @@ function setAll<S extends string, T>(
     },
     { ...obj }
   );
+}
+
+function valueOfPoolToken(
+  tranchedPoolToken: DashboardPageQuery["tranchedPoolTokens"][number]
+): BigNumber {
+  const value = tranchedPoolToken.principalAmount
+    .add(tranchedPoolToken.principalRedeemable)
+    .add(tranchedPoolToken.interestRedeemable)
+    .sub(tranchedPoolToken.principalRedeemed)
+    .sub(tranchedPoolToken.interestRedeemed);
+  if (value.isNegative()) {
+    return BigNumber.from(0);
+  }
+  return value;
 }
