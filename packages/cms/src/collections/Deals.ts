@@ -82,6 +82,14 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "agreement",
+      type: "text",
+      admin: {
+        description:
+          "This should be a URL linking to the agreement for this deal. A backer must agree to this before depositing funds.",
+      },
+    },
+    {
       name: "securitiesAndRecourse",
       label: "Securities and Recourse",
       type: "group",

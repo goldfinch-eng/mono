@@ -10,6 +10,7 @@ import {
   Icon,
   InfoIconTooltip,
   Input,
+  Link,
   Select,
   Tooltip,
 } from "@/components/design-system";
@@ -71,6 +72,7 @@ interface SupplyPanelProps {
    * This is necessary for zapping functionality. Senior pool staked position amounts are measured in FIDU, but we need to show the amounts to users in USDC.
    */
   seniorPoolSharePrice: BigNumber;
+  agreement?: string | null;
 }
 
 interface SupplyForm {
@@ -91,6 +93,7 @@ export default function SupplyPanel({
   fiatPerGfi,
   seniorPoolApyFromGfiRaw,
   seniorPoolSharePrice,
+  agreement,
 }: SupplyPanelProps) {
   const apolloClient = useApolloClient();
   const { account, provider } = useWallet();
@@ -462,8 +465,16 @@ export default function SupplyPanel({
           <div className="mb-3 text-xs">
             By entering my name and clicking “Supply” below, I hereby agree and
             acknowledge that (i) I am electronically signing and becoming a
-            party to the Loan Agreement for this pool, and (ii) my name and
-            transaction information may be shared with the borrower.
+            party to the{" "}
+            {agreement ? (
+              <Link href={agreement} target="_blank" rel="noreferrer">
+                Loan Agreement
+              </Link>
+            ) : (
+              "Loan Agreement"
+            )}{" "}
+            for this pool, and (ii) my name and transaction information may be
+            shared with the borrower.
           </div>
           <Button
             className="block w-full"

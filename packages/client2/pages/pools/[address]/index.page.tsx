@@ -164,6 +164,7 @@ const singleDealQuery = gql`
       }
       overview
       details
+      agreement
       securitiesAndRecourse {
         ...SecuritiesRecourseTableFields
       }
@@ -387,6 +388,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                     seniorPool.latestPoolStatus.estimatedApyFromGfiRaw
                   }
                   seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
+                  agreement={dealDetails.agreement}
                 />
               )}
 

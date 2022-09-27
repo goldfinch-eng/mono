@@ -2280,6 +2280,7 @@ type Deal {
   overview(depth: Int): JSON!
   defaultInterestRate: Float
   details(depth: Int): JSON
+  agreement: String
   securitiesAndRecourse: Deal_SecuritiesandRecourse
   documents: [Deal_Documents!]
 }
@@ -2636,6 +2637,7 @@ input Deal_where {
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
   details: Deal_details_operator
+  agreement: Deal_agreement_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -2702,6 +2704,14 @@ input Deal_details_operator {
   not_equals: JSON
   like: JSON
   contains: JSON
+  exists: Boolean
+}
+
+input Deal_agreement_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
   exists: Boolean
 }
 
@@ -2789,6 +2799,7 @@ input Deal_where_or {
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
   details: Deal_details_operator
+  agreement: Deal_agreement_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -2808,6 +2819,7 @@ input Deal_where_and {
   overview: Deal_overview_operator
   defaultInterestRate: Deal_defaultInterestRate_operator
   details: Deal_details_operator
+  agreement: Deal_agreement_operator
   securitiesAndRecourse__secured: Deal_securitiesAndRecourse__secured_operator
   securitiesAndRecourse__type: Deal_securitiesAndRecourse__type_operator
   securitiesAndRecourse__description: Deal_securitiesAndRecourse__description_operator
@@ -4654,6 +4666,7 @@ type DealFields {
   overview: DealFields_overview
   defaultInterestRate: DealFields_defaultInterestRate
   details: DealFields_details
+  agreement: DealFields_agreement
   securitiesAndRecourse: DealFields_securitiesAndRecourse
   documents: DealFields_documents
 }
@@ -4816,6 +4829,29 @@ type DealFields_details_Update {
 }
 
 type DealFields_details_Delete {
+  permission: Boolean!
+}
+
+type DealFields_agreement {
+  create: DealFields_agreement_Create
+  read: DealFields_agreement_Read
+  update: DealFields_agreement_Update
+  delete: DealFields_agreement_Delete
+}
+
+type DealFields_agreement_Create {
+  permission: Boolean!
+}
+
+type DealFields_agreement_Read {
+  permission: Boolean!
+}
+
+type DealFields_agreement_Update {
+  permission: Boolean!
+}
+
+type DealFields_agreement_Delete {
   permission: Boolean!
 }
 
@@ -5341,6 +5377,7 @@ input mutationDealInput {
   overview: JSON!
   defaultInterestRate: Float
   details: JSON
+  agreement: String
   securitiesAndRecourse: mutationDeal_SecuritiesandRecourseInput
   documents: JSON
 }
@@ -5362,6 +5399,7 @@ input mutationDealUpdateInput {
   overview: JSON
   defaultInterestRate: Float
   details: JSON
+  agreement: String
   securitiesAndRecourse: mutationDealUpdate_SecuritiesandRecourseInput
   documents: JSON
 }

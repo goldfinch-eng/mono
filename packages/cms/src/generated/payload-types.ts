@@ -151,6 +151,7 @@ export interface Deal {
   details?: {
     [k: string]: unknown;
   }[];
+  agreement?: string;
   securitiesAndRecourse: {
     secured?: boolean;
     type?: string;
