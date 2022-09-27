@@ -112,7 +112,6 @@ export function SeniorPoolWithDrawalPanel({
       let remainingWithdrawalAmount = withdrawAmountFidu.sub(
         unstakedWithdrawalPortion
       );
-      let forfeitedGfi = BigNumber.from(0);
       const tokenIds: string[] = [];
       const fiduAmounts: BigNumber[] = [];
       for (const position of detailedPositions) {
@@ -127,10 +126,6 @@ export function SeniorPoolWithDrawalPanel({
         )
           ? remainingWithdrawalAmount
           : position.details.amount;
-        const forfeitedGfiFromThisToken = position.details.rewards.totalUnvested
-          .mul(amountFromThisToken)
-          .div(position.details.amount);
-        forfeitedGfi = forfeitedGfi.add(forfeitedGfiFromThisToken);
         tokenIds.push(position.id);
         fiduAmounts.push(amountFromThisToken);
         remainingWithdrawalAmount =
@@ -139,16 +134,11 @@ export function SeniorPoolWithDrawalPanel({
       if (!remainingWithdrawalAmount.isZero()) {
         throw new Error("Insufficient balance to withdraw");
       }
-      if (!forfeitedGfi.isZero()) {
-        const confirmation = await confirmDialog(
-          `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position. As a result of withdrawing this amount, you will forfeit ${formatCrypto(
-            { token: SupportedCrypto.Gfi, amount: forfeitedGfi },
-            { includeToken: true }
-          )} of your FIDU staking rewards.`
-        );
-        if (!confirmation) {
-          throw new Error("User backed out");
-        }
+      const confirmation = await confirmDialog(
+        `To withdraw this amount, two transactions will be executed. The first transaction will withdraw your unstaked FIDU position, and the second transaction will withdraw your staked FIDU position.`
+      );
+      if (!confirmation) {
+        throw new Error("User backed out");
       }
       if (!unstakedWithdrawalPortion.isZero()) {
         const transaction1 = seniorPoolContract.withdrawInFidu(

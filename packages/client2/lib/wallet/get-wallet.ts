@@ -1,4 +1,3 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
 import { ethers } from "ethers";
 
 import { DESIRED_CHAIN_ID } from "@/constants";
@@ -29,5 +28,8 @@ export async function getProvider() {
       }
     }
   }
-  return new JsonRpcProvider(RPC_URLS[DESIRED_CHAIN_ID], DESIRED_CHAIN_ID);
+  return new ethers.providers.JsonRpcProvider(
+    RPC_URLS[DESIRED_CHAIN_ID],
+    DESIRED_CHAIN_ID
+  );
 }
