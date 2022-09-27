@@ -5,6 +5,8 @@ import path from "path";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
+console.log("WARNING: SEEDING ONLY WORKS ON AN EMPTY DATABASE");
+
 // Initialize Payload
 payload.init({
   secret: process.env.PAYLOAD_SECRET,
@@ -23,7 +25,13 @@ const borrowersData = JSON.parse(
 );
 
 const dealsData = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "deals.json"), "utf-8")
+  fs.readFileSync(
+    path.resolve(
+      __dirname,
+      process.env.SEED_LOCALHOST_DEALS ? "localhost-deals.json" : "deals.json"
+    ),
+    "utf-8"
+  )
 );
 
 /**

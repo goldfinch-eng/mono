@@ -166,3 +166,6 @@ dist
 # local uplaod folder
 media
 google-cloud-storage
+
+# local metadata file for seeding fake deals in the CMS
+src/scripts/localhost-deals.json
