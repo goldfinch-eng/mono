@@ -86,7 +86,7 @@ const Deals: CollectionConfig = {
       type: "text",
       admin: {
         description:
-          "This should be a URL linking to the agreement for this deal. A backer must agree to this before depositing funds.",
+          "This should be a URL linking to the agreement for this deal.",
       },
     },
     {
