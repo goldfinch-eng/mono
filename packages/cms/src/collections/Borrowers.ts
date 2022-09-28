@@ -34,6 +34,10 @@ const Borrowers: CollectionConfig = {
       relationTo: "media",
     },
     {
+      name: "orgType",
+      type: "text",
+    },
+    {
       name: "bio",
       type: "richText",
       admin: {

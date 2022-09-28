@@ -29,6 +29,7 @@ export const BORROWER_PROFILE_FIELDS = gql`
     logo {
       url
     }
+    orgType
     bio
     website
     twitter
@@ -72,52 +73,57 @@ export function BorrowerProfile({
   return (
     <div className="space-y-20">
       <div>
-        <div className="mb-8 items-center justify-between lg:flex">
-          <div className="mb-3 flex items-center">
-            {borrower.logo && (
-              <Image
-                src={borrower.logo.url as string}
-                alt={borrower.name}
-                className="mr-3 overflow-hidden rounded-full border border-sand-200 object-contain object-center"
-                height={32}
-                width={32}
-              />
-            )}
+        <div className="mb-8">
+          <div className="mb-3 items-center justify-between lg:flex">
+            <div className="flex items-center gap-3">
+              {borrower.logo && (
+                <Image
+                  src={borrower.logo.url as string}
+                  alt={borrower.name}
+                  className="overflow-hidden rounded-full border border-sand-200 object-contain object-center"
+                  height={32}
+                  width={32}
+                />
+              )}
 
-            <h2 className="text-3xl lg:mb-0">{borrower.name}</h2>
+              <h2 className="text-3xl lg:mb-0">{borrower.name}</h2>
+            </div>
+            <div className="flex gap-2">
+              {borrower.website ? (
+                <ChipLink
+                  iconLeft="Link"
+                  href={borrower.website}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Website
+                </ChipLink>
+              ) : null}
+              {borrower.linkedin ? (
+                <ChipLink
+                  iconLeft="LinkedIn"
+                  href={borrower.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  LinkedIn
+                </ChipLink>
+              ) : null}
+              {borrower.twitter ? (
+                <ChipLink
+                  iconLeft="Twitter"
+                  href={borrower.twitter}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Twitter
+                </ChipLink>
+              ) : null}
+            </div>
           </div>
-          <div className="flex gap-2">
-            {borrower.website ? (
-              <ChipLink
-                iconLeft="Link"
-                href={borrower.website}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Website
-              </ChipLink>
-            ) : null}
-            {borrower.linkedin ? (
-              <ChipLink
-                iconLeft="LinkedIn"
-                href={borrower.linkedin}
-                target="_blank"
-                rel="noreferrer"
-              >
-                LinkedIn
-              </ChipLink>
-            ) : null}
-            {borrower.twitter ? (
-              <ChipLink
-                iconLeft="Twitter"
-                href={borrower.twitter}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Twitter
-              </ChipLink>
-            ) : null}
-          </div>
+          {borrower.orgType ? (
+            <div className="text-sm text-sand-500">{borrower.orgType}</div>
+          ) : null}
         </div>
 
         {borrower.bio ? (
