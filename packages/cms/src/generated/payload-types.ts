@@ -93,13 +93,12 @@ export interface Borrower {
       text: string;
       id?: string;
     }[];
-    otherProducts: {
-      text: string;
-      id?: string;
-    }[];
     isAudited?: 'yes' | 'no';
     financialStatementSummary?: string | Media;
   };
+  otherProducts?: {
+    [k: string]: unknown;
+  }[];
   underwritingPerformance: {
     performanceDocument?: string | Media;
     underwritingDescription?: string;

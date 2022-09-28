@@ -56,9 +56,6 @@ export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
     pastOffChainDeals {
       text
     }
-    otherProducts {
-      text
-    }
     isAudited
     financialStatementSummary {
       url
@@ -283,20 +280,6 @@ export function BorrowerFinancialsTable({
       <ul key="borrower-offchain-deals-list">
         {borrowerFinancials.pastOffChainDeals.map((item, idx) => (
           <li key={`borrower-offdeals-list-deal-${idx}`}>{item.text}</li>
-        ))}
-      </ul>,
-    ]);
-  }
-  if (
-    borrowerFinancials?.otherProducts &&
-    borrowerFinancials.otherProducts.length > 0
-  ) {
-    rows.push([
-      "Other products offered",
-      null,
-      <ul key="borrower-products-list">
-        {borrowerFinancials.otherProducts.map((item, idx) => (
-          <li key={`borrower-products-list-item-${idx}`}>{item.text}</li>
         ))}
       </ul>,
     ]);

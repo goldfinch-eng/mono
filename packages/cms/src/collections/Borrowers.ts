@@ -105,19 +105,6 @@ const Borrowers: CollectionConfig = {
             },
           ],
         },
-        {
-          name: "otherProducts",
-          label: "Other products offered",
-          type: "array",
-          minRows: 0,
-          fields: [
-            {
-              name: "text",
-              type: "text",
-              required: true,
-            },
-          ],
-        },
         generateBinarySelect("isAudited"),
         {
           name: "financialStatementSummary",
@@ -125,6 +112,15 @@ const Borrowers: CollectionConfig = {
           relationTo: "media",
         },
       ],
+    },
+    {
+      name: "otherProducts",
+      label: "Other products offered",
+      type: "richText",
+      admin: {
+        elements: ["h4", "h5", "link", "ol", "ul"],
+        leaves: ["bold", "italic", "underline"],
+      },
     },
     {
       name: "underwritingPerformance",

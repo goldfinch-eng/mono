@@ -57,13 +57,13 @@ function renderRichText(documentNodes?: RichTextNode[]): ReactNode {
         );
       case "h4":
         return (
-          <Heading key={i} level={4} className="mb-8 !text-lg">
+          <Heading key={i} level={4} className="mb-8 !text-base">
             {renderRichText(node.children)}
           </Heading>
         );
       case "h5":
         return (
-          <Heading key={i} level={5} className="mb-8 !text-lg">
+          <Heading key={i} level={5} className="mb-8 !text-sm">
             {renderRichText(node.children)}
           </Heading>
         );

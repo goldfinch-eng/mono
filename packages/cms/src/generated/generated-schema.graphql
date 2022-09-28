@@ -628,6 +628,7 @@ type Borrower {
   twitter: String
   linkedin: String
   borrowerFinancials: Borrower_BorrowerFinancials
+  otherProducts(depth: Int): JSON
   underwritingPerformance: Borrower_UnderwritingandPerformance
   team: Borrower_Team
   mediaLinks: [Borrower_Medialinks!]
@@ -1035,17 +1036,11 @@ type Borrower_BorrowerFinancials {
   currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [Borrower_BorrowerFinancials_Off_chaindebtproviders!]
-  otherProducts: [Borrower_BorrowerFinancials_Otherproductsoffered!]
   isAudited: Borrower_BorrowerFinancials_isAudited
   financialStatementSummary(where: Borrower_BorrowerFinancials_FinancialStatementSummary_where): Media
 }
 
 type Borrower_BorrowerFinancials_Off_chaindebtproviders {
-  text: String
-  id: String
-}
-
-type Borrower_BorrowerFinancials_Otherproductsoffered {
   text: String
   id: String
 }
@@ -2725,10 +2720,9 @@ input Borrower_where {
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
-  borrowerFinancials__otherProducts__text: Borrower_borrowerFinancials__otherProducts__text_operator
-  borrowerFinancials__otherProducts__id: Borrower_borrowerFinancials__otherProducts__id_operator
   borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
   borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
+  otherProducts: Borrower_otherProducts_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
   underwritingPerformance__underwritingDescription: Borrower_underwritingPerformance__underwritingDescription_operator
   underwritingPerformance__defaultRate: Borrower_underwritingPerformance__defaultRate_operator
@@ -2843,21 +2837,6 @@ input Borrower_borrowerFinancials__pastOffChainDeals__id_operator {
   exists: Boolean
 }
 
-input Borrower_borrowerFinancials__otherProducts__text_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-}
-
-input Borrower_borrowerFinancials__otherProducts__id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  exists: Boolean
-}
-
 input Borrower_borrowerFinancials__isAudited_operator {
   equals: Borrower_borrowerFinancials__isAudited_Input
   not_equals: Borrower_borrowerFinancials__isAudited_Input
@@ -2875,6 +2854,14 @@ enum Borrower_borrowerFinancials__isAudited_Input {
 input Borrower_borrowerFinancials__financialStatementSummary_operator {
   equals: String
   not_equals: String
+  exists: Boolean
+}
+
+input Borrower_otherProducts_operator {
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -2993,10 +2980,9 @@ input Borrower_where_or {
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
-  borrowerFinancials__otherProducts__text: Borrower_borrowerFinancials__otherProducts__text_operator
-  borrowerFinancials__otherProducts__id: Borrower_borrowerFinancials__otherProducts__id_operator
   borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
   borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
+  otherProducts: Borrower_otherProducts_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
   underwritingPerformance__underwritingDescription: Borrower_underwritingPerformance__underwritingDescription_operator
   underwritingPerformance__defaultRate: Borrower_underwritingPerformance__defaultRate_operator
@@ -3024,10 +3010,9 @@ input Borrower_where_and {
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
-  borrowerFinancials__otherProducts__text: Borrower_borrowerFinancials__otherProducts__text_operator
-  borrowerFinancials__otherProducts__id: Borrower_borrowerFinancials__otherProducts__id_operator
   borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
   borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
+  otherProducts: Borrower_otherProducts_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
   underwritingPerformance__underwritingDescription: Borrower_underwritingPerformance__underwritingDescription_operator
   underwritingPerformance__defaultRate: Borrower_underwritingPerformance__defaultRate_operator
@@ -4295,6 +4280,7 @@ type BorrowerFields {
   twitter: BorrowerFields_twitter
   linkedin: BorrowerFields_linkedin
   borrowerFinancials: BorrowerFields_borrowerFinancials
+  otherProducts: BorrowerFields_otherProducts
   underwritingPerformance: BorrowerFields_underwritingPerformance
   team: BorrowerFields_team
   mediaLinks: BorrowerFields_mediaLinks
@@ -4493,7 +4479,6 @@ type BorrowerFields_borrowerFinancials_Fields {
   currentLoansOutstanding: BorrowerFields_borrowerFinancials_currentLoansOutstanding
   aum: BorrowerFields_borrowerFinancials_aum
   pastOffChainDeals: BorrowerFields_borrowerFinancials_pastOffChainDeals
-  otherProducts: BorrowerFields_borrowerFinancials_otherProducts
   isAudited: BorrowerFields_borrowerFinancials_isAudited
   financialStatementSummary: BorrowerFields_borrowerFinancials_financialStatementSummary
 }
@@ -4642,81 +4627,6 @@ type BorrowerFields_borrowerFinancials_pastOffChainDeals_id_Delete {
   permission: Boolean!
 }
 
-type BorrowerFields_borrowerFinancials_otherProducts {
-  create: BorrowerFields_borrowerFinancials_otherProducts_Create
-  read: BorrowerFields_borrowerFinancials_otherProducts_Read
-  update: BorrowerFields_borrowerFinancials_otherProducts_Update
-  delete: BorrowerFields_borrowerFinancials_otherProducts_Delete
-  fields: BorrowerFields_borrowerFinancials_otherProducts_Fields
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_Fields {
-  text: BorrowerFields_borrowerFinancials_otherProducts_text
-  id: BorrowerFields_borrowerFinancials_otherProducts_id
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_text {
-  create: BorrowerFields_borrowerFinancials_otherProducts_text_Create
-  read: BorrowerFields_borrowerFinancials_otherProducts_text_Read
-  update: BorrowerFields_borrowerFinancials_otherProducts_text_Update
-  delete: BorrowerFields_borrowerFinancials_otherProducts_text_Delete
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_text_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_text_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_text_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_text_Delete {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_id {
-  create: BorrowerFields_borrowerFinancials_otherProducts_id_Create
-  read: BorrowerFields_borrowerFinancials_otherProducts_id_Read
-  update: BorrowerFields_borrowerFinancials_otherProducts_id_Update
-  delete: BorrowerFields_borrowerFinancials_otherProducts_id_Delete
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_id_Create {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_id_Read {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_id_Update {
-  permission: Boolean!
-}
-
-type BorrowerFields_borrowerFinancials_otherProducts_id_Delete {
-  permission: Boolean!
-}
-
 type BorrowerFields_borrowerFinancials_isAudited {
   create: BorrowerFields_borrowerFinancials_isAudited_Create
   read: BorrowerFields_borrowerFinancials_isAudited_Read
@@ -4760,6 +4670,29 @@ type BorrowerFields_borrowerFinancials_financialStatementSummary_Update {
 }
 
 type BorrowerFields_borrowerFinancials_financialStatementSummary_Delete {
+  permission: Boolean!
+}
+
+type BorrowerFields_otherProducts {
+  create: BorrowerFields_otherProducts_Create
+  read: BorrowerFields_otherProducts_Read
+  update: BorrowerFields_otherProducts_Update
+  delete: BorrowerFields_otherProducts_Delete
+}
+
+type BorrowerFields_otherProducts_Create {
+  permission: Boolean!
+}
+
+type BorrowerFields_otherProducts_Read {
+  permission: Boolean!
+}
+
+type BorrowerFields_otherProducts_Update {
+  permission: Boolean!
+}
+
+type BorrowerFields_otherProducts_Delete {
   permission: Boolean!
 }
 
@@ -5749,6 +5682,7 @@ input mutationBorrowerInput {
   twitter: String
   linkedin: String
   borrowerFinancials: mutationBorrower_BorrowerFinancialsInput
+  otherProducts: JSON
   underwritingPerformance: mutationBorrower_UnderwritingandPerformanceInput
   team: mutationBorrower_TeamInput
   mediaLinks: [mutationBorrower_MedialinksInput]
@@ -5762,17 +5696,11 @@ input mutationBorrower_BorrowerFinancialsInput {
   currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [mutationBorrower_BorrowerFinancials_Off_chaindebtprovidersInput]
-  otherProducts: [mutationBorrower_BorrowerFinancials_OtherproductsofferedInput]
   isAudited: Borrower_BorrowerFinancials_isAudited_MutationInput
   financialStatementSummary: String
 }
 
 input mutationBorrower_BorrowerFinancials_Off_chaindebtprovidersInput {
-  text: String!
-  id: String
-}
-
-input mutationBorrower_BorrowerFinancials_OtherproductsofferedInput {
   text: String!
   id: String
 }
@@ -5808,6 +5736,7 @@ input mutationBorrowerUpdateInput {
   twitter: String
   linkedin: String
   borrowerFinancials: mutationBorrowerUpdate_BorrowerFinancialsInput
+  otherProducts: JSON
   underwritingPerformance: mutationBorrowerUpdate_UnderwritingandPerformanceInput
   team: mutationBorrowerUpdate_TeamInput
   mediaLinks: [mutationBorrowerUpdate_MedialinksInput]
@@ -5821,17 +5750,11 @@ input mutationBorrowerUpdate_BorrowerFinancialsInput {
   currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [mutationBorrowerUpdate_BorrowerFinancials_Off_chaindebtprovidersInput]
-  otherProducts: [mutationBorrowerUpdate_BorrowerFinancials_OtherproductsofferedInput]
   isAudited: BorrowerUpdate_BorrowerFinancials_isAudited_MutationInput
   financialStatementSummary: String
 }
 
 input mutationBorrowerUpdate_BorrowerFinancials_Off_chaindebtprovidersInput {
-  text: String!
-  id: String
-}
-
-input mutationBorrowerUpdate_BorrowerFinancials_OtherproductsofferedInput {
   text: String!
   id: String
 }

@@ -40,6 +40,7 @@ export const BORROWER_PROFILE_FIELDS = gql`
     borrowerFinancials {
       ...BorrowerFinancialsTableFields
     }
+    otherProducts
     team {
       description
       members {
@@ -135,6 +136,13 @@ export function BorrowerProfile({
         otherPools={borrowerPools}
         borrowerFinancials={borrower.borrowerFinancials}
       />
+
+      {borrower.otherProducts ? (
+        <div>
+          <h3 className="mb-8 text-lg font-semibold">Other Products Offered</h3>
+          <RichText content={borrower.otherProducts} />
+        </div>
+      ) : null}
 
       <UnderwritingPerformanceTable
         details={borrower.underwritingPerformance}
