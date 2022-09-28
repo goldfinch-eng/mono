@@ -59,7 +59,7 @@ export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
     otherProducts {
       text
     }
-    projections
+    isAudited
   }
 `;
 
@@ -298,8 +298,12 @@ export function BorrowerFinancialsTable({
       </ul>,
     ]);
   }
-  if (borrowerFinancials?.projections) {
-    rows.push(["Projections", null, borrowerFinancials.projections]);
+  if (borrowerFinancials?.isAudited) {
+    rows.push([
+      "Is audited?",
+      null,
+      borrowerFinancials.isAudited === "yes" ? "Yes" : "No",
+    ]);
   }
   if (rows.length === 0) {
     return null;

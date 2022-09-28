@@ -78,6 +78,7 @@ export interface Borrower {
   id: string;
   name: string;
   logo?: string | Media;
+  orgType?: string;
   bio?: {
     [k: string]: unknown;
   }[];
@@ -96,7 +97,7 @@ export interface Borrower {
       text: string;
       id?: string;
     }[];
-    projections?: string;
+    isAudited?: 'yes' | 'no';
   };
   underwritingPerformance: {
     performanceDocument?: string | Media;

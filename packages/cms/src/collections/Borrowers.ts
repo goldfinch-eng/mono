@@ -5,6 +5,7 @@ import { isValidURL } from "../lib/validation";
 import TeamMember from "../blocks/TeamMember";
 import Document from "../blocks/Document";
 import { revalidateBorrower } from "../hooks/borrowers";
+import { generateBinarySelect } from "../lib/binary-select";
 
 const Borrowers: CollectionConfig = {
   slug: "borrowers",
@@ -117,10 +118,7 @@ const Borrowers: CollectionConfig = {
             },
           ],
         },
-        {
-          name: "projections",
-          type: "textarea",
-        },
+        generateBinarySelect("isAudited"),
       ],
     },
     {
