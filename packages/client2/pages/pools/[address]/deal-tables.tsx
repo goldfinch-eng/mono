@@ -60,6 +60,9 @@ export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
       text
     }
     isAudited
+    financialStatementSummary {
+      url
+    }
   }
 `;
 
@@ -303,6 +306,21 @@ export function BorrowerFinancialsTable({
       "Is audited?",
       null,
       borrowerFinancials.isAudited === "yes" ? "Yes" : "No",
+    ]);
+  }
+  if (borrowerFinancials?.financialStatementSummary?.url) {
+    rows.push([
+      "Financial statement summary",
+      null,
+      <Link
+        key="financial summary"
+        href={borrowerFinancials.financialStatementSummary.url as string}
+        target="_blank"
+        rel="noreferrer"
+        iconRight="ArrowTopRight"
+      >
+        Link
+      </Link>,
     ]);
   }
   if (rows.length === 0) {

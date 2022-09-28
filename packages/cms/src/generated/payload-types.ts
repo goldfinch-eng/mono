@@ -98,6 +98,7 @@ export interface Borrower {
       id?: string;
     }[];
     isAudited?: 'yes' | 'no';
+    financialStatementSummary?: string | Media;
   };
   underwritingPerformance: {
     performanceDocument?: string | Media;

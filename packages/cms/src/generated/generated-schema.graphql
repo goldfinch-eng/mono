@@ -1037,6 +1037,7 @@ type Borrower_BorrowerFinancials {
   pastOffChainDeals: [Borrower_BorrowerFinancials_Off_chaindebtproviders!]
   otherProducts: [Borrower_BorrowerFinancials_Otherproductsoffered!]
   isAudited: Borrower_BorrowerFinancials_isAudited
+  financialStatementSummary(where: Borrower_BorrowerFinancials_FinancialStatementSummary_where): Media
 }
 
 type Borrower_BorrowerFinancials_Off_chaindebtproviders {
@@ -1052,6 +1053,400 @@ type Borrower_BorrowerFinancials_Otherproductsoffered {
 enum Borrower_BorrowerFinancials_isAudited {
   yes
   no
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_where {
+  alt: Borrower_BorrowerFinancials_FinancialStatementSummary_alt_operator
+  url: Borrower_BorrowerFinancials_FinancialStatementSummary_url_operator
+  filename: Borrower_BorrowerFinancials_FinancialStatementSummary_filename_operator
+  mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_mimeType_operator
+  filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_filesize_operator
+  width: Borrower_BorrowerFinancials_FinancialStatementSummary_width_operator
+  height: Borrower_BorrowerFinancials_FinancialStatementSummary_height_operator
+  sizes__thumbnail__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filename_operator
+  sizes__medium__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__url_operator
+  sizes__medium__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__width_operator
+  sizes__medium__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__height_operator
+  sizes__medium__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__mimeType_operator
+  sizes__medium__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filesize_operator
+  sizes__medium__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filename_operator
+  sizes__large__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__url_operator
+  sizes__large__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__width_operator
+  sizes__large__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__height_operator
+  sizes__large__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__mimeType_operator
+  sizes__large__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filesize_operator
+  sizes__large__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filename_operator
+  sizes__portrait__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__url_operator
+  sizes__portrait__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__width_operator
+  sizes__portrait__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__height_operator
+  sizes__portrait__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filesize_operator
+  sizes__portrait__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filename_operator
+  id: Borrower_BorrowerFinancials_FinancialStatementSummary_id_operator
+  OR: [Borrower_BorrowerFinancials_FinancialStatementSummary_where_or]
+  AND: [Borrower_BorrowerFinancials_FinancialStatementSummary_where_and]
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_alt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__url_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__width_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__height_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__mimeType_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filesize_operator {
+  equals: Float
+  not_equals: Float
+  greater_than_equal: Float
+  greater_than: Float
+  less_than_equal: Float
+  less_than: Float
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filename_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_id_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_where_or {
+  alt: Borrower_BorrowerFinancials_FinancialStatementSummary_alt_operator
+  url: Borrower_BorrowerFinancials_FinancialStatementSummary_url_operator
+  filename: Borrower_BorrowerFinancials_FinancialStatementSummary_filename_operator
+  mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_mimeType_operator
+  filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_filesize_operator
+  width: Borrower_BorrowerFinancials_FinancialStatementSummary_width_operator
+  height: Borrower_BorrowerFinancials_FinancialStatementSummary_height_operator
+  sizes__thumbnail__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filename_operator
+  sizes__medium__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__url_operator
+  sizes__medium__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__width_operator
+  sizes__medium__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__height_operator
+  sizes__medium__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__mimeType_operator
+  sizes__medium__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filesize_operator
+  sizes__medium__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filename_operator
+  sizes__large__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__url_operator
+  sizes__large__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__width_operator
+  sizes__large__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__height_operator
+  sizes__large__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__mimeType_operator
+  sizes__large__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filesize_operator
+  sizes__large__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filename_operator
+  sizes__portrait__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__url_operator
+  sizes__portrait__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__width_operator
+  sizes__portrait__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__height_operator
+  sizes__portrait__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filesize_operator
+  sizes__portrait__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filename_operator
+  id: Borrower_BorrowerFinancials_FinancialStatementSummary_id_operator
+}
+
+input Borrower_BorrowerFinancials_FinancialStatementSummary_where_and {
+  alt: Borrower_BorrowerFinancials_FinancialStatementSummary_alt_operator
+  url: Borrower_BorrowerFinancials_FinancialStatementSummary_url_operator
+  filename: Borrower_BorrowerFinancials_FinancialStatementSummary_filename_operator
+  mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_mimeType_operator
+  filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_filesize_operator
+  width: Borrower_BorrowerFinancials_FinancialStatementSummary_width_operator
+  height: Borrower_BorrowerFinancials_FinancialStatementSummary_height_operator
+  sizes__thumbnail__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__url_operator
+  sizes__thumbnail__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__width_operator
+  sizes__thumbnail__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__height_operator
+  sizes__thumbnail__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__mimeType_operator
+  sizes__thumbnail__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filesize_operator
+  sizes__thumbnail__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__thumbnail__filename_operator
+  sizes__medium__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__url_operator
+  sizes__medium__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__width_operator
+  sizes__medium__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__height_operator
+  sizes__medium__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__mimeType_operator
+  sizes__medium__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filesize_operator
+  sizes__medium__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__medium__filename_operator
+  sizes__large__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__url_operator
+  sizes__large__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__width_operator
+  sizes__large__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__height_operator
+  sizes__large__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__mimeType_operator
+  sizes__large__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filesize_operator
+  sizes__large__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__large__filename_operator
+  sizes__portrait__url: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__url_operator
+  sizes__portrait__width: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__width_operator
+  sizes__portrait__height: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__height_operator
+  sizes__portrait__mimeType: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__mimeType_operator
+  sizes__portrait__filesize: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filesize_operator
+  sizes__portrait__filename: Borrower_BorrowerFinancials_FinancialStatementSummary_sizes__portrait__filename_operator
+  id: Borrower_BorrowerFinancials_FinancialStatementSummary_id_operator
 }
 
 type Borrower_UnderwritingandPerformance {
@@ -2333,6 +2728,7 @@ input Borrower_where {
   borrowerFinancials__otherProducts__text: Borrower_borrowerFinancials__otherProducts__text_operator
   borrowerFinancials__otherProducts__id: Borrower_borrowerFinancials__otherProducts__id_operator
   borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
+  borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
   underwritingPerformance__underwritingDescription: Borrower_underwritingPerformance__underwritingDescription_operator
   underwritingPerformance__defaultRate: Borrower_underwritingPerformance__defaultRate_operator
@@ -2476,6 +2872,12 @@ enum Borrower_borrowerFinancials__isAudited_Input {
   no
 }
 
+input Borrower_borrowerFinancials__financialStatementSummary_operator {
+  equals: String
+  not_equals: String
+  exists: Boolean
+}
+
 input Borrower_underwritingPerformance__performanceDocument_operator {
   equals: String
   not_equals: String
@@ -2594,6 +2996,7 @@ input Borrower_where_or {
   borrowerFinancials__otherProducts__text: Borrower_borrowerFinancials__otherProducts__text_operator
   borrowerFinancials__otherProducts__id: Borrower_borrowerFinancials__otherProducts__id_operator
   borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
+  borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
   underwritingPerformance__underwritingDescription: Borrower_underwritingPerformance__underwritingDescription_operator
   underwritingPerformance__defaultRate: Borrower_underwritingPerformance__defaultRate_operator
@@ -2624,6 +3027,7 @@ input Borrower_where_and {
   borrowerFinancials__otherProducts__text: Borrower_borrowerFinancials__otherProducts__text_operator
   borrowerFinancials__otherProducts__id: Borrower_borrowerFinancials__otherProducts__id_operator
   borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
+  borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
   underwritingPerformance__underwritingDescription: Borrower_underwritingPerformance__underwritingDescription_operator
   underwritingPerformance__defaultRate: Borrower_underwritingPerformance__defaultRate_operator
@@ -4091,6 +4495,7 @@ type BorrowerFields_borrowerFinancials_Fields {
   pastOffChainDeals: BorrowerFields_borrowerFinancials_pastOffChainDeals
   otherProducts: BorrowerFields_borrowerFinancials_otherProducts
   isAudited: BorrowerFields_borrowerFinancials_isAudited
+  financialStatementSummary: BorrowerFields_borrowerFinancials_financialStatementSummary
 }
 
 type BorrowerFields_borrowerFinancials_totalLoansOriginated {
@@ -4332,6 +4737,29 @@ type BorrowerFields_borrowerFinancials_isAudited_Update {
 }
 
 type BorrowerFields_borrowerFinancials_isAudited_Delete {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_financialStatementSummary {
+  create: BorrowerFields_borrowerFinancials_financialStatementSummary_Create
+  read: BorrowerFields_borrowerFinancials_financialStatementSummary_Read
+  update: BorrowerFields_borrowerFinancials_financialStatementSummary_Update
+  delete: BorrowerFields_borrowerFinancials_financialStatementSummary_Delete
+}
+
+type BorrowerFields_borrowerFinancials_financialStatementSummary_Create {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_financialStatementSummary_Read {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_financialStatementSummary_Update {
+  permission: Boolean!
+}
+
+type BorrowerFields_borrowerFinancials_financialStatementSummary_Delete {
   permission: Boolean!
 }
 
@@ -5336,6 +5764,7 @@ input mutationBorrower_BorrowerFinancialsInput {
   pastOffChainDeals: [mutationBorrower_BorrowerFinancials_Off_chaindebtprovidersInput]
   otherProducts: [mutationBorrower_BorrowerFinancials_OtherproductsofferedInput]
   isAudited: Borrower_BorrowerFinancials_isAudited_MutationInput
+  financialStatementSummary: String
 }
 
 input mutationBorrower_BorrowerFinancials_Off_chaindebtprovidersInput {
@@ -5394,6 +5823,7 @@ input mutationBorrowerUpdate_BorrowerFinancialsInput {
   pastOffChainDeals: [mutationBorrowerUpdate_BorrowerFinancials_Off_chaindebtprovidersInput]
   otherProducts: [mutationBorrowerUpdate_BorrowerFinancials_OtherproductsofferedInput]
   isAudited: BorrowerUpdate_BorrowerFinancials_isAudited_MutationInput
+  financialStatementSummary: String
 }
 
 input mutationBorrowerUpdate_BorrowerFinancials_Off_chaindebtprovidersInput {
