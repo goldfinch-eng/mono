@@ -15,6 +15,7 @@ export const creditLineResolvers: Resolvers[string] = {
       name: "CreditLine",
       address: creditLine.id,
       provider,
+      useSigner: false,
     });
     try {
       return await creditLineContract.isLate();

@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import Image from "next/image";
+import Image from "next/future/image";
 
 import { Chip, Icon } from "@/components/design-system";
 import { BorrowerProfileFieldsFragment } from "@/lib/graphql/generated";
@@ -32,15 +32,13 @@ export function BorrowerProfile({
       <div className="mb-8 items-center justify-between lg:flex">
         <div className="mb-3 flex items-center">
           {logo && (
-            <div className="relative mr-3 h-8 w-8 overflow-hidden rounded-full border border-sand-200">
-              <Image
-                src={logo}
-                alt={name}
-                className="block h-full w-full object-contain object-center"
-                layout="fill"
-                sizes="32px"
-              />
-            </div>
+            <Image
+              src={logo}
+              alt={name}
+              className="mr-3 overflow-hidden rounded-full border border-sand-200"
+              height={32}
+              width={32}
+            />
           )}
 
           <h2 className="text-3xl lg:mb-0">{name}</h2>

@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 import { format } from "date-fns";
-import Image from "next/image";
+import Image from "next/future/image";
 import { useCallback } from "react";
 
 import { Address } from "@/components/address";
@@ -91,14 +91,13 @@ export function TransactionTable() {
         {transaction.category === TransactionCategory.TranchedPoolDrawdown ||
         transaction.category === TransactionCategory.TranchedPoolRepayment ? (
           <>
-            <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full">
-              <Image
-                src={transaction.tranchedPool?.icon as string}
-                layout="fill"
-                sizes="24px"
-                alt=""
-              />
-            </div>
+            <Image
+              src={transaction.tranchedPool?.icon as string}
+              width={24}
+              height={24}
+              className="shrink-0 overflow-hidden rounded-full"
+              alt=""
+            />
             <div>{transaction.tranchedPool?.borrower.name}</div>
           </>
         ) : (
