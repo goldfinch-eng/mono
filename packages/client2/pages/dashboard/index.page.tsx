@@ -95,10 +95,8 @@ gql`
     ) {
       id
       principalAmount
-      principalRedeemable
       principalRedeemed
       interestRedeemable
-      interestRedeemed
       rewardsClaimable
       stakingRewardsClaimable
       tranchedPool {
@@ -683,13 +681,7 @@ function setAll<S extends string, T>(
 function valueOfPoolToken(
   tranchedPoolToken: DashboardPageQuery["tranchedPoolTokens"][number]
 ): BigNumber {
-  const value = tranchedPoolToken.principalAmount
-    .add(tranchedPoolToken.principalRedeemable)
-    .add(tranchedPoolToken.interestRedeemable)
+  return tranchedPoolToken.principalAmount
     .sub(tranchedPoolToken.principalRedeemed)
-    .sub(tranchedPoolToken.interestRedeemed);
-  if (value.isNegative()) {
-    return BigNumber.from(0);
-  }
-  return value;
+    .add(tranchedPoolToken.interestRedeemable);
 }
