@@ -1449,7 +1449,7 @@ input Borrower_UnderwritingandPerformance_Performancedocument_where_and {
 }
 
 type Borrower_Team {
-  description: String
+  description(depth: Int): JSON
   members: [Borrower_Team_Members!]
 }
 
@@ -2480,10 +2480,10 @@ input Borrower_underwritingPerformance__defaultRate_operator {
 }
 
 input Borrower_team__description_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
   exists: Boolean
 }
 
@@ -5307,7 +5307,7 @@ input mutationBorrower_UnderwritingandPerformanceInput {
 }
 
 input mutationBorrower_TeamInput {
-  description: String
+  description: JSON
   members: JSON
 }
 
@@ -5359,7 +5359,7 @@ input mutationBorrowerUpdate_UnderwritingandPerformanceInput {
 }
 
 input mutationBorrowerUpdate_TeamInput {
-  description: String
+  description: JSON
   members: JSON
 }
 

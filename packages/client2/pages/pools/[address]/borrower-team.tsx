@@ -2,6 +2,7 @@ import { gql } from "@apollo/client";
 import Image from "next/image";
 
 import { ChipLink } from "@/components/design-system";
+import { RichText } from "@/components/rich-text";
 import { CmsTeamMemberFieldsFragment } from "@/lib/graphql/generated";
 
 export const CMS_TEAM_MEMBER_FIELDS = gql`
@@ -22,7 +23,7 @@ export const CMS_TEAM_MEMBER_FIELDS = gql`
 `;
 
 interface BorrowerTeamProps {
-  description?: string | null;
+  description?: never | null;
   members?: CmsTeamMemberFieldsFragment[] | null;
 }
 
@@ -30,7 +31,7 @@ export function BorrowerTeam({ description, members }: BorrowerTeamProps) {
   return (
     <div>
       <h3 className="mb-8 text-lg font-semibold">Team</h3>
-      {description ? <p className="mb-8">{description}</p> : null}
+      {description ? <RichText className="mb-8" content={description} /> : null}
 
       {members && members.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

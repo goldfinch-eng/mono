@@ -104,7 +104,9 @@ export interface Borrower {
     defaultRate?: number;
   };
   team: {
-    description?: string;
+    description?: {
+      [k: string]: unknown;
+    }[];
     members: {
       name: string;
       position?: string;

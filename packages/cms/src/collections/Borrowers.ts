@@ -148,7 +148,11 @@ const Borrowers: CollectionConfig = {
       fields: [
         {
           name: "description",
-          type: "textarea",
+          type: "richText",
+          admin: {
+            elements: ["link", "ol", "ul"],
+            leaves: ["bold", "italic", "underline"],
+          },
         },
         {
           name: "members",
