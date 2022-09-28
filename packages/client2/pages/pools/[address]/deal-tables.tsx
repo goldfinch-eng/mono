@@ -56,7 +56,7 @@ export const BORROWER_FINANCIALS_TABLE_FIELDS = gql`
     pastOffChainDeals {
       text
     }
-    isAudited
+    audited
     financialStatementSummary {
       url
     }
@@ -295,11 +295,11 @@ export function BorrowerFinancialsTable({
       </ul>,
     ]);
   }
-  if (borrowerFinancials?.isAudited) {
+  if (borrowerFinancials?.audited) {
     rows.push([
-      "Is audited?",
+      "Audited",
       null,
-      borrowerFinancials.isAudited === "yes" ? "Yes" : "No",
+      borrowerFinancials.audited === "yes" ? "Yes" : "No",
     ]);
   }
   if (borrowerFinancials?.financialStatementSummary?.url) {

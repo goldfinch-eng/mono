@@ -93,7 +93,7 @@ export interface Borrower {
       text: string;
       id?: string;
     }[];
-    isAudited?: 'yes' | 'no';
+    audited?: 'yes' | 'no';
     financialStatementSummary?: string | Media;
   };
   otherProducts?: {

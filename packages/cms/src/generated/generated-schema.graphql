@@ -1036,7 +1036,7 @@ type Borrower_BorrowerFinancials {
   currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [Borrower_BorrowerFinancials_Off_chaindebtproviders!]
-  isAudited: Borrower_BorrowerFinancials_isAudited
+  audited: Borrower_BorrowerFinancials_audited
   financialStatementSummary(where: Borrower_BorrowerFinancials_FinancialStatementSummary_where): Media
 }
 
@@ -1045,7 +1045,7 @@ type Borrower_BorrowerFinancials_Off_chaindebtproviders {
   id: String
 }
 
-enum Borrower_BorrowerFinancials_isAudited {
+enum Borrower_BorrowerFinancials_audited {
   yes
   no
 }
@@ -2730,7 +2730,7 @@ input Borrower_where {
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
-  borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
+  borrowerFinancials__audited: Borrower_borrowerFinancials__audited_operator
   borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
   otherProducts: Borrower_otherProducts_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
@@ -2847,16 +2847,16 @@ input Borrower_borrowerFinancials__pastOffChainDeals__id_operator {
   exists: Boolean
 }
 
-input Borrower_borrowerFinancials__isAudited_operator {
-  equals: Borrower_borrowerFinancials__isAudited_Input
-  not_equals: Borrower_borrowerFinancials__isAudited_Input
-  in: [Borrower_borrowerFinancials__isAudited_Input]
-  not_in: [Borrower_borrowerFinancials__isAudited_Input]
-  all: [Borrower_borrowerFinancials__isAudited_Input]
+input Borrower_borrowerFinancials__audited_operator {
+  equals: Borrower_borrowerFinancials__audited_Input
+  not_equals: Borrower_borrowerFinancials__audited_Input
+  in: [Borrower_borrowerFinancials__audited_Input]
+  not_in: [Borrower_borrowerFinancials__audited_Input]
+  all: [Borrower_borrowerFinancials__audited_Input]
   exists: Boolean
 }
 
-enum Borrower_borrowerFinancials__isAudited_Input {
+enum Borrower_borrowerFinancials__audited_Input {
   yes
   no
 }
@@ -2990,7 +2990,7 @@ input Borrower_where_or {
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
-  borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
+  borrowerFinancials__audited: Borrower_borrowerFinancials__audited_operator
   borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
   otherProducts: Borrower_otherProducts_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
@@ -3020,7 +3020,7 @@ input Borrower_where_and {
   borrowerFinancials__aum: Borrower_borrowerFinancials__aum_operator
   borrowerFinancials__pastOffChainDeals__text: Borrower_borrowerFinancials__pastOffChainDeals__text_operator
   borrowerFinancials__pastOffChainDeals__id: Borrower_borrowerFinancials__pastOffChainDeals__id_operator
-  borrowerFinancials__isAudited: Borrower_borrowerFinancials__isAudited_operator
+  borrowerFinancials__audited: Borrower_borrowerFinancials__audited_operator
   borrowerFinancials__financialStatementSummary: Borrower_borrowerFinancials__financialStatementSummary_operator
   otherProducts: Borrower_otherProducts_operator
   underwritingPerformance__performanceDocument: Borrower_underwritingPerformance__performanceDocument_operator
@@ -4505,7 +4505,7 @@ type BorrowerFields_borrowerFinancials_Fields {
   currentLoansOutstanding: BorrowerFields_borrowerFinancials_currentLoansOutstanding
   aum: BorrowerFields_borrowerFinancials_aum
   pastOffChainDeals: BorrowerFields_borrowerFinancials_pastOffChainDeals
-  isAudited: BorrowerFields_borrowerFinancials_isAudited
+  audited: BorrowerFields_borrowerFinancials_audited
   financialStatementSummary: BorrowerFields_borrowerFinancials_financialStatementSummary
 }
 
@@ -4653,26 +4653,26 @@ type BorrowerFields_borrowerFinancials_pastOffChainDeals_id_Delete {
   permission: Boolean!
 }
 
-type BorrowerFields_borrowerFinancials_isAudited {
-  create: BorrowerFields_borrowerFinancials_isAudited_Create
-  read: BorrowerFields_borrowerFinancials_isAudited_Read
-  update: BorrowerFields_borrowerFinancials_isAudited_Update
-  delete: BorrowerFields_borrowerFinancials_isAudited_Delete
+type BorrowerFields_borrowerFinancials_audited {
+  create: BorrowerFields_borrowerFinancials_audited_Create
+  read: BorrowerFields_borrowerFinancials_audited_Read
+  update: BorrowerFields_borrowerFinancials_audited_Update
+  delete: BorrowerFields_borrowerFinancials_audited_Delete
 }
 
-type BorrowerFields_borrowerFinancials_isAudited_Create {
+type BorrowerFields_borrowerFinancials_audited_Create {
   permission: Boolean!
 }
 
-type BorrowerFields_borrowerFinancials_isAudited_Read {
+type BorrowerFields_borrowerFinancials_audited_Read {
   permission: Boolean!
 }
 
-type BorrowerFields_borrowerFinancials_isAudited_Update {
+type BorrowerFields_borrowerFinancials_audited_Update {
   permission: Boolean!
 }
 
-type BorrowerFields_borrowerFinancials_isAudited_Delete {
+type BorrowerFields_borrowerFinancials_audited_Delete {
   permission: Boolean!
 }
 
@@ -5722,7 +5722,7 @@ input mutationBorrower_BorrowerFinancialsInput {
   currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [mutationBorrower_BorrowerFinancials_Off_chaindebtprovidersInput]
-  isAudited: Borrower_BorrowerFinancials_isAudited_MutationInput
+  audited: Borrower_BorrowerFinancials_audited_MutationInput
   financialStatementSummary: String
 }
 
@@ -5731,7 +5731,7 @@ input mutationBorrower_BorrowerFinancials_Off_chaindebtprovidersInput {
   id: String
 }
 
-enum Borrower_BorrowerFinancials_isAudited_MutationInput {
+enum Borrower_BorrowerFinancials_audited_MutationInput {
   yes
   no
 }
@@ -5776,7 +5776,7 @@ input mutationBorrowerUpdate_BorrowerFinancialsInput {
   currentLoansOutstanding: Float
   aum: Float
   pastOffChainDeals: [mutationBorrowerUpdate_BorrowerFinancials_Off_chaindebtprovidersInput]
-  isAudited: BorrowerUpdate_BorrowerFinancials_isAudited_MutationInput
+  audited: BorrowerUpdate_BorrowerFinancials_audited_MutationInput
   financialStatementSummary: String
 }
 
@@ -5785,7 +5785,7 @@ input mutationBorrowerUpdate_BorrowerFinancials_Off_chaindebtprovidersInput {
   id: String
 }
 
-enum BorrowerUpdate_BorrowerFinancials_isAudited_MutationInput {
+enum BorrowerUpdate_BorrowerFinancials_audited_MutationInput {
   yes
   no
 }

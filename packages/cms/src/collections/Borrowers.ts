@@ -105,7 +105,7 @@ const Borrowers: CollectionConfig = {
             },
           ],
         },
-        generateBinarySelect("isAudited"),
+        generateBinarySelect("audited"),
         {
           name: "financialStatementSummary",
           type: "upload",
