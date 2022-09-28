@@ -275,7 +275,7 @@ export function BorrowerFinancialsTable({
     borrowerFinancials.pastOffChainDeals.length > 0
   ) {
     rows.push([
-      "Past deals off-chain",
+      "Off-chain debt providers",
       null,
       <ul key="borrower-offchain-deals-list">
         {borrowerFinancials.pastOffChainDeals.map((item, idx) => (

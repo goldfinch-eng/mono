@@ -89,7 +89,7 @@ const Borrowers: CollectionConfig = {
         },
         {
           name: "pastOffChainDeals",
-          label: "Past deals off-chain",
+          label: "Off-chain debt providers",
           type: "array",
           minRows: 0,
           fields: [
