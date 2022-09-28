@@ -8,6 +8,7 @@ import {
 } from "../hooks/deals";
 
 import Document from "../blocks/Document";
+import { generateBinarySelect } from "../lib/binary-select";
 
 const Deals: CollectionConfig = {
   slug: "deals",
@@ -94,12 +95,7 @@ const Deals: CollectionConfig = {
       label: "Securities and Recourse",
       type: "group",
       fields: [
-        {
-          name: "secured",
-          type: "checkbox",
-          label: "Secured",
-          defaultValue: false,
-        },
+        generateBinarySelect("secured"),
         {
           name: "type",
           type: "text",
@@ -115,12 +111,7 @@ const Deals: CollectionConfig = {
           type: "number",
           label: "Loan to Value ratio",
         },
-        {
-          name: "recourse",
-          type: "checkbox",
-          label: "Recourse to borrower",
-          defaultValue: false,
-        },
+        generateBinarySelect("recourse", "Recourse to borrower"),
         {
           name: "recourseDescription",
           type: "textarea",

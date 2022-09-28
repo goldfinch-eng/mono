@@ -2682,13 +2682,23 @@ type Deal {
 }
 
 type Deal_SecuritiesandRecourse {
-  secured: Boolean
+  secured: Deal_SecuritiesandRecourse_secured
   type: String
   description: String
   value: Float
-  recourse: Boolean
+  recourse: Deal_SecuritiesandRecourse_recourse
   recourseDescription: String
   covenants: String
+}
+
+enum Deal_SecuritiesandRecourse_secured {
+  yes
+  no
+}
+
+enum Deal_SecuritiesandRecourse_recourse {
+  yes
+  no
 }
 
 union Deal_Documents = Document
@@ -3128,9 +3138,17 @@ input Deal_agreement_operator {
 }
 
 input Deal_securitiesAndRecourse__secured_operator {
-  equals: Boolean
-  not_equals: Boolean
+  equals: Deal_securitiesAndRecourse__secured_Input
+  not_equals: Deal_securitiesAndRecourse__secured_Input
+  in: [Deal_securitiesAndRecourse__secured_Input]
+  not_in: [Deal_securitiesAndRecourse__secured_Input]
+  all: [Deal_securitiesAndRecourse__secured_Input]
   exists: Boolean
+}
+
+enum Deal_securitiesAndRecourse__secured_Input {
+  yes
+  no
 }
 
 input Deal_securitiesAndRecourse__type_operator {
@@ -3160,9 +3178,17 @@ input Deal_securitiesAndRecourse__value_operator {
 }
 
 input Deal_securitiesAndRecourse__recourse_operator {
-  equals: Boolean
-  not_equals: Boolean
+  equals: Deal_securitiesAndRecourse__recourse_Input
+  not_equals: Deal_securitiesAndRecourse__recourse_Input
+  in: [Deal_securitiesAndRecourse__recourse_Input]
+  not_in: [Deal_securitiesAndRecourse__recourse_Input]
+  all: [Deal_securitiesAndRecourse__recourse_Input]
   exists: Boolean
+}
+
+enum Deal_securitiesAndRecourse__recourse_Input {
+  yes
+  no
 }
 
 input Deal_securitiesAndRecourse__recourseDescription_operator {
@@ -5795,13 +5821,23 @@ input mutationDealInput {
 }
 
 input mutationDeal_SecuritiesandRecourseInput {
-  secured: Boolean
+  secured: Deal_SecuritiesandRecourse_secured_MutationInput
   type: String
   description: String
   value: Float
-  recourse: Boolean
+  recourse: Deal_SecuritiesandRecourse_recourse_MutationInput
   recourseDescription: String
   covenants: String
+}
+
+enum Deal_SecuritiesandRecourse_secured_MutationInput {
+  yes
+  no
+}
+
+enum Deal_SecuritiesandRecourse_recourse_MutationInput {
+  yes
+  no
 }
 
 input mutationDealUpdateInput {
@@ -5817,11 +5853,21 @@ input mutationDealUpdateInput {
 }
 
 input mutationDealUpdate_SecuritiesandRecourseInput {
-  secured: Boolean
+  secured: DealUpdate_SecuritiesandRecourse_secured_MutationInput
   type: String
   description: String
   value: Float
-  recourse: Boolean
+  recourse: DealUpdate_SecuritiesandRecourse_recourse_MutationInput
   recourseDescription: String
   covenants: String
+}
+
+enum DealUpdate_SecuritiesandRecourse_secured_MutationInput {
+  yes
+  no
+}
+
+enum DealUpdate_SecuritiesandRecourse_recourse_MutationInput {
+  yes
+  no
 }

@@ -189,7 +189,9 @@ export function SecuritiesRecourseTable({
   details,
 }: SecuritiesRecourseTableProps) {
   const rows: TableRow[] = [];
-  rows.push(["Secured", null, details?.secured ? "Yes" : "No"]);
+  if (details?.secured) {
+    rows.push(["Secured", null, details.secured === "yes" ? "Yes" : "No"]);
+  }
   if (details?.type) {
     rows.push(["Type of security", null, details.type]);
   }
@@ -199,12 +201,21 @@ export function SecuritiesRecourseTable({
   if (details?.value) {
     rows.push(["Security value", null, details.value.toString()]);
   }
-  rows.push(["Recourse to Borrower", null, details?.recourse ? "Yes" : "No"]);
+  if (details?.recourse) {
+    rows.push([
+      "Recourse to borrower",
+      null,
+      details.recourse === "yes" ? "Yes" : "No",
+    ]);
+  }
   if (details?.recourseDescription) {
     rows.push(["Recourse description", null, details.recourseDescription]);
   }
   if (details?.covenants) {
     rows.push(["Covenants", null, details.covenants]);
+  }
+  if (rows.length === 0) {
+    return null;
   }
   return (
     <div>

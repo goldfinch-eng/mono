@@ -156,11 +156,11 @@ export interface Deal {
   }[];
   agreement?: string;
   securitiesAndRecourse: {
-    secured?: boolean;
+    secured?: 'yes' | 'no';
     type?: string;
     description?: string;
     value?: number;
-    recourse?: boolean;
+    recourse?: 'yes' | 'no';
     recourseDescription?: string;
     covenants?: string;
   };
