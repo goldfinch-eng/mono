@@ -169,6 +169,9 @@ const singleDealQuery = gql`
         ...SecuritiesRecourseTableFields
       }
       defaultInterestRate
+      transactionStructure {
+        url
+      }
       documents {
         ...DocumentFields
       }

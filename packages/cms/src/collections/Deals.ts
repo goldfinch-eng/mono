@@ -82,6 +82,7 @@ const Deals: CollectionConfig = {
         leaves: ["bold", "italic", "underline"],
       },
     },
+    { name: "transactionStructure", type: "upload", relationTo: "media" },
     {
       name: "agreement",
       type: "text",

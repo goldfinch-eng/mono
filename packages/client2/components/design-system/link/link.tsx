@@ -20,6 +20,7 @@ interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   nextLinkProps?: NextLinkProps;
   className?: string;
   iconRight?: IconNameType;
+  openInNewTab?: boolean;
 }
 
 export function Link({
@@ -28,6 +29,7 @@ export function Link({
   nextLinkProps,
   className,
   iconRight,
+  openInNewTab = false,
   ...rest
 }: LinkProps) {
   return (
@@ -37,6 +39,8 @@ export function Link({
           "inline-flex items-center gap-1 underline hover:no-underline",
           className
         )}
+        target={openInNewTab ? "_blank" : undefined}
+        rel={openInNewTab ? "noreferrer noopener" : undefined}
         {...rest}
       >
         {children}
