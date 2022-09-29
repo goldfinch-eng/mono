@@ -26,11 +26,11 @@ type DollarInputProps = ComponentProps<typeof Input> &
   UseControllerProps<any> & {
     unit?: Unit;
     /**
-     * A BigNumber (or a promise that resolves to a BigNumber) that serves as the value used when the max button is clicked. Note that this is subject to the `unit` prop.
+     * A BigNumber (or a promise that resolves to a BigNumber) that serves as the value used when the max button is clicked. Note that this is subject to the `unit` prop, and more importantly, this doesn't provide validation. Form validation is still handled through typical React Hook Form functions.
      */
     maxValue?: BigNumber | (() => Promise<BigNumber>);
     /**
-     * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`
+     * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
      */
     onMaxClick?: (n?: BigNumber) => void;
   };
