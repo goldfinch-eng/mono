@@ -12,6 +12,7 @@ import ArrowUp from "./svg/arrow-up.svg";
 import CheckmarkCircle from "./svg/checkmark-circle-solid.svg";
 import Checkmark from "./svg/checkmark.svg";
 import ChevronDown from "./svg/chevron-down.svg";
+import Clock from "./svg/clock.svg";
 import Copy from "./svg/copy.svg";
 import Discord from "./svg/discord.svg";
 import DotsHorizontal from "./svg/dots-horizontal.svg";
@@ -37,6 +38,7 @@ export const iconManifest = {
   Checkmark,
   CheckmarkCircle,
   ChevronDown,
+  Clock,
   Copy,
   Curve,
   Discord,
