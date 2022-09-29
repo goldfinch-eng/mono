@@ -26,7 +26,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
     /**
      * Determines the coloration of the button, independent from variant
      */
-    colorScheme?: "primary" | "secondary" | "sky";
+    colorScheme?: "primary" | "secondary" | "sky" | "mustard" | "mint";
     disabled?: boolean;
     iconLeft?: IconProps["name"];
     iconRight?: IconProps["name"];
@@ -101,6 +101,10 @@ export const Button = forwardRef<
           ? "bg-sand-100 text-sand-700 hover:bg-sand-200 hover:text-sand-900 active:bg-sand-300 active:text-sand-900"
           : colorScheme === "sky"
           ? "bg-sky-800 text-white hover:bg-sky-900 active:bg-sky-900"
+          : colorScheme === "mustard"
+          ? "bg-mustard-400 text-sand-700 hover:bg-mustard-500 hover:text-sand-900 active:bg-mustard-600 active:text-sand-900"
+          : colorScheme === "mint"
+          ? "bg-mint-500 text-white hover:bg-mint-600 active:bg-mint-700"
           : null,
         className
       )}
