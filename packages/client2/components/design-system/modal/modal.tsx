@@ -49,7 +49,6 @@ export function Modal({
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog
-        open={isOpen}
         onClose={onClose}
         className="fixed inset-0 z-10 flex items-center justify-center"
       >

@@ -46,11 +46,7 @@ export function Drawer({
 }: DrawerProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
-      <Dialog
-        open={isOpen}
-        onClose={onClose}
-        className="fixed inset-0 z-10 h-full w-full"
-      >
+      <Dialog onClose={onClose} className="fixed inset-0 z-10 h-full w-full">
         <Transition.Child
           as={Fragment}
           enter="transition-opacity duration-150"
