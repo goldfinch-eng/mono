@@ -5,6 +5,7 @@ import { ReactNode, Fragment } from "react";
 import { Icon } from "../icon";
 
 export interface ModalProps {
+  className?: string;
   /**
    * Controls whether or not the modal is currently open. Do not conditionally render the <Modal> component, otherwise the closing animation can't work.
    */
@@ -36,6 +37,7 @@ export interface ModalProps {
 }
 
 export function Modal({
+  className,
   isOpen,
   onClose,
   children,
@@ -73,7 +75,8 @@ export function Modal({
         >
           <div
             className={clsx(
-              "relative mx-2 my-4 w-full rounded-xl border border-sand-100 bg-white py-6 shadow-2xl",
+              className,
+              "relative mx-2 my-4 w-full rounded-xl bg-white py-6 shadow-2xl",
               size === "xs"
                 ? "max-w-screen-xs"
                 : size === "sm"
