@@ -18,6 +18,7 @@ import DotsHorizontal from "./svg/dots-horizontal.svg";
 import Exclamation from "./svg/exclamation.svg";
 import Gfi from "./svg/gfi.svg";
 import InfoCircle from "./svg/info-circle-solid.svg";
+import LightningBolt from "./svg/lightning-bolt.svg";
 import Link from "./svg/link.svg";
 import LinkedIn from "./svg/linkedin.svg";
 import Menu from "./svg/menu.svg";
@@ -43,6 +44,7 @@ export const iconManifest = {
   Exclamation,
   Gfi,
   InfoCircle,
+  LightningBolt,
   Link,
   LinkedIn,
   Menu,
