@@ -59,7 +59,7 @@ export function SeniorPoolWithDrawalPanel({
   const { provider } = useWallet();
 
   const rhfMethods = useForm<FormFields>();
-  const { control, setValue } = rhfMethods;
+  const { control } = rhfMethods;
 
   const onSubmit = async (data: FormFields) => {
     if (!provider) {
@@ -165,16 +165,6 @@ export function SeniorPoolWithDrawalPanel({
     }
   };
 
-  const handleMax = () => {
-    setValue(
-      "amount",
-      formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: maxWithdrawableUsdc },
-        { includeSymbol: false }
-      )
-    );
-  };
-
   const validateAmount = async (value: string) => {
     const valueAsUsdc = utils.parseUnits(value, USDC_DECIMALS);
     if (valueAsUsdc.lte(BigNumber.from(0))) {
@@ -228,7 +218,7 @@ export function SeniorPoolWithDrawalPanel({
             colorScheme="dark"
             rules={{ required: "Required", validate: validateAmount }}
             labelClassName="!mb-3 text-sm"
-            onMaxClick={handleMax}
+            maxValue={maxWithdrawableUsdc}
           />
         </div>
         <div className="mb-3 text-sm">

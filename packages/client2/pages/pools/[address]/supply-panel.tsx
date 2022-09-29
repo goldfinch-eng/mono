@@ -113,24 +113,7 @@ export default function SupplyPanel({
   const rhfMethods = useForm<SupplyForm>({
     defaultValues: { source: "wallet" },
   });
-  const { control, watch, register, setValue } = rhfMethods;
-
-  const handleMax = async () => {
-    if (!account) {
-      return;
-    }
-    const userUsdcBalance = availableBalance;
-    const maxAvailable = userUsdcBalance.lt(remainingJuniorCapacity)
-      ? userUsdcBalance
-      : remainingJuniorCapacity;
-    setValue(
-      "supply",
-      formatCrypto(
-        { token: SupportedCrypto.Usdc, amount: maxAvailable },
-        { includeSymbol: false }
-      )
-    );
-  };
+  const { control, watch, register } = rhfMethods;
 
   const validateMaximumAmount = async (value: string) => {
     if (!account) {
@@ -442,7 +425,11 @@ export default function SupplyPanel({
             rules={{ required: "Required", validate: validateMaximumAmount }}
             colorScheme="dark"
             textSize="xl"
-            onMaxClick={handleMax}
+            maxValue={
+              availableBalance.lt(remainingJuniorCapacity)
+                ? availableBalance
+                : remainingJuniorCapacity
+            }
             className="mb-4"
             labelClassName="!text-sm !mb-3"
           />
