@@ -401,7 +401,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         <div className="relative" style={{ gridArea: "widgets" }}>
           {tranchedPool && seniorPool && fiatPerGfi ? (
             <div className="flex flex-col items-stretch gap-8">
-              {poolStatus === PoolStatus.Open && (
+              {poolStatus === PoolStatus.Open ? (
                 <SupplyPanel
                   tranchedPool={tranchedPool}
                   user={user}
@@ -412,7 +412,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                   seniorPoolSharePrice={seniorPool.latestPoolStatus.sharePrice}
                   agreement={dealDetails.agreement}
                 />
-              )}
+              ) : null}
 
               {data.user && hasBacked ? (
                 <WithdrawalPanel
@@ -438,17 +438,17 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
                 />
               ) : null}
 
-              {poolStatus === PoolStatus.ComingSoon && (
+              {poolStatus === PoolStatus.ComingSoon ? (
                 <ComingSoonPanel fundableAt={tranchedPool?.fundableAt} />
-              )}
+              ) : null}
 
-              {tranchedPool && poolStatus && (
+              {tranchedPool && poolStatus ? (
                 <SecondaryMarketPanel
                   hasBacked={hasBacked}
                   poolStatus={poolStatus}
                   poolAddress={tranchedPool.id}
                 />
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>
