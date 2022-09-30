@@ -78,7 +78,7 @@ export function SeniorPoolSupplyPanel({
   const rhfMethods = useForm<FormFields>({
     defaultValues: { isStaking: true },
   });
-  const { control, register, watch, setValue } = rhfMethods;
+  const { control, register, watch } = rhfMethods;
   const supplyValue = watch("supply");
   const { account, provider } = useWallet();
   const apolloClient = useApolloClient();
@@ -201,15 +201,6 @@ export function SeniorPoolSupplyPanel({
         ],
         user
       );
-
-  const handleMax = async () => {
-    if (!account || !provider) {
-      return;
-    }
-    const usdcContract = await getContract({ name: "USDC", provider });
-    const userUsdcBalance = await usdcContract.balanceOf(account);
-    setValue("supply", utils.formatUnits(userUsdcBalance, USDC_DECIMALS));
-  };
 
   const validateMaximumAmount = async (value: string) => {
     if (!account || !provider) {
@@ -360,7 +351,19 @@ export function SeniorPoolSupplyPanel({
                 <span className="text-xs">Balance: {availableBalance}</span>
               }
               className="mb-4"
-              onMaxClick={handleMax}
+              maxValue={async () => {
+                if (!account || !provider) {
+                  throw new Error(
+                    "Wallet not connected when trying to compute max"
+                  );
+                }
+                const usdcContract = await getContract({
+                  name: "USDC",
+                  provider,
+                });
+                const userUsdcBalance = await usdcContract.balanceOf(account);
+                return userUsdcBalance;
+              }}
               rules={{ required: "Required", validate: validateMaximumAmount }}
             />
             <Checkbox

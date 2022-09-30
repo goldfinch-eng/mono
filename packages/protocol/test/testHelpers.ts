@@ -137,12 +137,12 @@ const tolerance = usdcVal(1).div(new BN(1000)) // 0.001$
 
 type Expectation<T> =
   | {by: Numberish}
-  | {byCloseTo: Numberish}
+  | {byCloseTo: Numberish; threshold?: Numberish}
+  | {toCloseTo: Numberish; threshold?: Numberish}
   | {fn: (originalValue: T, newValue: T) => any}
   | {increase: boolean}
   | {decrease: boolean}
   | {to: T; bignumber?: boolean}
-  | {toCloseTo: Numberish}
   | {unchanged: boolean}
   | {beDifferent: boolean}
 
@@ -166,41 +166,49 @@ function expectAction(action: () => any, debug?: boolean) {
         console.log("New:     ", String(newValues))
       }
       expectations.forEach((expectation, i) => {
-        try {
-          if ("by" in expectation) {
-            expect(newValues[i].sub(originalValues[i])).to.bignumber.equal(expectation.by)
-          } else if ("byCloseTo" in expectation) {
-            const onePercent = new BN(expectation.byCloseTo).div(new BN(100)).abs()
-            expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(new BN(expectation.byCloseTo), onePercent)
-          } else if ("fn" in expectation) {
-            expectation.fn(originalValues[i], newValues[i])
-          } else if ("increase" in expectation) {
-            expect(newValues[i]).to.bignumber.gt(originalValues[i])
-          } else if ("decrease" in expectation) {
-            expect(newValues[i]).to.bignumber.lt(originalValues[i])
-          } else if ("to" in expectation) {
-            if (expectation.bignumber === false) {
-              // It was not originally the number we expected, but then was changed to it
-              expect(originalValues[i]).to.not.eq(expectation.to)
-              expect(newValues[i]).to.eq(expectation.to)
-            } else {
-              // It was not originally the number we expected, but then was changed to it
-              expect(originalValues[i]).to.not.bignumber.eq(expectation.to)
-              expect(newValues[i]).to.bignumber.eq(expectation.to)
-            }
-          } else if ("toCloseTo" in expectation) {
+        const errorMsg = `expectation ${i} failed`
+        if ("by" in expectation) {
+          expect(newValues[i].sub(originalValues[i])).to.bignumber.equal(expectation.by, errorMsg)
+        } else if ("byCloseTo" in expectation) {
+          const onePercent = new BN(expectation.byCloseTo).div(new BN(100)).abs()
+          const threshold = expectation.threshold ? new BN(expectation.threshold) : onePercent
+          expect(newValues[i].sub(originalValues[i])).to.bignumber.closeTo(
+            new BN(expectation.byCloseTo),
+            threshold,
+            `${errorMsg} - '${newValues[i].sub(originalValues[i])}' not within '${threshold}' of '${new BN(
+              expectation.byCloseTo
+            )}'`
+          )
+        } else if ("fn" in expectation) {
+          expectation.fn(originalValues[i], newValues[i])
+        } else if ("increase" in expectation) {
+          expect(newValues[i]).to.bignumber.gt(originalValues[i], errorMsg)
+        } else if ("decrease" in expectation) {
+          expect(newValues[i]).to.bignumber.lt(originalValues[i], errorMsg)
+        } else if ("to" in expectation) {
+          if (expectation.bignumber === false) {
             // It was not originally the number we expected, but then was changed to it
-            const onePercent = new BN(expectation.toCloseTo).div(new BN(100)).abs()
-            expect(originalValues[i]).to.not.bignumber.eq(new BN(expectation.toCloseTo))
-            expect(newValues[i]).to.bignumber.closeTo(new BN(expectation.toCloseTo), onePercent)
-          } else if ("unchanged" in expectation) {
-            expect(newValues[i]).to.bignumber.eq(originalValues[i])
-          } else if ("beDifferent" in expectation) {
-            expect(String(originalValues[i])).to.not.eq(String(newValues[i]))
+            expect(originalValues[i]).to.not.eq(expectation.to, errorMsg)
+            expect(newValues[i]).to.eq(expectation.to, errorMsg)
+          } else {
+            // It was not originally the number we expected, but then was changed to it
+            expect(originalValues[i]).to.not.bignumber.eq(expectation.to, errorMsg)
+            expect(newValues[i]).to.bignumber.eq(expectation.to, errorMsg)
           }
-        } catch (error) {
-          console.log("Expectation", i, "failed")
-          throw error
+        } else if ("toCloseTo" in expectation) {
+          // It was not originally the number we expected, but then was changed to it
+          const onePercent = new BN(expectation.toCloseTo).div(new BN(100)).abs()
+          const threshold = expectation.threshold ? new BN(expectation.threshold) : onePercent
+          expect(originalValues[i]).to.not.bignumber.eq(new BN(expectation.toCloseTo), errorMsg)
+          expect(newValues[i]).to.bignumber.closeTo(
+            new BN(expectation.toCloseTo),
+            threshold,
+            `${errorMsg} - '${newValues[i]}' not within '${threshold}' of '${expectation.toCloseTo}'`
+          )
+        } else if ("unchanged" in expectation) {
+          expect(newValues[i]).to.bignumber.eq(originalValues[i], errorMsg)
+        } else if ("beDifferent" in expectation) {
+          expect(String(originalValues[i])).to.not.eq(String(newValues[i]), errorMsg)
         }
       })
     },
