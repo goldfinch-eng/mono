@@ -32,6 +32,41 @@ interface PoolCardProps {
   poolStatus?: PoolStatus;
 }
 
+function getColorScheme(
+  poolStatus?: PoolStatus
+): "yellow" | "purple" | "blue" | "green" | "white" {
+  switch (poolStatus) {
+    case PoolStatus.Full:
+    case PoolStatus.Closed:
+      return "yellow";
+    case PoolStatus.Open:
+      return "purple";
+    case PoolStatus.ComingSoon:
+      return "blue";
+    case PoolStatus.Repaid:
+      return "green";
+    case PoolStatus.Paused:
+    default:
+      return "white";
+  }
+}
+
+function getChipContent(poolStatus?: PoolStatus): string | null {
+  switch (poolStatus) {
+    case PoolStatus.Full:
+      return "FULL";
+    case PoolStatus.Closed:
+      return "CLOSED";
+    case PoolStatus.Open:
+      return "OPEN";
+    case PoolStatus.ComingSoon:
+      return "COMING SOON";
+    case PoolStatus.Repaid:
+      return "REPAID";
+    default:
+      return null;
+  }
+}
 export function PoolCard({
   title,
   subtitle,
@@ -77,28 +112,8 @@ export function PoolCard({
         </div>
       }
       chipSlot={
-        <Chip
-          colorScheme={
-            poolStatus === PoolStatus.Full
-              ? "yellow"
-              : poolStatus === PoolStatus.Open
-              ? "purple"
-              : poolStatus === PoolStatus.ComingSoon
-              ? "blue"
-              : poolStatus === PoolStatus.Repaid
-              ? "green"
-              : "white"
-          }
-        >
-          {poolStatus === PoolStatus.Full
-            ? "FULL"
-            : poolStatus === PoolStatus.Open
-            ? "OPEN"
-            : poolStatus === PoolStatus.ComingSoon
-            ? "COMING SOON"
-            : poolStatus === PoolStatus.Repaid
-            ? "REPAID"
-            : null}
+        <Chip colorScheme={getColorScheme(poolStatus)}>
+          {getChipContent(poolStatus)}
         </Chip>
       }
     />

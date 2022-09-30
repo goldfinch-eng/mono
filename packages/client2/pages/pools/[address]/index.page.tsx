@@ -147,6 +147,41 @@ gql`
   }
 `;
 
+const getMarqueeColor = (
+  poolStatus: PoolStatus
+): "yellow" | "purple" | "blue" | "green" | undefined => {
+  switch (poolStatus) {
+    case PoolStatus.Closed:
+    case PoolStatus.Full:
+      return "yellow";
+    case PoolStatus.Open:
+      return "purple";
+    case PoolStatus.ComingSoon:
+      return "blue";
+    case PoolStatus.Repaid:
+      return "green";
+    default:
+      return undefined;
+  }
+};
+
+const getMarqueeText = (poolStatus: PoolStatus, numBackers?: number) => {
+  switch (poolStatus) {
+    case PoolStatus.Full:
+      return ["Filled", `${numBackers} Backers`];
+    case PoolStatus.Open:
+      return ["Open", `${numBackers} Backers`];
+    case PoolStatus.ComingSoon:
+      return "Coming Soon";
+    case PoolStatus.Closed:
+      return "Closed";
+    case PoolStatus.Repaid:
+      return "Repaid";
+    default:
+      return "Paused";
+  }
+};
+
 const singleDealQuery = gql`
   ${DOCUMENT_FIELDS}
   ${CMS_TEAM_MEMBER_FIELDS}
@@ -290,30 +325,10 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
         </BannerPortal>
       ) : null}
 
-      {poolStatus && (
+      {poolStatus !== null && poolStatus !== undefined && (
         <SubnavPortal>
-          <Marquee
-            colorScheme={
-              poolStatus === PoolStatus.Full
-                ? "yellow"
-                : poolStatus === PoolStatus.Open
-                ? "purple"
-                : poolStatus === PoolStatus.ComingSoon
-                ? "blue"
-                : poolStatus === PoolStatus.Repaid
-                ? "green"
-                : "yellow"
-            }
-          >
-            {poolStatus === PoolStatus.Full
-              ? ["Filled", `${tranchedPool?.numBackers} Backers`]
-              : poolStatus === PoolStatus.Open
-              ? ["Open", `${tranchedPool?.numBackers} Backers`]
-              : poolStatus === PoolStatus.ComingSoon
-              ? "Coming Soon"
-              : poolStatus === PoolStatus.Repaid
-              ? "Repaid"
-              : "Paused"}
+          <Marquee colorScheme={getMarqueeColor(poolStatus)}>
+            {getMarqueeText(poolStatus, tranchedPool?.numBackers)}
           </Marquee>
           {/* gives the illusion of rounded corners on the top of the page */}
           <div className="-mt-3 h-3 rounded-t-xl bg-white" />
@@ -354,7 +369,8 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             </HelperText>
           ) : null}
 
-          {poolStatus === PoolStatus.Open ? (
+          {poolStatus === PoolStatus.Open ||
+          poolStatus === PoolStatus.Closed ? (
             <FundingBar
               goal={
                 tranchedPool?.creditLine.maxLimit
@@ -445,7 +461,7 @@ export default function PoolPage({ dealDetails }: PoolPageProps) {
             </TabList>
             <TabPanels>
               <TabContent>
-                {tranchedPool && poolStatus ? (
+                {tranchedPool && poolStatus !== null ? (
                   <DealSummary
                     dealData={dealDetails}
                     poolChainData={tranchedPool}
