@@ -17,6 +17,8 @@ import type { Erc20 } from "@/types/ethers-contracts";
 
 import { toastTransaction } from "../toast";
 
+const CAURIS_POOL_ID = "0xd43a4f3041069c6178b99d55295b00d0db955bb5";
+
 /**
  * Include this graphQL fragment on a query for TranchedPool to ensure it has the correct fields for computing PoolStatus
  */
@@ -35,6 +37,7 @@ export const TRANCHED_POOL_STATUS_FIELDS = gql`
 `;
 
 export enum PoolStatus {
+  Closed,
   Paused,
   Repaid,
   Full,
@@ -47,8 +50,12 @@ export enum PoolStatus {
  * @param pool TranchedPool to get the status for. Use the TranchedPoolStatusFields fragment to guarantee your query has the right fields for this computation.
  * @returns the status of the pool
  */
-export function getTranchedPoolStatus(pool: TranchedPoolStatusFieldsFragment) {
-  if (pool.isPaused) {
+export function getTranchedPoolStatus(
+  pool: TranchedPoolStatusFieldsFragment
+): PoolStatus {
+  if (pool.id === CAURIS_POOL_ID) {
+    return PoolStatus.Closed;
+  } else if (pool.isPaused) {
     return PoolStatus.Paused;
   } else if (
     pool.creditLine.balance.isZero() &&
