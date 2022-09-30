@@ -20,7 +20,7 @@ export function FileItem({
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-10">
-        <Svg className="h-20" />
+        <Svg className="h-20 w-20" />
         <div>
           <div className="mb-3 font-medium">{filename}</div>
           {description ? <div>{description}</div> : null}
