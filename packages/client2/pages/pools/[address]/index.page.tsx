@@ -170,7 +170,10 @@ const singleDealQuery = gql`
       }
       defaultInterestRate
       transactionStructure {
+        filename
+        alt
         url
+        mimeType
       }
       documents {
         ...DocumentFields

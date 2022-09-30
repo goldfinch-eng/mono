@@ -1,4 +1,3 @@
-import { Link } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import {
   SingleDealQuery,
@@ -8,7 +7,7 @@ import { PoolStatus } from "@/lib/pools";
 
 import { DealTermsTable, SecuritiesRecourseTable } from "./deal-tables";
 import { DocumentsList } from "./documents-list";
-import FileSvg from "./file-pdf.svg";
+import { FileItem } from "./subcomponents/file-item";
 import { TransactionTable } from "./transaction-table";
 
 interface DealSummaryProps {
@@ -45,16 +44,13 @@ export default function DealSummary({
 
       {dealData.transactionStructure ? (
         <div className="mb-20">
-          <div className="relative flex w-max items-center gap-3">
-            <FileSvg className="h-14 w-14" />
-            <Link
-              openInNewTab
-              href={dealData.transactionStructure.url as string}
-              className="text-lg before:absolute before:inset-0"
-            >
-              Transaction Structure
-            </Link>
-          </div>
+          <h3 className="mb-8 text-lg font-semibold">Transaction Structure</h3>
+          <FileItem
+            filename={dealData.transactionStructure.filename as string}
+            description={dealData.transactionStructure.alt}
+            url={dealData.transactionStructure.url as string}
+            mimeType={dealData.transactionStructure.mimeType as string}
+          />
         </div>
       ) : null}
 

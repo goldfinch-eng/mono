@@ -13,7 +13,7 @@ const Media: CollectionConfig = {
     useAsTitle: "filename",
   },
   upload: {
-    mimeTypes: ["image/*", "application/pdf"],
+    mimeTypes: ["image/*", "application/pdf", "application/zip"],
     adminThumbnail: "thumbnail",
     imageSizes: [
       {
