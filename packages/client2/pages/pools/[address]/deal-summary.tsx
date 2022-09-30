@@ -32,12 +32,6 @@ export default function DealSummary({
         />
       </div>
 
-      <div className="mb-20">
-        <h2 className="mb-8 text-lg font-semibold">Recent Activity</h2>
-
-        <TransactionTable tranchedPoolId={poolChainData.id} />
-      </div>
-
       {dealData.details ? (
         <RichText content={dealData.details} className="mb-20" />
       ) : null}
@@ -69,6 +63,12 @@ export default function DealSummary({
       {dealData.documents && dealData.documents.length > 0 ? (
         <DocumentsList documents={dealData.documents} />
       ) : null}
+
+      <div className="mb-20">
+        <h2 className="mb-8 text-lg font-semibold">Recent Activity</h2>
+
+        <TransactionTable tranchedPoolId={poolChainData.id} />
+      </div>
     </div>
   );
 }
