@@ -13,6 +13,8 @@ export const whitelist = [
   "http://localhost:3010",
   "https://app.goldfinch.finance/",
   "https://beta.app.goldfinch.finance/",
+  "http://cms.goldfinch.finance/",
+  "https://cms.goldfinch.finance/",
 ];
 
 // Local filesystem will be used if the env var for GCS bucket is not set. Can be used for running the CMS on local machine.
@@ -57,7 +59,7 @@ export default buildConfig({
       collections: {
         media: {
           adapter,
-          disablePayloadAccessControl: true
+          disablePayloadAccessControl: true,
         },
       },
     }),
