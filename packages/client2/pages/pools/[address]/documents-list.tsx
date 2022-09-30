@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 
 import { DocumentFieldsFragment } from "@/lib/graphql/generated";
 
-import { FileItem } from "./subcomponents/file-item";
+import { FileItem } from "./subcomponents";
 
 export const DOCUMENT_FIELDS = gql`
   fragment DocumentFields on Document {
