@@ -6,6 +6,7 @@
   "main": "dist/server.js",
   "scripts": {
     "predev": "npm run generate:types && npm run generate:graphQLSchema",
+    "prebuild": "npm run generate:types && npm run generate:graphQLSchema",
     "dev": "cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts nodemon",
     "build:payload": "cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts payload build",
     "build:server": "tsc",
