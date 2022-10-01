@@ -104,11 +104,15 @@ abstract contract BaseTest is Test {
     return amount * 10**TestConstants.USDC_DECIMALS;
   }
 
-  function fundAddress(address addressToFund, uint256 amount) public impersonating(GF_OWNER) {
+  function fundAddress(address addressToFund, uint256 amount) internal impersonating(GF_OWNER) {
     usdc.transfer(addressToFund, amount);
   }
 
-  modifier filterAddress(address _address) {
+  function assertZero(uint256 x) internal {
+    assertEq(x, 0);
+  }
+
+  modifier onlyAllowListed(address _address) {
     vm.assume(fuzzHelper.isAllowed(_address));
     _;
   }

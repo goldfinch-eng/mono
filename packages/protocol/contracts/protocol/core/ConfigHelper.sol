@@ -198,8 +198,8 @@ library ConfigHelper {
     return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalEpochDuration));
   }
 
-  function getSeniorPoolWithdrawalCancelationPercent(GoldfinchConfig config) internal view returns (uint256) {
-    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationPercent));
+  function SeniorPoolWithdrawalCancelationFeeBps(GoldfinchConfig config) internal view returns (uint256) {
+    return config.getNumber(uint256(ConfigOptions.Numbers.SeniorPoolWithdrawalCancelationFeeBps));
   }
 
   function getSeniorPoolWithdrawalProRataMin(GoldfinchConfig config) internal view returns (uint256) {

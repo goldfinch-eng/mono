@@ -7,8 +7,8 @@ import {
   PAUSER_ROLE,
   ETHDecimals,
 } from "../blockchain_scripts/deployHelpers"
-import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
-import hre from "hardhat"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
+import hre, {ethers} from "hardhat"
 const {deployments, artifacts} = hre
 const CreditLine = artifacts.require("CreditLine")
 import {
@@ -27,8 +27,10 @@ import {
   tolerance,
   decodeLogs,
   decodeAndGetFirstLog,
+  ZERO,
+  Numberish,
 } from "./testHelpers"
-import {expectEvent} from "@openzeppelin/test-helpers"
+import {time, expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -48,6 +50,7 @@ import {TestSeniorPoolInstance} from "../typechain/truffle"
 const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
 
 const TEST_TIMEOUT = 30_000
+const TWO_WEEKS = SECONDS_PER_DAY.mul(new BN(14))
 
 const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any): Promise<string> => {
   // Simulate someone deploying their own malicious TranchedPool using our contracts
@@ -86,6 +89,7 @@ describe("SeniorPool", () => {
   let accounts, owner, person2, person3, reserve, borrower
 
   let seniorPool: TestSeniorPoolInstance, seniorPoolFixedStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
+  let epochsInitializedAt: BN
 
   const interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -112,6 +116,38 @@ describe("SeniorPool", () => {
     return await seniorPool.withdrawInFidu(fiduAmount, {from: person})
   }
 
+  const assertEpochAt = async (
+    id: Numberish,
+    startsAt: Numberish,
+    sharePrice: Numberish,
+    fiduRequested: Numberish,
+    usdcIn: Numberish,
+    fiduRemaining: Numberish,
+    usdcRemaining: Numberish
+  ) => {
+    const epoch = await seniorPool.epochAt(id)
+    expect(epoch.id).to.bignumber.eq(id, "id")
+    expect(epoch.startsAt).to.bignumber.eq(startsAt, "startsAt")
+    expect(epoch.sharePrice).to.bignumber.eq(sharePrice, "sharePrice")
+    expect(epoch.fiduRequested).to.bignumber.eq(fiduRequested, "fiduRequested")
+    expect(epoch.usdcIn).to.bignumber.eq(usdcIn, "usdcIn")
+    expect(epoch.fiduRemaining).to.bignumber.eq(fiduRemaining, "fiduRemaining")
+    expect(epoch.usdcRemaining).to.bignumber.eq(usdcRemaining, "usdcRemaining")
+  }
+
+  const assertCurrentEpoch = async (id: Numberish, startsAt: BN, fiduRequested: BN, usdcIn: BN) => {
+    const epoch = await seniorPool.currentEpoch()
+    expect(epoch.id).to.bignumber.eq(id, "id")
+    expect(epoch.startsAt).to.bignumber.eq(startsAt, "startsAt")
+    expect(epoch.usdcIn).to.bignumber.eq(usdcIn, "usdcIn")
+    expect(epoch.fiduRequested).to.bignumber.eq(fiduRequested, "fiduRequested")
+
+    // These params should always be uninitialized in the current epoch
+    expect(epoch.sharePrice).to.bignumber.eq(ZERO, "sharePrice should be 0")
+    expect(epoch.fiduRemaining).to.bignumber.eq(ZERO, "fiduRemaining should be 0")
+    expect(epoch.usdcRemaining).to.bignumber.eq(ZERO, "usdcRemaining should be 0")
+  }
+
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {
       seniorPool: _seniorPool,
@@ -124,10 +160,11 @@ describe("SeniorPool", () => {
     } = await deployBaseFixture()
     // A bit of setup for our test users
     await erc20Approve(usdc, _seniorPool.address, usdcVal(100000), [person2])
-    await erc20Transfer(usdc, [person2, person3], usdcVal(10000), owner)
+    await erc20Transfer(usdc, [person2, person3], usdcVal(100_000), owner)
     await goldfinchConfig.setTreasuryReserve(reserve)
 
     await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, _seniorPool.address])
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
       borrower,
       usdcAddress: usdc.address,
@@ -139,6 +176,13 @@ describe("SeniorPool", () => {
       juniorFeePercent,
       id: "TranchedPool",
     }))
+    await goldfinchConfig.setNumber(
+      CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
+      SECONDS_PER_DAY.mul(new BN(14))
+    )
+    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10)
+    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin, usdcVal(500))
+    epochsInitializedAt = new BN((await (_seniorPool as TestSeniorPoolInstance).epochAt("0")).startsAt)
 
     return {
       usdc,
@@ -155,8 +199,10 @@ describe("SeniorPool", () => {
   beforeEach(async () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;[owner, person2, person3, reserve] = accounts
     borrower = person2
+    // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({usdc, seniorPool, seniorPoolFixedStrategy, tranchedPool, creditLine, fidu, goldfinchConfig} = await setupTest())
   })
 
@@ -251,6 +297,149 @@ describe("SeniorPool", () => {
         await testSetup()
       })
 
+      describe("when epoch storage is stale by one epoch", () => {
+        it("increases usdcIn by deposited amount for the current epoch", async () => {
+          // EPOCH 0
+          await makeDeposit(person2, usdcVal(5_000))
+          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(5_000))
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(5_000), ZERO, ZERO)
+
+          await advanceTime({days: new BN(18)})
+          await ethers.provider.send("evm_mine", [])
+
+          // EPOCH 1
+
+          // Check when epoch 2 is not in storage
+          await assertCurrentEpoch(new BN(1), epochsInitializedAt.add(TWO_WEEKS), ZERO, usdcVal(5_000))
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            usdcVal(5_000),
+            ZERO,
+            usdcVal(5_000)
+          )
+          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(5_000), ZERO, ZERO)
+
+          // Deposit triggers an epoch storage update
+          await makeDeposit(person2, usdcVal(10_000))
+
+          // Check when epoch 2 is in storage
+          await assertCurrentEpoch(
+            new BN(1),
+            epochsInitializedAt.add(SECONDS_PER_DAY.mul(new BN(14))),
+            ZERO,
+            usdcVal(15_000)
+          )
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            usdcVal(5_000),
+            ZERO,
+            usdcVal(5000)
+          )
+          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(15_000), ZERO, ZERO)
+        })
+      })
+
+      describe("when epoch storage is stale by multiple epochs", () => {
+        it("increases usdcIn by deposited amount for the current epoch", async () => {
+          // EPOCH 0
+          await makeDeposit(person2, usdcVal(1_000))
+          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(1_000))
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(1_000), ZERO, ZERO)
+
+          await advanceTime({days: new BN(32)})
+          await ethers.provider.send("evm_mine", [])
+
+          // EPOCH 2
+
+          // Check when epochs 1 and 2 are not in storage
+          await assertCurrentEpoch(new BN(2), epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcVal(1_000))
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            usdcVal(1_000),
+            ZERO,
+            usdcVal(1_000)
+          )
+          console.log("ASSERT EPOCH 1")
+          await assertEpochAt(
+            "1",
+            epochsInitializedAt.add(TWO_WEEKS),
+            await seniorPool.sharePrice(),
+            ZERO,
+            usdcVal(1_000),
+            ZERO,
+            usdcVal(1_000)
+          )
+          await assertEpochAt(
+            "2",
+            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+            ZERO,
+            ZERO,
+            usdcVal(1_000),
+            ZERO,
+            ZERO
+          )
+
+          // Deposit triggers an epoch storage update
+          await makeDeposit(person2, usdcVal(11_000))
+
+          // Check when epochs 1 and 2 are in storage
+          await assertCurrentEpoch(
+            new BN(2),
+            epochsInitializedAt.add(SECONDS_PER_DAY.mul(new BN(28))),
+            ZERO,
+            usdcVal(12_000)
+          )
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            usdcVal(1_000),
+            ZERO,
+            usdcVal(1_000)
+          )
+          await assertEpochAt(
+            "1",
+            epochsInitializedAt.add(TWO_WEEKS),
+            await seniorPool.sharePrice(),
+            ZERO,
+            usdcVal(1_000),
+            ZERO,
+            usdcVal(1_000)
+          )
+          await assertEpochAt(
+            "2",
+            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+            ZERO,
+            ZERO,
+            usdcVal(12_000),
+            ZERO,
+            ZERO
+          )
+        })
+      })
+
+      describe("when epoch storage up to date", () => {
+        it("increases usdcIn by deposited amount for the current epoch", async () => {
+          await makeDeposit(person2, usdcVal(10_000))
+          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(10_000))
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(10_000), ZERO, ZERO)
+
+          await makeDeposit(person2, usdcVal(25_000))
+          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(35_000))
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(35_000), ZERO, ZERO)
+        })
+      })
+
       it("increases the senior pool's balance of the ERC20 token when you call deposit", async () => {
         const balanceBefore = await getBalance(seniorPool.address, usdc)
         await makeDeposit()
@@ -334,6 +523,237 @@ describe("SeniorPool", () => {
 
       // Verify that permit creates allowance for amount only
       expect(await usdc.allowance(person2, seniorPool.address)).to.bignumber.eq("0")
+    })
+
+    describe("when epoch storage up to date", () => {
+      it("increases usdcIn by deposited amount for the current epoch", async () => {
+        // EPOCH 0
+        const capitalProviderAddress = person2.toLowerCase()
+        const nonce = await usdc.nonces(capitalProviderAddress)
+        const deadline = MAX_UINT
+        const value = usdcVal(100)
+
+        // Create signature for permit
+        const digest = await getApprovalDigest({
+          token: usdc,
+          owner: capitalProviderAddress,
+          spender: seniorPool.address.toLowerCase(),
+          value,
+          nonce,
+          deadline,
+        })
+        const wallet = await getWallet(capitalProviderAddress)
+        assertNonNullable(wallet)
+        const {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+        await (seniorPool as any).depositWithPermit(value, deadline, v, r, s, {
+          from: capitalProviderAddress,
+        })
+
+        await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(100))
+        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100), ZERO, ZERO)
+      })
+    })
+
+    describe("when epoch storage is stale by one epoch", () => {
+      it("increases usdcIn by deposited amount for the current epoch", async () => {
+        // EPOCH 0
+        const capitalProviderAddress = person2.toLowerCase()
+        let nonce = await usdc.nonces(capitalProviderAddress)
+        const deadline = MAX_UINT
+        let value = usdcVal(100)
+
+        // Create signature for permit
+        let digest = await getApprovalDigest({
+          token: usdc,
+          owner: capitalProviderAddress,
+          spender: seniorPool.address.toLowerCase(),
+          value,
+          nonce,
+          deadline,
+        })
+        const wallet = await getWallet(capitalProviderAddress)
+        assertNonNullable(wallet)
+        let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+        await (seniorPool as any).depositWithPermit(value, deadline, v, r, s, {
+          from: capitalProviderAddress,
+        })
+
+        await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(100))
+        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100), ZERO, ZERO)
+
+        await advanceTime({days: 18})
+        await ethers.provider.send("evm_mine", [])
+
+        // EPOCH 1
+
+        // Check when epoch 1 is not in storage
+        await assertCurrentEpoch(new BN(1), epochsInitializedAt.add(TWO_WEEKS), ZERO, usdcVal(100))
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcVal(100),
+          ZERO,
+          usdcVal(100)
+        )
+        await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(100), ZERO, ZERO)
+
+        // Deposit triggers an epoch storage update
+        nonce = await usdc.nonces(capitalProviderAddress)
+        value = usdcVal(1000)
+        digest = await getApprovalDigest({
+          token: usdc,
+          owner: capitalProviderAddress,
+          spender: seniorPool.address.toLowerCase(),
+          value,
+          nonce,
+          deadline,
+        })
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;({v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex")))
+        await (seniorPool as any).depositWithPermit(value, deadline, v, r, s, {
+          from: capitalProviderAddress,
+        })
+
+        // Check when epoch 2 is in storage
+        await assertCurrentEpoch(
+          new BN(1),
+          epochsInitializedAt.add(SECONDS_PER_DAY.mul(new BN(14))),
+          ZERO,
+          usdcVal(1_100)
+        )
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcVal(100),
+          ZERO,
+          usdcVal(100)
+        )
+        await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(1_100), ZERO, ZERO)
+      })
+    })
+
+    describe("when epoch storage is stale by multiple epochs", () => {
+      it("increases usdcIn by deposited amount for the current epoch", async () => {
+        // EPOCH 0
+
+        const capitalProviderAddress = person2.toLowerCase()
+        let nonce = await usdc.nonces(capitalProviderAddress)
+        const deadline = MAX_UINT
+        let value = usdcVal(1000)
+
+        // Create signature for permit
+        let digest = await getApprovalDigest({
+          token: usdc,
+          owner: capitalProviderAddress,
+          spender: seniorPool.address.toLowerCase(),
+          value,
+          nonce,
+          deadline,
+        })
+        const wallet = await getWallet(capitalProviderAddress)
+        assertNonNullable(wallet)
+        let {v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex"))
+
+        await (seniorPool as any).depositWithPermit(value, deadline, v, r, s, {
+          from: capitalProviderAddress,
+        })
+
+        await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(1_000))
+        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(1_000), ZERO, ZERO)
+
+        await advanceTime({days: new BN(32)})
+        await ethers.provider.send("evm_mine", [])
+
+        // EPOCH 2
+
+        // Check when epochs 1 and 2 are not in storage
+        await assertCurrentEpoch(new BN(2), epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcVal(1_000))
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcVal(1_000),
+          ZERO,
+          usdcVal(1_000)
+        )
+        await assertEpochAt(
+          "1",
+          epochsInitializedAt.add(TWO_WEEKS),
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcVal(1_000),
+          ZERO,
+          usdcVal(1_000)
+        )
+        await assertEpochAt(
+          "2",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+          ZERO,
+          ZERO,
+          usdcVal(1_000),
+          ZERO,
+          ZERO
+        )
+
+        // Deposit triggers an epoch storage update
+        nonce = await usdc.nonces(capitalProviderAddress)
+        value = usdcVal(2000)
+        digest = await getApprovalDigest({
+          token: usdc,
+          owner: capitalProviderAddress,
+          spender: seniorPool.address.toLowerCase(),
+          value,
+          nonce,
+          deadline,
+        })
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;({v, r, s} = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(wallet.privateKey.slice(2), "hex")))
+        await (seniorPool as any).depositWithPermit(value, deadline, v, r, s, {
+          from: capitalProviderAddress,
+        })
+
+        // Check when epochs 1 and 2 are in storage
+        await assertCurrentEpoch(
+          new BN(2),
+          epochsInitializedAt.add(SECONDS_PER_DAY.mul(new BN(28))),
+          ZERO,
+          usdcVal(3_000)
+        )
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcVal(1_000),
+          ZERO,
+          usdcVal(1_000)
+        )
+        await assertEpochAt(
+          "1",
+          epochsInitializedAt.add(TWO_WEEKS),
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcVal(1_000),
+          ZERO,
+          usdcVal(1_000)
+        )
+        await assertEpochAt(
+          "2",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+          ZERO,
+          ZERO,
+          usdcVal(3_000),
+          ZERO,
+          ZERO
+        )
+      })
     })
   })
 
@@ -541,11 +961,11 @@ describe("SeniorPool", () => {
   })
 
   describe("invest", () => {
-    const juniorInvestmentAmount = usdcVal(10000)
+    const juniorInvestmentAmount = usdcVal(10_000)
 
     const testSetup = deployments.createFixture(async () => {
-      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
-      await makeDeposit(owner, usdcVal(100000))
+      await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])
+      await makeDeposit(owner, usdcVal(100_000))
       await goldfinchConfig.addToGoList(seniorPool.address)
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
@@ -683,6 +1103,187 @@ describe("SeniorPool", () => {
         expect(seniorTranche.principalDeposited).to.bignumber.equal(investmentAmount)
       })
     })
+
+    describe("epoch checkpointing", () => {
+      describe("when epoch storage up to date", () => {
+        it("decreases usdcIn by invested amount for the current epoch", async () => {
+          // Make the senior pool invest
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await seniorPool.invest(tranchedPool.address)
+
+          // junior deposit amount was 10_000 so senior pool invests 40_000
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100_000 - 40_000), ZERO, ZERO)
+        })
+      })
+
+      describe("when epoch storage is stale by one epoch", () => {
+        let pool2
+        beforeEach(async () => {
+          // eslint-disable-next-line @typescript-eslint/no-extra-semi
+          ;({tranchedPool: pool2} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+            borrower,
+            usdcAddress: usdc.address,
+            limit,
+            interestApr,
+            paymentPeriodInDays,
+            termInDays,
+            lateFeeApr,
+            juniorFeePercent,
+            id: "second pool",
+          }))
+        })
+        it("decreases usdcIn by invested amount for the current epoch", async () => {
+          // EPOCH 0
+          // Make the senior pool invests
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await seniorPool.invest(tranchedPool.address)
+
+          const firstEpochUsdcIn = usdcVal(100_000 - 40_000)
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
+
+          await pool2.deposit(TRANCHES.Junior, usdcVal(1000))
+          await pool2.lockJuniorCapital({from: borrower})
+          await advanceTime({days: 14})
+          await ethers.provider.send("evm_mine", [])
+
+          // EPOCH1
+          // Check first and second epoch before seniorPool.invest triggers a checkpoint
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
+
+          // Invest and force an epoch update
+          await seniorPool.invest(pool2.address)
+
+          const secondEpochUsdcIn = firstEpochUsdcIn.sub(usdcVal(4_000))
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, secondEpochUsdcIn, ZERO, ZERO)
+        })
+      })
+
+      describe("when epoch storage is stale by multiple epochs", () => {
+        let pool2
+        beforeEach(async () => {
+          // eslint-disable-next-line @typescript-eslint/no-extra-semi
+          ;({tranchedPool: pool2} = await deployTranchedPoolWithGoldfinchFactoryFixture({
+            borrower,
+            usdcAddress: usdc.address,
+            limit,
+            interestApr,
+            paymentPeriodInDays,
+            termInDays,
+            lateFeeApr,
+            juniorFeePercent,
+            id: "second pool",
+          }))
+        })
+        it("decreases usdcIn by invested amount for the current epoch", async () => {
+          // EPOCH 0
+          // Make the senior pool invests
+          await tranchedPool.lockJuniorCapital({from: borrower})
+          await seniorPool.invest(tranchedPool.address)
+
+          const firstEpochUsdcIn = usdcVal(100_000 - 40_000)
+          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
+
+          await advanceTime({days: 14})
+          await ethers.provider.send("evm_mine", [])
+
+          // EPOCH 1
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
+
+          await advanceTime({days: 14})
+          await ethers.provider.send("evm_mine", [])
+
+          // EPOCH 2
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt(
+            "1",
+            epochsInitializedAt.add(TWO_WEEKS),
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt(
+            "2",
+            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+            ZERO,
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            ZERO
+          )
+
+          await pool2.deposit(TRANCHES.Junior, usdcVal(1000))
+          await pool2.lockJuniorCapital({from: borrower})
+          // Invest and trigger an epoch update
+          await seniorPool.invest(pool2.address)
+
+          const thirdEpochUsdcIn = firstEpochUsdcIn.sub(usdcVal(4_000))
+          await assertEpochAt(
+            "0",
+            epochsInitializedAt,
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt(
+            "1",
+            epochsInitializedAt.add(TWO_WEEKS),
+            await seniorPool.sharePrice(),
+            ZERO,
+            firstEpochUsdcIn,
+            ZERO,
+            firstEpochUsdcIn
+          )
+          await assertEpochAt(
+            "2",
+            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+            ZERO,
+            ZERO,
+            thirdEpochUsdcIn,
+            ZERO,
+            ZERO
+          )
+        })
+      })
+    })
   })
 
   describe("redeem", async () => {
@@ -694,8 +1295,8 @@ describe("SeniorPool", () => {
       tokenAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.PoolTokens)
       poolTokens = await artifacts.require("PoolTokens").at(tokenAddress)
 
-      await erc20Approve(usdc, seniorPool.address, usdcVal(100000), [owner])
-      await makeDeposit(owner, usdcVal(100000))
+      await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])
+      await makeDeposit(owner, usdcVal(100_000))
       await goldfinchConfig.addToGoList(seniorPool.address)
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
@@ -811,6 +1412,268 @@ describe("SeniorPool", () => {
       // No reserve funds should be collected for a regular redeem
       expectEvent.notEmitted(receipt, "ReserveFundsCollected")
     })
+
+    describe("when epoch storage up to date", () => {
+      it("increases usdcIn by redeemed amount for the current epoch", async () => {
+        // EPOCH 0
+        // Make the senior pool invest
+        const firstEpochSharePrice = await seniorPool.sharePrice()
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await seniorPool.invest(tranchedPool.address)
+
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // EPOCH 2
+        await advanceTime({days: 30})
+        await tranchedPool.assess()
+        await tranchedPool.pay(await creditLine.totalInterestAccrued())
+
+        const tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
+        const tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
+        await seniorPool.redeem(tokenId)
+        const tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
+
+        const usdcInFirstEpoch = usdcVal(100_000 - 400)
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          firstEpochSharePrice,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+
+        const usdcInSecondEpoch = usdcInFirstEpoch
+        await assertEpochAt(
+          "1",
+          epochsInitializedAt.add(TWO_WEEKS),
+          firstEpochSharePrice,
+          ZERO,
+          usdcInSecondEpoch,
+          ZERO,
+          usdcInSecondEpoch
+        )
+
+        const interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
+        const principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(
+          new BN(tokenInfoBefore.principalRedeemed)
+        )
+        const seniorPoolUsdcRedeemed = interestRedeemed.add(principalRedeemed)
+        const usdcInThirdEpoch = usdcInSecondEpoch.add(seniorPoolUsdcRedeemed)
+        await assertEpochAt(
+          "2",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+          ZERO,
+          ZERO,
+          usdcInThirdEpoch,
+          ZERO,
+          ZERO
+        )
+        await assertCurrentEpoch("2", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcInThirdEpoch)
+      })
+    })
+
+    describe("when epoch storage is stale by one epoch", () => {
+      it("updates past epochs and increases usdcIn by redeemed amount for the current epoch", async () => {
+        // EPOCH 0
+        // Make the senior pool invest
+        const firstEpochSharePrice = await seniorPool.sharePrice()
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await seniorPool.invest(tranchedPool.address)
+
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // EPOCH 2
+        await advanceTime({days: 30})
+        await tranchedPool.assess()
+        await tranchedPool.pay(await creditLine.totalInterestAccrued())
+
+        // Advance one more epoch
+        await advanceTime({days: 14})
+        await ethers.provider.send("evm_mine", [])
+
+        // EPOCH 3
+        // Assertions before redeeming, when epoch storage is 1 epoch stale
+        const usdcInFirstEpoch = usdcVal(100_000 - 400)
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "1",
+          epochsInitializedAt.add(TWO_WEEKS),
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "2",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+          await seniorPool.sharePrice(),
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "3",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
+          ZERO,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          ZERO
+        )
+        await assertCurrentEpoch("3", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))), ZERO, usdcInFirstEpoch)
+
+        // Redeem
+        const tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
+        const tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
+        await seniorPool.redeem(tokenId)
+        const tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
+        const interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
+        const principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(
+          new BN(tokenInfoBefore.principalRedeemed)
+        )
+        const seniorPoolUsdcRedeemed = interestRedeemed.add(principalRedeemed)
+
+        // Assertions after redeeming, when epoch storage is up to date
+        await assertEpochAt(
+          "3",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
+          ZERO,
+          ZERO,
+          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed),
+          ZERO,
+          ZERO
+        )
+        await assertCurrentEpoch(
+          "3",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
+          ZERO,
+          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed)
+        )
+      })
+    })
+
+    describe("when epoch storage is stale by multiple epochs", () => {
+      it("updates storage and increases usdcIn by redeemed amount for the current epoch", async () => {
+        // EPOCH 0
+        // Make the senior pool invest
+        const firstEpochSharePrice = await seniorPool.sharePrice()
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await seniorPool.invest(tranchedPool.address)
+
+        await tranchedPool.lockPool({from: borrower})
+        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
+
+        // EPOCH 2
+        await advanceTime({days: 30})
+        await tranchedPool.assess()
+        await tranchedPool.pay(await creditLine.totalInterestAccrued())
+
+        // Advance two epochs
+        await advanceTime({days: 28})
+        await ethers.provider.send("evm_mine", [])
+
+        // EPOCH 4
+        const usdcInFirstEpoch = usdcVal(100_000 - 400)
+        await assertEpochAt(
+          "0",
+          epochsInitializedAt,
+          firstEpochSharePrice,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "1",
+          epochsInitializedAt.add(TWO_WEEKS),
+          firstEpochSharePrice,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "2",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
+          firstEpochSharePrice,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "3",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
+          firstEpochSharePrice,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "4",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
+          ZERO,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          ZERO
+        )
+        await assertCurrentEpoch("4", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))), ZERO, usdcInFirstEpoch)
+
+        // Redeem
+        const tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
+        const tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
+        await seniorPool.redeem(tokenId)
+        const tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
+        const interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
+        const principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(
+          new BN(tokenInfoBefore.principalRedeemed)
+        )
+        const seniorPoolUsdcRedeemed = interestRedeemed.add(principalRedeemed)
+
+        // Assertions after redeeming, when epoch storage is up to date
+        // Redeeming should update
+        await assertEpochAt(
+          "3",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
+          firstEpochSharePrice,
+          ZERO,
+          usdcInFirstEpoch,
+          ZERO,
+          usdcInFirstEpoch
+        )
+        await assertEpochAt(
+          "4",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
+          ZERO,
+          ZERO,
+          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed),
+          ZERO,
+          ZERO
+        )
+        await assertCurrentEpoch(
+          "4",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
+          ZERO,
+          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed)
+        )
+      })
+    })
   })
 
   describe("writedown", async () => {
@@ -837,6 +1700,99 @@ describe("SeniorPool", () => {
 
     beforeEach(async () => {
       await testSetup()
+    })
+
+    describe("when the last epoch checkpoint was in the current epoch", () => {
+      it("should decrease the share price for the current epoch", async () => {
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
+
+        // EPOCH 4
+        // Make a senior pool deposit to trigger a checkpoint
+        await makeDeposit(person2, usdcVal(200))
+        // Writedown
+        await tranchedPool.assess()
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([[seniorPool.sharePrice, {decrease: true}]])
+
+        // Advance to next epoch to lock in share price
+        await advanceTime({days: 14})
+        await ethers.provider.send("evm_mine", [])
+
+        const expectedUsdcIn = usdcVal(100 - 80 + 200)
+        await assertEpochAt(
+          "4",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
+          await seniorPool.sharePrice(),
+          ZERO,
+          expectedUsdcIn,
+          ZERO,
+          expectedUsdcIn
+        )
+      })
+    })
+
+    describe("when the last epoch checkpoint was in the last epoch", () => {
+      it("should decrease the share price for the current epoch", async () => {
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+
+        // EPOCH 3
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds.sub(TWO_WEEKS)})
+        await makeDeposit(person2, usdcVal(200))
+
+        // EPOCH 4
+        await advanceTime({seconds: TWO_WEEKS})
+        // Writedown
+        await tranchedPool.assess()
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([[seniorPool.sharePrice, {decrease: true}]])
+
+        // Advance to next epoch to lock in share price
+        await advanceTime({seconds: TWO_WEEKS})
+        await ethers.provider.send("evm_mine", [])
+
+        const expectedUsdcIn = usdcVal(100 - 80 + 200)
+        await assertEpochAt(
+          "4",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
+          await seniorPool.sharePrice(),
+          ZERO,
+          expectedUsdcIn,
+          ZERO,
+          expectedUsdcIn
+        )
+      })
+    })
+
+    describe("when the last epoch checkpoint was multiple epochs ago", () => {
+      it("should decrease the share price for the current epoch", async () => {
+        // Assess for two periods of lateness
+        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+
+        // EPOCH 4
+        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
+        // Writedown
+        await tranchedPool.assess()
+        await expectAction(() => seniorPool.writedown(tokenId)).toChange([[seniorPool.sharePrice, {decrease: true}]])
+
+        // Advance to next epoch to lock in share price
+        await advanceTime({seconds: TWO_WEEKS})
+        await ethers.provider.send("evm_mine", [])
+
+        const expectedUsdcIn = usdcVal(100 - 80)
+        await assertEpochAt(
+          "4",
+          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
+          await seniorPool.sharePrice(),
+          ZERO,
+          expectedUsdcIn,
+          ZERO,
+          expectedUsdcIn
+        )
+      })
     })
 
     context("called by non-governance", async () => {

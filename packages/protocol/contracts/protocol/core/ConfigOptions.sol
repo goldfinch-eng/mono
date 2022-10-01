@@ -27,9 +27,9 @@ library ConfigOptions {
     LeverageRatio,
     /// Length of a senior pool withdrawal epoch in seconds
     SeniorPoolWithdrawalEpochDuration,
-    /// A number in the range [0, 100]. The percentage of FIDU taken as a fee
-    /// when a withdrawal request is canceled
-    SeniorPoolWithdrawalCancelationPercent,
+    /// A number in the range [0, 10000] representing basis points of FIDU taken as a fee
+    /// when a withdrawal request is canceled.
+    SeniorPoolWithdrawalCancelationFeeBps,
     SeniorPoolWithdrawalProRataMin
   }
   /// @dev TrustedForwarder is deprecated because we no longer use GSN. CreditDesk
@@ -58,6 +58,7 @@ library ConfigOptions {
     BackerRewards,
     StakingRewards,
     FiduUSDCCurveLP,
-    TranchedPoolImplementationRepository
+    TranchedPoolImplementationRepository,
+    WithdrawalRequestToken
   }
 }

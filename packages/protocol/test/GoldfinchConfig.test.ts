@@ -59,7 +59,7 @@ describe("GoldfinchConfig", () => {
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalEpochDuration)).to.bignumber.equal(
         new BN(11)
       )
-      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationPercent)).to.bignumber.equal(
+      expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeBps)).to.bignumber.equal(
         new BN(12)
       )
       expect(await goldfinchConfig.getNumber(CONFIG_KEYS.SeniorPoolWithdrawalProRataMin)).to.bignumber.equal(new BN(13))
@@ -89,6 +89,9 @@ describe("GoldfinchConfig", () => {
       )
       expect(await goldfinchConfig.getAddress(CONFIG_KEYS.TranchedPoolImplementationRepository)).to.equal(
         "0x0000000000000000000000000000000000000009"
+      )
+      expect(await goldfinchConfig.getAddress(CONFIG_KEYS.WithdrawalRequestToken)).to.equal(
+        "0x000000000000000000000000000000000000000A"
       )
     })
   })

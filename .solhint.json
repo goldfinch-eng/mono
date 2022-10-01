@@ -120,13 +120,27 @@
           "withdraw": [],
           "withdrawInFidu": [],
           "redeem": [],
-          "writedown": []
+          "writedown": [],
+          "withdrawV2": [],
+          "initializeEpochs": [],
+          "cancelWithdrawalRequest": [],
+          "requestWithdrawal": [],
+          "checkpointEpochs": [],
+          "initializeNextEpoch": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],
           "mintTo": [],
           "burnFrom": [],
           "updateGoldfinchConfig": []
+        },
+        "**/WithdrawalRequestToken.sol:WithdrawalRequestToken": {
+          "approve": [],
+          "setApprovalForAll": [],
+          "transferFrom": [],
+          "safeTransferFrom": [],
+          "mint": ["onlySeniorPool"],
+          "burn": ["onlySeniorPool"]
         },
         "**/TransferRestrictedVault.sol:TransferRestrictedVault": {
           "depositJunior": [],

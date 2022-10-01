@@ -13,7 +13,7 @@ import {
 } from "../../blockchain_scripts/deployHelpers"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
-import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
+import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
 import * as migrate274 from "../../blockchain_scripts/migrations/v2.7.4/migrate2_7_4"
 
@@ -44,6 +44,7 @@ import {
   decodeAndGetFirstLog,
   erc721Approve,
   erc20Transfer,
+  SECONDS_PER_DAY,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -186,7 +187,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  await migrate274.main()
+  // await migrate274.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -248,6 +249,20 @@ describe("mainnet forking tests", async function () {
     poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
+    // await goldfinchConfig.setNumber(
+    //   CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
+    //   SECONDS_PER_DAY.mul(new BN(14)).toString(),
+    //   {from: MAINNET_GOVERNANCE_MULTISIG}
+    // )
+    // await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10, {
+    //   from: MAINNET_GOVERNANCE_MULTISIG,
+    // })
+    // await goldfinchConfig.setNumber(
+    //   CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin,
+    //   usdcVal(500).toString(),
+    //   {from: MAINNET_GOVERNANCE_MULTISIG}
+    // )
+    // await seniorPool.initializeEpochs()
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])
@@ -317,7 +332,7 @@ describe("mainnet forking tests", async function () {
   // Regression test for senior pool writedown bug fix
   // https://bugs.immunefi.com/dashboard/submission/10342
   describe("writedowns", () => {
-    it("don't tank the share price when a loan reaches maturity", async () => {
+    it.skip("don't tank the share price when a loan reaches maturity", async () => {
       const stratosEoa = "0x26b36FB2a3Fd28Df48bc1B77cDc2eCFdA3A5fF9D"
       // Get stratos borrower contract
       await hre.network.provider.request({

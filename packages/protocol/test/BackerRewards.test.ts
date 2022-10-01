@@ -3,6 +3,7 @@ import {asNonNullable} from "@goldfinch-eng/utils"
 import {expectEvent} from "@openzeppelin/test-helpers"
 import BN from "bn.js"
 import hre from "hardhat"
+import {CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
 import {FIDU_DECIMALS, interestAprAsBN, OWNER_ROLE, TRANCHES} from "../blockchain_scripts/deployHelpers"
 import {
   CreditLineInstance,
@@ -29,6 +30,7 @@ import {
   getFirstLog,
   getTruffleContractAtAddress,
   SECONDS_PER_YEAR,
+  SECONDS_PER_DAY,
   usdcVal,
   USDC_DECIMALS,
   ZERO_ADDRESS,
@@ -149,6 +151,13 @@ describe("BackerRewards", function () {
     const {goldfinchConfig, gfi, backerRewards, seniorPool, stakingRewards, usdc, goldfinchFactory, poolTokens} =
       await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, borrower, anotherUser, anotherAnotherUser])
+
+    await goldfinchConfig.setNumber(
+      CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
+      SECONDS_PER_DAY.mul(new BN(14))
+    )
+    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10)
+    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin, usdcVal(500))
 
     await erc20Transfer(usdc, [anotherUser], usdcVal(100_000), owner)
     await erc20Transfer(usdc, [anotherAnotherUser], usdcVal(100_000), owner)

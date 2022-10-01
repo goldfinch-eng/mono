@@ -3,9 +3,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./ITranchedPool.sol";
+import {ITranchedPool} from "./ITranchedPool.sol";
+import {ISeniorPoolEpochWithdrawals} from "./ISeniorPoolEpochWithdrawals.sol";
 
-abstract contract ISeniorPool {
+abstract contract ISeniorPool is ISeniorPoolEpochWithdrawals {
   uint256 public sharePrice;
   uint256 public totalLoansOutstanding;
   uint256 public totalWritedowns;

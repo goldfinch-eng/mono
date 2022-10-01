@@ -38,6 +38,7 @@ import {
   TestStakingRewardsInstance,
   TestPoolTokensInstance,
   StakingRewardsInstance,
+  WithdrawalRequestTokenInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -296,6 +297,7 @@ async function deployAllContracts(
   uniqueIdentity: TestUniqueIdentityInstance
   go: GoInstance
   zapper: ZapperInstance
+  withdrawalRequestToken: WithdrawalRequestTokenInstance
 }> {
   await deployments.fixture("base_deploy")
   const seniorPool = await getDeployedAsTruffleContract<SeniorPoolInstance>(deployments, "SeniorPool")
@@ -358,6 +360,8 @@ async function deployAllContracts(
 
   const zapper = await getTruffleContract<ZapperInstance>("Zapper")
 
+  const withdrawalRequestToken = await getTruffleContract<WithdrawalRequestTokenInstance>("WithdrawalRequestToken")
+
   return {
     seniorPool,
     seniorPoolFixedStrategy,
@@ -378,6 +382,7 @@ async function deployAllContracts(
     go,
     backerRewards,
     zapper,
+    withdrawalRequestToken,
   }
 }
 

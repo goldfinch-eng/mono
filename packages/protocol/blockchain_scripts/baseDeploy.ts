@@ -1,14 +1,6 @@
-import {
-  OWNER_ROLE,
-  MINTER_ROLE,
-  isMainnetForking,
-  assertIsChainId,
-  ContractDeployer,
-  ZAPPER_ROLE,
-} from "./deployHelpers"
+import {isMainnetForking, assertIsChainId, ContractDeployer, ZAPPER_ROLE} from "./deployHelpers"
 import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {DeployFunction} from "hardhat-deploy/types"
-import {Fidu} from "../typechain/ethers"
 import {Logger} from "./types"
 import {assertNonNullable} from "@goldfinch-eng/utils"
 import {getDeployEffects} from "./migrations/deployEffects"
@@ -32,6 +24,7 @@ import {deployUniqueIdentity} from "./baseDeploy/deployUniqueIdentity"
 import {deployZapper} from "./baseDeploy/deployZapper"
 import {getOrDeployFiduUSDCCurveLP} from "./baseDeploy/getorDeployFiduUSDCCurveLP"
 import {deployTranchedPoolImplementationRepository} from "./baseDeploy/deployTranchedPoolImplementationRepository"
+import {deployWithdrawalRequestToken} from "./baseDeploy/deployWithdrawalRequestToken"
 
 const logger: Logger = console.log
 
@@ -68,6 +61,8 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
   const seniorPool = await deploySeniorPool(deployer, {config, fidu})
   await deployBorrower(deployer, {config})
   await deploySeniorPoolStrategies(deployer, {config})
+  logger("Deploying WithdrawalRequestToken")
+  await deployWithdrawalRequestToken(deployer, {config})
   logger("Deploying GoldfinchFactory")
   await deployGoldfinchFactory(deployer, {config})
   await deployClImplementation(deployer, {config})
