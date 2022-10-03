@@ -81,7 +81,7 @@ export function BorrowerProfile({
                 <Image
                   src={borrower.logo.url as string}
                   alt={borrower.name}
-                  className="overflow-hidden rounded-full border border-sand-200 object-contain object-center"
+                  className="h-8 w-8 overflow-hidden rounded-full border border-sand-200 object-contain"
                   height={32}
                   width={32}
                 />
