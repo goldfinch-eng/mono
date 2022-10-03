@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { BigNumber, FixedNumber, utils } from "ethers";
+import { BigNumber, FixedNumber } from "ethers";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -12,19 +12,17 @@ import {
   TabList,
   TabPanels,
 } from "@/components/design-system";
-import { GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import {
   stitchGrantsWithTokens,
   sumTotalClaimable,
   sumTotalLocked,
 } from "@/lib/gfi-rewards";
 import {
-  CryptoAmount,
   SupportedCrypto,
   useDashboardPageQuery,
   DashboardPageQuery,
 } from "@/lib/graphql/generated";
-import { sharesToUsdc, sum } from "@/lib/pools";
+import { sharesToUsdc, sum, gfiToUsdc } from "@/lib/pools";
 import { openWalletModal } from "@/lib/state/actions";
 import { useWallet } from "@/lib/wallet";
 
@@ -631,18 +629,6 @@ export default function DashboardPage() {
       )}
     </div>
   );
-}
-
-function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
-  const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
-  const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
-    FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())
-  );
-  const amount = FixedNumber.from(formattedGfi).mulUnsafe(usdcPerGfi);
-  return {
-    token: SupportedCrypto.Usdc,
-    amount: BigNumber.from(amount.toString().split(".")[0]),
-  };
 }
 
 function curveLpTokensToUsdc(

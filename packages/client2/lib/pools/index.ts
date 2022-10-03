@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import { BigNumber, FixedNumber, utils } from "ethers";
 
 import { IconNameType } from "@/components/design-system";
-import { FIDU_DECIMALS, USDC_DECIMALS } from "@/constants";
+import { FIDU_DECIMALS, GFI_DECIMALS, USDC_DECIMALS } from "@/constants";
 import { API_BASE_URL } from "@/constants";
 import {
   SupportedCrypto,
@@ -12,6 +12,7 @@ import {
   TransactionCategory,
   StakedPositionType,
   SeniorPoolStakedPosition,
+  CryptoAmount,
 } from "@/lib/graphql/generated";
 import type { Erc20 } from "@/types/ethers-contracts";
 
@@ -367,4 +368,22 @@ export function sum<T extends string, U extends Record<T, BigNumber>>(
     (prev, current) => prev.add(current[field]),
     BigNumber.from(0)
   );
+}
+
+/**
+ *
+ * @param gfi CryptoAmount measured in GFI
+ * @param fiatPerGfi The number of USD per GFI
+ * @returns A CryptoAmount in USDC
+ */
+export function gfiToUsdc(gfi: CryptoAmount, fiatPerGfi: number): CryptoAmount {
+  const formattedGfi = utils.formatUnits(gfi.amount, GFI_DECIMALS);
+  const usdcPerGfi = FixedNumber.from(fiatPerGfi.toString()).mulUnsafe(
+    FixedNumber.from(Math.pow(10, USDC_DECIMALS).toString())
+  );
+  const amount = FixedNumber.from(formattedGfi).mulUnsafe(usdcPerGfi);
+  return {
+    token: SupportedCrypto.Usdc,
+    amount: BigNumber.from(amount.toString().split(".")[0]),
+  };
 }
