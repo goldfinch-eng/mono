@@ -10,7 +10,10 @@ import {
   ShimmerLines,
 } from "@/components/design-system";
 import { formatPercent } from "@/lib/format";
-import { TranchedPoolCardFieldsFragment } from "@/lib/graphql/generated";
+import {
+  TranchedPoolCardFieldsFragment,
+  TranchedPoolCardDealFieldsFragment,
+} from "@/lib/graphql/generated";
 import {
   PoolStatus,
   getTranchedPoolStatus,
@@ -19,8 +22,8 @@ import {
 } from "@/lib/pools";
 
 interface PoolCardProps {
-  title?: string | null;
-  subtitle?: string | null;
+  title: string;
+  subtitle: string;
   apy: FixedNumber;
   apyWithGfi: FixedNumber;
   apyTooltipContent: ReactNode;
@@ -177,9 +180,6 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   ${TRANCHED_POOL_STATUS_FIELDS}
   fragment TranchedPoolCardFields on TranchedPool {
     id
-    name @client
-    category @client
-    icon @client
     estimatedJuniorApy
     estimatedJuniorApyFromGfiRaw
     creditLine {
@@ -190,7 +190,22 @@ export const TRANCHED_POOL_CARD_FIELDS = gql`
   }
 `;
 
+export const TRANCHED_POOL_CARD_DEAL_FIELDS = gql`
+  fragment TranchedPoolCardDealFields on Deal {
+    id
+    name
+    category
+    borrower {
+      id
+      logo {
+        url
+      }
+    }
+  }
+`;
+
 interface TranchedPoolCardProps {
+  details: TranchedPoolCardDealFieldsFragment;
   tranchedPool: TranchedPoolCardFieldsFragment;
   href: string;
   fiatPerGfi: number;
@@ -198,6 +213,7 @@ interface TranchedPoolCardProps {
 }
 
 export function TranchedPoolCard({
+  details,
   tranchedPool,
   href,
   fiatPerGfi,
@@ -221,9 +237,9 @@ export function TranchedPoolCard({
 
   return (
     <PoolCard
-      title={tranchedPool.name}
-      subtitle={tranchedPool.category}
-      icon={tranchedPool.icon}
+      title={details.name}
+      subtitle={details.category}
+      icon={details.borrower?.logo?.url}
       apy={tranchedPool.estimatedJuniorApy}
       apyWithGfi={totalApyWithGfi}
       apyTooltipContent={

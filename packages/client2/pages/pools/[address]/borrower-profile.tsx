@@ -1,110 +1,195 @@
 import { gql } from "@apollo/client";
 import Image from "next/future/image";
 
-import { Chip, Icon } from "@/components/design-system";
-import { BorrowerProfileFieldsFragment } from "@/lib/graphql/generated";
+import { ChipLink, Link } from "@/components/design-system";
+import { RichText } from "@/components/rich-text";
+import {
+  BorrowerProfileFieldsFragment,
+  BorrowerOtherPoolFieldsFragment,
+} from "@/lib/graphql/generated";
+
+import { BorrowerTeam } from "./borrower-team";
+import {
+  BorrowerFinancialsTable,
+  UnderwritingPerformanceTable,
+} from "./deal-tables";
+import { DocumentsList } from "./documents-list";
+
+export const BORROWER_OTHER_POOL_FIELDS = gql`
+  fragment BorrowerOtherPoolFields on TranchedPool {
+    id
+    name @client
+  }
+`;
 
 export const BORROWER_PROFILE_FIELDS = gql`
-  fragment BorrowerProfileFields on TranchedPool {
+  fragment BorrowerProfileFields on Borrower {
     id
-    borrower @client {
+    name
+    logo {
+      url
+    }
+    orgType
+    bio
+    website
+    twitter
+    linkedin
+    underwritingPerformance {
+      ...BorrowerPerformanceTableFields
+    }
+    borrowerFinancials {
+      ...BorrowerFinancialsTableFields
+    }
+    otherProducts
+    team {
+      description
+      members {
+        ...CMSTeamMemberFields
+      }
+    }
+    mediaLinks {
+      url
+      title
+    }
+    contactInfo
+    documents {
+      ...DocumentFields
+    }
+    deals {
+      id
       name
-      logo
-      orgType
-      website
-      linkedIn
-      twitter
-      bio
-      highlights
     }
   }
 `;
 
-export function BorrowerProfile({
-  tranchedPool: {
-    borrower: { name, logo, website, linkedIn, twitter, bio, highlights },
-  },
-}: {
-  tranchedPool: BorrowerProfileFieldsFragment;
-}) {
-  return (
-    <div>
-      <div className="mb-8 items-center justify-between lg:flex">
-        <div className="mb-3 flex items-center">
-          {logo && (
-            <Image
-              src={logo}
-              alt={name}
-              className="mr-3 overflow-hidden rounded-full border border-sand-200"
-              height={32}
-              width={32}
-            />
-          )}
+interface BorrowerProfileProps {
+  borrower: BorrowerProfileFieldsFragment;
+  borrowerPools: BorrowerOtherPoolFieldsFragment[];
+}
 
-          <h2 className="text-3xl lg:mb-0">{name}</h2>
-        </div>
-        <div className="flex gap-2">
-          <Chip
-            className="relative flex items-center sm:gap-2"
-            colorScheme="sand"
-          >
-            <Icon name="Link" size="sm" />
-            <a
-              className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-              href={website}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span className="sr-only sm:not-sr-only">Website</span>
-            </a>
-          </Chip>
-          <Chip
-            className="relative flex items-center sm:gap-2"
-            colorScheme="sand"
-          >
-            <Icon name="LinkedIn" size="sm" />
-            <a
-              className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-              href={linkedIn}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span className="sr-only sm:not-sr-only">LinkedIn</span>
-            </a>
-          </Chip>
-          {twitter ? (
-            <Chip
-              className="relative flex items-center sm:gap-2"
-              colorScheme="sand"
-            >
-              <Icon name="Twitter" size="sm" />
-              <a
-                className="after:absolute after:top-0 after:left-0 after:h-full after:w-full"
-                href={twitter}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span className="sr-only sm:not-sr-only">Twitter</span>
-              </a>
-            </Chip>
+export function BorrowerProfile({
+  borrower,
+  borrowerPools,
+}: BorrowerProfileProps) {
+  return (
+    <div className="space-y-20">
+      <div>
+        <div className="mb-8">
+          <div className="mb-3 items-center justify-between lg:flex">
+            <div className="flex items-center gap-3">
+              {borrower.logo && (
+                <Image
+                  src={borrower.logo.url as string}
+                  alt={borrower.name}
+                  className="h-8 w-8 overflow-hidden rounded-full border border-sand-200 object-contain"
+                  height={32}
+                  width={32}
+                />
+              )}
+
+              <h2 className="text-3xl lg:mb-0">{borrower.name}</h2>
+            </div>
+            <div className="flex gap-2">
+              {borrower.website ? (
+                <ChipLink
+                  iconLeft="Link"
+                  href={borrower.website}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Website
+                </ChipLink>
+              ) : null}
+              {borrower.linkedin ? (
+                <ChipLink
+                  iconLeft="LinkedIn"
+                  href={borrower.linkedin}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  LinkedIn
+                </ChipLink>
+              ) : null}
+              {borrower.twitter ? (
+                <ChipLink
+                  iconLeft="Twitter"
+                  href={borrower.twitter}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Twitter
+                </ChipLink>
+              ) : null}
+            </div>
+          </div>
+          {borrower.orgType ? (
+            <div className="text-sm text-sand-500">{borrower.orgType}</div>
           ) : null}
         </div>
+
+        {borrower.bio ? (
+          <RichText content={borrower.bio} className="mb-8" />
+        ) : null}
       </div>
-      <div className="mb-20">{bio}</div>
-      {highlights ? (
-        <>
-          <h3 className="mb-8 text-lg font-semibold">Highlights</h3>
-          <ul className="list-outside list-disc space-y-5 pl-5">
-            {highlights.map((item, idx) => (
+
+      <BorrowerFinancialsTable
+        otherPools={borrowerPools}
+        borrowerFinancials={borrower.borrowerFinancials}
+      />
+
+      {borrower.otherProducts ? (
+        <div>
+          <h3 className="mb-8 text-lg font-semibold">Other Products Offered</h3>
+          <RichText content={borrower.otherProducts} />
+        </div>
+      ) : null}
+
+      <UnderwritingPerformanceTable
+        details={borrower.underwritingPerformance}
+      />
+
+      {borrower.team &&
+      ((borrower.team.members && borrower.team.members.length > 0) ||
+        borrower.team?.description) ? (
+        <BorrowerTeam
+          members={borrower.team.members}
+          description={borrower.team.description}
+        />
+      ) : null}
+
+      {borrower.mediaLinks && borrower.mediaLinks.length > 0 ? (
+        <div>
+          <h3 className="mb-8 text-lg font-semibold">Media</h3>
+          <ul>
+            {borrower.mediaLinks.map((link, idx) => (
               <li
-                key={`pool-highlight-${name}-${idx}`}
-                className="whitespace-pre-wrap"
+                key={`borrower-media-link-${link.url}-${idx}`}
+                className="py-1"
               >
-                {item}
+                <Link
+                  href={link.url as string}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 text-eggplant-700 underline sm:gap-2"
+                  iconRight="ArrowTopRight"
+                >
+                  {link.title as string}
+                </Link>
               </li>
             ))}
           </ul>
-        </>
+        </div>
+      ) : null}
+
+      {borrower.contactInfo ? (
+        <div>
+          <h3 className="mb-8 text-lg font-semibold">Contact Information</h3>
+          <RichText content={borrower.contactInfo} />
+        </div>
+      ) : null}
+
+      {borrower.documents && borrower.documents.length > 0 ? (
+        <DocumentsList documents={borrower.documents} />
       ) : null}
     </div>
   );

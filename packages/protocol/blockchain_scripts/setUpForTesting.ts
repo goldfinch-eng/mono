@@ -512,16 +512,21 @@ async function writePoolMetadata({
 
   const metadataPath = "../../packages/pools/metadata/localhost.json"
   const metadataPathForClient2 = "../../packages/client2/constants/metadata/localhost.json"
+  const metadataPathForCmsSeeding = "../../packages/cms/src/scripts/localhost-deals.json"
   let metadata: any
   let metadata2: any
+  let metadataCmsSeeding: any
   try {
     const data = await fs.promises.readFile(metadataPath)
     metadata = JSON.parse(data.toString())
     const data2 = await fs.promises.readFile(metadataPathForClient2)
     metadata2 = JSON.parse(data2.toString())
+    const dataCms = await fs.promises.readFile(metadataPathForCmsSeeding)
+    metadataCmsSeeding = JSON.parse(dataCms.toString())
   } catch (error) {
     metadata = {}
     metadata2 = {}
+    metadataCmsSeeding = {}
   }
   const name = `${borrower}: ${_.sample(names)}`
   const launchTime = await getCurrentTimestamp()
@@ -540,16 +545,18 @@ async function writePoolMetadata({
   }
   metadata2[pool.address.toLowerCase()] = {
     name,
+    borrower: "goldfinchTestBorrower",
+  }
+  metadataCmsSeeding[pool.address.toLowerCase()] = {
+    name,
     category: _.sample(categories),
-    icon: _.sample(icons),
     description,
-    dataroom: "/fake-dataroom",
-    agreement: "/fake-agreement",
     borrower: "goldfinchTestBorrower",
   }
 
   await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
   await fs.promises.writeFile(metadataPathForClient2, JSON.stringify(metadata2, null, 2))
+  await fs.promises.writeFile(metadataPathForCmsSeeding, JSON.stringify(metadataCmsSeeding, null, 2))
 }
 
 function getLastEventArgs(result: ContractReceipt): Result {

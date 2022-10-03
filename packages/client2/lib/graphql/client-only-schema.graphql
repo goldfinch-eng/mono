@@ -4,27 +4,10 @@ extend type SeniorPool {
   icon: String!
 }
 
-type Borrower {
-  name: String!
-  orgType: String!
-  website: String!
-  linkedIn: String!
-  twitter: String
-  logo: String!
-  headerColor: String!
-  bio: String!
-  highlights: [String!]!
-}
-
 extend type TranchedPool {
   name: String!
-  category: String!
-  description: String!
-  highlights: [String!]
-  icon: String!
-  agreement: String
-  dataroom: String
-  borrower: Borrower!
+  borrowerName: String!
+  borrowerLogo: String!
 }
 
 extend type CreditLine {
