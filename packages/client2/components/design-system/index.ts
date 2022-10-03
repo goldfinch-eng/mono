@@ -3,6 +3,7 @@ export * from "./banner";
 export * from "./breadcrumb";
 export * from "./button";
 export * from "./chip";
+export * from "./drawer";
 export * from "./form";
 export * from "./icon";
 export * from "./input";

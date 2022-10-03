@@ -85,7 +85,7 @@ export function Drawer({
         >
           <div
             className={clsx(
-              "fixed bg-white p-6 shadow-lg md:p-12",
+              "fixed overflow-auto bg-white p-6 shadow-lg md:p-12",
               from === "left" && "top-0 left-0 h-full",
               from === "right" && "top-0 right-0 h-full",
               from === "bottom" && "bottom-0 right-0 w-full",
@@ -99,9 +99,9 @@ export function Drawer({
                 : null
             )}
           >
-            <div className="mb-6">
+            <div className="mb-10">
               {title && (
-                <Dialog.Title className="text-lg font-semibold">
+                <Dialog.Title className="font-serif text-3xl font-semibold">
                   {title}
                 </Dialog.Title>
               )}
