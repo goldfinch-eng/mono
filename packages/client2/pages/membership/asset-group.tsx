@@ -5,7 +5,7 @@ import { Button, InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
 
-interface Asset {
+export interface Asset {
   name: string;
   description: string;
   tooltip?: string;
@@ -69,8 +69,8 @@ function AssetDisplay({ asset }: { asset: Asset }) {
   return (
     <div className="flex items-center justify-between rounded bg-white py-6 px-5">
       <div>
-        <div className="flex items-center gap-2">
-          <div className="mb-1 text-lg">{name}</div>
+        <div className="mb-1 flex items-center gap-2">
+          <div className="text-lg">{name}</div>
           {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
         </div>
         <div className="font-medium text-sand-400">{description}</div>
