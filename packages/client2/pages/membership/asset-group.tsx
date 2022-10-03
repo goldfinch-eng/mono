@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
+import { ReactNode } from "react";
 
 import { Button, InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
@@ -20,6 +21,8 @@ interface AssetGroupProps {
   heading: string;
   buttonText: string;
   onButtonClick: () => void;
+  hideButton?: boolean;
+  emptyContent?: ReactNode;
 }
 
 export function AssetGroup({
@@ -29,6 +32,8 @@ export function AssetGroup({
   heading,
   buttonText,
   onButtonClick,
+  hideButton = false,
+  emptyContent = null,
 }: AssetGroupProps) {
   const totalValue = sum("dollarValue", assets);
   return (
@@ -41,7 +46,12 @@ export function AssetGroup({
           : "border-mustard-200 bg-mustard-200"
       )}
     >
-      <div className="mb-4 flex items-center justify-between gap-8 text-lg font-semibold">
+      <div
+        className={clsx(
+          "flex items-center justify-between gap-8 text-lg font-semibold",
+          assets.length !== 0 || !hideButton ? "mb-4" : null
+        )}
+      >
         <div>{heading}</div>
         <div>
           {formatCrypto(
@@ -51,7 +61,7 @@ export function AssetGroup({
         </div>
       </div>
       {assets.length === 0 ? (
-        <div>No assets</div>
+        emptyContent
       ) : (
         <div className="flex flex-col items-stretch gap-2">
           {assets.map((asset, index) => (
@@ -59,14 +69,16 @@ export function AssetGroup({
           ))}
         </div>
       )}
-      <Button
-        className="mt-4 w-full"
-        colorScheme={background === "sand" ? "primary" : "mustard"}
-        size="xl"
-        onClick={onButtonClick}
-      >
-        {buttonText}
-      </Button>
+      {hideButton ? null : (
+        <Button
+          className="mt-4 w-full"
+          colorScheme={background === "sand" ? "primary" : "mustard"}
+          size="xl"
+          onClick={onButtonClick}
+        >
+          {buttonText}
+        </Button>
+      )}
     </div>
   );
 }

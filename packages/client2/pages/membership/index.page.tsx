@@ -102,6 +102,8 @@ export default function MembershipPage() {
     });
   }
 
+  const vaultedAssets: Asset[] = [];
+
   return (
     <div>
       <SEO title="Membership" />
@@ -141,14 +143,16 @@ export default function MembershipPage() {
                 className="lg:w-1/2"
                 buttonText="Add to vault"
                 onButtonClick={() => alert("unimplemented")}
+                hideButton={vaultableAssets.length === 0}
               />
               <AssetGroup
                 heading="Assets in vault"
-                assets={[]}
+                assets={vaultedAssets}
                 background="gold"
                 className="lg:w-1/2"
                 buttonText="Remove from vault"
                 onButtonClick={() => alert("unimplemented")}
+                hideButton={vaultedAssets.length === 0}
               />
             </div>
           </div>
