@@ -22,7 +22,8 @@ interface AssetGroupProps {
   buttonText: string;
   onButtonClick: () => void;
   hideButton?: boolean;
-  emptyContent?: ReactNode;
+  beforeAssets?: ReactNode;
+  afterAssets?: ReactNode;
 }
 
 export function AssetGroup({
@@ -33,25 +34,21 @@ export function AssetGroup({
   buttonText,
   onButtonClick,
   hideButton = false,
-  emptyContent = null,
+  beforeAssets = null,
+  afterAssets = null,
 }: AssetGroupProps) {
   const totalValue = sum("dollarValue", assets);
   return (
     <div
       className={clsx(
         className,
-        "rounded-xl border p-5",
+        "space-y-4 rounded-xl border p-5",
         background === "sand"
           ? "border-sand-200 bg-sand-100"
           : "border-mustard-200 bg-mustard-200"
       )}
     >
-      <div
-        className={clsx(
-          "flex items-center justify-between gap-8 text-lg font-semibold",
-          assets.length !== 0 || !hideButton ? "mb-4" : null
-        )}
-      >
+      <div className="flex items-center justify-between gap-8 text-lg font-semibold">
         <div>{heading}</div>
         <div>
           {formatCrypto(
@@ -60,15 +57,15 @@ export function AssetGroup({
           )}
         </div>
       </div>
-      {assets.length === 0 ? (
-        emptyContent
-      ) : (
+      {beforeAssets}
+      {assets.length === 0 ? null : (
         <div className="flex flex-col items-stretch gap-2">
           {assets.map((asset, index) => (
             <AssetDisplay key={`${asset.name}-${index}`} asset={asset} />
           ))}
         </div>
       )}
+      {afterAssets}
       {hideButton ? null : (
         <Button
           className="mt-4 w-full"

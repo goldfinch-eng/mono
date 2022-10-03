@@ -1,7 +1,8 @@
 import { gql } from "@apollo/client";
+import clsx from "clsx";
 import { useState } from "react";
 
-import { Button, Heading } from "@/components/design-system";
+import { Button, Heading, Icon } from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import { useMembershipPageQuery } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
@@ -62,6 +63,9 @@ export default function MembershipPage() {
     skip: !account,
   });
 
+  let userHasGfi = false;
+  let userHasPositions = false;
+
   const vaultableAssets: Asset[] = [];
   if (
     data &&
@@ -76,6 +80,7 @@ export default function MembershipPage() {
       dollarValue: gfiToUsdc(data.viewer.gfiBalance, data.gfiPrice.price.amount)
         .amount,
     });
+    userHasGfi = true;
   }
 
   if (data && data.seniorPoolStakedPositions.length > 0) {
@@ -89,6 +94,7 @@ export default function MembershipPage() {
           .amount,
       });
     });
+    userHasPositions = true;
   }
 
   if (data && data.tranchedPoolTokens.length > 0) {
@@ -100,6 +106,7 @@ export default function MembershipPage() {
         dollarValue: poolToken.principalAmount,
       });
     });
+    userHasPositions = true;
   }
 
   const vaultedAssets: Asset[] = [];
@@ -144,6 +151,37 @@ export default function MembershipPage() {
                 buttonText="Add to vault"
                 onButtonClick={() => alert("unimplemented")}
                 hideButton={vaultableAssets.length === 0}
+                beforeAssets={
+                  !userHasGfi || !userHasPositions ? (
+                    <div>
+                      Goldfinch Membership offers exclusive benefits, like
+                      accessing yield enhancements by receiving a pro-rata share
+                      of Member Rewards, distributed in FIDU. Start by investing
+                      in the Senior Pool or any Backer Pool. Then add those
+                      investor tokens to your vault alongside GFI.
+                    </div>
+                  ) : null
+                }
+                afterAssets={
+                  !userHasGfi || !userHasPositions ? (
+                    <div className="space-y-2">
+                      {!userHasGfi ? (
+                        <CallToAction
+                          mainText="Buy GFI"
+                          buttonText="Buy now"
+                          href="https://www.coinbase.com/price/goldfinch-protocol"
+                        />
+                      ) : null}
+                      {!userHasPositions ? (
+                        <CallToAction
+                          mainText="Invest in a pool"
+                          buttonText="Explore"
+                          href="/earn"
+                        />
+                      ) : null}
+                    </div>
+                  ) : null
+                }
               />
               <AssetGroup
                 heading="Assets in vault"
@@ -158,6 +196,42 @@ export default function MembershipPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function CallToAction({
+  className,
+  mainText,
+  buttonText,
+  href,
+}: {
+  className?: string;
+  mainText: string;
+  buttonText: string;
+  href: string;
+}) {
+  return (
+    <div
+      className={clsx(
+        className,
+        "flex justify-between rounded-lg border border-sand-200 bg-white p-4"
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <Icon name="LightningBolt" className="text-mustard-400" />
+        <div className="text-lg font-semibold">{mainText}</div>
+      </div>
+      <Button
+        colorScheme="mustard"
+        variant="rounded"
+        size="lg"
+        as="a"
+        href={href}
+        iconRight="ArrowSmRight"
+      >
+        {buttonText}
+      </Button>
     </div>
   );
 }
