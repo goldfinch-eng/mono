@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
@@ -25,7 +26,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
   using SafeERC20 for IERC20;
   using ConfigHelper for GoldfinchConfig;
 
-  using StakingRewardsVesting for StakingRewardsVesting.Rewards;
+  using StakingRewardsVesting for Rewards;
 
   enum LockupPeriod {
     SixMonths,
@@ -549,7 +550,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     positions[tokenId] = StakedPosition({
       positionType: positionType,
       amount: amount,
-      rewards: StakingRewardsVesting.Rewards({
+      rewards: Rewards({
         totalUnvested: 0,
         totalVested: 0,
         totalPreviouslyVested: 0,
@@ -906,7 +907,7 @@ contract StakingRewards is ERC721PresetMinterPauserAutoIdUpgradeSafe, Reentrancy
     if (tokenId != 0) {
       uint256 additionalRewards = earnedSinceLastCheckpoint(tokenId);
 
-      StakingRewardsVesting.Rewards storage rewards = positions[tokenId].rewards;
+      Rewards storage rewards = positions[tokenId].rewards;
       rewards.totalUnvested = rewards.totalUnvested.add(additionalRewards);
       rewards.checkpoint();
 
