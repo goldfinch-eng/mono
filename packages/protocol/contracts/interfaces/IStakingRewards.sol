@@ -27,6 +27,45 @@ interface IStakingRewards is IERC721, IERC721Metadata, IERC721Enumerable {
   function accumulatedRewardsPerToken() external view returns (uint256);
 
   function lastUpdateTime() external view returns (uint256);
+
+  /* ========== EVENTS ========== */
+
+  event RewardAdded(uint256 reward);
+  event Staked(
+    address indexed user,
+    uint256 indexed tokenId,
+    uint256 amount,
+    StakedPositionType positionType,
+    uint256 baseTokenExchangeRate
+  );
+  event DepositedAndStaked(address indexed user, uint256 depositedAmount, uint256 indexed tokenId, uint256 amount);
+  event DepositedToCurve(address indexed user, uint256 fiduAmount, uint256 usdcAmount, uint256 tokensReceived);
+  event DepositedToCurveAndStaked(
+    address indexed user,
+    uint256 fiduAmount,
+    uint256 usdcAmount,
+    uint256 indexed tokenId,
+    uint256 amount
+  );
+  event Unstaked(address indexed user, uint256 indexed tokenId, uint256 amount, StakedPositionType positionType);
+  event UnstakedMultiple(address indexed user, uint256[] tokenIds, uint256[] amounts);
+  event UnstakedAndWithdrew(address indexed user, uint256 usdcReceivedAmount, uint256 indexed tokenId, uint256 amount);
+  event UnstakedAndWithdrewMultiple(
+    address indexed user,
+    uint256 usdcReceivedAmount,
+    uint256[] tokenIds,
+    uint256[] amounts
+  );
+  event RewardPaid(address indexed user, uint256 indexed tokenId, uint256 reward);
+  event RewardsParametersUpdated(
+    address indexed who,
+    uint256 targetCapacity,
+    uint256 minRate,
+    uint256 maxRate,
+    uint256 minRateAtPercent,
+    uint256 maxRateAtPercent
+  );
+  event EffectiveMultiplierUpdated(address indexed who, StakedPositionType positionType, uint256 multiplier);
 }
 
 /// @notice Indicates which ERC20 is staked
