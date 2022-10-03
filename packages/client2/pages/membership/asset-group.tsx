@@ -4,6 +4,7 @@ import { BigNumber } from "ethers";
 import { Button, InfoIconTooltip } from "@/components/design-system";
 import { formatCrypto } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
+import { sum } from "@/lib/pools";
 
 export interface Asset {
   name: string;
@@ -29,6 +30,7 @@ export function AssetGroup({
   buttonText,
   onButtonClick,
 }: AssetGroupProps) {
+  const totalValue = sum("dollarValue", assets);
   return (
     <div
       className={clsx(
@@ -41,7 +43,12 @@ export function AssetGroup({
     >
       <div className="mb-4 flex items-center justify-between gap-8 text-lg font-semibold">
         <div>{heading}</div>
-        <div>$ total</div>
+        <div>
+          {formatCrypto(
+            { amount: totalValue, token: SupportedCrypto.Usdc },
+            { includeSymbol: true, includeToken: false }
+          )}
+        </div>
       </div>
       {assets.length === 0 ? (
         <div>No assets</div>
@@ -79,7 +86,7 @@ function AssetDisplay({ asset }: { asset: Asset }) {
       <div className="text-lg font-medium">
         {formatCrypto(
           { amount: dollarValue, token: SupportedCrypto.Usdc },
-          { includeToken: true, includeSymbol: true }
+          { includeSymbol: true }
         )}
       </div>
     </div>
