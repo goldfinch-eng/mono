@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import {IVersioned} from "../../../interfaces/IVersioned.sol";
-import {
-  ImplementationRepository as Repo
-} from "./ImplementationRepository.sol";
+import {ImplementationRepository as Repo} from "./ImplementationRepository.sol";
 
 contract VersionedImplementationRepository is Repo {
   /// @dev abi encoded version -> implementation address
