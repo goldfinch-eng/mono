@@ -52,9 +52,9 @@ async function fetchCoinbasePrice(fiat: SupportedFiat): Promise<number> {
 
 async function fetchGfiPrice(fiat: SupportedFiat): Promise<number> {
   try {
-    return await fetchCoingeckoPrice(fiat);
-  } catch (e) {
     return await fetchCoinbasePrice(fiat);
+  } catch (e) {
+    return await fetchCoingeckoPrice(fiat);
   }
 }
 
