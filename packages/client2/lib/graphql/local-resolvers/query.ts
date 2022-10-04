@@ -11,10 +11,18 @@ import {
 } from "../generated";
 import { fetchBackerSecondaryMarketStat } from "./backer-secondary-market";
 
+async function fetchWithTimeout(url: string, timeout = 3000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const fetchResponse = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeoutId);
+  return fetchResponse;
+}
+
 async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toLowerCase();
   const coingeckoResponse = await (
-    await fetch(
+    await fetchWithTimeout(
       `https://api.coingecko.com/api/v3/simple/price?ids=goldfinch&vs_currencies=${key}`
     )
   ).json();
@@ -35,7 +43,7 @@ async function fetchCoingeckoPrice(fiat: SupportedFiat): Promise<number> {
 async function fetchCoinbasePrice(fiat: SupportedFiat): Promise<number> {
   const key = fiat.toUpperCase();
   const coinbaseResponse = await (
-    await fetch(`https://api.coinbase.com/v2/prices/GFI-${key}/spot`)
+    await fetchWithTimeout(`https://api.coinbase.com/v2/prices/GFI-${key}/spot`)
   ).json();
 
   if (
@@ -52,9 +60,9 @@ async function fetchCoinbasePrice(fiat: SupportedFiat): Promise<number> {
 
 async function fetchGfiPrice(fiat: SupportedFiat): Promise<number> {
   try {
-    return await fetchCoinbasePrice(fiat);
-  } catch (e) {
     return await fetchCoingeckoPrice(fiat);
+  } catch (e) {
+    return await fetchCoinbasePrice(fiat);
   }
 }
 
