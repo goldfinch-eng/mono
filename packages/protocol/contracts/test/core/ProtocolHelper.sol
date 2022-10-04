@@ -51,22 +51,22 @@ contract ProtocolHelper is IProtocolHelper {
     _fidu.__initialize__(gfOwner, "Fidu", "FIDU", _gfConfig);
     _gfConfig.setAddress(uint256(ConfigOptions.Addresses.Fidu), address(_fidu));
 
-    vm.stopPrank(gfOwner);
+    vm.stopPrank();
   }
 
-  function gfConfig() external returns (IGoldfinchConfig) {
-    return IGoldfinchConfig(_gfConfig);
+  function gfConfig() external override returns (IGoldfinchConfig) {
+    return IGoldfinchConfig(address(_gfConfig));
   }
 
-  function fidu() external returns (IFidu) {
-    return IFidu(_fidu);
+  function fidu() external override returns (IERC20) {
+    return IERC20(address(_fidu));
   }
 
-  function gfFactory() external returns (IGoldfinchFactory) {
-    return IGoldfinchFactory(_gfFactory);
+  function gfFactory() external override returns (IGoldfinchFactory) {
+    return IGoldfinchFactory(address(_gfFactory));
   }
 
-  function usdc() external returns (IERC20) {
-    return IERC20(_usdc);
+  function usdc() external override returns (IERC20) {
+    return IERC20(address(_usdc));
   }
 }
