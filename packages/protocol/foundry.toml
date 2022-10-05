@@ -1,4 +1,4 @@
-[default]
+[profile.default]
 auto_detect_solc = true
 block_base_fee_per_gas = 0
 block_coinbase = '0x0000000000000000000000000000000000000000'
@@ -40,7 +40,7 @@ verbosity = 0
 via_ir = false
 match_path = "./contracts/test/*.sol"
 
-[default.rpc_storage_caching]
+[profile.default.rpc_storage_caching]
 chains = 'all'
 endpoints = 'all'
 
