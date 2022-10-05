@@ -9,6 +9,7 @@
     "test": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test $(find test/ -name '*.test.ts' | grep -v mainnet_forking) --show-stack-traces",
     "test:unfiltered": "NODE_OPTIONS=--unhandled-rejections=strict NODE_ENV=test npx hardhat test --show-stack-traces",
     "test:mainnet-forking": "NODE_OPTIONS=--unhandled-rejections=strict HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test $(find test/mainnet_forking/ -name '*.test.ts') --show-stack-traces",
+    "test:mainnet-forking:foundry": "source ./scripts/setupFoundryMainnetForkingEnv.sh && FOUNDRY_PROFILE=mainnet-forking forge test",
     "test:tenderly": "NODE_OPTIONS=--unhandled-rejections=strict HARDHAT_FORK=mainnet NODE_ENV=test npx hardhat test $(find test/mainnet_forking/ -name '*.test.ts') --show-stack-traces --network localhost",
     "build": "npx hardhat compile",
     "pre-commit": "npx lint-staged",
