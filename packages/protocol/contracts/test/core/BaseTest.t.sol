@@ -22,13 +22,9 @@ abstract contract BaseTest is Test {
   FuzzingHelper internal fuzzHelper = new FuzzingHelper();
 
   function setUp() public virtual {
-    _startImpersonation(GF_OWNER);
-
     protocol = IProtocolHelper(deployCode("ProtocolHelper.sol", abi.encode(vm, GF_OWNER, TREASURY)));
 
     excludeAddresses();
-
-    _stopImpersonation();
   }
 
   function excludeAddresses() private {
