@@ -22,7 +22,10 @@ abstract contract BaseTest is Test {
   FuzzingHelper internal fuzzHelper = new FuzzingHelper();
 
   function setUp() public virtual {
-    protocol = IProtocolHelper(deployCode("ProtocolHelper.sol", abi.encode(vm, GF_OWNER, TREASURY)));
+    // We use deployCode and cast to an interface so that BaseTest can be used by both 0.6.x and 0.8.x test files.
+    protocol = IProtocolHelper(
+      deployCode("./artifacts/ProtocolHelper.t.sol/ProtocolHelper.json", abi.encode(vm, GF_OWNER, TREASURY))
+    );
 
     excludeAddresses();
   }
