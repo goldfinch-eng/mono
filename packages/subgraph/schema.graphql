@@ -248,6 +248,7 @@ enum TransactionCategory {
   TRANCHED_POOL_REPAYMENT
   TRANCHED_POOL_DRAWDOWN
   UID_MINTED
+  CURVE_TOKEN_EXCHANGE
 }
 
 enum SupportedCrypto {
