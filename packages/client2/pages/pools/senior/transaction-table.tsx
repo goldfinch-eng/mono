@@ -26,7 +26,6 @@ gql`
           SENIOR_POOL_WITHDRAWAL
           SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL
           SENIOR_POOL_UNSTAKE
-          CURVE_TOKEN_EXCHANGE
         ]
       }
       orderBy: timestamp

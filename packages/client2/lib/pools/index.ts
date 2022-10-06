@@ -237,6 +237,8 @@ const transactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.TranchedPoolRepayment]: "Repayment",
   [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
   [TransactionCategory.UidMinted]: "Mint UID",
+  [TransactionCategory.CurveFiduBuy]: "Curve Swap",
+  [TransactionCategory.CurveFiduSell]: "Curve Swap",
 };
 
 export function getTransactionLabel(transaction: {
@@ -258,6 +260,8 @@ const shortTransactionLabels: Record<TransactionCategory, string> = {
   [TransactionCategory.TranchedPoolRepayment]: "Repayment",
   [TransactionCategory.TranchedPoolDrawdown]: "Drawdown",
   [TransactionCategory.UidMinted]: "Mint UID",
+  [TransactionCategory.CurveFiduBuy]: "Curve Swap",
+  [TransactionCategory.CurveFiduSell]: "Curve Swap",
 };
 
 /**
@@ -284,6 +288,8 @@ const transactionIcons: Record<TransactionCategory, IconNameType> = {
   [TransactionCategory.TranchedPoolRepayment]: "ArrowUp",
   [TransactionCategory.TranchedPoolDrawdown]: "ArrowDown",
   [TransactionCategory.UidMinted]: "Checkmark",
+  [TransactionCategory.CurveFiduBuy]: "ArrowUp",
+  [TransactionCategory.CurveFiduSell]: "ArrowDown",
 };
 
 /**

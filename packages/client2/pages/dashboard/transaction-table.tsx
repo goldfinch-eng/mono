@@ -42,6 +42,7 @@ const subtractiveIconTransactionCategories = [
   TransactionCategory.SeniorPoolWithdrawal,
   TransactionCategory.TranchedPoolDrawdown,
   TransactionCategory.TranchedPoolWithdrawal,
+  TransactionCategory.CurveFiduSell,
 ];
 
 const seniorPoolCategories = [

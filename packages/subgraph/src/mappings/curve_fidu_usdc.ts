@@ -13,15 +13,19 @@ export function handleTokenExchange(event: TokenExchange): void {
 
   const curveUsdcId = BigInt.fromI32(1)
 
-  let transaction = createTransactionFromEvent(event, "CURVE_TOKEN_EXCHANGE", buyer)
-  transaction.category = "CURVE_TOKEN_EXCHANGE"
-  transaction.amount = tokensSold
-  transaction.amountToken = soldId.equals(curveUsdcId) ? "USDC" : "FIDU"
-  transaction.save()
-
-  transaction = createTransactionFromEvent(event, "CURVE_TOKEN_EXCHANGE", buyer)
-  transaction.category = "CURVE_TOKEN_EXCHANGE"
-  transaction.amount = tokensBought
-  transaction.amountToken = boughtId.equals(curveUsdcId) ? "USDC" : "FIDU"
-  transaction.save()
+  // Sells USDC and acquires FIDU
+  if (soldId.equals(curveUsdcId)) {
+    const transaction = createTransactionFromEvent(event, "CURVE_FIDU_BUY", buyer)
+    transaction.category = "CURVE_FIDU_BUY"
+    transaction.amount = tokensBought
+    transaction.amountToken = "FIDU"
+    transaction.save()
+  } else {
+    // Sell fidu and acquires usdc
+    const transaction = createTransactionFromEvent(event, "CURVE_FIDU_SELL", buyer)
+    transaction.category = "CURVE_FIDU_SELL"
+    transaction.amount = tokensSold
+    transaction.amountToken = "FIDU"
+    transaction.save()
+  }
 }
