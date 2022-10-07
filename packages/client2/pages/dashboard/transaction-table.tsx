@@ -3,9 +3,11 @@ import { format } from "date-fns";
 import { useCallback } from "react";
 
 import { Link, ShimmerLines, Table, Icon } from "@/components/design-system";
+import { formatCrypto } from "@/lib/format";
 import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
+  SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
@@ -25,8 +27,11 @@ gql`
       id
       transactionHash
       category
-      amount
-      amountToken
+      sentAmount
+      sentToken
+      receivedAmount
+      receivedToken
+      fiduPrice
       timestamp
       tranchedPool {
         id
@@ -34,16 +39,6 @@ gql`
     }
   }
 `;
-
-const subtractiveIconTransactionCategories = [
-  TransactionCategory.SeniorPoolRedemption,
-  TransactionCategory.SeniorPoolUnstake,
-  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
-  TransactionCategory.SeniorPoolWithdrawal,
-  TransactionCategory.TranchedPoolDrawdown,
-  TransactionCategory.TranchedPoolWithdrawal,
-  TransactionCategory.CurveFiduSell,
-];
 
 const seniorPoolCategories = [
   TransactionCategory.SeniorPoolDeposit,
@@ -75,20 +70,27 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
 
   const rows = (isPreview ? filteredTxs.slice(0, 5) : filteredTxs).map(
     (transaction) => {
-      const amount =
-        transaction.amount && !transaction.amount.isZero() ? (
+      const sentAmount =
+        transaction.sentToken &&
+        transaction.sentAmount &&
+        !transaction.sentAmount.isZero() ? (
           <FormatWithIcon
             cryptoAmount={{
-              token: transaction.amountToken,
-              amount: transaction.amount,
+              token: transaction.sentToken,
+              amount: transaction.sentAmount,
             }}
-            prefix={
-              subtractiveIconTransactionCategories.includes(
-                transaction.category
-              )
-                ? "-"
-                : "+"
-            }
+          />
+        ) : null;
+
+      const receivedAmount =
+        transaction.receivedToken &&
+        transaction.receivedAmount &&
+        !transaction.receivedAmount.isZero() ? (
+          <FormatWithIcon
+            cryptoAmount={{
+              token: transaction.receivedToken,
+              amount: transaction.receivedAmount,
+            }}
           />
         ) : null;
 
@@ -105,8 +107,18 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         <div key={`${transaction.id}-date`} className="text-left">
           {format(date, "MMM d, y")}
         </div>,
-        <div key={`${transaction.id}-amount`} className="text-left">
-          {amount}
+        <div key={`${transaction.id}-sent`} className="text-left">
+          {sentAmount}
+        </div>,
+        <div key={`${transaction.id}-received`} className="text-left">
+          {receivedAmount}
+        </div>,
+        <div key={`${transaction.id}-price`} className="text-left">
+          {transaction.fiduPrice &&
+            formatCrypto({
+              amount: transaction.fiduPrice,
+              token: SupportedCrypto.Fidu,
+            })}
         </div>,
         <div key={`${transaction.id}-pool`} className="text-left">
           {transaction.tranchedPool ? (
@@ -166,7 +178,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
     </div>
   ) : (
     <Table
-      headings={["Type", "Date", "Amount", "Link", ""]}
+      headings={["Type", "Date", "Sent", "Received", "Price", "Link", ""]}
       rows={rows}
       onScrollBottom={!isPreview ? onScrollBottom : undefined}
     />

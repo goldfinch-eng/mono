@@ -269,9 +269,12 @@ type Transaction @entity(immutable: true) {
   user: User!
   timestamp: Int!
   blockNumber: Int!
-  amount: BigInt!
-  amountToken: SupportedCrypto!
+  sentAmount: BigInt
+  sentToken: SupportedCrypto
+  receivedAmount: BigInt
+  receivedToken: SupportedCrypto
   tranchedPool: TranchedPool
+  fiduPrice: BigInt
 }
 
 type Zap @entity {

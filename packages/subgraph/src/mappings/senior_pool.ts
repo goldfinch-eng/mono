@@ -10,7 +10,7 @@ import {
   ReserveFundsCollected,
   WithdrawalMade,
 } from "../../generated/SeniorPool/SeniorPool"
-import {CONFIG_KEYS_ADDRESSES} from "../constants"
+import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
 import {createTransactionFromEvent} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
 import {handleDeposit} from "../entities/user"
@@ -31,8 +31,19 @@ export function handleDepositMade(event: DepositMade): void {
   // Purposefully ignore deposits from StakingRewards contract because those will get captured as DepositAndStake events instead
   if (!event.params.capitalProvider.equals(stakingRewardsAddress)) {
     const transaction = createTransactionFromEvent(event, "SENIOR_POOL_DEPOSIT", event.params.capitalProvider)
-    transaction.amount = event.params.amount
-    transaction.amountToken = "USDC"
+
+    transaction.sentAmount = event.params.amount
+    transaction.sentToken = "USDC"
+    transaction.receivedAmount = event.params.shares
+    transaction.receivedToken = "FIDU"
+
+    // usdc / fidu
+    transaction.fiduPrice = event.params.amount
+      .times(FIDU_DECIMALS)
+      .div(USDC_DECIMALS)
+      .times(FIDU_DECIMALS)
+      .div(event.params.shares)
+
     transaction.save()
   }
 }
@@ -71,8 +82,21 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   // Purposefully ignore withdrawals made by StakingRewards contract because those will be captured as UnstakeAndWithdraw
   if (!event.params.capitalProvider.equals(stakingRewardsAddress)) {
     const transaction = createTransactionFromEvent(event, "SENIOR_POOL_WITHDRAWAL", event.params.capitalProvider)
-    transaction.amount = event.params.userAmount
-    transaction.amountToken = "USDC"
+
+    const seniorPoolContract = SeniorPool.bind(event.address)
+    const sharePrice = seniorPoolContract.sharePrice()
+
+    transaction.sentAmount = event.params.userAmount
+      .plus(event.params.reserveAmount)
+      .times(FIDU_DECIMALS)
+      .div(USDC_DECIMALS)
+      .times(FIDU_DECIMALS)
+      .div(sharePrice)
+    transaction.sentToken = "FIDU"
+    transaction.receivedAmount = event.params.userAmount
+    transaction.receivedToken = "USDC"
+    transaction.fiduPrice = sharePrice
+
     transaction.save()
   }
 }

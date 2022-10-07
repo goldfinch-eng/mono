@@ -37,8 +37,10 @@ gql`
         id
       }
       category
-      amount
-      amountToken
+      sentAmount
+      sentToken
+      receivedAmount
+      receivedToken
       timestamp
       tranchedPool {
         id
@@ -60,6 +62,8 @@ const subtractiveIconTransactionCategories = [
   TransactionCategory.TranchedPoolDrawdown,
   TransactionCategory.SeniorPoolRedemption,
 ];
+
+const sentTokenCategories = [TransactionCategory.TranchedPoolDeposit];
 
 export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
   const { data, loading, error, fetchMore } =
@@ -97,17 +101,27 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
         <Address address={transaction.user.id} />
       );
 
+    let tokenToDisplay = transaction.receivedToken;
+    let amountToDisplay = transaction.receivedAmount;
+
+    if (sentTokenCategories.includes(transaction.category)) {
+      tokenToDisplay = transaction.sentToken;
+      amountToDisplay = transaction.sentAmount;
+    }
+
     const amount =
+      !!tokenToDisplay &&
+      !!amountToDisplay &&
       (subtractiveIconTransactionCategories.includes(transaction.category)
         ? "-"
         : "+") +
-      formatCrypto(
-        {
-          token: transaction.amountToken,
-          amount: transaction.amount,
-        },
-        { includeToken: true }
-      );
+        formatCrypto(
+          {
+            token: tokenToDisplay,
+            amount: amountToDisplay,
+          },
+          { includeToken: true }
+        );
 
     const date = new Date(transaction.timestamp * 1000);
 
