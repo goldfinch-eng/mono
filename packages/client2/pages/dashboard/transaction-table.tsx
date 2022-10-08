@@ -40,6 +40,11 @@ gql`
   }
 `;
 
+const curvePoolCategories = [
+  TransactionCategory.CurveFiduBuy,
+  TransactionCategory.CurveFiduSell,
+];
+
 const seniorPoolCategories = [
   TransactionCategory.SeniorPoolDeposit,
   TransactionCategory.SeniorPoolDepositAndStake,
@@ -137,6 +142,14 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
               className="text-sand-400"
             >
               Senior Pool
+            </Link>
+          ) : curvePoolCategories.includes(transaction.category) ? (
+            <Link
+              href="https://curve.fi/factory-crypto/23"
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              Curve Pool
             </Link>
           ) : null}
         </div>,
