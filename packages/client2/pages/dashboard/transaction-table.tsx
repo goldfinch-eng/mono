@@ -148,6 +148,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
               href="https://curve.fi/factory-crypto/23"
               iconRight="ArrowTopRight"
               className="text-sand-400"
+              target={"_blank"}
             >
               Curve Pool
             </Link>
