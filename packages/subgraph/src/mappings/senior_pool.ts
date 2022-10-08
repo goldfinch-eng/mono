@@ -11,7 +11,7 @@ import {
   WithdrawalMade,
 } from "../../generated/SeniorPool/SeniorPool"
 import {CONFIG_KEYS_ADDRESSES, FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
-import {createTransactionFromEvent} from "../entities/helpers"
+import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updatePoolInvestments, updatePoolStatus} from "../entities/senior_pool"
 import {handleDeposit} from "../entities/user"
 import {getAddressFromConfig} from "../utils"
@@ -38,11 +38,7 @@ export function handleDepositMade(event: DepositMade): void {
     transaction.receivedToken = "FIDU"
 
     // usdc / fidu
-    transaction.fiduPrice = event.params.amount
-      .times(FIDU_DECIMALS)
-      .div(USDC_DECIMALS)
-      .times(FIDU_DECIMALS)
-      .div(event.params.shares)
+    transaction.fiduPrice = usdcWithFiduPrecision(event.params.amount).div(event.params.shares)
 
     transaction.save()
   }

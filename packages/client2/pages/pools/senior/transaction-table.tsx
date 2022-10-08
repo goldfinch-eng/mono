@@ -57,18 +57,23 @@ gql`
   }
 `;
 
-const subtractiveIconTransactionCategories = [
-  TransactionCategory.SeniorPoolWithdrawal,
-  TransactionCategory.SeniorPoolUnstake,
-  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
-  TransactionCategory.TranchedPoolDrawdown,
-];
+export const subtractiveIconTransactionCategories =
+  new Set<TransactionCategory>();
+subtractiveIconTransactionCategories.add(
+  TransactionCategory.SeniorPoolWithdrawal
+);
+subtractiveIconTransactionCategories.add(TransactionCategory.SeniorPoolUnstake);
+subtractiveIconTransactionCategories.add(
+  TransactionCategory.SeniorPoolUnstakeAndWithdrawal
+);
+subtractiveIconTransactionCategories.add(
+  TransactionCategory.TranchedPoolDrawdown
+);
 
-const sentTokenCategories = [
-  TransactionCategory.SeniorPoolStake,
-  TransactionCategory.SeniorPoolDepositAndStake,
-  TransactionCategory.TranchedPoolRepayment,
-];
+export const sentTokenCategories = new Set<TransactionCategory>();
+sentTokenCategories.add(TransactionCategory.SeniorPoolStake);
+sentTokenCategories.add(TransactionCategory.SeniorPoolDepositAndStake);
+sentTokenCategories.add(TransactionCategory.TranchedPoolRepayment);
 
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
@@ -86,7 +91,7 @@ export function TransactionTable() {
     let tokenToDisplay = transaction.receivedToken;
     let amountToDisplay = transaction.receivedAmount;
 
-    if (sentTokenCategories.includes(transaction.category)) {
+    if (sentTokenCategories.has(transaction.category)) {
       tokenToDisplay = transaction.sentToken;
       amountToDisplay = transaction.sentAmount;
     }
@@ -94,7 +99,7 @@ export function TransactionTable() {
     const transactionAmount =
       !!tokenToDisplay &&
       !!amountToDisplay &&
-      (subtractiveIconTransactionCategories.includes(transaction.category)
+      (subtractiveIconTransactionCategories.has(transaction.category)
         ? "-"
         : "+") +
         formatCrypto(

@@ -1,7 +1,6 @@
 import {BigInt} from "@graphprotocol/graph-ts"
 import {TokenExchange} from "../../generated/CurveFiduUSDC/CurveFiduUSDC"
-import {FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
-import {createTransactionFromEvent} from "../entities/helpers"
+import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {getOrInitUser} from "../entities/user"
 
 export function handleTokenExchange(event: TokenExchange): void {
@@ -14,22 +13,23 @@ export function handleTokenExchange(event: TokenExchange): void {
 
   // FIDU=0 USDC=1
   const curveFiduId = BigInt.fromI32(0)
+  const boughtFidu = boughtId.equals(curveFiduId)
 
-  const eventName = boughtId.equals(curveFiduId) ? "CURVE_FIDU_BUY" : "CURVE_FIDU_SELL"
+  const eventName = boughtFidu ? "CURVE_FIDU_BUY" : "CURVE_FIDU_SELL"
 
   const transaction = createTransactionFromEvent(event, eventName, buyer)
   transaction.category = eventName
   transaction.sentAmount = tokensSold
   transaction.sentToken = soldId.equals(curveFiduId) ? "FIDU" : "USDC"
   transaction.receivedAmount = tokensBought
-  transaction.receivedToken = boughtId.equals(curveFiduId) ? "FIDU" : "USDC"
+  transaction.receivedToken = boughtFidu ? "FIDU" : "USDC"
 
   // sell fidu buy usdc
   if (soldId.equals(curveFiduId)) {
     // usdc / fidu
-    transaction.fiduPrice = tokensBought.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS).div(tokensSold)
+    transaction.fiduPrice = usdcWithFiduPrecision(tokensBought).div(tokensSold)
   } else {
-    transaction.fiduPrice = tokensSold.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS).div(tokensBought)
+    transaction.fiduPrice = usdcWithFiduPrecision(tokensSold).div(tokensBought)
   }
 
   transaction.save()

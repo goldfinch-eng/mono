@@ -14,9 +14,7 @@ import {
   RewardPaid,
 } from "../../generated/StakingRewards/StakingRewards"
 
-import {FIDU_DECIMALS, USDC_DECIMALS} from "../constants"
-
-import {createTransactionFromEvent} from "../entities/helpers"
+import {createTransactionFromEvent, usdcWithFiduPrecision} from "../entities/helpers"
 import {updateCurrentEarnRate} from "../entities/staking_rewards"
 
 function mapStakedPositionTypeToAmountToken(stakedPositionType: i32): string {
@@ -121,11 +119,7 @@ export function handleDepositedAndStaked(event: DepositedAndStaked): void {
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "FIDU"
   // usdc / fidu
-  transaction.fiduPrice = event.params.depositedAmount
-    .times(FIDU_DECIMALS)
-    .div(USDC_DECIMALS)
-    .times(FIDU_DECIMALS)
-    .div(event.params.amount)
+  transaction.fiduPrice = usdcWithFiduPrecision(event.params.depositedAmount).div(event.params.amount)
   transaction.save()
 }
 
@@ -136,11 +130,7 @@ export function handleDepositedAndStaked1(event: DepositedAndStaked1): void {
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = "FIDU"
   // usdc / fidu
-  transaction.fiduPrice = event.params.depositedAmount
-    .times(FIDU_DECIMALS)
-    .div(USDC_DECIMALS)
-    .times(FIDU_DECIMALS)
-    .div(event.params.amount)
+  transaction.fiduPrice = usdcWithFiduPrecision(event.params.depositedAmount).div(event.params.amount)
   transaction.save()
 }
 
@@ -156,9 +146,8 @@ export function handleUnstakedAndWithdrew(event: UnstakedAndWithdrew): void {
 export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMultiple): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
 
-  // TODO
-  // transaction.sentAmount = event.params.amounts.reduce((partialSum: BigInt, a) => partialSum.plus(a))
-  // transaction.sentToken = "FIDU"
+  transaction.sentAmount = event.params.amounts.reduce((partialSum: BigInt, a) => partialSum.plus(a))
+  transaction.sentToken = "FIDU"
   transaction.receivedAmount = event.params.usdcReceivedAmount
   transaction.receivedToken = "USDC"
   transaction.save()

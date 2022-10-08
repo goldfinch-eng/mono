@@ -18,8 +18,8 @@ export function fiduFromAtomic(amount: BigInt): BigInt {
   return amount.div(FIDU_DECIMALS)
 }
 
-export function usdcFromAtomic(amount: BigInt): BigInt {
-  return amount.div(USDC_DECIMALS)
+export function usdcWithFiduPrecision(amount: BigInt) {
+  return amount.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS)
 }
 
 export function getTotalDeposited(
