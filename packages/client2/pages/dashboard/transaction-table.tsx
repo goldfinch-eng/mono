@@ -108,17 +108,18 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
           {format(date, "MMM d, y")}
         </div>,
         <div key={`${transaction.id}-sent`} className="text-left">
-          {sentAmount}
+          {sentAmount || "--"}
         </div>,
         <div key={`${transaction.id}-received`} className="text-left">
-          {receivedAmount}
+          {receivedAmount || "--"}
         </div>,
         <div key={`${transaction.id}-price`} className="text-left">
-          {transaction.fiduPrice &&
+          {(transaction.fiduPrice &&
             formatCrypto({
               amount: transaction.fiduPrice,
               token: SupportedCrypto.Fidu,
-            })}
+            })) ||
+            "--"}
         </div>,
         <div key={`${transaction.id}-pool`} className="text-left">
           {transaction.tranchedPool ? (
