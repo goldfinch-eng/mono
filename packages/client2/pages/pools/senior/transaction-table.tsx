@@ -57,23 +57,18 @@ gql`
   }
 `;
 
-export const subtractiveIconTransactionCategories =
-  new Set<TransactionCategory>();
-subtractiveIconTransactionCategories.add(
-  TransactionCategory.SeniorPoolWithdrawal
-);
-subtractiveIconTransactionCategories.add(TransactionCategory.SeniorPoolUnstake);
-subtractiveIconTransactionCategories.add(
-  TransactionCategory.SeniorPoolUnstakeAndWithdrawal
-);
-subtractiveIconTransactionCategories.add(
-  TransactionCategory.TranchedPoolDrawdown
-);
+const subtractiveIconTransactionCategories = new Set<TransactionCategory>([
+  TransactionCategory.SeniorPoolWithdrawal,
+  TransactionCategory.SeniorPoolUnstake,
+  TransactionCategory.SeniorPoolUnstakeAndWithdrawal,
+  TransactionCategory.TranchedPoolDrawdown,
+]);
 
-export const sentTokenCategories = new Set<TransactionCategory>();
-sentTokenCategories.add(TransactionCategory.SeniorPoolStake);
-sentTokenCategories.add(TransactionCategory.SeniorPoolDepositAndStake);
-sentTokenCategories.add(TransactionCategory.TranchedPoolRepayment);
+const sentTokenCategories = new Set<TransactionCategory>([
+  TransactionCategory.SeniorPoolStake,
+  TransactionCategory.SeniorPoolDepositAndStake,
+  TransactionCategory.TranchedPoolRepayment,
+]);
 
 export function TransactionTable() {
   // ! This query defies the one-query-per-page pattern, but sadly it's necessary because Apollo has trouble with nested fragments. So sending the above as a nested fragment causes problems.
