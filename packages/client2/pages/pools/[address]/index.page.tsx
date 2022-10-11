@@ -199,6 +199,7 @@ const singleDealQuery = gql`
       overview
       details
       agreement
+      dataroom
       securitiesAndRecourse {
         ...SecuritiesRecourseTableFields
       }

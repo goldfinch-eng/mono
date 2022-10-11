@@ -1,3 +1,4 @@
+import { Button } from "@/components/design-system";
 import { RichText } from "@/components/rich-text";
 import {
   SingleDealQuery,
@@ -30,6 +31,21 @@ export default function DealSummary({
           content={dealData.overview}
           className="mb-8 whitespace-pre-wrap text-2xl font-light"
         />
+
+        {dealData.dataroom ? (
+          <Button
+            as="a"
+            variant="rounded"
+            iconRight="ArrowTopRight"
+            href={dealData.dataroom}
+            target="_blank"
+            rel="noreferrer"
+            size="lg"
+            className="block"
+          >
+            Dataroom
+          </Button>
+        ) : null}
       </div>
 
       {dealData.details ? (
