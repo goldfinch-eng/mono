@@ -18,7 +18,7 @@ export function fiduFromAtomic(amount: BigInt): BigInt {
   return amount.div(FIDU_DECIMALS)
 }
 
-export function usdcWithFiduPrecision(amount: BigInt) {
+export function usdcWithFiduPrecision(amount: BigInt): BigInt {
   return amount.times(FIDU_DECIMALS).div(USDC_DECIMALS).times(FIDU_DECIMALS)
 }
 
