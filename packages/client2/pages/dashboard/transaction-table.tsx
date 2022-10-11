@@ -193,7 +193,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
     </div>
   ) : (
     <Table
-      headings={["Type", "Date", "Sent", "Received", "Price", "Link", ""]}
+      headings={["Type", "Date", "Sent", "Received", "Price", "Links", ""]}
       rows={rows}
       onScrollBottom={!isPreview ? onScrollBottom : undefined}
     />
