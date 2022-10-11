@@ -146,7 +146,10 @@ export function handleUnstakedAndWithdrew(event: UnstakedAndWithdrew): void {
 export function handleUnstakedAndWithdrewMultiple(event: UnstakedAndWithdrewMultiple): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE_AND_WITHDRAWAL", event.params.user)
 
-  transaction.sentAmount = event.params.amounts.reduce((partialSum: BigInt, a) => partialSum.plus(a))
+  transaction.sentAmount = event.params.amounts.reduce(
+    (prevValue: BigInt, currValue: BigInt) => prevValue.plus(currValue),
+    BigInt.zero()
+  )
   transaction.sentToken = "FIDU"
   transaction.receivedAmount = event.params.usdcReceivedAmount
   transaction.receivedToken = "USDC"
