@@ -75,7 +75,7 @@ const nextConfig = {
     "page.md",
   ],
   images: {
-    domains: ["localhost", "34.133.55.171", "storage.googleapis.com"],
+    domains: ["localhost", "34.133.55.171"],
     unoptimized: true,
   },
   async redirects() {
