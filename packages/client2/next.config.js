@@ -76,6 +76,7 @@ const nextConfig = {
   ],
   images: {
     domains: ["localhost", "34.133.55.171"],
+    unoptimized: true,
   },
   async redirects() {
     return [
