@@ -257,6 +257,8 @@ enum SupportedCrypto {
   GFI
   FIDU
   CURVE_LP
+  STAKING_TOKEN_ID
+  POOL_TOKEN_ID
 }
 
 type Transaction @entity(immutable: true) {

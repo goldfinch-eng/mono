@@ -39,6 +39,8 @@ export function handleDepositMade(event: DepositMade): void {
   transaction.tranchedPool = event.address.toHexString()
   transaction.sentAmount = event.params.amount
   transaction.sentToken = "USDC"
+  transaction.receivedAmount = event.params.tokenId
+  transaction.receivedToken = "POOL_TOKEN_ID"
   transaction.save()
 
   createZapMaybe(event)
@@ -66,6 +68,8 @@ export function handleWithdrawalMade(event: WithdrawalMade): void {
   )
   transaction.transactionHash = event.transaction.hash
   transaction.tranchedPool = event.address.toHexString()
+  transaction.sentAmount = event.params.tokenId
+  transaction.sentToken = "POOL_TOKEN_ID"
   transaction.receivedAmount = event.params.interestWithdrawn.plus(event.params.principalWithdrawn)
   transaction.receivedToken = "USDC"
   transaction.save()

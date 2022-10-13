@@ -75,29 +75,86 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
 
   const rows = (isPreview ? filteredTxs.slice(0, 5) : filteredTxs).map(
     (transaction) => {
-      const sentAmount =
+      let sentAmount = null,
+        receivedAmount = null;
+
+      if (transaction.sentToken === SupportedCrypto.PoolTokenId) {
+        sentAmount = (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`https://etherscan.io/nft/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.sentAmount}`}
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              {`Pool Token ID: ${transaction.sentAmount}`}
+            </Link>
+          </div>
+        );
+      } else if (transaction.sentToken === SupportedCrypto.StakingTokenId) {
+        sentAmount = (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`https://etherscan.io/nft/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.sentAmount}`}
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              {`Staked Token ID: ${transaction.sentAmount}`}
+            </Link>
+          </div>
+        );
+      } else if (
         transaction.sentToken &&
         transaction.sentAmount &&
-        !transaction.sentAmount.isZero() ? (
+        !transaction.sentAmount.isZero()
+      ) {
+        sentAmount = (
           <FormatWithIcon
             cryptoAmount={{
               token: transaction.sentToken,
               amount: transaction.sentAmount,
             }}
           />
-        ) : null;
+        );
+      }
 
-      const receivedAmount =
+      if (transaction.receivedToken === SupportedCrypto.PoolTokenId) {
+        receivedAmount = (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`https://etherscan.io/nft/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.receivedAmount}`}
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              {`Pool Token ID: ${transaction.receivedAmount}`}
+            </Link>
+          </div>
+        );
+      } else if (transaction.receivedToken === SupportedCrypto.StakingTokenId) {
+        receivedAmount = (
+          <div className="flex items-center gap-2">
+            <Link
+              href={`https://etherscan.io/nft/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.receivedAmount}`}
+              iconRight="ArrowTopRight"
+              className="text-sand-400"
+            >
+              {`Staked Token ID: ${transaction.receivedAmount}`}
+            </Link>
+          </div>
+        );
+      } else if (
         transaction.receivedToken &&
         transaction.receivedAmount &&
-        !transaction.receivedAmount.isZero() ? (
+        !transaction.receivedAmount.isZero()
+      ) {
+        receivedAmount = (
           <FormatWithIcon
             cryptoAmount={{
               token: transaction.receivedToken,
               amount: transaction.receivedAmount,
             }}
           />
-        ) : null;
+        );
+      }
 
       const date = new Date(transaction.timestamp * 1000);
 

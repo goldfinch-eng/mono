@@ -69,6 +69,8 @@ export function handleStaked1(event: Staked1): void {
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_STAKE", event.params.user)
   transaction.sentAmount = event.params.amount
   transaction.sentToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
+  transaction.receivedAmount = event.params.tokenId
+  transaction.receivedToken = "STAKING_TOKEN_ID"
   transaction.save()
 }
 
@@ -82,6 +84,8 @@ export function handleUnstaked(event: Unstaked): void {
   stakedPosition.save()
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
+  transaction.sentAmount = event.params.tokenId
+  transaction.sentToken = "STAKING_TOKEN_ID"
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = mapStakedPositionTypeToAmountToken(
     // The historical/legacy Unstaked events that didn't have a `positionType` param were all of FIDU type.
@@ -99,6 +103,8 @@ export function handleUnstaked1(event: Unstaked1): void {
   stakedPosition.save()
 
   const transaction = createTransactionFromEvent(event, "SENIOR_POOL_UNSTAKE", event.params.user)
+  transaction.sentAmount = event.params.tokenId
+  transaction.sentToken = "STAKING_TOKEN_ID"
   transaction.receivedAmount = event.params.amount
   transaction.receivedToken = mapStakedPositionTypeToAmountToken(event.params.positionType)
   transaction.save()
