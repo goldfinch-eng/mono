@@ -16,7 +16,10 @@ import {
 } from "../generated";
 
 async function erc20Balance(
-  token: SupportedCrypto
+  token: Exclude<
+    SupportedCrypto,
+    SupportedCrypto.StakingTokenId | SupportedCrypto.PoolTokenId
+  >
 ): Promise<CryptoAmount | null> {
   try {
     const provider = await getProvider();

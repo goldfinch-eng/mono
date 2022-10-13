@@ -39,6 +39,8 @@ const cryptoPrecision: Record<SupportedCrypto, number> = {
   [SupportedCrypto.Gfi]: GFI_DECIMALS,
   [SupportedCrypto.Fidu]: FIDU_DECIMALS,
   [SupportedCrypto.CurveLp]: CURVE_LP_DECIMALS,
+  [SupportedCrypto.StakingTokenId]: 0,
+  [SupportedCrypto.PoolTokenId]: 0,
 };
 
 export function cryptoToFloat(cryptoAmount: CryptoAmount): number {
@@ -94,4 +96,6 @@ const tokenMap: Record<SupportedCrypto, string> = {
   [SupportedCrypto.Gfi]: "GFI",
   [SupportedCrypto.Fidu]: "FIDU",
   [SupportedCrypto.CurveLp]: "FIDU-USDC-F",
+  [SupportedCrypto.StakingTokenId]: "StakingToken",
+  [SupportedCrypto.PoolTokenId]: "PoolToken",
 };

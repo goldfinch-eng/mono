@@ -82,7 +82,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         sentAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://etherscan.io/nft/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.sentAmount}`}
+              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.sentAmount}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
@@ -94,7 +94,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         sentAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://etherscan.io/nft/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.sentAmount}`}
+              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.sentAmount}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
@@ -121,7 +121,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         receivedAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://etherscan.io/nft/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.receivedAmount}`}
+              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.receivedAmount}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
@@ -133,7 +133,7 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         receivedAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://etherscan.io/nft/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.receivedAmount}`}
+              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.receivedAmount}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
