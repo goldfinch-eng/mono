@@ -1,10 +1,12 @@
 import { gql } from "@apollo/client";
 import { BigNumber } from "ethers";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 import {
   Button,
   Checkbox,
+  DollarInput,
   InfoIconTooltip,
   Modal,
   ModalProps,
@@ -56,7 +58,7 @@ export function AddToVault({
       )
       .add(sum("principalAmount", vaultablePoolTokens)),
   };
-  // const [gfiToVault, setGfiToVault] = useState();
+  const [gfiToVault, setGfiToVault] = useState("");
   const [stakedPositionsToVault, setStakedPositionsToVault] = useState<
     StakedPosition[]
   >([]);
@@ -69,6 +71,18 @@ export function AddToVault({
         <div>{formatCrypto(total)}</div>
       </div>
       <div className="mb-8 space-y-2">
+        {!maxVaultableGfi.amount.isZero() ? (
+          <AssetCheckbox
+            name="GFI"
+            tooltip="Lorem ipsum"
+            description="Goldfinch Token"
+            usdcAmount={gfiInUsdc}
+            secondaryAmount={maxVaultableGfi}
+            includeAmountInput
+            inputMax={maxVaultableGfi.amount}
+            onInputChange={(s) => setGfiToVault(s)}
+          />
+        ) : null}
         {vaultableStakedPositions.map((stakedPosition) => {
           const checked = stakedPositionsToVault.some(
             (s) => s.id === stakedPosition.id
@@ -162,7 +176,7 @@ export function AddToVault({
         size="xl"
         onClick={() =>
           alert(
-            `Confirming with staked positions ${stakedPositionsToVault
+            `Confirming with GFI ${gfiToVault} staked positions ${stakedPositionsToVault
               .map((s) => s.id)
               .join(", ")}, pool tokens ${poolTokensToVault
               .map((p) => p.id)
@@ -188,8 +202,12 @@ interface AssetCheckboxProps {
   tooltip?: string;
   description: string;
   usdcAmount: CryptoAmount;
-  checked: boolean;
-  onChange: () => void;
+  secondaryAmount?: CryptoAmount;
+  checked?: boolean;
+  onChange?: () => void;
+  includeAmountInput?: boolean;
+  inputMax?: BigNumber;
+  onInputChange?: (s: string) => void;
 }
 
 function AssetCheckbox({
@@ -197,16 +215,30 @@ function AssetCheckbox({
   tooltip,
   description,
   usdcAmount,
-  checked,
-  onChange,
+  secondaryAmount,
+  checked = false,
+  onChange = () => null, // this is just to avoid onChange being undefined (React complains about this)
+  includeAmountInput = false,
+  inputMax,
+  onInputChange,
 }: AssetCheckboxProps) {
+  const { control, watch, setValue } = useForm<{ gfiToVault: string }>();
+  const gfiToVault = watch("gfiToVault");
+  useEffect(() => {
+    onInputChange?.(gfiToVault);
+  }, [onInputChange, gfiToVault]);
+
   return (
     <div className="relative rounded bg-white py-6 px-5">
       <div className="flex justify-between gap-3">
         <div className="flex items-start justify-between gap-5">
           <Checkbox
             inputSize="md"
-            checked={checked}
+            checked={
+              includeAmountInput
+                ? gfiToVault !== undefined && gfiToVault !== ""
+                : checked
+            }
             onChange={onChange}
             label={name}
             hideLabel
@@ -216,7 +248,11 @@ function AssetCheckbox({
             <div className="mb-1 flex items-center gap-2">
               <button
                 className="text-lg before:absolute before:inset-0"
-                onClick={onChange}
+                onClick={
+                  includeAmountInput
+                    ? () => setValue("gfiToVault", "")
+                    : onChange
+                }
               >
                 {name}
               </button>
@@ -227,8 +263,28 @@ function AssetCheckbox({
             </div>
           </div>
         </div>
-        <div className="text-lg font-medium">{formatCrypto(usdcAmount)}</div>
+        <div>
+          <div className="mb-1 text-lg font-medium">
+            {formatCrypto(usdcAmount)}
+          </div>
+          {secondaryAmount ? (
+            <div className="text-right text-xs font-medium text-sand-400">
+              {formatCrypto(secondaryAmount, { includeToken: true })}
+            </div>
+          ) : null}
+        </div>
       </div>
+      {includeAmountInput ? (
+        <DollarInput
+          label="GFI Amount"
+          hideLabel
+          name="gfiToVault"
+          control={control}
+          className="mt-3"
+          unit={SupportedCrypto.Gfi}
+          maxValue={inputMax}
+        />
+      ) : null}
     </div>
   );
 }
