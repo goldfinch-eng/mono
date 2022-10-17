@@ -70,7 +70,6 @@ const addresses = {
   CurveLP:
     contracts.TestFiduUSDCCurveLP?.address ?? // This is a little weird because the TestFiduUSDCCurveLP contract kind of absorbs the job of the CurveLP Token contract
     "0x42ec68ca5c2c80036044f3eead675447ab3a8065",
-  PoolTokens: contracts.PoolTokens.address,
 };
 const code = `// For network: ${networkName}
 export const CONTRACT_ADDRESSES = ${JSON.stringify(addresses)};

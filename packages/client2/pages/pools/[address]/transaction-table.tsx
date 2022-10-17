@@ -44,10 +44,8 @@ gql`
       timestamp
       tranchedPool {
         id
-        borrower @client {
-          name
-          logo
-        }
+        borrowerName @client
+        borrowerLogo @client
       }
     }
   }
@@ -77,20 +75,20 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
 
   const rows = filteredTxs.map((transaction) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const borrower = transaction.tranchedPool!.borrower;
+    const tranchedPool = transaction.tranchedPool!;
 
     const user =
       transaction.category === TransactionCategory.TranchedPoolDrawdown ||
       transaction.category === TransactionCategory.TranchedPoolRepayment ? (
         <div className="flex items-center gap-2">
           <Image
-            src={borrower.logo}
+            src={tranchedPool.borrowerLogo}
             alt=""
             width={24}
             height={24}
             className="shrink-0 overflow-hidden rounded-full"
           />
-          <span>{borrower.name}</span>
+          <span>{tranchedPool.borrowerName}</span>
         </div>
       ) : transaction.category === TransactionCategory.SeniorPoolRedemption ? (
         <div className="flex items-center gap-2">
