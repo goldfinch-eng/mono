@@ -92,6 +92,14 @@ const Deals: CollectionConfig = {
       },
     },
     {
+      name: "dataroom",
+      type: "text",
+      admin: {
+        description:
+          "This should be a URL linking to the dataroom for this deal.",
+      },
+    },
+    {
       name: "securitiesAndRecourse",
       label: "Securities and Recourse",
       type: "group",

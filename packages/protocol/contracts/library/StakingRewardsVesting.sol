@@ -1,30 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/Math.sol";
+import {Rewards} from "../interfaces/IStakingRewards.sol";
 
 library StakingRewardsVesting {
   using SafeMath for uint256;
   using StakingRewardsVesting for Rewards;
 
   uint256 internal constant PERCENTAGE_DECIMALS = 1e18;
-
-  struct Rewards {
-    uint256 totalUnvested;
-    uint256 totalVested;
-    // @dev DEPRECATED (definition kept for storage slot)
-    //   For legacy vesting positions, this was used in the case of slashing.
-    //   For non-vesting positions, this is unused.
-    uint256 totalPreviouslyVested;
-    uint256 totalClaimed;
-    uint256 startTime;
-    // @dev DEPRECATED (definition kept for storage slot)
-    //   For legacy vesting positions, this is the endTime of the vesting.
-    //   For non-vesting positions, this is 0.
-    uint256 endTime;
-  }
 
   function claim(Rewards storage rewards, uint256 reward) internal {
     rewards.totalClaimed = rewards.totalClaimed.add(reward);
