@@ -1,13 +1,18 @@
 import { gql } from "@apollo/client";
 import clsx from "clsx";
+import { BigNumber } from "ethers";
 import { useState } from "react";
 
 import { Button, Heading, Icon } from "@/components/design-system";
 import { SEO } from "@/components/seo";
-import { useMembershipPageQuery } from "@/lib/graphql/generated";
+import {
+  SupportedCrypto,
+  useMembershipPageQuery,
+} from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
+import { AddToVault } from "./add-to-vault";
 import { Asset, AssetGroup } from "./asset-group";
 import { Explainer } from "./explainer";
 
@@ -82,9 +87,9 @@ export default function MembershipPage() {
     });
     userHasGfi = true;
   }
-
+  const sharePrice =
+    data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
-    const sharePrice = data.seniorPools[0].latestPoolStatus.sharePrice;
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
       vaultableAssets.push({
         name: "Senior Pool Position",
@@ -110,6 +115,8 @@ export default function MembershipPage() {
   }
 
   const vaultedAssets: Asset[] = [];
+
+  const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 
   return (
     <div>
@@ -149,7 +156,7 @@ export default function MembershipPage() {
                 background="sand"
                 className="lg:w-1/2"
                 buttonText="Add to vault"
-                onButtonClick={() => alert("unimplemented")}
+                onButtonClick={() => setIsAddToVaultOpen(true)}
                 hideButton={vaultableAssets.length === 0}
                 beforeAssets={
                   !userHasGfi || !userHasPositions ? (
@@ -193,6 +200,20 @@ export default function MembershipPage() {
                 hideButton={vaultedAssets.length === 0}
               />
             </div>
+            <AddToVault
+              isOpen={isAddToVaultOpen}
+              onClose={() => setIsAddToVaultOpen(false)}
+              maxVaultableGfi={
+                data.viewer.gfiBalance ?? {
+                  token: SupportedCrypto.Gfi,
+                  amount: BigNumber.from(0),
+                }
+              }
+              fiatPerGfi={data.gfiPrice.price.amount}
+              vaultablePoolTokens={data.tranchedPoolTokens}
+              vaultableStakedPositions={data.seniorPoolStakedPositions}
+              sharePrice={sharePrice}
+            />
           </div>
         </>
       )}
