@@ -101,7 +101,7 @@ import {
   TranchedPool,
   UniqueIdentity,
 } from "@goldfinch-eng/protocol/typechain/ethers"
-import {ContractReceipt, Signer} from "ethers"
+import {ContractReceipt, Signer, Wallet} from "ethers"
 import BigNumber from "bignumber.js"
 import {BorrowerCreated, PoolCreated} from "@goldfinch-eng/protocol/typechain/truffle/GoldfinchFactory"
 
@@ -320,6 +320,14 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_GOVERNANCE_MULTISIG})
     await setupSeniorPool()
+  })
+
+  describe("Go", () => {
+    it("should not be re-initializable", async () => {
+      await expect(
+        go.initialize(Wallet.createRandom().address, goldfinchConfig.address, uniqueIdentity.address)
+      ).to.be.rejectedWith(/Contract instance has already been initialized/)
+    })
   })
 
   describe("drawing down into another currency", async function () {

@@ -100,6 +100,10 @@ contract Go is IGo, BaseUpgradeablePausable {
       }
 
       // Check if tx.origin has the UID, and has delegated that to `account`
+      // tx.origin should only ever be used for access control - it should never be used to determine
+      // the target address for any economic actions
+      // e.g. tx.origin should never be used as the source of truth for the target address to
+      // credit/debit/mint/burn any tokens to/from
       /* solhint-disable avoid-tx-origin */
       uint256 txOriginIdBalance = IUniqueIdentity0612(uniqueIdentity).balanceOf(tx.origin, idType);
       if (txOriginIdBalance > 0) {
