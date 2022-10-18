@@ -214,14 +214,13 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 proRataAmount = epochUsdcIn.mul(userFiduRequested).div(epochFiduRequested);
     return Math.min(proRataAmount, requestAmountInUsdc);
   }
-  
+
   function initializeEpochs() external onlyAdmin {
     require(_epochs[0].endsAt == 0);
     _epochDuration = 2 weeks;
     usdcAvailable = config.getUSDC().balanceOf(address(this));
     _epochs[0] = Epoch({id: 0, endsAt: block.timestamp, fiduRequested: 0, fiduLiquidated: 0, usdcAllocated: 0});
     _initializeNextEpoch();
-    
   }
 
   /// @notice Increment _checkpointedEpochId cursor up to the current epoch
@@ -277,8 +276,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       return;
     }
 
-    uint256 epochDuration = config.getSeniorPoolWithdrawalEpochDuration();
-
     // liquidate epoch
     uint256 usdcNeededToFullyLiquidate = _fiduToUSDC(epoch.fiduRequested);
     uint256 usdcAllocated = usdcAvailable.min(usdcNeededToFullyLiquidate);
@@ -291,14 +288,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // if multiple epochs have passed since checkpointing, update the endtime
     // and emit many events so that we don't need to write a bunch of useless epochs
-    uint256 nopEpochsElapsed = block.timestamp.sub(epoch.endsAt).div(epochDuration);
+    uint256 nopEpochsElapsed = block.timestamp.sub(epoch.endsAt).div(_epochDuration);
     for (uint256 i = 0; i < nopEpochsElapsed; i++) {
       // emit a different event to indicate that its an extension of a nop epoch
-      emit EpochEnded(epoch.id, epoch.endsAt.add(i.mul(epochDuration)), 0, 0);
+      emit EpochEnded(epoch.id, epoch.endsAt.add(i.mul(_epochDuration)), 0, 0);
     }
 
     // update the last epoch timestamp to the timestamp of the most recently ended epoch
-    epoch.endsAt = epoch.endsAt.add(nopEpochsElapsed.mul(epochDuration));
+    epoch.endsAt = epoch.endsAt.add(nopEpochsElapsed.mul(_epochDuration));
 
     config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
   }
@@ -309,8 +306,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       return epoch;
     }
 
-    uint256 epochDuration = config.getSeniorPoolWithdrawalEpochDuration();
-
     // liquidate epoch
     uint256 usdcNeededToFullyLiquidate = _fiduToUSDC(epoch.fiduRequested);
     uint256 usdcAllocated = usdcAvailable.min(usdcNeededToFullyLiquidate);
@@ -320,10 +315,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // if multiple epochs have passed since checkpointing, update the endtime
     // and emit many events so that we don't need to write a bunch of useless epochs
-    uint256 nopEpochsElapsed = block.timestamp.sub(epoch.endsAt).div(epochDuration);
+    uint256 nopEpochsElapsed = block.timestamp.sub(epoch.endsAt).div(_epochDuration);
 
     // update the last epoch timestamp to the timestamp of the most recently ended epoch
-    epoch.endsAt = epoch.endsAt.add(nopEpochsElapsed.mul(epochDuration));
+    epoch.endsAt = epoch.endsAt.add(nopEpochsElapsed.mul(_epochDuration));
     return epoch;
   }
 
@@ -654,7 +649,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     Epoch storage nextEpoch = _epochs[_checkpointedEpochId++];
 
     nextEpoch.id = lastEpoch.id + 1;
-    nextEpoch.endsAt = lastEpoch.endsAt.add(config.getSeniorPoolWithdrawalEpochDuration());
+    nextEpoch.endsAt = lastEpoch.endsAt.add(_epochDuration);
     uint256 fiduToCarryOverFromLastEpoch = lastEpoch.fiduRequested.sub(lastEpoch.fiduLiquidated);
     nextEpoch.fiduRequested = fiduToCarryOverFromLastEpoch;
 
