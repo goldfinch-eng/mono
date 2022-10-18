@@ -8,6 +8,7 @@
     "max-line-length": ["error", 120],
     "modifiers/ensure-modifiers": ["error", {
       "ignoreContractKind": ["interface"],
+      "ignoreVisibility": ["internal", "private"],
       "required": {
         "*": ["onlyAdmin"]
       },
@@ -121,12 +122,11 @@
           "withdrawInFidu": [],
           "redeem": [],
           "writedown": [],
-          "withdrawV2": [],
+          "claimWithdrawalRequest": [],
           "initializeEpochs": [],
           "cancelWithdrawalRequest": [],
           "requestWithdrawal": [],
-          "checkpointEpochs": [],
-          "initializeNextEpoch": []
+          "addToWithdrawalRequest": []
         },
         "**/SeniorPoolFidu.sol:SeniorPoolFidu": {
           "__initialize__": [],

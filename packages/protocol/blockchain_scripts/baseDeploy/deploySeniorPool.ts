@@ -33,12 +33,7 @@ export async function deploySeniorPool(deployer: ContractDeployer, {config, fidu
   })
   await updateConfig(config, "address", CONFIG_KEYS.SeniorPool, seniorPool.address, {logger})
 
-  await config.setNumber(
-    CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
-    SECONDS_PER_DAY.mul(new BN(14)).toString()
-  )
   await config.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10)
-  await config.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin, usdcVal(500).toString())
   await seniorPool.initializeEpochs()
 
   await (await config.addToGoList(seniorPool.address)).wait()

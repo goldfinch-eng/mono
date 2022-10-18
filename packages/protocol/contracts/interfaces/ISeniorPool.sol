@@ -21,13 +21,14 @@ abstract contract ISeniorPool is ISeniorPoolEpochWithdrawals {
     bytes32 s
   ) external virtual returns (uint256 depositShares);
 
+  /// @notice Withdraw `usdcAmount` of USDC, bypassing the epoch withdrawal system
   function withdraw(uint256 usdcAmount) external virtual returns (uint256 amount);
 
+  /**
+   * @notice Withdraw `fiduAmount` of FIDU converted to USDC at the current share price,
+   * bypassing the epoch withdrawal system.
+   */
   function withdrawInFidu(uint256 fiduAmount) external virtual returns (uint256 amount);
-
-  function sweepToCompound() public virtual;
-
-  function sweepFromCompound() public virtual;
 
   function invest(ITranchedPool pool) public virtual;
 

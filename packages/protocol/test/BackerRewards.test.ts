@@ -152,13 +152,6 @@ describe("BackerRewards", function () {
       await deployBaseFixture()
     await goldfinchConfig.bulkAddToGoList([owner, investor, borrower, anotherUser, anotherAnotherUser])
 
-    await goldfinchConfig.setNumber(
-      CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
-      SECONDS_PER_DAY.mul(new BN(14))
-    )
-    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10)
-    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin, usdcVal(500))
-
     await erc20Transfer(usdc, [anotherUser], usdcVal(100_000), owner)
     await erc20Transfer(usdc, [anotherAnotherUser], usdcVal(100_000), owner)
     await erc20Transfer(usdc, [investor], usdcVal(100_000), owner)

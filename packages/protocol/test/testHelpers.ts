@@ -14,6 +14,7 @@ import {
   DISTRIBUTOR_ROLE,
   OWNER_ROLE,
   getTruffleContract,
+  getProtocolOwner,
 } from "../blockchain_scripts/deployHelpers"
 
 import {DeploymentsExtension} from "hardhat-deploy/types"
@@ -39,6 +40,7 @@ import {
   TestPoolTokensInstance,
   StakingRewardsInstance,
   WithdrawalRequestTokenInstance,
+  TestSeniorPoolCallerInstance,
 } from "../typechain/truffle"
 import {DynamicLeverageRatioStrategyInstance} from "../typechain/truffle/DynamicLeverageRatioStrategy"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -50,6 +52,8 @@ const GFI_DECIMALS = new BN(String(1e18))
 const SECONDS_PER_DAY = new BN(86400)
 const SECONDS_PER_YEAR = SECONDS_PER_DAY.mul(new BN(365))
 const UNIT_SHARE_PRICE = new BN("1000000000000000000") // Corresponds to share price of 100% (no interest or writedowns)
+const HALF_CENT = usdcVal(1).div(new BN(200))
+const HALF_DOLLAR = HALF_CENT.mul(new BN(100))
 import ChaiBN from "chai-bn"
 import {BaseContract, BigNumber, ContractReceipt, ContractTransaction, PopulatedTransaction} from "ethers"
 import {TestBackerRewardsInstance} from "../typechain/truffle/TestBackerRewards"
@@ -70,6 +74,10 @@ function bigVal(number): BN {
 
 function usdcVal(number) {
   return new BN(number).mul(USDC_DECIMALS)
+}
+
+function fiduVal(number) {
+  return new BN(number).mul(FIDU_DECIMALS)
 }
 
 function usdcToFidu(number: BN | number) {
@@ -279,6 +287,7 @@ async function deployAllContracts(
   options: DeployAllContractsOptions = {}
 ): Promise<{
   seniorPool: SeniorPoolInstance
+  seniorPoolCaller: TestSeniorPoolCallerInstance
   seniorPoolFixedStrategy: FixedLeverageRatioStrategyInstance
   seniorPoolDynamicStrategy: DynamicLeverageRatioStrategyInstance
   usdc: ERC20Instance
@@ -355,6 +364,12 @@ async function deployAllContracts(
     merkleDirectDistributor = await getTruffleContract<MerkleDirectDistributorInstance>("MerkleDirectDistributor")
   }
 
+  await deployments.deploy("TestSeniorPoolCaller", {
+    from: await getProtocolOwner(),
+    args: [seniorPool.address, usdc.address, fidu.address],
+  })
+  const seniorPoolCaller = await getTruffleContract<TestSeniorPoolCallerInstance>("TestSeniorPoolCaller")
+
   const uniqueIdentity = await getTruffleContract<TestUniqueIdentityInstance>("TestUniqueIdentity")
   const go = await getTruffleContract<GoInstance>("Go")
 
@@ -364,6 +379,7 @@ async function deployAllContracts(
 
   return {
     seniorPool,
+    seniorPoolCaller,
     seniorPoolFixedStrategy,
     seniorPoolDynamicStrategy,
     usdc,
@@ -658,9 +674,12 @@ export {
   EMPTY_DATA,
   BLOCKS_PER_DAY,
   UNIT_SHARE_PRICE,
+  HALF_CENT,
+  HALF_DOLLAR,
   ZERO,
   bigVal,
   usdcVal,
+  fiduVal,
   mochaEach,
   getBalance,
   getDeployedAsTruffleContract,

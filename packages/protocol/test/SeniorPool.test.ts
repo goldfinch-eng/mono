@@ -7,7 +7,7 @@ import {
   PAUSER_ROLE,
   ETHDecimals,
 } from "../blockchain_scripts/deployHelpers"
-import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../blockchain_scripts/configKeys"
+import {CONFIG_KEYS} from "../blockchain_scripts/configKeys"
 import hre, {ethers} from "hardhat"
 const {deployments, artifacts} = hre
 const CreditLine = artifacts.require("CreditLine")
@@ -29,8 +29,12 @@ import {
   decodeAndGetFirstLog,
   ZERO,
   Numberish,
+  fiduVal,
+  HALF_CENT,
+  HALF_DOLLAR,
+  getCurrentTimestamp,
 } from "./testHelpers"
-import {time, expectEvent} from "@openzeppelin/test-helpers"
+import {expectEvent} from "@openzeppelin/test-helpers"
 import {ecsign} from "ethereumjs-util"
 import {getApprovalDigest, getWallet} from "./permitHelpers"
 import {assertNonNullable} from "@goldfinch-eng/utils"
@@ -40,14 +44,18 @@ import {
   deployUninitializedTranchedPoolFixture,
   deployTranchedPoolWithGoldfinchFactoryFixture,
 } from "./util/fixtures"
+import {DepositMade, InvestmentMadeInSenior, WithdrawalMade} from "../typechain/truffle/SeniorPool"
 import {
-  DepositMade,
-  InvestmentMadeInSenior,
-  ReserveFundsCollected,
-  WithdrawalMade,
-} from "../typechain/truffle/SeniorPool"
-import {TestSeniorPoolInstance} from "../typechain/truffle"
-const WITHDRAWL_FEE_DENOMINATOR = new BN(200)
+  GoInstance,
+  TestSeniorPoolCallerInstance,
+  TestSeniorPoolInstance,
+  TestUniqueIdentityInstance,
+  WithdrawalRequestTokenInstance,
+} from "../typechain/truffle"
+
+import chai from "chai"
+import {burn, mint} from "./uniqueIdentityHelpers"
+chai.config.truncateThreshold = 0 // disable truncating
 
 const TEST_TIMEOUT = 30_000
 const TWO_WEEKS = SECONDS_PER_DAY.mul(new BN(14))
@@ -86,9 +94,19 @@ const simulateMaliciousTranchedPool = async (goldfinchConfig: any, person2: any)
 }
 
 describe("SeniorPool", () => {
-  let accounts, owner, person2, person3, reserve, borrower
+  let accounts, owner, person2, person3, person4, reserve, borrower
 
-  let seniorPool: TestSeniorPoolInstance, seniorPoolFixedStrategy, usdc, fidu, goldfinchConfig, tranchedPool, creditLine
+  let seniorPool: TestSeniorPoolInstance,
+    seniorPoolCaller: TestSeniorPoolCallerInstance,
+    seniorPoolFixedStrategy,
+    usdc,
+    fidu,
+    goldfinchConfig,
+    tranchedPool,
+    creditLine,
+    uniqueIdentity: TestUniqueIdentityInstance,
+    withdrawalRequestToken: WithdrawalRequestTokenInstance,
+    go: GoInstance
   let epochsInitializedAt: BN
 
   const interestApr = interestAprAsBN("5.00")
@@ -121,9 +139,7 @@ describe("SeniorPool", () => {
     startsAt: Numberish,
     sharePrice: Numberish,
     fiduRequested: Numberish,
-    usdcIn: Numberish,
-    fiduRemaining: Numberish,
-    usdcRemaining: Numberish
+    usdcIn: Numberish
   ) => {
     const epoch = await seniorPool.epochAt(id)
     expect(epoch.id).to.bignumber.eq(id, "id")
@@ -131,8 +147,6 @@ describe("SeniorPool", () => {
     expect(epoch.sharePrice).to.bignumber.eq(sharePrice, "sharePrice")
     expect(epoch.fiduRequested).to.bignumber.eq(fiduRequested, "fiduRequested")
     expect(epoch.usdcIn).to.bignumber.eq(usdcIn, "usdcIn")
-    expect(epoch.fiduRemaining).to.bignumber.eq(fiduRemaining, "fiduRemaining")
-    expect(epoch.usdcRemaining).to.bignumber.eq(usdcRemaining, "usdcRemaining")
   }
 
   const assertCurrentEpoch = async (id: Numberish, startsAt: BN, fiduRequested: BN, usdcIn: BN) => {
@@ -144,26 +158,29 @@ describe("SeniorPool", () => {
 
     // These params should always be uninitialized in the current epoch
     expect(epoch.sharePrice).to.bignumber.eq(ZERO, "sharePrice should be 0")
-    expect(epoch.fiduRemaining).to.bignumber.eq(ZERO, "fiduRemaining should be 0")
-    expect(epoch.usdcRemaining).to.bignumber.eq(ZERO, "usdcRemaining should be 0")
   }
 
   const setupTest = deployments.createFixture(async ({deployments}) => {
     const {
       seniorPool: _seniorPool,
+      seniorPoolCaller,
       seniorPoolFixedStrategy,
       usdc,
       fidu,
       goldfinchFactory,
       goldfinchConfig,
       poolTokens,
+      uniqueIdentity,
+      withdrawalRequestToken,
+      go,
     } = await deployBaseFixture()
     // A bit of setup for our test users
-    await erc20Approve(usdc, _seniorPool.address, usdcVal(100000), [person2])
-    await erc20Transfer(usdc, [person2, person3], usdcVal(100_000), owner)
+    await erc20Approve(fidu, _seniorPool.address, fiduVal(100_000_000), [person2, person3, owner])
+    await erc20Approve(usdc, _seniorPool.address, usdcVal(100_000_000), [person2, person3, owner])
+    await erc20Transfer(usdc, [person2, person3, person4], usdcVal(100_000), owner)
     await goldfinchConfig.setTreasuryReserve(reserve)
 
-    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, reserve, _seniorPool.address])
+    await goldfinchConfig.bulkAddToGoList([owner, person2, person3, person4, reserve, _seniorPool.address])
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
     ;({tranchedPool, creditLine} = await deployTranchedPoolWithGoldfinchFactoryFixture({
       borrower,
@@ -176,23 +193,21 @@ describe("SeniorPool", () => {
       juniorFeePercent,
       id: "TranchedPool",
     }))
-    await goldfinchConfig.setNumber(
-      CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
-      SECONDS_PER_DAY.mul(new BN(14))
-    )
-    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10)
-    await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin, usdcVal(500))
     epochsInitializedAt = new BN((await (_seniorPool as TestSeniorPoolInstance).epochAt("0")).startsAt)
 
     return {
       usdc,
       seniorPool: _seniorPool as TestSeniorPoolInstance,
+      seniorPoolCaller,
       seniorPoolFixedStrategy,
       tranchedPool,
       creditLine,
       fidu,
       goldfinchConfig,
       poolTokens,
+      uniqueIdentity,
+      withdrawalRequestToken,
+      go,
     }
   })
 
@@ -200,10 +215,22 @@ describe("SeniorPool", () => {
     // Pull in our unlocked accounts
     accounts = await web3.eth.getAccounts()
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;[owner, person2, person3, reserve] = accounts
+    ;[owner, person2, person3, reserve, person4] = accounts
     borrower = person2
     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-    ;({usdc, seniorPool, seniorPoolFixedStrategy, tranchedPool, creditLine, fidu, goldfinchConfig} = await setupTest())
+    ;({
+      usdc,
+      seniorPool,
+      seniorPoolCaller,
+      seniorPoolFixedStrategy,
+      tranchedPool,
+      creditLine,
+      fidu,
+      goldfinchConfig,
+      uniqueIdentity,
+      withdrawalRequestToken,
+      go,
+    } = await setupTest())
   })
 
   describe("Access Controls", () => {
@@ -248,6 +275,10 @@ describe("SeniorPool", () => {
         return expect(makeWithdraw()).to.be.rejectedWith(/Pausable: paused/)
       })
 
+      it("disallows withdrawing in FIDU", async () => {
+        return expect(makeWithdrawInFidu(person2, fiduVal(100))).to.be.rejectedWith(/Pausable: paused/)
+      })
+
       it("disallows invest", async () => {
         await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
       })
@@ -258,6 +289,26 @@ describe("SeniorPool", () => {
 
       it("disallows writedown", async () => {
         return expect(seniorPool.writedown(tranchedPool.address)).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows withdrawal requests", async () => {
+        await expect(seniorPool.requestWithdrawal(usdcVal(100), {from: person2})).to.be.rejectedWith(/Pausable: paused/)
+      })
+
+      it("disallows adding to a withdrawal request", async () => {
+        await expect(seniorPool.addToWithdrawalRequest(usdcVal(100), "1", {from: person2})).to.be.rejectedWith(
+          /Pausable: paused/
+        )
+      })
+
+      it("disallows cancelling a withdrawal request", async () => {
+        await expect(seniorPool.cancelWithdrawalRequest(usdcVal(100), {from: person2})).to.be.rejectedWith(
+          /Pausable: paused/
+        )
+      })
+
+      it("disallows claiming a withdrawal request", async () => {
+        await expect(seniorPool.claimWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/Pausable: paused/)
       })
 
       it("allows unpausing", async () => {
@@ -279,8 +330,7 @@ describe("SeniorPool", () => {
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {
-        const expectedErr = /transfer amount exceeds allowance/
-        return expect(makeDeposit(person3)).to.be.rejectedWith(expectedErr)
+        await expect(makeDeposit(person4)).to.be.rejectedWith(/transfer amount exceeds allowance/)
       })
     })
 
@@ -297,146 +347,31 @@ describe("SeniorPool", () => {
         await testSetup()
       })
 
-      describe("when epoch storage is stale by one epoch", () => {
-        it("increases usdcIn by deposited amount for the current epoch", async () => {
-          // EPOCH 0
-          await makeDeposit(person2, usdcVal(5_000))
-          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(5_000))
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(5_000), ZERO, ZERO)
-
-          await advanceTime({days: new BN(18)})
-          await ethers.provider.send("evm_mine", [])
-
-          // EPOCH 1
-
-          // Check when epoch 2 is not in storage
-          await assertCurrentEpoch(new BN(1), epochsInitializedAt.add(TWO_WEEKS), ZERO, usdcVal(5_000))
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            usdcVal(5_000),
-            ZERO,
-            usdcVal(5_000)
-          )
-          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(5_000), ZERO, ZERO)
-
-          // Deposit triggers an epoch storage update
-          await makeDeposit(person2, usdcVal(10_000))
-
-          // Check when epoch 2 is in storage
-          await assertCurrentEpoch(
-            new BN(1),
-            epochsInitializedAt.add(SECONDS_PER_DAY.mul(new BN(14))),
-            ZERO,
-            usdcVal(15_000)
-          )
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            usdcVal(5_000),
-            ZERO,
-            usdcVal(5000)
-          )
-          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(15_000), ZERO, ZERO)
+      describe("epoch checkpointing", () => {
+        describe("when all previous epochs are checkpointed", () => {
+          it("increases usdcIn for current epoch", async () => {
+            await makeDeposit(person2, usdcVal(10_000))
+            await makeDeposit(person2, usdcVal(25_000))
+            await assertCurrentEpoch("0", epochsInitializedAt, ZERO, usdcVal(35_000))
+          })
         })
-      })
-
-      describe("when epoch storage is stale by multiple epochs", () => {
-        it("increases usdcIn by deposited amount for the current epoch", async () => {
-          // EPOCH 0
-          await makeDeposit(person2, usdcVal(1_000))
-          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(1_000))
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(1_000), ZERO, ZERO)
-
-          await advanceTime({days: new BN(32)})
-          await ethers.provider.send("evm_mine", [])
-
-          // EPOCH 2
-
-          // Check when epochs 1 and 2 are not in storage
-          await assertCurrentEpoch(new BN(2), epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcVal(1_000))
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            usdcVal(1_000),
-            ZERO,
-            usdcVal(1_000)
-          )
-          console.log("ASSERT EPOCH 1")
-          await assertEpochAt(
-            "1",
-            epochsInitializedAt.add(TWO_WEEKS),
-            await seniorPool.sharePrice(),
-            ZERO,
-            usdcVal(1_000),
-            ZERO,
-            usdcVal(1_000)
-          )
-          await assertEpochAt(
-            "2",
-            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-            ZERO,
-            ZERO,
-            usdcVal(1_000),
-            ZERO,
-            ZERO
-          )
-
-          // Deposit triggers an epoch storage update
-          await makeDeposit(person2, usdcVal(11_000))
-
-          // Check when epochs 1 and 2 are in storage
-          await assertCurrentEpoch(
-            new BN(2),
-            epochsInitializedAt.add(SECONDS_PER_DAY.mul(new BN(28))),
-            ZERO,
-            usdcVal(12_000)
-          )
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            usdcVal(1_000),
-            ZERO,
-            usdcVal(1_000)
-          )
-          await assertEpochAt(
-            "1",
-            epochsInitializedAt.add(TWO_WEEKS),
-            await seniorPool.sharePrice(),
-            ZERO,
-            usdcVal(1_000),
-            ZERO,
-            usdcVal(1_000)
-          )
-          await assertEpochAt(
-            "2",
-            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-            ZERO,
-            ZERO,
-            usdcVal(12_000),
-            ZERO,
-            ZERO
-          )
+        describe("when the last epoch hasn't been checkpointed", () => {
+          it("increases usdcIn for current epoch", async () => {
+            await makeDeposit(person2, usdcVal(10_000))
+            await advanceTime({days: 14})
+            // This deposit in epoch 1 triggers a checkpoint of epoch 0
+            await makeDeposit(person2, usdcVal(25_000))
+            await assertCurrentEpoch("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, usdcVal(35_000))
+          })
         })
-      })
-
-      describe("when epoch storage up to date", () => {
-        it("increases usdcIn by deposited amount for the current epoch", async () => {
-          await makeDeposit(person2, usdcVal(10_000))
-          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(10_000))
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(10_000), ZERO, ZERO)
-
-          await makeDeposit(person2, usdcVal(25_000))
-          await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(35_000))
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(35_000), ZERO, ZERO)
+        describe("when multiple epochs have not been checkpointed", async () => {
+          it("increases usdcIn for current epoch", async () => {
+            await makeDeposit(person2, usdcVal(10_000))
+            await advanceTime({days: 28})
+            // This deposit in epoch 2 triggers a checkpoint of epoch 0 and 1
+            await makeDeposit(person2, usdcVal(25_000))
+            await assertCurrentEpoch("2", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcVal(35_000))
+          })
         })
       })
 
@@ -551,7 +486,7 @@ describe("SeniorPool", () => {
         })
 
         await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(100))
-        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100), ZERO, ZERO)
+        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100))
       })
     })
 
@@ -581,7 +516,7 @@ describe("SeniorPool", () => {
         })
 
         await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(100))
-        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100), ZERO, ZERO)
+        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100))
 
         await advanceTime({days: 18})
         await ethers.provider.send("evm_mine", [])
@@ -590,16 +525,8 @@ describe("SeniorPool", () => {
 
         // Check when epoch 1 is not in storage
         await assertCurrentEpoch(new BN(1), epochsInitializedAt.add(TWO_WEEKS), ZERO, usdcVal(100))
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcVal(100),
-          ZERO,
-          usdcVal(100)
-        )
-        await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(100), ZERO, ZERO)
+        await assertEpochAt("0", epochsInitializedAt, await seniorPool.sharePrice(), ZERO, usdcVal(100))
+        await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(100))
 
         // Deposit triggers an epoch storage update
         nonce = await usdc.nonces(capitalProviderAddress)
@@ -625,16 +552,8 @@ describe("SeniorPool", () => {
           ZERO,
           usdcVal(1_100)
         )
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcVal(100),
-          ZERO,
-          usdcVal(100)
-        )
-        await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(1_100), ZERO, ZERO)
+        await assertEpochAt("0", epochsInitializedAt, await seniorPool.sharePrice(), ZERO, usdcVal(100))
+        await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, usdcVal(1_100))
       })
     })
 
@@ -665,7 +584,7 @@ describe("SeniorPool", () => {
         })
 
         await assertCurrentEpoch(new BN(0), epochsInitializedAt, ZERO, usdcVal(1_000))
-        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(1_000), ZERO, ZERO)
+        await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(1_000))
 
         await advanceTime({days: new BN(32)})
         await ethers.provider.send("evm_mine", [])
@@ -674,33 +593,15 @@ describe("SeniorPool", () => {
 
         // Check when epochs 1 and 2 are not in storage
         await assertCurrentEpoch(new BN(2), epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcVal(1_000))
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcVal(1_000),
-          ZERO,
-          usdcVal(1_000)
-        )
+        await assertEpochAt("0", epochsInitializedAt, await seniorPool.sharePrice(), ZERO, usdcVal(1_000))
         await assertEpochAt(
           "1",
           epochsInitializedAt.add(TWO_WEEKS),
           await seniorPool.sharePrice(),
           ZERO,
-          usdcVal(1_000),
-          ZERO,
           usdcVal(1_000)
         )
-        await assertEpochAt(
-          "2",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-          ZERO,
-          ZERO,
-          usdcVal(1_000),
-          ZERO,
-          ZERO
-        )
+        await assertEpochAt("2", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, ZERO, usdcVal(1_000))
 
         // Deposit triggers an epoch storage update
         nonce = await usdc.nonces(capitalProviderAddress)
@@ -726,33 +627,15 @@ describe("SeniorPool", () => {
           ZERO,
           usdcVal(3_000)
         )
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcVal(1_000),
-          ZERO,
-          usdcVal(1_000)
-        )
+        await assertEpochAt("0", epochsInitializedAt, await seniorPool.sharePrice(), ZERO, usdcVal(1_000))
         await assertEpochAt(
           "1",
           epochsInitializedAt.add(TWO_WEEKS),
           await seniorPool.sharePrice(),
           ZERO,
-          usdcVal(1_000),
-          ZERO,
           usdcVal(1_000)
         )
-        await assertEpochAt(
-          "2",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-          ZERO,
-          ZERO,
-          usdcVal(3_000),
-          ZERO,
-          ZERO
-        )
+        await assertEpochAt("2", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, ZERO, usdcVal(3_000))
       })
     })
   })
@@ -776,6 +659,7 @@ describe("SeniorPool", () => {
       await usdc.approve(seniorPool.address, new BN(100000).mul(USDC_DECIMALS), {from: owner})
 
       capitalProvider = person2
+      await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), capitalProvider, {from: owner})
     })
 
     beforeEach(async () => {
@@ -799,22 +683,8 @@ describe("SeniorPool", () => {
 
       expect(event.event).to.equal("WithdrawalMade")
       expect(event.args.capitalProvider).to.equal(capitalProvider)
-      expect(event.args.reserveAmount).to.bignumber.equal(reserveAmount)
-      expect(event.args.userAmount).to.bignumber.equal(withdrawAmount.sub(reserveAmount))
-    })
-
-    it("should emit an event that the reserve received funds", async () => {
-      await makeDeposit()
-      const result = await makeWithdraw()
-      const event = decodeAndGetFirstLog<ReserveFundsCollected>(
-        result.receipt.rawLogs,
-        seniorPool,
-        "ReserveFundsCollected"
-      )
-
-      expect(event.event).to.equal("ReserveFundsCollected")
-      expect(event.args.user).to.equal(capitalProvider)
-      expect(event.args.amount).to.bignumber.equal(withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR))
+      expect(event.args.reserveAmount).to.bignumber.equal(ZERO)
+      expect(event.args.userAmount).to.bignumber.equal(withdrawAmount)
     })
 
     it("sends the amount back to the address, accounting for fees", async () => {
@@ -822,33 +692,9 @@ describe("SeniorPool", () => {
       const addressValueBefore = await getBalance(person2, usdc)
       await makeWithdraw()
       const addressValueAfter = await getBalance(person2, usdc)
-      const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
+      const expectedFee = ZERO
       const delta = addressValueAfter.sub(addressValueBefore)
       expect(delta).bignumber.equal(withdrawAmount.sub(expectedFee))
-    })
-
-    it("should send the fees to the reserve address", async () => {
-      await makeDeposit()
-      const reserveBalanceBefore = await getBalance(reserve, usdc)
-      await makeWithdraw()
-      const reserveBalanceAfter = await getBalance(reserve, usdc)
-      const expectedFee = withdrawAmount.div(WITHDRAWL_FEE_DENOMINATOR)
-      const delta = reserveBalanceAfter.sub(reserveBalanceBefore)
-      expect(delta).bignumber.equal(expectedFee)
-    })
-
-    context("address has ZAPPER_ROLE", async () => {
-      it("should not take protocol fees", async () => {
-        await seniorPool.initZapperRole()
-        await seniorPool.grantRole(await seniorPool.ZAPPER_ROLE(), person2)
-
-        await makeDeposit(person2)
-        const reserveBalanceBefore = await getBalance(reserve, usdc)
-        await makeWithdraw(person2)
-        const reserveBalanceAfter = await getBalance(reserve, usdc)
-        const delta = reserveBalanceAfter.sub(reserveBalanceBefore)
-        expect(delta).bignumber.equal(new BN(0))
-      })
     })
 
     it("reduces your shares of fidu", async () => {
@@ -895,6 +741,1199 @@ describe("SeniorPool", () => {
       await makeWithdraw(person2, new BN("123"))
       const sharesAfter = await getBalance(person2, fidu)
       expect(sharesAfter.toNumber()).to.equal(0)
+    })
+
+    describe("authorization", () => {
+      it("rejects caller without ZAPPER_ROLE", async () => {
+        await seniorPool.deposit(usdcVal(100), {from: person3})
+        await expect(seniorPool.withdraw(usdcVal(100), {from: person3})).to.be.rejectedWith(/Not Zapper/)
+        await expect(seniorPool.withdrawInFidu(fiduVal(100), {from: person3})).to.be.rejectedWith(/Not Zapper/)
+      })
+    })
+  })
+
+  describe("requestWithdrawal", () => {
+    describe("authorization", () => {
+      let supportedIdTypes
+      let expiresAt
+      beforeEach(async () => {
+        await goldfinchConfig.bulkRemoveFromGoList([person2], {from: owner})
+        expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        // Add one supported UID type that is NOT eligible to interact with the senior pool
+        const seniorPoolIds = await go.getSeniorPoolIdTypes()
+        supportedIdTypes = [...seniorPoolIds, new BN(5)]
+        await uniqueIdentity.setSupportedUIDTypes(
+          supportedIdTypes,
+          supportedIdTypes.map(() => true),
+          {from: owner}
+        )
+      })
+      describe("when caller == tx.origin", () => {
+        it("works when caller go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([person2], {from: owner})
+          await makeDeposit(person2, usdcVal(100))
+          await expectAction(() => seniorPool.requestWithdrawal(fiduVal(100), {from: person2})).toChange([
+            [() => fidu.balanceOf(person2), {by: fiduVal(100).neg()}],
+          ])
+        })
+        it("works when caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await makeDeposit(person2, usdcVal(100))
+          await expectAction(() => seniorPool.requestWithdrawal(fiduVal(100), {from: person2})).toChange([
+            [() => fidu.balanceOf(person2), {by: fiduVal(100).neg()}],
+          ])
+        })
+        it("reverts when caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, person2)
+          await expect(seniorPool.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(/NA/)
+        })
+        it("reverts when caller has no UID and not go-listed", async () => {
+          await expect(seniorPool.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(/NA/)
+        })
+      })
+      describe("when caller != tx.origin", () => {
+        it("works when tx.origin has senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await expectAction(() => seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).toChange([
+            [() => fidu.balanceOf(seniorPoolCaller.address), {by: fiduVal(100).neg()}],
+          ])
+        })
+
+        it("reverts when tx.origin has non-senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(/NA/)
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(
+            /Ambiguous/
+          )
+        })
+
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller go-listed", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address])
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(
+            /Ambiguous/
+          )
+        })
+
+        it("reverts when tx.origin has senior-pool UID and caller has nothing", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(/NA/)
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("works when tx.origin has nothing and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await expectAction(() => seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).toChange([
+            [() => fidu.balanceOf(seniorPoolCaller.address), {by: fiduVal(100).neg()}],
+          ])
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has nothing and caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(
+            /Unauthorized/
+          )
+        })
+
+        it("works when tx.origin has nothing and caller is go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address], {from: owner})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await expectAction(() => seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})).toChange([
+            [() => fidu.balanceOf(seniorPoolCaller.address), {by: fiduVal(100).neg()}],
+          ])
+        })
+      })
+    })
+
+    describe("when the user has approved the contract to take custody of their assets", () => {
+      it("succeeds", async () => {
+        // Deposit and then request to withdraw
+        await makeDeposit(person2, usdcVal(5000))
+        await expectAction(() => seniorPool.requestWithdrawal(fiduVal(5000), {from: person2})).toChange([
+          [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(5000)}],
+          [() => fidu.balanceOf(person2), {by: fiduVal(5000).neg()}],
+        ])
+
+        const withdrawal = await seniorPool.withdrawalRequest("1")
+        expect(withdrawal.epochCursor).to.equal("0")
+        expect(withdrawal.fiduRequested).to.bignumber.to.equal(fiduVal(5000))
+
+        // Epoch 0 should have 500 requested and $500 in
+        const epoch = await seniorPool.epochAt("0")
+        expect(epoch.fiduRequested).to.bignumber.eq(fiduVal(5000))
+        expect(epoch.usdcIn).to.bignumber.eq(usdcVal(5000))
+      })
+
+      it("reverts if caller has an outstanding request", async () => {
+        await seniorPool.deposit(usdcVal(100), {from: person2})
+        await seniorPool.requestWithdrawal(fiduVal(100), {from: person2})
+        await expect(seniorPool.requestWithdrawal(fiduVal(100), {from: person2})).to.be.rejectedWith(/Existing request/)
+      })
+
+      it("reverts if requested amount exceeds balance", async () => {
+        await seniorPool.deposit(usdcVal(1000), {from: person2})
+        await expect(seniorPool.requestWithdrawal(fiduVal(1001), {from: person2})).to.be.rejectedWith(
+          /SafeERC20: low-level call failed/
+        )
+      })
+
+      it("emits an event", async () => {
+        await seniorPool.deposit(usdcVal(1000), {from: person2})
+
+        const res = await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
+        expectEvent(res, "WithdrawalRequested", {
+          operator: person2,
+          uidHolder: "0x0000000000000000000000000000000000000000",
+          fiduRequested: fiduVal(1000),
+        })
+      })
+
+      it("mints a request token", async () => {
+        await seniorPool.deposit(usdcVal(1000), {from: person2})
+        await expectAction(() => seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})).toChange([
+          [() => withdrawalRequestToken.balanceOf(person2), {by: new BN(1)}],
+        ])
+      })
+    })
+  })
+
+  describe("addToWithdrawalRequest", () => {
+    beforeEach(async () => {
+      await seniorPool.deposit(usdcVal(4000), {from: person2})
+
+      // Invest in a pool to suck up the liquidity
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorPool.invest(tranchedPool.address)
+
+      await seniorPool.requestWithdrawal(fiduVal(3500), {from: person2})
+    })
+
+    describe("when caller is tokenOwner", () => {
+      it("adds fidu to the epoch's and request's fiduRequested", async () => {
+        await expectAction(() => seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).toChange([
+          [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(500)}],
+          [() => fidu.balanceOf(person2), {by: fiduVal(500).neg()}],
+          [async () => new BN((await seniorPool.currentEpoch()).fiduRequested), {by: fiduVal(500)}],
+          [async () => new BN((await seniorPool.withdrawalRequest("1")).fiduRequested), {by: fiduVal(500)}],
+        ])
+      })
+
+      it("reverts when amount > caller's FIDU balance", async () => {
+        await expect(seniorPool.addToWithdrawalRequest(fiduVal(5000), "1", {from: person2})).to.be.rejectedWith(
+          /SafeERC20: low-level call failed/
+        )
+      })
+    })
+
+    describe("when caller not tokenOwner", () => {
+      it("reverts", async () => {
+        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person3})).to.be.rejectedWith(/NA/)
+      })
+    })
+
+    describe("authorization", () => {
+      let supportedIdTypes
+      let expiresAt
+      beforeEach(async () => {
+        await goldfinchConfig.bulkRemoveFromGoList([person2], {from: owner})
+        expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        // Add one supported UID type that is NOT eligible to interact with the senior pool
+        const seniorPoolIds = await go.getSeniorPoolIdTypes()
+        supportedIdTypes = [...seniorPoolIds, new BN(5)]
+        await uniqueIdentity.setSupportedUIDTypes(
+          supportedIdTypes,
+          supportedIdTypes.map(() => true),
+          {from: owner}
+        )
+      })
+      describe("when caller == tx.origin", () => {
+        it("works when caller go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([person2], {from: owner})
+          await expect(seniorPool.addToWithdrawalRequest(fiduVal(100), "1", {from: person2})).to.be.fulfilled
+        })
+        it("works when caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await expect(seniorPool.addToWithdrawalRequest(fiduVal(100), "1", {from: person2})).to.be.fulfilled
+        })
+        it("reverts when caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, person2)
+          await expect(seniorPool.addToWithdrawalRequest(fiduVal(100), "1", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+        it("reverts when caller has no UID and not go-listed", async () => {
+          await expect(seniorPool.addToWithdrawalRequest(fiduVal(100), "1", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+      })
+      describe("when caller != tx.origin", () => {
+        it("works when tx.origin has senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.fulfilled
+        })
+
+        it("reverts when tx.origin has non-senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+
+          await burn(hre, uniqueIdentity, person2, new BN(1), expiresAt, new BN(1), owner, undefined, person2)
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(2), owner, undefined, person2)
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.rejectedWith(
+            /NA/
+          )
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.rejectedWith(
+            /Ambiguous/
+          )
+        })
+
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller go-listed", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, false, {from: person2})
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address])
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(100), "2", {from: person2})).to.be.rejectedWith(
+            /Ambiguous/
+          )
+        })
+
+        it("reverts when tx.origin has senior-pool UID and caller has nothing", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, false, {from: person2})
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.rejectedWith(
+            /NA/
+          )
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("works when tx.origin has nothing and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.fulfilled
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has nothing and caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+
+          await burn(
+            hre,
+            uniqueIdentity,
+            seniorPoolCaller.address,
+            new BN(1),
+            expiresAt,
+            new BN(1),
+            owner,
+            undefined,
+            seniorPoolCaller.address
+          )
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(2), owner, undefined, seniorPoolCaller.address)
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.rejectedWith(
+            /Unauthorized/
+          )
+        })
+
+        it("works when tx.origin has nothing and caller is go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address], {from: owner})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
+          await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.fulfilled
+        })
+      })
+    })
+
+    describe("authorization", () => {
+      beforeEach(async () => {
+        await goldfinchConfig.bulkRemoveFromGoList([person2], {from: owner})
+        const seniorPoolIds = await go.getSeniorPoolIdTypes()
+        const supportedIdTypes = [...seniorPoolIds, new BN(5)]
+        await uniqueIdentity.setSupportedUIDTypes(
+          supportedIdTypes,
+          supportedIdTypes.map(() => true),
+          {from: owner}
+        )
+      })
+      it("works when caller has senior-pool UID", async () => {
+        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).to.be.fulfilled
+      })
+      it("works when caller go-listed", async () => {
+        await goldfinchConfig.bulkAddToGoList([person2], {from: owner})
+        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).to.be.fulfilled
+      })
+      it("reverts when caller not go-listed and doesn't have senior pool UID", async () => {
+        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).to.be.rejectedWith(/NA/)
+      })
+    })
+  })
+
+  describe("cancelWithdrawalRequest", () => {
+    let request1, request2
+    beforeEach(async () => {
+      await seniorPool.deposit(usdcVal(1000), {from: person2})
+      await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
+      request1 = await seniorPool.withdrawalRequest("1")
+
+      await seniorPool.deposit(usdcVal(3000), {from: person3})
+      await seniorPool.requestWithdrawal(fiduVal(3000), {from: person3})
+      request2 = await seniorPool.withdrawalRequest("2")
+    })
+
+    describe("authorization", () => {
+      let expiresAt
+      beforeEach(async () => {
+        await goldfinchConfig.bulkRemoveFromGoList([person2], {from: owner})
+        expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        // Add one supported UID type that is NOT eligible to interact with the senior pool
+        const seniorPoolIds = await go.getSeniorPoolIdTypes()
+        const supportedIdTypes = [...seniorPoolIds, new BN(5)]
+        await uniqueIdentity.setSupportedUIDTypes(
+          supportedIdTypes,
+          supportedIdTypes.map(() => true),
+          {from: owner}
+        )
+      })
+      describe("when caller == tx.origin", () => {
+        it("works when caller go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([person2], {from: owner})
+          await expect(seniorPool.cancelWithdrawalRequest("1", {from: person2})).to.be.fulfilled
+        })
+        it("works when caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await expect(seniorPool.cancelWithdrawalRequest("1", {from: person2})).to.be.fulfilled
+        })
+        it("reverts when caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, person2)
+          await expect(seniorPool.cancelWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+        it("reverts when caller has no UID and not go-listed", async () => {
+          await expect(seniorPool.cancelWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+      })
+      describe("when caller != tx.origin", () => {
+        it("works when tx.origin has senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await erc20Transfer(usdc, [seniorPoolCaller.address], usdcVal(100), person2)
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.fulfilled
+        })
+
+        it("reverts when tx.origin has non-senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/Ambiguous/)
+        })
+
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller go-listed", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address])
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/Ambiguous/)
+        })
+
+        it("reverts when tx.origin has senior-pool UID and caller has nothing", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("works when tx.origin has nothing and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.fulfilled
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has nothing and caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(
+            /Unauthorized/
+          )
+        })
+
+        it("works when tx.origin has nothing and caller is go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address], {from: owner})
+          console.log("senior pool caller " + seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+          await expect(seniorPoolCaller.cancelWithdrawalRequest("3", {from: person2})).to.be.fulfilled
+        })
+      })
+    })
+
+    describe("in the same epoch as the request", () => {
+      it("should succeed", async () => {
+        // First user cancels their request
+        await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: person2})).toChange([
+          [() => fidu.balanceOf(person2), {by: fiduVal(1000).mul(new BN(9990)).div(new BN(10_000))}],
+          [() => fidu.balanceOf(reserve), {by: fiduVal(1000).mul(new BN(10)).div(new BN(10_000))}],
+          [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(-1000)}],
+        ])
+
+        let epoch = await seniorPool.currentEpoch()
+        // Epoch's fidu requested should no longer include request 1's fidu requested
+        expect(epoch.fiduRequested).to.eq(request2.fiduRequested)
+        // Token was burned
+        expect(await withdrawalRequestToken.balanceOf(person2)).to.bignumber.eq(ZERO)
+        // Request is empty now
+        let request = await seniorPool.withdrawalRequest("1")
+        expect(request.epochCursor).to.bignumber.eq(ZERO)
+        expect(request.fiduRequested).to.bignumber.eq(ZERO)
+
+        // Second user cancels their request
+        await expectAction(() => seniorPool.cancelWithdrawalRequest("2", {from: person3})).toChange([
+          [() => fidu.balanceOf(person3), {by: fiduVal(3000).mul(new BN(9990)).div(new BN(10_000))}],
+          [() => fidu.balanceOf(reserve), {by: fiduVal(3000).mul(new BN(10)).div(new BN(10_000))}],
+          [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(-3000)}],
+        ])
+
+        epoch = await seniorPool.currentEpoch()
+        // Epoch's fidu requested should now be 0
+        expect(epoch.fiduRequested).to.eq("0")
+        // Token was burned
+        expect(await withdrawalRequestToken.balanceOf(person3)).to.bignumber.eq(ZERO)
+        // Request is empty now
+        request = await seniorPool.withdrawalRequest("2")
+        expect(request.epochCursor).to.bignumber.eq(ZERO)
+        expect(request.fiduRequested).to.bignumber.eq(ZERO)
+      })
+    })
+
+    describe("in a later epoch from the request", () => {
+      it("should succeed if I have withdrawn up to the current epoch", async () => {
+        // Invest in a pool to suck up the liquidity
+        await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+        await tranchedPool.lockJuniorCapital({from: borrower})
+        await seniorPool.invest(tranchedPool.address)
+        // Someone else deposits in the senior pool
+        await seniorPool.deposit(usdcVal(500), {from: owner})
+
+        // Advance to next epoch
+        await advanceTime({days: 14})
+
+        // Execute withdrawal
+        await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+          [() => usdc.balanceOf(person2), {by: amountLessFee(usdcVal(125))}],
+          [() => usdc.balanceOf(seniorPool.address), {by: usdcVal(125).neg()}],
+          // 500 FIDU was burned as the result of the $500 deposit, plus
+          [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(500).neg()}],
+        ])
+
+        // Cancel request
+        // They have 875 fidu remaining. Subtracting 10 bps from that is 9990/10_000 * 875
+        await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: person2})).toChange([
+          [() => fidu.balanceOf(person2), {by: fiduVal(875).mul(new BN(9990)).div(new BN(10_000))}],
+          [() => fidu.balanceOf(reserve), {by: fiduVal(875).mul(new BN(10)).div(new BN(10_000))}],
+        ])
+        const currentEpoch = await seniorPool.currentEpoch()
+        // Epoch's fidu requested should now be 3000
+        expect(currentEpoch.fiduRequested).to.bignumber.eq(fiduVal(3500 - 875))
+        // Token was burned
+        expect(await withdrawalRequestToken.balanceOf(person2)).to.bignumber.eq(ZERO)
+        // Request is empty now
+        const request = await seniorPool.withdrawalRequest("1")
+        expect(request.epochCursor).to.bignumber.eq(ZERO)
+        expect(request.fiduRequested).to.bignumber.eq(ZERO)
+      })
+
+      it("should revert if I have not withdrawn up to the current epoch", async () => {
+        // Advance to next epoch
+        await advanceTime({days: 14})
+        await expect(seniorPool.cancelWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/Not fully withdrawn/)
+      })
+    })
+
+    it("should emit an event", async () => {
+      const tx = await seniorPool.cancelWithdrawalRequest("1", {from: person2})
+      expectEvent(tx, "WithdrawalCanceled", {
+        operator: person2,
+        uidHolder: "0x0000000000000000000000000000000000000000",
+        fiduCanceled: fiduVal(1000),
+      })
+    })
+  })
+
+  function amountLessFee(amount: BN) {
+    return amount.mul(new BN(995)).div(new BN(1000))
+  }
+
+  function feeAmount(amount: BN) {
+    return amount.mul(new BN(5)).div(new BN(1000))
+  }
+
+  describe("previewWithdrawal", () => {
+    let request1, request2
+    beforeEach(async () => {
+      await seniorPool.deposit(usdcVal(1000), {from: person2})
+      await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
+      request1 = await seniorPool.withdrawalRequest("1")
+
+      await seniorPool.deposit(usdcVal(3000), {from: person3})
+      await seniorPool.requestWithdrawal(fiduVal(3000), {from: person3})
+      request2 = await seniorPool.withdrawalRequest("2")
+
+      // Invest in a pool to suck up liquidity
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorPool.invest(tranchedPool.address)
+    })
+
+    it("returns 0 in the very first epoch", async () => {
+      expect(await seniorPool.previewWithdrawal("1")).to.bignumber.eq(ZERO)
+    })
+
+    it("reverts for invalid token", async () => {
+      await expect(seniorPool.previewWithdrawal("3", {from: person2})).to.be.rejectedWith(/Invalid token/)
+    })
+
+    it("caps amount at requestAmount if usdcIn > fiduRequested", async () => {
+      // Make a $10K deposit in epoch 0, then advance to epoch 1
+      await seniorPool.deposit(usdcVal(10_000), {from: owner})
+      await advanceTime({days: 14})
+      await ethers.provider.send("evm_mine", [])
+
+      // Preview withdrawal should return each user's respective total requested amount
+      expect(await seniorPool.previewWithdrawal("1")).to.bignumber.eq(usdcVal(1000))
+      expect(await seniorPool.previewWithdrawal("2")).to.bignumber.eq(usdcVal(3000))
+    })
+
+    it("returns the sum of my pro-rata shares when those shares exceed the pro-rata minimum", async () => {
+      // Make a $500 deposit in epoch 0
+      await seniorPool.deposit(usdcVal(500), {from: owner})
+
+      // Make a $350 deposit in epoch 1
+      await advanceTime({days: 14})
+      await seniorPool.deposit(usdcVal(350))
+
+      // Advance to epoch 3
+      await advanceTime({days: 28})
+      await ethers.provider.send("evm_mine", [])
+
+      // In Epoch 0 we had $500 in and $4000 requested, so 12.5% fulfilled
+      let expectedUsdcEpoch0 = usdcVal(1000).mul(new BN(125)).div(new BN(1000))
+      // In Epoch 1 we had $350 in and $3500 requested, so 10% fulfilled
+      let expectedUsdcEpoch1 = usdcVal(1000).sub(expectedUsdcEpoch0).mul(new BN(10)).div(new BN(100))
+      // No liquidity entered in the second epoch
+      let expectedUsdcEpoch2 = ZERO
+      let expectedUsdc = expectedUsdcEpoch0.add(expectedUsdcEpoch1).add(expectedUsdcEpoch2)
+      expect(await seniorPool.previewWithdrawal("1")).to.bignumber.eq(expectedUsdc)
+
+      expectedUsdcEpoch0 = usdcVal(3000).mul(new BN(125)).div(new BN(1000))
+      expectedUsdcEpoch1 = usdcVal(3000).sub(expectedUsdcEpoch0).mul(new BN(10)).div(new BN(100))
+      expectedUsdcEpoch2 = ZERO
+      expectedUsdc = expectedUsdcEpoch0.add(expectedUsdcEpoch1).add(expectedUsdcEpoch2)
+      expect(await seniorPool.previewWithdrawal("2")).to.bignumber.eq(expectedUsdc)
+    })
+
+    it("returns 0 after I execute a withdrawal", async () => {
+      // Make a $500 deposit in epoch 0
+      await seniorPool.deposit(usdcVal(500), {from: owner})
+
+      // Advance to epoch 1 and execute withdrawals
+      await advanceTime({days: 14})
+      await seniorPool.claimWithdrawalRequest("1", {from: person2})
+      await seniorPool.claimWithdrawalRequest("2", {from: person3})
+
+      expect(await seniorPool.previewWithdrawal("1")).to.bignumber.eq(ZERO)
+      expect(await seniorPool.previewWithdrawal("2")).to.bignumber.eq(ZERO)
+    })
+  })
+
+  describe("claimWithdrawalRequest", () => {
+    let request1, request2
+    beforeEach(async () => {
+      await seniorPool.deposit(usdcVal(1000), {from: person2})
+      await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
+      request1 = await seniorPool.withdrawalRequest("1")
+
+      await seniorPool.deposit(usdcVal(3000), {from: person3})
+      await seniorPool.requestWithdrawal(fiduVal(3000), {from: person3})
+      request2 = await seniorPool.withdrawalRequest("2")
+    })
+
+    it("reverts if I withdraw early", async () => {
+      await expect(seniorPool.claimWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/Too early/)
+    })
+
+    it("withdraws up to the current epoch", async () => {
+      // Invest in a pool to suck up the liquidity
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorPool.invest(tranchedPool.address)
+
+      // Make a $500 deposit in epoch 0
+      await seniorPool.deposit(usdcVal(500), {from: owner})
+
+      // Make a $350 deposit in epoch 1
+      await advanceTime({days: 14})
+      await seniorPool.deposit(usdcVal(350), {from: owner})
+
+      // Make a $1000 deposit in epoch 2
+      await advanceTime({days: 14})
+      await seniorPool.deposit(usdcVal(1000), {from: owner})
+
+      // Withdraw in epoch 3
+      await advanceTime({days: 14})
+      // In Epoch 0 we had $500 in and $4000 requested, so 12.5% fulfilled
+      // In Epoch 1 we had $350 in and $3500 requested, so 10% fulfilled
+      // In Epoch 2 we had $1000 in and $3150 requested, so 31.746031746% fulfilled
+      const person2UsdcEpoch0 = usdcVal(1000).mul(new BN(125)).div(new BN(1000))
+      const person3UsdcEpoch0 = usdcVal(3000).mul(new BN(125)).div(new BN(1000))
+
+      const person2UsdcEpoch1 = usdcVal(1000).sub(person2UsdcEpoch0).mul(new BN(10)).div(new BN(100))
+      const person3UsdcEpoch1 = usdcVal(3000).sub(person3UsdcEpoch0).mul(new BN(10)).div(new BN(100))
+
+      const person2UsdcEpoch2 = usdcVal(1000)
+        .sub(person2UsdcEpoch0)
+        .sub(person2UsdcEpoch1)
+        .mul(new BN(31746031746))
+        .div(new BN(100_000_000_000))
+      const person3UsdcEpoch2 = usdcVal(3000)
+        .sub(person3UsdcEpoch0)
+        .sub(person3UsdcEpoch1)
+        .mul(new BN(31746031746))
+        .div(new BN(100_000_000_000))
+
+      // PERSON 2 WITHDRAWS
+      const person2TotalUsdc = person2UsdcEpoch0.add(person2UsdcEpoch1).add(person2UsdcEpoch2)
+      await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+        // BALANCES
+        [() => usdc.balanceOf(seniorPool.address), {byCloseTo: person2TotalUsdc.neg(), threshold: HALF_CENT}],
+        [() => usdc.balanceOf(person2), {byCloseTo: amountLessFee(person2TotalUsdc), threshold: HALF_CENT}],
+        [() => usdc.balanceOf(reserve), {byCloseTo: feeAmount(person2TotalUsdc), threshold: HALF_CENT}],
+        // Epoch 2 is the only one which hasn't been checkpointed. $1000 of usdcIn at a share price of 1 results in 1000 fidu burned
+        [() => fidu.balanceOf(seniorPool.address), {byCloseTo: fiduVal(1000).neg()}],
+        // EPOCHS
+        // Epoch0: 4000 requested and $500 in. After person2 withdraws on their 1000 requested, then fiduRemaining = 4000 - 1000 = 3000
+        //         and usdcRemaining = $500 * (1 - 1000/4000) = $375. fiduRequested for next epoch = 4000 - $500 = 3500. Person2's fiduRequested = 1000 - 125 = 875
+        [async () => (await seniorPool.epochAt(0)).fiduRequested, {to: fiduVal(3000)}],
+        [async () => (await seniorPool.epochAt(0)).usdcIn, {to: usdcVal(375)}],
+        // Epoch1: 3500 requested and $350 in. After person2 withdraws on their 875 requested, then fiduRemaining = 3500 - 875 = 2625
+        //         and usdcRemaining = $350 * (1 - 875 / 3500) = $262.5. fiduRequested for next epoch = 3500 - $350 = 3150. Person2's fiduRequested = 875 - 87.5 = 787.5
+        [async () => (await seniorPool.epochAt(1)).fiduRequested, {to: fiduVal(2625)}],
+        [async () => (await seniorPool.epochAt(1)).usdcIn, {to: usdcVal(262).add(HALF_DOLLAR)}],
+        // Epoch2: 3150 requested and $1000 in. After person2 withdraws on their 787.5 requested, then fiduRemaining = 3150 - 787.5 = 2362.5
+        //         and usdcRemaining = $1000 * (1 - 787.5 / 3150) = $750. fiduRequested for next epoch = 3150 - $1000 = 2150. Person2's fiduRequested = 787.5 - 250 = 537.5
+        [async () => (await seniorPool.epochAt(2)).fiduRequested, {to: fiduVal(2362).add(fiduVal(1).div(new BN(2)))}],
+        [async () => (await seniorPool.epochAt(2)).usdcIn, {to: usdcVal(750)}],
+        // WITHDRAWAL REQUEST
+        [
+          async () => (await seniorPool.withdrawalRequest("1")).fiduRequested,
+          {to: fiduVal(537.5).add(fiduVal(1).div(new BN(2)))},
+        ],
+      ])
+
+      // PERSON3 WITHDRAWS
+      const person3TotalUsdc = person3UsdcEpoch0.add(person3UsdcEpoch1).add(person3UsdcEpoch2)
+      await expectAction(() => seniorPool.claimWithdrawalRequest("2", {from: person3})).toChange([
+        // BALANCES
+        [() => usdc.balanceOf(seniorPool.address), {byCloseTo: person3TotalUsdc.neg(), threshold: HALF_CENT}],
+        [() => usdc.balanceOf(person3), {byCloseTo: amountLessFee(person3TotalUsdc), threshold: HALF_CENT}],
+        [() => usdc.balanceOf(reserve), {byCloseTo: feeAmount(person3TotalUsdc), threshold: HALF_CENT}],
+        [() => fidu.balanceOf(seniorPool.address), {unchanged: true}],
+        // EPOCHS
+        [async () => (await seniorPool.epochAt(0)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(0)).usdcIn, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(1)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(1)).usdcIn, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(2)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(2)).usdcIn, {to: ZERO}],
+        // WITHDRAWAL REQUEST
+        [
+          async () => (await seniorPool.withdrawalRequest("2")).fiduRequested,
+          {to: fiduVal(1612).add(fiduVal(1).div(new BN(2)))},
+        ],
+      ])
+
+      // CURRENT EPOCH
+      expect((await seniorPool.epochAt(3)).fiduRequested).to.bignumber.eq(fiduVal(2150))
+    })
+
+    it("should clear my position when the clearing epoch is in the past", async () => {
+      // If withdrawing up to epoch[i] clears out my position and I wait until some epoch[i + j] (j >= 1)
+      // to execute the withdrawal, then the withdraw should still work and I should not get any usdc from
+      // epoch[i+1]...epoch[i+j]
+
+      // Invest in a pool to suck up the liquidity
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorPool.invest(tranchedPool.address)
+
+      // Make a $500 deposit in epoch 0
+      await seniorPool.deposit(usdcVal(500), {from: owner})
+
+      // Advance to epoch 2
+      await advanceTime({days: 28})
+      await seniorPool.deposit(usdcVal(1500), {from: owner})
+
+      // Advance to epoch 3 - this will be enough for positions to be cleared out
+      await advanceTime({days: 14})
+      await seniorPool.deposit(usdcVal(2500), {from: owner})
+
+      // Advance to epoch 4 - make another deposit
+      await advanceTime({days: 14})
+      await seniorPool.deposit(usdcVal(10_000))
+
+      // Advance to epoch 5 - make no deposits
+      await advanceTime({days: 14})
+
+      // Now execute the withdrawal request for person2
+      await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+        // BALANCES
+        [() => usdc.balanceOf(seniorPool.address), {by: usdcVal(1000).neg()}],
+        [() => usdc.balanceOf(person2), {by: amountLessFee(usdcVal(1000))}],
+        [() => usdc.balanceOf(reserve), {by: feeAmount(usdcVal(1000))}],
+        // Withdrawing will trigger an epoch checkpoint but no fidu should be burned because all positions
+        // have been cleared out
+        [() => fidu.balanceOf(seniorPool.address), {unchanged: true}],
+        // EPOCHS
+        [async () => (await seniorPool.epochAt(0)).fiduRequested, {to: fiduVal(3000)}],
+        [async () => (await seniorPool.epochAt(0)).usdcIn, {to: usdcVal(375)}],
+        [async () => (await seniorPool.epochAt(1)).fiduRequested, {to: fiduVal(2625)}],
+        [async () => (await seniorPool.epochAt(1)).usdcIn, {unchanged: true}], // no usdc came in so it stays at 0
+        [async () => (await seniorPool.epochAt(2)).fiduRequested, {to: fiduVal(2625)}],
+        [async () => (await seniorPool.epochAt(2)).usdcIn, {to: usdcVal(1125)}],
+        [async () => (await seniorPool.epochAt(3)).fiduRequested, {to: fiduVal(1500)}],
+        [async () => (await seniorPool.epochAt(3)).usdcIn, {to: usdcVal(2000)}],
+        // WITHDRAWAL REQUEST
+        [() => withdrawalRequestToken.balanceOf(person2), {to: ZERO}],
+      ])
+
+      // Execute the withdrawal request for person3
+      await expectAction(() => seniorPool.claimWithdrawalRequest("2", {from: person3})).toChange([
+        // BALANCES
+        [() => usdc.balanceOf(seniorPool.address), {by: usdcVal(3000).neg()}],
+        [() => usdc.balanceOf(person3), {by: amountLessFee(usdcVal(3000))}],
+        [() => usdc.balanceOf(reserve), {by: feeAmount(usdcVal(3000))}],
+        [() => fidu.balanceOf(seniorPool.address), {unchanged: true}],
+        // EPOCHS
+        [async () => (await seniorPool.epochAt(0)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(0)).usdcIn, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(1)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(1)).usdcIn, {unchanged: true}], // no usdc came in so it stays 0
+        [async () => (await seniorPool.epochAt(2)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(2)).usdcIn, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(3)).fiduRequested, {to: ZERO}],
+        // This epoch has non-zero usdcRemaining even though all requests have been executed because there was a
+        // liquidity surplus
+        [async () => (await seniorPool.epochAt(3)).usdcIn, {to: usdcVal(500)}],
+        // WITHDRAWAL REQUEST
+        [() => withdrawalRequestToken.balanceOf(person3), {to: ZERO}],
+      ])
+
+      // Check epochs 4 and 5
+      let epoch = await seniorPool.epochAt(4)
+      expect(epoch.fiduRequested).to.bignumber.eq(ZERO)
+      expect(epoch.usdcIn).to.bignumber.eq(usdcVal(10_500))
+
+      epoch = await seniorPool.epochAt(5)
+      expect(epoch.fiduRequested).to.bignumber.eq(ZERO)
+      expect(epoch.usdcIn).to.bignumber.eq(usdcVal(10_500))
+    })
+
+    it("should clear my position if there is enough liquidity", async () => {
+      // person2 and person3's deposits are still in the senior pool. If no other actions are taken before the end
+      // of the epoch then it will be available for both of them to withdraw and clear their positions
+      await advanceTime({days: 14})
+
+      await expectAction(() => seniorPool.claimWithdrawalRequest("2", {from: person3})).toChange([
+        // BALANCES
+        [() => usdc.balanceOf(seniorPool.address), {by: usdcVal(3000).neg()}],
+        [() => usdc.balanceOf(person3), {by: amountLessFee(usdcVal(3000))}],
+        [() => usdc.balanceOf(reserve), {by: feeAmount(usdcVal(3000))}],
+        // First checkpoint after the $4000 of deposits is triggered here, burning the corresponding 4000 FIDU
+        [() => fidu.balanceOf(seniorPool.address), {by: fiduVal(4000).neg()}],
+        // EPOCHS
+        [async () => (await seniorPool.epochAt(0)).fiduRequested, {to: fiduVal(1000)}],
+        [async () => (await seniorPool.epochAt(0)).usdcIn, {to: usdcVal(1000)}],
+        // WITHDRAWAL REQUEST
+        [() => withdrawalRequestToken.balanceOf(person3), {to: ZERO}],
+      ])
+
+      await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+        // BALANCES
+        [() => usdc.balanceOf(seniorPool.address), {to: ZERO}],
+        [() => usdc.balanceOf(person2), {by: amountLessFee(usdcVal(1000))}],
+        [() => usdc.balanceOf(reserve), {by: feeAmount(usdcVal(1000))}],
+        // Checkpoint already happen during the first withdrawal, so there is no more fidu to burn
+        [() => fidu.balanceOf(seniorPool.address), {unchanged: true}],
+        // EPOCHS
+        [async () => (await seniorPool.epochAt(0)).fiduRequested, {to: ZERO}],
+        [async () => (await seniorPool.epochAt(0)).usdcIn, {to: ZERO}],
+        // WITHDRAWAL REQUEST
+        [() => withdrawalRequestToken.balanceOf(person2), {to: ZERO}],
+      ])
+
+      // Requests are empty
+      let request = await seniorPool.withdrawalRequest("1")
+      expect(request.epochCursor).to.bignumber.eq(ZERO)
+      expect(request.fiduRequested).to.bignumber.eq(ZERO)
+      request = await seniorPool.withdrawalRequest("2")
+      expect(request.epochCursor).to.bignumber.eq(ZERO)
+      expect(request.fiduRequested).to.bignumber.eq(ZERO)
+
+      // Current epoch
+      expect((await seniorPool.currentEpoch()).fiduRequested).to.bignumber.eq(ZERO)
+    })
+
+    it("uses the share price for each epoch to reduce the request amount", async () => {
+      // Suck up liquidity by investing in a tranched pool
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorPool.invest(tranchedPool.address)
+
+      // Borrower draws down
+      await tranchedPool.drawdown(usdcVal(5000), {from: borrower})
+
+      // $500 deposit comes in at share price 1.00
+      await seniorPool.deposit(usdcVal(500), {from: owner})
+
+      // Advance to when first payment on tranched pool is due (epoch 2)
+      await advanceTime({days: 30})
+      await tranchedPool.assess()
+      const paymentAmount = await creditLine.interestOwed()
+      await tranchedPool.pay(paymentAmount)
+      // Share price should go up as a result of redemption
+      const poolBalanceBeforeRedemption = await usdc.balanceOf(seniorPool.address)
+      await expectAction(() => seniorPool.redeem("2")).toChange([
+        [seniorPool.sharePrice, {increase: true}],
+        [() => usdc.balanceOf(seniorPool.address), {increase: true}],
+      ])
+      const seniorInterest = (await usdc.balanceOf(seniorPool.address)).sub(poolBalanceBeforeRedemption)
+
+      // Add another deposit such that there are $200 total usdcIn for epoch 2
+      await seniorPool.deposit(usdcVal(200).sub(seniorInterest))
+      const epoch2SharePrice = await seniorPool.sharePrice()
+
+      // We are now in epoch3
+      await advanceTime({days: 14})
+
+      /*
+      Epoch 0 sharePrice = 1000000000000000000, usdcIn = $500, epochFidu = 4000, user1TotalFidu = 1000, user1Usdc = $500 * 1000/4000 = $125, user1Fidu = $125/1.00 = 125
+      Epoch 1 sharePrice = 1000000000000000000, usdcIn = $0, epochFidu = 4000 - $500/1.00 = 3500, user1TotalFidu = 875, user1Usdc = $0, user1Fidu = 0
+      Epoch 2 sharePrice = 1002876712250000000, usdcIn = $200, epochFidu = 3500, user1TotalFidu = 875, user1Usdc = $200 * 875/3500 = $50, user1Fidu = $50/1.002876712250000000 = $49.856576974275036
+      */
+
+      // Do user 1
+      let expectedUserUsdcEpoch0 = usdcVal(125)
+      let expectedUserFiduEpoch0 = fiduVal(125)
+      let expectedUserUsdcEpoch1 = ZERO
+      let expectedUserFiduEpoch1 = ZERO
+      let expectedUserUsdcEpoch2 = usdcVal(50)
+      let expectedUserFiduEpoch2 = await seniorPool.__getNumShares(usdcVal(50), epoch2SharePrice)
+      let expectedUsdcReceived = expectedUserUsdcEpoch0.add(expectedUserUsdcEpoch1).add(expectedUserUsdcEpoch2)
+      let expectedFiduBurned = expectedUserFiduEpoch0.add(expectedUserFiduEpoch1).add(expectedUserFiduEpoch2)
+
+      await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+        [() => usdc.balanceOf(seniorPool.address), {by: expectedUsdcReceived.neg()}],
+        [() => usdc.balanceOf(person2), {by: amountLessFee(expectedUsdcReceived)}],
+      ])
+      let request = await seniorPool.withdrawalRequest("1")
+      expect(request.fiduRequested).to.bignumber.eq(fiduVal(1000).sub(expectedFiduBurned))
+
+      // Now do user 2
+      expectedUserUsdcEpoch0 = usdcVal(375)
+      expectedUserFiduEpoch0 = fiduVal(375)
+      expectedUserUsdcEpoch1 = ZERO
+      expectedUserFiduEpoch1 = ZERO
+      expectedUserUsdcEpoch2 = usdcVal(150)
+      expectedUserFiduEpoch2 = await seniorPool.__getNumShares(usdcVal(150), epoch2SharePrice)
+      expectedUsdcReceived = expectedUserUsdcEpoch0.add(expectedUserUsdcEpoch1).add(expectedUserUsdcEpoch2)
+      expectedFiduBurned = expectedUserFiduEpoch0.add(expectedUserFiduEpoch1).add(expectedUserFiduEpoch2)
+
+      await expectAction(() => seniorPool.claimWithdrawalRequest("2", {from: person3})).toChange([
+        [() => usdc.balanceOf(seniorPool.address), {by: expectedUsdcReceived.neg()}],
+        [() => usdc.balanceOf(person3), {by: amountLessFee(expectedUsdcReceived)}],
+      ])
+      request = await seniorPool.withdrawalRequest("2")
+      expect(request.fiduRequested).to.bignumber.eq(fiduVal(3000).sub(expectedFiduBurned))
+    })
+
+    describe("authorization", () => {
+      let supportedIdTypes
+      let expiresAt
+      beforeEach(async () => {
+        await goldfinchConfig.bulkRemoveFromGoList([person2], {from: owner})
+        expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
+        // Add one supported UID type that is NOT eligible to interact with the senior pool
+        const seniorPoolIds = await go.getSeniorPoolIdTypes()
+        supportedIdTypes = [...seniorPoolIds, new BN(5)]
+        await uniqueIdentity.setSupportedUIDTypes(
+          supportedIdTypes,
+          supportedIdTypes.map(() => true),
+          {from: owner}
+        )
+      })
+      describe("when caller == tx.origin", () => {
+        it("works when caller go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([person2], {from: owner})
+          await advanceTime({days: 14})
+          await expect(seniorPool.claimWithdrawalRequest("1", {from: person2})).to.be.fulfilled
+        })
+        it("works when caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await advanceTime({days: 14})
+          await expect(seniorPool.claimWithdrawalRequest("1", {from: person2})).to.be.fulfilled
+        })
+        it("reverts when caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(0), owner, undefined, person2)
+          await advanceTime({days: 14})
+          await expect(seniorPool.claimWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+        it("reverts when caller has no UID and not go-listed", async () => {
+          await advanceTime({days: 14})
+          await expect(seniorPool.claimWithdrawalRequest("1", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+      })
+      describe("when caller != tx.origin", () => {
+        it("works when tx.origin has senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.fulfilled
+        })
+
+        it("reverts when tx.origin has non-senior-pool UID and caller is ERC1155 approved", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+
+          // Burn their senior-pool enabled UID and mint them a non-senior-pool UID
+          await burn(hre, uniqueIdentity, person2, new BN(1), expiresAt, new BN(1), owner, undefined)
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(2), owner, undefined, person2)
+
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+
+          // Now mint the seniorPoolCaller a valid UID
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, false, {from: person2})
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/Ambiguous/)
+        })
+
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has senior-pool UID and caller go-listed", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100))
+
+          // Now add seniorPoolCaller to go list
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, false, {from: person2})
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address])
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/Ambiguous/)
+        })
+
+        it("reverts when tx.origin has senior-pool UID and caller has nothing", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, true, {from: person2})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+
+          // Now remove approval
+          await uniqueIdentity.setApprovalForAll(seniorPoolCaller.address, false, {from: person2})
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/NA/)
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("works when tx.origin has nothing and caller has senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.fulfilled
+        })
+
+        // TODO - we cannot mint to seniorPoolCaller until UniqueIdentity's mintTo functionality is merged in
+        // TODO - when we add sybil resistance
+        it.skip("reverts when tx.origin has nothing and caller has non-senior-pool UID", async () => {
+          await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, seniorPoolCaller.address)
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+
+          // Burn the seniorPoolCaller's UID and mint them a non senior pool UID
+          await burn(hre, uniqueIdentity, seniorPoolCaller.address, new BN(1), expiresAt, new BN(1), owner, undefined)
+          await mint(hre, uniqueIdentity, new BN(5), expiresAt, new BN(2), owner, undefined, seniorPoolCaller.address)
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.rejectedWith(/Unauthorized/)
+        })
+
+        it("works when tx.origin has nothing and caller is go-listed", async () => {
+          await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address], {from: owner})
+          await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
+          await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
+          await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
+
+          await advanceTime({days: 14})
+          await expect(seniorPoolCaller.claimWithdrawalRequest("3", {from: person2})).to.be.fulfilled
+        })
+      })
+    })
+  })
+
+  describe("pool assets", () => {
+    let request1, request2, assetsBeforeAllocation
+    beforeEach(async () => {
+      await seniorPool.deposit(usdcVal(1000), {from: person2})
+      await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
+      request1 = await seniorPool.withdrawalRequest("1")
+
+      await seniorPool.deposit(usdcVal(3000), {from: person3})
+      await seniorPool.requestWithdrawal(fiduVal(3000), {from: person3})
+      request2 = await seniorPool.withdrawalRequest("2")
+
+      // Invest in a pool to suck up liquidity
+      await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
+      await tranchedPool.lockJuniorCapital({from: borrower})
+      await seniorPool.invest(tranchedPool.address)
+    })
+
+    const depositAmounts = [
+      // Shortfall
+      usdcVal(500),
+      // Enough to fulfill all withdrawal demand
+      usdcVal(10_000),
+    ]
+
+    depositAmounts.forEach((depositAmount) => {
+      describe(`when ${depositAmount} usdc is allocated for withdrawals`, () => {
+        beforeEach(async () => {
+          await seniorPool.deposit(depositAmount, {from: owner})
+          assetsBeforeAllocation = await seniorPool.assets()
+        })
+
+        it("should decrease asset value by amount allocated", async () => {
+          await advanceTime({days: 14})
+          await ethers.provider.send("evm_mine", [])
+
+          // Even though checkpointed hasn't happened, the $500 deposit should no longer be included
+          expect(await seniorPool.assets()).to.bignumber.eq(
+            assetsBeforeAllocation.sub(BN.min(depositAmount, usdcVal(4000)))
+          )
+
+          // Make a deposit, which will trigger the checkpoint
+          await seniorPool.deposit(usdcVal(1))
+
+          // Verify $500 still not included in the asset count, event though it sits in the contract
+          expect(await seniorPool.assets()).to.bignumber.eq(
+            assetsBeforeAllocation.add(usdcVal(1)).sub(BN.min(depositAmount, usdcVal(4000)))
+          )
+        })
+
+        it("should not change when a user withdraws", async () => {
+          await advanceTime({days: 14})
+
+          await seniorPool.claimWithdrawalRequest("1", {from: person2})
+          await seniorPool.claimWithdrawalRequest("2", {from: person3})
+
+          expect(await seniorPool.assets()).to.bignumber.eq(
+            assetsBeforeAllocation.sub(BN.min(depositAmount, usdcVal(4000)))
+          )
+        })
+      })
     })
   })
 
@@ -959,6 +1998,17 @@ describe("SeniorPool", () => {
       await expect(estimate).to.bignumber.equal(investmentAmount)
     })
   })
+
+  async function getCurrentEpoch() {
+    const epoch = await seniorPool.currentEpoch()
+    return {
+      id: new BN(epoch.id),
+      startsAt: new BN(epoch.startsAt),
+      sharePrice: new BN(epoch.sharePrice),
+      fiduRequested: new BN(epoch.fiduRequested),
+      usdcIn: new BN(epoch.usdcIn),
+    }
+  }
 
   describe("invest", () => {
     const juniorInvestmentAmount = usdcVal(10_000)
@@ -1105,184 +2155,76 @@ describe("SeniorPool", () => {
     })
 
     describe("epoch checkpointing", () => {
-      describe("when epoch storage up to date", () => {
-        it("decreases usdcIn by invested amount for the current epoch", async () => {
-          // Make the senior pool invest
-          await tranchedPool.lockJuniorCapital({from: borrower})
+      beforeEach(async () => {
+        await tranchedPool.lockJuniorCapital({from: borrower})
+      })
+      describe("in the current epoch", () => {
+        it("decreases usdcIn by investment amount", async () => {
+          const epoch0BeforeInvest = await getCurrentEpoch()
           await seniorPool.invest(tranchedPool.address)
-
-          // junior deposit amount was 10_000 so senior pool invests 40_000
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, usdcVal(100_000 - 40_000), ZERO, ZERO)
+          const epoch0AfterInvest = await getCurrentEpoch()
+          expect(epoch0BeforeInvest.usdcIn.sub(epoch0AfterInvest.usdcIn)).to.bignumber.eq(usdcVal(40_000))
         })
       })
-
-      describe("when epoch storage is stale by one epoch", () => {
-        let pool2
-        beforeEach(async () => {
-          // eslint-disable-next-line @typescript-eslint/no-extra-semi
-          ;({tranchedPool: pool2} = await deployTranchedPoolWithGoldfinchFactoryFixture({
-            borrower,
-            usdcAddress: usdc.address,
-            limit,
-            interestApr,
-            paymentPeriodInDays,
-            termInDays,
-            lateFeeApr,
-            juniorFeePercent,
-            id: "second pool",
-          }))
-        })
-        it("decreases usdcIn by invested amount for the current epoch", async () => {
-          // EPOCH 0
-          // Make the senior pool invests
-          await tranchedPool.lockJuniorCapital({from: borrower})
-          await seniorPool.invest(tranchedPool.address)
-
-          const firstEpochUsdcIn = usdcVal(100_000 - 40_000)
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
-
-          await pool2.deposit(TRANCHES.Junior, usdcVal(1000))
-          await pool2.lockJuniorCapital({from: borrower})
+      describe("when the last epoch hasn't been checkpointed", () => {
+        it("decreases usdcIn by investment amount", async () => {
           await advanceTime({days: 14})
           await ethers.provider.send("evm_mine", [])
 
-          // EPOCH1
-          // Check first and second epoch before seniorPool.invest triggers a checkpoint
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
-
-          // Invest and force an epoch update
-          await seniorPool.invest(pool2.address)
-
-          const secondEpochUsdcIn = firstEpochUsdcIn.sub(usdcVal(4_000))
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, secondEpochUsdcIn, ZERO, ZERO)
-        })
-      })
-
-      describe("when epoch storage is stale by multiple epochs", () => {
-        let pool2
-        beforeEach(async () => {
-          // eslint-disable-next-line @typescript-eslint/no-extra-semi
-          ;({tranchedPool: pool2} = await deployTranchedPoolWithGoldfinchFactoryFixture({
-            borrower,
-            usdcAddress: usdc.address,
-            limit,
-            interestApr,
-            paymentPeriodInDays,
-            termInDays,
-            lateFeeApr,
-            juniorFeePercent,
-            id: "second pool",
-          }))
-        })
-        it("decreases usdcIn by invested amount for the current epoch", async () => {
-          // EPOCH 0
-          // Make the senior pool invests
-          await tranchedPool.lockJuniorCapital({from: borrower})
+          const epoch1BeforeInvest = await getCurrentEpoch()
           await seniorPool.invest(tranchedPool.address)
-
-          const firstEpochUsdcIn = usdcVal(100_000 - 40_000)
-          await assertEpochAt("0", epochsInitializedAt, ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
-
-          await advanceTime({days: 14})
-          await ethers.provider.send("evm_mine", [])
-
-          // EPOCH 1
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt("1", epochsInitializedAt.add(TWO_WEEKS), ZERO, ZERO, firstEpochUsdcIn, ZERO, ZERO)
-
-          await advanceTime({days: 14})
-          await ethers.provider.send("evm_mine", [])
-
-          // EPOCH 2
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt(
-            "1",
-            epochsInitializedAt.add(TWO_WEEKS),
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt(
-            "2",
-            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-            ZERO,
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            ZERO
-          )
-
-          await pool2.deposit(TRANCHES.Junior, usdcVal(1000))
-          await pool2.lockJuniorCapital({from: borrower})
-          // Invest and trigger an epoch update
-          await seniorPool.invest(pool2.address)
-
-          const thirdEpochUsdcIn = firstEpochUsdcIn.sub(usdcVal(4_000))
-          await assertEpochAt(
-            "0",
-            epochsInitializedAt,
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt(
-            "1",
-            epochsInitializedAt.add(TWO_WEEKS),
-            await seniorPool.sharePrice(),
-            ZERO,
-            firstEpochUsdcIn,
-            ZERO,
-            firstEpochUsdcIn
-          )
-          await assertEpochAt(
-            "2",
-            epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-            ZERO,
-            ZERO,
-            thirdEpochUsdcIn,
-            ZERO,
-            ZERO
-          )
+          const epoch1AfterInvest = await getCurrentEpoch()
+          expect(epoch1BeforeInvest.usdcIn.sub(epoch1AfterInvest.usdcIn)).to.bignumber.eq(usdcVal(40_000))
         })
       })
+      describe("when multiple epochs haven't been checkpointed", () => {
+        it("decreases usdcIn by investment amount", async () => {
+          await advanceTime({days: 28})
+          await ethers.provider.send("evm_mine", [])
+
+          const epoch2BeforeInvest = await getCurrentEpoch()
+          await seniorPool.invest(tranchedPool.address)
+          const epoch2AfterInvest = await getCurrentEpoch()
+          expect(epoch2BeforeInvest.usdcIn.sub(epoch2AfterInvest.usdcIn)).to.bignumber.eq(usdcVal(40_000))
+        })
+      })
+      it("cannot invest more than current epoch's usdcIn, event when the senior pool's balance is higher", async () => {
+        // By requesting to withdary 80_000 FIDU = $80K, there will only be 20K left to invest in the next epoch
+        await seniorPool.requestWithdrawal(fiduVal(80_000), {from: owner})
+        await advanceTime({days: 14})
+
+        // The 4x leverage strategy tries to invest $40k but this exceeds usdc in
+        await expect(seniorPool.invest(tranchedPool.address)).to.be.rejectedWith(/Investment exceeds available USDC/)
+      })
+    })
+  })
+
+  describe("epochDuration", () => {
+    it("can be set by admin", async () => {
+      await expectAction(() => seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: owner})).toChange([
+        [seniorPool.epochDuration, {to: SECONDS_PER_DAY}],
+      ])
+    })
+    it("cannot be set by non-admin", async () => {
+      await expect(seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: person2})).to.be.rejectedWith(
+        /Must have admin role to perform this action/
+      )
+    })
+    it("returns the duration", async () => {
+      expect(await seniorPool.epochDuration()).to.bignumber.eq(TWO_WEEKS)
+    })
+    it("emits and event", async () => {
+      const receipt = await seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: owner})
+      expectEvent(receipt, "EpochDurationChanged", {
+        to: SECONDS_PER_DAY,
+      })
+    })
+    it("checkpoints epochs before and after the duration change", async () => {
+      await advanceTime({days: 16})
+      await seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: owner})
+      // 1 epoch should have elapsed from the old two week duration, and two epochs from the new 1 day duration.
+      // So we should be on epoch 0 + 1 + 2 = 3
+      expect((await getCurrentEpoch()).id).to.bignumber.eq("3")
     })
   })
 
@@ -1301,6 +2243,17 @@ describe("SeniorPool", () => {
 
       await tranchedPool.deposit(TRANCHES.Junior, juniorInvestmentAmount)
     })
+
+    async function getPoolTokenInfo(tokenId) {
+      const tokenInfo = await poolTokens.getTokenInfo(tokenId)
+      return {
+        ...tokenInfo,
+        tranche: new BN(tokenInfo.tranche),
+        principalAmount: new BN(tokenInfo.principalAmount),
+        principalRedeemed: new BN(tokenInfo.principalRedeemed),
+        interestRedeemed: new BN(tokenInfo.interestRedeemed),
+      }
+    }
 
     it("should redeem the maximum from the TranchedPool", async () => {
       // Make the senior pool invest
@@ -1413,265 +2366,57 @@ describe("SeniorPool", () => {
       expectEvent.notEmitted(receipt, "ReserveFundsCollected")
     })
 
-    describe("when epoch storage up to date", () => {
-      it("increases usdcIn by redeemed amount for the current epoch", async () => {
-        // EPOCH 0
-        // Make the senior pool invest
-        const firstEpochSharePrice = await seniorPool.sharePrice()
+    describe("epoch checkpointing", () => {
+      let tokenId
+      beforeEach(async () => {
+        // Epoch 0: Make the senior pool invest
         await tranchedPool.lockJuniorCapital({from: borrower})
         await seniorPool.invest(tranchedPool.address)
-
+        tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
         await tranchedPool.lockPool({from: borrower})
         await tranchedPool.drawdown(usdcVal(100), {from: borrower})
 
-        // EPOCH 2
+        // Epoch 2: First tranchedpool payment is due
         await advanceTime({days: 30})
         await tranchedPool.assess()
         await tranchedPool.pay(await creditLine.totalInterestAccrued())
-
-        const tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
-        const tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
-        await seniorPool.redeem(tokenId)
-        const tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
-
-        const usdcInFirstEpoch = usdcVal(100_000 - 400)
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          firstEpochSharePrice,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-
-        const usdcInSecondEpoch = usdcInFirstEpoch
-        await assertEpochAt(
-          "1",
-          epochsInitializedAt.add(TWO_WEEKS),
-          firstEpochSharePrice,
-          ZERO,
-          usdcInSecondEpoch,
-          ZERO,
-          usdcInSecondEpoch
-        )
-
-        const interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
-        const principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(
-          new BN(tokenInfoBefore.principalRedeemed)
-        )
-        const seniorPoolUsdcRedeemed = interestRedeemed.add(principalRedeemed)
-        const usdcInThirdEpoch = usdcInSecondEpoch.add(seniorPoolUsdcRedeemed)
-        await assertEpochAt(
-          "2",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-          ZERO,
-          ZERO,
-          usdcInThirdEpoch,
-          ZERO,
-          ZERO
-        )
-        await assertCurrentEpoch("2", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))), ZERO, usdcInThirdEpoch)
       })
-    })
-
-    describe("when epoch storage is stale by one epoch", () => {
-      it("updates past epochs and increases usdcIn by redeemed amount for the current epoch", async () => {
-        // EPOCH 0
-        // Make the senior pool invest
-        const firstEpochSharePrice = await seniorPool.sharePrice()
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await seniorPool.invest(tranchedPool.address)
-
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-
-        // EPOCH 2
-        await advanceTime({days: 30})
-        await tranchedPool.assess()
-        await tranchedPool.pay(await creditLine.totalInterestAccrued())
-
-        // Advance one more epoch
-        await advanceTime({days: 14})
-        await ethers.provider.send("evm_mine", [])
-
-        // EPOCH 3
-        // Assertions before redeeming, when epoch storage is 1 epoch stale
-        const usdcInFirstEpoch = usdcVal(100_000 - 400)
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "1",
-          epochsInitializedAt.add(TWO_WEEKS),
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "2",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-          await seniorPool.sharePrice(),
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "3",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
-          ZERO,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          ZERO
-        )
-        await assertCurrentEpoch("3", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))), ZERO, usdcInFirstEpoch)
-
-        // Redeem
-        const tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
-        const tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
-        await seniorPool.redeem(tokenId)
-        const tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
-        const interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
-        const principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(
-          new BN(tokenInfoBefore.principalRedeemed)
-        )
-        const seniorPoolUsdcRedeemed = interestRedeemed.add(principalRedeemed)
-
-        // Assertions after redeeming, when epoch storage is up to date
-        await assertEpochAt(
-          "3",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
-          ZERO,
-          ZERO,
-          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed),
-          ZERO,
-          ZERO
-        )
-        await assertCurrentEpoch(
-          "3",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
-          ZERO,
-          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed)
-        )
+      describe("in the current epoch", () => {
+        it("increases usdcIn by redemption amount", async () => {
+          // Epoch 2: Redeem
+          const epoch2Before = await getCurrentEpoch()
+          await seniorPool.redeem(tokenId)
+          const tokenInfo = await getPoolTokenInfo(tokenId)
+          const epoch2After = await getCurrentEpoch()
+          const seniorPoolUsdcRedeemed = tokenInfo.interestRedeemed.add(tokenInfo.principalRedeemed)
+          expect(epoch2After.usdcIn.sub(epoch2Before.usdcIn)).to.bignumber.eq(seniorPoolUsdcRedeemed)
+        })
       })
-    })
-
-    describe("when epoch storage is stale by multiple epochs", () => {
-      it("updates storage and increases usdcIn by redeemed amount for the current epoch", async () => {
-        // EPOCH 0
-        // Make the senior pool invest
-        const firstEpochSharePrice = await seniorPool.sharePrice()
-        await tranchedPool.lockJuniorCapital({from: borrower})
-        await seniorPool.invest(tranchedPool.address)
-
-        await tranchedPool.lockPool({from: borrower})
-        await tranchedPool.drawdown(usdcVal(100), {from: borrower})
-
-        // EPOCH 2
-        await advanceTime({days: 30})
-        await tranchedPool.assess()
-        await tranchedPool.pay(await creditLine.totalInterestAccrued())
-
-        // Advance two epochs
-        await advanceTime({days: 28})
-        await ethers.provider.send("evm_mine", [])
-
-        // EPOCH 4
-        const usdcInFirstEpoch = usdcVal(100_000 - 400)
-        await assertEpochAt(
-          "0",
-          epochsInitializedAt,
-          firstEpochSharePrice,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "1",
-          epochsInitializedAt.add(TWO_WEEKS),
-          firstEpochSharePrice,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "2",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(2))),
-          firstEpochSharePrice,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "3",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
-          firstEpochSharePrice,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "4",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
-          ZERO,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          ZERO
-        )
-        await assertCurrentEpoch("4", epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))), ZERO, usdcInFirstEpoch)
-
-        // Redeem
-        const tokenId = await poolTokens.tokenOfOwnerByIndex(seniorPool.address, 0)
-        const tokenInfoBefore = await poolTokens.getTokenInfo(tokenId)
-        await seniorPool.redeem(tokenId)
-        const tokenInfoAfter = await poolTokens.getTokenInfo(tokenId)
-        const interestRedeemed = new BN(tokenInfoAfter.interestRedeemed).sub(new BN(tokenInfoBefore.interestRedeemed))
-        const principalRedeemed = new BN(tokenInfoAfter.principalRedeemed).sub(
-          new BN(tokenInfoBefore.principalRedeemed)
-        )
-        const seniorPoolUsdcRedeemed = interestRedeemed.add(principalRedeemed)
-
-        // Assertions after redeeming, when epoch storage is up to date
-        // Redeeming should update
-        await assertEpochAt(
-          "3",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(3))),
-          firstEpochSharePrice,
-          ZERO,
-          usdcInFirstEpoch,
-          ZERO,
-          usdcInFirstEpoch
-        )
-        await assertEpochAt(
-          "4",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
-          ZERO,
-          ZERO,
-          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed),
-          ZERO,
-          ZERO
-        )
-        await assertCurrentEpoch(
-          "4",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
-          ZERO,
-          usdcInFirstEpoch.add(seniorPoolUsdcRedeemed)
-        )
+      describe("when the last epoch hasn't been checkpointed", async () => {
+        it("increases usdcIn by redemption amount", async () => {
+          // Epoch 3: Redeem
+          await advanceTime({days: 14})
+          await ethers.provider.send("evm_mine", [])
+          const epoch3Before = await getCurrentEpoch()
+          await seniorPool.redeem(tokenId)
+          const tokenInfo = await getPoolTokenInfo(tokenId)
+          const epoch3After = await getCurrentEpoch()
+          const seniorPoolUsdcRedeemed = tokenInfo.interestRedeemed.add(tokenInfo.principalRedeemed)
+          expect(epoch3After.usdcIn.sub(epoch3Before.usdcIn)).to.bignumber.eq(seniorPoolUsdcRedeemed)
+        })
+      })
+      describe("when multiple epochs haven't been checkpointed", async () => {
+        it("increases usdcIn by redemption amount", async () => {
+          // Epoch 4: Redeem
+          await advanceTime({days: 28})
+          await ethers.provider.send("evm_mine", [])
+          const epoch4Before = await getCurrentEpoch()
+          await seniorPool.redeem(tokenId)
+          const tokenInfo = await getPoolTokenInfo(tokenId)
+          const epoch4After = await getCurrentEpoch()
+          const seniorPoolUsdcRedeemed = tokenInfo.interestRedeemed.add(tokenInfo.principalRedeemed)
+          expect(epoch4After.usdcIn.sub(epoch4Before.usdcIn)).to.bignumber.eq(seniorPoolUsdcRedeemed)
+        })
       })
     })
   })
@@ -1702,96 +2447,47 @@ describe("SeniorPool", () => {
       await testSetup()
     })
 
-    describe("when the last epoch checkpoint was in the current epoch", () => {
-      it("should decrease the share price for the current epoch", async () => {
+    describe("epoch checkpointing", () => {
+      const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
+      const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
+      let epochBeforeWritedown, postWritedownSharePrice
+      beforeEach(async () => {
         // Assess for two periods of lateness
-        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
-        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
         await advanceTime({seconds: twoPaymentPeriodsInSeconds})
-
-        // EPOCH 4
-        // Make a senior pool deposit to trigger a checkpoint
-        await makeDeposit(person2, usdcVal(200))
+        // Deposit to trigger a checkpoint
+        await seniorPool.deposit(usdcVal(1), {from: owner})
+        epochBeforeWritedown = await getCurrentEpoch()
         // Writedown
-        await tranchedPool.assess()
         await expectAction(() => seniorPool.writedown(tokenId)).toChange([[seniorPool.sharePrice, {decrease: true}]])
-
-        // Advance to next epoch to lock in share price
-        await advanceTime({days: 14})
-        await ethers.provider.send("evm_mine", [])
-
-        const expectedUsdcIn = usdcVal(100 - 80 + 200)
-        await assertEpochAt(
-          "4",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
-          await seniorPool.sharePrice(),
-          ZERO,
-          expectedUsdcIn,
-          ZERO,
-          expectedUsdcIn
-        )
+        postWritedownSharePrice = await seniorPool.sharePrice()
       })
-    })
-
-    describe("when the last epoch checkpoint was in the last epoch", () => {
-      it("should decrease the share price for the current epoch", async () => {
-        // Assess for two periods of lateness
-        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
-        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-
-        // EPOCH 3
-        await advanceTime({seconds: twoPaymentPeriodsInSeconds.sub(TWO_WEEKS)})
-        await makeDeposit(person2, usdcVal(200))
-
-        // EPOCH 4
-        await advanceTime({seconds: TWO_WEEKS})
-        // Writedown
-        await tranchedPool.assess()
-        await expectAction(() => seniorPool.writedown(tokenId)).toChange([[seniorPool.sharePrice, {decrease: true}]])
-
-        // Advance to next epoch to lock in share price
-        await advanceTime({seconds: TWO_WEEKS})
-        await ethers.provider.send("evm_mine", [])
-
-        const expectedUsdcIn = usdcVal(100 - 80 + 200)
-        await assertEpochAt(
-          "4",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
-          await seniorPool.sharePrice(),
-          ZERO,
-          expectedUsdcIn,
-          ZERO,
-          expectedUsdcIn
-        )
+      describe("in the current epoch", () => {
+        it("does not affect the current epoch", async () => {
+          // Should not have affected the epoch
+          expect(epochBeforeWritedown).to.deep.eq(await getCurrentEpoch())
+        })
       })
-    })
-
-    describe("when the last epoch checkpoint was multiple epochs ago", () => {
-      it("should decrease the share price for the current epoch", async () => {
-        // Assess for two periods of lateness
-        const paymentPeriodInSeconds = paymentPeriodInDays.mul(SECONDS_PER_DAY)
-        const twoPaymentPeriodsInSeconds = paymentPeriodInSeconds.mul(new BN(2))
-
-        // EPOCH 4
-        await advanceTime({seconds: twoPaymentPeriodsInSeconds})
-        // Writedown
-        await tranchedPool.assess()
-        await expectAction(() => seniorPool.writedown(tokenId)).toChange([[seniorPool.sharePrice, {decrease: true}]])
-
-        // Advance to next epoch to lock in share price
-        await advanceTime({seconds: TWO_WEEKS})
-        await ethers.provider.send("evm_mine", [])
-
-        const expectedUsdcIn = usdcVal(100 - 80)
-        await assertEpochAt(
-          "4",
-          epochsInitializedAt.add(TWO_WEEKS.mul(new BN(4))),
-          await seniorPool.sharePrice(),
-          ZERO,
-          expectedUsdcIn,
-          ZERO,
-          expectedUsdcIn
-        )
+      describe("when the last epoch hasn't been checkpointed", () => {
+        it("locks in the last epoch at pre-writedown share price", async () => {
+          await advanceTime({days: 14})
+          await ethers.provider.send("evm_mine", [])
+          // Deposit to trigger a checkpoint and then get the previous epoch
+          await seniorPool.deposit(usdcVal(1), {from: owner})
+          const writedownEpoch = await seniorPool.epochAt((await getCurrentEpoch()).id.sub(new BN(1)))
+          expect(writedownEpoch.sharePrice).to.bignumber.eq(postWritedownSharePrice)
+        })
+      })
+      describe("when multiple epochs haven't been checkpointed", () => {
+        it("locks in those epoch's share prices at pre-writedown share price", async () => {
+          await advanceTime({days: 28})
+          await ethers.provider.send("evm_mine", [])
+          // Deposit to trigger a checkpoint and then get the previous epoch
+          await seniorPool.deposit(usdcVal(1), {from: owner})
+          let writedownEpoch = await seniorPool.epochAt((await getCurrentEpoch()).id.sub(new BN(2)))
+          expect(writedownEpoch.sharePrice).to.bignumber.eq(postWritedownSharePrice)
+          writedownEpoch = await seniorPool.epochAt((await getCurrentEpoch()).id.sub(new BN(1)))
+          expect(writedownEpoch.sharePrice).to.bignumber.eq(postWritedownSharePrice)
+        })
       })
     })
 
