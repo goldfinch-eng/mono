@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { useEffect, useState } from "react";
@@ -221,7 +222,12 @@ function AssetCheckbox({
   onChange,
 }: AssetCheckboxProps) {
   return (
-    <div className="relative rounded bg-white py-6 px-5">
+    <div
+      className={clsx(
+        "relative rounded border bg-white py-6 px-5",
+        checked ? "border-black" : "border-white"
+      )}
+    >
       <div className="flex justify-between gap-3">
         <div className="flex items-start justify-between gap-5">
           <Checkbox
@@ -271,8 +277,19 @@ function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
   useEffect(() => {
     onChange(gfiToVault);
   }, [onChange, gfiToVault]);
+  const gfiToVaultAsBigNumber = parseUnits(
+    gfiToVault !== undefined && gfiToVault !== "" ? gfiToVault : "0",
+    GFI_DECIMALS
+  );
   return (
-    <div className="rounded bg-white py-6 px-5">
+    <div
+      className={clsx(
+        "rounded border bg-white py-6 px-5",
+        !gfiToVaultAsBigNumber.isZero() && !gfiToVaultAsBigNumber.isNegative()
+          ? "border-black"
+          : "border-white"
+      )}
+    >
       <div className="flex justify-between gap-3">
         <div className="mb-1 flex items-center justify-between gap-2">
           <Icon name="Gfi" size="md" />
@@ -297,7 +314,7 @@ function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
         helperText={formatCrypto(
           gfiToUsdc(
             {
-              amount: parseUnits(gfiToVault, GFI_DECIMALS),
+              amount: gfiToVaultAsBigNumber,
               token: SupportedCrypto.Gfi,
             },
             fiatPerGfi
