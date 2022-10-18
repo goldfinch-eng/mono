@@ -90,7 +90,7 @@ export function Modal({
             <div
               className={clsx(
                 "flex items-center justify-between gap-12 px-6 pb-4",
-                divider ? "border-b border-b-sand-100" : null
+                divider ? "border-b border-b-sand-200" : null
               )}
             >
               <div>
