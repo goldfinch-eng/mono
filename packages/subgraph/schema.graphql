@@ -248,6 +248,8 @@ enum TransactionCategory {
   TRANCHED_POOL_REPAYMENT
   TRANCHED_POOL_DRAWDOWN
   UID_MINTED
+  CURVE_FIDU_BUY
+  CURVE_FIDU_SELL
 }
 
 enum SupportedCrypto {
@@ -255,6 +257,12 @@ enum SupportedCrypto {
   GFI
   FIDU
   CURVE_LP
+}
+
+enum SupportedNft {
+  STAKING_TOKEN
+  POOL_TOKEN
+  UID
 }
 
 type Transaction @entity(immutable: true) {
@@ -267,9 +275,20 @@ type Transaction @entity(immutable: true) {
   user: User!
   timestamp: Int!
   blockNumber: Int!
-  amount: BigInt!
-  amountToken: SupportedCrypto!
+
+  sentAmount: BigInt
+  sentToken: SupportedCrypto
+  sentNftId: String
+  sentNftType: SupportedNft
+
+  receivedAmount: BigInt
+  receivedToken: SupportedCrypto
+  receivedNftId: String
+  receivedNftType: SupportedNft
+
   tranchedPool: TranchedPool
+
+  fiduPrice: BigInt
 }
 
 type Zap @entity {
