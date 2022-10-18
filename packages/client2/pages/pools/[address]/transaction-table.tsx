@@ -108,18 +108,18 @@ export function TransactionTable({ tranchedPoolId }: TransactionTableProps) {
     }
 
     const amount =
-      !!tokenToDisplay &&
-      !!amountToDisplay &&
-      (subtractiveIconTransactionCategories.includes(transaction.category)
-        ? "-"
-        : "+") +
-        formatCrypto(
-          {
-            token: tokenToDisplay,
-            amount: amountToDisplay,
-          },
-          { includeToken: true }
-        );
+      tokenToDisplay && amountToDisplay
+        ? (subtractiveIconTransactionCategories.includes(transaction.category)
+            ? "-"
+            : "+") +
+          formatCrypto(
+            {
+              token: tokenToDisplay,
+              amount: amountToDisplay,
+            },
+            { includeToken: true }
+          )
+        : null;
 
     const date = new Date(transaction.timestamp * 1000);
 

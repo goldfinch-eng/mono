@@ -176,10 +176,5 @@ export function createTransactionFromEvent(event: ethereum.Event, category: stri
   transaction.category = category
   const user = getOrInitUser(userAddress)
   transaction.user = user.id
-  transaction.sentAmount = null
-  transaction.sentToken = null
-  transaction.receivedAmount = null
-  transaction.receivedToken = null
-  transaction.fiduPrice = null
   return transaction
 }

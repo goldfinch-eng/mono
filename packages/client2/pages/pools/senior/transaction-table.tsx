@@ -89,18 +89,18 @@ export function TransactionTable() {
     }
 
     const transactionAmount =
-      !!tokenToDisplay &&
-      !!amountToDisplay &&
-      (subtractiveIconTransactionCategories.has(transaction.category)
-        ? "-"
-        : "+") +
-        formatCrypto(
-          {
-            token: tokenToDisplay,
-            amount: amountToDisplay,
-          },
-          { includeToken: true }
-        );
+      tokenToDisplay && amountToDisplay
+        ? (subtractiveIconTransactionCategories.has(transaction.category)
+            ? "-"
+            : "+") +
+          formatCrypto(
+            {
+              token: tokenToDisplay,
+              amount: amountToDisplay,
+            },
+            { includeToken: true }
+          )
+        : null;
 
     return [
       <div key={`${transaction.id}-user`} className="flex items-center gap-2">

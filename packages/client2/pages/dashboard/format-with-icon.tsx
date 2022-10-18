@@ -28,13 +28,10 @@ export function FormatWithIcon({
       <Icon size="md" name="Curve" />
     ) : cryptoAmount.token === SupportedCrypto.Fidu ? (
       "FIDU"
-    ) : cryptoAmount.token === SupportedCrypto.StakingTokenId ? (
-      "StakedToken"
-    ) : cryptoAmount.token === SupportedCrypto.PoolTokenId ? (
-      "PoolToken"
     ) : (
       assertUnreachable(cryptoAmount.token)
     );
+
   return (
     <div className="flex items-center gap-2">
       <div>{formatted}</div>

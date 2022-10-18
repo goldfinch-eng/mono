@@ -44,8 +44,6 @@ const unitProperties: Record<Unit, { mask: string; scale: number }> = {
     mask: "amount FIDU-USDC-F",
     scale: CURVE_LP_DECIMALS,
   },
-  [SupportedCrypto.StakingTokenId]: { mask: "$amount", scale: 0 },
-  [SupportedCrypto.PoolTokenId]: { mask: "$amount", scale: 0 },
 };
 
 export function DollarInput({

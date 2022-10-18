@@ -8,6 +8,7 @@ import {
   useCurrentUserTransactionsQuery,
   TransactionCategory,
   SupportedCrypto,
+  SupportedNft,
 } from "@/lib/graphql/generated";
 import { getTransactionLabel, getTransactionIcon } from "@/lib/pools";
 import { reduceOverlappingEventsToNonOverlappingTxs } from "@/lib/tx";
@@ -29,8 +30,12 @@ gql`
       category
       sentAmount
       sentToken
+      sentNftId
+      sentNftType
       receivedAmount
       receivedToken
+      receivedNftId
+      receivedNftType
       fiduPrice
       timestamp
       tranchedPool {
@@ -78,27 +83,27 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
       let sentAmount = null,
         receivedAmount = null;
 
-      if (transaction.sentToken === SupportedCrypto.PoolTokenId) {
+      if (transaction.sentNftType === SupportedNft.PoolToken) {
         sentAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.sentAmount}`}
+              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.sentNftId}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
-              {`Pool Token ID: ${transaction.sentAmount}`}
+              {`Pool Token ID: ${transaction.sentNftId}`}
             </Link>
           </div>
         );
-      } else if (transaction.sentToken === SupportedCrypto.StakingTokenId) {
+      } else if (transaction.sentNftType === SupportedNft.StakingToken) {
         sentAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.sentAmount}`}
+              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.sentNftId}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
-              {`Staked Token ID: ${transaction.sentAmount}`}
+              {`Staked Token ID: ${transaction.sentNftId}`}
             </Link>
           </div>
         );
@@ -117,27 +122,27 @@ export function TransactionTable({ isPreview = false }: TransactionTableProps) {
         );
       }
 
-      if (transaction.receivedToken === SupportedCrypto.PoolTokenId) {
+      if (transaction.receivedNftType === SupportedNft.PoolToken) {
         receivedAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.receivedAmount}`}
+              href={`https://opensea.io/assets/ethereum/0x57686612c601cb5213b01aa8e80afeb24bbd01df/${transaction.receivedNftId}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
-              {`Pool Token ID: ${transaction.receivedAmount}`}
+              {`Pool Token ID: ${transaction.receivedNftId}`}
             </Link>
           </div>
         );
-      } else if (transaction.receivedToken === SupportedCrypto.StakingTokenId) {
+      } else if (transaction.receivedNftType === SupportedNft.StakingToken) {
         receivedAmount = (
           <div className="flex items-center gap-2">
             <Link
-              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.receivedAmount}`}
+              href={`https://opensea.io/assets/ethereum/0xfd6ff39da508d281c2d255e9bbbfab34b6be60c3/${transaction.receivedNftId}`}
               iconRight="ArrowTopRight"
               className="text-sand-400"
             >
-              {`Staked Token ID: ${transaction.receivedAmount}`}
+              {`Staked Token ID: ${transaction.receivedNftId}`}
             </Link>
           </div>
         );
