@@ -449,6 +449,19 @@ async function mineBlock(): Promise<void> {
   await ethers.provider.send("evm_mine", [])
 }
 
+async function advanceAndMineBlock({
+  days,
+  seconds,
+  toSecond,
+}: {
+  days?: Numberish
+  seconds?: Numberish
+  toSecond?: Numberish
+}): Promise<void> {
+  await advanceTime({days, seconds, toSecond})
+  await mineBlock()
+}
+
 async function getBalance(address, erc20) {
   if (typeof address !== "string") {
     throw new Error("Address must be a string")
@@ -694,6 +707,7 @@ export {
   getCurrentTimestamp,
   advanceTime,
   mineBlock,
+  advanceAndMineBlock,
   createPoolWithCreditLine,
   decodeLogs,
   getFirstLog,

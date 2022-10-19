@@ -26,6 +26,8 @@ interface ISeniorPoolEpochWithdrawals {
     uint256 usdcWithdrawable;
   }
 
+  function usdcAvailable() external view returns (uint256);
+
   /// @notice Current duration of withdrawal epochs, in seconds
   function epochDuration() external view returns (uint256);
 
@@ -68,7 +70,9 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice Preview how much usdc would be received if a withdrawal for tokenId were executed
   function previewWithdrawal(uint256 tokenId) external view returns (uint256 usdcReceived);
 
+  // TODO - add tokenId to requestMade/canceled
   event EpochDurationChanged(uint256 to);
+  // TODO - add epoch id to this event parameter
   event WithdrawalRequestMade(address indexed operator, address indexed uidHolder, uint256 fiduRequested);
   event WithdrawalRequested(address indexed operator, address indexed uidHolder, uint256 fiduRequested);
   event WithdrawalCanceled(address indexed operator, address indexed uidHolder, uint256 fiduCanceled);

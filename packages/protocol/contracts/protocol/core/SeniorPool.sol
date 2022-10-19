@@ -37,7 +37,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   using SafeERC20 for IFidu;
   using SafeERC20 for IERC20withDec;
 
-  uint256 internal constant USDC_MANTISSA = 1e18;
+  uint256 internal constant USDC_MANTISSA = 1e6;
   uint256 internal constant FIDU_MANTISSA = 1e18;
   bytes32 public constant ZAPPER_ROLE = keccak256("ZAPPER_ROLE");
 
@@ -63,8 +63,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   uint256 internal _checkpointedEpochId;
   mapping(uint256 => Epoch) internal _epochs;
   mapping(uint256 => WithdrawalRequest) internal _withdrawalRequests;
-  uint256 public usdcAvailable;
+  uint256 public override usdcAvailable;
   uint256 internal _epochDuration;
+
+  /*================================================================================
+    Initialization Functions
+    ================================================================================*/
 
   /*================================================================================
     Initialization Functions
@@ -78,11 +82,20 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     config = _config;
     sharePrice = FIDU_MANTISSA;
+    totalLoansOutstanding = 0;
+    totalWritedowns = 0;
+
+    IERC20withDec usdc = config.getUSDC();
+    // Sanity check the address
+    usdc.totalSupply();
+
+    bool success = usdc.approve(address(this), uint256(-1));
+    require(success, "Failed to approve USDC");
   }
 
   /*================================================================================
-    Admin Functions
-    ================================================================================*/
+  Admin Functions
+  ================================================================================*/
   function setEpochDuration(uint256 newEpochDuration) public override onlyAdmin {
     _checkpointEpochs();
     _epochDuration = newEpochDuration;
@@ -117,7 +130,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     emit DepositMade(msg.sender, amount, depositShares);
-    config.getUSDC().safeTransferFrom(msg.sender, address(this), amount);
+    require(config.getUSDC().transferFrom(msg.sender, address(this), amount), "Failed to transfer for deposit");
 
     config.getFidu().mintTo(msg.sender, depositShares);
     return depositShares;
@@ -220,15 +233,17 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     WithdrawalRequest storage request = _withdrawalRequests[tokenId];
     _withdrawalRequestCheckpoint(request);
 
+    uint256 totalUsdcAmount = request.usdcWithdrawable;
+    request.usdcWithdrawable = 0;
+    uint256 reserveAmount = totalUsdcAmount.div(config.getWithdrawFeeDenominator());
+    totalUsdcAmount = totalUsdcAmount.sub(reserveAmount);
+
     // if there is no outstanding FIDU, burn the token
     if (request.fiduRequested == 0 && request.usdcWithdrawable == 0) {
       delete _withdrawalRequests[tokenId];
       config.getWithdrawalRequestToken().burn(tokenId);
     }
 
-    uint256 totalUsdcAmount = request.usdcWithdrawable;
-    uint256 reserveAmount = totalUsdcAmount.div(config.getWithdrawFeeDenominator());
-    totalUsdcAmount = totalUsdcAmount.sub(reserveAmount);
     _sendToReserve(reserveAmount, msg.sender);
     config.getUSDC().safeTransfer(msg.sender, totalUsdcAmount);
 
@@ -294,7 +309,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     returns (WithdrawalRequest memory)
   {
     Epoch memory epoch;
-    for (uint256 i = wr.epochCursor; i <= _checkpointedEpochId && wr.fiduRequested > 0; ++i) {
+    uint256 endEpoch = block.timestamp < _epochs[_checkpointedEpochId].endsAt
+      ? _checkpointedEpochId - 1
+      : _checkpointedEpochId;
+    for (uint256 i = wr.epochCursor; i <= endEpoch && wr.fiduRequested > 0; ++i) {
       epoch = _epochs[i];
       if (block.timestamp < epoch.endsAt) {
         break;
@@ -306,7 +324,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       uint256 fiduLiquidated = epoch.fiduLiquidated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       wr.fiduRequested = wr.fiduRequested.sub(fiduLiquidated);
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
-      wr.epochCursor = i;
+      wr.epochCursor = i + 1;
     }
     return wr;
   }
@@ -321,7 +339,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   function _initializeNextEpoch() internal returns (Epoch storage) {
     Epoch storage lastEpoch = _epochs[_checkpointedEpochId];
-    Epoch storage nextEpoch = _epochs[_checkpointedEpochId++];
+    Epoch storage nextEpoch = _epochs[++_checkpointedEpochId];
 
     nextEpoch.id = lastEpoch.id + 1;
     nextEpoch.endsAt = lastEpoch.endsAt.add(_epochDuration);
@@ -345,7 +363,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       uint256 fiduLiquidated = epoch.fiduLiquidated.mul(wr.fiduRequested).div(epoch.fiduRequested);
       wr.fiduRequested = wr.fiduRequested.sub(fiduLiquidated);
       wr.usdcWithdrawable = wr.usdcWithdrawable.add(proRataUsdc);
-      wr.epochCursor = i;
+      wr.epochCursor = i + 1;
     }
   }
 
@@ -375,8 +393,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // update the last epoch timestamp to the timestamp of the most recently ended epoch
     epoch.endsAt = epoch.endsAt.add(nopEpochsElapsed.mul(_epochDuration));
-    config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
+
     _initializeNextEpoch();
+
+    config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
   }
 
   function _burnWithdrawRequest(uint256 tokenId) internal {
@@ -626,6 +646,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       emit PrincipalCollected(from, principal);
       totalLoansOutstanding = totalLoansOutstanding.sub(principal);
     }
+    usdcAvailable += (interest + principal);
   }
 
   function _isValidPool(ITranchedPool pool) internal view returns (bool) {
