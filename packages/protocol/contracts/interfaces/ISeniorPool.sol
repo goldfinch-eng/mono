@@ -43,4 +43,14 @@ abstract contract ISeniorPool is ISeniorPoolEpochWithdrawals {
   function assets() public view virtual returns (uint256);
 
   function getNumShares(uint256 amount) public view virtual returns (uint256);
+
+  event DepositMade(address indexed capitalProvider, uint256 amount, uint256 shares);
+  event WithdrawalMade(address indexed capitalProvider, uint256 userAmount, uint256 reserveAmount);
+  event InterestCollected(address indexed payer, uint256 amount);
+  event PrincipalCollected(address indexed payer, uint256 amount);
+  event ReserveFundsCollected(address indexed user, uint256 amount);
+
+  event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
+  event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);
+  event InvestmentMadeInJunior(address indexed tranchedPool, uint256 amount);
 }

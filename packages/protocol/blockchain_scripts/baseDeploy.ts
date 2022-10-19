@@ -94,7 +94,6 @@ const baseDeploy: DeployFunction = async function (hre: HardhatRuntimeEnvironmen
 
   logger("deploying Zapper and granting it ZAPPER_ROLE role on SeniorPool, StakingRewards, and Go")
   const zapper = await deployZapper(deployer, {config, deployEffects})
-  await seniorPool.initZapperRole({from: trustedSigner})
   await seniorPool.grantRole(ZAPPER_ROLE, zapper.address, {from: trustedSigner})
   await go.contract.initZapperRole({from: trustedSigner})
   await go.contract.grantRole(await go.contract.ZAPPER_ROLE(), zapper.address, {from: trustedSigner})

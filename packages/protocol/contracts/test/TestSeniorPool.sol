@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
+
 pragma experimental ABIEncoderV2;
 
 import "../protocol/core/SeniorPool.sol";
@@ -48,15 +49,15 @@ contract TestSeniorPool is SeniorPool {
   }
 
   function __getNumShares(uint256 usdcAmount, uint256 sharePrice) public pure returns (uint256) {
-    return getNumShares(usdcAmount, sharePrice);
+    return _getNumShares(usdcAmount, sharePrice);
   }
 
   function usdcMantissa() public pure returns (uint256) {
-    return _usdcMantissa();
+    return USDC_MANTISSA;
   }
 
   function fiduMantissa() public pure returns (uint256) {
-    return _fiduMantissa();
+    return FIDU_MANTISSA;
   }
 
   function usdcToFidu(uint256 amount) public pure returns (uint256) {
