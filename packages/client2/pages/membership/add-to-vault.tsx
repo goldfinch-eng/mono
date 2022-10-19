@@ -145,6 +145,10 @@ export function AddToVault({
                 name="Senior Pool Staked Position"
                 description="FIDU"
                 usdcAmount={sharesToUsdc(stakedPosition.amount, sharePrice)}
+                secondaryAmount={{
+                  token: SupportedCrypto.Fidu,
+                  amount: stakedPosition.amount,
+                }}
                 checked={checked}
                 onChange={() => {
                   if (!checked) {
@@ -328,6 +332,7 @@ interface AssetCheckboxProps {
   tooltip?: string;
   description: string;
   usdcAmount: CryptoAmount;
+  secondaryAmount?: CryptoAmount;
   checked: boolean;
   onChange: () => void;
 }
@@ -337,6 +342,7 @@ function AssetCheckbox({
   tooltip,
   description,
   usdcAmount,
+  secondaryAmount,
   checked = false,
   onChange,
 }: AssetCheckboxProps) {
@@ -347,49 +353,44 @@ function AssetCheckbox({
         checked ? "border-black" : "border-white"
       )}
     >
-      <div className="flex justify-between gap-3">
-        <div className="flex items-start gap-5">
-          <Checkbox
-            inputSize="md"
-            checked={checked}
-            onChange={onChange}
-            label={name}
-            hideLabel
-            tabIndex={-1}
-          />
-          <div className="-mt-0.5">
-            <div className="mb-1 flex items-center gap-2">
-              <button
-                className="text-lg before:absolute before:inset-0"
-                onClick={onChange}
-              >
-                {name}
-              </button>
-              {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
-            </div>
-            <div className="text-xs font-medium text-sand-400">
-              {description}
-            </div>
-          </div>
-        </div>
-        <div>
-          <div className="mb-1 text-lg font-medium">
-            {formatCrypto(usdcAmount)}
-          </div>
-        </div>
+      <div className="flex items-start gap-5">
+        <Checkbox
+          inputSize="md"
+          checked={checked}
+          onChange={onChange}
+          label={name}
+          hideLabel
+          tabIndex={-1}
+        />
+        <AssetBox
+          name={
+            <button
+              className="text-lg before:absolute before:inset-0"
+              onClick={onChange}
+            >
+              {name}
+            </button>
+          }
+          description={description}
+          tooltip={tooltip}
+          usdcAmount={usdcAmount}
+          secondaryAmount={secondaryAmount}
+          omitWrapperStyle
+        />
       </div>
     </div>
   );
 }
 
 interface AssetBoxProps {
-  name: string;
+  name: ReactNode;
   description: string;
   icon?: IconNameType;
   tooltip?: string;
   usdcAmount: CryptoAmount;
   secondaryAmount?: CryptoAmount;
   leftNode?: ReactNode;
+  omitWrapperStyle?: boolean;
 }
 
 function AssetBox({
@@ -399,9 +400,16 @@ function AssetBox({
   tooltip,
   usdcAmount,
   secondaryAmount,
+  omitWrapperStyle = false,
 }: AssetBoxProps) {
   return (
-    <div className="rounded border border-white bg-white px-5 py-6">
+    <div
+      className={
+        omitWrapperStyle
+          ? "w-full"
+          : "w-full rounded border border-white bg-white px-5 py-6"
+      }
+    >
       <div className="mb-1 flex justify-between gap-4">
         <div className="flex items-center gap-2">
           {icon ? <Icon size="md" name={icon} /> : null}
@@ -448,18 +456,14 @@ function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
           : "border-white"
       )}
     >
-      <div className="flex justify-between gap-3">
-        <div className="mb-1 flex items-center justify-between gap-2">
-          <Icon name="Gfi" size="md" />
-          <div className="text-lg">GFI</div>
-          <InfoIconTooltip content="Lorem ipsum" />
-        </div>
-        <div className="text-lg font-medium">{formatCrypto(maxInUsdc)}</div>
-      </div>
-      <div className="flex justify-between text-xs font-medium text-sand-400">
-        <div>Goldfinch Token</div>
-        <div>{formatCrypto(max, { includeToken: true })}</div>
-      </div>
+      <AssetBox
+        omitWrapperStyle
+        name="GFI"
+        description="Goldfinch Token"
+        icon="Gfi"
+        secondaryAmount={max}
+        usdcAmount={maxInUsdc}
+      />
       <DollarInput
         label="GFI Amount"
         hideLabel
