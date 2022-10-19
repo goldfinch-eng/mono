@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
@@ -10,6 +10,7 @@ import {
   Checkbox,
   DollarInput,
   Icon,
+  IconNameType,
   InfoIconTooltip,
   Modal,
   ModalProps,
@@ -61,11 +62,22 @@ export function AddToVault({
       sharePrice
     ).amount.add(sum("principalAmount", vaultablePoolTokens)),
   };
-  const [gfiToVault, setGfiToVault] = useState("");
+  const [gfiToVault, setGfiToVault] = useState("0");
+  const gfiToVaultAsBigNumber = parseUnits(
+    gfiToVault !== undefined && gfiToVault !== "" ? gfiToVault : "0",
+    GFI_DECIMALS
+  );
   const [stakedPositionsToVault, setStakedPositionsToVault] = useState<
     StakedPosition[]
   >([]);
   const [poolTokensToVault, setPoolTokensToVault] = useState<PoolToken[]>([]);
+  const selectedNftTotal = {
+    token: SupportedCrypto.Usdc,
+    amount: sharesToUsdc(
+      sum("amount", stakedPositionsToVault),
+      sharePrice
+    ).amount.add(sum("principalAmount", poolTokensToVault)),
+  };
 
   const [step, setStep] = useState<0 | 1>(0);
 
@@ -78,8 +90,11 @@ export function AddToVault({
       divider
       footer={
         <div className="flex items-center justify-between">
-          <Button colorScheme="secondary" onClick={rest.onClose}>
-            Cancel
+          <Button
+            colorScheme="secondary"
+            onClick={step === 0 ? rest.onClose : () => setStep(0)}
+          >
+            {step === 0 ? "Cancel" : "Back"}
           </Button>
           <div className="text-xs">{step + 1} of 2</div>
           <Button
@@ -102,124 +117,184 @@ export function AddToVault({
         </div>
       }
     >
-      <div className="mb-2 flex justify-between gap-3 text-sm">
-        <div>Step 1: Choose an amount of GFI</div>
-        <div>{formatCrypto(gfiInUsdc)}</div>
+      <div className={step === 0 ? undefined : "hidden"}>
+        <div className="mb-8">
+          <SectionHeading
+            leftText="Step 1: Choose an amount of GFI"
+            rightText={formatCrypto(gfiInUsdc)}
+          />
+          <GfiBox
+            max={maxVaultableGfi}
+            maxInUsdc={gfiInUsdc}
+            onChange={(s) => setGfiToVault(s)}
+            fiatPerGfi={fiatPerGfi}
+          />
+        </div>
+        <SectionHeading
+          leftText="Step 2: Choose an amount of TVL"
+          rightText={formatCrypto(nftTotal)}
+        />
+        <div className="mb-8 space-y-2">
+          {vaultableStakedPositions.map((stakedPosition) => {
+            const checked = stakedPositionsToVault.some(
+              (s) => s.id === stakedPosition.id
+            );
+            return (
+              <AssetCheckbox
+                key={`staked-position-${stakedPosition.id}`}
+                name="Senior Pool Staked Position"
+                description="FIDU"
+                usdcAmount={sharesToUsdc(stakedPosition.amount, sharePrice)}
+                checked={checked}
+                onChange={() => {
+                  if (!checked) {
+                    setStakedPositionsToVault([
+                      ...stakedPositionsToVault,
+                      stakedPosition,
+                    ]);
+                  } else {
+                    setStakedPositionsToVault(
+                      removeFromListById(
+                        stakedPositionsToVault,
+                        stakedPosition.id
+                      )
+                    );
+                  }
+                }}
+              />
+            );
+          })}
+          {vaultablePoolTokens.map((poolToken) => {
+            const checked = poolTokensToVault.some(
+              (p) => p.id === poolToken.id
+            );
+            return (
+              <AssetCheckbox
+                key={`pool-token-${poolToken.id}`}
+                name="Backer Pool Position"
+                description={poolToken.tranchedPool.name}
+                usdcAmount={{
+                  amount: poolToken.principalAmount,
+                  token: SupportedCrypto.Usdc,
+                }}
+                checked={checked}
+                onChange={() => {
+                  if (!checked) {
+                    setPoolTokensToVault([...poolTokensToVault, poolToken]);
+                  } else {
+                    setPoolTokensToVault(
+                      removeFromListById(poolTokensToVault, poolToken.id)
+                    );
+                  }
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
-      <GfiBox
-        max={maxVaultableGfi}
-        maxInUsdc={gfiInUsdc}
-        onChange={(s) => setGfiToVault(s)}
-        fiatPerGfi={fiatPerGfi}
-      />
-      <div className="mb-2 mt-8 flex justify-between gap-3 text-sm">
-        <div>Step 2: Choose an amount of TVL</div>
-        <div>{formatCrypto(nftTotal)}</div>
-      </div>
-      <div className="mb-8 space-y-2">
-        {vaultableStakedPositions.map((stakedPosition) => {
-          const checked = stakedPositionsToVault.some(
-            (s) => s.id === stakedPosition.id
-          );
-          return (
-            <AssetCheckbox
-              key={`staked-position-${stakedPosition.id}`}
-              name="Senior Pool Staked Position"
-              description="FIDU"
-              usdcAmount={sharesToUsdc(stakedPosition.amount, sharePrice)}
-              checked={checked}
-              onChange={() => {
-                if (!checked) {
-                  setStakedPositionsToVault([
-                    ...stakedPositionsToVault,
-                    stakedPosition,
-                  ]);
-                } else {
-                  setStakedPositionsToVault(
-                    removeFromListById(
-                      stakedPositionsToVault,
-                      stakedPosition.id
-                    )
-                  );
-                }
-              }}
-            />
-          );
-        })}
-        {vaultablePoolTokens.map((poolToken) => {
-          const checked = poolTokensToVault.some((p) => p.id === poolToken.id);
-          return (
-            <AssetCheckbox
-              key={`pool-token-${poolToken.id}`}
-              name="Backer Pool Position"
-              description={poolToken.tranchedPool.name}
-              usdcAmount={{
-                amount: poolToken.principalAmount,
-                token: SupportedCrypto.Usdc,
-              }}
-              checked={checked}
-              onChange={() => {
-                if (!checked) {
-                  setPoolTokensToVault([...poolTokensToVault, poolToken]);
-                } else {
-                  setPoolTokensToVault(
-                    removeFromListById(poolTokensToVault, poolToken.id)
-                  );
-                }
-              }}
-            />
-          );
-        })}
-      </div>
-      <div className="mb-2">
-        <div className="mb-2 text-sm">Vault earnings</div>
-        <div className="flex divide-x divide-sand-200 rounded-lg border border-sand-200 bg-white">
-          <div className="w-1/2 py-6 px-5">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="text-sm text-sand-600">
-                Est. share of member rewards
-              </div>
-              <InfoIconTooltip content="Lorem ipsum" />
-            </div>
-            <div className="text-lg font-medium">0.69%</div>
-          </div>
-          <div className="w-1/2 py-6 px-5">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="text-sm text-sand-600">
-                Projected member rewards
-              </div>
-              <InfoIconTooltip content="Lorem ipsum" />
-            </div>
-            <div>
-              <span className="text-lg font-medium">$420.69</span>{" "}
-              <span className="text-sm text-sand-500">(Monthly avg.)</span>
-            </div>
+      <div className={step === 1 ? undefined : "hidden"}>
+        <div className="mb-8">
+          <SectionHeading
+            leftText="GFI to be added"
+            rightText={formatCrypto(
+              gfiToUsdc(
+                {
+                  amount: gfiToVaultAsBigNumber,
+                  token: SupportedCrypto.Gfi,
+                },
+                fiatPerGfi
+              )
+            )}
+          />
+          <AssetBox
+            name="GFI"
+            icon="Gfi"
+            description="Goldfinch Token"
+            usdcAmount={gfiToUsdc(
+              {
+                amount: gfiToVaultAsBigNumber,
+                token: SupportedCrypto.Gfi,
+              },
+              fiatPerGfi
+            )}
+            secondaryAmount={{
+              token: SupportedCrypto.Gfi,
+              amount: gfiToVaultAsBigNumber,
+            }}
+          />
+        </div>
+        <div className="mb-8">
+          <SectionHeading
+            leftText="TVL to be added"
+            rightText={formatCrypto(selectedNftTotal)}
+          />
+          <div className="space-y-2">
+            {stakedPositionsToVault.map((s) => (
+              <AssetBox
+                key={`senior-pool-position-${s.id}`}
+                name="Senior Pool Position"
+                description="FIDU"
+                usdcAmount={sharesToUsdc(s.amount, sharePrice)}
+                secondaryAmount={{
+                  token: SupportedCrypto.Fidu,
+                  amount: s.amount,
+                }}
+              />
+            ))}
+            {poolTokensToVault.map((p) => (
+              <AssetBox
+                key={`pool-token-${p.id}`}
+                name="Backer Pool Position"
+                description={p.tranchedPool.name}
+                usdcAmount={{
+                  token: SupportedCrypto.Usdc,
+                  amount: p.principalAmount,
+                }}
+              />
+            ))}
           </div>
         </div>
       </div>
-      <div className="mb-8 text-xs">
-        By clicking continue below, I agree to lorem ipsum dolor sit amet,
-        consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
-        et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-        exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
-        dolore eu fugiat nulla pariatur.
+      <div className="mb-8">
+        <div className="mb-2 text-sm">Vault earnings</div>
+        <TwoGrid>
+          <GridItem
+            heading="Est. share of member rewards"
+            value="0.69%"
+            tooltip="Lorem ipsum"
+          />
+          <GridItem
+            heading="Projected member rewards"
+            value="$420.69"
+            parenthesisText="Monthly avg."
+            tooltip="Lorem ipsum"
+          />
+          {step === 1 ? (
+            <>
+              <GridItem
+                heading="Assets active as of"
+                value="October 4"
+                tooltip="Lorem ipsum"
+              />
+              <GridItem
+                heading="First distribution at this rate"
+                value="October 11"
+                tooltip="Lorem ipsum"
+              />
+            </>
+          ) : null}
+        </TwoGrid>
+        {step === 1 ? (
+          <div className="mt-2 text-xs">
+            By clicking continue below, I agree to lorem ipsum dolor sit amet,
+            consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
+            labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit
+            esse cillum dolore eu fugiat nulla pariatur.
+          </div>
+        ) : null}
       </div>
-      <Button
-        className="w-full"
-        size="xl"
-        onClick={() =>
-          alert(
-            `Confirming with GFI ${gfiToVault} staked positions ${stakedPositionsToVault
-              .map((s) => s.id)
-              .join(", ")}, pool tokens ${poolTokensToVault
-              .map((p) => p.id)
-              .join(", ")}`
-          )
-        }
-      >
-        Continue
-      </Button>
     </Modal>
   );
 }
@@ -229,6 +304,23 @@ function removeFromListById<T extends { id: string }>(
   idToRemove: string
 ): T[] {
   return list.filter((item) => item.id !== idToRemove);
+}
+
+function SectionHeading({
+  leftText,
+  rightText,
+  className,
+}: {
+  leftText: string;
+  rightText: string;
+  className?: string;
+}) {
+  return (
+    <div className={clsx("mb-2 flex justify-between gap-5 text-sm", className)}>
+      <div>{leftText}</div>
+      <div>{rightText}</div>
+    </div>
+  );
 }
 
 interface AssetCheckboxProps {
@@ -256,10 +348,11 @@ function AssetCheckbox({
       )}
     >
       <div className="flex justify-between gap-3">
-        <div className="flex items-start justify-between gap-5">
+        <div className="flex items-start gap-5">
           <Checkbox
             inputSize="md"
             checked={checked}
+            onChange={onChange}
             label={name}
             hideLabel
             tabIndex={-1}
@@ -284,6 +377,44 @@ function AssetCheckbox({
             {formatCrypto(usdcAmount)}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface AssetBoxProps {
+  name: string;
+  description: string;
+  icon?: IconNameType;
+  tooltip?: string;
+  usdcAmount: CryptoAmount;
+  secondaryAmount?: CryptoAmount;
+  leftNode?: ReactNode;
+}
+
+function AssetBox({
+  name,
+  description,
+  icon,
+  tooltip,
+  usdcAmount,
+  secondaryAmount,
+}: AssetBoxProps) {
+  return (
+    <div className="rounded border border-white bg-white px-5 py-6">
+      <div className="mb-1 flex justify-between gap-4">
+        <div className="flex items-center gap-2">
+          {icon ? <Icon size="md" name={icon} /> : null}
+          <div className="text-lg">{name}</div>
+          {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
+        </div>
+        <div className="text-lg font-medium">{formatCrypto(usdcAmount)}</div>
+      </div>
+      <div className="flex justify-between gap-4 text-xs font-medium text-sand-400">
+        <div>{description}</div>
+        {secondaryAmount ? (
+          <div>{formatCrypto(secondaryAmount, { includeToken: true })}</div>
+        ) : null}
       </div>
     </div>
   );
@@ -348,6 +479,44 @@ function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
           )
         )}
       />
+    </div>
+  );
+}
+
+function TwoGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-sand-200 bg-sand-200">
+      {children}
+    </div>
+  );
+}
+
+function GridItem({
+  heading,
+  value,
+  tooltip,
+  parenthesisText,
+}: {
+  heading: string;
+  value: string;
+  tooltip?: string;
+  parenthesisText?: string;
+}) {
+  return (
+    <div className="bg-white py-6 px-5">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="text-sm text-sand-600">{heading}</div>
+        {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
+      </div>
+      <div>
+        <span className="text-lg font-medium">{value}</span>
+        {parenthesisText ? (
+          <>
+            {" "}
+            <span className="text-sm text-sand-500">({parenthesisText})</span>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
