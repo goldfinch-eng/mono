@@ -34,6 +34,10 @@ export interface ModalProps {
    * Adds a divider between the modal's title and content
    */
   divider?: boolean;
+  /**
+   * Contents that are pinned to the bottom of the modal
+   */
+  footer?: ReactNode;
 }
 
 export function Modal({
@@ -45,6 +49,7 @@ export function Modal({
   title,
   description,
   divider = true,
+  footer,
 }: ModalProps) {
   return (
     <Transition show={isOpen} as={Fragment}>
@@ -108,6 +113,12 @@ export function Modal({
             <div className="max-h-[75vh] overflow-auto">
               <div className="px-6 pt-4 pb-1">{children}</div>
             </div>
+            {footer ? (
+              <>
+                {divider ? <hr className="border-t border-sand-200" /> : null}
+                <div className="px-6 pt-4">{footer}</div>
+              </>
+            ) : null}
           </div>
         </Transition.Child>
       </Dialog>
