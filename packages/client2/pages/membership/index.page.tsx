@@ -82,8 +82,8 @@ export default function MembershipPage() {
       description: "Goldfinch tokens",
       tooltip:
         "Your GFI tokens. These can be placed in the membership vault and they increase your rewards.",
-      dollarValue: gfiToUsdc(data.viewer.gfiBalance, data.gfiPrice.price.amount)
-        .amount,
+      usdcAmount: gfiToUsdc(data.viewer.gfiBalance, data.gfiPrice.price.amount),
+      nativeAmount: data.viewer.gfiBalance,
     });
     userHasGfi = true;
   }
@@ -95,8 +95,11 @@ export default function MembershipPage() {
         name: "Senior Pool Position",
         description: "FIDU",
         tooltip: "Lorem ipsum",
-        dollarValue: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice)
-          .amount,
+        usdcAmount: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice),
+        nativeAmount: {
+          token: SupportedCrypto.Fidu,
+          amount: seniorPoolStakedPosition.amount,
+        },
       });
     });
     userHasPositions = true;
@@ -108,7 +111,10 @@ export default function MembershipPage() {
         name: "Backer Pool Position",
         description: poolToken.tranchedPool.name,
         tooltip: "Lorem ipsum",
-        dollarValue: poolToken.principalAmount,
+        usdcAmount: {
+          token: SupportedCrypto.Usdc,
+          amount: poolToken.principalAmount,
+        },
       });
     });
     userHasPositions = true;

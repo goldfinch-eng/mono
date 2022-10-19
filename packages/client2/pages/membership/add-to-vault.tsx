@@ -2,15 +2,10 @@ import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { ReactNode, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { ReactNode, useState } from "react";
 
 import {
   Button,
-  Checkbox,
-  DollarInput,
-  Icon,
-  IconNameType,
   InfoIconTooltip,
   Modal,
   ModalProps,
@@ -23,6 +18,8 @@ import {
   SupportedCrypto,
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
+
+import { AssetBox, AssetCheckbox, GfiBox } from "./asset-group";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
 type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
@@ -142,12 +139,14 @@ export function AddToVault({
             return (
               <AssetCheckbox
                 key={`staked-position-${stakedPosition.id}`}
-                name="Senior Pool Staked Position"
-                description="FIDU"
-                usdcAmount={sharesToUsdc(stakedPosition.amount, sharePrice)}
-                secondaryAmount={{
-                  token: SupportedCrypto.Fidu,
-                  amount: stakedPosition.amount,
+                asset={{
+                  name: "Senior Pool Staked Position",
+                  description: "FIDU",
+                  usdcAmount: sharesToUsdc(stakedPosition.amount, sharePrice),
+                  nativeAmount: {
+                    token: SupportedCrypto.Fidu,
+                    amount: stakedPosition.amount,
+                  },
                 }}
                 checked={checked}
                 onChange={() => {
@@ -175,11 +174,13 @@ export function AddToVault({
             return (
               <AssetCheckbox
                 key={`pool-token-${poolToken.id}`}
-                name="Backer Pool Position"
-                description={poolToken.tranchedPool.name}
-                usdcAmount={{
-                  amount: poolToken.principalAmount,
-                  token: SupportedCrypto.Usdc,
+                asset={{
+                  name: "Backer Pool Position",
+                  description: poolToken.tranchedPool.name,
+                  usdcAmount: {
+                    amount: poolToken.principalAmount,
+                    token: SupportedCrypto.Usdc,
+                  },
                 }}
                 checked={checked}
                 onChange={() => {
@@ -211,19 +212,21 @@ export function AddToVault({
             )}
           />
           <AssetBox
-            name="GFI"
-            icon="Gfi"
-            description="Goldfinch Token"
-            usdcAmount={gfiToUsdc(
-              {
-                amount: gfiToVaultAsBigNumber,
+            asset={{
+              name: "GFI",
+              icon: "Gfi",
+              description: "Goldfinch Token",
+              usdcAmount: gfiToUsdc(
+                {
+                  amount: gfiToVaultAsBigNumber,
+                  token: SupportedCrypto.Gfi,
+                },
+                fiatPerGfi
+              ),
+              nativeAmount: {
                 token: SupportedCrypto.Gfi,
+                amount: gfiToVaultAsBigNumber,
               },
-              fiatPerGfi
-            )}
-            secondaryAmount={{
-              token: SupportedCrypto.Gfi,
-              amount: gfiToVaultAsBigNumber,
             }}
           />
         </div>
@@ -236,23 +239,27 @@ export function AddToVault({
             {stakedPositionsToVault.map((s) => (
               <AssetBox
                 key={`senior-pool-position-${s.id}`}
-                name="Senior Pool Position"
-                description="FIDU"
-                usdcAmount={sharesToUsdc(s.amount, sharePrice)}
-                secondaryAmount={{
-                  token: SupportedCrypto.Fidu,
-                  amount: s.amount,
+                asset={{
+                  name: "Senior Pool Staked Position",
+                  description: "FIDU",
+                  usdcAmount: sharesToUsdc(s.amount, sharePrice),
+                  nativeAmount: {
+                    token: SupportedCrypto.Fidu,
+                    amount: s.amount,
+                  },
                 }}
               />
             ))}
             {poolTokensToVault.map((p) => (
               <AssetBox
                 key={`pool-token-${p.id}`}
-                name="Backer Pool Position"
-                description={p.tranchedPool.name}
-                usdcAmount={{
-                  token: SupportedCrypto.Usdc,
-                  amount: p.principalAmount,
+                asset={{
+                  name: "Backer Pool Position",
+                  description: p.tranchedPool.name,
+                  usdcAmount: {
+                    token: SupportedCrypto.Usdc,
+                    amount: p.principalAmount,
+                  },
                 }}
               />
             ))}
@@ -323,166 +330,6 @@ function SectionHeading({
     <div className={clsx("mb-2 flex justify-between gap-5 text-sm", className)}>
       <div>{leftText}</div>
       <div>{rightText}</div>
-    </div>
-  );
-}
-
-interface AssetCheckboxProps {
-  name: string;
-  tooltip?: string;
-  description: string;
-  usdcAmount: CryptoAmount;
-  secondaryAmount?: CryptoAmount;
-  checked: boolean;
-  onChange: () => void;
-}
-
-function AssetCheckbox({
-  name,
-  tooltip,
-  description,
-  usdcAmount,
-  secondaryAmount,
-  checked = false,
-  onChange,
-}: AssetCheckboxProps) {
-  return (
-    <div
-      className={clsx(
-        "relative rounded border bg-white py-6 px-5",
-        checked ? "border-black" : "border-white"
-      )}
-    >
-      <div className="flex items-start gap-5">
-        <Checkbox
-          inputSize="md"
-          checked={checked}
-          onChange={onChange}
-          label={name}
-          hideLabel
-          tabIndex={-1}
-        />
-        <AssetBox
-          name={
-            <button
-              className="text-lg before:absolute before:inset-0"
-              onClick={onChange}
-            >
-              {name}
-            </button>
-          }
-          description={description}
-          tooltip={tooltip}
-          usdcAmount={usdcAmount}
-          secondaryAmount={secondaryAmount}
-          omitWrapperStyle
-        />
-      </div>
-    </div>
-  );
-}
-
-interface AssetBoxProps {
-  name: ReactNode;
-  description: string;
-  icon?: IconNameType;
-  tooltip?: string;
-  usdcAmount: CryptoAmount;
-  secondaryAmount?: CryptoAmount;
-  leftNode?: ReactNode;
-  omitWrapperStyle?: boolean;
-}
-
-function AssetBox({
-  name,
-  description,
-  icon,
-  tooltip,
-  usdcAmount,
-  secondaryAmount,
-  omitWrapperStyle = false,
-}: AssetBoxProps) {
-  return (
-    <div
-      className={
-        omitWrapperStyle
-          ? "w-full"
-          : "w-full rounded border border-white bg-white px-5 py-6"
-      }
-    >
-      <div className="mb-1 flex justify-between gap-4">
-        <div className="flex items-center gap-2">
-          {icon ? <Icon size="md" name={icon} /> : null}
-          <div className="text-lg">{name}</div>
-          {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
-        </div>
-        <div className="text-lg font-medium">{formatCrypto(usdcAmount)}</div>
-      </div>
-      <div className="flex justify-between gap-4 text-xs font-medium text-sand-400">
-        <div>{description}</div>
-        {secondaryAmount ? (
-          <div>{formatCrypto(secondaryAmount, { includeToken: true })}</div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-interface GfiBoxProps {
-  max: CryptoAmount;
-  maxInUsdc: CryptoAmount;
-  onChange: (s: string) => void;
-  fiatPerGfi: number;
-}
-
-function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
-  const { control, watch } = useForm<{ gfiToVault: string }>({
-    defaultValues: { gfiToVault: "0" },
-  });
-  const gfiToVault = watch("gfiToVault");
-  useEffect(() => {
-    onChange(gfiToVault);
-  }, [onChange, gfiToVault]);
-  const gfiToVaultAsBigNumber = parseUnits(
-    gfiToVault !== undefined && gfiToVault !== "" ? gfiToVault : "0",
-    GFI_DECIMALS
-  );
-  return (
-    <div
-      className={clsx(
-        "rounded border bg-white py-6 px-5",
-        !gfiToVaultAsBigNumber.isZero() && !gfiToVaultAsBigNumber.isNegative()
-          ? "border-black"
-          : "border-white"
-      )}
-    >
-      <AssetBox
-        omitWrapperStyle
-        name="GFI"
-        description="Goldfinch Token"
-        icon="Gfi"
-        secondaryAmount={max}
-        usdcAmount={maxInUsdc}
-      />
-      <DollarInput
-        label="GFI Amount"
-        hideLabel
-        name="gfiToVault"
-        control={control}
-        className="mt-3"
-        textSize="lg"
-        unit={SupportedCrypto.Gfi}
-        maxValue={max.amount}
-        helperText={formatCrypto(
-          gfiToUsdc(
-            {
-              amount: gfiToVaultAsBigNumber,
-              token: SupportedCrypto.Gfi,
-            },
-            fiatPerGfi
-          )
-        )}
-      />
     </div>
   );
 }
