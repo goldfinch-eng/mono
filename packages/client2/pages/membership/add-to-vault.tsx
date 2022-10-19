@@ -67,13 +67,40 @@ export function AddToVault({
   >([]);
   const [poolTokensToVault, setPoolTokensToVault] = useState<PoolToken[]>([]);
 
+  const [step, setStep] = useState<0 | 1>(0);
+
   return (
     <Modal
       {...rest}
       className="bg-sand-100"
-      title="Add to vault"
+      title={step === 0 ? "Select assets to add" : "Confirm transaction"}
       size="sm"
       divider
+      footer={
+        <div className="flex items-center justify-between">
+          <Button colorScheme="secondary" onClick={rest.onClose}>
+            Cancel
+          </Button>
+          <div className="text-xs">{step + 1} of 2</div>
+          <Button
+            colorScheme="primary"
+            onClick={
+              step === 0
+                ? () => setStep(1)
+                : () =>
+                    alert(
+                      `Confirming with GFI ${gfiToVault} staked positions ${stakedPositionsToVault
+                        .map((s) => s.id)
+                        .join(", ")}, pool tokens ${poolTokensToVault
+                        .map((p) => p.id)
+                        .join(", ")}`
+                    )
+            }
+          >
+            {step === 0 ? "Review" : "Confirm"}
+          </Button>
+        </div>
+      }
     >
       <div className="mb-2 flex justify-between gap-3 text-sm">
         <div>Step 1: Choose an amount of GFI</div>
