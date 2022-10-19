@@ -3,7 +3,12 @@ import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { useState } from "react";
 
-import { Button, Heading, Icon } from "@/components/design-system";
+import {
+  Button,
+  Heading,
+  Icon,
+  IconNameType,
+} from "@/components/design-system";
 import { SEO } from "@/components/seo";
 import {
   SupportedCrypto,
@@ -13,7 +18,7 @@ import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
-import { Asset, AssetGroup } from "./asset-group";
+import { AssetGroup } from "./asset-group";
 import { Explainer } from "./explainer";
 
 gql`
@@ -68,30 +73,39 @@ export default function MembershipPage() {
     skip: !account,
   });
 
-  let userHasGfi = false;
-  let userHasPositions = false;
-
-  const vaultableAssets: Asset[] = [];
+  const vaultableAssets: AssetGroup[] = [];
   if (
     data &&
     data.viewer.gfiBalance &&
     !data.viewer.gfiBalance?.amount.isZero()
   ) {
     vaultableAssets.push({
-      name: "GFI",
-      description: "Goldfinch tokens",
-      tooltip:
-        "Your GFI tokens. These can be placed in the membership vault and they increase your rewards.",
-      usdcAmount: gfiToUsdc(data.viewer.gfiBalance, data.gfiPrice.price.amount),
-      nativeAmount: data.viewer.gfiBalance,
+      groupName: "GFI",
+      assets: [
+        {
+          name: "GFI",
+          description: "Goldfinch tokens",
+          tooltip:
+            "Your GFI tokens. These can be placed in the membership vault and they increase your rewards.",
+          usdcAmount: gfiToUsdc(
+            data.viewer.gfiBalance,
+            data.gfiPrice.price.amount
+          ),
+          nativeAmount: data.viewer.gfiBalance,
+        },
+      ],
     });
-    userHasGfi = true;
   }
+
+  const tvlAssetGroup: AssetGroup = {
+    groupName: "TVL",
+    assets: [],
+  };
   const sharePrice =
     data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
-      vaultableAssets.push({
+      tvlAssetGroup.assets.push({
         name: "Senior Pool Position",
         description: "FIDU",
         tooltip: "Lorem ipsum",
@@ -102,12 +116,11 @@ export default function MembershipPage() {
         },
       });
     });
-    userHasPositions = true;
   }
 
   if (data && data.tranchedPoolTokens.length > 0) {
     data.tranchedPoolTokens.forEach((poolToken) => {
-      vaultableAssets.push({
+      tvlAssetGroup.assets.push({
         name: "Backer Pool Position",
         description: poolToken.tranchedPool.name,
         tooltip: "Lorem ipsum",
@@ -117,10 +130,8 @@ export default function MembershipPage() {
         },
       });
     });
-    userHasPositions = true;
   }
-
-  const vaultedAssets: Asset[] = [];
+  vaultableAssets.push(tvlAssetGroup);
 
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 
@@ -155,55 +166,49 @@ export default function MembershipPage() {
           <div className="mb-16">Chart goes here</div>
           <div>
             <h2 className="mb-10 text-4xl">Vault</h2>
-            <div className="flex flex-col items-start justify-between gap-10 lg:flex-row">
-              <AssetGroup
-                heading="Available assets"
-                assets={vaultableAssets}
-                background="sand"
-                className="lg:w-1/2"
-                buttonText="Add to vault"
-                onButtonClick={() => setIsAddToVaultOpen(true)}
-                hideButton={vaultableAssets.length === 0}
-                beforeAssets={
-                  !userHasGfi || !userHasPositions ? (
-                    <div>
-                      Goldfinch Membership offers exclusive benefits, like
-                      accessing yield enhancements by receiving a pro-rata share
-                      of Member Rewards, distributed in FIDU. Start by investing
-                      in the Senior Pool or any Backer Pool. Then add those
-                      investor tokens to your vault alongside GFI.
-                    </div>
-                  ) : null
-                }
-                afterAssets={
-                  !userHasGfi || !userHasPositions ? (
-                    <div className="space-y-2">
-                      {!userHasGfi ? (
-                        <CallToAction
-                          mainText="Buy GFI"
-                          buttonText="Buy now"
-                          href="https://www.coinbase.com/price/goldfinch-protocol"
-                        />
-                      ) : null}
-                      {!userHasPositions ? (
-                        <CallToAction
-                          mainText="Invest in a pool"
-                          buttonText="Explore"
-                          href="/earn"
-                        />
-                      ) : null}
-                    </div>
-                  ) : null
-                }
-              />
+            <div className="flex flex-col items-stretch justify-between gap-10 lg:flex-row lg:items-start">
+              <div className="space-y-8 lg:w-1/2">
+                <AssetGroup
+                  heading="Available assets"
+                  assetGroups={vaultableAssets}
+                  background="sand"
+                  buttonText="Select assets to add"
+                  onButtonClick={() => setIsAddToVaultOpen(true)}
+                  hideButton={vaultableAssets.length === 0}
+                />
+                <div className="rounded-xl border border-sand-200 bg-sand-100 p-5">
+                  <div className="mb-3 flex items-center gap-2 text-lg font-medium">
+                    <Icon name="LightningBolt" className="text-mustard-400" />
+                    Balanced is best
+                  </div>
+                  <div className="mb-6">
+                    To optimize Member rewards, aim to have balanced amounts of
+                    TVL and GFI in your vault at all times.
+                  </div>
+                  <div className="space-y-2">
+                    <CallToAction
+                      mainText="Buy GFI"
+                      icon="Gfi"
+                      buttonText="Buy now"
+                      href="https://coinbase.com/prices/goldfinch-protocol"
+                    />
+                    <CallToAction
+                      mainText="LP in the Senior Pool for FIDU"
+                      buttonText="Invest"
+                      href="/pools/senior"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <AssetGroup
                 heading="Assets in vault"
-                assets={vaultedAssets}
+                assetGroups={[]}
                 background="gold"
                 className="lg:w-1/2"
                 buttonText="Remove from vault"
                 onButtonClick={() => alert("unimplemented")}
-                hideButton={vaultedAssets.length === 0}
+                hideButton
               />
             </div>
             <AddToVault
@@ -230,24 +235,27 @@ export default function MembershipPage() {
 function CallToAction({
   className,
   mainText,
+  icon,
   buttonText,
   href,
 }: {
   className?: string;
   mainText: string;
+  icon?: IconNameType;
   buttonText: string;
   href: string;
 }) {
+  const isExternal = href.startsWith("http");
   return (
     <div
       className={clsx(
         className,
-        "flex justify-between rounded-lg border border-sand-200 bg-white p-4"
+        "flex items-center justify-between rounded-lg border border-sand-200 bg-white p-4"
       )}
     >
-      <div className="flex items-center gap-2">
-        <Icon name="LightningBolt" className="text-mustard-400" />
-        <div className="text-lg font-semibold">{mainText}</div>
+      <div className="flex items-center gap-4">
+        <div className="text-lg">{mainText}</div>
+        {icon ? <Icon name={icon} size="md" /> : null}
       </div>
       <Button
         colorScheme="mustard"
@@ -255,7 +263,9 @@ function CallToAction({
         size="lg"
         as="a"
         href={href}
-        iconRight="ArrowSmRight"
+        rel={isExternal ? "noopener noreferrer" : undefined}
+        target={isExternal ? "_blank" : undefined}
+        iconRight={isExternal ? "ArrowTopRight" : "ArrowSmRight"}
       >
         {buttonText}
       </Button>

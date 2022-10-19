@@ -26,44 +26,61 @@ export interface Asset {
   nativeAmount?: CryptoAmount;
 }
 
+export interface AssetGroup {
+  groupName: string;
+  assets: Asset[];
+}
+
 interface AssetGroupProps {
   className?: string;
-  assets: Asset[];
+  assetGroups: AssetGroup[];
   background: "sand" | "gold";
   heading: string;
   buttonText: string;
   onButtonClick: () => void;
   hideButton?: boolean;
-  beforeAssets?: ReactNode;
-  afterAssets?: ReactNode;
 }
 
 export function AssetGroup({
   className,
-  assets,
+  assetGroups,
   background,
   heading,
   buttonText,
   onButtonClick,
   hideButton = false,
-  beforeAssets = null,
-  afterAssets = null,
 }: AssetGroupProps) {
-  const totalValue = assets.reduce(
-    (prev, current) => prev.add(current.usdcAmount.amount),
+  const totalValue = assetGroups.reduce(
+    (prev, current) =>
+      prev.add(
+        current.assets.reduce(
+          (prev, current) => prev.add(current.usdcAmount.amount),
+          BigNumber.from(0)
+        )
+      ),
     BigNumber.from(0)
   );
   return (
     <div
       className={clsx(
         className,
-        "space-y-4 rounded-xl border p-5",
+        "rounded-xl border",
         background === "sand"
           ? "border-sand-200 bg-sand-100"
           : "border-mustard-200 bg-mustard-200"
       )}
     >
-      <div className="flex items-center justify-between gap-8 text-lg font-semibold">
+      <div
+        className={clsx(
+          "flex items-center justify-between gap-8 p-5 text-lg font-medium",
+          assetGroups.length > 0
+            ? clsx(
+                "border-b",
+                background === "sand" ? "border-sand-300" : "border-mustard-300"
+              )
+            : null
+        )}
+      >
         <div>{heading}</div>
         <div>
           {formatCrypto(
@@ -72,25 +89,45 @@ export function AssetGroup({
           )}
         </div>
       </div>
-      {beforeAssets}
-      {assets.length === 0 ? null : (
-        <div className="flex flex-col items-stretch gap-2">
-          {assets.map((asset, index) => (
-            <AssetBox key={`${asset.name}-${index}`} asset={asset} />
-          ))}
-        </div>
-      )}
-      {afterAssets}
-      {hideButton ? null : (
-        <Button
-          className="mt-4 w-full"
-          colorScheme={background === "sand" ? "primary" : "mustard"}
-          size="xl"
-          onClick={onButtonClick}
-        >
-          {buttonText}
-        </Button>
-      )}
+      <div
+        className={assetGroups.length !== 0 || !hideButton ? "p-5" : undefined}
+      >
+        {assetGroups.length === 0 ? null : (
+          <div className="flex flex-col items-stretch gap-6">
+            {assetGroups.map((assetGroup) => (
+              <div key={assetGroup.groupName}>
+                <div className="mb-2 flex justify-between gap-4 text-sm">
+                  <div>{assetGroup.groupName}</div>
+                  <div>
+                    {formatCrypto({
+                      token: SupportedCrypto.Usdc,
+                      amount: assetGroup.assets.reduce(
+                        (prev, current) => prev.add(current.usdcAmount.amount),
+                        BigNumber.from(0)
+                      ),
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {assetGroup.assets.map((asset, index) => (
+                    <AssetBox key={`${asset.name}-${index}`} asset={asset} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {hideButton ? null : (
+          <Button
+            className="mt-4 w-full"
+            colorScheme={background === "sand" ? "primary" : "mustard"}
+            size="xl"
+            onClick={onButtonClick}
+          >
+            {buttonText}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
