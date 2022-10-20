@@ -272,20 +272,20 @@ export function AddToVault({
           <GridItem
             heading="Est. share of member rewards"
             value="0.69%"
-            tooltip="Lorem ipsum"
+            tooltip="The estimated percentage of overall Member Rewards you will receive this cycle, based on what percentage of the Member Vault's overall balance your position represents."
           />
           <GridItem
             heading="Projected member rewards"
             value="$420.69"
             parenthesisText="Monthly avg."
-            tooltip="Lorem ipsum"
+            tooltip="The estimated value of Member Rewards you will receive on an average monthly basis, based on weekly cycle estimates."
           />
           {step === 1 ? (
             <>
               <GridItem
                 heading="Assets active as of"
                 value="October 4"
-                tooltip="Lorem ipsum"
+                tooltip="The date that your capital will start actively earning Member Rewards in the vault."
               />
               <GridItem
                 heading="First distribution at this rate"
