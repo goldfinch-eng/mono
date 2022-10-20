@@ -70,7 +70,6 @@ export default function MembershipPage() {
   const { account } = useWallet();
   const { data, loading, error } = useMembershipPageQuery({
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
-    skip: !account,
   });
 
   const vaultableAssets: AssetGroup[] = [];
@@ -131,7 +130,9 @@ export default function MembershipPage() {
       });
     });
   }
-  vaultableAssets.push(tvlAssetGroup);
+  if (tvlAssetGroup.assets.length > 0) {
+    vaultableAssets.push(tvlAssetGroup);
+  }
 
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 

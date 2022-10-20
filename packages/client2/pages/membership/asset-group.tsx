@@ -92,7 +92,9 @@ export function AssetGroup({
       <div
         className={assetGroups.length !== 0 || !hideButton ? "p-5" : undefined}
       >
-        {assetGroups.length === 0 ? null : (
+        {assetGroups.length === 0 ? (
+          <div className="p-5">No assets available</div>
+        ) : (
           <div className="flex flex-col items-stretch gap-6">
             {assetGroups.map((assetGroup) => (
               <div key={assetGroup.groupName}>
