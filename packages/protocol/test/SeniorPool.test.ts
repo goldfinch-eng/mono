@@ -1080,7 +1080,6 @@ describe("SeniorPool", () => {
 
         it("works when tx.origin has nothing and caller is go-listed", async () => {
           await goldfinchConfig.bulkAddToGoList([seniorPoolCaller.address], {from: owner})
-          console.log("senior pool caller " + seniorPoolCaller.address)
           await usdc.transfer(seniorPoolCaller.address, usdcVal(100), {from: person2})
           await seniorPoolCaller.deposit(usdcVal(100), {from: person2})
           await seniorPoolCaller.requestWithdrawal(fiduVal(100), {from: person2})
@@ -1454,7 +1453,7 @@ describe("SeniorPool", () => {
       // $500 deposit comes in at share price 1.00
       await seniorPool.deposit(usdcVal(500), {from: owner})
 
-      // Advance to when first payment on tranched pool is due (epoch 2)
+      // Advance to when first payment on tranched pool is due (epoch 3)
       await advanceTime({days: 30})
       await tranchedPool.assess()
       const paymentAmount = await creditLine.interestOwed()
@@ -1467,7 +1466,7 @@ describe("SeniorPool", () => {
       ])
       const seniorInterest = (await usdc.balanceOf(seniorPool.address)).sub(poolBalanceBeforeRedemption)
 
-      // Add another deposit such that there are $200 total usdcIn for epoch 2
+      // Add another deposit such that there are $200 total usdcIn for epoch 3
       await seniorPool.deposit(usdcVal(200).sub(seniorInterest))
       const epoch2SharePrice = await seniorPool.sharePrice()
 
@@ -1476,9 +1475,7 @@ describe("SeniorPool", () => {
 
       /*
       Epoch 1 sharePrice = 1000000000000000000, usdcIn = $500, epochFidu = 4000, user1TotalFidu = 1000, user1Usdc = $500 * 1000/4000 = $125, user1Fidu = $125/1.00 = 125
-      Epoch 2 sharePrice = 1000000000000000000, usdcIn = $0, epochFidu = 4000 - $500/1.00 = 3500, user1TotalFidu = 875, user1Usdc = $0, user1Fidu = 0
-      Epoch 3 sharePrice = 1002876712250000000, usdcIn = $200, epochFidu = 3500, user1TotalFidu = 875, user1Usdc = $200 * 875/3500 = $50, user1Fidu = $50/1.002876712250000000 = $49.856576974275036
-
+      Epoch 2 sharePrice = 1002876712250000000, usdcIn = $200, epochFidu = 3500, user1TotalFidu = 875, user1Usdc = $200 * 875/3500 = $50, user1Fidu = $50/1.002876712250000000 = $49.856576974275036
       */
 
       // Do user 1
@@ -1513,8 +1510,7 @@ describe("SeniorPool", () => {
         [() => usdc.balanceOf(person3), {by: amountLessFee(expectedUsdcReceived)}],
       ])
       request = await seniorPool.withdrawalRequest("2")
-      // imprecision in the epoch equity calculation can mean this is off by one
-      expect(request.fiduRequested).to.bignumber.closeTo(fiduVal(3000).sub(expectedFiduBurned), "1")
+      expect(request.fiduRequested).to.bignumber.closeTo(fiduVal(3000).sub(expectedFiduBurned), new BN(1))
     })
 
     describe("authorization", () => {

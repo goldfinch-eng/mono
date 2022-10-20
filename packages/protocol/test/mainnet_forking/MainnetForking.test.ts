@@ -3,7 +3,6 @@ import {
   getUSDCAddress,
   MAINNET_ONE_SPLIT_ADDRESS,
   getSignerForAddress,
-  interestAprAsBN,
   MAINNET_CUSDC_ADDRESS,
   TRANCHES,
   MAINNET_CHAIN_ID,
@@ -13,9 +12,9 @@ import {
 } from "../../blockchain_scripts/deployHelpers"
 import {MAINNET_GOVERNANCE_MULTISIG} from "../../blockchain_scripts/mainnetForkingHelpers"
 import {getExistingContracts} from "../../blockchain_scripts/deployHelpers/getExistingContracts"
-import {CONFIG_KEYS, CONFIG_KEYS_BY_TYPE} from "../../blockchain_scripts/configKeys"
+import {CONFIG_KEYS} from "../../blockchain_scripts/configKeys"
 import {time} from "@openzeppelin/test-helpers"
-import * as migrate274 from "../../blockchain_scripts/migrations/v2.7.4/migrate2_7_4"
+import * as migrate280 from "../../blockchain_scripts/migrations/v2.8/migrate2_8_0"
 
 const {deployments, ethers, artifacts, web3} = hre
 const Borrower = artifacts.require("Borrower")
@@ -45,6 +44,16 @@ import {
   erc721Approve,
   erc20Transfer,
   SECONDS_PER_DAY,
+  advanceAndMineBlock,
+  fiduToUSDC,
+  getNumShares,
+  HALF_CENT,
+  ZERO,
+  fiduVal,
+  borrowers,
+  stakedFiduHolders,
+  amountLessProtocolFee,
+  protocolFee,
 } from "../testHelpers"
 
 import {asNonNullable, assertIsString, assertNonNullable} from "@goldfinch-eng/utils"
@@ -52,6 +61,7 @@ import {
   BackerRewardsInstance,
   BorrowerInstance,
   CommunityRewardsInstance,
+  CreditLineInstance,
   FiduInstance,
   FixedLeverageRatioStrategyInstance,
   GFIInstance,
@@ -187,7 +197,7 @@ const setupTest = deployments.createFixture(async ({deployments}) => {
   const signer = ethersUniqueIdentity.signer
   assertNonNullable(signer.provider, "Signer provider is null")
   const network = await signer.provider.getNetwork()
-  // await migrate274.main()
+  await migrate280.main()
 
   const zapper: ZapperInstance = await getDeployedAsTruffleContract<ZapperInstance>(deployments, "Zapper")
 
@@ -249,20 +259,7 @@ describe("mainnet forking tests", async function () {
     poolTokens: PoolTokensInstance
 
   async function setupSeniorPool() {
-    // await goldfinchConfig.setNumber(
-    //   CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalEpochDuration,
-    //   SECONDS_PER_DAY.mul(new BN(14)).toString(),
-    //   {from: MAINNET_GOVERNANCE_MULTISIG}
-    // )
-    // await goldfinchConfig.setNumber(CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalCancelationFeeBps, 10, {
-    //   from: MAINNET_GOVERNANCE_MULTISIG,
-    // })
-    // await goldfinchConfig.setNumber(
-    //   CONFIG_KEYS_BY_TYPE.numbers.SeniorPoolWithdrawalProRataMin,
-    //   usdcVal(500).toString(),
-    //   {from: MAINNET_GOVERNANCE_MULTISIG}
-    // )
-    // await seniorPool.initializeEpochs()
+    await seniorPool.initializeEpochs({from: MAINNET_GOVERNANCE_MULTISIG})
     seniorPoolStrategy = await artifacts.require("ISeniorPoolStrategy").at(seniorPoolStrategy.address)
 
     await erc20Approve(usdc, seniorPool.address, usdcVal(100_000), [owner])
@@ -315,6 +312,7 @@ describe("mainnet forking tests", async function () {
       ethersUniqueIdentity,
       poolTokens,
     } = await setupTest())
+    reserveAddress = await goldfinchConfig.getAddress(CONFIG_KEYS.TreasuryReserve)
     const usdcAddress = getUSDCAddress(MAINNET_CHAIN_ID)
     assertIsString(usdcAddress)
     const busdAddress = "0x4fabb145d64652a948d72533023f6e7a623c7c53"
@@ -327,6 +325,180 @@ describe("mainnet forking tests", async function () {
     await erc20Approve(usdc, seniorPool.address, MAX_UINT, accounts)
     await legacyGoldfinchConfig.bulkAddToGoList([owner, bwr, person3], {from: MAINNET_GOVERNANCE_MULTISIG})
     await setupSeniorPool()
+  })
+
+  describe("epoch withdrawals", () => {
+    async function repayPool(i: number, owner) {
+      const pool = await getTruffleContract<TranchedPoolInstance>("TranchedPool", {at: borrowers[i]!.poolAddress})
+      const cl = await getTruffleContract<CreditLineInstance>("CreditLine", {at: await pool.creditLine()})
+      // Advance to Oct 23rd
+      await advanceTime({toSecond: await cl.nextDueTime()})
+      await pool.assess()
+
+      await impersonateAccount(hre, owner.address)
+      await usdc.approve(pool.address, await cl.interestOwed(), {from: owner.address})
+      await pool.pay(await cl.interestOwed(), {from: owner.address})
+    }
+
+    async function redeemPool(token: number) {
+      const tokenPreRedeem = await poolTokens.getTokenInfo(token)
+      await expectAction(() => seniorPool.redeem(token)).toChange([
+        [() => usdc.balanceOf(seniorPool.address), {increase: true}],
+        [seniorPool.usdcAvailable, {increase: true}],
+      ])
+      const tokenPostRedeem = await poolTokens.getTokenInfo(token)
+      const interestRedeemed = new BN(tokenPostRedeem.interestRedeemed).sub(new BN(tokenPreRedeem.interestRedeemed))
+      const principalRedeemed = new BN(tokenPostRedeem.principalRedeemed).sub(new BN(tokenPreRedeem.principalRedeemed))
+      return interestRedeemed.add(principalRedeemed)
+    }
+
+    /**
+     * This test simulates withdrawals across two epochs and several pool repayments. In the first epoch the Stratos
+     * and Addem pools repay interest, and in the second epoch the Cauris pool repays interest. We have four FIDU
+     * holders of varying position sizes who have submitted requests to withdraw in the first epoch. For each epoch
+     * liquidation we assert that their usdcWithdrawable is what we would expect.
+     */
+    it("withdraws", async () => {
+      const [owner] = await ethers.getSigners()
+      assertNonNullable(owner)
+      await fundWithWhales(["USDC"], [owner.address], 500_000)
+
+      let usdcAvailable = await seniorPool.usdcAvailable()
+      let fiduRequested = ZERO
+
+      // IN EPOCH 1 (started Oct 17th)
+      for (let i = 0; i < stakedFiduHolders.length; ++i) {
+        const fiduBalance = await stakingRewards.stakedBalanceOf(stakedFiduHolders[i]!.stakingRewardsTokenId)
+        await impersonateAccount(hre, stakedFiduHolders[i]!.address)
+        await stakingRewards.unstake(stakedFiduHolders[i]!.stakingRewardsTokenId, fiduBalance, {
+          from: stakedFiduHolders[i]!.address,
+        })
+        await fidu.approve(seniorPool.address, fiduBalance, {from: stakedFiduHolders[i]!.address})
+        await expectAction(() =>
+          seniorPool.requestWithdrawal(fiduBalance, {from: stakedFiduHolders[i]!.address})
+        ).toChange([
+          [() => fidu.balanceOf(stakedFiduHolders[i]!.address), {by: fiduBalance.neg()}],
+          [() => fidu.balanceOf(seniorPool.address), {by: fiduBalance}],
+        ])
+        fiduRequested = fiduRequested.add(fiduBalance)
+      }
+
+      // Stratos repayment (advance to Oct 19th) and redemption
+      await repayPool(0, owner)
+      usdcAvailable = usdcAvailable.add(await redeemPool(613))
+
+      // Addem repayment (advance to Oct 23rd) and redemption
+      await repayPool(1, owner)
+      usdcAvailable = usdcAvailable.add(await redeemPool(738))
+
+      // Need to fetch request before the next epoch so we have the pre-liquidation vals for
+      // fiduRequest and usdcWithdrawable
+      const requestsBeforeLiquidation = [await seniorPool.withdrawalRequest("1")]
+      for (let i = 1; i < stakedFiduHolders.length; ++i) {
+        requestsBeforeLiquidation.push(await seniorPool.withdrawalRequest(i + 1))
+      }
+
+      // IN EPOCH 2 (started Nov 1st)
+      await advanceAndMineBlock({days: 9})
+      const epoch1UsdcAllocated = usdcAvailable
+      const epoch1FiduRequested = fiduRequested
+      const epoch1FiduLiquidated = getNumShares(epoch1UsdcAllocated, await seniorPool.sharePrice())
+      fiduRequested = fiduRequested.sub(epoch1FiduLiquidated)
+      usdcAvailable = ZERO
+
+      // Verify holders' withdrawableUdsc is correct
+      for (let i = 0; i < requestsBeforeLiquidation.length; ++i) {
+        const requestBeforeLiquidation = requestsBeforeLiquidation[i]!
+        const requestAfterLiquidation = await seniorPool.withdrawalRequest(i + 1)
+
+        const proRataUsdc = new BN(epoch1UsdcAllocated)
+          .mul(new BN(requestBeforeLiquidation.fiduRequested))
+          .div(new BN(epoch1FiduRequested))
+        const fiduLiquidated = new BN(epoch1FiduLiquidated)
+          .mul(new BN(requestBeforeLiquidation.fiduRequested))
+          .div(new BN(epoch1FiduRequested))
+
+        expect(requestAfterLiquidation.usdcWithdrawable).to.bignumber.eq(proRataUsdc)
+        expect(requestAfterLiquidation.fiduRequested).to.bignumber.eq(
+          new BN(requestBeforeLiquidation.fiduRequested).sub(fiduLiquidated)
+        )
+        const userUsdc = amountLessProtocolFee(proRataUsdc)
+        const reserveUsdc = protocolFee(proRataUsdc)
+        await expectAction(() =>
+          seniorPool.claimWithdrawalRequest(i + 1, {from: stakedFiduHolders[i]!.address})
+        ).toChange([
+          [() => usdc.balanceOf(stakedFiduHolders[i]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
+          [() => usdc.balanceOf(reserveAddress), {by: reserveUsdc}],
+          [
+            () => usdc.balanceOf(seniorPool.address),
+            {byCloseTo: userUsdc.add(reserveUsdc).neg(), threshold: HALF_CENT},
+          ],
+          [async () => (await seniorPool.withdrawalRequest(i + 1)).usdcWithdrawable, {to: ZERO}],
+        ])
+      }
+
+      // Before we advance to the next epoch and do the cauris repayment/redemption, let's have a fresh request
+      // from a user
+      const newHolder = {
+        address: "0x3ccf9578728cf103a4435ec83c716090d5752043",
+        // ~42K FIDU
+        stakingRewardsTokenId: 2108,
+      }
+      await impersonateAccount(hre, newHolder.address)
+      await stakingRewards.unstake(newHolder.stakingRewardsTokenId, fiduVal(30_000), {from: newHolder.address})
+      await fidu.approve(seniorPool.address, fiduVal(30_000), {from: newHolder.address})
+      await seniorPool.requestWithdrawal(fiduVal(30_000), {from: newHolder.address})
+      stakedFiduHolders.push(newHolder)
+      fiduRequested = fiduRequested.add(fiduVal(30_000))
+      requestsBeforeLiquidation.push(requestsBeforeLiquidation[0]!) // placeholder
+
+      expect(usdcAvailable).to.bignumber.eq(await seniorPool.usdcAvailable(), "Sanity Check")
+
+      // Cauris repayment and redemption
+      await repayPool(2, owner)
+      usdcAvailable = usdcAvailable.add(await redeemPool(179))
+
+      // Advance to the end of the epoch. But first, get the requests before liquidation
+      for (let i = 0; i < stakedFiduHolders.length; ++i) {
+        requestsBeforeLiquidation[i] = await seniorPool.withdrawalRequest(i + 1)
+      }
+      await advanceAndMineBlock({toSecond: (await seniorPool.currentEpoch()).endsAt})
+
+      const epoch2UsdcAllocated = usdcAvailable
+      const epoch2FiduRequested = fiduRequested
+      const epoch2FiduLiquidated = getNumShares(epoch2UsdcAllocated, await seniorPool.sharePrice())
+      fiduRequested = fiduRequested.sub(epoch2FiduLiquidated)
+      for (let i = 0; i < stakedFiduHolders.length; ++i) {
+        const requestBeforeLiquidation = requestsBeforeLiquidation[i]!
+        const requestAfterLiquidation = await seniorPool.withdrawalRequest(i + 1)
+
+        const proRataUsdc = new BN(epoch2UsdcAllocated)
+          .mul(new BN(requestBeforeLiquidation.fiduRequested))
+          .div(new BN(epoch2FiduRequested))
+        const fiduLiquidated = new BN(epoch2FiduLiquidated)
+          .mul(new BN(requestBeforeLiquidation.fiduRequested))
+          .div(new BN(epoch2FiduRequested))
+
+        expect(requestAfterLiquidation.usdcWithdrawable).to.bignumber.eq(proRataUsdc)
+        expect(requestAfterLiquidation.fiduRequested).to.bignumber.eq(
+          new BN(requestBeforeLiquidation.fiduRequested).sub(fiduLiquidated)
+        )
+
+        const userUsdc = amountLessProtocolFee(proRataUsdc)
+        const reserveUsdc = protocolFee(proRataUsdc)
+        await expectAction(() =>
+          seniorPool.claimWithdrawalRequest(i + 1, {from: stakedFiduHolders[i]!.address})
+        ).toChange([
+          [() => usdc.balanceOf(stakedFiduHolders[i]!.address), {byCloseTo: userUsdc, threshold: HALF_CENT}],
+          [() => usdc.balanceOf(reserveAddress), {by: reserveUsdc}],
+          [
+            () => usdc.balanceOf(seniorPool.address),
+            {byCloseTo: userUsdc.add(reserveUsdc).neg(), threshold: HALF_CENT},
+          ],
+          [async () => (await seniorPool.withdrawalRequest(i + 1)).usdcWithdrawable, {to: ZERO}],
+        ])
+      }
+    })
   })
 
   // Regression test for senior pool writedown bug fix

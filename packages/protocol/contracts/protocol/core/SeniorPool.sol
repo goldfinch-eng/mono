@@ -48,10 +48,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   GoldfinchConfig public config;
 
   /// @dev DEPRECATED!
-  uint256 internal DEPRECATED_compoundBalance;
+  uint256 internal compoundBalance;
 
   /// @dev DEPRECATED, DO NOT USE.
-  mapping(ITranchedPool => uint256) internal DEPRECATED_writedowns;
+  mapping(ITranchedPool => uint256) internal writedowns;
 
   /// @dev Writedowns by PoolToken id. This is used to ensure writedowns are incremental.
   ///   Example: At t1, a pool is late and should be written down by 10%. At t2, the pool
@@ -280,7 +280,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @return wasCheckpointed true if the epoch was checkpointed, otherwise false
    */
   function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, bool) {
-    if (block.timestamp <= epoch.endsAt || usdcAvailable == 0 || epoch.fiduRequested == 0) {
+    if (block.timestamp < epoch.endsAt || usdcAvailable == 0 || epoch.fiduRequested == 0) {
       return (epoch, false);
     }
 

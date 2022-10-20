@@ -94,6 +94,10 @@ function fiduToUSDC(number: BN | number) {
   return number.div(decimals.div(USDCDecimals))
 }
 
+function getNumShares(usdcAmount: BN, sharePrice: BN) {
+  return usdcToFidu(usdcAmount).mul(FIDU_DECIMALS).div(sharePrice)
+}
+
 const getDeployedAsTruffleContract = async <T extends Truffle.ContractInstance>(
   deployments: DeploymentsExtension,
   contractName: string
@@ -664,10 +668,64 @@ export async function mineInSameBlock(txs: PopulatedTransaction[], timeout = 5_0
   }
 }
 
+export function amountLessProtocolFee(usdcAmount: BN) {
+  return usdcAmount.mul(new BN(995)).div(new BN(1000))
+}
+
+export function protocolFee(usdcAmount: BN) {
+  return usdcAmount.mul(new BN(5)).div(new BN(1000))
+}
+
 export function dbg<T>(x: T): T {
   console.trace(x)
   return x
 }
+
+// Some staked fidu holders that can be used in mainnet forking tests
+export const stakedFiduHolders = [
+  // ~300K FIDU
+  {
+    address: "0x8d95730Bab8499e1169D2b7208005B11721ceE6a",
+    stakingRewardsTokenId: 2118,
+  },
+  // ~600K FIDU
+  {
+    address: "0xcFD727653C3d5a1B943f675781d3245B884f1d34",
+    stakingRewardsTokenId: 2116,
+  },
+  // ~19k FIDU
+  {
+    address: "0x7AdC457434e8C57737AD2aCE768a863865f2AaBc",
+    stakingRewardsTokenId: 2123,
+  },
+  // ~111 FIDU
+  {
+    address: "0x9Fdf83188afBCa0b4b41960337Fb83aA1F3eE28a",
+    stakingRewardsTokenId: 2102,
+  },
+]
+
+// Some active borrower/pool info that can be used in mainnet forking tests
+export const borrowers = [
+  {
+    // nextDueTime is Oct 19th
+    name: "Stratos",
+    poolAddress: "0x00c27FC71b159a346e179b4A1608a0865e8A7470",
+    poolToken: 613,
+  },
+  {
+    // nextDueTime is Oct 23rd
+    name: "Addem",
+    poolAddress: "0x89d7C618a4EeF3065DA8ad684859a547548E6169",
+    poolToken: 738,
+  },
+  {
+    // nextDueTime is Nov 6th
+    name: "Cauris",
+    poolAddress: "0xc9BDd0D3B80CC6EfE79a82d850f44EC9B55387Ae",
+    poolToken: 179,
+  },
+]
 
 export {
   hardhat,
@@ -699,6 +757,7 @@ export {
   getTruffleContractAtAddress,
   fiduToUSDC,
   usdcToFidu,
+  getNumShares,
   expectAction,
   deployAllContracts,
   erc721Approve,

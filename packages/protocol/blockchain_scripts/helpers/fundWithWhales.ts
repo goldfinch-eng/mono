@@ -15,7 +15,7 @@ export async function fundWithWhales(
   logger("💰🐋 Begin fundWithWhales")
 
   const whales: Record<Ticker, AddressString> = {
-    USDC: "0x72a53cdbbcc1b9efa39c834a540550e23463aacb",
+    USDC: "0xda9ce944a37d218c3302f6b82a094844c6eceb17",
     USDT: "0x28c6c06298d514db089934071355e5743bf21d60",
     BUSD: "0x28c6c06298d514db089934071355e5743bf21d60",
     ETH: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
