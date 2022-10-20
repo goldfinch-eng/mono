@@ -190,7 +190,7 @@ export default function MembershipPage() {
                       mainText="Buy GFI"
                       icon="Gfi"
                       buttonText="Buy now"
-                      href="https://coinbase.com/prices/goldfinch-protocol"
+                      href="https://coinmarketcap.com/currencies/goldfinch-protocol/markets/"
                     />
                     <CallToAction
                       mainText="LP in the Senior Pool for FIDU"
