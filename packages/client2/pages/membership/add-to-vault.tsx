@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 import {
   Button,
@@ -44,6 +44,8 @@ interface AddToVaultProps extends Omit<ModalProps, "children" | "title"> {
 }
 
 export function AddToVault({
+  isOpen,
+  onClose,
   maxVaultableGfi,
   fiatPerGfi,
   vaultableStakedPositions,
@@ -77,9 +79,22 @@ export function AddToVault({
   };
 
   const [step, setStep] = useState<0 | 1>(0);
+  useEffect(() => {
+    // Reset to the first step when this modal is closed
+    if (!isOpen) {
+      setTimeout(() => {
+        setStep(0);
+        setGfiToVault("0");
+        setStakedPositionsToVault([]);
+        setPoolTokensToVault([]);
+      }, 250);
+    }
+  }, [isOpen]);
 
   return (
     <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       {...rest}
       className="bg-sand-100"
       title={step === 0 ? "Select assets to add" : "Confirm transaction"}
@@ -89,7 +104,7 @@ export function AddToVault({
         <div className="flex items-center justify-between">
           <Button
             colorScheme="secondary"
-            onClick={step === 0 ? rest.onClose : () => setStep(0)}
+            onClick={step === 0 ? onClose : () => setStep(0)}
           >
             {step === 0 ? "Cancel" : "Back"}
           </Button>
