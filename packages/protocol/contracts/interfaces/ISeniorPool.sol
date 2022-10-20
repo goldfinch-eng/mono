@@ -49,6 +49,7 @@ abstract contract ISeniorPool is ISeniorPoolEpochWithdrawals {
   event InterestCollected(address indexed payer, uint256 amount);
   event PrincipalCollected(address indexed payer, uint256 amount);
   event ReserveFundsCollected(address indexed user, uint256 amount);
+  event ReserveSharesCollected(address indexed user, uint256 amount);
 
   event PrincipalWrittenDown(address indexed tranchedPool, int256 amount);
   event InvestmentMadeInSenior(address indexed tranchedPool, uint256 amount);

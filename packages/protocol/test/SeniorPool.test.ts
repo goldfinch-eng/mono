@@ -1165,12 +1165,22 @@ describe("SeniorPool", () => {
       })
     })
 
-    it("should emit an event", async () => {
+    it("should emit WithdrawalCanceled", async () => {
       const tx = await seniorPool.cancelWithdrawalRequest("1", {from: person2})
       expectEvent(tx, "WithdrawalCanceled", {
         operator: person2,
         uidHolder: "0x0000000000000000000000000000000000000000",
         fiduCanceled: fiduVal(1000),
+      })
+    })
+
+    it("should emit ReserveSharesCollected", async () => {
+      await goldfinchConfig.setNumber(CONFIG_KEYS.SeniorPoolWithdrawalCancelationFeeBps, 50, {from: owner})
+      console.log(feeAmount(usdcVal(1000)))
+      const tx = await seniorPool.cancelWithdrawalRequest("1", {from: person2})
+      expectEvent(tx, "ReserveSharesCollected", {
+        user: person2,
+        amount: feeAmount(fiduVal(1000)),
       })
     })
   })
