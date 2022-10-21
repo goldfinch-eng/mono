@@ -102,30 +102,34 @@ export function AddToVault({
       divider
       footer={
         <div className="flex items-center justify-between">
-          <Button
-            colorScheme="secondary"
-            onClick={step === 0 ? onClose : () => setStep(0)}
-          >
-            {step === 0 ? "Cancel" : "Back"}
-          </Button>
+          <div className="w-28">
+            <Button
+              colorScheme="secondary"
+              onClick={step === 0 ? onClose : () => setStep(0)}
+            >
+              {step === 0 ? "Cancel" : "Back"}
+            </Button>
+          </div>
           <div className="text-xs">{step + 1} of 2</div>
-          <Button
-            colorScheme="primary"
-            onClick={
-              step === 0
-                ? () => setStep(1)
-                : () =>
-                    alert(
-                      `Confirming with GFI ${gfiToVault} staked positions ${stakedPositionsToVault
-                        .map((s) => s.id)
-                        .join(", ")}, pool tokens ${poolTokensToVault
-                        .map((p) => p.id)
-                        .join(", ")}`
-                    )
-            }
-          >
-            {step === 0 ? "Next" : "Submit"}
-          </Button>
+          <div className="w-28 text-right">
+            <Button
+              colorScheme="primary"
+              onClick={
+                step === 0
+                  ? () => setStep(1)
+                  : () =>
+                      alert(
+                        `Confirming with GFI ${gfiToVault} staked positions ${stakedPositionsToVault
+                          .map((s) => s.id)
+                          .join(", ")}, pool tokens ${poolTokensToVault
+                          .map((p) => p.id)
+                          .join(", ")}`
+                      )
+              }
+            >
+              {step === 0 ? "Next" : "Submit"}
+            </Button>
+          </div>
         </div>
       }
     >
