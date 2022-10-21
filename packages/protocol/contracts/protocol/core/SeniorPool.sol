@@ -193,7 +193,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.add(fiduAmount);
     config.getFidu().safeTransferFrom(msg.sender, address(this), fiduAmount);
 
-    emit WithdrawalRequested(msg.sender, address(0), fiduAmount);
+    emit WithdrawalRequested(_checkpointedEpochId, msg.sender, address(0), fiduAmount);
     return tokenId;
   }
 
@@ -218,7 +218,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     config.getFidu().safeTransfer(config.reserveAddress(), reserveFidu);
 
     emit ReserveSharesCollected(msg.sender, reserveFidu);
-    emit WithdrawalCanceled(msg.sender, address(0), userFidu.add(reserveFidu));
+    emit WithdrawalCanceled(_checkpointedEpochId, msg.sender, address(0), userFidu, reserveFidu);
   }
 
   /// @inheritdoc ISeniorPoolEpochWithdrawals

@@ -750,8 +750,9 @@ describe("SeniorPool", () => {
 
         const res = await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
         expectEvent(res, "WithdrawalRequested", {
+          epochId: "1",
           operator: person2,
-          uidHolder: "0x0000000000000000000000000000000000000000",
+          kycAddress: "0x0000000000000000000000000000000000000000",
           fiduRequested: fiduVal(1000),
         })
       })
@@ -1181,12 +1182,17 @@ describe("SeniorPool", () => {
       expect(request.fiduRequested).to.bignumber.eq(ZERO)
     })
 
-    it("should emit WithdrawalCanceled", async () => {
+    it("emits WithdrawalCanceled", async () => {
       const tx = await seniorPool.cancelWithdrawalRequest("1", {from: person2})
+      // 10 bps fee
+      const userAmount = new BN("999000000000000000000")
+      const feeAmount = fiduVal(1000).sub(userAmount)
       expectEvent(tx, "WithdrawalCanceled", {
+        epochId: "1",
         operator: person2,
-        uidHolder: "0x0000000000000000000000000000000000000000",
-        fiduCanceled: fiduVal(1000),
+        kycAddress: "0x0000000000000000000000000000000000000000",
+        fiduCanceled: userAmount,
+        reserveFidu: feeAmount,
       })
     })
 
@@ -2016,10 +2022,10 @@ describe("SeniorPool", () => {
     it("returns the duration", async () => {
       expect(await seniorPool.epochDuration()).to.bignumber.eq(TWO_WEEKS)
     })
-    it("emits and event", async () => {
+    it("emits EpochDurationChanged", async () => {
       const receipt = await seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: owner})
       expectEvent(receipt, "EpochDurationChanged", {
-        to: SECONDS_PER_DAY,
+        newDuration: SECONDS_PER_DAY,
       })
     })
   })
