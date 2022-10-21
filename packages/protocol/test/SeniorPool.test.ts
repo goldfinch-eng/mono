@@ -107,7 +107,6 @@ describe("SeniorPool", () => {
     uniqueIdentity: TestUniqueIdentityInstance,
     withdrawalRequestToken: WithdrawalRequestTokenInstance,
     go: GoInstance
-  let epochsInitializedAt: BN
 
   const interestApr = interestAprAsBN("5.00")
   const paymentPeriodInDays = new BN(30)
@@ -167,9 +166,6 @@ describe("SeniorPool", () => {
       juniorFeePercent,
       id: "TranchedPool",
     }))
-
-    const firstEpochEndsAt = new BN((await (_seniorPool as TestSeniorPoolInstance).epochAt("0")).endsAt)
-    epochsInitializedAt = firstEpochEndsAt
 
     return {
       usdc,
@@ -796,6 +792,35 @@ describe("SeniorPool", () => {
           /SafeERC20: low-level call failed/
         )
       })
+
+      describe("adding to a request that has been fully liquidated", async () => {
+        it("works", async () => {
+          // Epoch 1 (full liquidation)
+          // usdcAvailable = $3600
+          // fiduRequested = 3500 (all from person2)
+          await seniorPool.deposit(usdcVal(3600), {from: person3})
+
+          await advanceTime({days: 14})
+
+          // Epoch 2
+          // usdcAvailable = $100 + $500 = $600
+          // fiduRequested = 1000 (all from person3)
+          await seniorPool.requestWithdrawal(fiduVal(1000), {from: person3})
+          await seniorPool.deposit(usdcVal(500))
+
+          await advanceTime({days: 14})
+
+          // Epoch 3
+          // Person2 adding to their request should not give them any usdcAllocated from epoch2
+          await seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})
+          const requestPerson2 = await seniorPool.withdrawalRequest("1")
+          expect(requestPerson2.usdcWithdrawable).to.bignumber.eq(usdcVal(3500))
+          expect(requestPerson2.fiduRequested).to.bignumber.eq(fiduVal(500))
+          const requestPerson3 = await seniorPool.withdrawalRequest("2")
+          expect(requestPerson3.usdcWithdrawable).to.bignumber.eq(usdcVal(600))
+          expect(requestPerson3.fiduRequested).to.bignumber.eq(fiduVal(400))
+        })
+      })
     })
 
     describe("when caller not tokenOwner", () => {
@@ -947,31 +972,6 @@ describe("SeniorPool", () => {
           await seniorPoolCaller.requestWithdrawal(fiduVal(50), {from: person2})
           await expect(seniorPoolCaller.addToWithdrawalRequest(fiduVal(50), "2", {from: person2})).to.be.fulfilled
         })
-      })
-    })
-
-    describe("authorization", () => {
-      beforeEach(async () => {
-        await goldfinchConfig.bulkRemoveFromGoList([person2], {from: owner})
-        const seniorPoolIds = await go.getSeniorPoolIdTypes()
-        const supportedIdTypes = [...seniorPoolIds, new BN(5)]
-        await uniqueIdentity.setSupportedUIDTypes(
-          supportedIdTypes,
-          supportedIdTypes.map(() => true),
-          {from: owner}
-        )
-      })
-      it("works when caller has senior-pool UID", async () => {
-        const expiresAt = (await getCurrentTimestamp()).add(SECONDS_PER_DAY)
-        await mint(hre, uniqueIdentity, new BN(1), expiresAt, new BN(0), owner, undefined, person2)
-        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).to.be.fulfilled
-      })
-      it("works when caller go-listed", async () => {
-        await goldfinchConfig.bulkAddToGoList([person2], {from: owner})
-        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).to.be.fulfilled
-      })
-      it("reverts when caller not go-listed and doesn't have senior pool UID", async () => {
-        await expect(seniorPool.addToWithdrawalRequest(fiduVal(500), "1", {from: person2})).to.be.rejectedWith(/NA/)
       })
     })
   })

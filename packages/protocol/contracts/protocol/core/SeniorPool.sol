@@ -70,10 +70,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     Initialization Functions
     ================================================================================*/
 
-  /*================================================================================
-    Initialization Functions
-    ================================================================================*/
-
   function initialize(address owner, GoldfinchConfig _config) public initializer {
     require(owner != address(0) && address(_config) != address(0), "Owner and config addresses cannot be empty");
 
@@ -164,6 +160,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(msg.sender == requestTokens.ownerOf(tokenId), "NA");
 
     (Epoch storage thisEpoch, WithdrawalRequest storage request) = _applyEpochAndRequestCheckpoints(tokenId);
+    // Update a fully liquidated request's cursor. Otherwise new fiduRequested would be applied to liquidated
+    // epochs that the request was not part of.
+    if (request.fiduRequested == 0) {
+      request.epochCursor = _checkpointedEpochId;
+    }
     request.fiduRequested = request.fiduRequested.add(fiduAmount);
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.add(fiduAmount);
 
