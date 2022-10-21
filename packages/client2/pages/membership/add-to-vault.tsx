@@ -238,11 +238,12 @@ export function AddToVault({
                 amount: gfiToVaultAsBigNumber,
               },
             }}
+            nativeAmountIsPrimary
           />
         </div>
         <div className="mb-8">
           <SectionHeading
-            leftText="TVL to be added"
+            leftText="Capital to be added"
             rightText={formatCrypto(selectedCapitalTotal)}
           />
           <div className="space-y-2">

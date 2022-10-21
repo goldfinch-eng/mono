@@ -137,9 +137,17 @@ export function AssetGroup({
 interface AssetBoxProps {
   asset: Asset;
   omitWrapperStyle?: boolean;
+  /**
+   * Whether or not the native token amount should be the primary bolded one in this box
+   */
+  nativeAmountIsPrimary?: boolean;
 }
 
-export function AssetBox({ asset, omitWrapperStyle = false }: AssetBoxProps) {
+export function AssetBox({
+  asset,
+  omitWrapperStyle = false,
+  nativeAmountIsPrimary = false,
+}: AssetBoxProps) {
   const { name, description, icon, tooltip, usdcAmount, nativeAmount } = asset;
   return (
     <div
@@ -155,12 +163,18 @@ export function AssetBox({ asset, omitWrapperStyle = false }: AssetBoxProps) {
           <div className="text-lg">{name}</div>
           {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
         </div>
-        <div className="text-lg font-medium">{formatCrypto(usdcAmount)}</div>
+        <div className="text-lg font-medium">
+          {formatCrypto(
+            nativeAmountIsPrimary && nativeAmount ? nativeAmount : usdcAmount
+          )}
+        </div>
       </div>
       <div className="flex justify-between gap-4 text-xs font-medium text-sand-400">
         <div>{description}</div>
         {nativeAmount ? (
-          <div>{formatCrypto(nativeAmount, { includeToken: true })}</div>
+          <div>
+            {formatCrypto(nativeAmountIsPrimary ? usdcAmount : nativeAmount)}
+          </div>
         ) : null}
       </div>
     </div>
@@ -247,6 +261,7 @@ export function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
     >
       <AssetBox
         omitWrapperStyle
+        nativeAmountIsPrimary
         asset={{
           name: "GFI",
           description: "Governance Token",

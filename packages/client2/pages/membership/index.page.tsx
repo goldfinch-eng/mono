@@ -181,7 +181,7 @@ export default function MembershipPage() {
                   </div>
                   <div className="mb-6">
                     To optimize Member rewards, aim to have balanced amounts of
-                    TVL and GFI in your vault at all times.
+                    capital and GFI in your vault at all times.
                   </div>
                   <div className="space-y-2">
                     <CallToAction
