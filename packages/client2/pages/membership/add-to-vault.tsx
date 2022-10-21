@@ -54,7 +54,7 @@ export function AddToVault({
   ...rest
 }: AddToVaultProps) {
   const gfiInUsdc = gfiToUsdc(maxVaultableGfi, fiatPerGfi);
-  const nftTotal = {
+  const capitalTotal = {
     token: SupportedCrypto.Usdc,
     amount: sharesToUsdc(
       sum("amount", vaultableStakedPositions),
@@ -70,7 +70,7 @@ export function AddToVault({
     StakedPosition[]
   >([]);
   const [poolTokensToVault, setPoolTokensToVault] = useState<PoolToken[]>([]);
-  const selectedNftTotal = {
+  const selectedCapitalTotal = {
     token: SupportedCrypto.Usdc,
     amount: sharesToUsdc(
       sum("amount", stakedPositionsToVault),
@@ -124,7 +124,7 @@ export function AddToVault({
                     )
             }
           >
-            {step === 0 ? "Review" : "Confirm"}
+            {step === 0 ? "Next" : "Submit"}
           </Button>
         </div>
       }
@@ -133,7 +133,7 @@ export function AddToVault({
         <div className="mb-8">
           <SectionHeading
             leftText="Step 1: Choose an amount of GFI"
-            rightText={formatCrypto(gfiInUsdc)}
+            rightText={`${formatCrypto(maxVaultableGfi)} available`}
           />
           <GfiBox
             max={maxVaultableGfi}
@@ -143,8 +143,8 @@ export function AddToVault({
           />
         </div>
         <SectionHeading
-          leftText="Step 2: Choose an amount of TVL"
-          rightText={formatCrypto(nftTotal)}
+          leftText="Step 2: Choose an amount of Capital"
+          rightText={`${formatCrypto(capitalTotal)} available`}
         />
         <div className="mb-8 space-y-2">
           {vaultableStakedPositions.map((stakedPosition) => {
@@ -216,15 +216,10 @@ export function AddToVault({
         <div className="mb-8">
           <SectionHeading
             leftText="GFI to be added"
-            rightText={formatCrypto(
-              gfiToUsdc(
-                {
-                  amount: gfiToVaultAsBigNumber,
-                  token: SupportedCrypto.Gfi,
-                },
-                fiatPerGfi
-              )
-            )}
+            rightText={formatCrypto({
+              amount: gfiToVaultAsBigNumber,
+              token: SupportedCrypto.Gfi,
+            })}
           />
           <AssetBox
             asset={{
@@ -248,7 +243,7 @@ export function AddToVault({
         <div className="mb-8">
           <SectionHeading
             leftText="TVL to be added"
-            rightText={formatCrypto(selectedNftTotal)}
+            rightText={formatCrypto(selectedCapitalTotal)}
           />
           <div className="space-y-2">
             {stakedPositionsToVault.map((s) => (
