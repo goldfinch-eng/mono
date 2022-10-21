@@ -83,9 +83,8 @@ export default function MembershipPage() {
       assets: [
         {
           name: "GFI",
-          description: "Goldfinch tokens",
-          tooltip:
-            "Your GFI tokens. These can be placed in the membership vault and they increase your rewards.",
+          icon: "Gfi",
+          description: "Governance Token",
           usdcAmount: gfiToUsdc(
             data.viewer.gfiBalance,
             data.gfiPrice.price.amount
@@ -96,18 +95,17 @@ export default function MembershipPage() {
     });
   }
 
-  const tvlAssetGroup: AssetGroup = {
-    groupName: "TVL",
+  const capitalAssetGroup: AssetGroup = {
+    groupName: "Capital",
     assets: [],
   };
   const sharePrice =
     data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
-      tvlAssetGroup.assets.push({
-        name: "Senior Pool Position",
-        description: "FIDU",
-        tooltip: "Lorem ipsum",
+      capitalAssetGroup.assets.push({
+        name: "Staked FIDU",
+        description: "Goldfinch Senior Pool Position",
         usdcAmount: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice),
         nativeAmount: {
           token: SupportedCrypto.Fidu,
@@ -119,10 +117,9 @@ export default function MembershipPage() {
 
   if (data && data.tranchedPoolTokens.length > 0) {
     data.tranchedPoolTokens.forEach((poolToken) => {
-      tvlAssetGroup.assets.push({
-        name: "Backer Pool Position",
+      capitalAssetGroup.assets.push({
+        name: "Borrower Pool Position",
         description: poolToken.tranchedPool.name,
-        tooltip: "Lorem ipsum",
         usdcAmount: {
           token: SupportedCrypto.Usdc,
           amount: poolToken.principalAmount,
@@ -130,8 +127,8 @@ export default function MembershipPage() {
       });
     });
   }
-  if (tvlAssetGroup.assets.length > 0) {
-    vaultableAssets.push(tvlAssetGroup);
+  if (capitalAssetGroup.assets.length > 0) {
+    vaultableAssets.push(capitalAssetGroup);
   }
 
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);

@@ -155,8 +155,8 @@ export function AddToVault({
               <AssetCheckbox
                 key={`staked-position-${stakedPosition.id}`}
                 asset={{
-                  name: "Senior Pool Staked Position",
-                  description: "FIDU",
+                  name: "Staked FIDU",
+                  description: "Goldfinch Senior Pool Position",
                   usdcAmount: sharesToUsdc(stakedPosition.amount, sharePrice),
                   nativeAmount: {
                     token: SupportedCrypto.Fidu,
@@ -190,7 +190,7 @@ export function AddToVault({
               <AssetCheckbox
                 key={`pool-token-${poolToken.id}`}
                 asset={{
-                  name: "Backer Pool Position",
+                  name: "Borrower Pool Position",
                   description: poolToken.tranchedPool.name,
                   usdcAmount: {
                     amount: poolToken.principalAmount,
@@ -230,7 +230,7 @@ export function AddToVault({
             asset={{
               name: "GFI",
               icon: "Gfi",
-              description: "Goldfinch Token",
+              description: "Governance Token",
               usdcAmount: gfiToUsdc(
                 {
                   amount: gfiToVaultAsBigNumber,
@@ -253,10 +253,10 @@ export function AddToVault({
           <div className="space-y-2">
             {stakedPositionsToVault.map((s) => (
               <AssetBox
-                key={`senior-pool-position-${s.id}`}
+                key={`staked-fidu-${s.id}`}
                 asset={{
-                  name: "Senior Pool Staked Position",
-                  description: "FIDU",
+                  name: "Staked FIDU",
+                  description: "Goldfinch Senior Pool Position",
                   usdcAmount: sharesToUsdc(s.amount, sharePrice),
                   nativeAmount: {
                     token: SupportedCrypto.Fidu,
@@ -269,7 +269,7 @@ export function AddToVault({
               <AssetBox
                 key={`pool-token-${p.id}`}
                 asset={{
-                  name: "Backer Pool Position",
+                  name: "Borrower Pool Position",
                   description: p.tranchedPool.name,
                   usdcAmount: {
                     token: SupportedCrypto.Usdc,

@@ -249,7 +249,7 @@ export function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
         omitWrapperStyle
         asset={{
           name: "GFI",
-          description: "Goldfinch Token",
+          description: "Governance Token",
           icon: "Gfi",
           usdcAmount: maxInUsdc,
           nativeAmount: max,
