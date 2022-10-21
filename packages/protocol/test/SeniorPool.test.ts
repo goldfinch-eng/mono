@@ -1164,6 +1164,23 @@ describe("SeniorPool", () => {
       })
     })
 
+    it("burns the request nft if usdcWithdrawable == 0", async () => {
+      await seniorPool.deposit(usdcVal(100)) // This deposit shouldn't affect my cancellation because it's in the current epoch
+      await expectAction(() => seniorPool.cancelWithdrawalRequest("1", {from: person2})).toChange([
+        [() => withdrawalRequestToken.balanceOf(person2), {to: ZERO}],
+      ])
+    })
+
+    it("doesn't burn request nft if usdcWithdrawable > 0", async () => {
+      await seniorPool.deposit(usdcVal(100), {from: owner})
+      await advanceAndMineBlock({days: 14})
+      await seniorPool.cancelWithdrawalRequest("1", {from: person2})
+      expect(await withdrawalRequestToken.balanceOf(person2)).to.bignumber.eq("1")
+      const request = await seniorPool.withdrawalRequest("1")
+      expect(request.usdcWithdrawable).to.bignumber.gt(ZERO)
+      expect(request.fiduRequested).to.bignumber.eq(ZERO)
+    })
+
     it("should emit WithdrawalCanceled", async () => {
       const tx = await seniorPool.cancelWithdrawalRequest("1", {from: person2})
       expectEvent(tx, "WithdrawalCanceled", {
@@ -1265,15 +1282,14 @@ describe("SeniorPool", () => {
   })
 
   describe("claimWithdrawalRequest", () => {
-    let request1, request2
     beforeEach(async () => {
       await seniorPool.deposit(usdcVal(1000), {from: person2})
       await seniorPool.requestWithdrawal(fiduVal(1000), {from: person2})
-      request1 = await seniorPool.withdrawalRequest("1")
+      await seniorPool.withdrawalRequest("1")
 
       await seniorPool.deposit(usdcVal(3000), {from: person3})
       await seniorPool.requestWithdrawal(fiduVal(3000), {from: person3})
-      request2 = await seniorPool.withdrawalRequest("2")
+      await seniorPool.withdrawalRequest("2")
     })
 
     it("no-ops if I withdraw early", async () => {
@@ -1281,6 +1297,14 @@ describe("SeniorPool", () => {
       await seniorPool.claimWithdrawalRequest("1", {from: person2})
       const requestAfter = await seniorPool.withdrawalRequest("1")
       expect(requestAfter).to.deep.eq(requestBefore)
+    })
+
+    it("burns the nft when fiduRequested == 0", async () => {
+      await seniorPool.deposit(usdcVal(4000))
+      await advanceTime({days: 14})
+      expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+        [() => withdrawalRequestToken.balanceOf(person2), {to: ZERO}],
+      ])
     })
 
     it("withdraws up to the current epoch", async () => {
@@ -1336,6 +1360,7 @@ describe("SeniorPool", () => {
           async () => (await seniorPool.withdrawalRequest("1")).fiduRequested,
           {to: fiduVal(537.5).add(fiduVal(1).div(new BN(2)))},
         ],
+        [() => withdrawalRequestToken.balanceOf(person2), {unchanged: true}],
       ])
 
       // PERSON3 WITHDRAWS
@@ -1346,7 +1371,9 @@ describe("SeniorPool", () => {
         [() => usdc.balanceOf(person3), {byCloseTo: amountLessFee(person3TotalUsdc), threshold: HALF_CENT}],
         [() => usdc.balanceOf(reserve), {byCloseTo: feeAmount(person3TotalUsdc), threshold: HALF_CENT}],
         [() => fidu.balanceOf(seniorPool.address), {unchanged: true}],
+        [() => withdrawalRequestToken.balanceOf(person3), {unchanged: true}],
       ])
+
       expect((await seniorPool.withdrawalRequest("2")).fiduRequested).to.bignumber.eq(
         fiduVal(1612).add(fiduVal(1).div(new BN(2)))
       )

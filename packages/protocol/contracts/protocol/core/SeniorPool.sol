@@ -229,17 +229,17 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 totalUsdcAmount = request.usdcWithdrawable;
     request.usdcWithdrawable = 0;
     uint256 reserveAmount = totalUsdcAmount.div(config.getWithdrawFeeDenominator());
-    totalUsdcAmount = totalUsdcAmount.sub(reserveAmount);
+    uint256 userAmount = totalUsdcAmount.sub(reserveAmount);
 
     // if there is no outstanding FIDU, burn the token
-    if (request.fiduRequested == 0 && request.usdcWithdrawable == 0) {
+    if (request.fiduRequested == 0) {
       _burnWithdrawRequest(tokenId);
     }
 
     _sendToReserve(reserveAmount, msg.sender);
-    config.getUSDC().safeTransfer(msg.sender, totalUsdcAmount);
+    config.getUSDC().safeTransfer(msg.sender, userAmount);
 
-    emit WithdrawalMade(msg.sender, totalUsdcAmount, reserveAmount);
+    emit WithdrawalMade(msg.sender, userAmount, reserveAmount);
   }
 
   // view functions
