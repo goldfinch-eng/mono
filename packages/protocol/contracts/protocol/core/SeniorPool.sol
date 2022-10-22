@@ -63,7 +63,8 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   uint256 internal _checkpointedEpochId;
   mapping(uint256 => Epoch) internal _epochs;
   mapping(uint256 => WithdrawalRequest) internal _withdrawalRequests;
-  uint256 public override usdcAvailable;
+  /// @dev The amount of USDC that is in the senior pool but hasnt been allocated since the last checkpoint
+  uint256 internal _usdcAvailable;
   uint256 internal _epochDuration;
 
   /*================================================================================
@@ -104,7 +105,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   function initializeEpochs() external onlyAdmin {
     require(_epochs[0].endsAt == 0);
     _epochDuration = 2 weeks;
-    usdcAvailable = config.getUSDC().balanceOf(address(this));
+    _usdcAvailable = config.getUSDC().balanceOf(address(this));
     _epochs[0].endsAt = block.timestamp;
     _initializeNextEpochFrom(_epochs[0]);
   }
@@ -125,7 +126,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(amount > 0, "Must deposit more than zero");
     _applyEpochCheckpoints();
-    usdcAvailable += amount;
+    _usdcAvailable += amount;
     // Check if the amount of new shares to be added is within limits
     depositShares = getNumShares(amount);
     emit DepositMade(msg.sender, amount, depositShares);
@@ -281,7 +282,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @return wasCheckpointed true if the epoch was checkpointed, otherwise false
    */
   function _previewEpochCheckpoint(Epoch memory epoch) internal view returns (Epoch memory, bool) {
-    if (block.timestamp < epoch.endsAt || usdcAvailable == 0 || epoch.fiduRequested == 0) {
+    if (block.timestamp < epoch.endsAt || _usdcAvailable == 0 || epoch.fiduRequested == 0) {
       return (epoch, false);
     }
 
@@ -294,7 +295,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     // liquidate epoch
     uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
-    uint256 usdcAllocated = usdcAvailable.min(usdcNeededToFullyLiquidate);
+    uint256 usdcAllocated = _usdcAvailable.min(usdcNeededToFullyLiquidate);
     uint256 fiduLiquidated = getNumShares(usdcAllocated);
     epoch.fiduLiquidated = fiduLiquidated;
     epoch.usdcAllocated = usdcAllocated;
@@ -399,7 +400,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     epoch.usdcAllocated = checkpointedEpoch.usdcAllocated;
     epoch.endsAt = checkpointedEpoch.endsAt;
 
-    usdcAvailable = usdcAvailable.sub(epoch.usdcAllocated);
+    _usdcAvailable = _usdcAvailable.sub(epoch.usdcAllocated);
     Epoch storage newEpoch = _initializeNextEpochFrom(epoch);
     config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
 
@@ -461,7 +462,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     require(withdrawShares <= currentShares, "Amount requested is greater than what this address owns");
     // require(usdcAmount <= config.getUSDC().balanceOf(address(this)).sub(usdcAllocatedNotWithdrawn), "IB");
 
-    usdcAvailable = usdcAvailable.sub(usdcAmount, "IB");
+    _usdcAvailable = _usdcAvailable.sub(usdcAmount, "IB");
     // Send to reserves
     userAmount = usdcAmount;
 
@@ -497,9 +498,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 amount = strategy.invest(this, pool);
 
     require(amount > 0, "Investment amount must be positive");
-    require(amount <= usdcAvailable, "not enough usdc");
+    require(amount <= _usdcAvailable, "not enough usdc");
 
-    usdcAvailable = usdcAvailable.sub(amount);
+    _usdcAvailable = _usdcAvailable.sub(amount);
 
     _approvePool(pool, amount);
     uint256 nSlices = pool.numSlices();
@@ -570,13 +571,17 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   // View Functions
   //--------------------------------------------------------------------------------
 
+  function usdcAvailable() public view override returns (uint256) {
+    (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
+    uint256 usdcThatWillBeAllocatedToLatestEpoch = e.usdcAllocated;
+    return _usdcAvailable.sub(usdcThatWillBeAllocatedToLatestEpoch);
+  }
+
   /**
    * @notice Returns the net assests controlled by and owed to the pool
    */
   function assets() public view override returns (uint256) {
-    (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
-    uint256 usdcThatWillBeAllocatedToLatestEpoch = e.usdcAllocated;
-    return usdcAvailable.add(totalLoansOutstanding).sub(usdcThatWillBeAllocatedToLatestEpoch).sub(totalWritedowns);
+    return usdcAvailable().add(totalLoansOutstanding).sub(totalWritedowns);
   }
 
   /**
@@ -663,7 +668,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       emit PrincipalCollected(from, principal);
       totalLoansOutstanding = totalLoansOutstanding.sub(principal);
     }
-    usdcAvailable += (interest + principal);
+    _usdcAvailable += (interest + principal);
   }
 
   function _isValidPool(ITranchedPool pool) internal view returns (bool) {

@@ -299,6 +299,52 @@ describe("SeniorPool", () => {
     })
   })
 
+  describe("usdcAvailable", () => {
+    it("should include money when it's deposited", async () => {
+      const depositAmount = usdcVal(100)
+      await expectAction(() => makeDeposit(person2, depositAmount)).toChange([
+        [seniorPool.usdcAvailable, {by: depositAmount}],
+      ])
+    })
+
+    describe("after the end of epoch where money can be allocated", () => {
+      it("should exclude the allocatable money", async () => {
+        const depositAmount = usdcVal(100)
+        await makeDeposit(person2, depositAmount)
+        const depositAmountInFidu = await seniorPool.getNumShares(depositAmount)
+        const firstWithdrawalAmount = depositAmountInFidu.div(new BN(2))
+        await seniorPool.requestWithdrawal(firstWithdrawalAmount, {from: person2})
+        const epochDuration = await seniorPool.epochDuration()
+        await expectAction(() => advanceAndMineBlock({seconds: epochDuration})).toChange([
+          [seniorPool.usdcAvailable, {by: depositAmount.div(new BN(2)).neg()}],
+        ])
+
+        const secondWithdrawalAmount = depositAmountInFidu.div(new BN(4))
+
+        // creating a withdraw request shouldn't immediately allocate USDC to a withdraw request
+        await expectAction(() =>
+          seniorPool.addToWithdrawalRequest(secondWithdrawalAmount, "1", {from: person2})
+        ).toChange([[seniorPool.usdcAvailable, {by: "0"}]])
+
+        // claiming withdraw request should never change usdcAvailable
+        await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+          [seniorPool.usdcAvailable, {by: "0"}],
+        ])
+
+        // crossing over another epoch the request should be liquidated and the allocated USDC should be
+        // subtracted from available USDC
+        await expectAction(() => advanceAndMineBlock({seconds: epochDuration})).toChange([
+          [seniorPool.usdcAvailable, {by: depositAmount.div(new BN(4)).neg()}],
+        ])
+
+        // claiming withdraw request should never change usdcAvailable
+        await expectAction(() => seniorPool.claimWithdrawalRequest("1", {from: person2})).toChange([
+          [seniorPool.usdcAvailable, {by: "0"}],
+        ])
+      })
+    })
+  })
+
   describe("deposit", () => {
     describe("before you have approved the senior pool to transfer funds on your behalf", async () => {
       it("should fail", async () => {

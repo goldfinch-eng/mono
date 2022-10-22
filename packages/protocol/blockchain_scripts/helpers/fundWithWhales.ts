@@ -71,6 +71,8 @@ async function fundWithWhale({
   logger(`💰🐋 recipient:${recipient}`)
   logger(`💰🐋 whale:${whale}`)
   await impersonateAccount(hre, whale)
+  // give the whale a ton of eth in case they dont have enough
+  await ethers.provider.send("hardhat_setBalance", [whale, ethers.utils.parseEther("10.0").toHexString()])
   const signer = await ethers.provider.getSigner(whale)
   const contract = erc20.connect(signer)
 

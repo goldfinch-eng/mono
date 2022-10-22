@@ -1401,13 +1401,6 @@ describe("mainnet forking tests", async function () {
         await expect(go.go(goListedUser)).to.eventually.be.true
       })
 
-      describe("when I deposit and subsequently withdraw into the senior pool", async () => {
-        it("it works", async () => {
-          await expect(seniorPool.deposit(usdcVal(10), {from: goListedUser})).to.be.fulfilled
-          await expect(seniorPool.withdraw(usdcVal(10), {from: goListedUser})).to.be.fulfilled
-        })
-      })
-
       describe("when I deposit and subsequently withdraw from a tranched pool's junior tranche", async () => {
         it("it works", async () => {
           const tx = await expect(tranchedPool.deposit(TRANCHES.Junior, usdcVal(10), {from: goListedUser})).to.be
