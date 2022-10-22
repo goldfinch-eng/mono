@@ -19,9 +19,9 @@ import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
-import { AssetBox, AssetGroup } from "./asset-box";
+import { AssetBox, Asset } from "./asset-box";
 import {
-  AssetGroup as AssetGroup2,
+  AssetGroup,
   AssetGroupSubheading,
   AssetGroupButton,
 } from "./asset-group";
@@ -82,38 +82,12 @@ export default function MembershipPage() {
     variables: { userId: account?.toLocaleLowerCase() ?? "" },
   });
 
-  const vaultableAssets: AssetGroup[] = [];
-  if (
-    data &&
-    data.viewer.gfiBalance &&
-    !data.viewer.gfiBalance?.amount.isZero()
-  ) {
-    vaultableAssets.push({
-      groupName: "GFI",
-      assets: [
-        {
-          name: "GFI",
-          icon: "Gfi",
-          description: "Governance Token",
-          usdcAmount: gfiToUsdc(
-            data.viewer.gfiBalance,
-            data.gfiPrice.price.amount
-          ),
-          nativeAmount: data.viewer.gfiBalance,
-        },
-      ],
-    });
-  }
-
-  const capitalAssetGroup: AssetGroup = {
-    groupName: "Capital",
-    assets: [],
-  };
+  const vaultableCapitalAssets: Asset[] = [];
   const sharePrice =
     data?.seniorPools[0].latestPoolStatus.sharePrice ?? BigNumber.from(0);
   if (data && data.seniorPoolStakedPositions.length > 0) {
     data.seniorPoolStakedPositions.forEach((seniorPoolStakedPosition) => {
-      capitalAssetGroup.assets.push({
+      vaultableCapitalAssets.push({
         name: "Staked FIDU",
         description: "Goldfinch Senior Pool Position",
         usdcAmount: sharesToUsdc(seniorPoolStakedPosition.amount, sharePrice),
@@ -127,7 +101,7 @@ export default function MembershipPage() {
 
   if (data && data.tranchedPoolTokens.length > 0) {
     data.tranchedPoolTokens.forEach((poolToken) => {
-      capitalAssetGroup.assets.push({
+      vaultableCapitalAssets.push({
         name: "Borrower Pool Position",
         description: poolToken.tranchedPool.name,
         usdcAmount: {
@@ -137,11 +111,12 @@ export default function MembershipPage() {
       });
     });
   }
-  if (capitalAssetGroup.assets.length > 0) {
-    vaultableAssets.push(capitalAssetGroup);
-  }
 
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
+
+  //TODO real data lol
+  const vaultedGfi = { token: SupportedCrypto.Gfi, amount: BigNumber.from(0) };
+  const vaultedCapitalAssets: Asset[] = [];
 
   return (
     <div>
@@ -186,9 +161,9 @@ export default function MembershipPage() {
                     capital and GFI in your vault at all times.
                   </div>
                 </div>
-                <AssetGroup2 headingLeft="Available assets">
+                <AssetGroup headingLeft="Available assets">
                   {data.viewer.gfiBalance?.amount.isZero() &&
-                  capitalAssetGroup.assets.length === 0 ? (
+                  vaultableCapitalAssets.length === 0 ? (
                     <div>
                       <div className="mb-6">
                         <div className="mb-1 text-lg font-medium">
@@ -239,18 +214,18 @@ export default function MembershipPage() {
                           left="Capital"
                           right={formatCrypto({
                             token: SupportedCrypto.Usdc,
-                            amount: capitalAssetGroup.assets.reduce(
+                            amount: vaultableCapitalAssets.reduce(
                               (prev, current) =>
                                 prev.add(current.usdcAmount.amount),
                               BigNumber.from(0)
                             ),
                           })}
                         />
-                        {capitalAssetGroup.assets.length === 0 ? (
+                        {vaultableCapitalAssets.length === 0 ? (
                           <LpInSeniorPoolCta />
                         ) : (
                           <div className="space-y-2">
-                            {capitalAssetGroup.assets.map((asset, index) => (
+                            {vaultableCapitalAssets.map((asset, index) => (
                               <AssetBox
                                 key={`capital-${index}`}
                                 asset={asset}
@@ -266,10 +241,10 @@ export default function MembershipPage() {
                       </AssetGroupButton>
                     </div>
                   )}
-                </AssetGroup2>
+                </AssetGroup>
                 {data.viewer.fiduBalance &&
                 !data.viewer.fiduBalance.amount.isZero() ? (
-                  <AssetGroup2
+                  <AssetGroup
                     headingLeft="Unavailable assets"
                     headingRight={formatCrypto(
                       sharesToUsdc(data.viewer.fiduBalance.amount, sharePrice)
@@ -302,19 +277,72 @@ export default function MembershipPage() {
                     >
                       Stake FIDU
                     </AssetGroupButton>
-                  </AssetGroup2>
+                  </AssetGroup>
                 ) : null}
               </div>
 
               <AssetGroup
-                heading="Assets in vault"
-                assetGroups={[]}
-                background="gold"
+                headingLeft="Assets in vault"
                 className="lg:w-1/2"
-                buttonText="Remove from vault"
-                onButtonClick={() => alert("unimplemented")}
-                hideButton
-              />
+                colorScheme="gold"
+              >
+                <div className="mb-6">
+                  <AssetGroupSubheading
+                    left="GFI"
+                    right={formatCrypto(vaultedGfi)}
+                  />
+                  <AssetBox
+                    faded={vaultedGfi.amount.isZero()}
+                    asset={{
+                      name: "GFI",
+                      description: "Governance Token",
+                      icon: "Gfi",
+                      nativeAmount: vaultedGfi,
+                      usdcAmount: gfiToUsdc(
+                        vaultedGfi,
+                        data.gfiPrice.price.amount
+                      ),
+                    }}
+                  />
+                </div>
+                <div className="mb-6">
+                  <AssetGroupSubheading
+                    left="Capital"
+                    right={formatCrypto({
+                      token: SupportedCrypto.Usdc,
+                      amount: vaultedCapitalAssets.reduce(
+                        (prev, current) => prev.add(current.usdcAmount.amount),
+                        BigNumber.from(0)
+                      ),
+                    })}
+                  />
+                  {vaultedCapitalAssets.length > 0 ? (
+                    vaultedCapitalAssets.map((asset) => (
+                      <AssetBox
+                        key={`vaulted-capital-${
+                          asset.name + asset.description
+                        }`}
+                        asset={asset}
+                      />
+                    ))
+                  ) : (
+                    <AssetBox
+                      faded
+                      asset={{
+                        name: "Capital",
+                        description: "Vaulted capital",
+                        usdcAmount: {
+                          token: SupportedCrypto.Usdc,
+                          amount: BigNumber.from(0),
+                        },
+                      }}
+                    />
+                  )}
+                </div>
+                <AssetGroupButton colorScheme="mustard" disabled>
+                  Select assets to remove
+                </AssetGroupButton>
+              </AssetGroup>
             </div>
             <AddToVault
               isOpen={isAddToVaultOpen}

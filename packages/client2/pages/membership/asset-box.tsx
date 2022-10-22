@@ -1,11 +1,9 @@
 import clsx from "clsx";
-import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { ReactNode, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import {
-  Button,
   Checkbox,
   DollarInput,
   Icon,
@@ -25,115 +23,6 @@ export interface Asset {
   usdcAmount: CryptoAmount;
   nativeAmount?: CryptoAmount;
 }
-
-export interface AssetGroup {
-  groupName: string;
-  assets: Asset[];
-}
-
-interface AssetGroupProps {
-  className?: string;
-  assetGroups: AssetGroup[];
-  background: "sand" | "gold";
-  heading: string;
-  buttonText: string;
-  onButtonClick: () => void;
-  hideButton?: boolean;
-}
-
-export function AssetGroup({
-  className,
-  assetGroups,
-  background,
-  heading,
-  buttonText,
-  onButtonClick,
-  hideButton = false,
-}: AssetGroupProps) {
-  const totalValue = assetGroups.reduce(
-    (prev, current) =>
-      prev.add(
-        current.assets.reduce(
-          (prev, current) => prev.add(current.usdcAmount.amount),
-          BigNumber.from(0)
-        )
-      ),
-    BigNumber.from(0)
-  );
-  return (
-    <div
-      className={clsx(
-        className,
-        "rounded-xl border",
-        background === "sand"
-          ? "border-sand-200 bg-sand-100"
-          : "border-mustard-200 bg-mustard-200"
-      )}
-    >
-      <div
-        className={clsx(
-          "flex items-center justify-between gap-8 p-5 text-lg font-medium",
-          assetGroups.length > 0
-            ? clsx(
-                "border-b",
-                background === "sand" ? "border-sand-300" : "border-mustard-300"
-              )
-            : null
-        )}
-      >
-        <div>{heading}</div>
-        <div>
-          {formatCrypto(
-            { amount: totalValue, token: SupportedCrypto.Usdc },
-            { includeSymbol: true, includeToken: false }
-          )}
-        </div>
-      </div>
-      <div
-        className={assetGroups.length !== 0 || !hideButton ? "p-5" : undefined}
-      >
-        {assetGroups.length === 0 ? (
-          <div className="p-5">No assets available</div>
-        ) : (
-          <div className="flex flex-col items-stretch gap-6">
-            {assetGroups.map((assetGroup) => (
-              <div key={assetGroup.groupName}>
-                <div className="mb-2 flex justify-between gap-4 text-sm">
-                  <div>{assetGroup.groupName}</div>
-                  <div>
-                    {formatCrypto({
-                      token: SupportedCrypto.Usdc,
-                      amount: assetGroup.assets.reduce(
-                        (prev, current) => prev.add(current.usdcAmount.amount),
-                        BigNumber.from(0)
-                      ),
-                    })}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {assetGroup.assets.map((asset, index) => (
-                    <AssetBox key={`${asset.name}-${index}`} asset={asset} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {hideButton ? null : (
-          <Button
-            className="mt-4 w-full"
-            colorScheme={background === "sand" ? "primary" : "mustard"}
-            size="xl"
-            onClick={onButtonClick}
-          >
-            {buttonText}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 interface AssetBoxProps {
   asset: Asset;
   omitWrapperStyle?: boolean;
@@ -142,6 +31,7 @@ interface AssetBoxProps {
    */
   nativeAmountIsPrimary?: boolean;
   notice?: ReactNode;
+  faded?: boolean;
 }
 
 export function AssetBox({
@@ -149,16 +39,15 @@ export function AssetBox({
   omitWrapperStyle = false,
   nativeAmountIsPrimary = false,
   notice,
+  faded = false,
 }: AssetBoxProps) {
   const { name, description, icon, tooltip, usdcAmount, nativeAmount } = asset;
+  const wrapperStyle = clsx(
+    "w-full rounded border border-white bg-white px-5 py-6",
+    faded ? "opacity-50" : null
+  );
   return (
-    <div
-      className={
-        omitWrapperStyle
-          ? "w-full"
-          : "w-full rounded border border-white bg-white px-5 py-6"
-      }
-    >
+    <div className={omitWrapperStyle ? "w-full" : wrapperStyle}>
       <div className="mb-1 flex justify-between gap-4">
         <div className="flex items-center gap-2">
           {icon ? <Icon size="md" name={icon} /> : null}
