@@ -10,6 +10,7 @@ import {
   IconNameType,
 } from "@/components/design-system";
 import { SEO } from "@/components/seo";
+import { formatCrypto } from "@/lib/format";
 import {
   SupportedCrypto,
   useMembershipPageQuery,
@@ -18,7 +19,12 @@ import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
-import { AssetGroup } from "./asset-group";
+import { AssetBox, AssetGroup } from "./asset-box";
+import {
+  AssetGroup as AssetGroup2,
+  AssetGroupSubheading,
+  AssetGroupButton,
+} from "./asset-group";
 import { Explainer } from "./explainer";
 
 gql`
@@ -165,38 +171,98 @@ export default function MembershipPage() {
           <div>
             <h2 className="mb-10 text-4xl">Vault</h2>
             <div className="flex flex-col items-stretch justify-between gap-10 lg:flex-row lg:items-start">
-              <div className="space-y-8 lg:w-1/2">
-                <AssetGroup
-                  heading="Available assets"
-                  assetGroups={vaultableAssets}
-                  background="sand"
-                  buttonText="Select assets to add"
-                  onButtonClick={() => setIsAddToVaultOpen(true)}
-                  hideButton={vaultableAssets.length === 0}
-                />
+              <div className="space-y-4 lg:w-1/2">
                 <div className="rounded-xl border border-sand-200 bg-sand-100 p-5">
                   <div className="mb-3 flex items-center gap-2 text-lg font-medium">
                     <Icon name="LightningBolt" className="text-mustard-400" />
                     Balanced is best
                   </div>
-                  <div className="mb-6">
+                  <div>
                     To optimize Member rewards, aim to have balanced amounts of
                     capital and GFI in your vault at all times.
                   </div>
-                  <div className="space-y-2">
-                    <CallToAction
-                      mainText="Buy GFI"
-                      icon="Gfi"
-                      buttonText="Buy now"
-                      href="https://coinmarketcap.com/currencies/goldfinch-protocol/markets/"
-                    />
-                    <CallToAction
-                      mainText="LP in the Senior Pool for FIDU"
-                      buttonText="Invest"
-                      href="/pools/senior"
-                    />
-                  </div>
                 </div>
+                <AssetGroup2 headingLeft="Available assets">
+                  {data.viewer.gfiBalance?.amount.isZero() &&
+                  capitalAssetGroup.assets.length === 0 ? (
+                    <div>
+                      <div className="mb-6">
+                        <div className="mb-1 text-lg font-medium">
+                          You don&apos;t have any available assets to be added
+                        </div>
+                        <div className="text-sm">
+                          To optimize Member rewards, aim to have balanced
+                          amounts of GFI and Capital in your Vault at all times.
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <BuyGfiCta />
+                        <LpInSeniorPoolCta />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-4">
+                        <AssetGroupSubheading
+                          left="GFI"
+                          right={
+                            data.viewer.gfiBalance
+                              ? formatCrypto(data.viewer.gfiBalance)
+                              : undefined
+                          }
+                        />
+                        {data.viewer.gfiBalance ? (
+                          data.viewer.gfiBalance.amount.isZero() ? (
+                            <BuyGfiCta />
+                          ) : (
+                            <AssetBox
+                              asset={{
+                                name: "GFI",
+                                icon: "Gfi",
+                                description: "Governance Token",
+                                usdcAmount: gfiToUsdc(
+                                  data.viewer.gfiBalance,
+                                  data.gfiPrice.price.amount
+                                ),
+                                nativeAmount: data.viewer.gfiBalance,
+                              }}
+                            />
+                          )
+                        ) : null}
+                      </div>
+                      <div className="mb-4">
+                        <AssetGroupSubheading
+                          left="Capital"
+                          right={formatCrypto({
+                            token: SupportedCrypto.Usdc,
+                            amount: capitalAssetGroup.assets.reduce(
+                              (prev, current) =>
+                                prev.add(current.usdcAmount.amount),
+                              BigNumber.from(0)
+                            ),
+                          })}
+                        />
+                        {capitalAssetGroup.assets.length === 0 ? (
+                          <LpInSeniorPoolCta />
+                        ) : (
+                          <div className="space-y-2">
+                            {capitalAssetGroup.assets.map((asset, index) => (
+                              <AssetBox
+                                key={`capital-${index}`}
+                                asset={asset}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <AssetGroupButton
+                        onClick={() => setIsAddToVaultOpen(true)}
+                      >
+                        Select assets to add
+                      </AssetGroupButton>
+                    </div>
+                  )}
+                </AssetGroup2>
               </div>
 
               <AssetGroup
@@ -268,5 +334,26 @@ function CallToAction({
         {buttonText}
       </Button>
     </div>
+  );
+}
+
+function BuyGfiCta() {
+  return (
+    <CallToAction
+      mainText="Buy GFI"
+      icon="Gfi"
+      buttonText="Buy now"
+      href="https://coinmarketcap.com/currencies/goldfinch-protocol/markets/"
+    />
+  );
+}
+
+function LpInSeniorPoolCta() {
+  return (
+    <CallToAction
+      mainText="LP in the Senior Pool for FIDU"
+      buttonText="Invest"
+      href="/pools/senior"
+    />
   );
 }

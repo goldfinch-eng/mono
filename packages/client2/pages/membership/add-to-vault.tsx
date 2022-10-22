@@ -19,7 +19,7 @@ import {
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 
-import { AssetBox, AssetCheckbox, GfiBox } from "./asset-group";
+import { AssetBox, AssetCheckbox, GfiBox } from "./asset-box";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
 type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
