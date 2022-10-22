@@ -115,8 +115,20 @@ export default function MembershipPage() {
   const [isAddToVaultOpen, setIsAddToVaultOpen] = useState(false);
 
   //TODO real data lol
-  const vaultedGfi = { token: SupportedCrypto.Gfi, amount: BigNumber.from(0) };
-  const vaultedCapitalAssets: Asset[] = [];
+  const vaultedGfi = {
+    token: SupportedCrypto.Gfi,
+    amount: BigNumber.from("420000000000000000000"),
+  };
+  const vaultedCapitalAssets: Asset[] = [
+    {
+      name: "Borrower Pool Position",
+      description: "Pug Pool #1",
+      usdcAmount: {
+        token: SupportedCrypto.Usdc,
+        amount: BigNumber.from("69420000000"),
+      },
+    },
+  ];
 
   return (
     <div>
@@ -195,6 +207,7 @@ export default function MembershipPage() {
                             <BuyGfiCta />
                           ) : (
                             <AssetBox
+                              nativeAmountIsPrimary
                               asset={{
                                 name: "GFI",
                                 icon: "Gfi",
@@ -293,6 +306,7 @@ export default function MembershipPage() {
                   />
                   <AssetBox
                     faded={vaultedGfi.amount.isZero()}
+                    nativeAmountIsPrimary
                     asset={{
                       name: "GFI",
                       description: "Governance Token",
@@ -339,7 +353,13 @@ export default function MembershipPage() {
                     />
                   )}
                 </div>
-                <AssetGroupButton colorScheme="mustard" disabled>
+                <AssetGroupButton
+                  colorScheme="mustard"
+                  disabled={
+                    vaultedGfi.amount.isZero() &&
+                    vaultedCapitalAssets.length === 0
+                  }
+                >
                   Select assets to remove
                 </AssetGroupButton>
               </AssetGroup>
