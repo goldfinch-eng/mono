@@ -92,12 +92,16 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   /*================================================================================
   Admin Functions
-  ================================================================================*/
+================================================================================*/
   function setEpochDuration(uint256 newEpochDuration) public override onlyAdmin {
     Epoch storage headEpoch = _applyEpochCheckpoints();
     // When we're updating the epoch duration we need to update the head epoch endsAt
     // time to be the new epoch duration
-    headEpoch.endsAt.sub(_epochDuration).add(newEpochDuration);
+    if (headEpoch.endsAt > block.timestamp) {
+      headEpoch.endsAt = headEpoch.endsAt.sub(_epochDuration).add(newEpochDuration);
+    } else {
+      headEpoch.endsAt = _mostRecentEndsAtAfter(headEpoch.endsAt).add(newEpochDuration);
+    }
     _epochDuration = newEpochDuration;
     emit EpochDurationChanged(newEpochDuration);
   }
@@ -286,12 +290,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       return (epoch, false);
     }
 
-    // if multiple epochs have passed since checkpointing, update the endtime
-    // and emit many events so that we don't need to write a bunch of useless epochs
-    uint256 nopEpochsElapsed = block.timestamp.sub(epoch.endsAt).div(_epochDuration);
-
-    // update the last epoch timestamp to the timestamp of the most recently ended epoch
-    epoch.endsAt = epoch.endsAt.add(nopEpochsElapsed.mul(_epochDuration));
+    epoch.endsAt = _mostRecentEndsAtAfter(epoch.endsAt);
 
     // liquidate epoch
     uint256 usdcNeededToFullyLiquidate = _getUSDCAmountFromShares(epoch.fiduRequested);
@@ -330,6 +329,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
       wr.epochCursor = i + 1;
     }
     return wr;
+  }
+
+  function _mostRecentEndsAtAfter(uint256 endsAt) internal view returns (uint256) {
+    // if multiple epochs have passed since checkpointing, update the endtime
+    // and emit many events so that we don't need to write a bunch of useless epochs
+    uint256 nopEpochsElapsed = block.timestamp.sub(endsAt).div(_epochDuration);
+    // update the last epoch timestamp to the timestamp of the most recently ended epoch
+    return endsAt.add(nopEpochsElapsed.mul(_epochDuration));
   }
 
   // internal functions

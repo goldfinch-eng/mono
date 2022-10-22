@@ -2097,17 +2097,54 @@ describe("SeniorPool", () => {
     })
   })
 
-  describe("epochDuration", () => {
+  describe("setEpochDuration", () => {
+    describe("after multiple nop epochs have passed", async () => {
+      const week = 60 * 60 * 24 * 7
+      const newEpochDuration = week * 5 // 5 weeks
+      let initialEndsAt
+      let initialStartsAt
+      let initialEpochDuration
+      beforeEach(async () => {
+        const currentEpoch = await seniorPool.currentEpoch()
+        initialEndsAt = new BN(currentEpoch.endsAt)
+        initialEpochDuration = await seniorPool.epochDuration()
+        expect(initialEpochDuration).to.bignumber.eq(TWO_WEEKS)
+        initialStartsAt = initialEndsAt.sub(initialEpochDuration)
+      })
+      /*
+      Currently we have epoch duration of two weeks
+      v- week 0(last checkpoint)
+      | 2 weeks | 2 weeks | [we are here] 2 weeks | <--- endsAt
+
+      We to make sure that the new endsAt timestamp is based off the endsAt of the previous
+      epoch even if hasn't been checkpointed.
+      v- week 0 (last checkpoint)
+      | 2 weeks | 2 weeks | [we are here]| 5 weeks           | <--- endsAt = week 9
+      */
+      it("sets the epoch endsAt correctly", async () => {
+        await advanceAndMineBlock({days: 30})
+
+        await seniorPool.setEpochDuration(newEpochDuration)
+
+        const newCurrentEpoch = await seniorPool.currentEpoch()
+        const newEndsAt = newCurrentEpoch.endsAt
+        const nineWeeks = new BN(week).mul(new BN("9"))
+        expect(newEndsAt).to.bignumber.eq(initialStartsAt.add(nineWeeks))
+      })
+    })
+
     it("can be set by admin", async () => {
       await expectAction(() => seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: owner})).toChange([
         [seniorPool.epochDuration, {to: SECONDS_PER_DAY}],
       ])
     })
+
     it("cannot be set by non-admin", async () => {
       await expect(seniorPool.setEpochDuration(SECONDS_PER_DAY, {from: person2})).to.be.rejectedWith(
         /Must have admin role to perform this action/
       )
     })
+
     it("returns the duration", async () => {
       expect(await seniorPool.epochDuration()).to.bignumber.eq(TWO_WEEKS)
     })
@@ -2116,6 +2153,12 @@ describe("SeniorPool", () => {
       expectEvent(receipt, "EpochDurationChanged", {
         newDuration: SECONDS_PER_DAY,
       })
+    })
+  })
+
+  describe("epochDuration", () => {
+    it("returns the duration", async () => {
+      expect(await seniorPool.epochDuration()).to.bignumber.eq(TWO_WEEKS)
     })
   })
 
