@@ -575,9 +575,19 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    * @notice Returns the net assests controlled by and owed to the pool
    */
   function assets() public view override returns (uint256) {
-    (Epoch memory e, bool wasCheckpointed) = _previewEpochCheckpoint(_headEpoch());
+    (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
     uint256 usdcThatWillBeAllocatedToLatestEpoch = e.usdcAllocated;
     return usdcAvailable.add(totalLoansOutstanding).sub(usdcThatWillBeAllocatedToLatestEpoch).sub(totalWritedowns);
+  }
+
+  /**
+   * @notice Returns the number of shares outstanding, accounting for shares that will be burned
+   *          when an epoch checkpoint happens
+   */
+  function sharesOutstanding() public view override returns (uint256) {
+    (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
+    uint256 fiduThatWillBeBurnedOnCheckpoint = e.fiduLiquidated;
+    return config.getFidu().totalSupply().sub(fiduThatWillBeBurnedOnCheckpoint);
   }
 
   function getNumShares(uint256 usdcAmount) public view override returns (uint256) {

@@ -13,7 +13,7 @@ export async function main() {
   })
 
   const upgradedContracts = await upgrader.upgrade({
-    contracts: ["SeniorPool", "StakingRewards", "Zapper"],
+    contracts: ["SeniorPool", "StakingRewards", "Zapper", "Fidu"],
   })
   await deployEffects.add(await changeImplementations({contracts: upgradedContracts}))
 

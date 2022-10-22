@@ -1752,7 +1752,51 @@ describe("SeniorPool", () => {
     })
   })
 
+  describe("sharesOutstanding", () => {
+    it("should include newly minted fidu", async () => {
+      const depositAmount = usdcVal(1000)
+      const depositAmountInFidu = await seniorPool.getNumShares(depositAmount)
+      await expectAction(() => makeDeposit(person2, depositAmount)).toChange([
+        [seniorPool.sharesOutstanding, {by: depositAmountInFidu}],
+      ])
+    })
+
+    it("should exclude virtually burned shares", async () => {
+      const depositAmount = usdcVal(1000)
+      const depositAmountInFidu = await seniorPool.getNumShares(depositAmount)
+      await expectAction(() => makeDeposit(person2, depositAmount)).toChange([
+        [seniorPool.sharesOutstanding, {by: depositAmountInFidu}],
+      ])
+
+      // The shares are still outstanding because the user could claim them
+      await expectAction(() => seniorPool.requestWithdrawal(depositAmountInFidu, {from: person2})).toChange([
+        [seniorPool.sharesOutstanding, {unchanged: true}],
+      ])
+
+      // once we cross over an epoch the shares will be virtually burned, so they should no longer be counted
+      // as shares outstanding. There's no way for a user to ge them back.
+      const epochDuration = await seniorPool.epochDuration()
+      await expectAction(() => advanceAndMineBlock({seconds: epochDuration})).toChange([
+        [seniorPool.sharesOutstanding, {by: depositAmountInFidu.neg()}],
+      ])
+    })
+  })
+
   describe("assets matching liabilities", async () => {
+    describe("when there is a large difference", async () => {
+      it("should fail", async () => {
+        // Create fidu that so that we
+        await makeDeposit(person2, usdcVal(100_000))
+        const testSharePrice = new BN(String(2.23456789 * (ETHDecimals as any)))
+        // can increase the value of the shares without taking in more usdc so that
+        await seniorPool._setSharePrice(testSharePrice)
+        // when we mint more share there will be an asset liability mismatch
+        return expect(makeDeposit(person2, usdcVal(2500))).to.be.rejectedWith(
+          /Cannot mint: it would create an asset\/liability mismatch/i
+        )
+      })
+    })
+
     describe("when there is a super tiny rounding error", async () => {
       it("should still work", async () => {
         // This share price will cause a rounding error of 1 atomic unit.
