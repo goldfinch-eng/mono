@@ -187,7 +187,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
     WithdrawalRequest storage request = _withdrawalRequests[tokenId];
 
-    request.epochCursor = thisEpoch.id;
+    request.epochCursor = _checkpointedEpochId;
     request.fiduRequested = request.fiduRequested.add(fiduAmount);
 
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.add(fiduAmount);
@@ -342,7 +342,6 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   function _initializeNextEpochFrom(Epoch storage previousEpoch) internal returns (Epoch storage) {
     Epoch storage nextEpoch = _epochs[++_checkpointedEpochId];
 
-    nextEpoch.id = previousEpoch.id + 1;
     nextEpoch.endsAt = previousEpoch.endsAt.add(_epochDuration);
     uint256 fiduToCarryOverFromLastEpoch = previousEpoch.fiduRequested.sub(previousEpoch.fiduLiquidated);
     nextEpoch.fiduRequested = fiduToCarryOverFromLastEpoch;
@@ -404,7 +403,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     Epoch storage newEpoch = _initializeNextEpochFrom(epoch);
     config.getFidu().burnFrom(address(this), epoch.fiduLiquidated);
 
-    emit EpochEnded(epoch.id, epoch.endsAt, epoch.usdcAllocated, epoch.fiduLiquidated);
+    emit EpochEnded(_checkpointedEpochId, epoch.endsAt, epoch.usdcAllocated, epoch.fiduLiquidated);
     return newEpoch;
   }
 

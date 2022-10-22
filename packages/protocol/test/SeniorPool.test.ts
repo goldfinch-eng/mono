@@ -1862,7 +1862,6 @@ describe("SeniorPool", () => {
   async function getCurrentEpoch() {
     const epoch = await seniorPool.currentEpoch()
     return {
-      id: new BN(epoch.id),
       endsAt: new BN(epoch.endsAt),
       fiduRequested: new BN(epoch.fiduRequested),
       fiduLiquidated: new BN(epoch.fiduLiquidated),
@@ -2312,25 +2311,6 @@ describe("SeniorPool", () => {
         it("does not affect the current epoch", async () => {
           // Should not have affected the epoch
           expect(epochBeforeWritedown).to.deep.eq(await getCurrentEpoch())
-        })
-      })
-      describe("when the last epoch hasn't been checkpointed", () => {
-        it.skip("locks in the last epoch at pre-writedown share price", async () => {
-          // TODO: fix this test
-          await advanceAndMineBlock({days: 14})
-          // Deposit to trigger a checkpoint and then get the previous epoch
-          await seniorPool.deposit(usdcVal(1), {from: owner})
-          const writedownEpoch = await seniorPool.epochAt((await getCurrentEpoch()).id.sub(new BN(1)))
-        })
-      })
-      describe("when multiple epochs haven't been checkpointed", () => {
-        it.skip("locks in those epoch's share prices at pre-writedown share price", async () => {
-          // TODO: fix this test
-          await advanceAndMineBlock({days: 28})
-          // Deposit to trigger a checkpoint and then get the previous epoch
-          await seniorPool.deposit(usdcVal(1), {from: owner})
-          let writedownEpoch = await seniorPool.epochAt((await getCurrentEpoch()).id.sub(new BN(2)))
-          writedownEpoch = await seniorPool.epochAt((await getCurrentEpoch()).id.sub(new BN(1)))
         })
       })
     })

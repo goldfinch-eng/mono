@@ -10,7 +10,6 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice fiduRequested withdrawal demand for this epoch
   /// @notice usdcIn liquidity for this epoch
   struct Epoch {
-    uint256 id;
     uint256 endsAt;
     uint256 fiduRequested;
     uint256 fiduLiquidated;
@@ -22,8 +21,8 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice usdcWithdrawable amount already liquidated
   struct WithdrawalRequest {
     uint256 epochCursor;
-    uint256 fiduRequested;
     uint256 usdcWithdrawable;
+    uint256 fiduRequested;
   }
 
   function usdcAvailable() external view returns (uint256);
