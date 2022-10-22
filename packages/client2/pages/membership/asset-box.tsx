@@ -141,12 +141,14 @@ interface AssetBoxProps {
    * Whether or not the native token amount should be the primary bolded one in this box
    */
   nativeAmountIsPrimary?: boolean;
+  notice?: ReactNode;
 }
 
 export function AssetBox({
   asset,
   omitWrapperStyle = false,
   nativeAmountIsPrimary = false,
+  notice,
 }: AssetBoxProps) {
   const { name, description, icon, tooltip, usdcAmount, nativeAmount } = asset;
   return (
@@ -177,6 +179,11 @@ export function AssetBox({
           </div>
         ) : null}
       </div>
+      {notice ? (
+        <div className="mt-6 rounded bg-tidepool-200 p-2 text-center text-xs font-medium">
+          {notice}
+        </div>
+      ) : null}
     </div>
   );
 }

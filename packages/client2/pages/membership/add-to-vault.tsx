@@ -7,8 +7,8 @@ import { ReactNode, useEffect, useState } from "react";
 import {
   Button,
   InfoIconTooltip,
+  Link,
   Modal,
-  ModalProps,
 } from "@/components/design-system";
 import { GFI_DECIMALS } from "@/constants";
 import { formatCrypto } from "@/lib/format";
@@ -35,12 +35,15 @@ export const ADD_TO_VAULT_POOL_TOKEN_FIELDS = gql`
   }
 `;
 
-interface AddToVaultProps extends Omit<ModalProps, "children" | "title"> {
+interface AddToVaultProps {
+  isOpen: boolean;
+  onClose: () => void;
   maxVaultableGfi: CryptoAmount;
   fiatPerGfi: number;
   vaultableStakedPositions: StakedPosition[];
   sharePrice: BigNumber;
   vaultablePoolTokens: PoolToken[];
+  unstakedFidu: CryptoAmount;
 }
 
 export function AddToVault({
@@ -51,7 +54,7 @@ export function AddToVault({
   vaultableStakedPositions,
   sharePrice,
   vaultablePoolTokens,
-  ...rest
+  unstakedFidu,
 }: AddToVaultProps) {
   const gfiInUsdc = gfiToUsdc(maxVaultableGfi, fiatPerGfi);
   const capitalTotal = {
@@ -95,7 +98,6 @@ export function AddToVault({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      {...rest}
       className="bg-sand-100"
       title={step === 0 ? "Select assets to add" : "Confirm transaction"}
       size="sm"
@@ -214,6 +216,26 @@ export function AddToVault({
               />
             );
           })}
+          {!unstakedFidu.amount.isZero() ? (
+            <AssetBox
+              asset={{
+                name: "Unstaked FIDU",
+                description: "Goldfinch Senior Pool Position",
+                nativeAmount: unstakedFidu,
+                usdcAmount: sharesToUsdc(unstakedFidu.amount, sharePrice),
+              }}
+              notice={
+                <div className="flex items-center justify-between">
+                  <div>
+                    FIDU must be staked before it can be added to the Vault.
+                  </div>
+                  <Link href="/stake" iconRight="ArrowTopRight">
+                    Stake FIDU
+                  </Link>
+                </div>
+              }
+            />
+          ) : null}
         </div>
       </div>
       <div className={step === 1 ? undefined : "hidden"}>

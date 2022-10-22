@@ -41,6 +41,10 @@ gql`
         token
         amount
       }
+      fiduBalance {
+        token
+        amount
+      }
     }
     gfiPrice(fiat: USD) @client {
       price {
@@ -263,6 +267,43 @@ export default function MembershipPage() {
                     </div>
                   )}
                 </AssetGroup2>
+                {data.viewer.fiduBalance &&
+                !data.viewer.fiduBalance.amount.isZero() ? (
+                  <AssetGroup2
+                    headingLeft="Unavailable assets"
+                    headingRight={formatCrypto(
+                      sharesToUsdc(data.viewer.fiduBalance.amount, sharePrice)
+                    )}
+                  >
+                    <AssetGroupSubheading
+                      left="Capital"
+                      right={formatCrypto(
+                        sharesToUsdc(data.viewer.fiduBalance.amount, sharePrice)
+                      )}
+                    />
+                    <AssetBox
+                      asset={{
+                        name: "Unstaked FIDU",
+                        description: "Goldfinch Senior Pool Position",
+                        nativeAmount: data.viewer.fiduBalance,
+                        usdcAmount: sharesToUsdc(
+                          data.viewer.fiduBalance.amount,
+                          sharePrice
+                        ),
+                      }}
+                      notice="FIDU must be staked before it can be added to the Vault."
+                    />
+                    <AssetGroupButton
+                      colorScheme="tidepool"
+                      as="a"
+                      href="/stake"
+                      iconRight="ArrowSmRight"
+                      className="mt-4"
+                    >
+                      Stake FIDU
+                    </AssetGroupButton>
+                  </AssetGroup2>
+                ) : null}
               </div>
 
               <AssetGroup
@@ -288,6 +329,12 @@ export default function MembershipPage() {
               vaultablePoolTokens={data.tranchedPoolTokens}
               vaultableStakedPositions={data.seniorPoolStakedPositions}
               sharePrice={sharePrice}
+              unstakedFidu={
+                data.viewer.fiduBalance ?? {
+                  token: SupportedCrypto.Fidu,
+                  amount: BigNumber.from(0),
+                }
+              }
             />
           </div>
         </>
