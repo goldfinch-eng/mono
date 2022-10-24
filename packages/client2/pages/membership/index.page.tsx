@@ -15,7 +15,7 @@ import {
   SupportedCrypto,
   useMembershipPageQuery,
 } from "@/lib/graphql/generated";
-import { gfiToUsdc, sharesToUsdc } from "@/lib/pools";
+import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 import { useWallet } from "@/lib/wallet";
 
 import { AddToVault } from "./add-to-vault";
@@ -26,6 +26,7 @@ import {
   AssetGroupButton,
 } from "./asset-group";
 import { Explainer } from "./explainer";
+import { RemoveFromVault } from "./remove-from-vault";
 
 gql`
   query MembershipPage($userId: String!) {
@@ -116,27 +117,34 @@ export default function MembershipPage() {
 
   //TODO real data lol
   const vaultedGfi = {
-    token: SupportedCrypto.Gfi,
+    positionId: "69",
     amount: BigNumber.from("420000000000000000000"),
   };
-  const vaultedCapitalAssets: Asset[] = [
+  const vaultedStakedPositions = [
     {
-      name: "Borrower Pool Position",
-      description: "Pug Pool #1",
-      usdcAmount: {
-        token: SupportedCrypto.Usdc,
-        amount: BigNumber.from("69420000000"),
-      },
-    },
-    {
-      name: "Borrower Pool Position",
-      description: "Pug Pool #2",
-      usdcAmount: {
-        token: SupportedCrypto.Usdc,
-        amount: BigNumber.from("420000000"),
+      positionId: "69",
+      usdcEquivalent: BigNumber.from("69420000000"),
+      seniorPoolStakedPosition: {
+        id: "1",
+        amount: BigNumber.from("69400000000000000000000"),
       },
     },
   ];
+  const vaultedPoolTokens = [
+    {
+      positionId: "420",
+      usdcEquivalent: BigNumber.from("1000000000"),
+      poolToken: {
+        id: "2",
+        tranchedPool: {
+          id: "10",
+          name: "Pug Pool #1",
+        },
+      },
+    },
+  ];
+
+  const [isRemoveFromVaultOpen, setIsRemoveFromVaultOpen] = useState(false);
 
   return (
     <div>
@@ -310,7 +318,10 @@ export default function MembershipPage() {
                 <div className="mb-6">
                   <AssetGroupSubheading
                     left="GFI"
-                    right={formatCrypto(vaultedGfi)}
+                    right={formatCrypto({
+                      token: SupportedCrypto.Gfi,
+                      amount: vaultedGfi.amount,
+                    })}
                   />
                   <AssetBox
                     faded={vaultedGfi.amount.isZero()}
@@ -319,9 +330,15 @@ export default function MembershipPage() {
                       name: "GFI",
                       description: "Governance Token",
                       icon: "Gfi",
-                      nativeAmount: vaultedGfi,
+                      nativeAmount: {
+                        token: SupportedCrypto.Gfi,
+                        amount: vaultedGfi.amount,
+                      },
                       usdcAmount: gfiToUsdc(
-                        vaultedGfi,
+                        {
+                          token: SupportedCrypto.Gfi,
+                          amount: vaultedGfi.amount,
+                        },
                         data.gfiPrice.price.amount
                       ),
                     }}
@@ -332,20 +349,43 @@ export default function MembershipPage() {
                     left="Capital"
                     right={formatCrypto({
                       token: SupportedCrypto.Usdc,
-                      amount: vaultedCapitalAssets.reduce(
-                        (prev, current) => prev.add(current.usdcAmount.amount),
-                        BigNumber.from(0)
-                      ),
+                      amount: sum("usdcEquivalent", [
+                        ...vaultedStakedPositions,
+                        ...vaultedPoolTokens,
+                      ]),
                     })}
                   />
-                  {vaultedCapitalAssets.length > 0 ? (
+                  {vaultedStakedPositions.length > 0 ||
+                  vaultedPoolTokens.length > 0 ? (
                     <div className="space-y-2">
-                      {vaultedCapitalAssets.map((asset) => (
+                      {vaultedStakedPositions.map((vsp) => (
                         <AssetBox
-                          key={`vaulted-capital-${
-                            asset.name + asset.description
-                          }`}
-                          asset={asset}
+                          key={vsp.positionId}
+                          asset={{
+                            name: "Staked FIDU",
+                            description: "Goldfinch Senior Pool Position",
+                            nativeAmount: {
+                              token: SupportedCrypto.Fidu,
+                              amount: vsp.seniorPoolStakedPosition.amount,
+                            },
+                            usdcAmount: {
+                              token: SupportedCrypto.Usdc,
+                              amount: vsp.usdcEquivalent,
+                            },
+                          }}
+                        />
+                      ))}
+                      {vaultedPoolTokens.map((vpt) => (
+                        <AssetBox
+                          key={vpt.positionId}
+                          asset={{
+                            name: "Borrower Pool Position",
+                            description: vpt.poolToken.tranchedPool.name,
+                            usdcAmount: {
+                              token: SupportedCrypto.Usdc,
+                              amount: vpt.usdcEquivalent,
+                            },
+                          }}
                         />
                       ))}
                     </div>
@@ -365,9 +405,11 @@ export default function MembershipPage() {
                 </div>
                 <AssetGroupButton
                   colorScheme="mustard"
+                  onClick={() => setIsRemoveFromVaultOpen(true)}
                   disabled={
                     vaultedGfi.amount.isZero() &&
-                    vaultedCapitalAssets.length === 0
+                    vaultedStakedPositions.length === 0 &&
+                    vaultedPoolTokens.length === 0
                   }
                 >
                   Select assets to remove
@@ -393,6 +435,14 @@ export default function MembershipPage() {
                   amount: BigNumber.from(0),
                 }
               }
+            />
+            <RemoveFromVault
+              isOpen={isRemoveFromVaultOpen}
+              onClose={() => setIsRemoveFromVaultOpen(false)}
+              vaultedGfi={vaultedGfi}
+              fiatPerGfi={data.gfiPrice.price.amount}
+              vaultedStakedPositions={vaultedStakedPositions}
+              vaultedPoolTokens={vaultedPoolTokens}
             />
           </div>
         </>

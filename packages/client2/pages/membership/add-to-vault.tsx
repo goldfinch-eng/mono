@@ -304,7 +304,7 @@ export function AddToVault({
         </div>
       </div>
       <div className="mb-8">
-        <div className="mb-2 text-sm">Vault earnings</div>
+        <SectionHeading leftText="Vault earnings" />
         <TwoGrid>
           <GridItem
             heading="Est. share of member rewards"
@@ -354,19 +354,19 @@ function removeFromListById<T extends { id: string }>(
   return list.filter((item) => item.id !== idToRemove);
 }
 
-function SectionHeading({
+export function SectionHeading({
   leftText,
   rightText,
   className,
 }: {
   leftText: string;
-  rightText: string;
+  rightText?: string;
   className?: string;
 }) {
   return (
     <div className={clsx("mb-2 flex justify-between gap-5 text-sm", className)}>
       <div>{leftText}</div>
-      <div>{rightText}</div>
+      {rightText ? <div>{rightText}</div> : null}
     </div>
   );
 }
