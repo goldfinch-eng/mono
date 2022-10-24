@@ -128,6 +128,14 @@ export default function MembershipPage() {
         amount: BigNumber.from("69420000000"),
       },
     },
+    {
+      name: "Borrower Pool Position",
+      description: "Pug Pool #2",
+      usdcAmount: {
+        token: SupportedCrypto.Usdc,
+        amount: BigNumber.from("420000000"),
+      },
+    },
   ];
 
   return (
@@ -331,14 +339,16 @@ export default function MembershipPage() {
                     })}
                   />
                   {vaultedCapitalAssets.length > 0 ? (
-                    vaultedCapitalAssets.map((asset) => (
-                      <AssetBox
-                        key={`vaulted-capital-${
-                          asset.name + asset.description
-                        }`}
-                        asset={asset}
-                      />
-                    ))
+                    <div className="space-y-2">
+                      {vaultedCapitalAssets.map((asset) => (
+                        <AssetBox
+                          key={`vaulted-capital-${
+                            asset.name + asset.description
+                          }`}
+                          asset={asset}
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <AssetBox
                       faded
