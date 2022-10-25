@@ -5,10 +5,15 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 interface ISeniorPoolEpochWithdrawals {
-  /// @notice id of the epoch (starts at 0)
-  /// @notice timestamp when the epoch started
-  /// @notice fiduRequested withdrawal demand for this epoch
-  /// @notice usdcIn liquidity for this epoch
+  /**
+   * @notice A withdrawal epoch
+   * @param endsAt timestamp the epoch ends
+   * @param fiduRequested amount of fidu requested in the epoch, including fidu
+   *                      carried over from previous epochs
+   * @param fiduLiquidated Amount of fidu that was liquidated at the end of this epoch
+   * @param usdcAllocated Amount of usdc that was allocated to liquidate fidu.
+   *                      Does not consider fees.
+   */
   struct Epoch {
     uint256 endsAt;
     uint256 fiduRequested;
@@ -16,15 +21,22 @@ interface ISeniorPoolEpochWithdrawals {
     uint256 usdcAllocated;
   }
 
-  /// @notice epochCursor id of next epoch the user can liquidate their request
-  /// @notice fiduRequested amount left to liquidate at epochCursor-1
-  /// @notice usdcWithdrawable amount already liquidated
+  /**
+   * @notice A user's request for withdrawal
+   * @param epochCursor id of next epoch the user can liquidate their request
+   * @param fiduRequested amount of fidu left to liquidate since last checkpoint
+   * @param usdcWithdrawable amount of usdc available for a user to withdraw
+   */
   struct WithdrawalRequest {
     uint256 epochCursor;
     uint256 usdcWithdrawable;
     uint256 fiduRequested;
   }
 
+  /**
+   * @notice Returns the amount of unallocated usdc in the senior pool, taking into account
+   *         usdc that _will_ be allocated to withdrawals when a checkpoint happens
+   */
   function usdcAvailable() external view returns (uint256);
 
   /// @notice Current duration of withdrawal epochs, in seconds
@@ -69,8 +81,10 @@ interface ISeniorPoolEpochWithdrawals {
   /// @notice Preview how much usdc would be received if a withdrawal for tokenId were executed
   function previewWithdrawal(uint256 tokenId) external view returns (uint256 usdcReceived);
 
+  /// @notice Emitted when the epoch duration is changed
   event EpochDurationChanged(uint256 newDuration);
 
+  /// @notice Emitted when a new withdraw request has been created
   event WithdrawalRequested(
     uint256 indexed epochId,
     address indexed operator,
@@ -78,6 +92,7 @@ interface ISeniorPoolEpochWithdrawals {
     uint256 fiduRequested
   );
 
+  /// @notice Emitted when a withdraw request has been canceled
   event WithdrawalCanceled(
     uint256 indexed epochId,
     address indexed operator,
@@ -86,5 +101,6 @@ interface ISeniorPoolEpochWithdrawals {
     uint256 reserveFidu
   );
 
+  /// @notice Emitted when an epoch has been checkpointed
   event EpochEnded(uint256 indexed epochId, uint256 endTime, uint256 usdcAllocated, uint256 fiduLiquidated);
 }

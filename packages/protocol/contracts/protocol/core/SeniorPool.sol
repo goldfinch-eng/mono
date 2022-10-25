@@ -92,7 +92,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
 
   /*================================================================================
   Admin Functions
-================================================================================*/
+  ================================================================================*/
+
+  /**
+   * @inheritdoc ISeniorPoolEpochWithdrawals
+   * @dev Triggers a checkpoint
+   */
   function setEpochDuration(uint256 newEpochDuration) public override onlyAdmin {
     Epoch storage headEpoch = _applyEpochCheckpoints();
     // When we're updating the epoch duration we need to update the head epoch endsAt
@@ -106,6 +111,11 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     emit EpochDurationChanged(newEpochDuration);
   }
 
+  /**
+   * @notice Initialize the epoch withdrawal system. This includes writing the
+   *          initial epoch and snapshotting usdcAvailable at the current usdc balance of
+   *          the senior pool.
+   */
   function initializeEpochs() external onlyAdmin {
     require(_epochs[0].endsAt == 0);
     _epochDuration = 2 weeks;
@@ -159,6 +169,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return deposit(amount);
   }
 
+  /**
+   * @inheritdoc ISeniorPoolEpochWithdrawals
+   * @dev Reverts if a withdrawal with the given tokenId does not exist
+   * @dev Reverts if the caller is not the owner of the given token
+   * @dev Triggers a checkpoint
+   */
   function addToWithdrawalRequest(uint256 fiduAmount, uint256 tokenId) external override whenNotPaused nonReentrant {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     IWithdrawalRequestToken requestTokens = config.getWithdrawalRequestToken();
@@ -176,12 +192,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     config.getFidu().safeTransferFrom(msg.sender, address(this), fiduAmount);
   }
 
-  /// @inheritdoc ISeniorPoolEpochWithdrawals
-  /// @dev Users who make requests through our dapp will always use their msg.sender address for
-  ///   the operator. The extra flexibility of the operator param is needed for contract integration.
-  ///   E.g. if someone calls unstakeAndWithdraw on StakingRewards, the contract can call requestWithdrawal
-  ///   usint its msg.sender for operator so that the request token is minted not to StakingRewards but to
-  ///   the user who called unstakeAndWithdraw.
+  /**
+   * @inheritdoc ISeniorPoolEpochWithdrawals
+   * @dev triggers a checkpoint
+   */
   function requestWithdrawal(uint256 fiduAmount) external override whenNotPaused nonReentrant returns (uint256) {
     IWithdrawalRequestToken requestTokens = config.getWithdrawalRequestToken();
     require(config.getGo().goSeniorPool(msg.sender), "NA");
@@ -202,7 +216,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return tokenId;
   }
 
-  /// @inheritdoc ISeniorPoolEpochWithdrawals
+  /**
+   * @inheritdoc ISeniorPoolEpochWithdrawals
+   * @dev triggers a checkpoint
+   */
   function cancelWithdrawalRequest(uint256 tokenId) external override whenNotPaused nonReentrant returns (uint256) {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(msg.sender == config.getWithdrawalRequestToken().ownerOf(tokenId), "NA");
@@ -227,7 +244,10 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     emit WithdrawalCanceled(_checkpointedEpochId, msg.sender, address(0), userFidu, reserveFidu);
   }
 
-  /// @inheritdoc ISeniorPoolEpochWithdrawals
+  /**
+   * @inheritdoc ISeniorPoolEpochWithdrawals
+   * @dev triggers a checkpoint
+   */
   function claimWithdrawalRequest(uint256 tokenId) external override whenNotPaused nonReentrant returns (uint256) {
     require(config.getGo().goSeniorPool(msg.sender), "NA");
     require(msg.sender == config.getWithdrawalRequestToken().ownerOf(tokenId), "NA");
@@ -252,6 +272,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   // view functions
   //--------------------------------------------------------------------------------
 
+  /// @inheritdoc ISeniorPoolEpochWithdrawals
   function epochDuration() public view override returns (uint256) {
     return _epochDuration;
   }
@@ -268,7 +289,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return _previewWithdrawRequestCheckpoint(wr);
   }
 
-  // amount of usdc you will receive
+  /// @inheritdoc ISeniorPoolEpochWithdrawals
   function previewWithdrawal(uint256 tokenId) public view override returns (uint256) {
     WithdrawalRequest storage wr = _withdrawalRequests[tokenId];
     return _previewWithdrawRequestCheckpoint(wr).usdcWithdrawable;
@@ -302,10 +323,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return (epoch, true);
   }
 
+  /// @notice Returns the most recent, uncheckpointed epoch
   function _headEpoch() internal view returns (Epoch storage) {
     return _epochs[_checkpointedEpochId];
   }
 
+  /// @notice Returns the state of a withdraw request after checkpointing
   function _previewWithdrawRequestCheckpoint(WithdrawalRequest memory wr)
     internal
     view
@@ -332,6 +355,12 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     return wr;
   }
 
+  /**
+   * @notice Returns the most recent time an epoch would end assuming the current epoch duration
+   *          and the starting point of `endsAt`.
+   * @param endsAt basis for calculating the most recent endsAt time
+   * @return mostRecentEndsAt The most recent endsAt
+   */
   function _mostRecentEndsAtAfter(uint256 endsAt) internal view returns (uint256) {
     // if multiple epochs have passed since checkpointing, update the endtime
     // and emit many events so that we don't need to write a bunch of useless epochs
@@ -348,6 +377,9 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     config.getUSDC().safeTransfer(config.reserveAddress(), amount);
   }
 
+  /**
+   * @notice Initialize the next epoch using a given epoch by carrying forward its oustanding fidu
+   */
   function _initializeNextEpochFrom(Epoch storage previousEpoch) internal returns (Epoch storage) {
     Epoch storage nextEpoch = _epochs[++_checkpointedEpochId];
 
@@ -524,6 +556,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   /**
    * @notice Redeem interest and/or principal from an ITranchedPool investment
    * @param tokenId the ID of an IPoolTokens token to be redeemed
+   * @dev triggers a checkpoint
    */
   function redeem(uint256 tokenId) public override whenNotPaused nonReentrant {
     _applyEpochCheckpoints();
@@ -541,6 +574,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
    *  down if we're considering the investment a loss, or up if the borrower has subsequently
    *  made repayments that restore confidence that the full loan will be repaid.
    * @param tokenId the ID of an IPoolTokens token to be considered for writedown
+   * @dev triggers a checkpoint
    */
   function writedown(uint256 tokenId) public override whenNotPaused nonReentrant {
     IPoolTokens poolTokens = config.getPoolTokens();
@@ -579,6 +613,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
   // View Functions
   //--------------------------------------------------------------------------------
 
+  /// @inheritdoc ISeniorPoolEpochWithdrawals
   function usdcAvailable() public view override returns (uint256) {
     (Epoch memory e, ) = _previewEpochCheckpoint(_headEpoch());
     uint256 usdcThatWillBeAllocatedToLatestEpoch = e.usdcAllocated;
