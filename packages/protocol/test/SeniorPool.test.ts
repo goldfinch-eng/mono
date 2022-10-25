@@ -1174,7 +1174,7 @@ describe("SeniorPool", () => {
     })
 
     describe("in a later epoch from the request", () => {
-      it.skip("should succeed if I have withdrawn up to the current epoch", async () => {
+      it("should succeed if I have withdrawn up to the current epoch", async () => {
         // Invest in a pool to suck up the liquidity
         await tranchedPool.deposit(TRANCHES.Junior, usdcVal(1000), {from: owner})
         await tranchedPool.lockJuniorCapital({from: borrower})
@@ -1205,9 +1205,22 @@ describe("SeniorPool", () => {
         // Token was burned
         expect(await withdrawalRequestToken.balanceOf(person2)).to.bignumber.eq(ZERO)
         // Request is empty now
-        const request = await seniorPool.withdrawalRequest("1")
+        let request = await seniorPool.withdrawalRequest("1")
         expect(request.epochCursor).to.bignumber.eq(ZERO)
         expect(request.fiduRequested).to.bignumber.eq(ZERO)
+        expect(request.usdcWithdrawable).to.bignumber.eq(ZERO)
+
+        // Person3 cancels request without claiming first. They're request should still exist, but
+        // fiduRequested should be set to 0.
+        // They have 3000 - 375 = 2625 fiduReamining
+        await expectAction(() => seniorPool.cancelWithdrawalRequest("2", {from: person3})).toChange([
+          [() => fidu.balanceOf(person3), {by: fiduVal(2625).mul(new BN(9990)).div(new BN(10_000))}],
+          [() => fidu.balanceOf(reserve), {by: fiduVal(2625).mul(new BN(10)).div(new BN(10_000))}],
+        ])
+        request = await seniorPool.withdrawalRequest("2")
+        expect(request.epochCursor).to.bignumber.eq(new BN("2"))
+        expect(request.fiduRequested).to.bignumber.eq(ZERO)
+        expect(request.usdcWithdrawable).to.bignumber.eq(usdcVal(375))
       })
     })
 

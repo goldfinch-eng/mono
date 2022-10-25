@@ -214,6 +214,7 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     uint256 userFidu = request.fiduRequested.sub(reserveFidu);
 
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.sub(request.fiduRequested);
+    request.fiduRequested = 0;
 
     // only delete the withdraw request if there is no more possible value to be added
     if (request.usdcWithdrawable == 0) {
