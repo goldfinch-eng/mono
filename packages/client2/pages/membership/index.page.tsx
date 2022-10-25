@@ -117,12 +117,12 @@ export default function MembershipPage() {
 
   //TODO real data lol
   const vaultedGfi = {
-    positionId: "69",
+    id: "69",
     amount: BigNumber.from("420000000000000000000"),
   };
   const vaultedStakedPositions = [
     {
-      positionId: "69",
+      id: "69",
       usdcEquivalent: BigNumber.from("69420000000"),
       seniorPoolStakedPosition: {
         id: "1",
@@ -132,7 +132,7 @@ export default function MembershipPage() {
   ];
   const vaultedPoolTokens = [
     {
-      positionId: "420",
+      id: "420",
       usdcEquivalent: BigNumber.from("1000000000"),
       poolToken: {
         id: "2",
@@ -360,7 +360,7 @@ export default function MembershipPage() {
                     <div className="space-y-2">
                       {vaultedStakedPositions.map((vsp) => (
                         <AssetBox
-                          key={vsp.positionId}
+                          key={vsp.id}
                           asset={{
                             name: "Staked FIDU",
                             description: "Goldfinch Senior Pool Position",
@@ -377,7 +377,7 @@ export default function MembershipPage() {
                       ))}
                       {vaultedPoolTokens.map((vpt) => (
                         <AssetBox
-                          key={vpt.positionId}
+                          key={vpt.id}
                           asset={{
                             name: "Borrower Pool Position",
                             description: vpt.poolToken.tranchedPool.name,

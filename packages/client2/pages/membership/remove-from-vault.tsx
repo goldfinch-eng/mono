@@ -10,12 +10,12 @@ import { SectionHeading } from "./add-to-vault";
 import { AssetCheckbox, GfiBox } from "./asset-box";
 
 type VaultedGfi = {
-  positionId: string;
+  id: string; // positionId
   amount: BigNumber;
 };
 
 type VaultedStakedPosition = {
-  positionId: string;
+  id: string; // positionId
   usdcEquivalent: BigNumber;
   seniorPoolStakedPosition: {
     id: string;
@@ -24,7 +24,7 @@ type VaultedStakedPosition = {
 };
 
 type VaultedPoolToken = {
-  positionId: string;
+  id: string;
   usdcEquivalent: BigNumber;
   poolToken: {
     id: string;
@@ -105,11 +105,11 @@ export function RemoveFromVault({
           <div className="space-y-2">
             {vaultedStakedPositions.map((vsp) => {
               const checked = stakedPositionsToUnvault.some(
-                (v) => v.positionId === vsp.positionId
+                (v) => v.id === vsp.id
               );
               return (
                 <AssetCheckbox
-                  key={vsp.positionId}
+                  key={vsp.id}
                   checked={checked}
                   onChange={() => {
                     if (!checked) {
@@ -119,10 +119,7 @@ export function RemoveFromVault({
                       ]);
                     } else {
                       setStakedPositionsToUnvault(
-                        removeFromListByPositionId(
-                          stakedPositionsToUnvault,
-                          vsp.positionId
-                        )
+                        removeFromListById(stakedPositionsToUnvault, vsp.id)
                       );
                     }
                   }}
@@ -142,22 +139,17 @@ export function RemoveFromVault({
               );
             })}
             {vaultedPoolTokens.map((vpt) => {
-              const checked = poolTokensToUnvault.some(
-                (v) => v.positionId === vpt.positionId
-              );
+              const checked = poolTokensToUnvault.some((v) => v.id === vpt.id);
               return (
                 <AssetCheckbox
-                  key={vpt.positionId}
+                  key={vpt.id}
                   checked={checked}
                   onChange={() => {
                     if (!checked) {
                       setPoolTokensToUnvault([...poolTokensToUnvault, vpt]);
                     } else {
                       setPoolTokensToUnvault(
-                        removeFromListByPositionId(
-                          poolTokensToUnvault,
-                          vpt.positionId
-                        )
+                        removeFromListById(poolTokensToUnvault, vpt.id)
                       );
                     }
                   }}
@@ -182,9 +174,9 @@ export function RemoveFromVault({
         onClick={() =>
           alert(
             `Confirming with GFI ${gfiToUnvault} staked positions ${stakedPositionsToUnvault
-              .map((s) => s.positionId)
+              .map((s) => s.id)
               .join(", ")}, pool tokens ${poolTokensToUnvault
-              .map((p) => p.positionId)
+              .map((p) => p.id)
               .join(", ")}`
           )
         }
@@ -195,9 +187,9 @@ export function RemoveFromVault({
   );
 }
 
-function removeFromListByPositionId<T extends { positionId: string }>(
+function removeFromListById<T extends { id: string }>(
   list: T[],
   idToRemove: string
 ): T[] {
-  return list.filter((item) => item.positionId !== idToRemove);
+  return list.filter((item) => item.id !== idToRemove);
 }
