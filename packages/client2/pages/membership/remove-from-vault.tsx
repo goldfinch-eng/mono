@@ -35,12 +35,6 @@ type VaultedPoolToken = {
     };
   };
 };
-
-type FormFields = {
-  stakedPositionsToUnvault: string[];
-  poolTokensToUnvault: string[];
-  gfiToUnvault: string;
-};
 interface RemoveFromVaultProps {
   isOpen: boolean;
   onClose: () => void;
@@ -59,9 +53,12 @@ export function RemoveFromVault({
   vaultedPoolTokens,
 }: RemoveFromVaultProps) {
   const [step, setStep] = useState<"select" | "review">("select");
-  const [, setDataToSubmit] = useState<FormFields>();
 
-  const rhfMethods = useForm<FormFields>({
+  const rhfMethods = useForm<{
+    stakedPositionsToUnvault: string[];
+    poolTokensToUnvault: string[];
+    gfiToUnvault: string;
+  }>({
     mode: "onChange",
     defaultValues: { stakedPositionsToUnvault: [], poolTokensToUnvault: [] },
   });
@@ -90,9 +87,7 @@ export function RemoveFromVault({
       .add(sum("usdcEquivalent", poolTokensToUnvault).mul("1000000000000")),
   };
 
-  const onSubmit = (data: FormFields) => {
-    setDataToSubmit(data);
-
+  const onSubmit = () => {
     alert(
       `Confirming with ${formatCrypto(
         gfiToUnvault
