@@ -189,6 +189,14 @@ contract SeniorPool is BaseUpgradeablePausable, ISeniorPool {
     request.fiduRequested = request.fiduRequested.add(fiduAmount);
     thisEpoch.fiduRequested = thisEpoch.fiduRequested.add(fiduAmount);
 
+    emit WithdrawalAddedTo({
+      epochId: _checkpointedEpochId,
+      tokenId: tokenId,
+      operator: msg.sender,
+      kycAddress: address(0),
+      fiduRequested: fiduAmount
+    });
+
     config.getFidu().safeTransferFrom(msg.sender, address(this), fiduAmount);
   }
 
