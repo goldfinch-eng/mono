@@ -21,7 +21,7 @@ const MaskedInput = IMaskMixin(({ inputRef, ...props }) => {
 
 type Unit = SupportedFiat | SupportedCrypto;
 
-type DollarInputProps = ComponentProps<typeof Input> &
+export type DollarInputProps = ComponentProps<typeof Input> &
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   UseControllerProps<any> & {
     unit?: Unit;
@@ -33,6 +33,7 @@ type DollarInputProps = ComponentProps<typeof Input> &
      * A callback function that will be invoked after the MAX button is clicked. The argument provided to this function is `maxValue`.
      */
     onMaxClick?: (n?: BigNumber) => void;
+    onChange?: (s: string) => void;
   };
 
 const unitProperties: Record<Unit, { mask: string; scale: number }> = {
@@ -50,6 +51,7 @@ export function DollarInput({
   unit = SupportedCrypto.Usdc,
   maxValue,
   onMaxClick,
+  onChange: callbackOnChange,
   name,
   rules,
   control,
@@ -58,7 +60,7 @@ export function DollarInput({
   ...rest
 }: DollarInputProps) {
   const {
-    field: { onChange, ...controllerField },
+    field: { onChange: rhfOnChange, ...controllerField },
   } = useController({
     name,
     rules,
@@ -66,6 +68,11 @@ export function DollarInput({
     shouldUnregister,
     defaultValue,
   });
+
+  const onChange = (s: string) => {
+    rhfOnChange(s);
+    callbackOnChange?.(s);
+  };
 
   return (
     <MaskedInput

@@ -1,11 +1,13 @@
 import clsx from "clsx";
+import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { ReactNode, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { ReactNode, useEffect, useState } from "react";
+import { useController, UseControllerProps, useForm } from "react-hook-form";
 
 import {
   Checkbox,
   DollarInput,
+  DollarInputProps,
   Icon,
   IconNameType,
   InfoIconTooltip,
@@ -32,6 +34,7 @@ interface AssetBoxProps {
   nativeAmountIsPrimary?: boolean;
   notice?: ReactNode;
   faded?: boolean;
+  changeAmount?: CryptoAmount;
 }
 
 export function AssetBox({
@@ -40,6 +43,7 @@ export function AssetBox({
   nativeAmountIsPrimary = false,
   notice,
   faded = false,
+  changeAmount,
 }: AssetBoxProps) {
   const { name, description, icon, tooltip, usdcAmount, nativeAmount } = asset;
   const wrapperStyle = clsx(
@@ -54,10 +58,34 @@ export function AssetBox({
           <div className="text-lg">{name}</div>
           {tooltip ? <InfoIconTooltip content={tooltip} /> : null}
         </div>
-        <div className="text-lg font-medium">
-          {formatCrypto(
-            nativeAmountIsPrimary && nativeAmount ? nativeAmount : usdcAmount
-          )}
+        <div className="flex items-center">
+          <div className="text-lg font-medium">
+            {formatCrypto(
+              nativeAmountIsPrimary && nativeAmount ? nativeAmount : usdcAmount
+            )}
+          </div>
+          {changeAmount ? (
+            <div
+              className={clsx(
+                "ml-1 text-sm",
+                changeAmount.amount.isZero()
+                  ? null
+                  : changeAmount.amount.isNegative()
+                  ? "text-clay-500"
+                  : "text-mint-450"
+              )}
+            >
+              ({formatCrypto(changeAmount)})
+              {changeAmount.amount.isZero() ? null : (
+                <Icon
+                  size="xs"
+                  name={
+                    changeAmount.amount.isNegative() ? "ArrowDown" : "ArrowUp"
+                  }
+                />
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="flex justify-between gap-4 text-xs font-medium text-sand-400">
@@ -109,6 +137,7 @@ export function AssetCheckbox({
           asset={{
             name: (
               <button
+                type="button"
                 className="text-lg before:absolute before:inset-0"
                 onClick={onChange}
               >
@@ -185,6 +214,108 @@ export function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
           )
         )}
       />
+    </div>
+  );
+}
+
+type GfiBoxProps2 = Omit<
+  DollarInputProps,
+  "label" | "hideLabel" | "textSize" | "unit"
+> & {
+  maxGfi: CryptoAmount;
+  fiatPerGfi: number;
+};
+
+export function GfiBox2({ maxGfi, fiatPerGfi, ...rest }: GfiBoxProps2) {
+  const [usdcEquivalent, setUsdcEquivalent] = useState<CryptoAmount>({
+    token: SupportedCrypto.Usdc,
+    amount: BigNumber.from(0),
+  });
+  const validate = (value: string) => {
+    const gfi = parseUnits(!value || value === "" ? "0" : value, GFI_DECIMALS);
+    if (gfi.isNegative()) {
+      return "Cannot be negative";
+    }
+    if (gfi.gt(maxGfi.amount)) {
+      return "Exceeds maximum amount";
+    }
+  };
+  return (
+    <div className={clsx("rounded border bg-white py-6 px-5", "border-white")}>
+      <AssetBox
+        omitWrapperStyle
+        nativeAmountIsPrimary
+        asset={{
+          name: "GFI",
+          description: "Governance Token",
+          icon: "Gfi",
+          usdcAmount: gfiToUsdc(maxGfi, fiatPerGfi),
+          nativeAmount: maxGfi,
+        }}
+      />
+      <DollarInput
+        label="GFI Amount"
+        hideLabel
+        className="mt-3"
+        textSize="lg"
+        unit={SupportedCrypto.Gfi}
+        maxValue={maxGfi.amount}
+        helperText={formatCrypto(usdcEquivalent)}
+        onChange={(s) =>
+          setUsdcEquivalent(
+            gfiToUsdc(
+              {
+                token: SupportedCrypto.Gfi,
+                amount: parseUnits(
+                  (s as string) === "" ? "0" : (s as string),
+                  GFI_DECIMALS
+                ),
+              },
+              fiatPerGfi
+            )
+          )
+        }
+        {...rest}
+        rules={{ validate }}
+      />
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AssetPickerProps = UseControllerProps<any> & {
+  options: { id: string; asset: Asset }[];
+};
+
+export function AssetPicker({
+  options,
+  ...useControllerProps
+}: AssetPickerProps) {
+  const {
+    field: { onChange, value },
+  } = useController<Record<string, string[]>>({
+    defaultValue: [],
+    ...useControllerProps,
+  });
+  return (
+    <div className="space-y-2">
+      {options.map((option) => {
+        const checked = value.includes(option.id);
+        return (
+          <AssetCheckbox
+            key={option.id}
+            asset={option.asset}
+            checked={checked}
+            onChange={() => {
+              if (!checked) {
+                onChange([...value, option.id]);
+              } else {
+                onChange(value.filter((v) => v !== option.id));
+              }
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
