@@ -1,11 +1,16 @@
 import { BigNumber } from "ethers";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode, Children } from "react";
 import { useForm } from "react-hook-form";
 
-import { Button, Form, Modal } from "@/components/design-system";
+import {
+  Button,
+  Form,
+  InfoIconTooltip,
+  Modal,
+} from "@/components/design-system";
 import { formatCrypto, stringToCryptoAmount } from "@/lib/format";
 import { SupportedCrypto } from "@/lib/graphql/generated";
-import { sum } from "@/lib/pools";
+import { gfiToUsdc, sum } from "@/lib/pools";
 
 import { SectionHeading } from "./add-to-vault";
 import { AssetBox, AssetPicker, GfiBox } from "./asset-box";
@@ -129,7 +134,12 @@ export function RemoveFromVault({
           <div className="w-28 text-right">
             <Button
               colorScheme="primary"
-              disabled={Object.keys(errors).length > 0}
+              disabled={
+                Object.keys(errors).length > 0 ||
+                (gfiToUnvault.amount.isZero() &&
+                  stakedPositionsToUnvault.length === 0 &&
+                  poolTokensToUnvault.length === 0)
+              }
               onClick={
                 step === "select"
                   ? async () => {
@@ -231,7 +241,121 @@ export function RemoveFromVault({
             />
           </div>
         </div>
+        <div className={step === "select" ? "hidden" : undefined}>
+          <div className="mb-8">
+            <SectionHeading
+              leftText="GFI to be removed"
+              rightText={formatCrypto(gfiToUsdc(gfiToUnvault, fiatPerGfi))}
+            />
+            <AssetBox
+              asset={{
+                name: "GFI",
+                description: "Governance Token",
+                nativeAmount: gfiToUnvault,
+                usdcAmount: gfiToUsdc(gfiToUnvault, fiatPerGfi),
+              }}
+              nativeAmountIsPrimary
+            />
+          </div>
+          <div className="mb-8">
+            <SectionHeading
+              leftText="Capital to be removed"
+              rightText={formatCrypto({
+                token: SupportedCrypto.Usdc,
+                amount: sum("usdcEquivalent", stakedPositionsToUnvault).add(
+                  sum("usdcEquivalent", poolTokensToUnvault)
+                ),
+              })}
+            />
+            <div className="space-y-2">
+              {stakedPositionsToUnvault.map((vsp) => (
+                <AssetBox
+                  key={vsp.id}
+                  asset={{
+                    name: "Staked FIDU",
+                    description: "Goldfinch Senior Pool Position",
+                    nativeAmount: {
+                      token: SupportedCrypto.Fidu,
+                      amount: vsp.seniorPoolStakedPosition.amount,
+                    },
+                    usdcAmount: {
+                      token: SupportedCrypto.Usdc,
+                      amount: vsp.usdcEquivalent,
+                    },
+                  }}
+                />
+              ))}
+              {poolTokensToUnvault.map((vpt) => (
+                <AssetBox
+                  key={vpt.id}
+                  asset={{
+                    name: "Borrower Pool Position",
+                    description: vpt.poolToken.tranchedPool.name,
+                    usdcAmount: {
+                      token: SupportedCrypto.Usdc,
+                      amount: vpt.usdcEquivalent,
+                    },
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div>
+            <SectionHeading leftText="Projected Member Rewards" />
+            <Summary>
+              <AssetBox
+                omitWrapperStyle
+                asset={{
+                  name: "Estimated Member Rewards",
+                  description: "(Monthly average)",
+                  nativeAmount: fakeFidu,
+                  usdcAmount: {
+                    token: SupportedCrypto.Usdc,
+                    amount: BigNumber.from(0),
+                  },
+                }}
+                changeAmount={{
+                  token: SupportedCrypto.Usdc,
+                  amount: BigNumber.from("-100000000"),
+                }}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  Rewards forfeited
+                  <InfoIconTooltip content="The value of the rewards forfeited for withdrawing from the Member Vault during this weekly cycle. Withdrawing from a Vault before the end of a cycle forfeits all rewards for that cycle." />
+                </div>
+                <div className="text-lg font-medium text-clay-500">$420.69</div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  Changes go into effect
+                  <InfoIconTooltip content="Date that your capital will no longer be actively earning Member Rewards in the vault." />
+                </div>
+                <div className="text-lg font-medium">Immediately</div>
+              </div>
+            </Summary>
+            <div className="mt-2 text-xs">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+              enim ad minim veniam, quis nostrud exercitation ullamco laboris
+              nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+              reprehenderit in voluptate velit esse cillum dolore eu fugiat
+              nulla pariatur. Excepteur sint occaecat cupidatat non proident,
+              sunt in culpa qui officia deserunt mollit anim id est laborum.
+            </div>
+          </div>
+        </div>
       </Form>
     </Modal>
+  );
+}
+
+function Summary({ children }: { children: ReactNode }) {
+  return (
+    <div className="divide-y divide-sand-300 rounded bg-white">
+      {Children.map(children, (child) => (
+        <div className="px-5 py-6">{child}</div>
+      ))}
+    </div>
   );
 }

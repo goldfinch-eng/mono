@@ -142,7 +142,12 @@ export function AddToVault({
           <div className="w-28 text-right">
             <Button
               colorScheme="primary"
-              disabled={Object.keys(errors).length > 0}
+              disabled={
+                Object.keys(errors).length > 0 ||
+                (gfiToVault.amount.isZero() &&
+                  stakedPositionsToVault.length === 0 &&
+                  poolTokensToVault.length === 0)
+              }
               onClick={
                 step === "select"
                   ? async () => {
