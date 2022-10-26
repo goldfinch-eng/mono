@@ -8,7 +8,7 @@ import { SupportedCrypto } from "@/lib/graphql/generated";
 import { sum } from "@/lib/pools";
 
 import { SectionHeading } from "./add-to-vault";
-import { AssetBox, AssetPicker, GfiBox2 } from "./asset-box";
+import { AssetBox, AssetPicker, GfiBox } from "./asset-box";
 
 type VaultedGfi = {
   id: string; // positionId
@@ -166,7 +166,7 @@ export function RemoveFromVault({
                 amount: vaultedGfi.amount,
               })}
             />
-            <GfiBox2
+            <GfiBox
               control={control}
               name="gfiToUnvault"
               maxGfi={{ token: SupportedCrypto.Gfi, amount: vaultedGfi.amount }}

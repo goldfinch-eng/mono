@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import { BigNumber } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
-import { ReactNode, useEffect, useState } from "react";
-import { useController, UseControllerProps, useForm } from "react-hook-form";
+import { ReactNode, useState } from "react";
+import { useController, UseControllerProps } from "react-hook-form";
 
 import {
   Checkbox,
@@ -156,69 +156,7 @@ export function AssetCheckbox({
   );
 }
 
-interface GfiBoxProps {
-  max: CryptoAmount;
-  maxInUsdc: CryptoAmount;
-  onChange: (s: string) => void;
-  fiatPerGfi: number;
-}
-
-export function GfiBox({ max, maxInUsdc, onChange, fiatPerGfi }: GfiBoxProps) {
-  const { control, watch } = useForm<{ gfiToVault: string }>({
-    defaultValues: { gfiToVault: "0" },
-  });
-  const gfiToVault = watch("gfiToVault");
-  useEffect(() => {
-    onChange(gfiToVault);
-  }, [onChange, gfiToVault]);
-  const gfiToVaultAsBigNumber = parseUnits(
-    gfiToVault !== undefined && gfiToVault !== "" ? gfiToVault : "0",
-    GFI_DECIMALS
-  );
-  return (
-    <div
-      className={clsx(
-        "rounded border bg-white py-6 px-5",
-        !gfiToVaultAsBigNumber.isZero() && !gfiToVaultAsBigNumber.isNegative()
-          ? "border-black"
-          : "border-white"
-      )}
-    >
-      <AssetBox
-        omitWrapperStyle
-        nativeAmountIsPrimary
-        asset={{
-          name: "GFI",
-          description: "Governance Token",
-          icon: "Gfi",
-          usdcAmount: maxInUsdc,
-          nativeAmount: max,
-        }}
-      />
-      <DollarInput
-        label="GFI Amount"
-        hideLabel
-        name="gfiToVault"
-        control={control}
-        className="mt-3"
-        textSize="lg"
-        unit={SupportedCrypto.Gfi}
-        maxValue={max.amount}
-        helperText={formatCrypto(
-          gfiToUsdc(
-            {
-              amount: gfiToVaultAsBigNumber,
-              token: SupportedCrypto.Gfi,
-            },
-            fiatPerGfi
-          )
-        )}
-      />
-    </div>
-  );
-}
-
-type GfiBoxProps2 = Omit<
+type GfiBoxProps = Omit<
   DollarInputProps,
   "label" | "hideLabel" | "textSize" | "unit"
 > & {
@@ -226,7 +164,7 @@ type GfiBoxProps2 = Omit<
   fiatPerGfi: number;
 };
 
-export function GfiBox2({ maxGfi, fiatPerGfi, ...rest }: GfiBoxProps2) {
+export function GfiBox({ maxGfi, fiatPerGfi, ...rest }: GfiBoxProps) {
   const [usdcEquivalent, setUsdcEquivalent] = useState<CryptoAmount>({
     token: SupportedCrypto.Usdc,
     amount: BigNumber.from(0),

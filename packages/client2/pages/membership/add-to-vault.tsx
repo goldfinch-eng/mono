@@ -19,7 +19,7 @@ import {
 } from "@/lib/graphql/generated";
 import { gfiToUsdc, sharesToUsdc, sum } from "@/lib/pools";
 
-import { AssetBox, GfiBox2, AssetPicker } from "./asset-box";
+import { AssetBox, GfiBox, AssetPicker } from "./asset-box";
 
 type StakedPosition = MembershipPageQuery["seniorPoolStakedPositions"][number];
 type PoolToken = MembershipPageQuery["tranchedPoolTokens"][number];
@@ -167,7 +167,7 @@ export function AddToVault({
               leftText="Step 1: Choose an amount of GFI"
               rightText={`${formatCrypto(maxVaultableGfi)} available`}
             />
-            <GfiBox2
+            <GfiBox
               maxGfi={maxVaultableGfi}
               fiatPerGfi={fiatPerGfi}
               name="gfiToVault"
